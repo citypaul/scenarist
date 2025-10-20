@@ -512,10 +512,11 @@ export type { RequestContext } from './request-context';
 ```typescript
 import type {
   ScenarioManager,
+  ScenarioRegistry,
   ScenarioStore,
 } from '../ports';
 import type {
-  Scenario,
+  ScenarioDefinition,
   ActiveScenario,
   Result,
   ScenaristConfig,
@@ -528,50 +529,52 @@ class ScenarioNotFoundError extends Error {
   }
 }
 
-class ScenarioAlreadyRegisteredError extends Error {
-  constructor(scenarioId: string) {
-    super(`Scenario '${scenarioId}' is already registered. Use a different ID or unregister first.`);
-    this.name = 'ScenarioAlreadyRegisteredError';
-  }
-}
-
 /**
  * Factory function to create a ScenarioManager implementation.
- * Pure functional approach - no hidden dependencies.
+ *
+ * Follows dependency injection principle - both ScenarioRegistry and
+ * ScenarioStore are injected, never created internally.
+ *
+ * This enables:
+ * - Any registry implementation (in-memory, Redis, files, remote)
+ * - Any store implementation (in-memory, Redis, database)
+ * - Proper testing with mock dependencies
+ * - True hexagonal architecture
  */
-export const createScenarioManager = (
-  store: ScenarioStore,
-  config: ScenaristConfig,
-): ScenarioManager => {
-  // Registry of all available scenarios
-  const scenarioRegistry = new Map<string, Scenario>();
-
+export const createScenarioManager = ({
+  registry,
+  store,
+  config,
+}: {
+  registry: ScenarioRegistry;
+  store: ScenarioStore;
+  config: ScenaristConfig;
+}): ScenarioManager => {
   return {
-    registerScenario(id: string, scenario: Scenario): void {
-      if (scenarioRegistry.has(id)) {
-        throw new ScenarioAlreadyRegisteredError(id);
-      }
-      scenarioRegistry.set(id, scenario);
+    registerScenario(definition: ScenarioDefinition): void {
+      // Delegate to injected registry
+      registry.register(definition);
     },
 
     switchScenario(
       testId: string,
       scenarioId: string,
-      variant?: { name: string; meta?: unknown },
+      variantName?: string,
     ): Result<void, Error> {
-      const scenario = scenarioRegistry.get(scenarioId);
+      // Business rule: Validate scenario exists in registry
+      const definition = registry.get(scenarioId);
 
-      if (!scenario) {
+      if (!definition) {
         return {
           success: false,
           error: new ScenarioNotFoundError(scenarioId),
         };
       }
 
+      // Store only the reference (serializable)
       const activeScenario: ActiveScenario = {
         scenarioId,
-        scenario,
-        variant,
+        variantName,
       };
 
       store.set(testId, activeScenario);
@@ -580,22 +583,23 @@ export const createScenarioManager = (
     },
 
     getActiveScenario(testId: string): ActiveScenario | undefined {
+      // Delegate to injected store
       return store.get(testId);
     },
 
-    listScenarios(): ReadonlyArray<{ id: string; scenario: Scenario }> {
-      return Array.from(scenarioRegistry.entries()).map(([id, scenario]) => ({
-        id,
-        scenario,
-      }));
+    listScenarios(): ReadonlyArray<ScenarioDefinition> {
+      // Delegate to injected registry
+      return registry.list();
     },
 
     clearScenario(testId: string): void {
+      // Delegate to injected store
       store.delete(testId);
     },
 
-    getScenarioById(id: string): Scenario | undefined {
-      return scenarioRegistry.get(id);
+    getScenarioById(id: string): ScenarioDefinition | undefined {
+      // Delegate to injected registry
+      return registry.get(id);
     },
   };
 };
@@ -700,9 +704,21 @@ export default defineConfig({
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createScenarioManager } from '../src/domain/scenario-manager';
 import { buildConfig } from '../src/domain/config-builder';
-import type { ScenarioStore } from '../src/ports';
-import type { ActiveScenario, Scenario } from '../src/types';
-import { http, HttpResponse } from 'msw';
+import type { ScenarioRegistry, ScenarioStore } from '../src/ports';
+import type { ActiveScenario, ScenarioDefinition } from '../src/types';
+
+// In-memory registry for testing (simple Map-based implementation)
+const createTestRegistry = (): ScenarioRegistry => {
+  const registry = new Map<string, ScenarioDefinition>();
+
+  return {
+    register: (definition) => registry.set(definition.id, definition),
+    get: (id) => registry.get(id),
+    has: (id) => registry.has(id),
+    list: () => Array.from(registry.values()),
+    unregister: (id) => registry.delete(id),
+  };
+};
 
 // In-memory store for testing (simple Map-based implementation)
 const createTestStore = (): ScenarioStore => {
@@ -717,63 +733,73 @@ const createTestStore = (): ScenarioStore => {
   };
 };
 
-// Test scenario factory
-const createTestScenario = (name: string = 'Test Scenario'): Scenario => ({
+// Test scenario definition factory
+const createTestScenarioDefinition = (
+  id: string,
+  name: string = 'Test Scenario'
+): ScenarioDefinition => ({
+  id,
   name,
   description: `Description for ${name}`,
   devToolEnabled: false,
   mocks: [
-    http.get('https://api.example.com/test', () => {
-      return HttpResponse.json({ message: 'mocked' });
-    }),
+    {
+      method: 'GET',
+      url: 'https://api.example.com/test',
+      response: {
+        status: 200,
+        body: { message: 'mocked' },
+      },
+    },
   ],
 });
 
 describe('ScenarioManager', () => {
+  let registry: ScenarioRegistry;
   let store: ScenarioStore;
   let manager: ReturnType<typeof createScenarioManager>;
 
   beforeEach(() => {
+    registry = createTestRegistry();
     store = createTestStore();
     const config = buildConfig({
       enabled: true,
       defaultScenario: 'default',
     });
-    manager = createScenarioManager(store, config);
+
+    // Inject both registry and store
+    manager = createScenarioManager({ registry, store, config });
   });
 
   describe('registerScenario', () => {
     it('should register a new scenario', () => {
-      const scenario = createTestScenario('happy-path');
+      const definition = createTestScenarioDefinition('happy-path', 'Happy Path');
 
-      manager.registerScenario('happy-path', scenario);
+      manager.registerScenario(definition);
 
       const registered = manager.getScenarioById('happy-path');
-      expect(registered).toBe(scenario);
+      expect(registered).toEqual(definition);
     });
 
-    it('should throw error when registering duplicate scenario ID', () => {
-      const scenario = createTestScenario();
+    it('should delegate to registry', () => {
+      const definition = createTestScenarioDefinition('test', 'Test');
 
-      manager.registerScenario('duplicate', scenario);
+      manager.registerScenario(definition);
 
-      expect(() => {
-        manager.registerScenario('duplicate', scenario);
-      }).toThrow('already registered');
+      expect(registry.has('test')).toBe(true);
     });
   });
 
   describe('switchScenario', () => {
     it('should switch to a registered scenario for a test ID', () => {
-      const scenario = createTestScenario('error-state');
-      manager.registerScenario('error-state', scenario);
+      const definition = createTestScenarioDefinition('error-state', 'Error State');
+      manager.registerScenario(definition);
 
       const result = manager.switchScenario('test-123', 'error-state');
 
       expect(result.success).toBe(true);
       const active = manager.getActiveScenario('test-123');
       expect(active?.scenarioId).toBe('error-state');
-      expect(active?.scenario).toBe(scenario);
     });
 
     it('should return error when switching to unregistered scenario', () => {
@@ -786,26 +812,22 @@ describe('ScenarioManager', () => {
     });
 
     it('should support scenario variants', () => {
-      const scenario = createTestScenario();
-      manager.registerScenario('with-variant', scenario);
+      const definition = createTestScenarioDefinition('with-variant', 'With Variant');
+      manager.registerScenario(definition);
 
-      const result = manager.switchScenario('test-123', 'with-variant', {
-        name: 'premium-user',
-        meta: { tier: 'premium' },
-      });
+      const result = manager.switchScenario('test-123', 'with-variant', 'premium-user');
 
       expect(result.success).toBe(true);
       const active = manager.getActiveScenario('test-123');
-      expect(active?.variant?.name).toBe('premium-user');
-      expect(active?.variant?.meta).toEqual({ tier: 'premium' });
+      expect(active?.variantName).toBe('premium-user');
     });
 
     it('should isolate scenarios by test ID', () => {
-      const scenario1 = createTestScenario('scenario-1');
-      const scenario2 = createTestScenario('scenario-2');
+      const definition1 = createTestScenarioDefinition('scenario-1', 'Scenario 1');
+      const definition2 = createTestScenarioDefinition('scenario-2', 'Scenario 2');
 
-      manager.registerScenario('scenario-1', scenario1);
-      manager.registerScenario('scenario-2', scenario2);
+      manager.registerScenario(definition1);
+      manager.registerScenario(definition2);
 
       manager.switchScenario('test-A', 'scenario-1');
       manager.switchScenario('test-B', 'scenario-2');
@@ -816,6 +838,19 @@ describe('ScenarioManager', () => {
       expect(activeA?.scenarioId).toBe('scenario-1');
       expect(activeB?.scenarioId).toBe('scenario-2');
     });
+
+    it('should store only reference not full definition', () => {
+      const definition = createTestScenarioDefinition('test', 'Test');
+      manager.registerScenario(definition);
+
+      manager.switchScenario('test-123', 'test', 'variant-1');
+
+      const active = store.get('test-123');
+      expect(active).toEqual({
+        scenarioId: 'test',
+        variantName: 'variant-1',
+      });
+    });
   });
 
   describe('getActiveScenario', () => {
@@ -824,12 +859,22 @@ describe('ScenarioManager', () => {
 
       expect(active).toBeUndefined();
     });
+
+    it('should delegate to store', () => {
+      const definition = createTestScenarioDefinition('test', 'Test');
+      manager.registerScenario(definition);
+      manager.switchScenario('test-123', 'test');
+
+      const active = manager.getActiveScenario('test-123');
+
+      expect(store.get('test-123')).toEqual(active);
+    });
   });
 
   describe('listScenarios', () => {
     it('should list all registered scenarios', () => {
-      manager.registerScenario('scenario-1', createTestScenario('Scenario 1'));
-      manager.registerScenario('scenario-2', createTestScenario('Scenario 2'));
+      manager.registerScenario(createTestScenarioDefinition('scenario-1', 'Scenario 1'));
+      manager.registerScenario(createTestScenarioDefinition('scenario-2', 'Scenario 2'));
 
       const scenarios = manager.listScenarios();
 
@@ -842,12 +887,20 @@ describe('ScenarioManager', () => {
 
       expect(scenarios).toEqual([]);
     });
+
+    it('should delegate to registry', () => {
+      manager.registerScenario(createTestScenarioDefinition('test', 'Test'));
+
+      const scenarios = manager.listScenarios();
+
+      expect(scenarios).toEqual(registry.list());
+    });
   });
 
   describe('clearScenario', () => {
     it('should clear active scenario for a test ID', () => {
-      const scenario = createTestScenario();
-      manager.registerScenario('test', scenario);
+      const definition = createTestScenarioDefinition('test', 'Test');
+      manager.registerScenario(definition);
       manager.switchScenario('test-123', 'test');
 
       manager.clearScenario('test-123');
@@ -857,8 +910,8 @@ describe('ScenarioManager', () => {
     });
 
     it('should not affect other test IDs when clearing', () => {
-      const scenario = createTestScenario();
-      manager.registerScenario('test', scenario);
+      const definition = createTestScenarioDefinition('test', 'Test');
+      manager.registerScenario(definition);
       manager.switchScenario('test-A', 'test');
       manager.switchScenario('test-B', 'test');
 
@@ -866,6 +919,16 @@ describe('ScenarioManager', () => {
 
       expect(manager.getActiveScenario('test-A')).toBeUndefined();
       expect(manager.getActiveScenario('test-B')).toBeDefined();
+    });
+
+    it('should delegate to store', () => {
+      const definition = createTestScenarioDefinition('test', 'Test');
+      manager.registerScenario(definition);
+      manager.switchScenario('test-123', 'test');
+
+      manager.clearScenario('test-123');
+
+      expect(store.has('test-123')).toBe(false);
     });
   });
 });
