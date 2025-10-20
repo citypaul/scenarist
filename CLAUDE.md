@@ -83,6 +83,67 @@ Scenarist follows **strict hexagonal architecture** to remain framework-agnostic
 - Implement port interfaces from core
 - No adapter should depend on another adapter
 
+### Dependency Injection Pattern
+
+**CRITICAL**: Domain logic (implementations) must NEVER create port implementations internally.
+
+**The Rule:**
+- Ports (interfaces) are always injected as dependencies
+- Never use `new` to create port implementations inside domain logic
+- Factory functions accept ports via parameters (dependency injection)
+
+**Example - ScenarioManager:**
+
+```typescript
+// ❌ WRONG - Creating implementation internally
+export const createScenarioManager = (
+  store: ScenarioStore,
+  config: ScenaristConfig,
+): ScenarioManager => {
+  const scenarioRegistry = new Map<string, ScenarioDefinition>();  // ❌ Hardcoded!
+  // ...
+};
+
+// ✅ CORRECT - Injecting both ports
+export const createScenarioManager = ({
+  registry,  // ✅ Injected
+  store,     // ✅ Injected
+  config,
+}: {
+  registry: ScenarioRegistry;
+  store: ScenarioStore;
+  config: ScenaristConfig;
+}): ScenarioManager => {
+  return {
+    registerScenario(definition) {
+      registry.register(definition);  // Delegate to injected port
+    },
+    switchScenario(testId, scenarioId, variantName) {
+      const definition = registry.get(scenarioId);  // Use injected port
+      if (!definition) {
+        return { success: false, error: new Error('Not found') };
+      }
+      store.set(testId, { scenarioId, variantName });  // Use injected port
+      return { success: true, data: undefined };
+    },
+    // ... other methods delegate to injected ports
+  };
+};
+```
+
+**Why This Matters:**
+- ✅ Enables any port implementation (in-memory, Redis, files, remote)
+- ✅ Testable (inject mocks for testing)
+- ✅ True hexagonal architecture
+- ✅ Follows dependency inversion principle
+- ❌ Without injection: can only ever have one implementation (breaks architecture)
+
+**ScenarioManager's Role:**
+- Coordinator/facade between `ScenarioRegistry` and `ScenarioStore`
+- Enforces business rules (e.g., can't activate non-existent scenarios)
+- Provides unified API for scenario operations
+- Delegates to injected ports, never creates them
+
 ## Package Structure
 
 ```
