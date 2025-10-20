@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(cat:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\ndocs: add CLAUDE.md with architecture guidance\n\nAdd comprehensive CLAUDE.md file documenting:\n- Hexagonal architecture principles (ports as interfaces, types for data)\n- TDD workflow and testing principles\n- Essential commands for development\n- Package structure and dependencies\n- Turborepo-specific workflows\n\nThis file provides critical context for future development, including the distinction between ports (behavior contracts using interface) and types (immutable data structures using type with readonly).\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
