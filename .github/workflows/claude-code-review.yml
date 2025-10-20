@@ -40,16 +40,28 @@ jobs:
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
 
-            Please review this pull request and provide feedback on:
-            - Code quality and best practices
-            - Potential bugs or issues
-            - Performance considerations
-            - Security concerns
-            - Test coverage
+            You are reviewing a pull request for Scenarist, a hexagonal architecture library for managing MSW mock scenarios.
 
-            Use the repository's CLAUDE.md for guidance on style and conventions. Be constructive and helpful in your feedback.
+            **Review Guidelines:**
+            Read `.claude/review-prompt.md` for comprehensive review rules specific to this repository.
+            Also reference `CLAUDE.md` for general development guidance.
 
-            Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
+            **Key Architecture Rules to Enforce:**
+            1. Hexagonal Architecture - Core has zero framework dependencies
+            2. Serializable Scenarios - No functions in scenario definitions
+            3. Dependency Injection - All ports injected, never created internally
+            4. Explicit Implementation - Adapters must use `implements PortInterface`
+            5. TDD - All production code must have tests
+            6. Type System - Ports use `interface`, data uses `type` with `readonly`
+
+            **Your Task:**
+            1. Read the PR changes using `gh pr diff ${{ github.event.pull_request.number }}`
+            2. Review against the rules in `.claude/review-prompt.md`
+            3. Check for violations of hexagonal architecture, serialization, dependency injection
+            4. Verify test coverage and code quality
+            5. Leave a constructive review comment using `gh pr comment ${{ github.event.pull_request.number }} --body "..."`
+
+            Be specific, reference relevant documentation, and provide examples. Focus on architecture violations first, then code quality.
 
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://docs.claude.com/en/docs/claude-code/cli-reference for available options
