@@ -98,12 +98,18 @@ importers:
         specifier: ^2.0.0
         version: 2.11.6(@types/node@22.15.3)(typescript@5.9.2)
     devDependencies:
+      '@repo/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
       '@repo/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@vitest/ui':
         specifier: ^1.2.0
         version: 1.6.1(vitest@1.6.1)
+      eslint:
+        specifier: ^9.34.0
+        version: 9.34.0
       typescript:
         specifier: ^5.3.3
         version: 5.9.2
