@@ -1,37 +1,67 @@
-import type { HttpHandler } from 'msw';
+/**
+ * HTTP methods supported by mock definitions.
+ */
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'HEAD';
 
 /**
- * A scenario represents a complete mock state for testing.
- * Scenarios are immutable data structures.
+ * Serializable mock response definition.
+ * Can be stored in Redis, files, databases, or transmitted over HTTP.
  */
-export type Scenario<TVariant extends string = string, TValue = unknown> = {
-  readonly name: string;
-  readonly description: string;
-  readonly mocks: ReadonlyArray<HttpHandler>;
-  readonly devToolEnabled: boolean;
-  readonly variants?: Readonly<Record<TVariant, ScenarioVariant<TValue>>>;
+export type MockResponse = {
+  readonly status: number;
+  readonly body?: unknown; // Must be JSON-serializable
+  readonly headers?: Readonly<Record<string, string>>;
+  readonly delay?: number; // Milliseconds
 };
 
 /**
- * A variant allows parameterization of scenarios.
- * Use variants when you need the same scenario with different data.
+ * Serializable mock definition.
+ * Represents an HTTP mock that can be converted to MSW handlers at runtime.
  */
-export type ScenarioVariant<T = unknown> = {
+export type MockDefinition = {
+  readonly method: HttpMethod;
+  readonly url: string; // URL pattern string
+  readonly response: MockResponse;
+};
+
+/**
+ * Serializable variant definition.
+ * Variants allow parameterization of scenarios with different data.
+ */
+export type VariantDefinition = {
   readonly name: string;
   readonly description: string;
-  readonly value: () => T;
+  readonly data: unknown; // Must be JSON-serializable, not a function
+};
+
+/**
+ * Serializable scenario definition.
+ * This is pure data that can be:
+ * - Stored in Redis for distributed testing
+ * - Saved to files for version control
+ * - Fetched from remote APIs
+ * - Stored in databases
+ *
+ * At runtime, MockDefinitions are converted to MSW HttpHandlers.
+ */
+export type ScenarioDefinition = {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly mocks: ReadonlyArray<MockDefinition>;
+  readonly devToolEnabled: boolean;
+  readonly variants?: ReadonlyArray<VariantDefinition>;
 };
 
 /**
  * Represents an active scenario for a specific test ID.
+ * Stores only references to enable serialization to Redis/storage.
+ *
+ * To get the full scenario definition, look up scenarioId in the registry.
  */
 export type ActiveScenario = {
   readonly scenarioId: string;
-  readonly scenario: Scenario;
-  readonly variant?: {
-    readonly name: string;
-    readonly meta?: unknown;
-  };
+  readonly variantName?: string;
 };
 
 /**

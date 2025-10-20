@@ -1851,6 +1851,61 @@ jobs:
 ✅ **Functional feel** - Data is just data, not behavior
 ✅ **Readonly by default** - Prevents accidental mutations
 
+### Why Serializable Scenario Definitions?
+✅ **Storage flexibility** - Can be stored in Redis, databases, files, or remote APIs
+✅ **Distribution** - Enable distributed testing across multiple processes
+✅ **Version control** - Scenarios can be committed as JSON/YAML files
+✅ **Port viability** - ScenarioRegistry/Store ports can have multiple implementations
+✅ **MSW independence** - Core types don't depend on MSW's non-serializable HttpHandler
+
+**The Problem:**
+Originally, scenarios contained MSW's `HttpHandler` type, which includes functions, closures, and regex patterns. This made scenarios impossible to serialize, meaning:
+- ❌ ScenarioRegistry could ONLY be in-memory
+- ❌ ScenarioStore could ONLY be in-memory
+- ❌ No Redis, databases, files, or remote scenarios
+- ❌ The ports were architectural theater - only one implementation possible
+
+**The Solution:**
+Separate serializable **definitions** from runtime **handlers**:
+
+```typescript
+// ✅ SERIALIZABLE - Can be stored anywhere
+type ScenarioDefinition = {
+  readonly id: string;
+  readonly name: string;
+  readonly mocks: ReadonlyArray<MockDefinition>; // Plain data
+};
+
+type MockDefinition = {
+  readonly method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  readonly url: string; // String pattern, not regex
+  readonly response: {
+    readonly status: number;
+    readonly body?: unknown; // JSON-serializable
+    readonly headers?: Record<string, string>;
+    readonly delay?: number;
+  };
+};
+
+// At runtime: MockDefinitions → MSW HttpHandlers
+const createHandler = (mock: MockDefinition): HttpHandler => {
+  return http[mock.method.toLowerCase()](mock.url, async () => {
+    if (mock.response.delay) await delay(mock.response.delay);
+    return HttpResponse.json(mock.response.body, {
+      status: mock.response.status,
+      headers: mock.response.headers,
+    });
+  });
+};
+```
+
+**Benefits:**
+- ScenarioRegistry can be Redis, DB, files, or remote
+- ScenarioStore can be Redis for distributed tests
+- Scenarios can be version controlled as JSON
+- MSW is isolated to runtime only
+- Ports are genuinely useful with multiple implementations
+
 ### Why Turborepo?
 ✅ **Build caching** - Faster builds and tests
 ✅ **Parallel execution** - Run tasks across packages concurrently
