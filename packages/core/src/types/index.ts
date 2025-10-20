@@ -1,6 +1,9 @@
 export type {
-  Scenario,
-  ScenarioVariant,
+  HttpMethod,
+  MockResponse,
+  MockDefinition,
+  VariantDefinition,
+  ScenarioDefinition,
   ActiveScenario,
   Result,
 } from './scenario.js';

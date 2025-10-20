@@ -317,6 +317,10 @@ Parameterize scenarios with variants. Test the same flow with different user tie
 
 Leverage the power of MSW's battle-tested HTTP interception. Scenarist adds runtime management, test isolation, and framework adapters on top of MSW's solid foundation.
 
+### 🗄️ Serializable Scenarios for Distributed Testing
+
+Scenarios are pure JSON—store them in Redis for distributed testing, save to files for version control, or fetch from remote APIs. No functions or closures means scenarios work across processes, containers, and even different machines.
+
 ---
 
 ## Architecture

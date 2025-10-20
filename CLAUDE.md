@@ -300,7 +300,8 @@ const createPayment = (amount: number, currency: string, cardId: string): Paymen
 
 Scenarist is built on **MSW (Mock Service Worker) v2.x**:
 
-- Scenarios contain arrays of MSW `HttpHandler` instances
+- Scenarios are serializable definitions (not MSW handlers directly)
+- `MockDefinition` types are converted to MSW `HttpHandler` at runtime
 - Handlers are applied dynamically based on active scenario
 - Test ID isolation allows different handlers per test
 - Mocks can be enabled/disabled per request via `x-mock-enabled` header
@@ -351,6 +352,98 @@ pnpm release
 - ❌ Nested if/else statements (use early returns)
 - ❌ Deep function nesting (max 2 levels)
 - ❌ Any use of `any` type
+
+## Critical Architectural Insight: Serialization
+
+**CRITICAL LEARNING**: When designing ports that abstract storage/persistence, ensure the data types are actually serializable. Otherwise, the ports become "architectural theater"—interfaces that can only ever have one implementation.
+
+### The Problem We Discovered
+
+Initial design had `Scenario` containing MSW's `HttpHandler`:
+
+```typescript
+// ❌ NOT SERIALIZABLE - Contains functions, closures, regex
+type Scenario = {
+  readonly name: string;
+  readonly mocks: ReadonlyArray<HttpHandler>; // MSW type with functions
+};
+```
+
+**This broke the entire port architecture:**
+- `ScenarioRegistry` port? **Useless** - only in-memory implementation possible
+- `ScenarioStore` port? **Useless** - only in-memory implementation possible
+- Redis adapter? **Impossible** - can't serialize functions
+- File-based scenarios? **Impossible** - can't JSON.stringify functions
+- Remote API? **Impossible** - can't send functions over HTTP
+
+The ports were **architectural theater** - pretty interfaces that could never have multiple implementations.
+
+### The Solution: Serializable Definitions
+
+Separate **serializable definitions** (data) from **runtime handlers** (behavior):
+
+```typescript
+// ✅ SERIALIZABLE - Pure JSON data
+type ScenarioDefinition = {
+  readonly id: string;
+  readonly name: string;
+  readonly mocks: ReadonlyArray<MockDefinition>; // Plain data
+};
+
+type MockDefinition = {
+  readonly method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  readonly url: string; // String, not regex
+  readonly response: {
+    readonly status: number;
+    readonly body?: unknown; // Must be JSON-serializable
+    readonly headers?: Record<string, string>;
+    readonly delay?: number;
+  };
+};
+```
+
+**At runtime**, convert definitions to MSW handlers:
+
+```typescript
+const toMSWHandler = (def: MockDefinition): HttpHandler => {
+  return http[def.method.toLowerCase()](def.url, async () => {
+    if (def.response.delay) await delay(def.response.delay);
+    return HttpResponse.json(def.response.body, {
+      status: def.response.status,
+      headers: def.response.headers,
+    });
+  });
+};
+```
+
+### Benefits Unlocked
+
+Now the ports are **genuinely useful**:
+
+- ✅ `InMemoryScenarioRegistry` - Fast, for single process
+- ✅ `RedisScenarioRegistry` - Distributed testing across processes
+- ✅ `FileSystemScenarioRegistry` - Version control scenarios as JSON/YAML
+- ✅ `RemoteScenarioRegistry` - Fetch scenarios from REST API
+- ✅ `DatabaseScenarioRegistry` - Store in PostgreSQL/MongoDB
+
+### The General Principle
+
+**When designing abstraction ports:**
+
+1. **Ask**: "Can this data be sent over a network?"
+2. **If no**: You can only ever have one implementation (in-memory)
+3. **If yes**: Multiple implementations are possible (Redis, files, remote, DB)
+
+**Serializable means:**
+- ✅ Primitives (string, number, boolean, null)
+- ✅ Plain objects and arrays
+- ✅ JSON-serializable data
+- ❌ Functions, closures, or methods
+- ❌ Regular expressions (convert to strings)
+- ❌ Class instances with methods
+- ❌ Symbols, undefined, or circular references
+
+**This applies to all port-based architectures, not just Scenarist.**
 
 ## Future Roadmap
 

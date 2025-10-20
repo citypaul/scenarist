@@ -1,4 +1,4 @@
-import type { Scenario } from '../types/index.js';
+import type { ScenarioDefinition } from '../types/index.js';
 
 /**
  * Secondary port for scenario registry.
@@ -8,23 +8,28 @@ import type { Scenario } from '../types/index.js';
  * - ScenarioRegistry: what scenarios exist (the catalog)
  * - ScenarioStore: which scenario each test is using (active state)
  *
- * Examples:
- * - InMemoryScenarioRegistry: Map-based registry (default)
- * - FileSystemScenarioRegistry: Load scenarios from files
- * - RemoteScenarioRegistry: Fetch scenarios from API
+ * ScenarioDefinitions are serializable, enabling:
+ * - InMemoryScenarioRegistry: Map-based registry (default, fastest)
+ * - RedisScenarioRegistry: Distributed scenarios across processes
+ * - FileSystemScenarioRegistry: Load scenarios from JSON/YAML files
+ * - RemoteScenarioRegistry: Fetch scenarios from REST API
+ * - DatabaseScenarioRegistry: Store scenarios in PostgreSQL/MongoDB
+ *
+ * At runtime, MockDefinitions are converted to MSW HttpHandlers.
  */
 export interface ScenarioRegistry {
   /**
-   * Register a scenario with a unique ID.
+   * Register a scenario definition.
+   * The definition.id is used as the unique identifier.
    * Makes the scenario available for use.
    */
-  register(id: string, scenario: Scenario): void;
+  register(definition: ScenarioDefinition): void;
 
   /**
-   * Retrieve a registered scenario by ID.
+   * Retrieve a registered scenario definition by ID.
    * Returns undefined if scenario not found.
    */
-  get(id: string): Scenario | undefined;
+  get(id: string): ScenarioDefinition | undefined;
 
   /**
    * Check if a scenario ID is registered.
@@ -32,10 +37,10 @@ export interface ScenarioRegistry {
   has(id: string): boolean;
 
   /**
-   * List all registered scenarios.
+   * List all registered scenario definitions.
    * Useful for debugging, dev tools, and scenario discovery.
    */
-  list(): ReadonlyArray<{ id: string; scenario: Scenario }>;
+  list(): ReadonlyArray<ScenarioDefinition>;
 
   /**
    * Remove a scenario from the registry.
