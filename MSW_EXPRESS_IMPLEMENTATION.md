@@ -688,7 +688,7 @@ _(To be filled after completion)_
 
 ## Phase 5: Dynamic Handler
 
-**Goal:** Create dynamic MSW handler that routes based on active scenarios
+**Goal:** Create dynamic MSW handler with default scenario fallback pattern
 **PR:** TBD
 **Status:** ⏸️ Pending
 **Estimated Time:** 3-4 hours
@@ -698,12 +698,13 @@ _(To be filled after completion)_
 - [ ] Creates single catch-all MSW handler
 - [ ] Reads test ID from injected function
 - [ ] Looks up active scenario for test ID
-- [ ] Finds matching mock definition
-- [ ] Returns built response
-- [ ] Handles passthrough in non-strict mode
-- [ ] Returns error in strict mode when no mock
-- [ ] Handles no active scenario
-- [ ] 100% test coverage
+- [ ] Finds matching mock in active scenario first
+- [ ] **Falls back to "default" scenario if mock not found in active scenario** ⭐
+- [ ] **Uses "default" scenario when no active scenario set** ⭐
+- [ ] Returns built response from whichever scenario had the mock
+- [ ] Handles passthrough in non-strict mode (when no mock in default either)
+- [ ] Returns error in strict mode when no mock in any scenario
+- [ ] 100% test coverage including default scenario fallback
 
 ### Files to Implement
 
@@ -713,13 +714,14 @@ _(To be filled after completion)_
 - [ ] Write test: calls getTestId to get test ID
 - [ ] Write test: looks up active scenario with test ID
 - [ ] Write test: gets scenario definition
-- [ ] Write test: finds matching mock
+- [ ] Write test: finds matching mock in active scenario
 - [ ] Write test: returns built response when mock found
-- [ ] Write test: passthrough when no scenario in non-strict mode
-- [ ] Write test: error when no scenario in strict mode
-- [ ] Write test: passthrough when no mock in non-strict mode
-- [ ] Write test: error when no mock in strict mode
-- [ ] Write test: passthrough when scenario not found
+- [ ] **Write test: falls back to default scenario when mock not in active scenario** ⭐
+- [ ] **Write test: uses default scenario when no active scenario** ⭐
+- [ ] **Write test: returns default mock when active scenario has no matching mock** ⭐
+- [ ] Write test: passthrough when no mock in default either (non-strict mode)
+- [ ] Write test: error when no mock in default either (strict mode)
+- [ ] Write test: passthrough when default scenario not found
 - [ ] Implement: createDynamicHandler factory ✅
 - [ ] Refactor: extract logic, clean up ✅
 
@@ -772,6 +774,7 @@ export const createDynamicHandler = (
 import { http, HttpResponse, passthrough } from 'msw';
 import { findMatchingMock } from '../matching/mock-matcher.js';
 import { buildResponse } from '../conversion/response-builder.js';
+import type { MockDefinition } from '@scenarist/core';
 import type { DynamicHandlerOptions } from './types.js';
 
 export const createDynamicHandler = (
@@ -781,32 +784,36 @@ export const createDynamicHandler = (
     // 1. Get test ID
     const testId = options.getTestId();
 
-    // 2. Look up active scenario
+    // 2. Look up active scenario (test-specific or default)
     const activeScenario = options.getActiveScenario(testId);
-    if (!activeScenario) {
-      return options.strictMode
-        ? HttpResponse.json(
-            { error: 'No active scenario for test ID', testId },
-            { status: 501 }
-          )
-        : passthrough();
+
+    // 3. Try to find mock in active scenario first
+    let mock: MockDefinition | undefined;
+
+    if (activeScenario) {
+      const scenarioDefinition = options.getScenarioDefinition(activeScenario.scenarioId);
+      if (scenarioDefinition) {
+        mock = findMatchingMock(
+          scenarioDefinition.mocks,
+          request.method,
+          request.url
+        );
+      }
     }
 
-    // 3. Get scenario definition
-    const scenarioDefinition = options.getScenarioDefinition(
-      activeScenario.scenarioId
-    );
-    if (!scenarioDefinition) {
-      return passthrough();
+    // 4. If not found in active scenario, fall back to default scenario
+    if (!mock) {
+      const defaultScenario = options.getScenarioDefinition('default');
+      if (defaultScenario) {
+        mock = findMatchingMock(
+          defaultScenario.mocks,
+          request.method,
+          request.url
+        );
+      }
     }
 
-    // 4. Find matching mock
-    const mock = findMatchingMock(
-      scenarioDefinition.mocks,
-      request.method,
-      request.url
-    );
-
+    // 5. If still no mock found, apply strictMode behavior
     if (!mock) {
       return options.strictMode
         ? HttpResponse.json(
@@ -815,14 +822,14 @@ export const createDynamicHandler = (
               method: request.method,
               url: request.url,
               testId,
-              scenarioId: activeScenario.scenarioId
+              scenarioId: activeScenario?.scenarioId ?? 'none'
             },
             { status: 501 }
           )
         : passthrough();
     }
 
-    // 5. Build and return response
+    // 6. Build and return response
     return buildResponse(mock);
   });
 };
@@ -1531,7 +1538,83 @@ _(To be filled after completion)_
 
 ## Architecture Decisions Log
 
-### Decision 1: Shared MSW Adapter Package
+### Decision 1: Default Scenario with Override Pattern
+
+**Date:** 2025-10-21
+**Decision:** Always require a "default" scenario that provides comprehensive happy-path responses. Test-specific scenarios SUPPLEMENT (not replace) the default scenario.
+
+**Rationale:**
+- Provides sensible fallback behavior without requiring every test to define all mocks
+- Reduces duplication - test scenarios only define what they need to override
+- Ensures consistent base behavior across tests
+- Simplifies test scenario definitions
+
+**Mock Resolution Algorithm (implemented in Dynamic Handler - Phase 5):**
+
+```typescript
+// Pseudo-code for mock resolution
+function findMock(request, testId) {
+  // 1. Get active scenario for this test (if any)
+  const activeScenario = getActiveScenario(testId);
+
+  // 2. Try to find mock in active scenario first
+  if (activeScenario) {
+    const mock = findMatchingMock(activeScenario.mocks, request);
+    if (mock) return mock;  // Found in test scenario
+  }
+
+  // 3. Fall back to default scenario
+  const defaultScenario = getScenarioById('default');
+  const mock = findMatchingMock(defaultScenario.mocks, request);
+  if (mock) return mock;  // Found in default scenario
+
+  // 4. No mock found - apply strictMode behavior
+  if (strictMode) {
+    return error501();  // Strict: error on unmocked
+  } else {
+    return passthrough();  // Non-strict: passthrough to real API
+  }
+}
+```
+
+**Example:**
+
+```typescript
+// Default scenario - comprehensive happy path (REQUIRED)
+scenarist.registerScenario({
+  id: 'default',
+  name: 'Default Happy Path',
+  description: 'Base success responses for all endpoints',
+  mocks: [
+    { method: 'GET', url: '*/api/users', response: { status: 200, body: { users: [] } } },
+    { method: 'POST', url: '*/api/users', response: { status: 201, body: { id: '123' } } },
+    { method: 'GET', url: '*/api/orders', response: { status: 200, body: { orders: [] } } },
+    { method: 'POST', url: '*/api/orders', response: { status: 201, body: { id: '456' } } }
+  ]
+});
+
+// Test scenario - only overrides what it needs
+scenarist.registerScenario({
+  id: 'user-creation-fails',
+  name: 'User Creation Fails',
+  description: 'POST /users returns 400 error',
+  mocks: [
+    // Only override POST /users
+    { method: 'POST', url: '*/api/users', response: { status: 400, body: { error: 'Email exists' } } }
+    // GET /users, GET /orders, POST /orders all fall back to default scenario
+  ]
+});
+```
+
+**When test uses "user-creation-fails" scenario:**
+- POST /api/users → 400 error (from test scenario)
+- GET /api/users → 200 success (from DEFAULT scenario - fallback)
+- GET /api/orders → 200 success (from DEFAULT scenario - fallback)
+- POST /api/orders → 201 success (from DEFAULT scenario - fallback)
+
+**Implementation Location:** This merge logic is implemented in the Dynamic Handler (Phase 5), not in core. Core only stores scenario references.
+
+### Decision 2: Shared MSW Adapter Package
 
 **Date:** 2025-10-21
 **Decision:** Create separate `@scenarist/msw-adapter` package
@@ -1541,7 +1624,7 @@ _(To be filled after completion)_
 - Isolate MSW-specific logic from framework-specific logic
 - Better testability
 
-### Decision 2: AsyncLocalStorage for Test ID
+### Decision 3: AsyncLocalStorage for Test ID
 
 **Date:** TBD
 **Decision:** Use Node.js AsyncLocalStorage for test ID context
@@ -1551,7 +1634,7 @@ _(To be filled after completion)_
 - Thread-safe for concurrent requests
 - Standard Node.js API (no external dependencies)
 
-### Decision 3: Dynamic Single Handler vs. Multiple Handlers
+### Decision 4: Dynamic Single Handler vs. Multiple Handlers
 
 **Date:** TBD
 **Decision:** Single catch-all dynamic handler
