@@ -53,5 +53,22 @@ describe('Response Builder', () => {
       expect(response.headers.get('X-Custom-Header')).toBe('custom-value');
       expect(response.headers.get('Content-Type')).toBe('application/json');
     });
+
+    it('should apply delay before returning response', async () => {
+      const mock: MockDefinition = {
+        method: 'GET',
+        url: 'https://api.example.com/users',
+        response: {
+          status: 200,
+          delay: 100,
+        },
+      };
+
+      const startTime = Date.now();
+      await buildResponse(mock);
+      const endTime = Date.now();
+
+      expect(endTime - startTime).toBeGreaterThanOrEqual(100);
+    });
   });
 });
