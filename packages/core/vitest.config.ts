@@ -18,6 +18,12 @@ export default defineConfig({
         'src/domain/**/*.ts',       // Domain logic (executable)
         'src/adapters/**/*.ts',     // Adapter implementations (executable)
       ],
+      thresholds: {
+        statements: 100,
+        branches: 100,
+        functions: 100,
+        lines: 100,
+      },
     },
   },
 });
