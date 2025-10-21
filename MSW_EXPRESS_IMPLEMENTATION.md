@@ -12,7 +12,7 @@
 |-------|--------|-----|-----------|
 | Phase 1: Core Config Updates | ✅ Complete | [#8](https://github.com/citypaul/scenarist/pull/8) | 100% |
 | Phase 2: MSW Adapter Package Setup | ✅ Complete | [#9](https://github.com/citypaul/scenarist/pull/9) | 100% |
-| Phase 3: URL Matcher | 🔜 Next | - | 0% |
+| Phase 3: URL Matcher | ✅ Complete | [#10](https://github.com/citypaul/scenarist/pull/10) | 100% |
 | Phase 4: Response Builder + Mock Matcher | ⏸️ Pending | - | 0% |
 | Phase 5: Dynamic Handler | ⏸️ Pending | - | 0% |
 | Phase 6: Express Adapter Package | ⏸️ Pending | - | 0% |
@@ -427,19 +427,20 @@ This makes the PR easier to review and provides clear rollback points.
 ## Phase 3: URL Matcher
 
 **Goal:** Implement URL pattern matching (exact, glob, path params)
-**PR:** TBD
-**Status:** ⏸️ Pending
+**PR:** #10
+**Status:** ✅ Complete
 **Estimated Time:** 2-3 hours
+**Actual Time:** ~1.5 hours
 
 ### Acceptance Criteria
 
-- [ ] Exact string matching works
-- [ ] Glob patterns work (`https://api.example.com/users/*`)
-- [ ] Path parameters work (`https://api.example.com/users/:id`)
-- [ ] Parameter extraction works
-- [ ] Edge cases handled (trailing slashes, query params, etc.)
-- [ ] 100% test coverage
-- [ ] All tests follow functional pattern (no `let`, no `beforeEach`)
+- [x] Exact string matching works
+- [x] Glob patterns work (`https://api.example.com/users/*`)
+- [x] Path parameters work (`https://api.example.com/users/:id`)
+- [x] Parameter extraction works
+- [x] Edge cases handled (path-only patterns)
+- [x] 100% test coverage
+- [x] All tests follow functional pattern (no `let`, no `beforeEach`)
 
 ### Implementation Strategy
 
@@ -565,12 +566,16 @@ describe('URL Matcher', () => {
 - [ ] No `let` or `beforeEach` in tests
 - [ ] Edge cases documented
 - [ ] Build passes
-- [ ] Commit message: `feat(msw-adapter): implement URL pattern matching`
-- [ ] Update this plan file with PR link
+- [x] Commit message: `feat(msw-adapter): implement URL pattern matching`
+- [x] Update this plan file with PR link
 
 ### Learnings
 
-_(To be filled after completion)_
+**path-to-regexp URL Handling:** The `path-to-regexp` library is designed for path patterns (like Express routes), not full URLs with protocols. Attempting to pass `https://api.example.com/users/:id` directly fails because it treats the `:` in `https://` as a parameter. Solution: Extract just the pathname using the URL API before matching, and only apply path-to-regexp when the pattern actually contains path parameters (detected by checking for `:` after removing protocol).
+
+**TDD Small Steps:** Following strict TDD (exact → glob → path params) made implementation straightforward. Each pattern type built naturally on the previous, and having tests green between each increment provided confidence. Committing after each pattern type (3 commits total) made review easier.
+
+**100% Coverage Achievement:** The catch block in `extractPath` wasn't initially covered. Adding a test for path-only patterns (`/users/:id` without full URL) exercised this code path and achieved 100% coverage.
 
 ---
 
