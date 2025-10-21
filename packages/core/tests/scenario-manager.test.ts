@@ -116,6 +116,7 @@ describe("ScenarioManager", () => {
       expect(result.success).toBe(false);
       if (!result.success) {
         expect(result.error.message).toContain("not found");
+        expect(result.error.message).toContain("non-existent");
       }
     });
 

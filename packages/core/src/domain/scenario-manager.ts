@@ -50,7 +50,7 @@ export const createScenarioManager = ({
       if (!definition) {
         return {
           success: false,
-          error: new ScenarioNotFoundError(),
+          error: new ScenarioNotFoundError(scenarioId),
         };
       }
 
