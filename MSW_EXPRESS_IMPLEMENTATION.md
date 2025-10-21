@@ -243,18 +243,19 @@ it.each([
 ## Phase 2: MSW Adapter Package Setup
 
 **Goal:** Create package structure with build/test infrastructure
-**PR:** TBD
-**Status:** ⏸️ Pending
+**PR:** #9
+**Status:** ✅ Complete
 **Estimated Time:** 1 hour
+**Actual Time:** ~45 minutes
 
 ### Acceptance Criteria
 
-- [ ] Package builds successfully
-- [ ] Tests run (even if empty)
-- [ ] TypeScript strict mode enabled
-- [ ] Coverage reporting configured (100% threshold)
-- [ ] Package exports defined
-- [ ] Can be imported by other packages
+- [x] Package builds successfully
+- [x] Tests run (even if empty)
+- [x] TypeScript strict mode enabled
+- [x] Coverage reporting configured (100% threshold)
+- [x] Package exports defined
+- [x] Can be imported by other packages
 
 ### Files to Create
 
@@ -411,7 +412,15 @@ Instead, use a framework-specific adapter like `@scenarist/express-adapter`.
 
 ### Learnings
 
-_(To be filled after completion)_
+**Scope Consistency:** While setting up the package, discovered that the monorepo was using `@repo` scope for internal packages. Renamed to `@scenarist` for consistency with the project (packages: `typescript-config`, `eslint-config`, `ui`). This improves clarity and aligns all packages under the same namespace.
+
+**tsconfig Simplification:** Initially included all strict mode compiler options in the package tsconfig. Realized these should be inherited from the base config (`@scenarist/typescript-config/base.json`). Only output-specific options (`outDir`, `rootDir`, `declaration`) should be in package tsconfigs.
+
+**Small Commits:** Followed "commit small and often" principle by splitting work into two commits:
+1. Refactor commit for @repo→@scenarist rename
+2. Feature commit for msw-adapter package setup
+
+This makes the PR easier to review and provides clear rollback points.
 
 ---
 
