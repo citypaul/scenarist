@@ -1,2 +1,2 @@
 // Express adapter public API
-// Exports will be added as features are implemented
+export { ExpressRequestContext } from './context/express-request-context.js';
