@@ -1,17 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import { buildResponse } from '../src/conversion/response-builder.js';
-import type { MockDefinition } from '@scenarist/core';
+import { mockDefinition } from './factories.js';
 
 describe('Response Builder', () => {
   describe('Basic response building', () => {
     it('should build response with status code', async () => {
-      const mock: MockDefinition = {
-        method: 'GET',
-        url: 'https://api.example.com/users',
-        response: {
-          status: 200,
-        },
-      };
+      const mock = mockDefinition();
 
       const response = await buildResponse(mock);
 
@@ -19,14 +13,12 @@ describe('Response Builder', () => {
     });
 
     it('should build response with JSON body', async () => {
-      const mock: MockDefinition = {
-        method: 'GET',
-        url: 'https://api.example.com/users',
+      const mock = mockDefinition({
         response: {
           status: 200,
           body: { id: '123', name: 'John Doe' },
         },
-      };
+      });
 
       const response = await buildResponse(mock);
       const body = await response.json();
@@ -36,9 +28,7 @@ describe('Response Builder', () => {
     });
 
     it('should build response with custom headers', async () => {
-      const mock: MockDefinition = {
-        method: 'GET',
-        url: 'https://api.example.com/users',
+      const mock = mockDefinition({
         response: {
           status: 200,
           headers: {
@@ -46,7 +36,7 @@ describe('Response Builder', () => {
             'Content-Type': 'application/json',
           },
         },
-      };
+      });
 
       const response = await buildResponse(mock);
 
@@ -57,14 +47,12 @@ describe('Response Builder', () => {
     it('should apply delay before returning response', async () => {
       vi.useFakeTimers();
 
-      const mock: MockDefinition = {
-        method: 'GET',
-        url: 'https://api.example.com/users',
+      const mock = mockDefinition({
         response: {
           status: 200,
           delay: 100,
         },
-      };
+      });
 
       const responsePromise = buildResponse(mock);
 
@@ -77,13 +65,13 @@ describe('Response Builder', () => {
     });
 
     it('should handle response with undefined body', async () => {
-      const mock: MockDefinition = {
+      const mock = mockDefinition({
         method: 'DELETE',
         url: 'https://api.example.com/users/123',
         response: {
           status: 204,
         },
-      };
+      });
 
       const response = await buildResponse(mock);
 
@@ -93,9 +81,8 @@ describe('Response Builder', () => {
     it('should combine all options together', async () => {
       vi.useFakeTimers();
 
-      const mock: MockDefinition = {
+      const mock = mockDefinition({
         method: 'POST',
-        url: 'https://api.example.com/users',
         response: {
           status: 201,
           body: { id: '456', created: true },
@@ -104,7 +91,7 @@ describe('Response Builder', () => {
           },
           delay: 50,
         },
-      };
+      });
 
       const responsePromise = buildResponse(mock);
 

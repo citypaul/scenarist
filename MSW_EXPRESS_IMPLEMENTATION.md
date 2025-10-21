@@ -14,7 +14,7 @@
 | Phase 2: MSW Adapter Package Setup | ✅ Complete | [#9](https://github.com/citypaul/scenarist/pull/9) | 100% |
 | Phase 3: URL Matcher | ✅ Complete | [#10](https://github.com/citypaul/scenarist/pull/10) | 100% |
 | Phase 4: Response Builder + Mock Matcher | ✅ Complete | [#11](https://github.com/citypaul/scenarist/pull/11) | 100% |
-| Phase 5: Dynamic Handler | ⏸️ Pending | - | 0% |
+| Phase 5: Dynamic Handler | ✅ Complete | [#12](https://github.com/citypaul/scenarist/pull/12) | 100% |
 | Phase 6: Express Adapter Package | ⏸️ Pending | - | 0% |
 | Phase 7: Integration + Setup Helper | ⏸️ Pending | - | 0% |
 
@@ -714,9 +714,10 @@ export const findMatchingMock = (
 ## Phase 5: Dynamic Handler
 
 **Goal:** Create dynamic MSW handler with default scenario fallback pattern
-**PR:** TBD
-**Status:** ⏸️ Pending
+**PR:** #12
+**Status:** ✅ Complete
 **Estimated Time:** 3-4 hours
+**Actual Time:** ~2 hours
 
 ### Acceptance Criteria
 
@@ -954,7 +955,21 @@ export type { DynamicHandlerOptions } from './handlers/dynamic-handler.js';
 
 ### Learnings
 
-_(To be filled after completion)_
+**Testing Passthrough Behavior:** MSW's `passthrough()` actually passes requests through to the real network, which means testing it requires handling real network errors. For test domains like `api.example.com`, passthrough will fail with network errors (ENOTFOUND). This is expected behavior - we verify passthrough by checking that the request throws (attempts real network call) rather than being intercepted.
+
+**Default Scenario Pattern:** The default scenario fallback is a key architectural pattern. When an active scenario doesn't have a matching mock, falling back to 'default' scenario provides sensible baseline behavior. This allows tests to override only specific endpoints while relying on defaults for everything else.
+
+**Strict vs Non-Strict Mode:** Strict mode (501 error) is useful for catching unexpected requests during development, while non-strict mode (passthrough) is useful for integration tests where some real API calls are acceptable.
+
+**100% Coverage with TDD:** Following strict TDD resulted in 100% coverage with only 5 tests. Each test was written to verify a specific behavior (active scenario, default fallback, no scenario, passthrough, strict mode), and the implementation naturally covered all branches.
+
+**CRITICAL: Avoid Mutable `let` Bindings (PR Feedback):** Initial implementation used `let mock;` with reassignment, violating functional programming principles. PR feedback caught this violation. Solution: Extract pure function `findMockInScenarios` that encapsulates the lookup logic using early returns and const bindings. This maintains immutability while expressing the same logic clearly.
+
+**Unnecessary `vi.fn()` Usage (PR Feedback):** Initially used `vi.fn()` to create mock functions without any assertions on those mocks. User question "can you explain why vi.fn is needed" revealed the code smell: tests were focused on implementation (whether functions were called) instead of behavior (what outputs were returned). Solution: Replace all `vi.fn()` calls with plain arrow functions. Tests now verify pure behavior - given these inputs (scenarios, test ID), what response does the handler return?
+
+**Factory Functions Improve Test Clarity (PR Feedback):** Initial tests had verbose inline `ScenarioDefinition` and `MockDefinition` objects (30+ lines per test), obscuring what was actually being tested. Solution: Create factory functions with sensible defaults and optional overrides (`createMock`, `createScenario`). Tests now clearly show intent - the test name combined with the factory calls immediately reveal what behavior is being verified. Reduced test file from ~210 lines to ~198 lines while improving readability.
+
+**Testing Implementation vs. Behavior:** This phase reinforced the importance of testing behavior through public APIs. The handler's job is to return the correct response for a given request - not to call specific functions in a specific order. By removing mocks and focusing on outputs, tests became both clearer and more maintainable. If we refactor the internal lookup logic (which we did by extracting `findMockInScenarios`), the tests don't break because they're testing the contract, not the implementation.
 
 ---
 
