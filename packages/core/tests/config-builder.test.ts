@@ -60,14 +60,15 @@ describe('buildConfig', () => {
     expect(config.defaultTestId).toBe('my-test');
   });
 
-  it('should support function for enabled property', () => {
-    const enabledFn = (): boolean => process.env.NODE_ENV !== 'production';
+  it('should require evaluated boolean for enabled property', () => {
+    // Dynamic enabling must be evaluated BEFORE creating config (for serialization)
+    const isEnabled = process.env.NODE_ENV !== 'production';
     const config = buildConfig({
-      enabled: enabledFn,
+      enabled: isEnabled,
     });
 
-    expect(config.enabled).toBe(enabledFn);
-    expect(typeof config.enabled).toBe('function');
+    expect(config.enabled).toBe(isEnabled);
+    expect(typeof config.enabled).toBe('boolean');
   });
 
   it('should allow partial override of headers while keeping defaults for others', () => {

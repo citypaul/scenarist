@@ -588,6 +588,48 @@ Now the ports are **genuinely useful**:
 
 **This applies to all port-based architectures, not just Scenarist.**
 
+### Config Must Also Be Serializable
+
+**CRITICAL**: The same serialization principle applies to `ScenaristConfig`. Config must be serializable so it can be:
+- ✅ Stored in files (JSON/YAML configuration)
+- ✅ Sent over network (remote config service)
+- ✅ Stored in databases or Redis
+- ✅ Passed between processes
+
+**Initial mistake:** Config had `enabled: boolean | (() => boolean)` which violated serialization.
+
+```typescript
+// ❌ WRONG - Function in config (not serializable)
+type ScenaristConfig = {
+  readonly enabled: boolean | (() => boolean);  // Can't JSON.stringify!
+};
+
+const config = buildConfig({
+  enabled: () => process.env.NODE_ENV !== 'production'  // Function!
+});
+```
+
+**The fix:** Config must only contain serializable data. Evaluate functions BEFORE creating config.
+
+```typescript
+// ✅ CORRECT - Only boolean (serializable)
+type ScenaristConfig = {
+  readonly enabled: boolean;
+};
+
+const config = buildConfig({
+  enabled: process.env.NODE_ENV !== 'production'  // Evaluated first!
+});
+```
+
+**Why this matters:**
+- Config can now be stored in `.scenaristrc.json` files
+- Config can be fetched from remote config service
+- Config can be stored per-environment in a database
+- Without serialization, config could only exist in-memory
+
+**The principle:** ALL data structures in ports and domain must be serializable. No exceptions.
+
 ## Future Roadmap
 
 See `SCENARIST_IMPLEMENTATION_PLAN.md` for complete roadmap. Key phases:
