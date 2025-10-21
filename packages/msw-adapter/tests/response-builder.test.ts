@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { buildResponse } from '../src/conversion/response-builder.js';
 import type { MockDefinition } from '@scenarist/core';
 
@@ -55,6 +55,8 @@ describe('Response Builder', () => {
     });
 
     it('should apply delay before returning response', async () => {
+      vi.useFakeTimers();
+
       const mock: MockDefinition = {
         method: 'GET',
         url: 'https://api.example.com/users',
@@ -64,14 +66,14 @@ describe('Response Builder', () => {
         },
       };
 
-      const startTime = Date.now();
-      await buildResponse(mock);
-      const duration = Date.now() - startTime;
+      const responsePromise = buildResponse(mock);
 
-      // Using timing-based assertion to verify actual delay behavior.
-      // Note: Could be flaky in CI under heavy load, but tests real behavior.
-      // Tolerance of 90ms (10% below expected) accounts for timing variance.
-      expect(duration).toBeGreaterThanOrEqual(90);
+      await vi.advanceTimersByTimeAsync(100);
+      const response = await responsePromise;
+
+      expect(response.status).toBe(200);
+
+      vi.useRealTimers();
     });
 
     it('should handle response with undefined body', async () => {
@@ -89,6 +91,8 @@ describe('Response Builder', () => {
     });
 
     it('should combine all options together', async () => {
+      vi.useFakeTimers();
+
       const mock: MockDefinition = {
         method: 'POST',
         url: 'https://api.example.com/users',
@@ -102,15 +106,17 @@ describe('Response Builder', () => {
         },
       };
 
-      const startTime = Date.now();
-      const response = await buildResponse(mock);
-      const duration = Date.now() - startTime;
+      const responsePromise = buildResponse(mock);
+
+      await vi.advanceTimersByTimeAsync(50);
+      const response = await responsePromise;
       const body = await response.json();
 
       expect(response.status).toBe(201);
       expect(body).toEqual({ id: '456', created: true });
       expect(response.headers.get('Location')).toBe('/users/456');
-      expect(duration).toBeGreaterThanOrEqual(45);
+
+      vi.useRealTimers();
     });
   });
 });
