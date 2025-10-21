@@ -90,6 +90,7 @@ import {
 // 1. Build configuration (all properties serializable)
 const config = buildConfig({
   enabled: process.env.NODE_ENV !== 'production', // Evaluated first!
+  strictMode: false,  // true = error on unmocked requests, false = passthrough
   headers: {
     testId: 'x-test-id',
     mockEnabled: 'x-mock-enabled',

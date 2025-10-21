@@ -11,6 +11,19 @@ export type ScenaristConfig = {
   readonly enabled: boolean;
 
   /**
+   * Whether to enforce strict mode for unmocked requests.
+   *
+   * - `true`: Unmocked requests return error responses (501 Not Implemented)
+   * - `false`: Unmocked requests passthrough to real APIs
+   *
+   * Default: false
+   *
+   * Strict mode is useful in tests to ensure all external API calls are explicitly mocked,
+   * preventing accidental calls to real services.
+   */
+  readonly strictMode: boolean;
+
+  /**
    * HTTP header names for test isolation and control.
    */
   readonly headers: {
@@ -47,6 +60,7 @@ export type ScenaristConfig = {
  */
 export type ScenaristConfigInput = {
   readonly enabled: boolean;
+  readonly strictMode?: boolean;
   readonly headers?: Partial<ScenaristConfig['headers']>;
   readonly endpoints?: Partial<ScenaristConfig['endpoints']>;
   readonly defaultScenario?: string;

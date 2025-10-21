@@ -10,8 +10,8 @@
 
 | Phase | Status | PR | Completion |
 |-------|--------|-----|-----------|
-| Phase 1: Core Config Updates | 🔜 Next | - | 0% |
-| Phase 2: MSW Adapter Package Setup | ⏸️ Pending | - | 0% |
+| Phase 1: Core Config Updates | ✅ Complete | TBD | 100% |
+| Phase 2: MSW Adapter Package Setup | 🔜 Next | - | 0% |
 | Phase 3: URL Matcher | ⏸️ Pending | - | 0% |
 | Phase 4: Response Builder + Mock Matcher | ⏸️ Pending | - | 0% |
 | Phase 5: Dynamic Handler | ⏸️ Pending | - | 0% |
@@ -110,35 +110,32 @@ afterAll(() => scenarist.stop());
 
 ## Phase 1: Core Config Updates
 
-**Goal:** Add new config options to support dev tools and strict mode
+**Goal:** Add `strictMode` config option
 **PR:** TBD
-**Status:** 🔜 Next
-**Estimated Time:** 1-2 hours
+**Status:** ✅ Complete
+**Actual Time:** ~30 minutes
 
 ### Acceptance Criteria
 
-- [x] `ScenaristConfig` has `devToolsEnabled: boolean` field
 - [x] `ScenaristConfig` has `strictMode: boolean` field
-- [x] `buildConfig()` applies correct defaults (`devToolsEnabled: false`, `strictMode: false`)
+- [x] `buildConfig()` applies correct default (`strictMode: false`)
 - [x] All existing tests pass
-- [x] New tests cover new fields
+- [x] New tests cover new field using `it.each` pattern
 - [x] Documentation updated
 - [x] 100% coverage maintained
+- [x] Created GitHub issue #7 for future `devToolsEnabled` feature
 
 ### Files to Modify
 
 #### 1. `packages/core/src/types/config.ts`
 
 **TDD Checklist:**
-- [ ] Read current file
-- [ ] Write test: `devToolsEnabled` defaults to `false`
-- [ ] Write test: `devToolsEnabled` can be set to `true`
-- [ ] Write test: `strictMode` defaults to `false`
-- [ ] Write test: `strictMode` can be set to `true`
-- [ ] Implement: Add `devToolsEnabled` field to `ScenaristConfig`
-- [ ] Implement: Add `strictMode` field to `ScenaristConfig`
-- [ ] Implement: Add fields to `ScenaristConfigInput`
-- [ ] All tests pass ✅
+- [x] Read current file
+- [x] Write test: `strictMode` defaults to `false`
+- [x] Write test: `strictMode` can be set to `true`
+- [x] Implement: Add `strictMode` field to `ScenaristConfig`
+- [x] Implement: Add field to `ScenaristConfigInput`
+- [x] All tests pass ✅
 
 **Changes:**
 ```typescript
@@ -224,7 +221,22 @@ export const buildConfig = (input: ScenaristConfigInput): ScenaristConfig => {
 
 ### Learnings
 
-_(To be filled after completion)_
+**YAGNI Applied:** Decided to skip `devToolsEnabled` field for now since dev tools won't be in v1. Created GitHub issue #7 to track future implementation. Only added what we need (`strictMode`).
+
+**Test Efficiency:** Used `it.each` to test multiple config properties efficiently, reducing duplication. Pattern: test both override value AND default value in same test case.
+
+```typescript
+it.each([
+  { property: 'strictMode', value: true, default: false },
+  // ... more properties
+])('should allow overriding $property', ({ property, value, default: defaultValue }) => {
+  // Tests both override and default in one test
+});
+```
+
+**Config Clarity:** The `/__scenario__` endpoints are core functionality (always available for tests), NOT part of "dev tools". Dev tools would be optional visual debugging UI (separate feature).
+
+**Quick Win:** Phase completed much faster than estimated (~30 min vs 1-2 hours) because we kept scope minimal and used efficient testing patterns.
 
 ---
 

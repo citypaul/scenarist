@@ -14,6 +14,7 @@ describe('buildConfig', () => {
     expect(config.endpoints.getScenario).toBe('/__scenario__');
     expect(config.defaultScenario).toBe('default');
     expect(config.defaultTestId).toBe('default-test');
+    expect(config.strictMode).toBe(false);
   });
 
   it('should allow overriding header config', () => {
@@ -42,22 +43,21 @@ describe('buildConfig', () => {
     expect(config.endpoints.getScenario).toBe('/api/scenario/get');
   });
 
-  it('should allow overriding default scenario', () => {
+  it.each([
+    { property: 'defaultScenario', value: 'happy-path', default: 'default' },
+    { property: 'defaultTestId', value: 'my-test', default: 'default-test' },
+    { property: 'strictMode', value: true, default: false },
+  ])('should allow overriding $property', ({ property, value, default: defaultValue }) => {
     const config = buildConfig({
       enabled: true,
-      defaultScenario: 'happy-path',
+      [property]: value,
     });
 
-    expect(config.defaultScenario).toBe('happy-path');
-  });
+    expect(config[property]).toBe(value);
 
-  it('should allow overriding default test ID', () => {
-    const config = buildConfig({
-      enabled: true,
-      defaultTestId: 'my-test',
-    });
-
-    expect(config.defaultTestId).toBe('my-test');
+    // Also verify default when not provided
+    const configWithDefaults = buildConfig({ enabled: true });
+    expect(configWithDefaults[property]).toBe(defaultValue);
   });
 
   it('should require evaluated boolean for enabled property', () => {
