@@ -5,29 +5,9 @@ import { createScenarioEndpoints } from '../src/endpoints/scenario-endpoints.js'
 import { mockConfig, mockScenarioManager } from './test-helpers.js';
 
 describe('Scenario Endpoints', () => {
-  describe('devToolsEnabled', () => {
-    it('should return null when devToolsEnabled is false', () => {
-      const config = mockConfig({ devToolsEnabled: false });
-      const manager = mockScenarioManager();
-
-      const router = createScenarioEndpoints(manager, config);
-
-      expect(router).toBeNull();
-    });
-
-    it('should return router when devToolsEnabled is true', () => {
-      const config = mockConfig({ devToolsEnabled: true });
-      const manager = mockScenarioManager();
-
-      const router = createScenarioEndpoints(manager, config);
-
-      expect(router).not.toBeNull();
-    });
-  });
-
   describe('POST /__scenario__', () => {
     it('should set scenario successfully', async () => {
-      const config = mockConfig({ devToolsEnabled: true });
+      const config = mockConfig();
       const manager = mockScenarioManager({
         switchScenario: () => ({ success: true, data: undefined }),
       });
@@ -51,7 +31,7 @@ describe('Scenario Endpoints', () => {
     });
 
     it('should set scenario with variant', async () => {
-      const config = mockConfig({ devToolsEnabled: true });
+      const config = mockConfig();
       const manager = mockScenarioManager({
         switchScenario: () => ({ success: true, data: undefined }),
       });
@@ -71,7 +51,7 @@ describe('Scenario Endpoints', () => {
     });
 
     it('should return 400 when scenario is missing', async () => {
-      const config = mockConfig({ devToolsEnabled: true });
+      const config = mockConfig();
       const manager = mockScenarioManager();
 
       const router = createScenarioEndpoints(manager, config);
@@ -89,7 +69,7 @@ describe('Scenario Endpoints', () => {
     });
 
     it('should return 400 when scenario switch fails', async () => {
-      const config = mockConfig({ devToolsEnabled: true });
+      const config = mockConfig();
       const manager = mockScenarioManager({
         switchScenario: () => ({
           success: false,
@@ -112,7 +92,7 @@ describe('Scenario Endpoints', () => {
     });
 
     it('should return 500 when unexpected error occurs', async () => {
-      const config = mockConfig({ devToolsEnabled: true });
+      const config = mockConfig();
       const manager = mockScenarioManager({
         switchScenario: () => {
           throw new Error('Unexpected error');
@@ -136,7 +116,7 @@ describe('Scenario Endpoints', () => {
 
   describe('GET /__scenario__', () => {
     it('should return active scenario', async () => {
-      const config = mockConfig({ devToolsEnabled: true });
+      const config = mockConfig();
       const manager = mockScenarioManager({
         getActiveScenario: () => ({
           scenarioId: 'happy-path',
@@ -169,7 +149,7 @@ describe('Scenario Endpoints', () => {
     });
 
     it('should return 404 when no active scenario', async () => {
-      const config = mockConfig({ devToolsEnabled: true });
+      const config = mockConfig();
       const manager = mockScenarioManager({
         getActiveScenario: () => undefined,
       });
@@ -188,7 +168,7 @@ describe('Scenario Endpoints', () => {
     });
 
     it('should handle missing scenario definition', async () => {
-      const config = mockConfig({ devToolsEnabled: true });
+      const config = mockConfig();
       const manager = mockScenarioManager({
         getActiveScenario: () => ({ scenarioId: 'missing' }),
         getScenarioById: () => undefined,

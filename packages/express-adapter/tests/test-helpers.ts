@@ -7,7 +7,6 @@ import type { ScenarioManager, ScenaristConfig } from '@scenarist/core';
  */
 export const mockConfig = (overrides?: Partial<ScenaristConfig>): ScenaristConfig => ({
   enabled: true,
-  devToolsEnabled: false,
   strictMode: false,
   headers: {
     testId: 'x-test-id',

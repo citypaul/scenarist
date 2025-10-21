@@ -11,11 +11,7 @@ const scenarioRequestSchema = z.object({
 export const createScenarioEndpoints = (
   manager: ScenarioManager,
   config: ScenaristConfig
-): Router | null => {
-  if (!config.devToolsEnabled) {
-    return null;
-  }
-
+): Router => {
   const router = Router();
 
   // POST /__scenario__ - Set scenario

@@ -24,18 +24,6 @@ export type ScenaristConfig = {
   readonly strictMode: boolean;
 
   /**
-   * Whether to enable dev tools endpoints for runtime scenario switching.
-   *
-   * - `true`: Enables HTTP endpoints for scenario management (/__scenario__)
-   * - `false`: Disables dev tools endpoints (returns null from createScenarioEndpoints)
-   *
-   * Default: false
-   *
-   * Dev tools should only be enabled in test/development environments, never in production.
-   */
-  readonly devToolsEnabled: boolean;
-
-  /**
    * HTTP header names for test isolation and control.
    */
   readonly headers: {
@@ -73,7 +61,6 @@ export type ScenaristConfig = {
 export type ScenaristConfigInput = {
   readonly enabled: boolean;
   readonly strictMode?: boolean;
-  readonly devToolsEnabled?: boolean;
   readonly headers?: Partial<ScenaristConfig['headers']>;
   readonly endpoints?: Partial<ScenaristConfig['endpoints']>;
   readonly defaultScenario?: string;
