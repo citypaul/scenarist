@@ -15,8 +15,8 @@
 | Phase 3: URL Matcher | ✅ Complete | [#10](https://github.com/citypaul/scenarist/pull/10) | 100% |
 | Phase 4: Response Builder + Mock Matcher | ✅ Complete | [#11](https://github.com/citypaul/scenarist/pull/11) | 100% |
 | Phase 5: Dynamic Handler | ✅ Complete | [#12](https://github.com/citypaul/scenarist/pull/12) | 100% |
-| Phase 6: Express Adapter Package | 🚧 In Progress | - | 0% |
-| Phase 7: Integration + Setup Helper | ⏸️ Pending | - | 0% |
+| Phase 6: Express Adapter Package | 🚧 In Progress | [#13](https://github.com/citypaul/scenarist/pull/13) | 95% |
+| Phase 7: Sample Express App + E2E Tests | ⏸️ Pending | - | 0% |
 
 **Legend:** 🔜 Next | 🚧 In Progress | ✅ Complete | ⏸️ Pending
 
@@ -982,13 +982,18 @@ export type { DynamicHandlerOptions } from './handlers/dynamic-handler.js';
 
 ### Acceptance Criteria
 
-- [ ] Package builds and tests run
-- [ ] ExpressRequestContext implements RequestContext port
-- [ ] Test ID middleware with AsyncLocalStorage works
-- [ ] Dev tool endpoints (GET/POST /__scenario__) work
-- [ ] Endpoints respect devToolsEnabled config
-- [ ] Integration with msw-adapter works
-- [ ] 100% unit test coverage
+**Phase 6 delivers the Express adapter package with unit and integration tests:**
+
+- [x] Package builds and tests run
+- [x] ExpressRequestContext implements RequestContext port
+- [x] Test ID middleware with AsyncLocalStorage works
+- [x] Scenario endpoints (GET/POST /__scenario__) work
+- [x] 100% unit test coverage
+- [x] Integration tests using supertest
+- [ ] Public API documentation in README
+
+**Phase 7 will deliver the sample app with E2E tests** (moved from Phase 6):
+
 - [ ] Sample Express app demonstrates real-world usage
 - [ ] E2E tests in sample app prove integration works
 - [ ] Sample app shows test ID isolation and concurrent scenarios
@@ -1338,20 +1343,30 @@ _(To be filled after completion)_
 
 ---
 
-## Phase 7: Integration + Setup Helper
+## Phase 7: Sample Express App + E2E Tests
 
-**Goal:** Wire everything together with convenience API and full E2E tests
+**Goal:** Create sample Express app demonstrating real-world usage with full E2E tests
 **PR:** TBD
 **Status:** ⏸️ Pending
-**Estimated Time:** 3-4 hours
+**Estimated Time:** 4-5 hours
 
 ### Acceptance Criteria
 
+**Sample App (`apps/express-example/`):**
+- [ ] Express server with routes calling external APIs
+- [ ] Multiple scenario definitions (success, failure, timeout, etc.)
+- [ ] Demonstrates scenario switching via `POST /__scenario__`
+- [ ] Shows real MSW interception of external API calls
+
+**E2E Tests:**
+- [ ] Full E2E tests with real Express server
+- [ ] Tests verify scenarios work end-to-end
+- [ ] Tests verify test ID isolation with concurrent scenarios
+- [ ] Tests prove MSW integration intercepts requests correctly
+
+**Optional Setup Helper:**
 - [ ] `createScenarist()` factory wires everything together
 - [ ] Returns middleware, lifecycle methods, and manager methods
-- [ ] Full E2E test with Express app making external API calls
-- [ ] Tests verify scenarios work end-to-end
-- [ ] Tests verify test ID isolation
 - [ ] README with complete examples
 - [ ] Documentation updated
 
