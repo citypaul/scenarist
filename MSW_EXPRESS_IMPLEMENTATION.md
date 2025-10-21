@@ -2,7 +2,7 @@
 
 **Status:** 🚧 In Progress
 **Started:** 2025-10-21
-**Current Phase:** Planning Complete
+**Current Phase:** Phase 6 - Express Adapter Package
 
 ---
 
@@ -15,7 +15,7 @@
 | Phase 3: URL Matcher | ✅ Complete | [#10](https://github.com/citypaul/scenarist/pull/10) | 100% |
 | Phase 4: Response Builder + Mock Matcher | ✅ Complete | [#11](https://github.com/citypaul/scenarist/pull/11) | 100% |
 | Phase 5: Dynamic Handler | ✅ Complete | [#12](https://github.com/citypaul/scenarist/pull/12) | 100% |
-| Phase 6: Express Adapter Package | ⏸️ Pending | - | 0% |
+| Phase 6: Express Adapter Package | 🚧 In Progress | - | 0% |
 | Phase 7: Integration + Setup Helper | ⏸️ Pending | - | 0% |
 
 **Legend:** 🔜 Next | 🚧 In Progress | ✅ Complete | ⏸️ Pending
@@ -977,7 +977,7 @@ export type { DynamicHandlerOptions } from './handlers/dynamic-handler.js';
 
 **Goal:** Create Express-specific integration using msw-adapter
 **PR:** TBD
-**Status:** ⏸️ Pending
+**Status:** 🚧 In Progress
 **Estimated Time:** 4-5 hours
 
 ### Acceptance Criteria
