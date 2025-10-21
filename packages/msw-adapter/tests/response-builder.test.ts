@@ -70,5 +70,44 @@ describe('Response Builder', () => {
 
       expect(endTime - startTime).toBeGreaterThanOrEqual(100);
     });
+
+    it('should handle response with undefined body', async () => {
+      const mock: MockDefinition = {
+        method: 'DELETE',
+        url: 'https://api.example.com/users/123',
+        response: {
+          status: 204,
+        },
+      };
+
+      const response = await buildResponse(mock);
+
+      expect(response.status).toBe(204);
+    });
+
+    it('should combine all options together', async () => {
+      const mock: MockDefinition = {
+        method: 'POST',
+        url: 'https://api.example.com/users',
+        response: {
+          status: 201,
+          body: { id: '456', created: true },
+          headers: {
+            'Location': '/users/456',
+          },
+          delay: 50,
+        },
+      };
+
+      const startTime = Date.now();
+      const response = await buildResponse(mock);
+      const endTime = Date.now();
+      const body = await response.json();
+
+      expect(response.status).toBe(201);
+      expect(body).toEqual({ id: '456', created: true });
+      expect(response.headers.get('Location')).toBe('/users/456');
+      expect(endTime - startTime).toBeGreaterThanOrEqual(50);
+    });
   });
 });
