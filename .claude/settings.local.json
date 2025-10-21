@@ -5,7 +5,9 @@
       "Bash(git checkout:*)",
       "Bash(pnpm test:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm vitest:*)"
     ],
     "deny": [],
     "ask": []
