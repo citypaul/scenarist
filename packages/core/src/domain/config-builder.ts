@@ -7,6 +7,7 @@ import type { ScenaristConfig, ScenaristConfigInput } from '../types/index.js';
 export const buildConfig = (input: ScenaristConfigInput): ScenaristConfig => {
   return {
     enabled: input.enabled,
+    strictMode: input.strictMode ?? false,
     headers: {
       testId: input.headers?.testId ?? 'x-test-id',
       mockEnabled: input.headers?.mockEnabled ?? 'x-mock-enabled',
