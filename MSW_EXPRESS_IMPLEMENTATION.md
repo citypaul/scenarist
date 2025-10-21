@@ -14,7 +14,7 @@
 | Phase 2: MSW Adapter Package Setup | ✅ Complete | [#9](https://github.com/citypaul/scenarist/pull/9) | 100% |
 | Phase 3: URL Matcher | ✅ Complete | [#10](https://github.com/citypaul/scenarist/pull/10) | 100% |
 | Phase 4: Response Builder + Mock Matcher | ✅ Complete | [#11](https://github.com/citypaul/scenarist/pull/11) | 100% |
-| Phase 5: Dynamic Handler | ⏸️ Pending | - | 0% |
+| Phase 5: Dynamic Handler | 🚧 In Progress | - | 90% |
 | Phase 6: Express Adapter Package | ⏸️ Pending | - | 0% |
 | Phase 7: Integration + Setup Helper | ⏸️ Pending | - | 0% |
 
@@ -714,9 +714,10 @@ export const findMatchingMock = (
 ## Phase 5: Dynamic Handler
 
 **Goal:** Create dynamic MSW handler with default scenario fallback pattern
-**PR:** TBD
-**Status:** ⏸️ Pending
+**PR:** TBD (in progress)
+**Status:** 🚧 In Progress
 **Estimated Time:** 3-4 hours
+**Actual Time:** ~2 hours (so far)
 
 ### Acceptance Criteria
 
@@ -954,7 +955,13 @@ export type { DynamicHandlerOptions } from './handlers/dynamic-handler.js';
 
 ### Learnings
 
-_(To be filled after completion)_
+**Testing Passthrough Behavior:** MSW's `passthrough()` actually passes requests through to the real network, which means testing it requires handling real network errors. For test domains like `api.example.com`, passthrough will fail with network errors (ENOTFOUND). This is expected behavior - we verify passthrough by checking that the request throws (attempts real network call) rather than being intercepted.
+
+**Default Scenario Pattern:** The default scenario fallback is a key architectural pattern. When an active scenario doesn't have a matching mock, falling back to 'default' scenario provides sensible baseline behavior. This allows tests to override only specific endpoints while relying on defaults for everything else.
+
+**Strict vs Non-Strict Mode:** Strict mode (501 error) is useful for catching unexpected requests during development, while non-strict mode (passthrough) is useful for integration tests where some real API calls are acceptable.
+
+**100% Coverage with TDD:** Following strict TDD resulted in 100% coverage with only 5 tests. Each test was written to verify a specific behavior (active scenario, default fallback, no scenario, passthrough, strict mode), and the implementation naturally covered all branches.
 
 ---
 
