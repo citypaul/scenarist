@@ -14,7 +14,7 @@
 | Phase 2: MSW Adapter Package Setup | ✅ Complete | [#9](https://github.com/citypaul/scenarist/pull/9) | 100% |
 | Phase 3: URL Matcher | ✅ Complete | [#10](https://github.com/citypaul/scenarist/pull/10) | 100% |
 | Phase 4: Response Builder + Mock Matcher | ✅ Complete | [#11](https://github.com/citypaul/scenarist/pull/11) | 100% |
-| Phase 5: Dynamic Handler | 🚧 In Progress | - | 90% |
+| Phase 5: Dynamic Handler | ✅ Complete | [#12](https://github.com/citypaul/scenarist/pull/12) | 100% |
 | Phase 6: Express Adapter Package | ⏸️ Pending | - | 0% |
 | Phase 7: Integration + Setup Helper | ⏸️ Pending | - | 0% |
 
@@ -714,10 +714,10 @@ export const findMatchingMock = (
 ## Phase 5: Dynamic Handler
 
 **Goal:** Create dynamic MSW handler with default scenario fallback pattern
-**PR:** TBD (in progress)
-**Status:** 🚧 In Progress
+**PR:** #12
+**Status:** ✅ Complete
 **Estimated Time:** 3-4 hours
-**Actual Time:** ~2 hours (so far)
+**Actual Time:** ~2 hours
 
 ### Acceptance Criteria
 
