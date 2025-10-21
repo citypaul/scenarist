@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(gh pr view:*)"
+      "Bash(gh pr view:*)",
+      "Bash(git checkout:*)",
+      "Bash(pnpm test:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
