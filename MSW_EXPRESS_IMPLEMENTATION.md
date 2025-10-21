@@ -10,7 +10,7 @@
 
 | Phase | Status | PR | Completion |
 |-------|--------|-----|-----------|
-| Phase 1: Core Config Updates | ✅ Complete | TBD | 100% |
+| Phase 1: Core Config Updates | ✅ Complete | [#8](https://github.com/citypaul/scenarist/pull/8) | 100% |
 | Phase 2: MSW Adapter Package Setup | 🔜 Next | - | 0% |
 | Phase 3: URL Matcher | ⏸️ Pending | - | 0% |
 | Phase 4: Response Builder + Mock Matcher | ⏸️ Pending | - | 0% |
@@ -111,7 +111,7 @@ afterAll(() => scenarist.stop());
 ## Phase 1: Core Config Updates
 
 **Goal:** Add `strictMode` config option
-**PR:** TBD
+**PR:** [#8](https://github.com/citypaul/scenarist/pull/8)
 **Status:** ✅ Complete
 **Actual Time:** ~30 minutes
 
