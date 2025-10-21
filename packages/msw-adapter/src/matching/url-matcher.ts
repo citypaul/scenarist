@@ -1,4 +1,1 @@
-// Placeholder - will be implemented in Phase 3
-export const matchesUrl = (pattern: string, url: string): boolean => {
-  throw new Error('Not implemented');
-};
+// URL matching implementation - will be added in Phase 3 using TDD

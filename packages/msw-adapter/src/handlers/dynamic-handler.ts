@@ -1,4 +1,1 @@
-// Placeholder - will be implemented in later phases
-export const createDynamicHandler = (): never => {
-  throw new Error('Not implemented');
-};
+// Dynamic MSW handler creation - will be added in later phases using TDD
