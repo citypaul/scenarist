@@ -2,17 +2,17 @@ import type {
   ScenarioManager,
   ScenarioRegistry,
   ScenarioStore,
-} from '../ports/index.js';
+} from "../ports/index.js";
 import type {
-  ScenarioDefinition,
   ActiveScenario,
   Result,
-} from '../types/index.js';
+  ScenarioDefinition,
+} from "../types/index.js";
 
 class ScenarioNotFoundError extends Error {
   constructor(scenarioId: string) {
     super(`Scenario '${scenarioId}' not found. Did you forget to register it?`);
-    this.name = 'ScenarioNotFoundError';
+    this.name = "ScenarioNotFoundError";
   }
 }
 
@@ -43,14 +43,14 @@ export const createScenarioManager = ({
     switchScenario(
       testId: string,
       scenarioId: string,
-      variantName?: string,
+      variantName?: string
     ): Result<void, Error> {
       const definition = registry.get(scenarioId);
 
       if (!definition) {
         return {
           success: false,
-          error: new ScenarioNotFoundError(scenarioId),
+          error: new ScenarioNotFoundError(),
         };
       }
 
