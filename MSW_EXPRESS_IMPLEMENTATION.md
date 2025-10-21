@@ -963,6 +963,14 @@ export type { DynamicHandlerOptions } from './handlers/dynamic-handler.js';
 
 **100% Coverage with TDD:** Following strict TDD resulted in 100% coverage with only 5 tests. Each test was written to verify a specific behavior (active scenario, default fallback, no scenario, passthrough, strict mode), and the implementation naturally covered all branches.
 
+**CRITICAL: Avoid Mutable `let` Bindings (PR Feedback):** Initial implementation used `let mock;` with reassignment, violating functional programming principles. PR feedback caught this violation. Solution: Extract pure function `findMockInScenarios` that encapsulates the lookup logic using early returns and const bindings. This maintains immutability while expressing the same logic clearly.
+
+**Unnecessary `vi.fn()` Usage (PR Feedback):** Initially used `vi.fn()` to create mock functions without any assertions on those mocks. User question "can you explain why vi.fn is needed" revealed the code smell: tests were focused on implementation (whether functions were called) instead of behavior (what outputs were returned). Solution: Replace all `vi.fn()` calls with plain arrow functions. Tests now verify pure behavior - given these inputs (scenarios, test ID), what response does the handler return?
+
+**Factory Functions Improve Test Clarity (PR Feedback):** Initial tests had verbose inline `ScenarioDefinition` and `MockDefinition` objects (30+ lines per test), obscuring what was actually being tested. Solution: Create factory functions with sensible defaults and optional overrides (`createMock`, `createScenario`). Tests now clearly show intent - the test name combined with the factory calls immediately reveal what behavior is being verified. Reduced test file from ~210 lines to ~198 lines while improving readability.
+
+**Testing Implementation vs. Behavior:** This phase reinforced the importance of testing behavior through public APIs. The handler's job is to return the correct response for a given request - not to call specific functions in a specific order. By removing mocks and focusing on outputs, tests became both clearer and more maintainable. If we refactor the internal lookup logic (which we did by extracting `findMockInScenarios`), the tests don't break because they're testing the contract, not the implementation.
+
 ---
 
 ## Phase 6: Express Adapter Package
