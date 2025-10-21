@@ -17,5 +17,22 @@ describe('Response Builder', () => {
 
       expect(response.status).toBe(200);
     });
+
+    it('should build response with JSON body', async () => {
+      const mock: MockDefinition = {
+        method: 'GET',
+        url: 'https://api.example.com/users',
+        response: {
+          status: 200,
+          body: { id: '123', name: 'John Doe' },
+        },
+      };
+
+      const response = await buildResponse(mock);
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(body).toEqual({ id: '123', name: 'John Doe' });
+    });
   });
 });
