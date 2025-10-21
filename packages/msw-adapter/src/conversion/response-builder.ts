@@ -8,7 +8,7 @@ export const buildResponse = async (
     await delay(mock.response.delay);
   }
 
-  return HttpResponse.json(mock.response.body, {
+  return HttpResponse.json(mock.response.body as never, {
     status: mock.response.status,
     headers: mock.response.headers,
   });

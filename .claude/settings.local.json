@@ -9,7 +9,9 @@
       "Bash(pnpm test:*)",
       "Bash(pnpm --filter=@scenarist/msw-adapter test)",
       "Bash(git checkout:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm vitest:*)"
     ],
     "deny": [],
     "ask": []
