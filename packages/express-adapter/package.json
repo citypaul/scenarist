@@ -21,7 +21,8 @@
   },
   "dependencies": {
     "@scenarist/core": "workspace:*",
-    "@scenarist/msw-adapter": "workspace:*"
+    "@scenarist/msw-adapter": "workspace:*",
+    "zod": "^3.22.4"
   },
   "peerDependencies": {
     "express": "^4.18.0 || ^5.0.0",

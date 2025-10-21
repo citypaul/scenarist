@@ -8,6 +8,7 @@ export const buildConfig = (input: ScenaristConfigInput): ScenaristConfig => {
   return {
     enabled: input.enabled,
     strictMode: input.strictMode ?? false,
+    devToolsEnabled: input.devToolsEnabled ?? false,
     headers: {
       testId: input.headers?.testId ?? 'x-test-id',
       mockEnabled: input.headers?.mockEnabled ?? 'x-mock-enabled',
