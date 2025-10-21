@@ -20,20 +20,34 @@ export const createDynamicHandler = (
     const testId = options.getTestId();
     const activeScenario = options.getActiveScenario(testId);
 
+    let mock;
+
     if (activeScenario) {
       const scenarioDefinition = options.getScenarioDefinition(
         activeScenario.scenarioId
       );
       if (scenarioDefinition) {
-        const mock = findMatchingMock(
+        mock = findMatchingMock(
           scenarioDefinition.mocks,
           request.method,
           request.url
         );
-        if (mock) {
-          return buildResponse(mock);
-        }
       }
+    }
+
+    if (!mock) {
+      const defaultScenario = options.getScenarioDefinition('default');
+      if (defaultScenario) {
+        mock = findMatchingMock(
+          defaultScenario.mocks,
+          request.method,
+          request.url
+        );
+      }
+    }
+
+    if (mock) {
+      return buildResponse(mock);
     }
 
     return new Response(null, { status: 501 });

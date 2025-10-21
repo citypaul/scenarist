@@ -53,4 +53,63 @@ describe('Dynamic Handler', () => {
       server.close();
     });
   });
+
+  describe('Default scenario fallback', () => {
+    it('should fall back to default scenario when no mock in active scenario', async () => {
+      const getTestId = vi.fn(() => 'test-123');
+      const getActiveScenario = vi.fn((): ActiveScenario => ({
+        scenarioId: 'empty-scenario',
+      }));
+      const getScenarioDefinition = vi.fn(
+        (scenarioId: string): ScenarioDefinition | undefined => {
+          if (scenarioId === 'empty-scenario') {
+            return {
+              id: 'empty-scenario',
+              name: 'Empty Scenario',
+              description: 'No mocks',
+              devToolEnabled: false,
+              mocks: [],
+            };
+          }
+          if (scenarioId === 'default') {
+            return {
+              id: 'default',
+              name: 'Default',
+              description: 'Default mocks',
+              devToolEnabled: false,
+              mocks: [
+                {
+                  method: 'GET',
+                  url: 'https://api.example.com/users',
+                  response: {
+                    status: 200,
+                    body: { source: 'default' },
+                  },
+                },
+              ],
+            };
+          }
+          return undefined;
+        }
+      );
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: false,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch('https://api.example.com/users');
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data).toEqual({ source: 'default' });
+
+      server.close();
+    });
+  });
 });
