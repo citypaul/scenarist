@@ -1,37 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { setupServer } from 'msw/node';
 import { createDynamicHandler } from '../src/handlers/dynamic-handler.js';
-import type {
-  ActiveScenario,
-  ScenarioDefinition,
-  MockDefinition,
-  HttpMethod,
-} from '@scenarist/core';
-
-// Test data factory functions
-const createMock = (
-  method: HttpMethod,
-  url: string,
-  responseBody?: unknown
-): MockDefinition => ({
-  method,
-  url,
-  response: {
-    status: 200,
-    ...(responseBody !== undefined && { body: responseBody }),
-  },
-});
-
-const createScenario = (
-  id: string,
-  mocks: ReadonlyArray<MockDefinition> = []
-): ScenarioDefinition => ({
-  id,
-  name: `${id} scenario`,
-  description: `Scenario for ${id}`,
-  devToolEnabled: false,
-  mocks,
-});
+import type { ActiveScenario, ScenarioDefinition } from '@scenarist/core';
+import { mockDefinition, mockScenario } from './factories.js';
 
 describe('Dynamic Handler', () => {
   describe('Basic handler setup', () => {
@@ -39,9 +10,14 @@ describe('Dynamic Handler', () => {
       const scenarios = new Map<string, ScenarioDefinition>([
         [
           'happy-path',
-          createScenario('happy-path', [
-            createMock('GET', 'https://api.example.com/users', { users: [] }),
-          ]),
+          mockScenario({
+            id: 'happy-path',
+            mocks: [
+              mockDefinition({
+                response: { status: 200, body: { users: [] } },
+              }),
+            ],
+          }),
         ],
       ]);
 
@@ -75,14 +51,17 @@ describe('Dynamic Handler', () => {
   describe('Default scenario fallback', () => {
     it('should fall back to default scenario when no mock in active scenario', async () => {
       const scenarios = new Map<string, ScenarioDefinition>([
-        ['empty-scenario', createScenario('empty-scenario', [])],
+        ['empty-scenario', mockScenario({ id: 'empty-scenario' })],
         [
           'default',
-          createScenario('default', [
-            createMock('GET', 'https://api.example.com/users', {
-              source: 'default',
-            }),
-          ]),
+          mockScenario({
+            id: 'default',
+            mocks: [
+              mockDefinition({
+                response: { status: 200, body: { source: 'default' } },
+              }),
+            ],
+          }),
         ],
       ]);
 
@@ -116,11 +95,14 @@ describe('Dynamic Handler', () => {
       const scenarios = new Map<string, ScenarioDefinition>([
         [
           'default',
-          createScenario('default', [
-            createMock('GET', 'https://api.example.com/users', {
-              source: 'default',
-            }),
-          ]),
+          mockScenario({
+            id: 'default',
+            mocks: [
+              mockDefinition({
+                response: { status: 200, body: { source: 'default' } },
+              }),
+            ],
+          }),
         ],
       ]);
 
