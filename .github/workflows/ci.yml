@@ -56,6 +56,9 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Test with coverage (enforces 100% threshold)
+        run: pnpm --filter=@scenarist/core exec vitest run --coverage
+
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4

@@ -4,10 +4,11 @@
  */
 export type ScenaristConfig = {
   /**
-   * Whether mocking is enabled. Can be a boolean or function.
-   * Function allows for dynamic enabling (e.g., based on environment).
+   * Whether mocking is enabled.
+   * For dynamic enabling (e.g., based on environment), evaluate before creating config:
+   * `enabled: process.env.NODE_ENV !== 'production'`
    */
-  readonly enabled: boolean | (() => boolean);
+  readonly enabled: boolean;
 
   /**
    * HTTP header names for test isolation and control.
@@ -42,9 +43,10 @@ export type ScenaristConfig = {
 
 /**
  * Partial config for user input - missing values will use defaults.
+ * All properties must be serializable (no functions).
  */
 export type ScenaristConfigInput = {
-  readonly enabled: boolean | (() => boolean);
+  readonly enabled: boolean;
   readonly headers?: Partial<ScenaristConfig['headers']>;
   readonly endpoints?: Partial<ScenaristConfig['endpoints']>;
   readonly defaultScenario?: string;

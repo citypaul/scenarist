@@ -21,7 +21,8 @@ src/
 **Types (Data Structures):**
 - Defined with `type` keyword
 - All properties are `readonly` for immutability
-- Examples: `Scenario`, `ScenaristConfig`, `ActiveScenario`
+- Must be serializable (no functions, closures, or class instances)
+- Examples: `ScenarioDefinition`, `ScenaristConfig`, `ActiveScenario`, `MockDefinition`
 
 **Ports (Behavior Contracts):**
 - Defined with `interface` keyword
@@ -41,10 +42,13 @@ src/
 - Directory structure established
 - TypeScript and Vitest configured
 
-**Phase 2: Domain Implementation** 🚧 (Next)
-- Implement `createScenarioManager()`
-- Implement `buildConfig()`
-- Implement `createScenario()` helper
+**Phase 2: Domain Implementation** ✅
+- Implemented `createScenarioManager()` with dependency injection
+- Implemented `buildConfig()` helper with defaults
+- Implemented `InMemoryScenarioRegistry` adapter
+- Implemented `InMemoryScenarioStore` adapter
+- 50 tests passing with 100% coverage
+- TypeScript strict mode enforced
 
 ## Installation
 
@@ -72,13 +76,66 @@ pnpm typecheck
 
 ## Usage
 
-```typescript
-import type { Scenario, ScenarioManager } from '@scenarist/core';
+### Basic Setup
 
-// Types and interfaces are exported for use in adapters
+```typescript
+import {
+  createScenarioManager,
+  InMemoryScenarioRegistry,
+  InMemoryScenarioStore,
+  buildConfig,
+  type ScenarioDefinition,
+} from '@scenarist/core';
+
+// 1. Build configuration (all properties serializable)
+const config = buildConfig({
+  enabled: process.env.NODE_ENV !== 'production', // Evaluated first!
+  headers: {
+    testId: 'x-test-id',
+    mockEnabled: 'x-mock-enabled',
+  },
+});
+
+// 2. Create adapters (dependency injection)
+const registry = new InMemoryScenarioRegistry();
+const store = new InMemoryScenarioStore();
+
+// 3. Create scenario manager
+const manager = createScenarioManager({ registry, store });
+
+// 4. Define scenarios (serializable definitions)
+const happyPathScenario: ScenarioDefinition = {
+  id: 'happy-path',
+  name: 'Happy Path',
+  description: 'All API calls succeed',
+  devToolEnabled: true,
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.example.com/users',
+      response: {
+        status: 200,
+        body: { users: [] },
+      },
+    },
+  ],
+};
+
+// 5. Register and activate scenarios
+manager.registerScenario(happyPathScenario);
+const result = manager.switchScenario('test-123', 'happy-path');
+
+if (result.success) {
+  console.log('Scenario activated!');
+}
 ```
 
-Full usage documentation will be available once domain implementations are complete.
+### Key Principles
+
+- **Serialization**: All types must be JSON-serializable (no functions!)
+- **Dependency Injection**: Ports are injected, never created internally
+- **Immutability**: All data structures use `readonly`
+- **Factory Pattern**: Use `createScenarioManager()`, not classes
 
 ## Contributing
 

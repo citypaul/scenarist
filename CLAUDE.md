@@ -6,7 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Scenarist** is a hexagonal architecture library for managing MSW (Mock Service Worker) mock scenarios in E2E testing environments. It enables concurrent tests to run with different backend states via test IDs, allowing runtime scenario switching without application restarts.
 
-**Current Status**: The repository is freshly initialized with Turborepo. The actual packages (core, adapters, etc.) are not yet implemented. The full implementation plan is in `SCENARIST_IMPLEMENTATION_PLAN.md`.
+**Current Status**: Core package implementation complete! The hexagonal architecture foundation is in place with:
+- ✅ All types and ports defined (serializable, immutable)
+- ✅ Domain logic implemented (`createScenarioManager`, `buildConfig`)
+- ✅ Default adapters (`InMemoryScenarioRegistry`, `InMemoryScenarioStore`)
+- ✅ 52 tests passing, 100% behavior coverage
+- ✅ TypeScript strict mode, builds successfully
+
+The full implementation plan is in `SCENARIST_IMPLEMENTATION_PLAN.md`.
 
 ## Essential Commands
 
@@ -96,23 +103,22 @@ Scenarist follows **strict hexagonal architecture** to remain framework-agnostic
 
 ```typescript
 // ❌ WRONG - Creating implementation internally
-export const createScenarioManager = (
-  store: ScenarioStore,
-  config: ScenaristConfig,
-): ScenarioManager => {
+export const createScenarioManager = ({
+  store,
+}: {
+  store: ScenarioStore;
+}): ScenarioManager => {
   const scenarioRegistry = new Map<string, ScenarioDefinition>();  // ❌ Hardcoded!
-  // ...
+  // This breaks hexagonal architecture - only one registry implementation possible!
 };
 
 // ✅ CORRECT - Injecting both ports
 export const createScenarioManager = ({
   registry,  // ✅ Injected
   store,     // ✅ Injected
-  config,
 }: {
   registry: ScenarioRegistry;
   store: ScenarioStore;
-  config: ScenaristConfig;
 }): ScenarioManager => {
   return {
     registerScenario(definition) {
@@ -148,15 +154,16 @@ export const createScenarioManager = ({
 
 ```
 packages/
-├── core/                    # The hexagon (zero dependencies)
+├── core/                    # The hexagon (✅ IMPLEMENTED)
 │   ├── src/
-│   │   ├── domain/          # Business logic (implementations)
+│   │   ├── adapters/        # Default adapters (InMemoryScenarioRegistry, InMemoryScenarioStore)
+│   │   ├── domain/          # Business logic (createScenarioManager, buildConfig)
 │   │   ├── ports/           # Interfaces (contracts) - use `interface`
 │   │   └── types/           # Data structures - use `type` with `readonly`
-│   └── tests/               # Behavior-driven tests
-├── in-memory-store/         # ScenarioStore adapter (Map-based)
-├── express-adapter/         # Express middleware adapter
-└── playwright-helpers/      # Playwright utilities (future)
+│   ├── tests/               # Behavior-driven tests (52 tests, all passing)
+│   └── dist/                # Built output (.js, .d.ts files)
+├── express-adapter/         # Express middleware adapter (NOT YET IMPLEMENTED)
+└── playwright-helpers/      # Playwright utilities (NOT YET IMPLEMENTED)
 ```
 
 ## TypeScript Configuration
@@ -394,6 +401,79 @@ pnpm changeset version
 pnpm release
 ```
 
+## Key Implementation Learnings
+
+### Config Belongs in Adapters, Not Domain Logic
+
+**CRITICAL INSIGHT**: During implementation, we discovered `ScenaristConfig` should NOT be passed to `createScenarioManager`.
+
+**Why?**
+- `ScenarioManager` is **pure domain logic** - coordinates registry and store
+- `ScenaristConfig` contains **infrastructure concerns** (HTTP headers, endpoints, enabled flag)
+- Config is needed by **adapters only**: middleware and `RequestContext` implementations
+
+**Where Config IS Used:**
+- ✅ `RequestContext` implementations - need config to know which headers to read
+- ✅ Middleware - needs config for enabled flag and endpoint paths
+- ✅ `buildConfig()` - helper to build complete config from partial input
+
+**Where Config is NOT Used:**
+- ❌ `ScenarioManager` - pure domain coordination
+- ❌ `ScenarioRegistry` - just stores scenario definitions
+- ❌ `ScenarioStore` - just stores active scenario references
+
+**This maintains hexagonal architecture**: domain core remains infrastructure-agnostic.
+
+### Test Pattern: No Mutation, Use Factory Functions
+
+**CRITICAL PATTERN**: Never use `let` declarations or `beforeEach` in tests. Use functional factory patterns instead.
+
+**❌ WRONG - Mutation with let:**
+```typescript
+describe('MyTest', () => {
+  let manager: ScenarioManager;
+  let store: ScenarioStore;
+
+  beforeEach(() => {
+    manager = createScenarioManager(...);
+    store = createTestStore();
+  });
+
+  it('does something', () => {
+    // Uses mutable state
+  });
+});
+```
+
+**✅ CORRECT - Factory function:**
+```typescript
+const createTestSetup = () => {
+  const registry = createTestRegistry();
+  const store = createTestStore();
+  const manager = createScenarioManager({ registry, store });
+
+  return { registry, store, manager };
+};
+
+describe('MyTest', () => {
+  it('does something', () => {
+    const { manager, store } = createTestSetup(); // Fresh dependencies
+    // Test with isolated state
+  });
+});
+```
+
+**Benefits:**
+- No shared mutable state between tests
+- Each test gets fresh, isolated dependencies
+- Can destructure only what's needed
+- Aligns with functional programming principles
+- Prevents test pollution and flakiness
+
+### TypeScript Strict Mode Forces Good Architecture
+
+The `noUnusedParameters` rule caught that `config` wasn't being used in `ScenarioManager`, leading us to discover it didn't belong there. This is strict mode working as intended - if a parameter isn't used, question whether it should exist.
+
 ## Anti-Patterns to Avoid
 
 ### In Core Package
@@ -403,6 +483,8 @@ pnpm release
 - ❌ Mutable data structures
 
 ### In Tests
+- ❌ Using `let` declarations or mutable state
+- ❌ Using `beforeEach` for setup (use factory functions instead)
 - ❌ Testing implementation details
 - ❌ Mocking internal functions
 - ❌ 1:1 test file to implementation file mapping
@@ -505,6 +587,48 @@ Now the ports are **genuinely useful**:
 - ❌ Symbols, undefined, or circular references
 
 **This applies to all port-based architectures, not just Scenarist.**
+
+### Config Must Also Be Serializable
+
+**CRITICAL**: The same serialization principle applies to `ScenaristConfig`. Config must be serializable so it can be:
+- ✅ Stored in files (JSON/YAML configuration)
+- ✅ Sent over network (remote config service)
+- ✅ Stored in databases or Redis
+- ✅ Passed between processes
+
+**Initial mistake:** Config had `enabled: boolean | (() => boolean)` which violated serialization.
+
+```typescript
+// ❌ WRONG - Function in config (not serializable)
+type ScenaristConfig = {
+  readonly enabled: boolean | (() => boolean);  // Can't JSON.stringify!
+};
+
+const config = buildConfig({
+  enabled: () => process.env.NODE_ENV !== 'production'  // Function!
+});
+```
+
+**The fix:** Config must only contain serializable data. Evaluate functions BEFORE creating config.
+
+```typescript
+// ✅ CORRECT - Only boolean (serializable)
+type ScenaristConfig = {
+  readonly enabled: boolean;
+};
+
+const config = buildConfig({
+  enabled: process.env.NODE_ENV !== 'production'  // Evaluated first!
+});
+```
+
+**Why this matters:**
+- Config can now be stored in `.scenaristrc.json` files
+- Config can be fetched from remote config service
+- Config can be stored per-environment in a database
+- Without serialization, config could only exist in-memory
+
+**The principle:** ALL data structures in ports and domain must be serializable. No exceptions.
 
 ## Future Roadmap
 

@@ -1,1 +1,2 @@
-// Domain implementations will be added in next phase
+export { createScenarioManager } from './scenario-manager.js';
+export { buildConfig } from './config-builder.js';
