@@ -988,7 +988,10 @@ export type { DynamicHandlerOptions } from './handlers/dynamic-handler.js';
 - [ ] Dev tool endpoints (GET/POST /__scenario__) work
 - [ ] Endpoints respect devToolsEnabled config
 - [ ] Integration with msw-adapter works
-- [ ] 100% test coverage
+- [ ] 100% unit test coverage
+- [ ] Sample Express app demonstrates real-world usage
+- [ ] E2E tests in sample app prove integration works
+- [ ] Sample app shows test ID isolation and concurrent scenarios
 
 ### Package Structure
 
@@ -1012,6 +1015,64 @@ packages/express-adapter/
 ├── vitest.config.ts
 └── README.md
 ```
+
+### Sample App Structure
+
+**Location:** `apps/express-example/`
+
+**Purpose:** Real-world Express application consuming the express-adapter to validate integration and demonstrate usage patterns.
+
+```
+apps/express-example/
+├── src/
+│   ├── server.ts              # Express app setup with Scenarist
+│   ├── routes/
+│   │   └── payments.ts        # Example routes calling external APIs
+│   └── scenarios/
+│       ├── stripe-success.ts  # Scenario: Stripe payment succeeds
+│       ├── stripe-failure.ts  # Scenario: Stripe payment fails
+│       └── default.ts         # Default happy-path scenario
+├── tests/
+│   ├── payments.test.ts       # E2E tests using different scenarios
+│   ├── concurrent.test.ts     # Tests proving test ID isolation
+│   └── setup.ts               # Scenarist test setup
+├── package.json
+├── tsconfig.json
+└── README.md
+```
+
+**What the Sample App Demonstrates:**
+
+1. **Real External API Integration**
+   - Routes that call external APIs (e.g., Stripe, GitHub, etc.)
+   - MSW intercepts these calls based on active scenario
+   - Proves the entire stack works end-to-end
+
+2. **Scenario Switching**
+   - Multiple scenarios defined (success, failure, timeout, etc.)
+   - Tests switch scenarios via `POST /__scenario__` endpoint
+   - Verifies scenario manager integration
+
+3. **Test ID Isolation**
+   - Concurrent tests running with different scenarios
+   - Each test uses unique test ID in `x-test-id` header
+   - Proves AsyncLocalStorage-based isolation works
+
+4. **Developer Experience**
+   - Shows actual API surface users will interact with
+   - Validates ergonomics of scenario definitions
+   - Serves as living documentation/examples
+
+**Testing Strategy:**
+
+- **Unit Tests** (in `packages/express-adapter/tests/`): Test individual components in isolation
+- **Integration Tests** (in `packages/express-adapter/tests/`): Test Express-specific integration with supertest
+- **E2E Tests** (in `apps/express-example/tests/`): Test full stack with real Express server, real scenarios, real MSW interception
+
+This three-tier approach ensures:
+- Components work correctly (unit)
+- Express integration works (integration)
+- Entire system works in realistic usage (E2E)
 
 ### Files to Create
 
