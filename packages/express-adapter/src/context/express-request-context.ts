@@ -26,9 +26,10 @@ export class ExpressRequestContext implements RequestContext {
     const headerName = this.config.headers.mockEnabled.toLowerCase();
     const header = this.req.headers[headerName];
 
-    // Default to true if header not present
+    const DEFAULT_MOCK_ENABLED = true;
+
     if (!header) {
-      return true;
+      return DEFAULT_MOCK_ENABLED;
     }
 
     return header === 'true';

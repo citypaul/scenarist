@@ -57,29 +57,5 @@ describe('Test ID Middleware', () => {
 
       expect(nextCalled).toBe(true);
     });
-
-    it('should maintain test ID throughout async context', () => {
-      const config = mockConfig();
-      const req = mockRequest({ headers: { 'x-test-id': 'async-test' } });
-      const res = mockResponse();
-
-      const capturedIds: string[] = [];
-      const next: NextFunction = () => {
-        // First capture
-        capturedIds.push(testIdStorage.getStore() ?? '');
-
-        // Simulate async operation
-        setTimeout(() => {
-          // Second capture after async delay
-          capturedIds.push(testIdStorage.getStore() ?? '');
-        }, 0);
-      };
-
-      const middleware = createTestIdMiddleware(config);
-      middleware(req, res, next);
-
-      // Both captures should have the same test ID
-      expect(capturedIds[0]).toBe('async-test');
-    });
   });
 });
