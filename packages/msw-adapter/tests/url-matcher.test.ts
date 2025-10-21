@@ -55,4 +55,44 @@ describe('URL Matcher', () => {
       expect(result.params).toBeUndefined();
     });
   });
+
+  describe('Path parameters', () => {
+    it('should match /users/:id pattern and extract parameter', () => {
+      const result = matchesUrl(
+        'https://api.example.com/users/:id',
+        'https://api.example.com/users/123'
+      );
+
+      expect(result.matches).toBe(true);
+      expect(result.params).toEqual({ id: '123' });
+    });
+
+    it('should match multiple path parameters', () => {
+      const result = matchesUrl(
+        'https://api.example.com/users/:userId/posts/:postId',
+        'https://api.example.com/users/123/posts/456'
+      );
+
+      expect(result.matches).toBe(true);
+      expect(result.params).toEqual({ userId: '123', postId: '456' });
+    });
+
+    it('should not match when extra segments present', () => {
+      const result = matchesUrl(
+        'https://api.example.com/users/:id',
+        'https://api.example.com/users/123/posts'
+      );
+
+      expect(result.matches).toBe(false);
+    });
+
+    it('should not match when pattern without params does not match', () => {
+      const result = matchesUrl(
+        'https://api.example.com/users/:id',
+        'https://api.example.com/posts/123'
+      );
+
+      expect(result.matches).toBe(false);
+    });
+  });
 });
