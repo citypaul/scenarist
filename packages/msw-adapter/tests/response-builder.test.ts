@@ -34,5 +34,24 @@ describe('Response Builder', () => {
       expect(response.status).toBe(200);
       expect(body).toEqual({ id: '123', name: 'John Doe' });
     });
+
+    it('should build response with custom headers', async () => {
+      const mock: MockDefinition = {
+        method: 'GET',
+        url: 'https://api.example.com/users',
+        response: {
+          status: 200,
+          headers: {
+            'X-Custom-Header': 'custom-value',
+            'Content-Type': 'application/json',
+          },
+        },
+      };
+
+      const response = await buildResponse(mock);
+
+      expect(response.headers.get('X-Custom-Header')).toBe('custom-value');
+      expect(response.headers.get('Content-Type')).toBe('application/json');
+    });
   });
 });

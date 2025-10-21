@@ -6,5 +6,6 @@ export const buildResponse = async (
 ): Promise<Response> => {
   return HttpResponse.json(mock.response.body, {
     status: mock.response.status,
+    headers: mock.response.headers,
   });
 };
