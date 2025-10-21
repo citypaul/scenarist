@@ -577,6 +577,10 @@ describe('URL Matcher', () => {
 
 **100% Coverage Achievement:** The catch block in `extractPath` wasn't initially covered. Adding a test for path-only patterns (`/users/:id` without full URL) exercised this code path and achieved 100% coverage.
 
+**Self-Documenting Code Through Refactoring:** Initial implementation had inline comments explaining what code did. PR feedback highlighted that comments indicate unclear code. Refactoring solution: extract well-named helper functions (`extractPathnameOrReturnAsIs`, `hasPathParamsAfterProtocol`, `convertGlobToRegex`, etc.) that make intent clear through naming. Result: zero comments, same clarity.
+
+**Immutability Over Mutation:** Initial parameter extraction used mutable object with for-loop (`params[key] = value`). Replaced with functional approach using `Object.fromEntries` + `filter`, maintaining 100% coverage while following immutable patterns.
+
 ---
 
 ## Phase 4: Response Builder + Mock Matcher
