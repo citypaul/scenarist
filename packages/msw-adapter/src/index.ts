@@ -1,1 +1,3 @@
-// Public API - will be populated in later phases as features are implemented via TDD
+// Public API
+export { matchesUrl } from './matching/url-matcher.js';
+export type { UrlMatchResult } from './matching/url-matcher.js';

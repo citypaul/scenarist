@@ -94,5 +94,15 @@ describe('URL Matcher', () => {
 
       expect(result.matches).toBe(false);
     });
+
+    it('should handle path-only patterns (no full URL)', () => {
+      const result = matchesUrl(
+        '/users/:id',
+        '/users/123'
+      );
+
+      expect(result.matches).toBe(true);
+      expect(result.params).toEqual({ id: '123' });
+    });
   });
 });
