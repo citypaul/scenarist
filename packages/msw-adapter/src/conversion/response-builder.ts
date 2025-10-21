@@ -1,1 +1,10 @@
-// Response building from MockDefinition - will be added in later phases using TDD
+import { HttpResponse } from 'msw';
+import type { MockDefinition } from '@scenarist/core';
+
+export const buildResponse = async (
+  mock: MockDefinition
+): Promise<Response> => {
+  return HttpResponse.json(null, {
+    status: mock.response.status,
+  });
+};
