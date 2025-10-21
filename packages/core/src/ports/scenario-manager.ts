@@ -17,13 +17,15 @@ import type { ScenarioDefinition, ActiveScenario, Result } from '../types/index.
  * Implementations accept ScenarioRegistry and ScenarioStore as constructor
  * parameters (dependency injection), never creating them internally.
  *
+ * Note: Config is NOT needed here - it's used by adapters (middleware, RequestContext)
+ * to handle HTTP concerns. ScenarioManager is pure domain logic.
+ *
  * @example
  * ```typescript
  * // Factory function accepts both ports as dependencies
  * const manager = createScenarioManager({
  *   registry: new InMemoryScenarioRegistry(),
  *   store: new InMemoryScenarioStore(),
- *   config: buildConfig({ enabled: true }),
  * });
  * ```
  *

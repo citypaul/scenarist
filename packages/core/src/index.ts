@@ -6,3 +6,6 @@ export type * from './ports/index.js';
 
 // Domain (implementations)
 export * from './domain/index.js';
+
+// Adapters (default implementations)
+export * from './adapters/index.js';
