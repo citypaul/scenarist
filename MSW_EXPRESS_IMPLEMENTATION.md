@@ -11,8 +11,8 @@
 | Phase | Status | PR | Completion |
 |-------|--------|-----|-----------|
 | Phase 1: Core Config Updates | ✅ Complete | [#8](https://github.com/citypaul/scenarist/pull/8) | 100% |
-| Phase 2: MSW Adapter Package Setup | 🔜 Next | - | 0% |
-| Phase 3: URL Matcher | ⏸️ Pending | - | 0% |
+| Phase 2: MSW Adapter Package Setup | ✅ Complete | [#9](https://github.com/citypaul/scenarist/pull/9) | 100% |
+| Phase 3: URL Matcher | 🔜 Next | - | 0% |
 | Phase 4: Response Builder + Mock Matcher | ⏸️ Pending | - | 0% |
 | Phase 5: Dynamic Handler | ⏸️ Pending | - | 0% |
 | Phase 6: Express Adapter Package | ⏸️ Pending | - | 0% |
