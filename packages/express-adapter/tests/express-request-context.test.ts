@@ -1,41 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import type { Request } from 'express';
 import { ExpressRequestContext } from '../src/context/express-request-context.js';
-import type { ScenaristConfig } from '@scenarist/core';
-
-const mockConfig = (overrides?: Partial<ScenaristConfig>): ScenaristConfig => ({
-  enabled: true,
-  devToolsEnabled: false,
-  strictMode: false,
-  headers: {
-    testId: 'x-test-id',
-    mockEnabled: 'x-mock-enabled',
-  },
-  endpoints: {
-    setScenario: '/__scenario__',
-    getScenario: '/__scenario__',
-  },
-  defaultScenario: 'default',
-  defaultTestId: 'default-test',
-  ...overrides,
-});
-
-const mockRequest = (overrides?: Partial<Request>): Request => {
-  // Express/Node.js lowercases all header names
-  const headers = overrides?.headers ?? {};
-  const lowercasedHeaders: Record<string, string | string[]> = {};
-
-  for (const [key, value] of Object.entries(headers)) {
-    lowercasedHeaders[key.toLowerCase()] = value;
-  }
-
-  return {
-    headers: lowercasedHeaders,
-    hostname: 'localhost',
-    ...overrides,
-    headers: lowercasedHeaders, // Ensure headers are lowercased even after spread
-  } as Request;
-};
+import { mockConfig, mockRequest } from './test-helpers.js';
 
 describe('ExpressRequestContext', () => {
   describe('getTestId', () => {

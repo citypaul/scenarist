@@ -1,42 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import type { Request, Response, NextFunction } from 'express';
+import type { NextFunction } from 'express';
 import { createTestIdMiddleware, testIdStorage } from '../src/middleware/test-id-middleware.js';
-import type { ScenaristConfig } from '@scenarist/core';
-
-const mockConfig = (overrides?: Partial<ScenaristConfig>): ScenaristConfig => ({
-  enabled: true,
-  devToolsEnabled: false,
-  strictMode: false,
-  headers: {
-    testId: 'x-test-id',
-    mockEnabled: 'x-mock-enabled',
-  },
-  endpoints: {
-    setScenario: '/__scenario__',
-    getScenario: '/__scenario__',
-  },
-  defaultScenario: 'default',
-  defaultTestId: 'default-test',
-  ...overrides,
-});
-
-const mockRequest = (overrides?: Partial<Request>): Request => {
-  const headers = overrides?.headers ?? {};
-  const lowercasedHeaders: Record<string, string | string[]> = {};
-
-  for (const [key, value] of Object.entries(headers)) {
-    lowercasedHeaders[key.toLowerCase()] = value;
-  }
-
-  return {
-    headers: lowercasedHeaders,
-    hostname: 'localhost',
-    ...overrides,
-    headers: lowercasedHeaders,
-  } as Request;
-};
-
-const mockResponse = (): Response => ({} as Response);
+import { mockConfig, mockRequest, mockResponse } from './test-helpers.js';
 
 describe('Test ID Middleware', () => {
   describe('AsyncLocalStorage integration', () => {

@@ -2,37 +2,7 @@ import { describe, it, expect } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import { createScenarioEndpoints } from '../src/endpoints/scenario-endpoints.js';
-import type { ScenarioManager, ScenaristConfig } from '@scenarist/core';
-
-const mockConfig = (overrides?: Partial<ScenaristConfig>): ScenaristConfig => ({
-  enabled: true,
-  devToolsEnabled: true,
-  strictMode: false,
-  headers: {
-    testId: 'x-test-id',
-    mockEnabled: 'x-mock-enabled',
-  },
-  endpoints: {
-    setScenario: '/__scenario__',
-    getScenario: '/__scenario__',
-  },
-  defaultScenario: 'default',
-  defaultTestId: 'default-test',
-  ...overrides,
-});
-
-const mockScenarioManager = (
-  overrides?: Partial<ScenarioManager>
-): ScenarioManager =>
-  ({
-    registerScenario: () => {},
-    switchScenario: () => ({ success: true, data: undefined }),
-    getActiveScenario: () => undefined,
-    listScenarios: () => [],
-    clearScenario: () => ({ success: true, data: undefined }),
-    getScenarioById: () => undefined,
-    ...overrides,
-  }) as ScenarioManager;
+import { mockConfig, mockScenarioManager } from './test-helpers.js';
 
 describe('Scenario Endpoints', () => {
   describe('devToolsEnabled', () => {
@@ -57,7 +27,7 @@ describe('Scenario Endpoints', () => {
 
   describe('POST /__scenario__', () => {
     it('should set scenario successfully', async () => {
-      const config = mockConfig();
+      const config = mockConfig({ devToolsEnabled: true });
       const manager = mockScenarioManager({
         switchScenario: () => ({ success: true, data: undefined }),
       });
@@ -81,7 +51,7 @@ describe('Scenario Endpoints', () => {
     });
 
     it('should set scenario with variant', async () => {
-      const config = mockConfig();
+      const config = mockConfig({ devToolsEnabled: true });
       const manager = mockScenarioManager({
         switchScenario: () => ({ success: true, data: undefined }),
       });
@@ -101,7 +71,7 @@ describe('Scenario Endpoints', () => {
     });
 
     it('should return 400 when scenario is missing', async () => {
-      const config = mockConfig();
+      const config = mockConfig({ devToolsEnabled: true });
       const manager = mockScenarioManager();
 
       const router = createScenarioEndpoints(manager, config);
@@ -119,7 +89,7 @@ describe('Scenario Endpoints', () => {
     });
 
     it('should return 400 when scenario switch fails', async () => {
-      const config = mockConfig();
+      const config = mockConfig({ devToolsEnabled: true });
       const manager = mockScenarioManager({
         switchScenario: () => ({
           success: false,
@@ -142,7 +112,7 @@ describe('Scenario Endpoints', () => {
     });
 
     it('should return 500 when unexpected error occurs', async () => {
-      const config = mockConfig();
+      const config = mockConfig({ devToolsEnabled: true });
       const manager = mockScenarioManager({
         switchScenario: () => {
           throw new Error('Unexpected error');
@@ -166,7 +136,7 @@ describe('Scenario Endpoints', () => {
 
   describe('GET /__scenario__', () => {
     it('should return active scenario', async () => {
-      const config = mockConfig();
+      const config = mockConfig({ devToolsEnabled: true });
       const manager = mockScenarioManager({
         getActiveScenario: () => ({
           scenarioId: 'happy-path',
@@ -199,7 +169,7 @@ describe('Scenario Endpoints', () => {
     });
 
     it('should return 404 when no active scenario', async () => {
-      const config = mockConfig();
+      const config = mockConfig({ devToolsEnabled: true });
       const manager = mockScenarioManager({
         getActiveScenario: () => undefined,
       });
@@ -218,7 +188,7 @@ describe('Scenario Endpoints', () => {
     });
 
     it('should handle missing scenario definition', async () => {
-      const config = mockConfig();
+      const config = mockConfig({ devToolsEnabled: true });
       const manager = mockScenarioManager({
         getActiveScenario: () => ({ scenarioId: 'missing' }),
         getScenarioById: () => undefined,
