@@ -13,7 +13,7 @@
 | Phase 1: Core Config Updates | ✅ Complete | [#8](https://github.com/citypaul/scenarist/pull/8) | 100% |
 | Phase 2: MSW Adapter Package Setup | ✅ Complete | [#9](https://github.com/citypaul/scenarist/pull/9) | 100% |
 | Phase 3: URL Matcher | ✅ Complete | [#10](https://github.com/citypaul/scenarist/pull/10) | 100% |
-| Phase 4: Response Builder + Mock Matcher | ⏸️ Pending | - | 0% |
+| Phase 4: Response Builder + Mock Matcher | ✅ Complete | [#11](https://github.com/citypaul/scenarist/pull/11) | 100% |
 | Phase 5: Dynamic Handler | ⏸️ Pending | - | 0% |
 | Phase 6: Express Adapter Package | ⏸️ Pending | - | 0% |
 | Phase 7: Integration + Setup Helper | ⏸️ Pending | - | 0% |
@@ -586,9 +586,10 @@ describe('URL Matcher', () => {
 ## Phase 4: Response Builder + Mock Matcher
 
 **Goal:** Convert MockDefinition to MSW HttpResponse and find matching mocks
-**PR:** TBD
-**Status:** ⏸️ Pending
+**PR:** #11
+**Status:** ✅ Complete
 **Estimated Time:** 2-3 hours
+**Actual Time:** ~2 hours
 
 ### Acceptance Criteria
 
@@ -700,7 +701,13 @@ export const findMatchingMock = (
 
 ### Learnings
 
-_(To be filled after completion)_
+**Type Assertion for MSW HttpResponse:** MSW's `HttpResponse.json()` expects a specific `JsonBodyType`, but our `MockDefinition` uses `unknown` for the body (to ensure JSON-serializability). Used `as never` type assertion to satisfy TypeScript while maintaining runtime safety. The body is guaranteed to be JSON-serializable by design.
+
+**TDD Incremental Building:** Building both features in small increments (7 commits total) made the implementation straightforward. Each commit was a complete, working unit: status codes → JSON body → headers → delay for response builder, then basic matching → edge cases → URL patterns for mock matcher.
+
+**Integration Through Composition:** The `findMatchingMock` function leveraged the existing `matchesUrl` function, demonstrating how well-tested, focused functions compose cleanly. No need to retest URL matching logic—just test the integration point.
+
+**100% Coverage Through TDD:** Following strict TDD resulted in 100% coverage naturally. Every line of code was written in response to a failing test, so every line is covered. No need for "coverage hunting" at the end.
 
 ---
 
