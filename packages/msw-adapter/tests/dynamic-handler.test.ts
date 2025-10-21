@@ -1,38 +1,56 @@
-import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { setupServer } from 'msw/node';
 import { createDynamicHandler } from '../src/handlers/dynamic-handler.js';
-import type { ActiveScenario, ScenarioDefinition } from '@scenarist/core';
+import type {
+  ActiveScenario,
+  ScenarioDefinition,
+  MockDefinition,
+  HttpMethod,
+} from '@scenarist/core';
+
+// Test data factory functions
+const createMock = (
+  method: HttpMethod,
+  url: string,
+  responseBody?: unknown
+): MockDefinition => ({
+  method,
+  url,
+  response: {
+    status: 200,
+    ...(responseBody !== undefined && { body: responseBody }),
+  },
+});
+
+const createScenario = (
+  id: string,
+  mocks: ReadonlyArray<MockDefinition> = []
+): ScenarioDefinition => ({
+  id,
+  name: `${id} scenario`,
+  description: `Scenario for ${id}`,
+  devToolEnabled: false,
+  mocks,
+});
 
 describe('Dynamic Handler', () => {
   describe('Basic handler setup', () => {
     it('should return mocked response when mock matches request', async () => {
-      const getTestId = vi.fn(() => 'test-123');
-      const getActiveScenario = vi.fn((): ActiveScenario => ({
+      const scenarios = new Map<string, ScenarioDefinition>([
+        [
+          'happy-path',
+          createScenario('happy-path', [
+            createMock('GET', 'https://api.example.com/users', { users: [] }),
+          ]),
+        ],
+      ]);
+
+      const getTestId = () => 'test-123';
+      const getActiveScenario = (): ActiveScenario => ({
         scenarioId: 'happy-path',
-      }));
-      const getScenarioDefinition = vi.fn(
-        (scenarioId: string): ScenarioDefinition | undefined => {
-          if (scenarioId === 'happy-path') {
-            return {
-              id: 'happy-path',
-              name: 'Happy Path',
-              description: 'All requests succeed',
-              devToolEnabled: false,
-              mocks: [
-                {
-                  method: 'GET',
-                  url: 'https://api.example.com/users',
-                  response: {
-                    status: 200,
-                    body: { users: [] },
-                  },
-                },
-              ],
-            };
-          }
-          return undefined;
-        }
-      );
+      });
+      const getScenarioDefinition = (scenarioId: string) =>
+        scenarios.get(scenarioId);
 
       const handler = createDynamicHandler({
         getTestId,
@@ -56,42 +74,24 @@ describe('Dynamic Handler', () => {
 
   describe('Default scenario fallback', () => {
     it('should fall back to default scenario when no mock in active scenario', async () => {
-      const getTestId = vi.fn(() => 'test-123');
-      const getActiveScenario = vi.fn((): ActiveScenario => ({
+      const scenarios = new Map<string, ScenarioDefinition>([
+        ['empty-scenario', createScenario('empty-scenario', [])],
+        [
+          'default',
+          createScenario('default', [
+            createMock('GET', 'https://api.example.com/users', {
+              source: 'default',
+            }),
+          ]),
+        ],
+      ]);
+
+      const getTestId = () => 'test-123';
+      const getActiveScenario = (): ActiveScenario => ({
         scenarioId: 'empty-scenario',
-      }));
-      const getScenarioDefinition = vi.fn(
-        (scenarioId: string): ScenarioDefinition | undefined => {
-          if (scenarioId === 'empty-scenario') {
-            return {
-              id: 'empty-scenario',
-              name: 'Empty Scenario',
-              description: 'No mocks',
-              devToolEnabled: false,
-              mocks: [],
-            };
-          }
-          if (scenarioId === 'default') {
-            return {
-              id: 'default',
-              name: 'Default',
-              description: 'Default mocks',
-              devToolEnabled: false,
-              mocks: [
-                {
-                  method: 'GET',
-                  url: 'https://api.example.com/users',
-                  response: {
-                    status: 200,
-                    body: { source: 'default' },
-                  },
-                },
-              ],
-            };
-          }
-          return undefined;
-        }
-      );
+      });
+      const getScenarioDefinition = (scenarioId: string) =>
+        scenarios.get(scenarioId);
 
       const handler = createDynamicHandler({
         getTestId,
@@ -113,31 +113,21 @@ describe('Dynamic Handler', () => {
     });
 
     it('should use default scenario when no active scenario is set', async () => {
-      const getTestId = vi.fn(() => 'test-123');
-      const getActiveScenario = vi.fn(() => undefined);
-      const getScenarioDefinition = vi.fn(
-        (scenarioId: string): ScenarioDefinition | undefined => {
-          if (scenarioId === 'default') {
-            return {
-              id: 'default',
-              name: 'Default',
-              description: 'Default mocks',
-              devToolEnabled: false,
-              mocks: [
-                {
-                  method: 'GET',
-                  url: 'https://api.example.com/users',
-                  response: {
-                    status: 200,
-                    body: { source: 'default' },
-                  },
-                },
-              ],
-            };
-          }
-          return undefined;
-        }
-      );
+      const scenarios = new Map<string, ScenarioDefinition>([
+        [
+          'default',
+          createScenario('default', [
+            createMock('GET', 'https://api.example.com/users', {
+              source: 'default',
+            }),
+          ]),
+        ],
+      ]);
+
+      const getTestId = () => 'test-123';
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = (scenarioId: string) =>
+        scenarios.get(scenarioId);
 
       const handler = createDynamicHandler({
         getTestId,
@@ -161,9 +151,9 @@ describe('Dynamic Handler', () => {
 
   describe('Passthrough and strict mode', () => {
     it('should passthrough when no mock found and strictMode is false', async () => {
-      const getTestId = vi.fn(() => 'test-123');
-      const getActiveScenario = vi.fn(() => undefined);
-      const getScenarioDefinition = vi.fn(() => undefined);
+      const getTestId = () => 'test-123';
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = () => undefined;
 
       const handler = createDynamicHandler({
         getTestId,
@@ -183,9 +173,9 @@ describe('Dynamic Handler', () => {
     });
 
     it('should return error when no mock found and strictMode is true', async () => {
-      const getTestId = vi.fn(() => 'test-123');
-      const getActiveScenario = vi.fn(() => undefined);
-      const getScenarioDefinition = vi.fn(() => undefined);
+      const getTestId = () => 'test-123';
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = () => undefined;
 
       const handler = createDynamicHandler({
         getTestId,

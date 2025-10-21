@@ -13,6 +13,30 @@ export type DynamicHandlerOptions = {
   readonly strictMode: boolean;
 };
 
+const findMockInScenarios = (
+  activeScenario: ActiveScenario | undefined,
+  getScenarioDefinition: (scenarioId: string) => ScenarioDefinition | undefined,
+  method: string,
+  url: string
+) => {
+  if (activeScenario) {
+    const scenarioDefinition = getScenarioDefinition(activeScenario.scenarioId);
+    if (scenarioDefinition) {
+      const mock = findMatchingMock(scenarioDefinition.mocks, method, url);
+      if (mock) {
+        return mock;
+      }
+    }
+  }
+
+  const defaultScenario = getScenarioDefinition('default');
+  if (defaultScenario) {
+    return findMatchingMock(defaultScenario.mocks, method, url);
+  }
+
+  return undefined;
+};
+
 export const createDynamicHandler = (
   options: DynamicHandlerOptions
 ): HttpHandler => {
@@ -20,31 +44,12 @@ export const createDynamicHandler = (
     const testId = options.getTestId();
     const activeScenario = options.getActiveScenario(testId);
 
-    let mock;
-
-    if (activeScenario) {
-      const scenarioDefinition = options.getScenarioDefinition(
-        activeScenario.scenarioId
-      );
-      if (scenarioDefinition) {
-        mock = findMatchingMock(
-          scenarioDefinition.mocks,
-          request.method,
-          request.url
-        );
-      }
-    }
-
-    if (!mock) {
-      const defaultScenario = options.getScenarioDefinition('default');
-      if (defaultScenario) {
-        mock = findMatchingMock(
-          defaultScenario.mocks,
-          request.method,
-          request.url
-        );
-      }
-    }
+    const mock = findMockInScenarios(
+      activeScenario,
+      options.getScenarioDefinition,
+      request.method,
+      request.url
+    );
 
     if (mock) {
       return buildResponse(mock);
