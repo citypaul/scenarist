@@ -19,7 +19,7 @@ const hasPathParamsAfterProtocol = (pattern: string): boolean => {
 };
 
 const extractStringParams = (
-  params: Record<string, unknown>
+  params: object
 ): Record<string, string> => {
   return Object.fromEntries(
     Object.entries(params).filter(([, value]) => typeof value === 'string')
