@@ -27,5 +27,18 @@ export const matchesUrl = (
     return { matches: true };
   }
 
+  // Glob pattern matching
+  if (pattern.includes('*')) {
+    const regexPattern = pattern
+      .replace(/[.+?^${}()|[\]\\]/g, '\\$&') // Escape regex special chars
+      .replace(/\*/g, '.*'); // Convert * to .*
+
+    const regex = new RegExp(`^${regexPattern}$`);
+
+    if (regex.test(requestUrl)) {
+      return { matches: true };
+    }
+  }
+
   return { matches: false };
 };
