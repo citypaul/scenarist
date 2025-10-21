@@ -1,4 +1,4 @@
-import { http } from 'msw';
+import { http, passthrough } from 'msw';
 import type { HttpHandler } from 'msw';
 import type { ActiveScenario, ScenarioDefinition } from '@scenarist/core';
 import { findMatchingMock } from '../matching/mock-matcher.js';
@@ -50,6 +50,10 @@ export const createDynamicHandler = (
       return buildResponse(mock);
     }
 
-    return new Response(null, { status: 501 });
+    if (options.strictMode) {
+      return new Response(null, { status: 501 });
+    }
+
+    return passthrough();
   });
 };
