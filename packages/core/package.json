@@ -22,8 +22,8 @@
     "msw": "^2.0.0"
   },
   "devDependencies": {
-    "@repo/eslint-config": "workspace:*",
-    "@repo/typescript-config": "workspace:*",
+    "@scenarist/eslint-config": "workspace:*",
+    "@scenarist/typescript-config": "workspace:*",
     "@vitest/coverage-v8": "^1.6.1",
     "@vitest/ui": "^1.2.0",
     "eslint": "^9.34.0",
