@@ -1,9 +1,26 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
+import { createScenaristTestClient } from '@scenarist/testing-helpers';
 import { createApp } from '../src/server.js';
+import {
+  successScenario,
+  githubNotFoundScenario,
+  weatherErrorScenario,
+  stripeFailureScenario,
+} from '../src/scenarios.js';
 
 describe('Scenario Switching E2E', () => {
   const { app, scenarist } = createApp();
+
+  // Create type-safe test client with all scenarios
+  const scenarios = {
+    success: successScenario,
+    githubNotFound: githubNotFoundScenario,
+    weatherError: weatherErrorScenario,
+    stripeFailure: stripeFailureScenario,
+  } as const;
+
+  const client = createScenaristTestClient(() => request(app), scenarios);
 
   beforeAll(() => {
     scenarist.start();
@@ -62,11 +79,8 @@ describe('Scenario Switching E2E', () => {
 
   describe('Switching to success scenario', () => {
     it('should switch to success scenario via POST /__scenario__', async () => {
-      // Switch scenario
-      const switchResponse = await request(app)
-        .post('/__scenario__')
-        .set('x-test-id', 'success-test-1')
-        .send({ scenario: 'success' });
+      // Switch scenario using type-safe client - autocomplete works!
+      const switchResponse = await client.switchTo('success', 'success-test-1');
 
       expect(switchResponse.status).toBe(200);
       expect(switchResponse.body).toEqual({
@@ -92,11 +106,8 @@ describe('Scenario Switching E2E', () => {
     });
 
     it('should return success scenario data for weather', async () => {
-      // Switch scenario
-      await request(app)
-        .post('/__scenario__')
-        .set('x-test-id', 'success-test-2')
-        .send({ scenario: 'success' });
+      // Switch scenario using type-safe client
+      await client.switchTo('success', 'success-test-2');
 
       // Verify weather uses success scenario
       const weatherResponse = await request(app)
@@ -115,11 +126,8 @@ describe('Scenario Switching E2E', () => {
 
   describe('Switching to error scenarios', () => {
     it('should return 404 when using github-not-found scenario', async () => {
-      // Switch to github-not-found scenario
-      await request(app)
-        .post('/__scenario__')
-        .set('x-test-id', 'github-404-test')
-        .send({ scenario: 'github-not-found' });
+      // Switch to github-not-found scenario using type-safe client
+      await client.switchTo('githubNotFound', 'github-404-test');
 
       // Verify GitHub returns 404
       const githubResponse = await request(app)
@@ -134,11 +142,8 @@ describe('Scenario Switching E2E', () => {
     });
 
     it('should return 500 when using weather-error scenario', async () => {
-      // Switch to weather-error scenario
-      await request(app)
-        .post('/__scenario__')
-        .set('x-test-id', 'weather-error-test')
-        .send({ scenario: 'weather-error' });
+      // Switch to weather-error scenario using type-safe client
+      await client.switchTo('weatherError', 'weather-error-test');
 
       // Verify weather returns 500
       const weatherResponse = await request(app)
@@ -153,11 +158,8 @@ describe('Scenario Switching E2E', () => {
     });
 
     it('should return 402 when using stripe-failure scenario', async () => {
-      // Switch to stripe-failure scenario
-      await request(app)
-        .post('/__scenario__')
-        .set('x-test-id', 'stripe-failure-test')
-        .send({ scenario: 'stripe-failure' });
+      // Switch to stripe-failure scenario using type-safe client
+      await client.switchTo('stripeFailure', 'stripe-failure-test');
 
       // Verify payment fails
       const paymentResponse = await request(app)
@@ -178,16 +180,11 @@ describe('Scenario Switching E2E', () => {
 
   describe('Getting current scenario', () => {
     it('should return current scenario via GET /__scenario__', async () => {
-      // Switch to a scenario
-      await request(app)
-        .post('/__scenario__')
-        .set('x-test-id', 'get-scenario-test')
-        .send({ scenario: 'success' });
+      // Switch to a scenario using type-safe client
+      await client.switchTo('success', 'get-scenario-test');
 
-      // Get current scenario
-      const getResponse = await request(app)
-        .get('/__scenario__')
-        .set('x-test-id', 'get-scenario-test');
+      // Get current scenario using type-safe client
+      const getResponse = await client.getCurrent('get-scenario-test');
 
       expect(getResponse.status).toBe(200);
       expect(getResponse.body.testId).toBe('get-scenario-test');
@@ -196,9 +193,7 @@ describe('Scenario Switching E2E', () => {
     });
 
     it('should return 404 when no scenario is set', async () => {
-      const getResponse = await request(app)
-        .get('/__scenario__')
-        .set('x-test-id', 'no-scenario-test');
+      const getResponse = await client.getCurrent('no-scenario-test');
 
       expect(getResponse.status).toBe(404);
       expect(getResponse.body.error).toBe('No active scenario for this test ID');
