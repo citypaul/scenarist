@@ -1,4 +1,4 @@
-import type { ScenarioDefinition, ActiveScenario, Result } from '../types/index.js';
+import type { ScenarioDefinition, ActiveScenario, Result } from '../../types/index.js';
 
 /**
  * Primary port for scenario management.
