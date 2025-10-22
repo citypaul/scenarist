@@ -53,11 +53,15 @@ export const createScenarist = (
   const store = options.store ?? new InMemoryScenarioStore();
   const manager = createScenarioManager({ registry, store });
 
+  // Auto-register the default scenario
+  manager.registerScenario(options.defaultScenario);
+
   const handler = createDynamicHandler({
     getTestId: () => testIdStorage.getStore() ?? config.defaultTestId,
     getActiveScenario: (testId) => manager.getActiveScenario(testId),
     getScenarioDefinition: (scenarioId) => manager.getScenarioById(scenarioId),
     strictMode: config.strictMode,
+    defaultScenarioId: config.defaultScenarioId,
   });
 
   const server = setupServer(handler);

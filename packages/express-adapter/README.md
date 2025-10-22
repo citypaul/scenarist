@@ -30,24 +30,33 @@ yarn add -D @scenarist/express-adapter @scenarist/core msw
 
 ## Quick Start
 
-### 1. Create Scenarist Instance
+### 1. Define Scenarios
 
 ```typescript
-// test/setup.ts
-import { createScenarist } from '@scenarist/express-adapter';
-
-export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
-  strictMode: false,
-});
-```
-
-### 2. Register Scenarios
-
-```typescript
-// test/scenarios/admin-user.ts
+// test/scenarios/default.ts
 import type { ScenarioDefinition } from '@scenarist/core';
 
+export const defaultScenario: ScenarioDefinition = {
+  id: 'default',
+  name: 'Default Scenario',
+  description: 'Baseline responses for all APIs',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.example.com/user',
+      response: {
+        status: 200,
+        body: {
+          id: '000',
+          name: 'Default User',
+          role: 'user',
+        },
+      },
+    },
+  ],
+};
+
+// test/scenarios/admin-user.ts
 export const adminUserScenario: ScenarioDefinition = {
   id: 'admin-user',
   name: 'Admin User',
@@ -67,8 +76,22 @@ export const adminUserScenario: ScenarioDefinition = {
     },
   ],
 };
+```
 
-// Register it
+### 2. Create Scenarist Instance
+
+```typescript
+// test/setup.ts
+import { createScenarist } from '@scenarist/express-adapter';
+import { defaultScenario, adminUserScenario } from './scenarios';
+
+export const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  defaultScenario: defaultScenario, // REQUIRED - fallback for unmocked requests
+  strictMode: false,
+});
+
+// Register additional scenarios (default is auto-registered)
 scenarist.registerScenario(adminUserScenario);
 ```
 
@@ -173,10 +196,11 @@ type ExpressScenarist = {
 ```typescript
 const scenarist = createScenarist({
   enabled: true,
+  defaultScenario: myDefaultScenario, // Required
   strictMode: false,
 });
 
-scenarist.registerScenario(myScenario);
+scenarist.registerScenario(myScenario); // Additional scenarios
 app.use(scenarist.middleware);
 
 beforeAll(() => scenarist.start());
@@ -380,6 +404,7 @@ Enable scenario switching during development:
 ```typescript
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test',
+  defaultScenario: myDefaultScenario, // Required
   strictMode: false,
 });
 ```
@@ -404,18 +429,21 @@ curl http://localhost:3000/__scenario__
 // Test-only
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
+  defaultScenario: myDefaultScenario, // Required
   strictMode: true, // Fail if any unmocked request
 });
 
 // Development and test
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development',
+  defaultScenario: myDefaultScenario, // Required
   strictMode: false, // Allow passthrough to real APIs
 });
 
 // Opt-in with environment variable
 const scenarist = createScenarist({
   enabled: process.env.ENABLE_MOCKING === 'true',
+  defaultScenario: myDefaultScenario, // Required
   strictMode: false,
 });
 ```
@@ -425,6 +453,7 @@ const scenarist = createScenarist({
 ```typescript
 const scenarist = createScenarist({
   enabled: true,
+  defaultScenario: myDefaultScenario, // Required
   headers: {
     testId: 'x-my-test-id',
     mockEnabled: 'x-my-mock-flag',

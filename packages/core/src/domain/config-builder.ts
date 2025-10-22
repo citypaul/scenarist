@@ -16,7 +16,7 @@ export const buildConfig = (input: ScenaristConfigInput): ScenaristConfig => {
       setScenario: input.endpoints?.setScenario ?? '/__scenario__',
       getScenario: input.endpoints?.getScenario ?? '/__scenario__',
     },
-    defaultScenario: input.defaultScenario ?? 'default',
+    defaultScenarioId: input.defaultScenario.id,
     defaultTestId: input.defaultTestId ?? 'default-test',
   };
 };

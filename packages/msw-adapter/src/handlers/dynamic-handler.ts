@@ -11,11 +11,13 @@ export type DynamicHandlerOptions = {
     scenarioId: string
   ) => ScenarioDefinition | undefined;
   readonly strictMode: boolean;
+  readonly defaultScenarioId: string;
 };
 
 const findMockInScenarios = (
   activeScenario: ActiveScenario | undefined,
   getScenarioDefinition: (scenarioId: string) => ScenarioDefinition | undefined,
+  defaultScenarioId: string,
   method: string,
   url: string
 ) => {
@@ -29,7 +31,7 @@ const findMockInScenarios = (
     }
   }
 
-  const defaultScenario = getScenarioDefinition('default');
+  const defaultScenario = getScenarioDefinition(defaultScenarioId);
   if (defaultScenario) {
     return findMatchingMock(defaultScenario.mocks, method, url);
   }
@@ -47,6 +49,7 @@ export const createDynamicHandler = (
     const mock = findMockInScenarios(
       activeScenario,
       options.getScenarioDefinition,
+      options.defaultScenarioId,
       request.method,
       request.url
     );

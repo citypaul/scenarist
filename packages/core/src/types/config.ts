@@ -1,3 +1,5 @@
+import type { ScenarioDefinition } from './scenario.js';
+
 /**
  * Configuration for the scenario management system.
  * All properties are readonly for immutability.
@@ -45,8 +47,9 @@ export type ScenaristConfig = {
 
   /**
    * The default scenario ID to use when none is specified.
+   * Derived from defaultScenario.id during config building.
    */
-  readonly defaultScenario: string;
+  readonly defaultScenarioId: string;
 
   /**
    * The default test ID to use when no x-test-id header is present.
@@ -63,6 +66,12 @@ export type ScenaristConfigInput = {
   readonly strictMode?: boolean;
   readonly headers?: Partial<ScenaristConfig['headers']>;
   readonly endpoints?: Partial<ScenaristConfig['endpoints']>;
-  readonly defaultScenario?: string;
+  /**
+   * The default scenario - used as fallback when no scenario is active
+   * or when the active scenario doesn't define a mock for a request.
+   *
+   * REQUIRED - ensures there's always a baseline set of mocks available.
+   */
+  readonly defaultScenario: ScenarioDefinition;
   readonly defaultTestId?: string;
 };

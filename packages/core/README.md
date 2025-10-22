@@ -94,29 +94,11 @@ import {
   type ScenarioDefinition,
 } from '@scenarist/core';
 
-// 1. Build configuration (all properties serializable)
-const config = buildConfig({
-  enabled: process.env.NODE_ENV !== 'production', // Evaluated first!
-  strictMode: false,  // true = error on unmocked requests, false = passthrough
-  headers: {
-    testId: 'x-test-id',
-    mockEnabled: 'x-mock-enabled',
-  },
-});
-
-// 2. Create adapters (dependency injection)
-const registry = new InMemoryScenarioRegistry();
-const store = new InMemoryScenarioStore();
-
-// 3. Create scenario manager
-const manager = createScenarioManager({ registry, store });
-
-// 4. Define scenarios (serializable definitions)
-const happyPathScenario: ScenarioDefinition = {
-  id: 'happy-path',
-  name: 'Happy Path',
-  description: 'All API calls succeed',
-  devToolEnabled: true,
+// 1. Define scenarios (serializable definitions)
+const defaultScenario: ScenarioDefinition = {
+  id: 'default',
+  name: 'Default Scenario',
+  description: 'Baseline mocks for all APIs',
   mocks: [
     {
       method: 'GET',
@@ -129,8 +111,46 @@ const happyPathScenario: ScenarioDefinition = {
   ],
 };
 
-// 5. Register and activate scenarios
+const happyPathScenario: ScenarioDefinition = {
+  id: 'happy-path',
+  name: 'Happy Path',
+  description: 'All API calls succeed',
+  devToolEnabled: true,
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.example.com/users',
+      response: {
+        status: 200,
+        body: { users: [{ id: 1, name: 'Test User' }] },
+      },
+    },
+  ],
+};
+
+// 2. Build configuration (all properties serializable)
+const config = buildConfig({
+  enabled: process.env.NODE_ENV !== 'production', // Evaluated first!
+  defaultScenario: defaultScenario, // REQUIRED - fallback for unmocked requests
+  strictMode: false,  // true = error on unmocked requests, false = passthrough
+  headers: {
+    testId: 'x-test-id',
+    mockEnabled: 'x-mock-enabled',
+  },
+});
+
+// 3. Create adapters (dependency injection)
+const registry = new InMemoryScenarioRegistry();
+const store = new InMemoryScenarioStore();
+
+// 4. Create scenario manager
+const manager = createScenarioManager({ registry, store });
+
+// 5. Register scenarios
+manager.registerScenario(defaultScenario); // Must register default
 manager.registerScenario(happyPathScenario);
+
+// 6. Switch to a scenario
 const result = manager.switchScenario('test-123', 'happy-path');
 
 if (result.success) {

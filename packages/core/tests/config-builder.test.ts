@@ -1,10 +1,19 @@
 import { describe, it, expect } from 'vitest';
 import { buildConfig } from '../src/domain/config-builder.js';
+import type { ScenarioDefinition } from '../src/types/index.js';
+
+const mockDefaultScenario: ScenarioDefinition = {
+  id: 'default',
+  name: 'Default Scenario',
+  description: 'Default test scenario',
+  mocks: [],
+};
 
 describe('buildConfig', () => {
   it('should apply default values for missing config properties', () => {
     const config = buildConfig({
       enabled: true,
+      defaultScenario: mockDefaultScenario,
     });
 
     expect(config.enabled).toBe(true);
@@ -12,7 +21,7 @@ describe('buildConfig', () => {
     expect(config.headers.mockEnabled).toBe('x-mock-enabled');
     expect(config.endpoints.setScenario).toBe('/__scenario__');
     expect(config.endpoints.getScenario).toBe('/__scenario__');
-    expect(config.defaultScenario).toBe('default');
+    expect(config.defaultScenarioId).toBe('default');
     expect(config.defaultTestId).toBe('default-test');
     expect(config.strictMode).toBe(false);
   });
@@ -20,6 +29,7 @@ describe('buildConfig', () => {
   it('should allow overriding header config', () => {
     const config = buildConfig({
       enabled: true,
+      defaultScenario: mockDefaultScenario,
       headers: {
         testId: 'x-custom-test-id',
         mockEnabled: 'x-custom-mock',
@@ -33,6 +43,7 @@ describe('buildConfig', () => {
   it('should allow overriding endpoint config', () => {
     const config = buildConfig({
       enabled: true,
+      defaultScenario: mockDefaultScenario,
       endpoints: {
         setScenario: '/api/scenario/set',
         getScenario: '/api/scenario/get',
@@ -43,24 +54,43 @@ describe('buildConfig', () => {
     expect(config.endpoints.getScenario).toBe('/api/scenario/get');
   });
 
+  it('should extract defaultScenarioId from defaultScenario definition', () => {
+    const customScenario: ScenarioDefinition = {
+      id: 'happy-path',
+      name: 'Happy Path',
+      description: 'All APIs succeed',
+      mocks: [],
+    };
+
+    const config = buildConfig({
+      enabled: true,
+      defaultScenario: customScenario,
+    });
+
+    expect(config.defaultScenarioId).toBe('happy-path');
+  });
+
   it.each<{
-    property: 'defaultScenario' | 'defaultTestId' | 'strictMode';
+    property: 'defaultTestId' | 'strictMode';
     value: string | boolean;
     default: string | boolean;
   }>([
-    { property: 'defaultScenario', value: 'happy-path', default: 'default' },
     { property: 'defaultTestId', value: 'my-test', default: 'default-test' },
     { property: 'strictMode', value: true, default: false },
   ])('should allow overriding $property', ({ property, value, default: defaultValue }) => {
     const config = buildConfig({
       enabled: true,
+      defaultScenario: mockDefaultScenario,
       [property]: value,
     });
 
     expect(config[property]).toBe(value);
 
     // Also verify default when not provided
-    const configWithDefaults = buildConfig({ enabled: true });
+    const configWithDefaults = buildConfig({
+      enabled: true,
+      defaultScenario: mockDefaultScenario,
+    });
     expect(configWithDefaults[property]).toBe(defaultValue);
   });
 
@@ -69,6 +99,7 @@ describe('buildConfig', () => {
     const isEnabled = process.env.NODE_ENV !== 'production';
     const config = buildConfig({
       enabled: isEnabled,
+      defaultScenario: mockDefaultScenario,
     });
 
     expect(config.enabled).toBe(isEnabled);
@@ -78,6 +109,7 @@ describe('buildConfig', () => {
   it('should allow partial override of headers while keeping defaults for others', () => {
     const config = buildConfig({
       enabled: true,
+      defaultScenario: mockDefaultScenario,
       headers: {
         testId: 'x-my-test-id',
       },
@@ -90,6 +122,7 @@ describe('buildConfig', () => {
   it('should allow partial override of endpoints while keeping defaults for others', () => {
     const config = buildConfig({
       enabled: false,
+      defaultScenario: mockDefaultScenario,
       endpoints: {
         setScenario: '/custom/set',
       },

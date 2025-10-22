@@ -25,11 +25,11 @@ export const createApp = () => {
   // Initialize Scenarist
   const scenarist = createScenarist({
     enabled: true,
+    defaultScenario: defaultScenario, // Required - used as fallback for all unmocked requests
     strictMode: false, // Allow passthrough for unmocked requests
   });
 
-  // Register all scenarios
-  scenarist.registerScenario(defaultScenario);
+  // Register additional scenarios (default is auto-registered)
   scenarist.registerScenario(successScenario);
   scenarist.registerScenario(githubNotFoundScenario);
   scenarist.registerScenario(weatherErrorScenario);
