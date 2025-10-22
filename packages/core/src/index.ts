@@ -1,8 +1,11 @@
 // Types (data structures)
 export type * from './types/index.js';
 
-// Ports (interfaces)
+// Ports (interfaces the hexagon uses/exposes)
 export type * from './ports/index.js';
+
+// Contracts (specifications for external implementations)
+export type * from './contracts/index.js';
 
 // Domain (implementations)
 export * from './domain/index.js';

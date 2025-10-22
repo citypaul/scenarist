@@ -3,9 +3,9 @@ import type {
   ActiveScenario,
   Result,
   ScenaristConfigInput,
-} from '../../types/index.js';
-import type { ScenarioRegistry } from '../driven/scenario-registry.js';
-import type { ScenarioStore } from '../driven/scenario-store.js';
+} from '../types/index.js';
+import type { ScenarioRegistry } from '../ports/driven/scenario-registry.js';
+import type { ScenarioStore } from '../ports/driven/scenario-store.js';
 
 /**
  * Base configuration options that all framework adapters must support.

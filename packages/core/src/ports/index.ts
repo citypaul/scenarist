@@ -5,9 +5,3 @@ export type { ScenarioManager } from './driving/scenario-manager.js';
 export type { ScenarioRegistry } from './driven/scenario-registry.js';
 export type { ScenarioStore } from './driven/scenario-store.js';
 export type { RequestContext } from './driven/request-context.js';
-
-// Adapter contracts - What framework adapters must implement
-export type {
-  ScenaristAdapter,
-  BaseAdapterOptions,
-} from './contracts/framework-adapter.js';
