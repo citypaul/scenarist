@@ -1,6 +1,6 @@
 # @scenarist/express-adapter
 
-Express.js middleware adapter for [Scenarist](https://github.com/citypaul/scenarist) - manage MSW mock scenarios in your Express applications during testing.
+Express.js middleware adapter for [Scenarist](https://github.com/citypaul/scenarist) - manage MSW mock scenarios in your Express applications for testing **and** development.
 
 ## What is this?
 
@@ -8,7 +8,8 @@ This package provides Express-specific middleware and endpoints to integrate Sce
 
 - **Switch mock scenarios at runtime** via HTTP endpoints
 - **Isolate concurrent tests** using unique test IDs
-- **Query active scenarios** for debugging and test validation
+- **Drive different user journeys** during local development
+- **Query active scenarios** for debugging and validation
 - **Integrate with MSW** for API mocking without modifying your application code
 
 ## Why use this?
@@ -56,6 +57,26 @@ test('regular user', async () => {
 
 Both tests run **concurrently** with **different backend states**.
 
+### Beyond Testing: Development Workflows
+
+Scenarist isn't just for automated tests. It enables rapid development and debugging workflows:
+
+```typescript
+// Manually switch to error scenarios without modifying backend code
+curl -X POST http://localhost:3000/__scenario__ \
+  -H "Content-Type: application/json" \
+  -d '{"scenario": "payment-declined"}'
+
+// Now interact with your UI to see how it handles the error state
+```
+
+**Use cases for development:**
+- **Manually test edge cases**: Switch to error scenarios instantly without backend changes
+- **Demo different states**: Show stakeholders various application states during demos
+- **Develop offline**: Build frontend features without waiting for backend APIs
+- **Debug production issues**: Recreate problematic scenarios locally
+- **Onboarding**: New developers can explore all application states without complex setup
+
 ## Installation
 
 ```bash
@@ -83,7 +104,7 @@ yarn add -D @scenarist/express-adapter @scenarist/core msw
 import { buildConfig } from '@scenarist/core';
 
 export const scenaristConfig = buildConfig({
-  enabled: process.env.NODE_ENV === 'test',
+  enabled: process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development',
   strictMode: false, // Allow unmocked requests to pass through
   headers: {
     testId: 'x-test-id',
@@ -110,12 +131,17 @@ import { scenaristConfig } from './config/scenarist.config';
 
 const app = express();
 
-// Only enable in test environment
-if (process.env.NODE_ENV === 'test') {
+// Enable in test and development environments
+if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
   // Create scenario manager
   const registry = new InMemoryScenarioRegistry();
   const store = new InMemoryScenarioStore();
   const manager = createScenarioManager({ registry, store, config: scenaristConfig });
+
+  // Register scenarios (import your scenario definitions)
+  // manager.registerScenario(adminUserScenario);
+  // manager.registerScenario(regularUserScenario);
+  // manager.registerScenario(defaultScenario);
 
   // Apply test ID middleware (must come before your routes)
   app.use(createTestIdMiddleware(scenaristConfig));
@@ -410,10 +436,22 @@ type ScenaristConfig = {
 ```typescript
 import { buildConfig } from '@scenarist/core';
 
-export const scenaristConfig = buildConfig({
+// Test-only configuration
+export const testOnlyConfig = buildConfig({
   enabled: process.env.NODE_ENV === 'test',
-  strictMode: process.env.STRICT_MODE === 'true',
-  // ... other config
+  strictMode: true, // Fail if any unmocked request is made
+});
+
+// Development and test configuration
+export const devAndTestConfig = buildConfig({
+  enabled: process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development',
+  strictMode: false, // Allow passthrough to real APIs
+});
+
+// Opt-in development configuration
+export const optInDevConfig = buildConfig({
+  enabled: process.env.ENABLE_MOCKING === 'true',
+  strictMode: false,
 });
 ```
 
@@ -581,6 +619,60 @@ export const scenaristConfig = buildConfig({
   defaultScenario: 'default',
 });
 ```
+
+---
+
+### Pattern 6: Development Workflows
+
+Enable scenario switching during development for rapid iteration:
+
+```typescript
+// config/scenarist.config.ts
+export const scenaristConfig = buildConfig({
+  enabled: process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test',
+  strictMode: false, // Allow passthrough to real APIs when needed
+  defaultScenario: 'default',
+});
+```
+
+**Manually switch scenarios with curl:**
+
+```bash
+# Switch to error scenario
+curl -X POST http://localhost:3000/__scenario__ \
+  -H "Content-Type: application/json" \
+  -d '{"scenario": "payment-declined"}'
+
+# Check active scenario
+curl http://localhost:3000/__scenario__
+
+# Switch to success scenario
+curl -X POST http://localhost:3000/__scenario__ \
+  -H "Content-Type: application/json" \
+  -d '{"scenario": "payment-success"}'
+```
+
+**Use with browser DevTools:**
+
+```javascript
+// In browser console, switch to error state
+await fetch('http://localhost:3000/__scenario__', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ scenario: 'api-error', variant: 'timeout' })
+});
+
+// Now interact with UI to test error handling
+```
+
+**Development use cases:**
+- **Feature development**: Build UI for features before backend is ready
+- **Error state testing**: Manually trigger error scenarios without backend changes
+- **Demo preparation**: Switch between scenarios to demonstrate different flows
+- **Bug reproduction**: Recreate production issues locally with specific scenarios
+- **Onboarding**: New developers can explore all states without complex setup
+
+**Note**: For development, you typically use the default test ID, so no need to send `x-test-id` headers when making manual requests.
 
 ## Troubleshooting
 
