@@ -40,7 +40,8 @@ src/
 tests/
 ├── scenario-switching.test.ts    # Tests scenario switching
 ├── test-id-isolation.test.ts     # Tests test ID isolation
-└── default-fallback.test.ts      # Tests default scenario fallback
+├── default-fallback.test.ts      # Tests default scenario fallback
+└── scenario-persistence.test.ts  # Tests scenarios persist across multiple requests
 ```
 
 ## How It Works
@@ -160,6 +161,44 @@ describe('GitHub API Integration', () => {
 
 ## Key Features Demonstrated
 
+### Scenario Persistence Across Multiple Requests
+
+Once a scenario is set for a test ID, it persists across all subsequent requests with that test ID. This simulates real user journeys across multiple pages:
+
+```typescript
+const testId = 'user-journey';
+
+// Set scenario once
+await request(app)
+  .post('/__scenario__')
+  .set('x-test-id', testId)
+  .send({ scenario: 'success' });
+
+// Page 1: User profile
+await request(app)
+  .get('/api/github/user/john')
+  .set('x-test-id', testId);
+// => Uses success scenario
+
+// Page 2: Weather dashboard
+await request(app)
+  .get('/api/weather/london')
+  .set('x-test-id', testId);
+// => Still uses success scenario
+
+// Page 3: Payment
+await request(app)
+  .post('/api/payment')
+  .set('x-test-id', testId)
+  .send({ amount: 1000 });
+// => Still uses success scenario
+```
+
+The scenario remains active until explicitly changed or cleared. This enables:
+- **Realistic user journey testing** - Multiple page navigations with consistent backend state
+- **Complex flow testing** - Multi-step processes (browse → add to cart → checkout → confirm)
+- **Consistent behavior** - Same scenario across all requests in a test
+
 ### Scenario Switching
 
 ```bash
@@ -250,7 +289,8 @@ All tests pass, demonstrating:
 - ✅ 10 scenario switching tests
 - ✅ 4 test ID isolation tests
 - ✅ 6 default fallback tests
-- ✅ **20 total tests passing**
+- ✅ 7 scenario persistence tests (multi-request scenarios)
+- ✅ **27 total tests passing**
 
 ## Next Steps
 

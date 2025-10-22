@@ -237,15 +237,21 @@ await request(app)
 
 **Example:**
 ```typescript
+// After setting a scenario
 const response = await request(app)
   .get('/__scenario__')
   .set('x-test-id', 'test-123');
 
-if (response.status === 200) {
-  console.log('Active scenario:', response.body.scenarioId);
-} else {
-  console.log('No scenario set for this test ID');
-}
+expect(response.status).toBe(200);
+expect(response.body.scenarioId).toBe('success');
+
+// Before setting a scenario
+const response2 = await request(app)
+  .get('/__scenario__')
+  .set('x-test-id', 'new-test');
+
+expect(response2.status).toBe(404);
+expect(response2.body.error).toBe('No active scenario for this test ID');
 ```
 
 ## Core Concepts
