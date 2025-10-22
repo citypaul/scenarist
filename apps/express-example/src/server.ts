@@ -1,14 +1,6 @@
 import express, { type Express } from 'express';
 import { createScenarist, type ExpressScenarist } from '@scenarist/express-adapter';
-import {
-  defaultScenario,
-  successScenario,
-  githubNotFoundScenario,
-  weatherErrorScenario,
-  stripeFailureScenario,
-  slowNetworkScenario,
-  mixedResultsScenario,
-} from './scenarios.js';
+import { defaultScenario, scenarios } from './scenarios.js';
 import { setupGitHubRoutes } from './routes/github.js';
 import { setupWeatherRoutes } from './routes/weather.js';
 import { setupStripeRoutes } from './routes/stripe.js';
@@ -30,12 +22,14 @@ export const createApp = (): { app: Express; scenarist: ExpressScenarist } => {
   });
 
   // Register additional scenarios (default is auto-registered)
-  scenarist.registerScenario(successScenario);
-  scenarist.registerScenario(githubNotFoundScenario);
-  scenarist.registerScenario(weatherErrorScenario);
-  scenarist.registerScenario(stripeFailureScenario);
-  scenarist.registerScenario(slowNetworkScenario);
-  scenarist.registerScenario(mixedResultsScenario);
+  scenarist.registerScenarios([
+    scenarios.success,
+    scenarios.githubNotFound,
+    scenarios.weatherError,
+    scenarios.stripeFailure,
+    scenarios.slowNetwork,
+    scenarios.mixedResults,
+  ]);
 
   // Apply Scenarist middleware (includes test ID extraction and scenario endpoints)
   app.use(scenarist.middleware);

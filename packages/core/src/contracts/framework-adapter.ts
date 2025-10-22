@@ -84,6 +84,24 @@ export type ScenaristAdapter<TMiddleware = unknown> = {
   readonly registerScenario: (definition: ScenarioDefinition) => void;
 
   /**
+   * Register multiple scenario definitions at once.
+   *
+   * This is a convenience method for batch registration.
+   *
+   * @example
+   * ```typescript
+   * scenarist.registerScenarios([
+   *   successScenario,
+   *   errorScenario,
+   *   slowNetworkScenario,
+   * ]);
+   * ```
+   */
+  readonly registerScenarios: (
+    definitions: ReadonlyArray<ScenarioDefinition>
+  ) => void;
+
+  /**
    * Switch active scenario for a test ID.
    */
   readonly switchScenario: (

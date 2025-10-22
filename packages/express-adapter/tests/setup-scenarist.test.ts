@@ -22,6 +22,7 @@ describe('createScenarist', () => {
     expect(scenarist).toHaveProperty('config');
     expect(scenarist).toHaveProperty('middleware');
     expect(scenarist).toHaveProperty('registerScenario');
+    expect(scenarist).toHaveProperty('registerScenarios');
     expect(scenarist).toHaveProperty('switchScenario');
     expect(scenarist).toHaveProperty('getActiveScenario');
     expect(scenarist).toHaveProperty('getScenarioById');
@@ -143,5 +144,41 @@ describe('createScenarist', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.message).toBe('mocked response');
+  });
+
+  it('should register multiple scenarios at once', () => {
+    const scenarist = createScenarist({
+      enabled: true,
+      defaultScenario: mockDefaultScenario,
+    });
+
+    const scenario1: ScenarioDefinition = {
+      id: 'scenario-1',
+      name: 'Scenario 1',
+      description: 'First test scenario',
+      mocks: [],
+    };
+
+    const scenario2: ScenarioDefinition = {
+      id: 'scenario-2',
+      name: 'Scenario 2',
+      description: 'Second test scenario',
+      mocks: [],
+    };
+
+    const scenario3: ScenarioDefinition = {
+      id: 'scenario-3',
+      name: 'Scenario 3',
+      description: 'Third test scenario',
+      mocks: [],
+    };
+
+    scenarist.registerScenarios([scenario1, scenario2, scenario3]);
+
+    const scenarios = scenarist.listScenarios();
+    expect(scenarios).toHaveLength(4); // default + 3 registered
+    expect(scenarios.find((s) => s.id === 'scenario-1')).toBeDefined();
+    expect(scenarios.find((s) => s.id === 'scenario-2')).toBeDefined();
+    expect(scenarios.find((s) => s.id === 'scenario-3')).toBeDefined();
   });
 });
