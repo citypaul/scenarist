@@ -398,17 +398,27 @@ scenarist.registerScenario(scenario1);
 scenarist.registerScenario(scenario2); // ❌ Throws: Scenario 'test' is already registered
 ```
 
-**Batch registration** also protects against duplicates:
+**Idempotent Registration**
+
+Re-registering the **exact same scenario object** is safe (no-op):
 
 ```typescript
-scenarist.registerScenarios([
-  { id: 'new-1', /* ... */ },
-  { id: 'duplicate', /* ... */ }, // Already registered
-  { id: 'new-2', /* ... */ },
-]);
-// ❌ Throws error when it reaches 'duplicate'
-// Note: 'new-1' will have been registered before the error
+scenarist.registerScenario(defaultScenario);
+scenarist.registerScenario(defaultScenario); // ✅ Safe - same object
+
+// This is useful when using Object.values(scenarios):
+const scenarios = {
+  default: defaultScenario,
+  success: successScenario,
+  error: errorScenario,
+} as const;
+
+// Even though default is auto-registered by createScenarist(),
+// this won't throw because it's the same object:
+scenarist.registerScenarios(Object.values(scenarios)); // ✅ Works!
 ```
+
+**Why idempotent?** The `defaultScenario` is auto-registered by `createScenarist()`, so if you organize all your scenarios (including default) in a const object and use `Object.values(scenarios)`, it would fail without idempotent behavior. By checking object reference equality, we allow the common pattern while still protecting against accidentally registering different scenarios with the same ID.
 
 ### Type-Safe Scenario Access
 

@@ -44,9 +44,18 @@ export const createScenarioManager = ({
 }): ScenarioManager => {
   return {
     registerScenario(definition: ScenarioDefinition): void {
-      if (registry.has(definition.id)) {
+      const existing = registry.get(definition.id);
+
+      // Allow re-registering the exact same scenario object (idempotent)
+      if (existing === definition) {
+        return;
+      }
+
+      // Prevent registering a different scenario with the same ID
+      if (existing) {
         throw new DuplicateScenarioError(definition.id);
       }
+
       registry.register(definition);
     },
 

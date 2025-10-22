@@ -250,4 +250,37 @@ describe('createScenarist', () => {
       "Scenario 'duplicate' is already registered"
     );
   });
+
+  it('should allow batch registering scenarios including default (idempotent)', () => {
+    const scenarist = createScenarist({
+      enabled: true,
+      defaultScenario: mockDefaultScenario,
+    });
+
+    const scenario1: ScenarioDefinition = {
+      id: 'scenario-1',
+      name: 'Scenario 1',
+      description: 'First scenario',
+      mocks: [],
+    };
+
+    const scenario2: ScenarioDefinition = {
+      id: 'scenario-2',
+      name: 'Scenario 2',
+      description: 'Second scenario',
+      mocks: [],
+    };
+
+    // This is the real-world use case: Object.values(scenarios) includes default
+    const allScenarios = [mockDefaultScenario, scenario1, scenario2];
+
+    // Should not throw even though default is already registered
+    expect(() => scenarist.registerScenarios(allScenarios)).not.toThrow();
+
+    const scenarios = scenarist.listScenarios();
+    expect(scenarios).toHaveLength(3); // default + 2 new scenarios
+    expect(scenarios.find((s) => s.id === 'default')).toBeDefined();
+    expect(scenarios.find((s) => s.id === 'scenario-1')).toBeDefined();
+    expect(scenarios.find((s) => s.id === 'scenario-2')).toBeDefined();
+  });
 });

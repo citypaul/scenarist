@@ -118,6 +118,18 @@ describe("ScenarioManager", () => {
       const registered = manager.getScenarioById("duplicate");
       expect(registered?.name).toBe("First");
     });
+
+    it("should allow re-registering the exact same scenario (idempotent)", () => {
+      const { manager } = createTestSetup();
+      const definition = createTestScenarioDefinition("test", "Test Scenario");
+
+      manager.registerScenario(definition);
+      // Re-registering the same object should not throw
+      expect(() => manager.registerScenario(definition)).not.toThrow();
+
+      const registered = manager.getScenarioById("test");
+      expect(registered).toEqual(definition);
+    });
   });
 
   describe("switchScenario", () => {
