@@ -170,7 +170,7 @@ type ExpressAdapterOptions = {
     setScenario?: string;               // POST endpoint (default: '/__scenario__')
     getScenario?: string;               // GET endpoint (default: '/__scenario__')
   };
-  defaultScenario?: string;             // Default scenario ID (default: 'default')
+  defaultScenario: ScenarioDefinition;  // REQUIRED - fallback scenario (auto-registered)
   defaultTestId?: string;               // Default test ID (default: 'default-test')
   registry?: ScenarioRegistry;          // Custom registry (default: InMemoryScenarioRegistry)
   store?: ScenarioStore;                // Custom store (default: InMemoryScenarioStore)

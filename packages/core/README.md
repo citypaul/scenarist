@@ -185,7 +185,7 @@ type BaseAdapterOptions = {
     readonly setScenario?: string;
     readonly getScenario?: string;
   };
-  readonly defaultScenario?: string;
+  readonly defaultScenario: ScenarioDefinition;  // REQUIRED
   readonly defaultTestId?: string;
   readonly registry?: ScenarioRegistry;
   readonly store?: ScenarioStore;
