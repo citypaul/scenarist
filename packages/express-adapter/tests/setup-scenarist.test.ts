@@ -1,0 +1,99 @@
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import express from 'express';
+import request from 'supertest';
+import { createScenarist } from '../src/setup/setup-scenarist';
+
+describe('createScenarist', () => {
+  it('should return object with all expected properties', () => {
+    const scenarist = createScenarist({
+      enabled: true,
+      strictMode: false,
+    });
+
+    expect(scenarist).toHaveProperty('middleware');
+    expect(scenarist).toHaveProperty('registerScenario');
+    expect(scenarist).toHaveProperty('switchScenario');
+    expect(scenarist).toHaveProperty('getActiveScenario');
+    expect(scenarist).toHaveProperty('getScenarioById');
+    expect(scenarist).toHaveProperty('listScenarios');
+    expect(scenarist).toHaveProperty('clearScenario');
+    expect(scenarist).toHaveProperty('start');
+    expect(scenarist).toHaveProperty('stop');
+  });
+
+  it('should create working middleware that includes test ID and endpoints', async () => {
+    const scenarist = createScenarist({
+      enabled: true,
+      strictMode: false,
+    });
+
+    scenarist.registerScenario({
+      id: 'test-scenario',
+      name: 'Test Scenario',
+      description: 'Test',
+      mocks: [],
+    });
+
+    const app = express();
+    app.use(express.json());
+    app.use(scenarist.middleware);
+
+    const response = await request(app)
+      .post('/__scenario__')
+      .set('x-test-id', 'test-123')
+      .send({ scenario: 'test-scenario' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.testId).toBe('test-123');
+  });
+
+  it('should intercept external API calls based on registered scenario', async () => {
+    const scenarist = createScenarist({
+      enabled: true,
+      strictMode: false,
+    });
+
+    scenarist.registerScenario({
+      id: 'api-success',
+      name: 'API Success',
+      description: 'External API returns success',
+      mocks: [
+        {
+          method: 'GET',
+          url: 'https://api.example.com/data',
+          response: {
+            status: 200,
+            body: { message: 'mocked response' },
+          },
+        },
+      ],
+    });
+
+    scenarist.start();
+
+    const app = express();
+    app.use(express.json());
+    app.use(scenarist.middleware);
+
+    app.get('/test-route', async (req, res) => {
+      const response = await fetch('https://api.example.com/data');
+      const data = await response.json();
+      res.json(data);
+    });
+
+    await request(app)
+      .post('/__scenario__')
+      .set('x-test-id', 'test-456')
+      .send({ scenario: 'api-success' });
+
+    const response = await request(app)
+      .get('/test-route')
+      .set('x-test-id', 'test-456');
+
+    await scenarist.stop();
+
+    expect(response.status).toBe(200);
+    expect(response.body.message).toBe('mocked response');
+  });
+});

@@ -1,4 +1,8 @@
-// Express adapter public API
+// Primary API - batteries included setup
+export { createScenarist } from './setup/setup-scenarist.js';
+export type { CreateScenaristOptions, Scenarist } from './setup/setup-scenarist.js';
+
+// Low-level API - for advanced users who need custom wiring
 export { ExpressRequestContext } from './context/express-request-context.js';
 export { createTestIdMiddleware, testIdStorage } from './middleware/test-id-middleware.js';
 export { createScenarioEndpoints } from './endpoints/scenario-endpoints.js';
