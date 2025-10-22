@@ -70,9 +70,6 @@ importers:
       '@scenarist/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint-config
-      '@scenarist/testing-helpers':
-        specifier: workspace:*
-        version: link:../../packages/testing-helpers
       '@scenarist/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
@@ -284,43 +281,6 @@ importers:
       msw:
         specifier: ^2.0.0
         version: 2.11.6(@types/node@20.19.23)(typescript@5.9.2)
-      typescript:
-        specifier: ^5.3.3
-        version: 5.9.2
-      vitest:
-        specifier: ^1.6.1
-        version: 1.6.1(@types/node@20.19.23)(@vitest/ui@1.6.1)
-
-  packages/testing-helpers:
-    dependencies:
-      '@scenarist/core':
-        specifier: workspace:*
-        version: link:../core
-    devDependencies:
-      '@scenarist/eslint-config':
-        specifier: workspace:*
-        version: link:../eslint-config
-      '@scenarist/typescript-config':
-        specifier: workspace:*
-        version: link:../typescript-config
-      '@types/node':
-        specifier: ^20.11.5
-        version: 20.19.23
-      '@types/supertest':
-        specifier: ^6.0.2
-        version: 6.0.3
-      '@vitest/coverage-v8':
-        specifier: ^1.6.1
-        version: 1.6.1(vitest@1.6.1(@types/node@20.19.23)(@vitest/ui@1.6.1))
-      eslint:
-        specifier: ^9.34.0
-        version: 9.34.0
-      express:
-        specifier: ^4.18.2
-        version: 4.21.2
-      supertest:
-        specifier: ^7.0.0
-        version: 7.1.4
       typescript:
         specifier: ^5.3.3
         version: 5.9.2

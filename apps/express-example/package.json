@@ -19,7 +19,6 @@
   },
   "devDependencies": {
     "@scenarist/eslint-config": "workspace:*",
-    "@scenarist/testing-helpers": "workspace:*",
     "@scenarist/typescript-config": "workspace:*",
     "@types/express": "^4.17.21",
     "@types/node": "^20.11.5",

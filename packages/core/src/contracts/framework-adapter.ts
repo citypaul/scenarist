@@ -3,6 +3,7 @@ import type {
   ActiveScenario,
   Result,
   ScenaristConfigInput,
+  ScenaristConfig,
 } from '../types/index.js';
 import type { ScenarioRegistry } from '../ports/driven/scenario-registry.js';
 import type { ScenarioStore } from '../ports/driven/scenario-store.js';
@@ -53,6 +54,21 @@ export type BaseAdapterOptions = ScenaristConfigInput & {
  *   - Next.js: NextMiddleware
  */
 export type ScenaristAdapter<TMiddleware = unknown> = {
+  /**
+   * Resolved configuration.
+   *
+   * Use this to access configured endpoints and headers in tests.
+   *
+   * @example
+   * ```typescript
+   * await request(app)
+   *   .post(scenarist.config.endpoints.setScenario)
+   *   .set(scenarist.config.headers.testId, 'test-123')
+   *   .send({ scenario: scenarios.success.id });
+   * ```
+   */
+  readonly config: ScenaristConfig;
+
   /**
    * Framework-specific middleware/plugin.
    *

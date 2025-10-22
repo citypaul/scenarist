@@ -71,6 +71,7 @@ export const createScenarist = (
   middleware.use(createScenarioEndpoints(manager, config));
 
   return {
+    config,
     middleware,
     registerScenario: (definition) => manager.registerScenario(definition),
     switchScenario: (testId, scenarioId, variantName) =>
