@@ -48,8 +48,14 @@ src/
 - Implemented `buildConfig()` helper with defaults
 - Implemented `InMemoryScenarioRegistry` adapter
 - Implemented `InMemoryScenarioStore` adapter
-- 50 tests passing with 100% coverage
+- **51 tests passing** with 100% behavior coverage
 - TypeScript strict mode enforced
+
+**Integration:** ✅
+- Used by `@scenarist/express-adapter` with 24 tests
+- Used by `@scenarist/msw-adapter` with 31 tests
+- Example app with 20 E2E tests
+- **Total: 126 tests across the ecosystem**
 
 ## Installation
 
