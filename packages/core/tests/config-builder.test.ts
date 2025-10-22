@@ -43,7 +43,11 @@ describe('buildConfig', () => {
     expect(config.endpoints.getScenario).toBe('/api/scenario/get');
   });
 
-  it.each([
+  it.each<{
+    property: 'defaultScenario' | 'defaultTestId' | 'strictMode';
+    value: string | boolean;
+    default: string | boolean;
+  }>([
     { property: 'defaultScenario', value: 'happy-path', default: 'default' },
     { property: 'defaultTestId', value: 'my-test', default: 'default-test' },
     { property: 'strictMode', value: true, default: false },
@@ -53,11 +57,11 @@ describe('buildConfig', () => {
       [property]: value,
     });
 
-    expect(config[property as keyof typeof config]).toBe(value);
+    expect(config[property]).toBe(value);
 
     // Also verify default when not provided
     const configWithDefaults = buildConfig({ enabled: true });
-    expect(configWithDefaults[property as keyof typeof configWithDefaults]).toBe(defaultValue);
+    expect(configWithDefaults[property]).toBe(defaultValue);
   });
 
   it('should require evaluated boolean for enabled property', () => {
