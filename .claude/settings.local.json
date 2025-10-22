@@ -17,7 +17,8 @@
       "Bash(gh pr edit:*)",
       "Bash(pnpm typecheck:*)",
       "Bash(git stash:*)",
-      "Bash(git cherry-pick:*)"
+      "Bash(git cherry-pick:*)",
+      "Bash(git pull:*)"
     ],
     "deny": [],
     "ask": []
