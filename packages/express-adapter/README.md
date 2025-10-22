@@ -91,13 +91,15 @@ yarn add -D @scenarist/express-adapter @scenarist/msw-adapter @scenarist/core ms
 ```
 
 **Required Packages:**
-- `@scenarist/express-adapter` - Express middleware and endpoints
-- `@scenarist/msw-adapter` - MSW request interception
+- `@scenarist/express-adapter` - Express middleware and scenario endpoints
+- `@scenarist/msw-adapter` - Converts scenario definitions to MSW handlers
 - `@scenarist/core` - Core scenario management
-- `msw` ^2.0.0 - Mock Service Worker
+- `msw` ^2.0.0 - Mock Service Worker for request interception
 
 **Peer Dependencies:**
 - `express` ^4.18.0 || ^5.0.0
+
+**Why both adapters?** The Express adapter provides scenario switching and test ID isolation, but doesn't intercept HTTP requests. The MSW adapter converts your scenario definitions into MSW handlers that actually mock the requests.
 
 ## Quick Start
 
@@ -191,35 +193,25 @@ export const adminUserScenario: ScenarioDefinition = {
 };
 ```
 
-### 4. Set Up MSW to Intercept Requests
+### 4. Set Up MSW Request Interception
+
+The Express adapter manages scenarios but doesn't intercept requests. You need MSW with the dynamic handler:
 
 ```typescript
 // test/setup.ts
 import { setupServer } from 'msw/node';
 import { createDynamicHandler } from '@scenarist/msw-adapter';
 import { testIdStorage } from '@scenarist/express-adapter';
-import { createScenarioManager } from '@scenarist/core';
-import { InMemoryScenarioRegistry, InMemoryScenarioStore } from '@scenarist/core';
-import { scenaristConfig } from '../src/config/scenarist.config';
-import { adminUserScenario } from './scenarios/admin-user';
+import { manager } from '../src/app'; // Export manager from your app
 
-// Create scenario manager (same as in your Express app)
-const registry = new InMemoryScenarioRegistry();
-const store = new InMemoryScenarioStore();
-export const manager = createScenarioManager({ registry, store, config: scenaristConfig });
-
-// Register your scenarios
-manager.registerScenario(adminUserScenario);
-
-// Create MSW handler that uses the Express adapter's test ID storage
+// Create MSW handler that reads test ID from Express middleware
 const handler = createDynamicHandler({
-  getTestId: () => testIdStorage.getStore() ?? scenaristConfig.defaultTestId,
+  getTestId: () => testIdStorage.getStore() ?? 'default-test',
   getActiveScenario: (testId) => manager.getActiveScenario(testId),
   getScenarioDefinition: (scenarioId) => manager.getScenarioById(scenarioId),
-  strictMode: scenaristConfig.strictMode,
+  strictMode: false,
 });
 
-// Set up MSW server
 export const server = setupServer(handler);
 
 beforeAll(() => server.listen());
@@ -233,6 +225,7 @@ afterAll(() => server.close());
 // test/api.test.ts
 import request from 'supertest';
 import { app } from '../src/app';
+import './setup'; // Import MSW setup
 
 describe('User API', () => {
   it('should return admin user', async () => {
@@ -243,7 +236,6 @@ describe('User API', () => {
       .send({ scenario: 'admin-user' });
 
     // Make requests with the same test ID
-    // MSW intercepts the fetch() call and returns the mocked response
     const response = await request(app)
       .get('/api/user')
       .set('x-test-id', 'admin-test');
@@ -256,31 +248,31 @@ describe('User API', () => {
 
 ## Core Concepts
 
-### How the Adapters Work Together
+### How It Works: Two Adapters Working Together
 
-Scenarist uses **two adapters** that work in tandem:
+Scenarist uses two complementary adapters:
 
-1. **@scenarist/express-adapter** (this package):
-   - Provides HTTP endpoints (`POST /__scenario__`, `GET /__scenario__`)
-   - Stores test ID in AsyncLocalStorage
-   - Manages which scenario is active for each test ID
+**@scenarist/express-adapter** (this package):
+- Provides `POST /__scenario__` and `GET /__scenario__` endpoints
+- Stores test ID in AsyncLocalStorage via middleware
+- Manages which scenario is active for each test ID
+- Exports `testIdStorage` for MSW integration
 
-2. **@scenarist/msw-adapter**:
-   - Intercepts HTTP requests using MSW
-   - Reads test ID from AsyncLocalStorage
-   - Returns mocked responses based on active scenario
+**@scenarist/msw-adapter**:
+- Creates MSW handlers from scenario definitions
+- Reads test ID from `testIdStorage`
+- Intercepts outgoing HTTP requests
+- Returns mocked responses based on active scenario
 
-**The flow:**
-1. Test calls `POST /__scenario__` to activate a scenario for test ID "test-1"
-2. Test makes HTTP request with `x-test-id: test-1` header
+**The complete flow:**
+1. Test calls `POST /__scenario__` with test ID "test-1" to activate scenario "admin-user"
+2. Test makes request to Express app with `x-test-id: test-1` header
 3. Express middleware stores "test-1" in AsyncLocalStorage
 4. Your route handler calls external API (e.g., `fetch('https://api.example.com/user')`)
-5. MSW dynamic handler intercepts the request
+5. MSW's dynamic handler intercepts that fetch call
 6. Handler reads "test-1" from AsyncLocalStorage
-7. Handler looks up active scenario for "test-1"
-8. Handler returns mocked response from that scenario
-
-Without both adapters, mocking won't work.
+7. Handler looks up active scenario for "test-1" (finds "admin-user")
+8. Handler converts MockDefinition to MSW response and returns it
 
 ### Test ID Isolation
 
@@ -817,23 +809,22 @@ export const scenaristConfig = buildConfig({
 
 ---
 
-### MSW not intercepting requests
+### Requests aren't being mocked
 
-**Problem:** Real API calls are being made instead of mocked responses.
+**Problem:** Scenarios switch successfully but API requests go to real endpoints instead of mocked responses.
 
-**Solution:** Ensure you've set up the MSW server with the dynamic handler:
+**Solution:** Ensure you've set up MSW with the dynamic handler:
 
 ```typescript
 import { setupServer } from 'msw/node';
 import { createDynamicHandler } from '@scenarist/msw-adapter';
 import { testIdStorage } from '@scenarist/express-adapter';
 
-// Create the dynamic handler
 const handler = createDynamicHandler({
-  getTestId: () => testIdStorage.getStore() ?? config.defaultTestId,
+  getTestId: () => testIdStorage.getStore() ?? 'default-test',
   getActiveScenario: (testId) => manager.getActiveScenario(testId),
   getScenarioDefinition: (scenarioId) => manager.getScenarioById(scenarioId),
-  strictMode: config.strictMode,
+  strictMode: false,
 });
 
 const server = setupServer(handler);
@@ -842,6 +833,8 @@ beforeAll(() => server.listen());
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 ```
+
+The Express adapter manages scenarios but doesn't intercept requests - that's MSW's job.
 
 ## TypeScript
 
@@ -880,6 +873,6 @@ MIT
 ## Related Packages
 
 - **[@scenarist/core](../core)** - Core scenario management (required)
-- **[@scenarist/msw-adapter](../msw-adapter)** - MSW integration for request interception (required)
+- **[@scenarist/msw-adapter](../msw-adapter)** - MSW request interception (required)
 
-**Note**: Both the Express adapter and MSW adapter are required for Scenarist to work. The Express adapter provides scenario management endpoints and test ID isolation, while the MSW adapter handles the actual request interception and response mocking.
+Both adapters work together to provide the complete solution. The Express adapter manages scenario state, while the MSW adapter intercepts and mocks HTTP requests based on that state.
