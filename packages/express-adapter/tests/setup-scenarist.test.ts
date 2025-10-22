@@ -19,6 +19,7 @@ describe('createScenarist', () => {
       strictMode: false,
     });
 
+    expect(scenarist).toHaveProperty('config');
     expect(scenarist).toHaveProperty('middleware');
     expect(scenarist).toHaveProperty('registerScenario');
     expect(scenarist).toHaveProperty('switchScenario');
@@ -30,7 +31,43 @@ describe('createScenarist', () => {
     expect(scenarist).toHaveProperty('stop');
   });
 
-  it('should create working middleware that includes test ID and endpoints', async () => {
+  it('should expose config with correct default values', () => {
+    const scenarist = createScenarist({
+      enabled: true,
+      defaultScenario: mockDefaultScenario,
+    });
+
+    expect(scenarist.config.endpoints.setScenario).toBe('/__scenario__');
+    expect(scenarist.config.endpoints.getScenario).toBe('/__scenario__');
+    expect(scenarist.config.headers.testId).toBe('x-test-id');
+    expect(scenarist.config.headers.mockEnabled).toBe('x-mock-enabled');
+    expect(scenarist.config.defaultScenarioId).toBe('default');
+    expect(scenarist.config.strictMode).toBe(false);
+  });
+
+  it('should expose config with custom values when provided', () => {
+    const scenarist = createScenarist({
+      enabled: true,
+      defaultScenario: mockDefaultScenario,
+      endpoints: {
+        setScenario: '/custom-set',
+        getScenario: '/custom-get',
+      },
+      headers: {
+        testId: 'x-custom-test',
+        mockEnabled: 'x-custom-mock',
+      },
+      strictMode: true,
+    });
+
+    expect(scenarist.config.endpoints.setScenario).toBe('/custom-set');
+    expect(scenarist.config.endpoints.getScenario).toBe('/custom-get');
+    expect(scenarist.config.headers.testId).toBe('x-custom-test');
+    expect(scenarist.config.headers.mockEnabled).toBe('x-custom-mock');
+    expect(scenarist.config.strictMode).toBe(true);
+  });
+
+  it('should create working middleware that uses config values', async () => {
     const scenarist = createScenarist({
       enabled: true,
       defaultScenario: mockDefaultScenario,
@@ -49,8 +86,8 @@ describe('createScenarist', () => {
     app.use(scenarist.middleware);
 
     const response = await request(app)
-      .post('/__scenario__')
-      .set('x-test-id', 'test-123')
+      .post(scenarist.config.endpoints.setScenario)
+      .set(scenarist.config.headers.testId, 'test-123')
       .send({ scenario: 'test-scenario' });
 
     expect(response.status).toBe(200);
@@ -94,13 +131,13 @@ describe('createScenarist', () => {
     });
 
     await request(app)
-      .post('/__scenario__')
-      .set('x-test-id', 'test-456')
+      .post(scenarist.config.endpoints.setScenario)
+      .set(scenarist.config.headers.testId, 'test-456')
       .send({ scenario: 'api-success' });
 
     const response = await request(app)
       .get('/test-route')
-      .set('x-test-id', 'test-456');
+      .set(scenarist.config.headers.testId, 'test-456');
 
     await scenarist.stop();
 
