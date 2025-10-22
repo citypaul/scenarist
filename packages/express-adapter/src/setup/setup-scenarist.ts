@@ -5,40 +5,49 @@ import {
   createScenarioManager,
   InMemoryScenarioRegistry,
   InMemoryScenarioStore,
-  type ScenaristConfigInput,
-  type ScenarioManager,
-  type ScenarioRegistry,
-  type ScenarioStore,
-  type ScenarioDefinition,
-  type Result,
+  type BaseAdapterOptions,
+  type ScenaristAdapter,
 } from '@scenarist/core';
 import { createDynamicHandler } from '@scenarist/msw-adapter';
 import { testIdStorage } from '../middleware/test-id-middleware.js';
 import { createTestIdMiddleware } from '../middleware/test-id-middleware.js';
 import { createScenarioEndpoints } from '../endpoints/scenario-endpoints.js';
 
-export type CreateScenaristOptions = ScenaristConfigInput & {
-  readonly registry?: ScenarioRegistry;
-  readonly store?: ScenarioStore;
-};
+/**
+ * Express-specific adapter options.
+ *
+ * Extends BaseAdapterOptions to ensure consistency across all adapters.
+ */
+export type ExpressAdapterOptions = BaseAdapterOptions;
 
-export type Scenarist = {
-  readonly middleware: Router;
-  readonly registerScenario: (definition: ScenarioDefinition) => void;
-  readonly switchScenario: (
-    testId: string,
-    scenarioId: string,
-    variantName?: string
-  ) => Result<void, Error>;
-  readonly getActiveScenario: ScenarioManager['getActiveScenario'];
-  readonly getScenarioById: ScenarioManager['getScenarioById'];
-  readonly listScenarios: ScenarioManager['listScenarios'];
-  readonly clearScenario: ScenarioManager['clearScenario'];
-  readonly start: () => void;
-  readonly stop: () => Promise<void>;
-};
+/**
+ * Express adapter instance.
+ *
+ * Implements ScenaristAdapter<Router> to ensure API consistency.
+ */
+export type ExpressScenarist = ScenaristAdapter<Router>;
 
-export const createScenarist = (options: CreateScenaristOptions): Scenarist => {
+/**
+ * Create a Scenarist instance for Express.
+ *
+ * This is the primary API for Express users. It wires everything automatically:
+ * - MSW server with dynamic handler
+ * - Test ID middleware
+ * - Scenario endpoints
+ * - Scenario manager
+ *
+ * @example
+ * ```typescript
+ * const scenarist = createScenarist({ enabled: true });
+ * scenarist.registerScenario(myScenario);
+ * app.use(scenarist.middleware);
+ * beforeAll(() => scenarist.start());
+ * afterAll(() => scenarist.stop());
+ * ```
+ */
+export const createScenarist = (
+  options: ExpressAdapterOptions
+): ExpressScenarist => {
   const config = buildConfig(options);
   const registry = options.registry ?? new InMemoryScenarioRegistry();
   const store = options.store ?? new InMemoryScenarioStore();
