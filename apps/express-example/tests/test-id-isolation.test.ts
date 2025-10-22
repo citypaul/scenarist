@@ -16,26 +16,26 @@ describe('Test ID Isolation E2E', () => {
   it('should allow different test IDs to use different scenarios concurrently', async () => {
     // Test ID 1: Set to success scenario
     await request(app)
-      .post('/__scenario__')
-      .set('x-test-id', 'test-id-1')
+      .post(scenarist.config.endpoints.setScenario)
+      .set(scenarist.config.headers.testId, 'test-id-1')
       .send({ scenario: 'success' });
 
     // Test ID 2: Set to github-not-found scenario
     await request(app)
-      .post('/__scenario__')
-      .set('x-test-id', 'test-id-2')
+      .post(scenarist.config.endpoints.setScenario)
+      .set(scenarist.config.headers.testId, 'test-id-2')
       .send({ scenario: 'github-not-found' });
 
     // Test ID 3: Set to weather-error scenario
     await request(app)
-      .post('/__scenario__')
-      .set('x-test-id', 'test-id-3')
+      .post(scenarist.config.endpoints.setScenario)
+      .set(scenarist.config.headers.testId, 'test-id-3')
       .send({ scenario: 'weather-error' });
 
     // Verify Test ID 1 gets success scenario data
     const response1 = await request(app)
       .get('/api/github/user/testuser')
-      .set('x-test-id', 'test-id-1');
+      .set(scenarist.config.headers.testId, 'test-id-1');
 
     expect(response1.status).toBe(200);
     expect(response1.body.login).toBe('testuser');
@@ -44,7 +44,7 @@ describe('Test ID Isolation E2E', () => {
     // Verify Test ID 2 gets 404 error
     const response2 = await request(app)
       .get('/api/github/user/testuser')
-      .set('x-test-id', 'test-id-2');
+      .set(scenarist.config.headers.testId, 'test-id-2');
 
     expect(response2.status).toBe(404);
     expect(response2.body.message).toBe('Not Found');
@@ -53,7 +53,7 @@ describe('Test ID Isolation E2E', () => {
     // Should fall back to default scenario for GitHub
     const response3 = await request(app)
       .get('/api/github/user/testuser')
-      .set('x-test-id', 'test-id-3');
+      .set(scenarist.config.headers.testId, 'test-id-3');
 
     expect(response3.status).toBe(200);
     expect(response3.body.login).toBe('octocat'); // Default scenario
@@ -61,7 +61,7 @@ describe('Test ID Isolation E2E', () => {
     // But weather should fail for Test ID 3
     const weatherResponse3 = await request(app)
       .get('/api/weather/tokyo')
-      .set('x-test-id', 'test-id-3');
+      .set(scenarist.config.headers.testId, 'test-id-3');
 
     expect(weatherResponse3.status).toBe(500);
     expect(weatherResponse3.body.error).toBe('Internal Server Error');
@@ -70,20 +70,20 @@ describe('Test ID Isolation E2E', () => {
   it('should not leak scenario state between test IDs', async () => {
     // Set test-id-A to stripe-failure
     await request(app)
-      .post('/__scenario__')
-      .set('x-test-id', 'test-id-A')
+      .post(scenarist.config.endpoints.setScenario)
+      .set(scenarist.config.headers.testId, 'test-id-A')
       .send({ scenario: 'stripe-failure' });
 
     // Set test-id-B to success
     await request(app)
-      .post('/__scenario__')
-      .set('x-test-id', 'test-id-B')
+      .post(scenarist.config.endpoints.setScenario)
+      .set(scenarist.config.headers.testId, 'test-id-B')
       .send({ scenario: 'success' });
 
     // Verify test-id-A sees failure
     const responseA = await request(app)
       .post('/api/payment')
-      .set('x-test-id', 'test-id-A')
+      .set(scenarist.config.headers.testId, 'test-id-A')
       .send({ amount: 1000, currency: 'usd' });
 
     expect(responseA.status).toBe(402);
@@ -92,7 +92,7 @@ describe('Test ID Isolation E2E', () => {
     // Verify test-id-B sees success
     const responseB = await request(app)
       .post('/api/payment')
-      .set('x-test-id', 'test-id-B')
+      .set(scenarist.config.headers.testId, 'test-id-B')
       .send({ amount: 1000, currency: 'usd' });
 
     expect(responseB.status).toBe(200);
@@ -102,7 +102,7 @@ describe('Test ID Isolation E2E', () => {
     // Verify test-id-A still sees failure (not affected by test-id-B)
     const responseA2 = await request(app)
       .post('/api/payment')
-      .set('x-test-id', 'test-id-A')
+      .set(scenarist.config.headers.testId, 'test-id-A')
       .send({ amount: 1000, currency: 'usd' });
 
     expect(responseA2.status).toBe(402);
@@ -111,26 +111,26 @@ describe('Test ID Isolation E2E', () => {
   it('should allow test IDs to get their own current scenarios', async () => {
     // Set different scenarios for different test IDs
     await request(app)
-      .post('/__scenario__')
-      .set('x-test-id', 'isolation-test-1')
+      .post(scenarist.config.endpoints.setScenario)
+      .set(scenarist.config.headers.testId, 'isolation-test-1')
       .send({ scenario: 'success' });
 
     await request(app)
-      .post('/__scenario__')
-      .set('x-test-id', 'isolation-test-2')
+      .post(scenarist.config.endpoints.setScenario)
+      .set(scenarist.config.headers.testId, 'isolation-test-2')
       .send({ scenario: 'slow-network' });
 
     // Get scenario for test-1
     const getResponse1 = await request(app)
-      .get('/__scenario__')
-      .set('x-test-id', 'isolation-test-1');
+      .get(scenarist.config.endpoints.getScenario)
+      .set(scenarist.config.headers.testId, 'isolation-test-1');
 
     expect(getResponse1.body.scenarioId).toBe('success');
 
     // Get scenario for test-2
     const getResponse2 = await request(app)
-      .get('/__scenario__')
-      .set('x-test-id', 'isolation-test-2');
+      .get(scenarist.config.endpoints.getScenario)
+      .set(scenarist.config.headers.testId, 'isolation-test-2');
 
     expect(getResponse2.body.scenarioId).toBe('slow-network');
 
@@ -147,8 +147,8 @@ describe('Test ID Isolation E2E', () => {
     await Promise.all(
       testIds.map((testId, index) =>
         request(app)
-          .post('/__scenario__')
-          .set('x-test-id', testId)
+          .post(scenarist.config.endpoints.setScenario)
+          .set(scenarist.config.headers.testId, testId)
           .send({ scenario: scenarios[index % scenarios.length] })
       )
     );
@@ -156,7 +156,7 @@ describe('Test ID Isolation E2E', () => {
     // Make concurrent requests with different test IDs
     const responses = await Promise.all(
       testIds.map((testId) =>
-        request(app).get('/api/github/user/testuser').set('x-test-id', testId)
+        request(app).get('/api/github/user/testuser').set(scenarist.config.headers.testId, testId)
       )
     );
 

@@ -25,7 +25,11 @@
       "Bash(pnpm --filter=@scenarist/msw-adapter typecheck:*)",
       "Bash(pnpm:*)",
       "Bash(xargs:*)",
-      "Bash(turbo run:*)"
+      "Bash(turbo run:*)",
+      "Bash(node -e \"\nconst { successScenario, githubNotFoundScenario } = await import(''./src/scenarios.js'');\nconsole.log(''Success ID:'', successScenario.id);\nconsole.log(''GitHub Not Found ID:'', githubNotFoundScenario.id);\n\")",
+      "Bash(for file in *.test.ts)",
+      "Bash(do)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

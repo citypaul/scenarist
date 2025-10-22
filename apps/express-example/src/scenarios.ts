@@ -281,3 +281,26 @@ export const mixedResultsScenario: ScenarioDefinition = {
     },
   ],
 };
+
+/**
+ * Scenarios organized as typed object for easy access in tests.
+ *
+ * Use this to get type-safe access to scenario IDs:
+ *
+ * @example
+ * ```typescript
+ * await request(app)
+ *   .post(scenarist.config.endpoints.setScenario)
+ *   .send({ scenario: scenarios.success.id });
+ * ```
+ */
+export const scenarios = {
+  default: defaultScenario,
+  success: successScenario,
+  githubNotFound: githubNotFoundScenario,
+  weatherError: weatherErrorScenario,
+  stripeFailure: stripeFailureScenario,
+  slowNetwork: slowNetworkScenario,
+  mixedResults: mixedResultsScenario,
+} as const;
+
