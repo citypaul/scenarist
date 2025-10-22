@@ -2,11 +2,20 @@ import { describe, it, expect } from 'vitest';
 import express from 'express';
 import request from 'supertest';
 import { createScenarist } from '../src/setup/setup-scenarist.js';
+import type { ScenarioDefinition } from '@scenarist/core';
+
+const mockDefaultScenario: ScenarioDefinition = {
+  id: 'default',
+  name: 'Default Scenario',
+  description: 'Default test scenario',
+  mocks: [],
+};
 
 describe('createScenarist', () => {
   it('should return object with all expected properties', () => {
     const scenarist = createScenarist({
       enabled: true,
+      defaultScenario: mockDefaultScenario,
       strictMode: false,
     });
 
@@ -24,6 +33,7 @@ describe('createScenarist', () => {
   it('should create working middleware that includes test ID and endpoints', async () => {
     const scenarist = createScenarist({
       enabled: true,
+      defaultScenario: mockDefaultScenario,
       strictMode: false,
     });
 
@@ -51,6 +61,7 @@ describe('createScenarist', () => {
   it('should intercept external API calls based on registered scenario', async () => {
     const scenarist = createScenarist({
       enabled: true,
+      defaultScenario: mockDefaultScenario,
       strictMode: false,
     });
 

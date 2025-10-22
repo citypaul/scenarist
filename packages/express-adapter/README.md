@@ -30,24 +30,33 @@ yarn add -D @scenarist/express-adapter @scenarist/core msw
 
 ## Quick Start
 
-### 1. Create Scenarist Instance
+### 1. Define Scenarios
 
 ```typescript
-// test/setup.ts
-import { createScenarist } from '@scenarist/express-adapter';
-
-export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
-  strictMode: false,
-});
-```
-
-### 2. Register Scenarios
-
-```typescript
-// test/scenarios/admin-user.ts
+// test/scenarios/default.ts
 import type { ScenarioDefinition } from '@scenarist/core';
 
+export const defaultScenario: ScenarioDefinition = {
+  id: 'default',
+  name: 'Default Scenario',
+  description: 'Baseline responses for all APIs',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.example.com/user',
+      response: {
+        status: 200,
+        body: {
+          id: '000',
+          name: 'Default User',
+          role: 'user',
+        },
+      },
+    },
+  ],
+};
+
+// test/scenarios/admin-user.ts
 export const adminUserScenario: ScenarioDefinition = {
   id: 'admin-user',
   name: 'Admin User',
@@ -67,8 +76,22 @@ export const adminUserScenario: ScenarioDefinition = {
     },
   ],
 };
+```
 
-// Register it
+### 2. Create Scenarist Instance
+
+```typescript
+// test/setup.ts
+import { createScenarist } from '@scenarist/express-adapter';
+import { defaultScenario, adminUserScenario } from './scenarios';
+
+export const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  defaultScenario: defaultScenario, // REQUIRED - fallback for unmocked requests
+  strictMode: false,
+});
+
+// Register additional scenarios (default is auto-registered)
 scenarist.registerScenario(adminUserScenario);
 ```
 
@@ -136,7 +159,7 @@ Creates a Scenarist instance with everything wired automatically.
 
 **Parameters:**
 ```typescript
-type CreateScenaristOptions = {
+type ExpressAdapterOptions = {
   enabled: boolean;                    // Whether mocking is enabled
   strictMode?: boolean;                 // Return 501 for unmocked requests (default: false)
   headers?: {
@@ -147,7 +170,7 @@ type CreateScenaristOptions = {
     setScenario?: string;               // POST endpoint (default: '/__scenario__')
     getScenario?: string;               // GET endpoint (default: '/__scenario__')
   };
-  defaultScenario?: string;             // Default scenario ID (default: 'default')
+  defaultScenario: ScenarioDefinition;  // REQUIRED - fallback scenario (auto-registered)
   defaultTestId?: string;               // Default test ID (default: 'default-test')
   registry?: ScenarioRegistry;          // Custom registry (default: InMemoryScenarioRegistry)
   store?: ScenarioStore;                // Custom store (default: InMemoryScenarioStore)
@@ -156,8 +179,8 @@ type CreateScenaristOptions = {
 
 **Returns:**
 ```typescript
-type Scenarist = {
-  middleware: Router;                   // Express middleware (includes everything)
+type ExpressScenarist = {
+  middleware: Router;                   // Express middleware (includes test ID extraction + scenario endpoints)
   registerScenario: (def: ScenarioDefinition) => void;
   switchScenario: (testId: string, scenarioId: string, variant?: string) => Result<void, Error>;
   getActiveScenario: (testId: string) => ActiveScenario | undefined;
@@ -173,10 +196,11 @@ type Scenarist = {
 ```typescript
 const scenarist = createScenarist({
   enabled: true,
+  defaultScenario: myDefaultScenario, // Required
   strictMode: false,
 });
 
-scenarist.registerScenario(myScenario);
+scenarist.registerScenario(myScenario); // Additional scenarios
 app.use(scenarist.middleware);
 
 beforeAll(() => scenarist.start());
@@ -227,11 +251,31 @@ await request(app)
 }
 ```
 
+**Response (404) - No Active Scenario:**
+```typescript
+{
+  error: "No active scenario for this test ID";
+  testId: string;
+}
+```
+
 **Example:**
 ```typescript
+// After setting a scenario
 const response = await request(app)
   .get('/__scenario__')
   .set('x-test-id', 'test-123');
+
+expect(response.status).toBe(200);
+expect(response.body.scenarioId).toBe('success');
+
+// Before setting a scenario
+const response2 = await request(app)
+  .get('/__scenario__')
+  .set('x-test-id', 'new-test');
+
+expect(response2.status).toBe(404);
+expect(response2.body.error).toBe('No active scenario for this test ID');
 ```
 
 ## Core Concepts
@@ -256,9 +300,15 @@ await request(app)
 
 The `createScenarist()` function automatically:
 1. Creates an MSW server with a dynamic handler
-2. Wires test ID from headers to MSW request interception
-3. Looks up the active scenario for each test ID
-4. Returns mocked responses based on the scenario
+2. Wires test ID extraction from headers via AsyncLocalStorage
+3. Sets up scenario control endpoints (POST/GET `/__scenario__`)
+4. Looks up the active scenario for each test ID
+5. Returns mocked responses based on the scenario
+
+The `middleware` includes everything:
+- Test ID extraction from `x-test-id` header (stored in AsyncLocalStorage)
+- Scenario control endpoints (`/__scenario__`)
+- All wired together - just add `app.use(scenarist.middleware)`
 
 You never see MSW code - it's all handled internally.
 
@@ -354,6 +404,7 @@ Enable scenario switching during development:
 ```typescript
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test',
+  defaultScenario: myDefaultScenario, // Required
   strictMode: false,
 });
 ```
@@ -378,18 +429,21 @@ curl http://localhost:3000/__scenario__
 // Test-only
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
+  defaultScenario: myDefaultScenario, // Required
   strictMode: true, // Fail if any unmocked request
 });
 
 // Development and test
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development',
+  defaultScenario: myDefaultScenario, // Required
   strictMode: false, // Allow passthrough to real APIs
 });
 
 // Opt-in with environment variable
 const scenarist = createScenarist({
   enabled: process.env.ENABLE_MOCKING === 'true',
+  defaultScenario: myDefaultScenario, // Required
   strictMode: false,
 });
 ```
@@ -399,6 +453,7 @@ const scenarist = createScenarist({
 ```typescript
 const scenarist = createScenarist({
   enabled: true,
+  defaultScenario: myDefaultScenario, // Required
   headers: {
     testId: 'x-my-test-id',
     mockEnabled: 'x-my-mock-flag',
@@ -483,8 +538,8 @@ This package is written in TypeScript and includes full type definitions.
 **Exported Types:**
 ```typescript
 import type {
-  CreateScenaristOptions,
-  Scenarist,
+  ExpressAdapterOptions,
+  ExpressScenarist,
 } from '@scenarist/express-adapter';
 
 import type {
@@ -496,11 +551,19 @@ import type {
 
 ## Examples
 
-See the `examples/` directory for complete working examples:
+See the [**Express Example App**](../../apps/express-example) for a complete working example demonstrating:
 
-- **Basic Express App** - Minimal setup with createScenarist
-- **Advanced Testing** - Concurrent tests, variants, error scenarios
-- **Development Workflows** - Using scenarios during local development
+- ✅ **Runtime scenario switching** - Change API behavior without restart
+- ✅ **Test ID isolation** - 20 E2E tests with concurrent scenarios
+- ✅ **Default fallback** - Partial scenarios automatically falling back
+- ✅ **Real API integration** - Actual Express routes calling external APIs
+- ✅ **Multiple scenarios** - Success, errors, timeouts, mixed results
+
+The example includes:
+- Complete Express application with GitHub, Weather, and Stripe API integrations
+- 7 different scenario definitions
+- 20 passing E2E tests demonstrating all features
+- Comprehensive documentation and usage patterns
 
 ## Contributing
 

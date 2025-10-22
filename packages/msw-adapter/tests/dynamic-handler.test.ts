@@ -33,6 +33,7 @@ describe('Dynamic Handler', () => {
         getActiveScenario,
         getScenarioDefinition,
         strictMode: false,
+        defaultScenarioId: 'default',
       });
 
       const server = setupServer(handler);
@@ -77,6 +78,7 @@ describe('Dynamic Handler', () => {
         getActiveScenario,
         getScenarioDefinition,
         strictMode: false,
+        defaultScenarioId: 'default',
       });
 
       const server = setupServer(handler);
@@ -116,6 +118,7 @@ describe('Dynamic Handler', () => {
         getActiveScenario,
         getScenarioDefinition,
         strictMode: false,
+        defaultScenarioId: 'default',
       });
 
       const server = setupServer(handler);
@@ -142,6 +145,7 @@ describe('Dynamic Handler', () => {
         getActiveScenario,
         getScenarioDefinition,
         strictMode: false,
+        defaultScenarioId: 'default',
       });
 
       const server = setupServer(handler);
@@ -164,6 +168,7 @@ describe('Dynamic Handler', () => {
         getActiveScenario,
         getScenarioDefinition,
         strictMode: true,
+        defaultScenarioId: 'default',
       });
 
       const server = setupServer(handler);
