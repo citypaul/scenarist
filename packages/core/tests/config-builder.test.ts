@@ -43,7 +43,11 @@ describe('buildConfig', () => {
     expect(config.endpoints.getScenario).toBe('/api/scenario/get');
   });
 
-  it.each([
+  it.each<{
+    property: 'defaultScenario' | 'defaultTestId' | 'strictMode';
+    value: string | boolean;
+    default: string | boolean;
+  }>([
     { property: 'defaultScenario', value: 'happy-path', default: 'default' },
     { property: 'defaultTestId', value: 'my-test', default: 'default-test' },
     { property: 'strictMode', value: true, default: false },

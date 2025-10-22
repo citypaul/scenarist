@@ -32,7 +32,6 @@ export const mockScenario = (
     id,
     name: overrides?.name ?? `${id} scenario`,
     description: overrides?.description ?? `Scenario for ${id}`,
-    devToolEnabled: false,
     mocks: [],
     ...overrides,
   };

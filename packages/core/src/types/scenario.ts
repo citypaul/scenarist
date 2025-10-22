@@ -49,7 +49,6 @@ export type ScenarioDefinition = {
   readonly name: string;
   readonly description: string;
   readonly mocks: ReadonlyArray<MockDefinition>;
-  readonly devToolEnabled: boolean;
   readonly variants?: ReadonlyArray<VariantDefinition>;
 };
 

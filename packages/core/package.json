@@ -16,7 +16,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --project tsconfig.typecheck.json --noEmit"
   },
   "dependencies": {
     "msw": "^2.0.0"

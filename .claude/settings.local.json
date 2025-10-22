@@ -18,7 +18,14 @@
       "Bash(pnpm typecheck:*)",
       "Bash(git stash:*)",
       "Bash(git cherry-pick:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(cat:*)",
+      "Bash(pnpm check-types:*)",
+      "Bash(pnpm --filter=@scenarist/core typecheck:*)",
+      "Bash(pnpm --filter=@scenarist/msw-adapter typecheck:*)",
+      "Bash(pnpm:*)",
+      "Bash(xargs:*)",
+      "Bash(turbo run:*)"
     ],
     "deny": [],
     "ask": []

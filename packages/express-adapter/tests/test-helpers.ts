@@ -31,11 +31,12 @@ export const mockRequest = (overrides?: Partial<Request>): Request => {
   const lowercasedHeaders: Record<string, string | string[]> = {};
 
   for (const [key, value] of Object.entries(headers)) {
-    lowercasedHeaders[key.toLowerCase()] = value;
+    if (value !== undefined) {
+      lowercasedHeaders[key.toLowerCase()] = value;
+    }
   }
 
   return {
-    headers: lowercasedHeaders,
     hostname: 'localhost',
     ...overrides,
     headers: lowercasedHeaders, // Ensure headers are lowercased even after spread
