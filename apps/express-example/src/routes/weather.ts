@@ -16,9 +16,9 @@ export const setupWeatherRoutes = (router: Router): void => {
         return res.status(response.status).json(data);
       }
 
-      res.json(data);
+      return res.json(data);
     } catch (error) {
-      res.status(500).json({
+      return res.status(500).json({
         error: 'Failed to fetch weather data',
         message: error instanceof Error ? error.message : 'Unknown error',
       });

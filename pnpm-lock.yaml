@@ -67,6 +67,9 @@ importers:
         specifier: ^4.18.2
         version: 4.21.2
     devDependencies:
+      '@scenarist/eslint-config':
+        specifier: workspace:*
+        version: link:../../packages/eslint-config
       '@scenarist/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
@@ -82,6 +85,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^1.6.1
         version: 1.6.1(vitest@1.6.1(@types/node@20.19.23)(@vitest/ui@1.6.1))
+      eslint:
+        specifier: ^9.34.0
+        version: 9.34.0
       msw:
         specifier: ^2.0.0
         version: 2.11.6(@types/node@20.19.23)(typescript@5.9.2)
@@ -3670,7 +3676,7 @@ snapshots:
       pathe: 1.1.2
       picocolors: 1.1.1
       sirv: 2.0.4
-      vitest: 1.6.1(@types/node@20.19.23)(@vitest/ui@1.6.1)
+      vitest: 1.6.1(@types/node@22.15.3)(@vitest/ui@1.6.1)
 
   '@vitest/utils@1.6.1':
     dependencies:
