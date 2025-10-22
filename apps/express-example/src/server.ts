@@ -1,9 +1,12 @@
-import express, { type Express } from 'express';
-import { createScenarist, type ExpressScenarist } from '@scenarist/express-adapter';
-import { defaultScenario, scenarios } from './scenarios.js';
-import { setupGitHubRoutes } from './routes/github.js';
-import { setupWeatherRoutes } from './routes/weather.js';
-import { setupStripeRoutes } from './routes/stripe.js';
+import {
+  createScenarist,
+  type ExpressScenarist,
+} from "@scenarist/express-adapter";
+import express, { type Express } from "express";
+import { setupGitHubRoutes } from "./routes/github.js";
+import { setupStripeRoutes } from "./routes/stripe.js";
+import { setupWeatherRoutes } from "./routes/weather.js";
+import { defaultScenario, scenarios } from "./scenarios.js";
 
 /**
  * Create and configure the Express application with Scenarist
@@ -22,14 +25,7 @@ export const createApp = (): { app: Express; scenarist: ExpressScenarist } => {
   });
 
   // Register additional scenarios (default is auto-registered)
-  scenarist.registerScenarios([
-    scenarios.success,
-    scenarios.githubNotFound,
-    scenarios.weatherError,
-    scenarios.stripeFailure,
-    scenarios.slowNetwork,
-    scenarios.mixedResults,
-  ]);
+  scenarist.registerScenarios(Object.values(scenarios));
 
   // Apply Scenarist middleware (includes test ID extraction and scenario endpoints)
   app.use(scenarist.middleware);
@@ -42,8 +38,8 @@ export const createApp = (): { app: Express; scenarist: ExpressScenarist } => {
   app.use(router);
 
   // Health check endpoint
-  app.get('/health', (_req, res) => {
-    res.json({ status: 'ok' });
+  app.get("/health", (_req, res) => {
+    res.json({ status: "ok" });
   });
 
   return { app, scenarist };
