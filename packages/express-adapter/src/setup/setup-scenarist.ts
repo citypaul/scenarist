@@ -75,6 +75,18 @@ export const createScenarist = (
     middleware,
     registerScenario: (definition) => manager.registerScenario(definition),
     registerScenarios: (definitions) => {
+      // Validate all scenarios first (fail-fast before registering any)
+      // This provides transaction-like behavior - either all succeed or none are registered
+      definitions.forEach((definition) => {
+        const existing = manager.getScenarioById(definition.id);
+        if (existing) {
+          throw new Error(
+            `Scenario '${definition.id}' is already registered. Each scenario must have a unique ID.`
+          );
+        }
+      });
+
+      // If validation passed, register all scenarios
       definitions.forEach((definition) => manager.registerScenario(definition));
     },
     switchScenario: (testId, scenarioId, variantName) =>

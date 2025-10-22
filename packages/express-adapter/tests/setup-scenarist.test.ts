@@ -181,4 +181,77 @@ describe('createScenarist', () => {
     expect(scenarios.find((s) => s.id === 'scenario-2')).toBeDefined();
     expect(scenarios.find((s) => s.id === 'scenario-3')).toBeDefined();
   });
+
+  it('should throw error when registering duplicate scenario ID', () => {
+    const scenarist = createScenarist({
+      enabled: true,
+      defaultScenario: mockDefaultScenario,
+    });
+
+    const scenario1: ScenarioDefinition = {
+      id: 'duplicate',
+      name: 'First',
+      description: 'First scenario',
+      mocks: [],
+    };
+
+    const scenario2: ScenarioDefinition = {
+      id: 'duplicate',
+      name: 'Second',
+      description: 'Second scenario',
+      mocks: [],
+    };
+
+    scenarist.registerScenario(scenario1);
+
+    expect(() => scenarist.registerScenario(scenario2)).toThrow(
+      "Scenario 'duplicate' is already registered"
+    );
+  });
+
+  it('should throw error when batch registering with duplicate IDs', () => {
+    const scenarist = createScenarist({
+      enabled: true,
+      defaultScenario: mockDefaultScenario,
+    });
+
+    const scenario1: ScenarioDefinition = {
+      id: 'unique-1',
+      name: 'Unique 1',
+      description: 'First unique scenario',
+      mocks: [],
+    };
+
+    const scenario2: ScenarioDefinition = {
+      id: 'duplicate',
+      name: 'Duplicate',
+      description: 'Duplicate scenario',
+      mocks: [],
+    };
+
+    scenarist.registerScenario(scenario1);
+    scenarist.registerScenario(scenario2);
+
+    const scenario3: ScenarioDefinition = {
+      id: 'unique-2',
+      name: 'Unique 2',
+      description: 'Second unique scenario',
+      mocks: [],
+    };
+
+    const scenario4: ScenarioDefinition = {
+      id: 'duplicate',
+      name: 'Duplicate Again',
+      description: 'Attempting to register duplicate',
+      mocks: [],
+    };
+
+    expect(() => scenarist.registerScenarios([scenario3, scenario4])).toThrow(
+      "Scenario 'duplicate' is already registered"
+    );
+
+    // Verify that unique-2 was not registered (transaction-like behavior)
+    const scenarios = scenarist.listScenarios();
+    expect(scenarios.find((s) => s.id === 'unique-2')).toBeUndefined();
+  });
 });

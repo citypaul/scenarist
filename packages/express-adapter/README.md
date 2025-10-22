@@ -93,6 +93,9 @@ export const scenarist = createScenarist({
 
 // Register additional scenarios (default is auto-registered)
 scenarist.registerScenario(adminUserScenario);
+
+// Or register multiple scenarios at once
+scenarist.registerScenarios([adminUserScenario, /* ... more scenarios */]);
 ```
 
 ### 3. Add to Express App
@@ -180,8 +183,10 @@ type ExpressAdapterOptions = {
 **Returns:**
 ```typescript
 type ExpressScenarist = {
+  config: ScenaristConfig;              // Resolved configuration (endpoints, headers, etc.)
   middleware: Router;                   // Express middleware (includes test ID extraction + scenario endpoints)
   registerScenario: (def: ScenarioDefinition) => void;
+  registerScenarios: (defs: ReadonlyArray<ScenarioDefinition>) => void;
   switchScenario: (testId: string, scenarioId: string, variant?: string) => Result<void, Error>;
   getActiveScenario: (testId: string) => ActiveScenario | undefined;
   getScenarioById: (scenarioId: string) => ScenarioDefinition | undefined;
@@ -338,6 +343,106 @@ scenarist.registerScenario({
   ],
 });
 ```
+
+## Scenario Registration
+
+### Single Registration
+
+Register scenarios one at a time:
+
+```typescript
+scenarist.registerScenario(successScenario);
+scenarist.registerScenario(errorScenario);
+scenarist.registerScenario(timeoutScenario);
+```
+
+### Batch Registration
+
+Register multiple scenarios at once for cleaner code:
+
+```typescript
+scenarist.registerScenarios([
+  successScenario,
+  errorScenario,
+  timeoutScenario,
+  notFoundScenario,
+]);
+```
+
+**Tip:** Use with the scenarios object pattern for maximum type safety:
+
+```typescript
+// scenarios.ts
+export const scenarios = {
+  success: successScenario,
+  error: errorScenario,
+  timeout: timeoutScenario,
+  notFound: notFoundScenario,
+} as const;
+
+// setup.ts
+import { scenarios } from './scenarios';
+
+scenarist.registerScenarios(Object.values(scenarios));
+```
+
+### Duplicate Protection
+
+Scenarist protects against duplicate scenario IDs to prevent accidental overwrites:
+
+```typescript
+const scenario1 = { id: 'test', name: 'First', /* ... */ };
+const scenario2 = { id: 'test', name: 'Second', /* ... */ };
+
+scenarist.registerScenario(scenario1);
+scenarist.registerScenario(scenario2); // ❌ Throws: Scenario 'test' is already registered
+```
+
+**Batch registration is transactional** - either all scenarios register successfully or none do:
+
+```typescript
+scenarist.registerScenarios([
+  { id: 'new-1', /* ... */ },
+  { id: 'duplicate', /* ... */ }, // Already registered
+  { id: 'new-2', /* ... */ },
+]);
+// ❌ Throws error, 'new-1' and 'new-2' are NOT registered
+```
+
+This prevents partial registration states that could lead to confusing test failures.
+
+### Type-Safe Scenario Access
+
+Combine batch registration with const objects for full type safety:
+
+```typescript
+// scenarios.ts - define and export scenarios
+export const scenarios = {
+  success: successScenario,
+  githubNotFound: githubNotFoundScenario,
+  weatherError: weatherErrorScenario,
+  stripeFailure: stripeFailureScenario,
+} as const;
+
+// setup.ts - register all scenarios at once
+import { scenarios } from './scenarios';
+
+scenarist.registerScenarios(Object.values(scenarios));
+
+// test.ts - type-safe access with autocomplete
+import { scenarios } from './scenarios';
+
+await request(app)
+  .post(scenarist.config.endpoints.setScenario)
+  .set(scenarist.config.headers.testId, 'test-123')
+  .send({ scenario: scenarios.success.id }); // ✅ Autocomplete works!
+```
+
+This pattern provides:
+- ✅ Autocomplete for scenario IDs
+- ✅ Refactor-safe (rename propagates everywhere)
+- ✅ Compile-time errors for typos
+- ✅ Single source of truth
 
 ## Common Patterns
 
