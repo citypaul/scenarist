@@ -1,5 +1,5 @@
-import express from 'express';
-import { createScenarist } from '@scenarist/express-adapter';
+import express, { type Express } from 'express';
+import { createScenarist, type ExpressScenarist } from '@scenarist/express-adapter';
 import {
   defaultScenario,
   successScenario,
@@ -16,7 +16,7 @@ import { setupStripeRoutes } from './routes/stripe.js';
 /**
  * Create and configure the Express application with Scenarist
  */
-export const createApp = () => {
+export const createApp = (): { app: Express; scenarist: ExpressScenarist } => {
   const app = express();
 
   // Parse JSON bodies
