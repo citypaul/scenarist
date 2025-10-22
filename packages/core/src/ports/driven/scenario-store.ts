@@ -1,4 +1,4 @@
-import type { ActiveScenario } from '../types/index.js';
+import type { ActiveScenario } from '../../types/index.js';
 
 /**
  * Secondary port for scenario storage.

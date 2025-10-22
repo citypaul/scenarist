@@ -1,4 +1,7 @@
-export type { ScenarioManager } from './scenario-manager.js';
-export type { ScenarioRegistry } from './scenario-registry.js';
-export type { ScenarioStore } from './scenario-store.js';
-export type { RequestContext } from './request-context.js';
+// Driving ports (primary/input) - How external actors use the core
+export type { ScenarioManager } from './driving/scenario-manager.js';
+
+// Driven ports (secondary/output) - How core uses external services
+export type { ScenarioRegistry } from './driven/scenario-registry.js';
+export type { ScenarioStore } from './driven/scenario-store.js';
+export type { RequestContext } from './driven/request-context.js';

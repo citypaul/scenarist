@@ -1,4 +1,4 @@
-import type { ScenarioDefinition } from '../types/index.js';
+import type { ScenarioDefinition } from '../../types/index.js';
 
 /**
  * Secondary port for scenario registry.
