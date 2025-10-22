@@ -126,7 +126,6 @@ describe('Scenario Endpoints', () => {
           id: 'happy-path',
           name: 'Happy Path Scenario',
           description: 'All requests succeed',
-          devToolEnabled: true,
           mocks: [],
         }),
       });

@@ -53,11 +53,11 @@ describe('buildConfig', () => {
       [property]: value,
     });
 
-    expect(config[property]).toBe(value);
+    expect(config[property as keyof typeof config]).toBe(value);
 
     // Also verify default when not provided
     const configWithDefaults = buildConfig({ enabled: true });
-    expect(configWithDefaults[property]).toBe(defaultValue);
+    expect(configWithDefaults[property as keyof typeof configWithDefaults]).toBe(defaultValue);
   });
 
   it('should require evaluated boolean for enabled property', () => {

@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import express from 'express';
 import request from 'supertest';
-import { createScenarist } from '../src/setup/setup-scenarist';
+import { createScenarist } from '../src/setup/setup-scenarist.js';
 
 describe('createScenarist', () => {
   it('should return object with all expected properties', () => {
@@ -76,7 +76,7 @@ describe('createScenarist', () => {
     app.use(express.json());
     app.use(scenarist.middleware);
 
-    app.get('/test-route', async (req, res) => {
+    app.get('/test-route', async (_req, res) => {
       const response = await fetch('https://api.example.com/data');
       const data = await response.json();
       res.json(data);

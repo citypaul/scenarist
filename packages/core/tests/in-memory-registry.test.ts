@@ -9,7 +9,6 @@ const createTestScenarioDefinition = (
   id,
   name,
   description: `Description for ${name}`,
-  devToolEnabled: false,
   mocks: [
     {
       method: 'GET',
