@@ -74,6 +74,9 @@ export const createScenarist = (
     config,
     middleware,
     registerScenario: (definition) => manager.registerScenario(definition),
+    registerScenarios: (definitions) => {
+      definitions.forEach((definition) => manager.registerScenario(definition));
+    },
     switchScenario: (testId, scenarioId, variantName) =>
       manager.switchScenario(testId, scenarioId, variantName),
     getActiveScenario: (testId) => manager.getActiveScenario(testId),

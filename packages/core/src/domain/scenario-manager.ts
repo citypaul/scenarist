@@ -16,6 +16,13 @@ class ScenarioNotFoundError extends Error {
   }
 }
 
+class DuplicateScenarioError extends Error {
+  constructor(scenarioId: string) {
+    super(`Scenario '${scenarioId}' is already registered. Each scenario must have a unique ID.`);
+    this.name = "DuplicateScenarioError";
+  }
+}
+
 /**
  * Factory function to create a ScenarioManager implementation.
  *
@@ -37,6 +44,18 @@ export const createScenarioManager = ({
 }): ScenarioManager => {
   return {
     registerScenario(definition: ScenarioDefinition): void {
+      const existing = registry.get(definition.id);
+
+      // Allow re-registering the exact same scenario object (idempotent)
+      if (existing === definition) {
+        return;
+      }
+
+      // Prevent registering a different scenario with the same ID
+      if (existing) {
+        throw new DuplicateScenarioError(definition.id);
+      }
+
       registry.register(definition);
     },
 

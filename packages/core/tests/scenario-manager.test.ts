@@ -89,6 +89,47 @@ describe("ScenarioManager", () => {
 
       expect(registry.has("test")).toBe(true);
     });
+
+    it("should throw error when registering duplicate scenario ID", () => {
+      const { manager } = createTestSetup();
+      const definition1 = createTestScenarioDefinition("duplicate", "First");
+      const definition2 = createTestScenarioDefinition("duplicate", "Second");
+
+      manager.registerScenario(definition1);
+
+      expect(() => manager.registerScenario(definition2)).toThrow(
+        "Scenario 'duplicate' is already registered"
+      );
+    });
+
+    it("should not overwrite existing scenario when duplicate detected", () => {
+      const { manager } = createTestSetup();
+      const definition1 = createTestScenarioDefinition("duplicate", "First");
+      const definition2 = createTestScenarioDefinition("duplicate", "Second");
+
+      manager.registerScenario(definition1);
+
+      try {
+        manager.registerScenario(definition2);
+      } catch {
+        // Expected to throw
+      }
+
+      const registered = manager.getScenarioById("duplicate");
+      expect(registered?.name).toBe("First");
+    });
+
+    it("should allow re-registering the exact same scenario (idempotent)", () => {
+      const { manager } = createTestSetup();
+      const definition = createTestScenarioDefinition("test", "Test Scenario");
+
+      manager.registerScenario(definition);
+      // Re-registering the same object should not throw
+      expect(() => manager.registerScenario(definition)).not.toThrow();
+
+      const registered = manager.getScenarioById("test");
+      expect(registered).toEqual(definition);
+    });
   });
 
   describe("switchScenario", () => {
