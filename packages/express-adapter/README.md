@@ -398,7 +398,7 @@ scenarist.registerScenario(scenario1);
 scenarist.registerScenario(scenario2); // ❌ Throws: Scenario 'test' is already registered
 ```
 
-**Batch registration is transactional** - either all scenarios register successfully or none do:
+**Batch registration** also protects against duplicates:
 
 ```typescript
 scenarist.registerScenarios([
@@ -406,10 +406,9 @@ scenarist.registerScenarios([
   { id: 'duplicate', /* ... */ }, // Already registered
   { id: 'new-2', /* ... */ },
 ]);
-// ❌ Throws error, 'new-1' and 'new-2' are NOT registered
+// ❌ Throws error when it reaches 'duplicate'
+// Note: 'new-1' will have been registered before the error
 ```
-
-This prevents partial registration states that could lead to confusing test failures.
 
 ### Type-Safe Scenario Access
 

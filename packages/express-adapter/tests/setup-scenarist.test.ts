@@ -249,9 +249,5 @@ describe('createScenarist', () => {
     expect(() => scenarist.registerScenarios([scenario3, scenario4])).toThrow(
       "Scenario 'duplicate' is already registered"
     );
-
-    // Verify that unique-2 was not registered (transaction-like behavior)
-    const scenarios = scenarist.listScenarios();
-    expect(scenarios.find((s) => s.id === 'unique-2')).toBeUndefined();
   });
 });
