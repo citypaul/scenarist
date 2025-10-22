@@ -1,0 +1,283 @@
+import type { ScenarioDefinition } from '@scenarist/core';
+
+/**
+ * Default scenario - always available as fallback
+ * Contains basic successful responses for all external APIs
+ */
+export const defaultScenario: ScenarioDefinition = {
+  id: 'default',
+  name: 'Default Scenario',
+  description: 'Default successful responses for all external APIs',
+  mocks: [
+    // GitHub API - Get user profile
+    {
+      method: 'GET',
+      url: 'https://api.github.com/users/:username',
+      response: {
+        status: 200,
+        body: {
+          login: 'octocat',
+          id: 1,
+          name: 'The Octocat',
+          bio: 'GitHub mascot',
+          public_repos: 8,
+          followers: 1000,
+        },
+      },
+    },
+    // Weather API - Get current weather
+    {
+      method: 'GET',
+      url: 'https://api.weather.com/v1/weather/:city',
+      response: {
+        status: 200,
+        body: {
+          city: 'London',
+          temperature: 18,
+          conditions: 'Cloudy',
+          humidity: 65,
+        },
+      },
+    },
+    // Stripe API - Create payment
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      response: {
+        status: 200,
+        body: {
+          id: 'ch_default123',
+          status: 'succeeded',
+          amount: 1000,
+          currency: 'usd',
+        },
+      },
+    },
+  ],
+};
+
+/**
+ * Scenario: All APIs return successful responses
+ */
+export const successScenario: ScenarioDefinition = {
+  id: 'success',
+  name: 'Success Scenario',
+  description: 'All external API calls succeed with valid data',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.github.com/users/:username',
+      response: {
+        status: 200,
+        body: {
+          login: 'testuser',
+          id: 123,
+          name: 'Test User',
+          bio: 'Test bio',
+          public_repos: 42,
+          followers: 1337,
+        },
+      },
+    },
+    {
+      method: 'GET',
+      url: 'https://api.weather.com/v1/weather/:city',
+      response: {
+        status: 200,
+        body: {
+          city: 'San Francisco',
+          temperature: 22,
+          conditions: 'Sunny',
+          humidity: 45,
+        },
+      },
+    },
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      response: {
+        status: 200,
+        body: {
+          id: 'ch_success123',
+          status: 'succeeded',
+          amount: 5000,
+          currency: 'usd',
+        },
+      },
+    },
+  ],
+};
+
+/**
+ * Scenario: GitHub API returns 404 (user not found)
+ */
+export const githubNotFoundScenario: ScenarioDefinition = {
+  id: 'github-not-found',
+  name: 'GitHub User Not Found',
+  description: 'GitHub API returns 404 for user lookup',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.github.com/users/:username',
+      response: {
+        status: 404,
+        body: {
+          message: 'Not Found',
+          documentation_url: 'https://docs.github.com',
+        },
+      },
+    },
+  ],
+};
+
+/**
+ * Scenario: Weather API returns server error
+ */
+export const weatherErrorScenario: ScenarioDefinition = {
+  id: 'weather-error',
+  name: 'Weather API Error',
+  description: 'Weather API returns 500 server error',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.weather.com/v1/weather/:city',
+      response: {
+        status: 500,
+        body: {
+          error: 'Internal Server Error',
+          message: 'Weather service temporarily unavailable',
+        },
+      },
+    },
+  ],
+};
+
+/**
+ * Scenario: Stripe payment fails (insufficient funds)
+ */
+export const stripeFailureScenario: ScenarioDefinition = {
+  id: 'stripe-failure',
+  name: 'Stripe Payment Failure',
+  description: 'Stripe payment fails due to insufficient funds',
+  mocks: [
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      response: {
+        status: 402,
+        body: {
+          error: {
+            type: 'card_error',
+            code: 'insufficient_funds',
+            message: 'Your card has insufficient funds.',
+          },
+        },
+      },
+    },
+  ],
+};
+
+/**
+ * Scenario: APIs return with delays (slow network)
+ */
+export const slowNetworkScenario: ScenarioDefinition = {
+  id: 'slow-network',
+  name: 'Slow Network',
+  description: 'All APIs respond slowly (1-2 second delays)',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.github.com/users/:username',
+      response: {
+        status: 200,
+        body: {
+          login: 'slowuser',
+          id: 999,
+          name: 'Slow User',
+          bio: 'Slow network test',
+          public_repos: 5,
+          followers: 10,
+        },
+        delay: 1500,
+      },
+    },
+    {
+      method: 'GET',
+      url: 'https://api.weather.com/v1/weather/:city',
+      response: {
+        status: 200,
+        body: {
+          city: 'Tokyo',
+          temperature: 25,
+          conditions: 'Clear',
+          humidity: 55,
+        },
+        delay: 2000,
+      },
+    },
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      response: {
+        status: 200,
+        body: {
+          id: 'ch_slow123',
+          status: 'succeeded',
+          amount: 3000,
+          currency: 'usd',
+        },
+        delay: 1000,
+      },
+    },
+  ],
+};
+
+/**
+ * Scenario: Mixed results (some succeed, some fail)
+ */
+export const mixedResultsScenario: ScenarioDefinition = {
+  id: 'mixed-results',
+  name: 'Mixed Results',
+  description: 'Some APIs succeed, others fail',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.github.com/users/:username',
+      response: {
+        status: 200,
+        body: {
+          login: 'mixeduser',
+          id: 456,
+          name: 'Mixed User',
+          bio: 'Test mixed scenario',
+          public_repos: 15,
+          followers: 100,
+        },
+      },
+    },
+    {
+      method: 'GET',
+      url: 'https://api.weather.com/v1/weather/:city',
+      response: {
+        status: 503,
+        body: {
+          error: 'Service Unavailable',
+          message: 'Weather service is temporarily down',
+        },
+      },
+    },
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      response: {
+        status: 200,
+        body: {
+          id: 'ch_mixed123',
+          status: 'succeeded',
+          amount: 2500,
+          currency: 'usd',
+        },
+      },
+    },
+  ],
+};

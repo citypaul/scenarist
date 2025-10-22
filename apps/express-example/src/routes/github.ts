@@ -1,0 +1,27 @@
+import type { Request, Response, Router } from 'express';
+
+/**
+ * GitHub routes - demonstrates calling external GitHub API
+ */
+export const setupGitHubRoutes = (router: Router): void => {
+  router.get('/api/github/user/:username', async (req: Request, res: Response) => {
+    const { username } = req.params;
+
+    try {
+      // Call external GitHub API (will be mocked by Scenarist)
+      const response = await fetch(`https://api.github.com/users/${username}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        return res.status(response.status).json(data);
+      }
+
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({
+        error: 'Failed to fetch GitHub user',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+};
