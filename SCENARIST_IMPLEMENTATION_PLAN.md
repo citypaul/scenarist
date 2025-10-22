@@ -67,7 +67,44 @@ scenarist/
 
 ---
 
-## Phase 1: Project Setup (Week 1, ~3-4 hours)
+## Current Progress
+
+### ✅ Completed Phases
+
+**Phase 1: Project Setup** ✅
+- Turborepo initialized with pnpm workspaces
+- TypeScript strict mode configured
+- Vitest configured for testing
+- Changesets configured for versioning
+
+**Phase 2: Core Package** ✅ (51 tests passing)
+- Types: ScenarioDefinition, MockDefinition, ScenaristConfig, ActiveScenario, Result
+- Ports (organized by driving/driven):
+  - Driving: ScenarioManager
+  - Driven: ScenarioRegistry, ScenarioStore, RequestContext
+- Contracts: Framework adapter contract (NOT a port - in `/contracts`)
+- Domain: createScenarioManager(), buildConfig()
+- Adapters: InMemoryScenarioRegistry, InMemoryScenarioStore
+
+**Phase 3: MSW Adapter Package** ✅ (31 tests passing)
+- URL pattern matching (glob-like patterns)
+- Mock matcher (request matching logic)
+- Response builder (MSW HttpResponse conversion)
+- Dynamic handler with default scenario fallback
+
+**Phase 4: Express Adapter Package** ✅ (24 tests passing)
+- ExpressRequestContext (test ID extraction)
+- Test ID middleware (AsyncLocalStorage)
+- Scenario endpoints (POST/GET/__scenario__)
+- **Batteries-included API: `createScenarist()`** ⭐
+
+**Total: 106 tests passing across 3 packages**
+
+### 🎯 Next Phase: Documentation (Phase 5)
+
+---
+
+## Phase 1: Project Setup (Week 1, ~3-4 hours) ✅ COMPLETED
 
 ### 1.1 Initialize Turborepo
 
@@ -196,7 +233,7 @@ Edit `.changeset/config.json`:
 
 ---
 
-## Phase 2: Core Package - Types & Ports (Week 1-2, ~5-6 hours)
+## Phase 2: Core Package - Types & Ports (Week 1-2, ~5-6 hours) ✅ COMPLETED
 
 ### 2.1 Create Core Package
 
@@ -988,7 +1025,9 @@ describe('buildConfig', () => {
 
 ---
 
-## Phase 3: In-Memory Store Adapter (Week 2, ~2-3 hours)
+## Phase 3: MSW Adapter Package (Week 2, ~2-3 hours) ✅ COMPLETED
+
+**Note:** This phase was renamed from "In-Memory Store Adapter" to "MSW Adapter Package" because the in-memory implementations (InMemoryScenarioRegistry, InMemoryScenarioStore) are part of the core package, not separate packages. The MSW adapter provides the runtime MSW integration.
 
 ### 3.1 Create Package
 
@@ -1153,7 +1192,7 @@ describe('InMemoryScenarioStore', () => {
 
 ---
 
-## Phase 4: Express Adapter (Week 2-3, ~5-6 hours)
+## Phase 4: Express Adapter (Week 2-3, ~5-6 hours) ✅ COMPLETED
 
 ### 4.1 Create Package
 
