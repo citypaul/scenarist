@@ -6,14 +6,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Scenarist** is a hexagonal architecture library for managing MSW (Mock Service Worker) mock scenarios in E2E testing environments. It enables concurrent tests to run with different backend states via test IDs, allowing runtime scenario switching without application restarts.
 
-**Current Status**: Core package implementation complete! The hexagonal architecture foundation is in place with:
+**Current Status**: All core packages implemented and tested! The hexagonal architecture is complete with:
+
+**Core Package** (`packages/core`)
 - ✅ All types and ports defined (serializable, immutable)
 - ✅ Domain logic implemented (`createScenarioManager`, `buildConfig`)
 - ✅ Default adapters (`InMemoryScenarioRegistry`, `InMemoryScenarioStore`)
-- ✅ 52 tests passing, 100% behavior coverage
-- ✅ TypeScript strict mode, builds successfully
+- ✅ 54 tests passing, 100% behavior coverage
 
-The full implementation plan is in `SCENARIST_IMPLEMENTATION_PLAN.md`.
+**MSW Adapter** (`packages/msw-adapter`)
+- ✅ URL pattern matching (exact, glob, path parameters)
+- ✅ Mock definition → MSW handler conversion
+- ✅ Dynamic handler with scenario fallback
+- ✅ 31 tests passing, 100% coverage
+
+**Express Adapter** (`packages/express-adapter`)
+- ✅ Express middleware integration
+- ✅ Test ID extraction via AsyncLocalStorage
+- ✅ Scenario endpoints (GET/POST `/__scenario__`)
+- ✅ 30 tests passing, 100% coverage
+
+**Express Example App** (`apps/express-example`)
+- ✅ Real-world Express application
+- ✅ Multiple scenarios demonstrating usage
+- ✅ E2E tests proving integration
+- ✅ 27 tests passing
+
+**Total: 142 tests passing across all packages** with TypeScript strict mode and full type safety.
 
 ## Essential Commands
 
@@ -154,16 +173,42 @@ export const createScenarioManager = ({
 
 ```
 packages/
-├── core/                    # The hexagon (✅ IMPLEMENTED)
+├── core/                    # The hexagon (✅ COMPLETE)
 │   ├── src/
 │   │   ├── adapters/        # Default adapters (InMemoryScenarioRegistry, InMemoryScenarioStore)
 │   │   ├── domain/          # Business logic (createScenarioManager, buildConfig)
 │   │   ├── ports/           # Interfaces (contracts) - use `interface`
 │   │   └── types/           # Data structures - use `type` with `readonly`
-│   ├── tests/               # Behavior-driven tests (52 tests, all passing)
+│   ├── tests/               # Behavior-driven tests (54 tests, all passing)
 │   └── dist/                # Built output (.js, .d.ts files)
-├── express-adapter/         # Express middleware adapter (NOT YET IMPLEMENTED)
-└── playwright-helpers/      # Playwright utilities (NOT YET IMPLEMENTED)
+├── msw-adapter/             # MSW integration (✅ COMPLETE)
+│   ├── src/
+│   │   ├── matching/        # URL and mock matching logic
+│   │   ├── conversion/      # MockDefinition → HttpResponse conversion
+│   │   └── handlers/        # Dynamic MSW handler factory
+│   ├── tests/               # Behavior-driven tests (31 tests, all passing)
+│   └── dist/                # Built output
+├── express-adapter/         # Express middleware adapter (✅ COMPLETE)
+│   ├── src/
+│   │   ├── context/         # Express request context
+│   │   ├── middleware/      # Test ID middleware (AsyncLocalStorage)
+│   │   ├── endpoints/       # Scenario control endpoints
+│   │   └── setup/           # createScenarist() factory
+│   ├── tests/               # Integration tests (30 tests, all passing)
+│   └── dist/                # Built output
+├── eslint-config/           # Shared ESLint configuration
+├── typescript-config/       # Shared TypeScript configuration
+└── ui/                      # Shared UI components (if needed)
+
+apps/
+├── express-example/         # Sample Express app (✅ COMPLETE)
+│   ├── src/
+│   │   ├── routes/          # Example API routes
+│   │   ├── scenarios.ts     # Scenario definitions
+│   │   └── server.ts        # Express server setup
+│   └── tests/               # E2E tests (27 tests, all passing)
+├── docs/                    # Documentation site (Next.js)
+└── web/                     # Web application (if needed)
 ```
 
 ## TypeScript Configuration
@@ -298,10 +343,12 @@ docs: update architecture documentation
 
 ## Important Files
 
-- **`SCENARIST_IMPLEMENTATION_PLAN.md`**: Complete implementation roadmap with detailed specs for all packages, phases, and architecture decisions
+- **`CLAUDE.md`**: This file - project guidance and architecture documentation
+- **`README.md`**: Main project README for external users
 - **`turbo.json`**: Turborepo task pipeline configuration
 - **`pnpm-workspace.yaml`**: Workspace package definitions
 - **Root `package.json`**: Workspace-level scripts
+- **`docs/archive/SCENARIST_IMPLEMENTATION_PLAN.md`**: Historical implementation plan (archived)
 
 ## Turborepo Specifics
 
@@ -630,16 +677,20 @@ const config = buildConfig({
 
 **The principle:** ALL data structures in ports and domain must be serializable. No exceptions.
 
-## Future Roadmap
+## Current Status & Next Steps
 
-See `SCENARIST_IMPLEMENTATION_PLAN.md` for complete roadmap. Key phases:
+**Completed:**
+- ✅ Core package with hexagonal architecture
+- ✅ MSW adapter package (framework-agnostic)
+- ✅ Express adapter package
+- ✅ Express example application with E2E tests
+- ✅ 142 tests passing, 100% coverage
+- ✅ TypeScript strict mode throughout
 
-- **Phase 1**: Project setup (completed)
-- **Phase 2**: Core package (types, ports, domain logic)
-- **Phase 3**: In-memory store adapter
-- **Phase 4**: Express adapter
-- **Phase 5**: Documentation
-- **Phase 6**: CI/CD
-- **Phase 7**: Release to npm
-
-Future versions may include: Fastify adapter, Redis store, visual debugger, Next.js support.
+**Future Enhancements:**
+- 🔜 Additional framework adapters (Fastify, Koa, Hono, Next.js)
+- 🔜 Additional storage adapters (Redis, PostgreSQL)
+- 🔜 Visual debugger for scenarios
+- 🔜 Playwright helper utilities
+- 🔜 Documentation site
+- 🔜 npm package publication
