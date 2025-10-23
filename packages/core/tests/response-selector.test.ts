@@ -629,4 +629,54 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       expect(result.success).toBe(false);
     });
   });
+
+  describe("Response Sequences (Phase 2)", () => {
+    it("should return responses from sequence in order", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/job/123",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "GET",
+          url: "/api/job/:id",
+          sequence: {
+            responses: [
+              { status: 200, body: { status: "pending" } },
+              { status: 200, body: { status: "processing" } },
+              { status: 200, body: { status: "complete" } },
+            ],
+            repeat: "last",
+          },
+        },
+      ];
+
+      const selector = createResponseSelector();
+
+      // First call
+      const result1 = selector.selectResponse("test-1", context, mocks);
+      expect(result1.success).toBe(true);
+      if (result1.success) {
+        expect(result1.data.body).toEqual({ status: "pending" });
+      }
+
+      // Second call
+      const result2 = selector.selectResponse("test-1", context, mocks);
+      expect(result2.success).toBe(true);
+      if (result2.success) {
+        expect(result2.data.body).toEqual({ status: "processing" });
+      }
+
+      // Third call
+      const result3 = selector.selectResponse("test-1", context, mocks);
+      expect(result3.success).toBe(true);
+      if (result3.success) {
+        expect(result3.data.body).toEqual({ status: "complete" });
+      }
+    });
+  });
 });
