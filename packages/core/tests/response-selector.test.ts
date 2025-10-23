@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { MockDefinition, HttpRequestContext } from "../src/types/index.js";
 import { createResponseSelector } from "../src/domain/response-selector.js";
+import { createInMemorySequenceTracker } from "../src/adapters/in-memory-sequence-tracker.js";
 
 describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
   describe("Match on Request Body (Partial Match)", () => {
@@ -23,7 +24,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -51,7 +52,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
 
       expect(result.success).toBe(false);
     });
@@ -75,7 +76,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
 
       expect(result.success).toBe(false);
     });
@@ -99,7 +100,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
 
       expect(result.success).toBe(false);
     });
@@ -123,7 +124,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
 
       expect(result.success).toBe(false);
     });
@@ -147,7 +148,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -176,7 +177,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -203,7 +204,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
 
       expect(result.success).toBe(false);
     });
@@ -227,7 +228,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
 
       expect(result.success).toBe(false);
     });
@@ -253,7 +254,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -280,7 +281,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
 
       expect(result.success).toBe(false);
     });
@@ -304,7 +305,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
 
       expect(result.success).toBe(false);
     });
@@ -336,7 +337,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -381,7 +382,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", context, mocksWithLessSpecificFirst);
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocksWithLessSpecificFirst);
 
       // The more specific mock (discount: 20) wins even though it appears second
       expect(result.success).toBe(true);
@@ -418,7 +419,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", context, mocksWithEqualSpecificity);
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocksWithEqualSpecificity);
 
       // First mock wins as tiebreaker (both have specificity of 1)
       expect(result.success).toBe(true);
@@ -454,7 +455,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -481,7 +482,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -523,7 +524,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -561,7 +562,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -594,7 +595,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -624,7 +625,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
 
       expect(result.success).toBe(false);
     });
@@ -655,27 +656,186 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         },
       ];
 
-      const selector = createResponseSelector();
+      const selector = createResponseSelector({
+        sequenceTracker: createInMemorySequenceTracker(),
+      });
 
       // First call
-      const result1 = selector.selectResponse("test-1", context, mocks);
+      const result1 = selector.selectResponse("test-1", "job-scenario", context, mocks);
       expect(result1.success).toBe(true);
       if (result1.success) {
         expect(result1.data.body).toEqual({ status: "pending" });
       }
 
       // Second call
-      const result2 = selector.selectResponse("test-1", context, mocks);
+      const result2 = selector.selectResponse("test-1", "job-scenario", context, mocks);
       expect(result2.success).toBe(true);
       if (result2.success) {
         expect(result2.data.body).toEqual({ status: "processing" });
       }
 
       // Third call
-      const result3 = selector.selectResponse("test-1", context, mocks);
+      const result3 = selector.selectResponse("test-1", "job-scenario", context, mocks);
       expect(result3.success).toBe(true);
       if (result3.success) {
         expect(result3.data.body).toEqual({ status: "complete" });
+      }
+    });
+
+    it("should repeat last response infinitely when repeat mode is 'last'", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/poll",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "GET",
+          url: "/api/poll",
+          sequence: {
+            responses: [
+              { status: 200, body: { value: 1 } },
+              { status: 200, body: { value: 2 } },
+            ],
+            repeat: "last",
+          },
+        },
+      ];
+
+      const selector = createResponseSelector({
+        sequenceTracker: createInMemorySequenceTracker(),
+      });
+
+      // Exhaust the sequence
+      selector.selectResponse("test-2", "poll-scenario", context, mocks);
+      selector.selectResponse("test-2", "poll-scenario", context, mocks);
+
+      // Calls beyond the sequence should repeat the last response
+      const result3 = selector.selectResponse("test-2", "poll-scenario", context, mocks);
+      expect(result3.success).toBe(true);
+      if (result3.success) {
+        expect(result3.data.body).toEqual({ value: 2 });
+      }
+
+      const result4 = selector.selectResponse("test-2", "poll-scenario", context, mocks);
+      expect(result4.success).toBe(true);
+      if (result4.success) {
+        expect(result4.data.body).toEqual({ value: 2 });
+      }
+    });
+
+    it("should cycle back to first response when repeat mode is 'cycle'", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/toggle",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "GET",
+          url: "/api/toggle",
+          sequence: {
+            responses: [
+              { status: 200, body: { state: "on" } },
+              { status: 200, body: { state: "off" } },
+            ],
+            repeat: "cycle",
+          },
+        },
+      ];
+
+      const selector = createResponseSelector({
+        sequenceTracker: createInMemorySequenceTracker(),
+      });
+
+      // First cycle
+      const result1 = selector.selectResponse("test-3", "toggle-scenario", context, mocks);
+      expect(result1.success).toBe(true);
+      if (result1.success) {
+        expect(result1.data.body).toEqual({ state: "on" });
+      }
+
+      const result2 = selector.selectResponse("test-3", "toggle-scenario", context, mocks);
+      expect(result2.success).toBe(true);
+      if (result2.success) {
+        expect(result2.data.body).toEqual({ state: "off" });
+      }
+
+      // Should cycle back to first
+      const result3 = selector.selectResponse("test-3", "toggle-scenario", context, mocks);
+      expect(result3.success).toBe(true);
+      if (result3.success) {
+        expect(result3.data.body).toEqual({ state: "on" });
+      }
+
+      const result4 = selector.selectResponse("test-3", "toggle-scenario", context, mocks);
+      expect(result4.success).toBe(true);
+      if (result4.success) {
+        expect(result4.data.body).toEqual({ state: "off" });
+      }
+    });
+
+    it("should mark sequence as exhausted when repeat mode is 'none'", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/limited",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "GET",
+          url: "/api/limited",
+          sequence: {
+            responses: [
+              { status: 200, body: { attempt: 1 } },
+              { status: 200, body: { attempt: 2 } },
+            ],
+            repeat: "none",
+          },
+        },
+        // Fallback mock when sequence is exhausted
+        {
+          method: "GET",
+          url: "/api/limited",
+          response: { status: 410, body: { error: "Sequence exhausted" } },
+        },
+      ];
+
+      const selector = createResponseSelector({
+        sequenceTracker: createInMemorySequenceTracker(),
+      });
+
+      // First two calls go through sequence
+      const result1 = selector.selectResponse("test-4", "limited-scenario", context, mocks);
+      expect(result1.success).toBe(true);
+      if (result1.success) {
+        expect(result1.data.body).toEqual({ attempt: 1 });
+      }
+
+      const result2 = selector.selectResponse("test-4", "limited-scenario", context, mocks);
+      expect(result2.success).toBe(true);
+      if (result2.success) {
+        expect(result2.data.body).toEqual({ attempt: 2 });
+      }
+
+      // Third call should use fallback (sequence exhausted)
+      // Note: This requires implementing exhaustion checking in the matching phase
+      // For now, this test documents the expected behavior
+      const result3 = selector.selectResponse("test-4", "limited-scenario", context, mocks);
+      expect(result3.success).toBe(true);
+      if (result3.success) {
+        // Current implementation will return null from exhausted sequence
+        // which causes the selector to fall through to the next mock (fallback)
+        expect(result3.data.status).toBe(410);
       }
     });
   });
