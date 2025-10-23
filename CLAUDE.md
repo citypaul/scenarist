@@ -836,3 +836,250 @@ packages/fastify-adapter/README.md   ← Fastify-specific usage (future)
 ```
 
 **Lesson:** Separate core domain documentation from adapter documentation. Core docs explain WHAT and WHY (concepts, architecture). Adapter docs explain HOW (framework integration, setup).
+
+## Phase 2: Response Sequences - Learnings (PRs #25, #26, #27)
+
+### TDD Violation and Coverage Cleanup
+
+**Problem:** After initial implementation, test coverage was 94.71% instead of required 100%
+
+**Root Cause:** Violated TDD by writing speculative/defensive code without tests first
+- Added `reset()` method to SequenceTracker (not used, not tested)
+- Added unreachable guard clauses for readonly array access
+- Added defensive checks in code paths already protected by earlier logic
+- Missing tests for default repeat mode and error cases
+
+**Solution:** Deep analysis of every uncovered line
+- **Deleted** `reset()` method - not needed for Phase 2, belongs in Phase 3
+- **Deleted** unreachable guard clauses - readonly array access safe within loop bounds
+- **Deleted** defensive exhaustion checks - matching phase already handles this
+- **Added** 3 missing behavior tests:
+  - Mock with neither response nor sequence (error case)
+  - Sequence with empty responses array (error case)
+  - Default repeat mode behavior (omitted field)
+
+**Result:** 100% coverage restored (lines, statements, functions, branches)
+
+**Key Lesson:** If code isn't driven by a failing test, don't write it. Every line must have a test that demanded its existence. Speculative code = untested code = bugs waiting to happen.
+
+**TDD Process Reinforcement:**
+1. RED: Write failing test for desired behavior
+2. GREEN: Write MINIMUM code to pass (resist adding "just in case" logic)
+3. REFACTOR: Clean up if valuable (not always needed)
+4. REPEAT: Move to next behavior
+
+**User Feedback Received:** "Poor test coverage here - this should not happen because we should be doing TDD. You need to ultrathink and solve the test coverage by deeply understanding what every line of code is doing..."
+
+**Action Taken:** Analyzed every uncovered line, deleted speculative code, added missing behavior tests. This reinforced the discipline of strict TDD adherence.
+
+### TypeScript Strict Mode with Readonly Arrays
+
+**Challenge:** TypeScript strict null checks don't guarantee `readonly array[index]` is defined
+
+**Error:** `error TS18048: 'mock' is possibly 'undefined'`
+
+**Code:**
+```typescript
+for (let mockIndex = 0; mockIndex < mocks.length; mockIndex++) {
+  const mock = mocks[mockIndex];  // TS error: possibly undefined
+  if (!mock) {
+    continue;
+  }
+  // ...
+}
+```
+
+**Solution:** Non-null assertion with explanatory comment
+```typescript
+for (let mockIndex = 0; mockIndex < mocks.length; mockIndex++) {
+  const mock = mocks[mockIndex]!;  // Index guaranteed in bounds by loop condition
+  // ...
+}
+```
+
+**Rationale:**
+- Loop condition ensures index is in bounds
+- Non-null assertion is safe here
+- Comment explains WHY it's safe (not obvious to reader)
+- Alternative (guard clause) was unreachable code
+
+**Lesson:** Non-null assertions are acceptable when you can prove safety via surrounding logic. Always add comment explaining WHY it's safe. Prefer guard clauses for runtime safety, but when they're unreachable, use `!` with clear justification.
+
+### Dependency Injection Signature Changes
+
+**Challenge:** Adding `scenarioId` parameter to `ResponseSelector` broke MSW adapter
+
+**Error:** `error TS2554: Expected 4 arguments, but got 3`
+
+**Root Cause:** SequenceTracker needs `scenarioId` to build unique key: `${testId}:${scenarioId}:${mockIndex}`
+
+**Solution:** Updated all adapter call sites
+```typescript
+// Before
+const result = responseSelector.selectResponse(testId, context, mocks);
+
+// After
+const scenarioId = activeScenario?.scenarioId ?? options.defaultScenarioId;
+const result = responseSelector.selectResponse(testId, scenarioId, context, mocks);
+```
+
+**Impact:** All adapters needed updating (MSW, Express)
+
+**Lesson:** When adding parameters to port interfaces, expect to update all adapters. This is by design in hexagonal architecture - ports are contracts. Breaking changes propagate intentionally to ensure all implementations stay in sync.
+
+### Sequence Isolation Per Test ID
+
+**Key Decision:** Sequence positions tracked per `(testId, scenarioId, mockIndex)` tuple
+
+**Rationale:**
+- Different test IDs = independent sequence state
+- Two tests using same scenario progress independently
+- Enables parallel test execution without interference
+- Consistent with existing test ID isolation pattern
+
+**Implementation:**
+```typescript
+private getKey(testId: string, scenarioId: string, mockIndex: number): string {
+  return `${testId}:${scenarioId}:${mockIndex}`;
+}
+```
+
+**Test Coverage:** Added dedicated test "should maintain independent sequence positions for different test IDs"
+
+**Lesson:** Test isolation is a first-class concern. When adding stateful features (sequences, state capture), always verify isolation per test ID. Add explicit tests demonstrating concurrent usage with independent state.
+
+### Exhaustion Checking in Matching Phase
+
+**Key Decision:** Skip exhausted sequences during URL matching, before selecting response
+
+**Three-Phase Execution:**
+1. **Match Phase** - Check if mock applies (URL, match criteria, exhaustion status)
+2. **Select Phase** - Choose response from sequence or single response
+3. **Transform Phase** - Apply state templates, delays, headers
+
+**Why Exhaustion Checking Happens in Match Phase:**
+- Exhausted sequences should fall through to next mock
+- Match phase determines "does this mock apply?"
+- Exhausted sequences don't apply (allow fallback)
+
+**Implementation:**
+```typescript
+// In ResponseSelector.selectResponse (Match Phase)
+for (let mockIndex = 0; mockIndex < mocks.length; mockIndex++) {
+  const mock = mocks[mockIndex]!;
+
+  // Skip exhausted sequences (repeat: 'none' that have been exhausted)
+  if (mock.sequence && sequenceTracker) {
+    const { exhausted } = sequenceTracker.getPosition(testId, scenarioId, mockIndex);
+    if (exhausted) {
+      continue; // Skip to next mock, allowing fallback to be selected
+    }
+  }
+
+  // Continue with match criteria checking...
+}
+```
+
+**Lesson:** Exhaustion is a matching concern, not a response selection concern. Design the three-phase model carefully - each phase has specific responsibilities. Don't mix concerns across phases.
+
+### Integration Testing Strategy for Sequences
+
+**Approach:** TDD at integration level (RED → GREEN)
+
+**First Test (RED Phase):**
+- Wrote integration test: GitHub polling scenario (pending → processing → complete)
+- Test failed with 404 (SequenceTracker not wired up yet)
+- Confirmed RED phase
+
+**Implementation (GREEN Phase):**
+- Wired up `InMemorySequenceTracker` in Express adapter
+- Passed SequenceTracker to ResponseSelector via dependency injection
+- Test passed
+
+**Comprehensive Tests (Additional RED-GREEN Cycles):**
+- Added repeat: 'cycle' test (weather cycling)
+- Added repeat: 'none' + exhaustion test (payment rate limiting)
+- Added test ID isolation test (concurrent tests)
+
+**Result:** 44 total integration tests (4 for sequences)
+
+**Lesson:** Integration tests follow same TDD cycle as unit tests. Write failing integration test first, then wire up dependencies to make it pass. Don't wire up infrastructure speculatively - let the test drive the integration.
+
+### Bruno Tests for Manual Testing
+
+**Pattern:** Bruno collections as manual testing documentation
+
+**Structure:**
+```
+bruno/Dynamic Responses/Sequences/
+  0. Setup - Set GitHub Polling Scenario.bru
+  1. GitHub Polling - Call 1 (Pending).bru
+  2. GitHub Polling - Call 2 (Processing).bru
+  3. GitHub Polling - Call 3 (Complete).bru
+  4. GitHub Polling - Call 4 (Still Complete).bru
+  5. Setup - Set Weather Cycle Scenario.bru
+  6. Weather Cycle - Call 1 (Sunny).bru
+  7. Weather Cycle - Call 2 (Cloudy).bru
+  8. Weather Cycle - Call 3 (Rainy).bru
+  9. Weather Cycle - Call 4 (Back to Sunny).bru
+  10. Setup - Set Payment Limited Scenario.bru
+  11. Payment Limited - Call 1 (Pending 1).bru
+  12. Payment Limited - Call 2 (Pending 2).bru
+  13. Payment Limited - Call 3 (Succeeded).bru
+  14. Payment Limited - Call 4 (Rate Limited).bru
+```
+
+**Benefits:**
+- **Sequential execution** - Run in order to see progression
+- **Clear naming** - Number prefix ensures order
+- **Automated assertions** - Verify expected responses
+- **Documentation** - Docs section explains behavior
+- **Manual testing** - Click through to verify by hand
+
+**Lesson:** Number Bruno tests (0. Setup, 1. First Call, 2. Second Call) when order matters. This makes sequential flows obvious and ensures correct execution order. Each test includes assertions for automation + docs for understanding.
+
+### Scenario Registration Pattern
+
+**Challenge:** New scenarios (githubPolling, weatherCycle, paymentLimited) needed registration
+
+**Solution:** Leverage existing pattern
+```typescript
+// In scenarios.ts
+export const githubPollingScenario: ScenarioDefinition = { ... };
+export const weatherCycleScenario: ScenarioDefinition = { ... };
+export const paymentLimitedScenario: ScenarioDefinition = { ... };
+
+export const scenarios = {
+  default: defaultScenario,
+  success: successScenario,
+  // ... existing scenarios
+  githubPolling: githubPollingScenario,
+  weatherCycle: weatherCycleScenario,
+  paymentLimited: paymentLimitedScenario,
+} as const;
+
+// In server.ts
+scenarist.registerScenarios(Object.values(scenarios));
+```
+
+**Benefit:** Adding new scenarios requires only:
+1. Export scenario definition
+2. Add to scenarios object
+3. Auto-registered via `Object.values()`
+
+**Lesson:** When adding new examples, follow established patterns. Check how existing examples are structured and registered. Don't invent new patterns unless there's clear value.
+
+### Documentation Updates After Phase Completion
+
+**Updated Files:**
+- `docs/plans/dynamic-responses.md` - Marked Phase 2 as complete, updated task checklist
+- `README.md` - Added sequence references to core docs and integration tests
+- `CLAUDE.md` - Added Phase 2 learnings (this section!)
+
+**Pattern:** After completing each phase:
+1. Update plan document (status, task checklist, files changed)
+2. Update high-level README (add new capabilities to feature list)
+3. Update CLAUDE.md with learnings (capture gotchas for future work)
+4. Link related PRs
+
+**Lesson:** Documentation is part of "done". A phase isn't complete until docs are updated. Capture learnings immediately while they're fresh - future you (or next developer) will thank you.

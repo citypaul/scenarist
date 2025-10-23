@@ -1,0 +1,36 @@
+meta {
+  name: 13. Payment Limited - Call 3 (Succeeded)
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/api/payment
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "amount": 1000,
+    "currency": "usd"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: eq ch_3
+  res.body.status: eq succeeded
+}
+
+docs {
+  Third payment attempt - succeeds (final response in sequence).
+
+  This is the last response in the sequence. With repeat: 'none', the next
+  call will NOT return this response again. Instead, the sequence is marked
+  as exhausted and the next matching mock (fallback) will be used.
+}

@@ -1,0 +1,32 @@
+meta {
+  name: 6. Weather Cycle - Call 1 (Sunny)
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/weather/london
+  body: none
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.city: eq London
+  res.body.conditions: eq Sunny
+  res.body.temp: eq 20
+}
+
+docs {
+  First call in the cycling sequence returns "Sunny" weather.
+
+  The sequence has three states that cycle indefinitely:
+  1. Sunny (temp: 20)
+  2. Cloudy (temp: 18)
+  3. Rainy (temp: 15)
+  4. Back to Sunny...
+}

@@ -1,0 +1,29 @@
+meta {
+  name: 3. GitHub Polling - Call 3 (Complete)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/github/user/testuser
+  body: none
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq complete
+  res.body.progress: eq 100
+  res.body.login: eq user3
+}
+
+docs {
+  Third call in the sequence returns "complete" state.
+
+  This is the final response in the sequence. With repeat: 'last', the next call
+  will also return this same response.
+}

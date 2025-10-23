@@ -1,0 +1,29 @@
+meta {
+  name: 8. Weather Cycle - Call 3 (Rainy)
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/api/weather/london
+  body: none
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.city: eq London
+  res.body.conditions: eq Rainy
+  res.body.temp: eq 15
+}
+
+docs {
+  Third call in the cycling sequence returns "Rainy" weather.
+
+  This is the last response in the sequence. With repeat: 'cycle', the next
+  call will wrap back to the first response (Sunny).
+}

@@ -1,0 +1,37 @@
+meta {
+  name: 10. Setup - Set Payment Limited Scenario
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/__scenario__
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "scenario": "payment-limited"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+  res.body.scenarioId: eq payment-limited
+}
+
+docs {
+  Sets the active scenario to "payment-limited" for testing sequence exhaustion.
+
+  This scenario demonstrates repeat: 'none' with fallback:
+  - First 3 calls go through sequence: pending → pending → succeeded
+  - After exhaustion, falls back to next matching mock (rate limit error)
+
+  Perfect for simulating rate limits, attempt quotas, or trial periods.
+}

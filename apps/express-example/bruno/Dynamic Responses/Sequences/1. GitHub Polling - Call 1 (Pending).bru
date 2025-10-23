@@ -1,0 +1,33 @@
+meta {
+  name: 1. GitHub Polling - Call 1 (Pending)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/github/user/testuser
+  body: none
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq pending
+  res.body.progress: eq 0
+  res.body.login: eq user1
+}
+
+docs {
+  First call in the sequence returns "pending" state.
+
+  The sequence has three responses:
+  1. pending (progress: 0)
+  2. processing (progress: 50)
+  3. complete (progress: 100)
+
+  With repeat: 'last', after reaching step 3, all subsequent calls stay at step 3.
+}

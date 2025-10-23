@@ -1,0 +1,38 @@
+meta {
+  name: 5. Setup - Set Weather Cycle Scenario
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/__scenario__
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "scenario": "weather-cycle"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+  res.body.scenarioId: eq weather-cycle
+}
+
+docs {
+  Sets the active scenario to "weather-cycle" for testing sequence cycling.
+
+  This scenario demonstrates repeat: 'cycle' behavior:
+  - Three weather states: Sunny → Cloudy → Rainy
+  - After reaching Rainy, cycles back to Sunny
+  - Continues cycling indefinitely
+
+  Perfect for simulating rotating content, carousel items, or cyclical states.
+}

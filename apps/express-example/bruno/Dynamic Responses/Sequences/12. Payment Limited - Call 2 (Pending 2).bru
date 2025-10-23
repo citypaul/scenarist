@@ -1,0 +1,34 @@
+meta {
+  name: 12. Payment Limited - Call 2 (Pending 2)
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/api/payment
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "amount": 1000,
+    "currency": "usd"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: eq ch_2
+  res.body.status: eq pending
+}
+
+docs {
+  Second payment attempt - still pending (attempt 2 of 3).
+
+  Sequence continues progressing through responses.
+}
