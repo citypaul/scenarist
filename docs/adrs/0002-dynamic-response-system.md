@@ -313,6 +313,388 @@ All features work together naturally:
 }
 ```
 
+## Testing Strategy
+
+The architectural decision to separate domain logic (core) from framework integration (adapters) requires a carefully designed testing strategy. Testing must validate each layer's responsibility without duplication.
+
+### Four-Layer Testing Approach
+
+#### Layer 1: Core Package Tests (`packages/core/tests/`)
+
+**Purpose:** Comprehensive unit testing of ALL domain logic.
+
+**What to test:**
+- `ResponseSelector` domain service (all three phases)
+- `SequenceTracker` port implementation (position tracking, repeat modes)
+- `StateManager` port implementation (capture, storage, injection)
+- Match criteria logic (body partial match, headers/query exact match)
+- Sequence advancement logic (last/cycle/none, exhaustion)
+- State capture logic (path extraction: `body.item`, `query.userId`)
+- Template replacement engine (`{{state.X}}`, nested paths, array access)
+- Edge cases: circular references, undefined keys, invalid paths
+- Error conditions: sequence exhaustion, missing state, malformed templates
+
+**Characteristics:**
+- ✅ **Fast** - No framework overhead, pure TypeScript
+- ✅ **Isolated** - Tests pure business logic
+- ✅ **Comprehensive** - 100% coverage of domain logic
+- ✅ **Single source of truth** - Domain behavior defined here
+
+**Example:**
+```typescript
+describe('ResponseSelector - Match Phase', () => {
+  it('should match request when body contains required fields (partial match)', () => {
+    const context: RequestContext = {
+      method: 'POST',
+      url: '/api/items',
+      body: { itemId: 'premium', quantity: 5, extra: 'ignored' },
+      headers: {},
+      query: {}
+    };
+
+    const mock: MockDefinition = {
+      method: 'POST',
+      url: '/api/items',
+      match: { body: { itemId: 'premium' } },
+      response: { status: 200, body: { price: 100 } }
+    };
+
+    const result = responseSelector.selectResponse('test-1', context, [mock]);
+
+    expect(result.success).toBe(true);
+    expect(result.data.body).toEqual({ price: 100 });
+  });
+});
+```
+
+**What NOT to test here:**
+- ❌ Express-specific request handling
+- ❌ Framework type conversions
+- ❌ HTTP-level integration
+
+#### Layer 2: Adapter Package Tests (`packages/express-adapter/tests/`)
+
+**Purpose:** Focused testing of translation layer between framework and domain.
+
+**What to test:**
+- Request context extraction from Express (`req` → `RequestContext`)
+- Response application to Express (`MockResponse` → `res`)
+- Integration with core domain services
+- Framework-specific quirks (header normalization, query parsing)
+- Type conversions (Express types → domain types)
+- Error handling in translation layer
+
+**Characteristics:**
+- ✅ **Fast** - Mock Express req/res, no full server
+- ✅ **Focused** - Only translation, not domain logic
+- ✅ **Framework-specific** - Tests Express quirks
+- ❌ **No duplication** - Doesn't re-test core logic
+
+**Example:**
+```typescript
+describe('Express Adapter - Request Translation', () => {
+  it('should extract RequestContext with all fields from Express request', () => {
+    const req = mockExpressRequest({
+      method: 'POST',
+      url: '/api/items',
+      body: { itemId: 'premium' },
+      query: { filter: 'active' },
+      headers: { 'x-user-tier': 'gold' }
+    });
+
+    const context = extractRequestContext(req);
+
+    expect(context).toEqual({
+      method: 'POST',
+      url: '/api/items',
+      body: { itemId: 'premium' },
+      query: { filter: 'active' },
+      headers: expect.objectContaining({ 'x-user-tier': 'gold' })
+    });
+  });
+
+  it('should handle missing optional fields gracefully', () => {
+    const req = mockExpressRequest({ method: 'GET', url: '/api/data' });
+    const context = extractRequestContext(req);
+
+    expect(context.body).toBeUndefined();
+    expect(context.query).toEqual({});
+  });
+});
+
+describe('Express Adapter - Response Application', () => {
+  it('should apply MockResponse to Express response', async () => {
+    const res = mockExpressResponse();
+    const mockResponse: MockResponse = {
+      status: 201,
+      body: { success: true },
+      headers: { 'X-Custom': 'value' },
+      delay: 100
+    };
+
+    await applyMockResponse(mockResponse, res);
+
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.setHeader).toHaveBeenCalledWith('X-Custom', 'value');
+    expect(res.json).toHaveBeenCalledWith({ success: true });
+  });
+});
+
+describe('Express Adapter - Core Integration', () => {
+  it('should call ResponseSelector with translated context', async () => {
+    const mockSelector = {
+      selectResponse: jest.fn().mockReturnValue({
+        success: true,
+        data: { status: 200, body: {} }
+      })
+    };
+
+    const handler = createHandler(mockSelector, mocks);
+    const req = mockExpressRequest({ method: 'GET', url: '/test' });
+
+    await handler(req, mockExpressResponse());
+
+    expect(mockSelector.selectResponse).toHaveBeenCalledWith(
+      expect.any(String),  // testId
+      expect.objectContaining({ method: 'GET', url: '/test' }),
+      expect.any(Array)
+    );
+  });
+});
+```
+
+**What NOT to test here:**
+- ❌ Match criteria logic (core's responsibility)
+- ❌ Sequence advancement (core's responsibility)
+- ❌ State management (core's responsibility)
+- ❌ Template replacement (core's responsibility)
+
+#### Layer 3: Integration Tests (`apps/express-example/tests/`)
+
+**Purpose:** E2E testing of real-world user journeys with full Express app.
+
+**What to test:**
+- Complete flows from HTTP request to response
+- Real-world composition patterns (match + sequence + state)
+- Scenario switching with test ID isolation
+- Multi-request user journeys (polling, shopping cart, forms)
+- Edge cases in full context
+
+**Characteristics:**
+- ✅ **Realistic** - Full Express server, supertest
+- ✅ **Comprehensive flows** - Tests complete user journeys
+- ✅ **Confidence** - Validates entire stack integration
+- ❌ **Slower** - Full server startup/teardown
+
+**Example:**
+```typescript
+describe('Dynamic Responses - Polling Scenario', () => {
+  it('should progress through sequence on multiple calls', async () => {
+    const testId = 'polling-test';
+
+    // Set scenario with sequence
+    await request(app)
+      .post('/__scenario__')
+      .set('x-test-id', testId)
+      .send({ scenario: 'job-polling' });
+
+    // First call - pending
+    const res1 = await request(app)
+      .get('/api/job/123')
+      .set('x-test-id', testId);
+    expect(res1.body.status).toBe('pending');
+
+    // Second call - processing
+    const res2 = await request(app)
+      .get('/api/job/123')
+      .set('x-test-id', testId);
+    expect(res2.body.status).toBe('processing');
+
+    // Third call - complete
+    const res3 = await request(app)
+      .get('/api/job/123')
+      .set('x-test-id', testId);
+    expect(res3.body.status).toBe('complete');
+
+    // Fourth call - still complete (repeat: 'last')
+    const res4 = await request(app)
+      .get('/api/job/123')
+      .set('x-test-id', testId);
+    expect(res4.body.status).toBe('complete');
+  });
+});
+```
+
+#### Layer 4: Bruno Tests (`apps/express-example/bruno/`)
+
+**Purpose:** Executable API documentation with automated tests for key flows.
+
+**What to test:**
+- Happy path scenarios (success flows)
+- Common composition patterns (match + sequence, state capture + injection)
+- Key user journeys (not every edge case)
+- API contract validation
+
+**Characteristics:**
+- ✅ **Human-readable** - Non-developers can understand
+- ✅ **Executable docs** - Tests are documentation
+- ✅ **CI-ready** - Run via `bru run` in CI pipeline
+- ❌ **Selective** - Not comprehensive, just key flows
+
+**Example:**
+```javascript
+// apps/express-example/bruno/Dynamic Responses/Polling - Job Status.bru
+
+meta {
+  name: Polling - Job Status
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/__scenario__
+  body: json
+}
+
+body:json {
+  {
+    "scenario": "job-polling"
+  }
+}
+
+tests {
+  test("should set scenario successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}
+
+---
+
+meta {
+  name: Polling - First Call (Pending)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/job/123
+}
+
+tests {
+  test("should return pending status", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().status).to.equal('pending');
+  });
+}
+
+---
+
+meta {
+  name: Polling - Second Call (Processing)
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/job/123
+}
+
+tests {
+  test("should return processing status", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().status).to.equal('processing');
+  });
+}
+```
+
+### Testing Strategy Decision Matrix
+
+| Layer | Tests | Doesn't Test | Speed | Coverage |
+|-------|-------|--------------|-------|----------|
+| **Core** | Domain logic (match, sequence, state) | Framework integration | Fast | 100% |
+| **Adapter** | Translation (req→domain, domain→res) | Domain logic | Fast | Translation layer |
+| **Integration** | Full flows, user journeys | Translation details | Slow | Real scenarios |
+| **Bruno** | Key flows, API documentation | Every edge case | Medium | Happy paths |
+
+### Why This Strategy Works
+
+**No Duplication:**
+- Each layer tests its **own responsibility**
+- Core tests domain logic, adapters test translation, E2E tests flows
+- Bruno documents key patterns, doesn't duplicate E2E
+
+**Clear Debugging:**
+- Core test failure → domain logic bug
+- Adapter test failure → translation bug (req/res handling)
+- Integration test failure → integration issue or missed scenario
+- Bruno test failure → API contract change
+
+**Fast Feedback:**
+- Core tests run in milliseconds (pure TypeScript, no frameworks)
+- Adapter tests run in milliseconds (mocked req/res)
+- Integration tests run in seconds (full server)
+- Bruno tests run in seconds (real HTTP)
+
+**Maintainability:**
+- Domain logic changes only affect core tests
+- Framework changes only affect adapter tests
+- New scenarios just need integration + selective Bruno tests
+- No cascading test updates across layers
+
+### Anti-Patterns to Avoid
+
+❌ **Testing domain logic in adapter tests**
+```typescript
+// WRONG - This belongs in core tests
+it('should match on body fields', () => {
+  // Testing match criteria in adapter layer
+});
+```
+
+❌ **Testing translation in core tests**
+```typescript
+// WRONG - This belongs in adapter tests
+it('should extract Express query params', () => {
+  // Testing Express-specific behavior in core
+});
+```
+
+❌ **Duplicating all Vitest tests in Bruno**
+```javascript
+// WRONG - Bruno should be selective, not comprehensive
+// Don't create Bruno test for every single edge case
+```
+
+❌ **E2E testing translation edge cases**
+```typescript
+// WRONG - This should be in adapter tests (faster feedback)
+it('should handle missing headers in Express request', () => {
+  // Testing adapter translation behavior in slow E2E test
+});
+```
+
+### Coverage Requirements
+
+**Core Package:**
+- 100% coverage of all domain logic
+- Every branch, every edge case, every error condition
+
+**Adapter Package:**
+- 100% coverage of translation functions
+- All request extraction paths
+- All response application paths
+- Error handling in translation layer
+
+**Integration Tests:**
+- All requirements (REQ-1 through REQ-4) demonstrated
+- All composition patterns validated
+- All example scenarios exercised
+
+**Bruno Tests:**
+- Key happy path for each requirement
+- 2-3 composition examples
+- Primary user journeys
+
 ## Alternatives Considered
 
 ### Alternative 1: Function-Based Responses

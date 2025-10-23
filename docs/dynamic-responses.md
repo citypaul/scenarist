@@ -615,8 +615,13 @@ Map<string, Record<string, unknown>>  // Key: testId
 
 **Example App Tasks:**
 9. Add example scenarios to `apps/express-example/src/scenarios.ts`
-10. Add Bruno collection requests
+10. Add Bruno collection requests with automated tests
 11. Update `packages/express-adapter/README.md`
+
+**Bruno Tests:**
+12. Create `apps/express-example/bruno/Dynamic Responses/Request Matching/` folder
+13. Add happy path tests for body/headers/query matching
+14. Include automated assertions via Bruno's `tests` blocks
 
 **Acceptance Criteria:**
 - ✅ Can match on request body (partial)
@@ -624,8 +629,10 @@ Map<string, Record<string, unknown>>  // Key: testId
 - ✅ Can match on query parameters (exact)
 - ✅ First matching mock wins
 - ✅ Fallback to unmatchable mock works
-- ✅ Core unit tests passing
+- ✅ Core unit tests passing (100% coverage)
+- ✅ Adapter unit tests passing (100% translation coverage)
 - ✅ Express integration tests passing
+- ✅ Bruno automated tests passing (`bru run`)
 
 ### Phase 2: Response Sequences (REQ-2)
 **Goal:** Enable ordered sequences of responses
@@ -644,8 +651,13 @@ Map<string, Record<string, unknown>>  // Key: testId
 
 **Example App Tasks:**
 9. Add polling scenarios to examples
-10. Add Bruno collection requests
-11. Update documentation
+10. Update documentation
+
+**Bruno Tests:**
+11. Create `apps/express-example/bruno/Dynamic Responses/Sequences/` folder
+12. Add polling flow tests (pending → processing → complete)
+13. Add tests for all repeat modes (last/cycle/none)
+14. Include automated assertions for sequence progression
 
 **Acceptance Criteria:**
 - ✅ Sequences advance on each call
@@ -653,8 +665,10 @@ Map<string, Record<string, unknown>>  // Key: testId
 - ✅ `repeat: 'cycle'` works correctly
 - ✅ `repeat: 'none'` exhaustion works
 - ✅ Sequence state isolated per test ID
-- ✅ Core unit tests passing
+- ✅ Core unit tests passing (100% coverage)
+- ✅ Adapter unit tests passing (100% translation coverage)
 - ✅ Express integration tests passing
+- ✅ Bruno automated tests passing (`bru run`)
 
 ### Phase 3: Stateful Mocks (REQ-3)
 **Goal:** Enable state capture and injection
@@ -676,8 +690,13 @@ Map<string, Record<string, unknown>>  // Key: testId
 
 **Example App Tasks:**
 12. Add stateful scenarios (cart, forms)
-13. Add Bruno collection requests
-14. Update documentation
+13. Update documentation
+
+**Bruno Tests:**
+14. Create `apps/express-example/bruno/Dynamic Responses/Stateful/` folder
+15. Add shopping cart flow (add items → get cart with state)
+16. Add form flow (multi-step with state persistence)
+17. Include automated assertions for state capture/injection
 
 **Acceptance Criteria:**
 - ✅ Can capture from body/headers/query/params
@@ -686,8 +705,10 @@ Map<string, Record<string, unknown>>  // Key: testId
 - ✅ Nested paths work
 - ✅ State resets on scenario switch
 - ✅ State isolated per test ID
-- ✅ Core unit tests passing
+- ✅ Core unit tests passing (100% coverage)
+- ✅ Adapter unit tests passing (100% translation coverage)
 - ✅ Express integration tests passing
+- ✅ Bruno automated tests passing (`bru run`)
 
 ### Phase 4: Feature Composition (REQ-4)
 **Goal:** Verify all features work together
@@ -706,40 +727,154 @@ Map<string, Record<string, unknown>>  // Key: testId
 
 **Example App Tasks:**
 9. Add comprehensive composition examples to scenarios
-10. Add Bruno collection requests for composition patterns
-11. Update documentation with composition patterns and best practices
+10. Update documentation with composition patterns and best practices
+
+**Bruno Tests:**
+11. Create `apps/express-example/bruno/Dynamic Responses/Composition/` folder
+12. Add 2-3 key composition examples (match+sequence, sequence+state, all three)
+13. Include automated assertions for complex flows
 
 **Acceptance Criteria:**
 - ✅ All composition patterns work
 - ✅ Precedence rules enforced
 - ✅ Complex scenarios working
-- ✅ Core unit tests passing
+- ✅ Core unit tests passing (100% coverage)
+- ✅ Adapter unit tests passing (100% translation coverage)
 - ✅ Express integration tests passing
+- ✅ Bruno automated tests passing (`bru run`)
 - ✅ Documentation complete
 
-## Test Coverage Requirements
+## Testing Strategy
 
-For **each requirement**, we must have:
+The architectural separation of domain logic (core) from framework integration (adapters) requires a four-layer testing strategy. Each layer tests its own responsibility without duplication.
 
-### 1. Unit Tests
-- Location: `packages/msw-adapter/tests/` or `packages/core/tests/`
-- Coverage: Specific feature logic in isolation
-- Focus: Edge cases, error handling, boundary conditions
+**See also:** [ADR-0002 § Testing Strategy](./adrs/0002-dynamic-response-system.md#testing-strategy) for detailed rationale and examples.
 
-### 2. Integration Tests
-- Location: `apps/express-example/tests/dynamic-*.test.ts`
-- Coverage: Feature working end-to-end through Express app
-- Focus: Real request/response cycles, test ID isolation
+### Layer 1: Core Package Tests
 
-### 3. Example Scenarios
-- Location: `apps/express-example/src/scenarios.ts`
-- Purpose: Demonstrate feature usage patterns
-- Focus: Real-world use cases
+**Location:** `packages/core/tests/`
+**Purpose:** Comprehensive unit testing of ALL domain logic
 
-### 4. Bruno Collection
-- Location: `apps/express-example/bruno/`
-- Purpose: Manual testing and exploration
-- Focus: Interactive demonstration of features
+**What to test:**
+- `ResponseSelector` domain service (all three phases: match, select, transform)
+- `SequenceTracker` port implementation (position tracking, repeat modes)
+- `StateManager` port implementation (capture, storage, injection)
+- Match criteria logic (body partial match, headers/query exact match)
+- Sequence advancement (last/cycle/none, exhaustion)
+- State capture (path extraction) and template replacement
+- Edge cases: circular references, undefined keys, invalid paths
+- Error conditions: sequence exhaustion, missing state, malformed templates
+
+**Coverage:** 100% of all domain logic, every branch, every edge case
+
+**Characteristics:**
+- ✅ Fast (pure TypeScript, no framework overhead)
+- ✅ Isolated (tests pure business logic)
+- ✅ Single source of truth (domain behavior defined here)
+
+### Layer 2: Adapter Package Tests
+
+**Location:** `packages/express-adapter/tests/`
+**Purpose:** Focused testing of translation layer ONLY
+
+**What to test:**
+- Request context extraction from Express (`req` → `RequestContext`)
+- Response application to Express (`MockResponse` → `res`)
+- Integration with core domain services
+- Framework-specific quirks (header normalization, query parsing)
+- Type conversions (Express types → domain types)
+- Error handling in translation layer
+
+**What NOT to test:**
+- ❌ Match criteria logic (core's responsibility)
+- ❌ Sequence advancement (core's responsibility)
+- ❌ State management (core's responsibility)
+- ❌ Template replacement (core's responsibility)
+
+**Coverage:** 100% of translation functions
+
+**Characteristics:**
+- ✅ Fast (mock Express req/res, no full server)
+- ✅ Focused (only translation, not domain logic)
+- ❌ No duplication with core tests
+
+### Layer 3: Integration Tests
+
+**Location:** `apps/express-example/tests/dynamic-*.test.ts`
+**Purpose:** E2E testing of real-world user journeys
+
+**What to test:**
+- Complete flows from HTTP request to response
+- Real-world composition patterns (match + sequence + state)
+- Scenario switching with test ID isolation
+- Multi-request user journeys (polling, shopping cart, forms)
+- All requirements (REQ-1 through REQ-4) demonstrated
+
+**Coverage:** All composition patterns, all example scenarios
+
+**Characteristics:**
+- ✅ Realistic (full Express server, supertest)
+- ✅ Comprehensive flows (tests complete user journeys)
+- ❌ Slower (full server startup/teardown)
+
+### Layer 4: Bruno Tests
+
+**Location:** `apps/express-example/bruno/Dynamic Responses/`
+**Purpose:** Executable API documentation with automated tests
+
+**What to test:**
+- Happy path scenarios (success flows)
+- Common composition patterns (2-3 examples)
+- Key user journeys (not every edge case)
+- API contract validation
+
+**Automated tests run via:**
+```bash
+bru run apps/express-example/bruno
+```
+
+**Coverage:** Selective - key flows only, not comprehensive
+
+**Characteristics:**
+- ✅ Human-readable (non-developers can understand)
+- ✅ Executable docs (tests are documentation)
+- ✅ CI-ready (run in pipeline for additional confidence)
+- ❌ Selective (not comprehensive like Vitest tests)
+
+### Testing Strategy Decision Matrix
+
+| Layer | Tests | Doesn't Test | Speed | Coverage |
+|-------|-------|--------------|-------|----------|
+| **Core** | Domain logic (match, sequence, state) | Framework integration | Fast | 100% |
+| **Adapter** | Translation (req→domain, domain→res) | Domain logic | Fast | Translation layer |
+| **Integration** | Full flows, user journeys | Translation details | Slow | Real scenarios |
+| **Bruno** | Key flows, API documentation | Every edge case | Medium | Happy paths |
+
+### Why This Strategy Works
+
+**No Duplication:**
+- Each layer tests its **own responsibility**
+- Core tests domain logic, adapters test translation, E2E tests flows
+- Bruno documents key patterns without duplicating Vitest tests
+
+**Clear Debugging:**
+- Core test failure → domain logic bug
+- Adapter test failure → translation bug (req/res handling)
+- Integration test failure → integration issue or missed scenario
+- Bruno test failure → API contract change
+
+**Fast Feedback:**
+- Core tests run in milliseconds
+- Adapter tests run in milliseconds
+- Integration tests run in seconds
+- Bruno tests run in seconds (CI)
+
+### Anti-Patterns to Avoid
+
+❌ **Testing domain logic in adapter tests** - Belongs in core tests
+❌ **Testing translation in core tests** - Belongs in adapter tests
+❌ **Duplicating all Vitest tests in Bruno** - Bruno should be selective
+❌ **E2E testing translation edge cases** - Should be in adapter tests (faster)
 
 ## Design Decisions
 
