@@ -184,7 +184,7 @@ When multiple mocks match the same URL:
 
 ### REQ-2: Response Sequences
 
-**Status:** ⏸️ Not Started
+**Status:** 🏗️ In Progress (Core Complete, Adapters Pending)
 
 Enable ordered sequences of responses for polling and progressive scenarios.
 
@@ -706,15 +706,18 @@ Map<string, Record<string, unknown>>  // Key: testId
 - `apps/express-example/bruno/Dynamic Responses/Request Matching/` - 10 Bruno tests
 
 ### Phase 2: Response Sequences (REQ-2)
+
+**Status:** 🏗️ In Progress (Core Complete)
+
 **Goal:** Enable ordered sequences of responses
 
 **Core Package Tasks:**
-1. Add `sequence` field and `RepeatMode` type to `MockDefinition`
-2. Create `SequenceTracker` port interface in `packages/core/src/ports/`
-3. Create `InMemorySequenceTracker` implementation in `packages/core/src/domain/`
-4. Implement sequence selection logic in `ResponseSelector` domain service
-5. Implement position increment and repeat logic (last/cycle/none)
-6. Add unit tests for all repeat modes in `packages/core/tests/`
+1. ✅ Add `sequence` field and `RepeatMode` type to `MockDefinition`
+2. ✅ Create `SequenceTracker` port interface in `packages/core/src/ports/driven/sequence-tracker.ts`
+3. ✅ Create `InMemorySequenceTracker` implementation in `packages/core/src/adapters/in-memory-sequence-tracker.ts`
+4. ✅ Implement sequence selection logic in `ResponseSelector` domain service
+5. ✅ Implement position increment and repeat logic (last/cycle/none)
+6. ✅ Add unit tests for all repeat modes in `packages/core/tests/response-selector.test.ts`
 
 **Express Adapter Tasks:**
 7. Wire up sequence tracking (no sequence logic in adapter!)
@@ -736,10 +739,27 @@ Map<string, Record<string, unknown>>  // Key: testId
 - ✅ `repeat: 'cycle'` works correctly
 - ✅ `repeat: 'none'` exhaustion works
 - ✅ Sequence state isolated per test ID
-- ✅ Core unit tests passing (100% coverage)
-- ✅ Adapter unit tests passing (100% translation coverage)
-- ✅ Express integration tests passing
-- ✅ Bruno automated tests passing (`bru run`)
+- ✅ Core unit tests passing (100% coverage) - 27 tests in response-selector.test.ts
+- ⏸️ Adapter unit tests passing (100% translation coverage)
+- ⏸️ Express integration tests passing
+- ⏸️ Bruno automated tests passing (`bru run`)
+
+**Implementation Details:**
+- Implemented **sequence tracking with dependency injection** (SequenceTracker injected into ResponseSelector)
+- All three repeat modes working correctly (last, cycle, none)
+- Exhaustion checking integrated into matching phase (skip exhausted sequences)
+- Sequence positions tracked per (testId, scenarioId, mockIndex) tuple
+- Full test coverage: basic progression, all repeat modes, test ID isolation, combination with match criteria
+
+**Files Changed (Core Package):**
+- `packages/core/src/types/scenario.ts` - Added `RepeatMode` and `ResponseSequence` types
+- `packages/core/src/ports/driven/sequence-tracker.ts` - Created `SequenceTracker` port interface
+- `packages/core/src/adapters/in-memory-sequence-tracker.ts` - Implementation with Map-based tracking
+- `packages/core/src/domain/response-selector.ts` - Integrated sequence logic and exhaustion checking
+- `packages/core/src/ports/driven/response-selector.ts` - Updated signature (added scenarioId parameter)
+- `packages/core/tests/response-selector.test.ts` - Added 6 new sequence tests (27 total)
+- `packages/core/src/ports/index.ts` - Exported SequenceTracker port
+- `packages/core/src/adapters/index.ts` - Exported InMemorySequenceTracker
 
 ### Phase 3: Stateful Mocks (REQ-3)
 **Goal:** Enable state capture and injection

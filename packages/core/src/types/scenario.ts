@@ -38,14 +38,30 @@ export type HttpRequestContext = {
 };
 
 /**
+ * Repeat mode for response sequences.
+ */
+export type RepeatMode = 'last' | 'cycle' | 'none';
+
+/**
+ * Response sequence definition for polling scenarios.
+ */
+export type ResponseSequence = {
+  readonly responses: ReadonlyArray<MockResponse>;
+  readonly repeat?: RepeatMode; // Defaults to 'last'
+};
+
+/**
  * Serializable mock definition.
  * Represents an HTTP mock that can be converted to MSW handlers at runtime.
+ *
+ * A mock must have EITHER `response` (single response) OR `sequence` (ordered responses).
  */
 export type MockDefinition = {
   readonly method: HttpMethod;
   readonly url: string; // URL pattern string
   readonly match?: MatchCriteria; // Optional: Request content matching criteria
-  readonly response: MockResponse;
+  readonly response?: MockResponse; // Single response (Phase 1)
+  readonly sequence?: ResponseSequence; // OR sequence of responses (Phase 2)
 };
 
 /**

@@ -33,13 +33,15 @@ export interface ResponseSelector {
   /**
    * Select a response from candidate mocks based on request content.
    *
-   * @param testId - Test ID for sequence/state tracking (unused in Phase 1)
+   * @param testId - Test ID for sequence/state tracking
+   * @param scenarioId - Scenario ID for sequence/state tracking
    * @param context - Request context (method, url, body, headers, query)
    * @param mocks - Candidate mocks from active scenario (already filtered by URL/method)
    * @returns Result with selected MockResponse or error if no match found
    */
   selectResponse(
     testId: string,
+    scenarioId: string,
     context: HttpRequestContext,
     mocks: ReadonlyArray<MockDefinition>
   ): Result<MockResponse, ResponseSelectionError>;
