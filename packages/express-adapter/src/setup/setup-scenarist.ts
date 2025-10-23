@@ -3,6 +3,7 @@ import { setupServer } from 'msw/node';
 import {
   buildConfig,
   createScenarioManager,
+  createResponseSelector,
   InMemoryScenarioRegistry,
   InMemoryScenarioStore,
   type BaseAdapterOptions,
@@ -56,12 +57,16 @@ export const createScenarist = (
   // Auto-register the default scenario
   manager.registerScenario(options.defaultScenario);
 
+  // Create ResponseSelector once for the lifetime of the adapter
+  const responseSelector = createResponseSelector();
+
   const handler = createDynamicHandler({
     getTestId: () => testIdStorage.getStore() ?? config.defaultTestId,
     getActiveScenario: (testId) => manager.getActiveScenario(testId),
     getScenarioDefinition: (scenarioId) => manager.getScenarioById(scenarioId),
     strictMode: config.strictMode,
     defaultScenarioId: config.defaultScenarioId,
+    responseSelector,
   });
 
   const server = setupServer(handler);

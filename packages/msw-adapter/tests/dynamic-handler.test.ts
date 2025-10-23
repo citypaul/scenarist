@@ -2,9 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { setupServer } from 'msw/node';
 import { createDynamicHandler } from '../src/handlers/dynamic-handler.js';
 import type { ActiveScenario, ScenarioDefinition } from '@scenarist/core';
+import { createResponseSelector } from '@scenarist/core';
 import { mockDefinition, mockScenario } from './factories.js';
 
 describe('Dynamic Handler', () => {
+  // Create ResponseSelector once for all tests
+  const responseSelector = createResponseSelector();
+
   describe('Basic handler setup', () => {
     it('should return mocked response when mock matches request', async () => {
       const scenarios = new Map<string, ScenarioDefinition>([
@@ -34,6 +38,7 @@ describe('Dynamic Handler', () => {
         getScenarioDefinition,
         strictMode: false,
         defaultScenarioId: 'default',
+        responseSelector,
       });
 
       const server = setupServer(handler);
@@ -79,6 +84,7 @@ describe('Dynamic Handler', () => {
         getScenarioDefinition,
         strictMode: false,
         defaultScenarioId: 'default',
+        responseSelector,
       });
 
       const server = setupServer(handler);
@@ -119,6 +125,7 @@ describe('Dynamic Handler', () => {
         getScenarioDefinition,
         strictMode: false,
         defaultScenarioId: 'default',
+        responseSelector,
       });
 
       const server = setupServer(handler);
@@ -146,6 +153,7 @@ describe('Dynamic Handler', () => {
         getScenarioDefinition,
         strictMode: false,
         defaultScenarioId: 'default',
+        responseSelector,
       });
 
       const server = setupServer(handler);
@@ -169,6 +177,7 @@ describe('Dynamic Handler', () => {
         getScenarioDefinition,
         strictMode: true,
         defaultScenarioId: 'default',
+        responseSelector,
       });
 
       const server = setupServer(handler);

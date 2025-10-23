@@ -5,8 +5,8 @@ import type {
   ScenarioDefinition,
   HttpRequestContext,
   HttpMethod,
+  ResponseSelector,
 } from '@scenarist/core';
-import { createResponseSelector } from '@scenarist/core';
 import { buildResponse } from '../conversion/response-builder.js';
 import { matchesUrl } from '../matching/url-matcher.js';
 
@@ -18,6 +18,7 @@ export type DynamicHandlerOptions = {
   ) => ScenarioDefinition | undefined;
   readonly strictMode: boolean;
   readonly defaultScenarioId: string;
+  readonly responseSelector: ResponseSelector;
 };
 
 /**
@@ -125,9 +126,8 @@ export const createDynamicHandler = (
       request.url
     );
 
-    // Use ResponseSelector to find matching mock
-    const selector = createResponseSelector();
-    const result = selector.selectResponse(testId, context, mocks);
+    // Use injected ResponseSelector to find matching mock
+    const result = options.responseSelector.selectResponse(testId, context, mocks);
 
     if (result.success) {
       return buildResponse(result.data);

@@ -80,6 +80,54 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       expect(result.success).toBe(false);
     });
 
+    it("should not match when request body is null", () => {
+      const context: HttpRequestContext = {
+        method: "POST",
+        url: "/api/items",
+        body: null, // Null body
+        headers: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "POST",
+          url: "/api/items",
+          match: { body: { itemId: "premium" } },
+          response: { status: 200, body: { price: 100 } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", context, mocks);
+
+      expect(result.success).toBe(false);
+    });
+
+    it("should not match when request body is not an object", () => {
+      const context: HttpRequestContext = {
+        method: "POST",
+        url: "/api/items",
+        body: "string body", // Non-object body
+        headers: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "POST",
+          url: "/api/items",
+          match: { body: { itemId: "premium" } },
+          response: { status: 200, body: { price: 100 } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", context, mocks);
+
+      expect(result.success).toBe(false);
+    });
+
     it("should match on multiple body fields (partial match)", () => {
       const context: HttpRequestContext = {
         method: "POST",
