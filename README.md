@@ -6,11 +6,10 @@ Test your complete application—business logic, database queries, API routes—
 
 Works with Express, Fastify, Next.js, Remix, tRPC, and any Node.js framework.
 
-[![npm version](https://img.shields.io/npm/v/scenarist.svg)](https://www.npmjs.com/package/scenarist)
-[![npm downloads](https://img.shields.io/npm/dm/scenarist.svg)](https://www.npmjs.com/package/scenarist)
-[![Build Status](https://img.shields.io/github/workflow/status/yourusername/scenarist/CI)](https://github.com/yourusername/scenarist/actions)
-[![Coverage](https://img.shields.io/codecov/c/github/yourusername/scenarist)](https://codecov.io/gh/yourusername/scenarist)
+[![Build Status](https://img.shields.io/github/workflow/status/citypaul/scenarist/CI)](https://github.com/citypaul/scenarist/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+> **Status**: 🚧 In development. Core packages complete, not yet published to npm.
 
 ---
 
@@ -403,63 +402,82 @@ Scenarist uses **Hexagonal Architecture** (Ports & Adapters) for maximum flexibi
 
 ### Installation
 
-```bash
-# Core package + your framework adapter + storage
-npm install @scenarist/core @scenarist/express-adapter @scenarist/in-memory-store
+> **Note**: Not yet published to npm. For now, use this repository directly or wait for official release.
 
-# Peer dependencies
-npm install msw express
+```bash
+# Once published:
+npm install @scenarist/express-adapter msw express
 ```
 
 ### Basic Setup
 
 **1. Create your scenarios**
 
+Scenarios are defined as serializable JSON objects (not MSW handlers):
+
 ```typescript
-// scenarios/happy-path.ts
-import { createScenario } from "@scenarist/core";
-import { http, HttpResponse } from "msw";
+// scenarios/default.ts
+import type { ScenarioDefinition } from "@scenarist/core";
 
-export const happyPath = createScenario(() => ({
-  name: "Happy Path",
-  description: "All API calls succeed",
+export const defaultScenario: ScenarioDefinition = {
+  id: "default",
+  name: "Default Scenario",
+  description: "Baseline responses for all APIs",
   mocks: [
-    http.get("https://api.example.com/user", () => {
-      return HttpResponse.json({
-        id: "123",
-        name: "John Doe",
-        email: "john@example.com",
-      });
-    }),
-
-    http.post("https://api.example.com/payment", () => {
-      return HttpResponse.json({
-        success: true,
-        transactionId: "txn_123",
-      });
-    }),
+    {
+      method: "GET",
+      url: "https://api.example.com/user",
+      response: {
+        status: 200,
+        body: {
+          id: "123",
+          name: "John Doe",
+          email: "john@example.com",
+        },
+      },
+    },
+    {
+      method: "POST",
+      url: "https://api.example.com/payment",
+      response: {
+        status: 200,
+        body: {
+          success: true,
+          transactionId: "txn_123",
+        },
+      },
+    },
   ],
-}))();
+};
 ```
 
 ```typescript
 // scenarios/error-state.ts
-import { createScenario } from "@scenarist/core";
-import { http, HttpResponse } from "msw";
+import type { ScenarioDefinition } from "@scenarist/core";
 
-export const errorState = createScenario(() => ({
+export const errorState: ScenarioDefinition = {
+  id: "error-state",
   name: "Error State",
   description: "API calls fail with errors",
   mocks: [
-    http.get("https://api.example.com/user", () => {
-      return HttpResponse.json({ error: "User not found" }, { status: 404 });
-    }),
-
-    http.post("https://api.example.com/payment", () => {
-      return HttpResponse.json({ error: "Payment failed" }, { status: 400 });
-    }),
+    {
+      method: "GET",
+      url: "https://api.example.com/user",
+      response: {
+        status: 404,
+        body: { error: "User not found" },
+      },
+    },
+    {
+      method: "POST",
+      url: "https://api.example.com/payment",
+      response: {
+        status: 400,
+        body: { error: "Payment failed" },
+      },
+    },
   ],
-}))();
+};
 ```
 
 **2. Set up your Express server**
@@ -467,81 +485,78 @@ export const errorState = createScenario(() => ({
 ```typescript
 // server.ts
 import express from "express";
-import { setupServer } from "msw/node";
-import { createScenarioManager, buildConfig } from "@scenarist/core";
-import { InMemoryScenarioStore } from "@scenarist/in-memory-store";
-import { createScenaristMiddleware } from "@scenarist/express-adapter";
-import { happyPath } from "./scenarios/happy-path";
-import { errorState } from "./scenarios/error-state";
+import { createScenarist } from "@scenarist/express-adapter";
+import { defaultScenario, errorState } from "./scenarios";
 
 const app = express();
 app.use(express.json());
 
-// Initialize MSW server
-const mswServer = setupServer();
-mswServer.listen({ onUnhandledRequest: "bypass" });
-
-// Create scenario manager
-const store = new InMemoryScenarioStore();
-const config = buildConfig({
-  enabled: process.env.ENABLE_MOCKS === "true",
+// Create Scenarist instance (wires everything automatically)
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === "test",
+  defaultScenario: defaultScenario, // REQUIRED - fallback scenario
+  strictMode: false,
 });
 
-const manager = createScenarioManager(store, config);
-
-// Register your scenarios
-manager.registerScenario("happy-path", happyPath);
-manager.registerScenario("error-state", errorState);
+// Register additional scenarios
+scenarist.registerScenario(errorState);
 
 // Add Scenarist middleware
-app.use(createScenaristMiddleware({ manager, config, mswServer }));
+if (process.env.NODE_ENV === "test") {
+  app.use(scenarist.middleware);
+}
 
 // Your application routes
 app.get("/api/profile", async (req, res) => {
-  // Your actual implementation
-  // MSW will intercept based on active scenario
+  // This calls external API - MSW intercepts based on active scenario
+  const response = await fetch("https://api.example.com/user");
+  const user = await response.json();
+  res.json(user);
 });
 
-app.listen(3000);
+export { app, scenarist };
+
+// Start server
+if (process.env.NODE_ENV !== "test") {
+  app.listen(3000, () => console.log("Server running on port 3000"));
+}
 ```
 
-**3. Write Playwright tests**
+**3. Write tests**
 
 ```typescript
-// tests/payment.spec.ts
-import { test, expect } from "@playwright/test";
+// tests/payment.test.ts
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import request from "supertest";
+import { app, scenarist } from "../server";
 
-test.describe("Payment Flow", () => {
-  test("should show success when payment succeeds", async ({ page }) => {
-    // Switch to success scenario
-    await page.request.post("http://localhost:3000/__scenario__", {
-      headers: { "x-test-id": "test-success" },
-      data: { scenario: "happy-path" },
-    });
+describe("Payment Flow", () => {
+  beforeAll(() => scenarist.start());
+  afterAll(() => scenarist.stop());
 
-    await page.goto("/payment");
-    await page.fill('[name="amount"]', "100");
-    await page.click('button:has-text("Pay")');
+  it("should return user data from default scenario", async () => {
+    const response = await request(app)
+      .get("/api/profile")
+      .set("x-test-id", "test-default");
 
-    await expect(page.locator(".success-message")).toBeVisible();
-    await expect(page.locator(".success-message")).toHaveText(
-      /Payment successful/
-    );
+    expect(response.status).toBe(200);
+    expect(response.body.name).toBe("John Doe");
   });
 
-  test("should show error when payment fails", async ({ page }) => {
+  it("should return error when using error scenario", async () => {
     // Switch to error scenario
-    await page.request.post("http://localhost:3000/__scenario__", {
-      headers: { "x-test-id": "test-error" },
-      data: { scenario: "error-state" },
-    });
+    await request(app)
+      .post("/__scenario__")
+      .set("x-test-id", "test-error")
+      .send({ scenario: "error-state" });
 
-    await page.goto("/payment");
-    await page.fill('[name="amount"]', "100");
-    await page.click('button:has-text("Pay")');
+    // Make request - gets error response
+    const response = await request(app)
+      .get("/api/profile")
+      .set("x-test-id", "test-error");
 
-    await expect(page.locator(".error-message")).toBeVisible();
-    await expect(page.locator(".error-message")).toHaveText(/Payment failed/);
+    expect(response.status).toBe(404);
+    expect(response.body.error).toBe("User not found");
   });
 });
 
@@ -552,56 +567,18 @@ test.describe("Payment Flow", () => {
 
 ## Advanced Features
 
-### Scenario Variants
-
-Parameterize scenarios with different data:
-
-```typescript
-// Scenario with variants
-export const userScenario = createScenario((variant) => {
-  const userTier = variant?.meta?.tier || "standard";
-
-  return {
-    name: "User Scenario",
-    description: "User with different tiers",
-    mocks: [
-      http.get("https://api.example.com/user", () => {
-        return HttpResponse.json({
-          id: "123",
-          tier: userTier,
-          features:
-            userTier === "premium"
-              ? ["advanced-analytics", "priority-support"]
-              : ["basic-features"],
-        });
-      }),
-    ],
-  };
-})();
-
-// In your test
-await page.request.post("http://localhost:3000/__scenario__", {
-  headers: { "x-test-id": "test-premium" },
-  data: {
-    scenario: "user-scenario",
-    variant: {
-      name: "premium-user",
-      meta: { tier: "premium" },
-    },
-  },
-});
-```
-
 ### Custom Configuration
 
 ```typescript
-const config = buildConfig({
-  enabled: () => process.env.NODE_ENV !== "production",
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === "test",
+  defaultScenario: myDefaultScenario,
+  strictMode: false,
 
   // Customize header names
   headers: {
     testId: "x-my-test-id",
-    mockEnabled: "x-enable-mocks",
+    mockEnabled: "x-my-mock-flag",
   },
 
   // Customize endpoint paths
@@ -609,91 +586,70 @@ const config = buildConfig({
     setScenario: "/api/test/scenario",
     getScenario: "/api/test/scenario",
   },
-
-  defaultScenario: "happy-path",
-  defaultTestId: "default",
 });
+```
+
+### Scenario Variants
+
+You can pass optional variant names when switching scenarios:
+
+```typescript
+await request(app)
+  .post("/__scenario__")
+  .set("x-test-id", "test-123")
+  .send({
+    scenario: "user-scenario",
+    variant: "premium-tier", // Optional variant
+  });
 ```
 
 ### Checking Active Scenario
 
 ```typescript
-// In your test
-const response = await page.request.get("http://localhost:3000/__scenario__", {
-  headers: { "x-test-id": "test-123" },
-});
+const response = await request(app)
+  .get("/__scenario__")
+  .set("x-test-id", "test-123");
 
-const data = await response.json();
-console.log(data);
+console.log(response.body);
 // {
 //   testId: 'test-123',
-//   scenarioId: 'happy-path',
-//   scenarioName: 'Happy Path',
-//   variant: { name: 'premium-user', meta: { tier: 'premium' } }
+//   scenarioId: 'user-scenario',
+//   scenarioName: 'User Scenario',
+//   variantName: 'premium-tier'
 // }
 ```
 
-### Programmatic API
-
-```typescript
-// You can also use the manager directly in Node.js tests
-import { createScenarioManager, buildConfig } from "@scenarist/core";
-import { InMemoryScenarioStore } from "@scenarist/in-memory-store";
-
-const manager = createScenarioManager(new InMemoryScenarioStore(), config);
-
-// Register scenarios
-manager.registerScenario("success", successScenario);
-
-// Switch scenarios
-const result = manager.switchScenario("test-123", "success");
-if (result.success) {
-  console.log("Scenario switched!");
-}
-
-// Get active scenario
-const active = manager.getActiveScenario("test-123");
-console.log(active?.scenarioId); // 'success'
-
-// List all scenarios
-const scenarios = manager.listScenarios();
-console.log(scenarios.map((s) => s.id)); // ['success', 'error', ...]
-
-// Clear scenario
-manager.clearScenario("test-123");
-```
+For more advanced usage patterns, see the [Express Adapter README](./packages/express-adapter/README.md) or the [Express Example App](./apps/express-example/).
 
 ---
 
 ## Framework Support
 
-### Express (Available Now)
+### Express (Available Now ✅)
 
 ```typescript
-import { createScenaristMiddleware } from "@scenarist/express-adapter";
+import { createScenarist } from "@scenarist/express-adapter";
 
-app.use(createScenaristMiddleware({ manager, config, mswServer }));
+const scenarist = createScenarist({
+  enabled: true,
+  defaultScenario: myDefaultScenario,
+});
+
+app.use(scenarist.middleware);
 ```
 
-### Fastify (Coming Soon)
+See the [Express Adapter Documentation](./packages/express-adapter/README.md) for complete usage.
 
-```typescript
-import { scenaristPlugin } from "@scenarist/fastify-adapter";
+### Other Frameworks (Coming Soon)
 
-await fastify.register(scenaristPlugin, { manager, config, mswServer });
-```
+Scenarist's hexagonal architecture makes it easy to create adapters for any framework:
 
-### Koa (Coming Soon)
+- **Fastify** - Coming soon
+- **Koa** - Coming soon
+- **Hono** - Coming soon
+- **Next.js** - Coming soon
 
-```typescript
-import { createScenaristMiddleware } from "@scenarist/koa-adapter";
-
-app.use(createScenaristMiddleware({ manager, config, mswServer }));
-```
-
-### Other Frameworks
-
-Scenarist's hexagonal architecture makes it easy to create adapters for any framework. See [Creating Custom Adapters](./docs/custom-adapters.md).
+Contributions welcome! See the [Express adapter](./packages/express-adapter/) as a reference implementation.
 
 ---
 
@@ -900,37 +856,21 @@ async function switchScenario(page: Page, scenario: string) {
 
 ## Documentation
 
-- [📖 Getting Started Guide](./docs/getting-started.md)
-- [🏗️ Architecture Overview](./docs/architecture.md)
-- [📚 API Reference](./docs/api.md)
-- [🎭 Creating Scenarios](./docs/creating-scenarios.md)
-- [🔌 Custom Adapters](./docs/custom-adapters.md)
-- [🧪 Testing Strategies](./docs/testing-strategies.md)
-- [🚀 Migration Guide](./docs/migration.md)
-- [❓ FAQ](./docs/faq.md)
+See the working example in `apps/express-example/` for a complete Express application with Scenarist integration.
 
----
-
-## Examples
-
-Explore complete working examples:
-
-- [**express-basic**](./examples/express-basic) - Simple Express app with Scenarist
-- [**playwright-e2e**](./examples/playwright-e2e) - Complete E2E testing setup
-- [**variants**](./examples/variants) - Using scenario variants
-- [**custom-adapter**](./examples/custom-adapter) - Building a custom framework adapter
+Additional documentation coming soon.
 
 ---
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guide](./CONTRIBUTING.md).
+Contributions welcome! This project follows Test-Driven Development (TDD) and hexagonal architecture principles.
 
 ### Development Setup
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/scenarist.git
+git clone https://github.com/citypaul/scenarist.git
 cd scenarist
 
 # Install dependencies
@@ -951,8 +891,8 @@ pnpm test:watch
 - 🔌 **Framework Adapters** - Fastify, Koa, Hono, Next.js
 - 💾 **Storage Adapters** - Redis, PostgreSQL, DynamoDB
 - 📚 **Documentation** - Examples, tutorials, blog posts
-- 🐛 **Bug Fixes** - Check our [issues](https://github.com/yourusername/scenarist/issues)
-- ✨ **Features** - See our [roadmap](./docs/roadmap.md)
+- 🐛 **Bug Fixes** - Check our [issues](https://github.com/citypaul/scenarist/issues)
+- ✨ **Features** - See existing packages for patterns
 
 ---
 
@@ -1176,22 +1116,18 @@ A: Absolutely! Scenarist is built with Turborepo. Perfect for monorepo testing s
 
 A: Use the `x-mock-enabled` header to disable mocking per-request, or configure scenarios to pass through specific endpoints.
 
-See [full FAQ](./docs/faq.md) for more.
-
 ---
 
 ## Support
 
-- 💬 [GitHub Discussions](https://github.com/yourusername/scenarist/discussions)
-- 🐛 [Issue Tracker](https://github.com/yourusername/scenarist/issues)
-- 📧 Email: support@scenarist.dev
-- 🐦 Twitter: [@scenarist_dev](https://twitter.com/scenarist_dev)
+- 💬 [GitHub Discussions](https://github.com/citypaul/scenarist/discussions)
+- 🐛 [Issue Tracker](https://github.com/citypaul/scenarist/issues)
 
 ---
 
 ## License
 
-MIT © [Your Name](https://github.com/yourusername)
+MIT © [Paul Hammond](https://github.com/citypaul)
 
 ---
 
@@ -1212,7 +1148,7 @@ Inspired by hexagonal architecture patterns and the testing community's need for
 
 If you find Scenarist useful, please consider giving it a star ⭐ on GitHub!
 
-[![Star History Chart](https://api.star-history.com/svg?repos=yourusername/scenarist&type=Date)](https://star-history.com/#yourusername/scenarist&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=citypaul/scenarist&type=Date)](https://star-history.com/#citypaul/scenarist&Date)
 
 ---
 
