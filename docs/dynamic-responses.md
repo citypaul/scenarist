@@ -7,13 +7,24 @@
 
 ## Overview
 
-This document defines requirements for enabling different responses from the same endpoint based on request content, call sequence, and application state. This feature is essential for testing realistic user journeys where the same endpoint is called multiple times with different expected behaviors.
+This document defines requirements for enabling different responses from the same endpoint based on request content, call sequence, and application state. Additionally, it specifies developer experience requirements for debugging complex scenarios. These features are essential for testing realistic user journeys where the same endpoint is called multiple times with different expected behaviors.
+
+**Requirements Covered:**
+- **REQ-1**: Request Content Matching (different responses based on body/headers/query)
+- **REQ-2**: Response Sequences (polling with repeat modes)
+- **REQ-3**: Stateful Mocks (capture and inject state)
+- **REQ-4**: Feature Composition (all features working together)
+- **REQ-5**: Developer Experience & Debugging (inspection API for complex scenarios)
 
 **See also:** [ADR-0002](./adrs/0002-dynamic-response-system.md) for the architectural decision record, including alternatives considered and expected consequences.
 
 ## Problem Statement
 
-Current limitation: Each `MockDefinition` provides a single static response for a URL pattern. This makes it impossible to test:
+### Current Limitations
+
+**Problem 1: Single Static Responses**
+
+Each `MockDefinition` provides a single static response for a URL pattern. This makes it impossible to test:
 
 - **Polling scenarios** - GET /job/:id should return "pending" → "processing" → "complete" over multiple calls
 - **Content-based responses** - POST /items should return different prices based on which item is requested
@@ -21,6 +32,18 @@ Current limitation: Each `MockDefinition` provides a single static response for 
 - **Multi-step processes** - Form steps that depend on previous steps being completed
 
 These are common real-world scenarios that E2E tests need to verify.
+
+**Problem 2: Debugging Complex Scenarios**
+
+When testing complex flows (Playwright, Cypress, manual testing), developers have no visibility into:
+
+- **Sequence positions**: "Am I at step 3 of 5 in this polling sequence?"
+- **Captured state**: "What values are currently captured in state?"
+- **Match failures**: "Why didn't my match criteria match this request?"
+- **Fallback behavior**: "Did this response come from my active scenario or the default?"
+- **Flow progression**: "What requests have been made and in what order?"
+
+This makes debugging complex scenarios difficult and time-consuming.
 
 ## Core Principles
 
@@ -743,6 +766,148 @@ Map<string, Record<string, unknown>>  // Key: testId
 - ✅ Express integration tests passing
 - ✅ Bruno automated tests passing (`bru run`)
 - ✅ Documentation complete
+
+### Phase 5: Developer Experience & Debugging (REQ-5)
+**Goal:** Enable world-class debugging experience for complex scenarios
+
+**Problem Being Solved:**
+Developers debugging complex scenarios (Playwright, Cypress, manual testing) have no visibility into:
+- Current sequence positions (am I at step 3 of 5?)
+- Captured state values (what's in my cart?)
+- Why a specific mock matched or didn't match
+- Whether response came from active scenario or default fallback
+- Request history to understand flow progression
+
+**Core Package Tasks:**
+1. Add `ScenarioInspection` types to `packages/core/src/types/inspection.ts`
+2. Add `inspect(testId: string): Result<ScenarioInspection>` to `ScenarioManager` port
+3. Implement inspection logic in `ScenarioManager` implementation
+4. Track request history in adapter runtime (last 10-20 requests per test ID)
+5. Unit tests for inspection data accuracy
+
+**Express Adapter Tasks:**
+6. Add `/__scenario_debug__` GET endpoint to Express adapter
+7. Wire up `scenarioManager.inspect()` to endpoint
+8. Add integration tests for inspection endpoint
+
+**Example App Tasks:**
+9. Add Playwright debugging examples to documentation
+10. Update README with debugging workflows
+
+**Bruno Tests:**
+11. Create `apps/express-example/bruno/Debug/` folder
+12. Add "Inspect Current Scenario" request
+13. Add documentation explaining debugging use cases
+14. Include examples of programmatic assertions using inspection data
+
+**Inspection Response Shape:**
+```typescript
+{
+  testId: "checkout-test",
+  activeScenario: { id: "checkout-flow", name: "Checkout Happy Path" },
+  defaultScenario: { id: "default", name: "Default Responses" },
+  sequenceState: [
+    {
+      mockIndex: 0,
+      method: "GET",
+      url: "/api/payment/status",
+      currentPosition: 3,
+      totalResponses: 5,
+      repeatMode: "last",
+      exhausted: false,
+      nextResponse: { status: 200, body: { status: "processing" } },
+      source: "checkout-flow"
+    }
+  ],
+  capturedState: {
+    cartItems: [{ id: "item-123", name: "Widget" }],
+    userId: "user-456"
+  },
+  activeMocks: [
+    {
+      index: 0,
+      method: "POST",
+      url: "/api/payment",
+      source: "checkout-flow",
+      hasMatchCriteria: true,
+      matchCriteria: { body: { amount: 29.99 } },
+      hasSequence: false,
+      capturesState: true
+    }
+  ],
+  requestHistory: [
+    {
+      timestamp: "2025-10-23T12:34:56.789Z",
+      method: "POST",
+      url: "/api/cart/items",
+      matchedMockIndex: 2,
+      source: "default",
+      responseStatus: 200
+    }
+  ]
+}
+```
+
+**Usage Examples:**
+
+*Playwright console debugging:*
+```typescript
+test('checkout flow', async ({ page }) => {
+  await page.click('#checkout');
+
+  const debug = await page.evaluate(async () => {
+    const res = await fetch('http://localhost:3000/__scenario_debug__');
+    return res.json();
+  });
+
+  console.log('Sequence positions:', debug.sequenceState);
+  console.log('Next payment response:', debug.sequenceState[0].nextResponse);
+});
+```
+
+*Browser DevTools:*
+```javascript
+// Quick state check during manual testing
+await fetch('http://localhost:3000/__scenario_debug__')
+  .then(r => r.json())
+  .then(console.log);
+```
+
+*Programmatic assertions:*
+```typescript
+test('sequence should advance correctly', async ({ page }) => {
+  await page.click('#check-status');
+
+  const debug = await inspect();
+  const paymentMock = debug.sequenceState.find(s => s.url.includes('payment'));
+
+  expect(paymentMock.currentPosition).toBe(2);
+  expect(paymentMock.nextResponse.body.status).toBe('complete');
+});
+```
+
+**Acceptance Criteria:**
+- ✅ `inspect()` method returns complete scenario state
+- ✅ `/__scenario_debug__` endpoint works in Express adapter
+- ✅ Sequence positions accurate (current, total, next response)
+- ✅ Captured state values returned correctly
+- ✅ Request history tracked (last N requests per test ID)
+- ✅ Active vs default mock sources identified
+- ✅ Bruno collection for interactive debugging
+- ✅ Playwright debugging examples documented
+- ✅ Core unit tests passing
+- ✅ Integration tests passing
+- ✅ Documentation complete
+
+**Design Principles:**
+- Zero-config (works automatically, no setup)
+- Framework-agnostic (HTTP endpoint, works everywhere)
+- Read-only (inspection never mutates state)
+- Actionable (shows NEXT expected responses, not just current state)
+- Minimal performance impact (optional endpoint)
+- Can be disabled in production via config
+
+**See Also:** [ADR-0002 § Future Enhancements](./adrs/0002-dynamic-response-system.md#future-enhancements) for detailed API specification and design rationale.
 
 ## Testing Strategy
 

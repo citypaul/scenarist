@@ -954,9 +954,246 @@ it('should handle missing headers in Express request', () => {
 - Add lessons learned section
 - Update alternatives if new approaches emerge
 
+## Future Enhancements
+
+These enhancements are deferred until after core features (REQ-1 through REQ-4) are implemented and validated.
+
+### Scenario Inspection API (Phase 5)
+
+**Problem:** Developers debugging complex scenarios (Playwright, Cypress, manual testing) have no visibility into:
+- Current sequence positions
+- Captured state values
+- Why a specific mock matched/didn't match
+- Whether response came from active scenario or default fallback
+- Request history
+
+**Use Case:**
+```typescript
+// Playwright test debugging
+test('checkout flow', async ({ page }) => {
+  await page.click('#checkout-button');
+  // Expected: "processing" response
+  // Actual: Got "error" response
+  // Question: "What's my current scenario state?"
+
+  const debug = await page.evaluate(async () => {
+    const res = await fetch('http://localhost:3000/__scenario_debug__');
+    return res.json();
+  });
+
+  console.log('Sequence positions:', debug.sequenceState);
+  console.log('Captured state:', debug.capturedState);
+  console.log('Next expected response:', debug.sequenceState[0].nextResponse);
+});
+```
+
+**Proposed Solution:** Add `/__scenario_debug__` endpoint that returns complete scenario state.
+
+**Response Shape:**
+```typescript
+type ScenarioInspection = {
+  readonly testId: string;
+  readonly activeScenario: { readonly id: string; readonly name: string } | null;
+  readonly defaultScenario: { readonly id: string; readonly name: string } | null;
+  readonly sequenceState: ReadonlyArray<{
+    readonly mockIndex: number;
+    readonly method: string;
+    readonly url: string;
+    readonly currentPosition: number;
+    readonly totalResponses: number;
+    readonly repeatMode: 'last' | 'cycle' | 'none';
+    readonly exhausted: boolean;
+    readonly nextResponse?: MockResponse;
+    readonly source: 'active-scenario' | 'default-scenario';
+  }>;
+  readonly capturedState: Record<string, unknown>;
+  readonly activeMocks: ReadonlyArray<{
+    readonly index: number;
+    readonly method: string;
+    readonly url: string;
+    readonly source: 'active-scenario' | 'default-scenario';
+    readonly hasMatchCriteria: boolean;
+    readonly matchCriteria?: MatchCriteria;
+    readonly hasSequence: boolean;
+    readonly capturesState: boolean;
+    readonly captureKeys?: ReadonlyArray<string>;
+  }>;
+  readonly requestHistory: ReadonlyArray<{
+    readonly timestamp: string;
+    readonly method: string;
+    readonly url: string;
+    readonly matchedMockIndex: number;
+    readonly source: 'active-scenario' | 'default-scenario';
+    readonly sequencePosition?: number;
+    readonly responseStatus: number;
+  }>;
+};
+```
+
+**Core Package Changes:**
+```typescript
+// Add to ScenarioManager port
+interface ScenarioManager {
+  // ... existing methods
+  inspect(testId: string): Result<ScenarioInspection>;
+}
+```
+
+**Adapter Changes:**
+```typescript
+// Add inspection endpoint to Express adapter
+app.get('/__scenario_debug__', (req, res) => {
+  const testId = getTestId(req);
+  const result = scenarioManager.inspect(testId);
+
+  if (result.success) {
+    res.json(result.data);
+  } else {
+    res.status(404).json({ error: result.error.message, testId });
+  }
+});
+```
+
+**Bruno Collection:**
+```
+# apps/express-example/bruno/Debug/Inspect Current Scenario.bru
+
+get {
+  url: {{baseUrl}}/__scenario_debug__
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+docs {
+  Get detailed debugging information about current scenario state.
+
+  Useful for:
+  - Debugging complex flows in Playwright/Cypress
+  - Understanding why a specific response was returned
+  - Checking current sequence positions
+  - Inspecting captured state
+  - Verifying scenario fallback behavior
+}
+```
+
+**Benefits:**
+- ✅ **Zero-config debugging** - Works automatically, no setup required
+- ✅ **Framework-agnostic** - HTTP endpoint works in browser, Playwright, Cypress, manual testing
+- ✅ **Actionable** - Shows not just state, but NEXT expected responses
+- ✅ **Type-safe** - TypeScript types for programmatic assertions
+- ✅ **Human-readable** - JSON structure is intuitive
+- ✅ **Bruno integration** - Interactive debugging via API collection
+
+**Implementation Plan:**
+1. Add `ScenarioInspection` types to core package
+2. Implement `inspect()` method in `ScenarioManager`
+3. Track request history in adapter runtime (last N requests)
+4. Add `/__scenario_debug__` endpoint to Express adapter
+5. Add Bruno collection for debugging
+6. Document inspection API in adapter README
+7. Add Playwright examples showing debugging patterns
+
+**Why Defer to Phase 5:**
+- Not blocking for core feature implementation
+- Requires core features (sequences, state) to be implemented first
+- Inspection API shape depends on final implementation details
+- Can be added incrementally without breaking changes
+- Allows us to discover what debugging info is most valuable during implementation
+
+**Design Principles:**
+- Inspection never mutates state (read-only)
+- Minimal performance impact (optional endpoint)
+- Can be disabled in production via config
+- Self-documenting (response explains current state)
+
+### Rich Error Messages
+
+When no mock matches a request, include debugging context in error:
+
+```typescript
+throw new Error(`
+No mock found for request:
+  Method: POST
+  URL: /api/items
+  Body: { "itemId": "premium-item", "quantity": 5 }
+
+Available mocks for this URL:
+  1. POST /api/items
+     Match: { body: { itemId: "standard-item" } }
+     Result: DIDN'T MATCH (body.itemId: expected "standard-item", got "premium-item")
+
+  2. POST /api/items (no match criteria)
+     Result: FALLBACK AVAILABLE
+
+Sequence positions for test ID 'my-test':
+  - Mock 0 (/api/job/:id): position 2/5 (repeat: last, next: "complete")
+
+Captured state:
+  - cartItems: [{ id: "item-123", name: "Widget" }]
+  - userId: "user-456"
+
+Suggestion: Check if you meant to use itemId "standard-item" in your request body.
+`);
+```
+
+**Implementation:** Add to core `ResponseSelector` when no mock matches.
+
+### Template Expression Language
+
+If demand emerges for operations in templates:
+
+```typescript
+// Current (Phase 1-4): Simple value injection only
+response: {
+  body: {
+    count: '{{state.items.length}}',  // ✅ Supported
+    items: '{{state.items}}'           // ✅ Supported
+  }
+}
+
+// Future: Template operations
+response: {
+  body: {
+    count: '{{state.items.length + 1}}',  // ❌ Not supported in Phase 1-4
+    total: '{{state.price * state.quantity}}',  // ❌ Not supported
+    greeting: '{{state.firstName.toUpperCase()}}' // ❌ Not supported
+  }
+}
+```
+
+**Decision:** Keep template engine simple for v1. Can add expression parser later if clear demand.
+
+### State Schema Validation
+
+If state becomes complex, validate captured state against schemas:
+
+```typescript
+{
+  captureState: {
+    'user': 'body.user',
+    'user.email': 'body.user.email'
+  },
+  stateSchema: {
+    user: {
+      type: 'object',
+      required: ['email', 'name'],
+      properties: {
+        email: { type: 'string', format: 'email' },
+        name: { type: 'string' }
+      }
+    }
+  }
+}
+```
+
+**Decision:** Defer until state management patterns emerge from real usage.
+
 ## Related Decisions
 
 - **ADR-0001**: Serializable Scenario Definitions (foundation for this decision)
+- **Future**: Scenario Inspection API (Phase 5, documented above)
 - **Future**: Template Expression Language (if we add operations like `{{state.count + 1}}`)
 - **Future**: State Schema Validation (if we need to validate captured state)
 
