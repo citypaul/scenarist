@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm exec vitest:*)",
+      "Bash(git rm:*)",
+      "Bash(gh api:*)",
+      "Bash(pnpm test:coverage:*)"
     ],
     "deny": [],
     "ask": []

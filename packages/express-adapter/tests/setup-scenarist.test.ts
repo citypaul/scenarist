@@ -283,4 +283,72 @@ describe('createScenarist', () => {
     expect(scenarios.find((s) => s.id === 'scenario-1')).toBeDefined();
     expect(scenarios.find((s) => s.id === 'scenario-2')).toBeDefined();
   });
+
+  it('should switch scenario programmatically', () => {
+    const scenarist = createScenarist({
+      enabled: true,
+      defaultScenario: mockDefaultScenario,
+    });
+
+    const testScenario: ScenarioDefinition = {
+      id: 'test-scenario',
+      name: 'Test Scenario',
+      description: 'Test scenario',
+      mocks: [],
+    };
+
+    scenarist.registerScenario(testScenario);
+
+    const result = scenarist.switchScenario('test-123', 'test-scenario');
+
+    expect(result.success).toBe(true);
+
+    const activeScenario = scenarist.getActiveScenario('test-123');
+    expect(activeScenario).toEqual({ scenarioId: 'test-scenario' });
+  });
+
+  it('should retrieve scenario by ID', () => {
+    const scenarist = createScenarist({
+      enabled: true,
+      defaultScenario: mockDefaultScenario,
+    });
+
+    const testScenario: ScenarioDefinition = {
+      id: 'test-scenario',
+      name: 'Test Scenario',
+      description: 'Test scenario',
+      mocks: [],
+    };
+
+    scenarist.registerScenario(testScenario);
+
+    const scenario = scenarist.getScenarioById('test-scenario');
+
+    expect(scenario).toEqual(testScenario);
+  });
+
+  it('should clear active scenario for a test ID', () => {
+    const scenarist = createScenarist({
+      enabled: true,
+      defaultScenario: mockDefaultScenario,
+    });
+
+    const testScenario: ScenarioDefinition = {
+      id: 'test-scenario',
+      name: 'Test Scenario',
+      description: 'Test scenario',
+      mocks: [],
+    };
+
+    scenarist.registerScenario(testScenario);
+    scenarist.switchScenario('test-123', 'test-scenario');
+
+    const beforeClear = scenarist.getActiveScenario('test-123');
+    expect(beforeClear).toEqual({ scenarioId: 'test-scenario' });
+
+    scenarist.clearScenario('test-123');
+
+    const afterClear = scenarist.getActiveScenario('test-123');
+    expect(afterClear).toBeUndefined();
+  });
 });

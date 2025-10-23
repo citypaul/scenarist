@@ -1,0 +1,38 @@
+meta {
+  name: 0. Setup - Set Content Matching Scenario
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/__scenario__
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "scenario": "content-matching"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+  res.body.scenarioId: eq content-matching
+}
+
+docs {
+  Sets the active scenario to "content-matching" for testing request content matching.
+
+  This scenario demonstrates Phase 1 of Dynamic Responses:
+  - Body matching (partial): Stripe charges based on itemType
+  - Header matching (exact): GitHub user data based on x-user-tier
+  - Query parameter matching (exact): Weather data based on units and detailed flags
+
+  All subsequent tests in this folder depend on this scenario being active.
+}

@@ -1,2 +1,3 @@
 export { createScenarioManager } from './scenario-manager.js';
 export { buildConfig } from './config-builder.js';
+export { createResponseSelector } from './response-selector.js';

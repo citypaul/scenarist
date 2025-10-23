@@ -1,0 +1,36 @@
+meta {
+  name: 4. Header Match - Premium User
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/github/user/testuser
+  body: none
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+  x-user-tier: premium
+}
+
+assert {
+  res.status: eq 200
+  res.body.login: eq premium-user
+  res.body.id: eq 999
+  res.body.bio: eq Premium tier access
+  res.body.private_repos: eq 50
+}
+
+docs {
+  Tests exact header matching for premium tier users.
+
+  The mock matches on `x-user-tier: "premium"` header.
+  All specified headers must match exactly.
+
+  Expected behavior:
+  - Premium users get enhanced data with private_repos field
+  - Header match is exact (case-sensitive value)
+  - Additional headers (x-test-id) don't affect matching
+}

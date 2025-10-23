@@ -15,12 +15,36 @@ export type MockResponse = {
 };
 
 /**
+ * Match criteria for request content matching.
+ * All criteria are optional - if specified, they must ALL match for the mock to apply.
+ */
+export type MatchCriteria = {
+  readonly body?: Record<string, unknown>;      // Partial match on request body
+  readonly headers?: Record<string, string>;    // Exact match on specified headers
+  readonly query?: Record<string, string>;      // Exact match on specified query params
+};
+
+/**
+ * HTTP request data for response selection.
+ * Framework adapters extract this from their specific request objects.
+ * Used by ResponseSelector to match requests against MockDefinition criteria.
+ */
+export type HttpRequestContext = {
+  readonly method: HttpMethod;
+  readonly url: string;
+  readonly body?: unknown; // Request body (JSON-parsed)
+  readonly headers: Readonly<Record<string, string>>;
+  readonly query: Readonly<Record<string, string>>;
+};
+
+/**
  * Serializable mock definition.
  * Represents an HTTP mock that can be converted to MSW handlers at runtime.
  */
 export type MockDefinition = {
   readonly method: HttpMethod;
   readonly url: string; // URL pattern string
+  readonly match?: MatchCriteria; // Optional: Request content matching criteria
   readonly response: MockResponse;
 };
 

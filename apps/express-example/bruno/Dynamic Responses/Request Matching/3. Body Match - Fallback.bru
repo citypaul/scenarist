@@ -1,0 +1,43 @@
+meta {
+  name: 3. Body Match - Fallback
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/stripe/charge
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "amount": 1000,
+    "currency": "usd",
+    "itemType": "other",
+    "description": "Other item type"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: eq ch_fallback123
+  res.body.status: eq succeeded
+  res.body.amount: eq 1000
+}
+
+docs {
+  Tests fallback behavior when body doesn't match any criteria.
+
+  Request has `itemType: "other"` which doesn't match premium or standard.
+  Falls back to the mock without match criteria.
+
+  Expected behavior:
+  - Uses fallback mock (no match criteria defined)
+  - Returns default charge amount (1000)
+  - Demonstrates precedence: specific matches checked first, fallback last
+}

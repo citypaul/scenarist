@@ -1,0 +1,35 @@
+meta {
+  name: 6. Header Match - Fallback (No Tier)
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/github/user/testuser
+  body: none
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.login: eq guest-user
+  res.body.id: eq 1
+  res.body.bio: eq No tier specified
+  res.body.public_repos: eq 5
+}
+
+docs {
+  Tests fallback when required header is missing.
+
+  Request does not include `x-user-tier` header.
+  Falls back to mock without match criteria.
+
+  Expected behavior:
+  - Guest user data returned (minimal information)
+  - Fallback mock used when no headers match
+  - Demonstrates header matching requires exact match
+}

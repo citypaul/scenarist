@@ -1,0 +1,44 @@
+meta {
+  name: 1. Body Match - Premium Item
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/stripe/charge
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "amount": 10000,
+    "currency": "usd",
+    "itemType": "premium",
+    "description": "Premium item purchase"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: eq ch_premium123
+  res.body.status: eq succeeded
+  res.body.amount: eq 8000
+  res.body.discount: eq premium_item_discount
+}
+
+docs {
+  Tests partial body matching for premium items.
+
+  The mock matches on `itemType: "premium"` in the request body.
+  Additional fields (amount, currency, description) are ignored.
+
+  Expected behavior:
+  - Premium items get discounted pricing (8000 instead of 10000)
+  - Response includes discount field
+  - Matches based on itemType field only (partial body match)
+}

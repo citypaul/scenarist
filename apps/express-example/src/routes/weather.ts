@@ -9,7 +9,14 @@ export const setupWeatherRoutes = (router: Router): void => {
 
     try {
       // Call external Weather API (will be mocked by Scenarist)
-      const response = await fetch(`https://api.weather.com/v1/weather/${city}`);
+      // Forward query parameters for content matching
+      const queryParams = new URLSearchParams(req.query as Record<string, string>);
+      const queryString = queryParams.toString();
+      const url = queryString
+        ? `https://api.weather.com/v1/weather/${city}?${queryString}`
+        : `https://api.weather.com/v1/weather/${city}`;
+
+      const response = await fetch(url);
       const data = await response.json();
 
       if (!response.ok) {

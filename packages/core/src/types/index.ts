@@ -2,6 +2,8 @@ export type {
   HttpMethod,
   MockResponse,
   MockDefinition,
+  MatchCriteria,
+  HttpRequestContext,
   VariantDefinition,
   ScenarioDefinition,
   ActiveScenario,

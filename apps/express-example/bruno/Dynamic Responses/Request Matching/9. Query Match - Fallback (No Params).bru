@@ -1,0 +1,34 @@
+meta {
+  name: 9. Query Match - Fallback (No Params)
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/api/weather/london
+  body: none
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.city: eq Default City
+  res.body.temperature: eq 15
+  res.body.conditions: eq Clear
+}
+
+docs {
+  Tests fallback when query parameters don't match.
+
+  Request has no query parameters, so doesn't match any criteria.
+  Falls back to mock without match criteria.
+
+  Expected behavior:
+  - Default weather data returned
+  - Fallback mock used when no query params match
+  - Demonstrates precedence: specific matches first, fallback last
+}

@@ -5,3 +5,4 @@ export type { ScenarioManager } from './driving/scenario-manager.js';
 export type { ScenarioRegistry } from './driven/scenario-registry.js';
 export type { ScenarioStore } from './driven/scenario-store.js';
 export type { RequestContext } from './driven/request-context.js';
+export type { ResponseSelector } from './driven/response-selector.js';
