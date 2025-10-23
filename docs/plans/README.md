@@ -61,10 +61,12 @@ What could go wrong and how do we address it?
 ### Implementation Plans
 
 **Location:** `docs/plans/`
-**Purpose:** Track feature implementation progress
+**Purpose:** Define requirements + track implementation progress
 **Length:** As long as needed (500-2000+ lines)
 **Status:** Living document (updated as work progresses)
 **Audience:** Developers actively working on the feature
+
+**Important:** Plans typically **combine requirements and implementation** for a feature. This is common practice (e.g., GitHub issues combine "what" and "how") because requirements and implementation evolve together. Separating them into two files creates synchronization issues.
 
 **Plan Structure:**
 ```markdown
@@ -110,6 +112,7 @@ Things discovered during implementation.
 ```
 
 **What belongs in a plan:**
+- ✅ Requirements with acceptance criteria (REQ-1, REQ-2, etc.)
 - ✅ Detailed implementation steps
 - ✅ Task lists and progress tracking
 - ✅ File-by-file modification plans
@@ -120,9 +123,9 @@ Things discovered during implementation.
 - ✅ Notes and learnings during implementation
 
 **Example plan topics:**
-- "Dynamic Response System Implementation"
-- "Redis Adapter Implementation"
-- "Visual Debugger Implementation"
+- "Dynamic Response System - Requirements & Implementation"
+- "Redis Adapter - Requirements & Implementation"
+- "Visual Debugger - Requirements & Implementation"
 - "v2.0 Migration Plan"
 
 ## When to Create Each
@@ -152,7 +155,8 @@ Things discovered during implementation.
 - Alternative: State machine definitions (rejected - too complex)
 - Consequence: More complex core logic, but maintains serializability
 
-**Plan: Dynamic Response System** (1000 lines)
+**Plan: Dynamic Response System - Requirements & Implementation** (1200 lines)
+- Requirements: REQ-1 through REQ-5 with acceptance criteria
 - Phase 1: Request matching (detailed tasks)
 - Phase 2: Response sequences (detailed tasks)
 - Phase 3: Stateful mocks (detailed tasks)
@@ -185,7 +189,7 @@ for detailed implementation phases and progress tracking.
 
 | Plan | Status | Related ADR |
 |------|--------|-------------|
-| (none yet) | - | - |
+| [Dynamic Responses](./dynamic-responses.md) | ⏳ Not Started | [ADR-0002](../adrs/0002-dynamic-response-system.md) |
 
 ## Creating a New Plan
 
