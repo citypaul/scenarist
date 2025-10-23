@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Scenarist Express Example",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

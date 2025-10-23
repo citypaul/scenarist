@@ -26,6 +26,93 @@ pnpm test:watch
 pnpm dev
 ```
 
+## Using the Bruno API Collection
+
+This example includes a [Bruno](https://www.usebruno.com/) API collection for manual testing and exploration. Bruno is an open-source, Git-friendly alternative to Postman that stores collections as files in your repository.
+
+### Installing Bruno
+
+Download Bruno for your platform:
+
+- **macOS**: Download from [usebruno.com](https://www.usebruno.com/downloads) or install via Homebrew:
+  ```bash
+  brew install bruno
+  ```
+
+- **Windows**: Download the installer from [usebruno.com](https://www.usebruno.com/downloads)
+
+- **Linux**: Download the AppImage or use package managers:
+  ```bash
+  # Snap
+  snap install bruno
+
+  # Flatpak
+  flatpak install flathub com.usebruno.Bruno
+  ```
+
+### Opening the Collection
+
+1. Start the Express server:
+   ```bash
+   pnpm dev
+   ```
+
+2. Open Bruno application
+
+3. Click **"Open Collection"**
+
+4. Navigate to this directory and select the `bruno` folder:
+   ```
+   apps/express-example/bruno
+   ```
+
+5. The collection will load with all available requests organized in folders
+
+### Using the Collection
+
+The Bruno collection includes:
+
+**Scenarios Folder** - Control which scenario is active:
+- Get Active Scenario
+- Set Scenario - Default
+- Set Scenario - Success
+- Set Scenario - GitHub Not Found
+- Set Scenario - Weather Error
+- Set Scenario - Stripe Failure
+- Set Scenario - Slow Network
+- Set Scenario - Mixed Results
+
+**API Folder** - Test the actual application endpoints:
+- GitHub - Get User
+- Weather - Get Current
+- Payment - Create Charge
+
+**Health Check** - Verify server is running
+
+### Workflow Example
+
+1. **Set a scenario**: Run "Set Scenario - Success" to activate the success scenario
+2. **Test endpoints**: Run "GitHub - Get User" to see how the API behaves with this scenario
+3. **Switch scenarios**: Run "Set Scenario - GitHub Not Found"
+4. **Test again**: Run "GitHub - Get User" again - now it returns 404
+5. **Check active**: Run "Get Active Scenario" to confirm which scenario is active
+
+### Environment Variables
+
+The collection uses these environment variables (set in `environments/Local.bru`):
+
+- `baseUrl`: `http://localhost:3000` - Server URL
+- `testId`: `bruno-test` - Test ID used in x-test-id header
+
+You can create additional environments for different setups (staging, production, etc.).
+
+### Tips
+
+- All requests include the `x-test-id` header automatically using `{{testId}}`
+- Scenarios persist across requests, so you only need to set them once
+- Use different test IDs to test multiple scenarios simultaneously
+- Check the "Docs" tab in each request for detailed information
+
 ## Project Structure
 
 ```
@@ -302,5 +389,5 @@ All tests pass, demonstrating:
 ## Learn More
 
 - [Scenarist Documentation](../../README.md)
+- [Express Adapter Documentation](../../packages/express-adapter/README.md)
 - [Architecture Guide](../../CLAUDE.md)
-- [Implementation Plan](../../MSW_EXPRESS_IMPLEMENTATION.md)

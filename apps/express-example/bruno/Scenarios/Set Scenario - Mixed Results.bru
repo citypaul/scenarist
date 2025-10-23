@@ -1,0 +1,30 @@
+meta {
+  name: Set Scenario - Mixed Results
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/__scenario__
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "scenario": "mixed-results"
+  }
+}
+
+docs {
+  Set the active scenario to "mixed-results".
+
+  Some APIs succeed, others fail:
+  - GitHub: Success
+  - Weather: 503 Service Unavailable
+  - Payment: Success
+}

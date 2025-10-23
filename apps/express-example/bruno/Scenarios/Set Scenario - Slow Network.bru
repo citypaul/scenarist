@@ -1,0 +1,28 @@
+meta {
+  name: Set Scenario - Slow Network
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/__scenario__
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "scenario": "slow-network"
+  }
+}
+
+docs {
+  Set the active scenario to "slow-network".
+
+  All API calls will respond slowly (1-2 second delays).
+  Use this to test loading states and timeouts.
+}

@@ -1,0 +1,29 @@
+meta {
+  name: Weather - Get Current
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/weather/London
+  body: none
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+docs {
+  Get current weather for a city.
+
+  This endpoint calls the external Weather API, which is mocked by Scenarist.
+
+  Try different scenarios:
+  - "default" or "success": Returns weather data
+  - "weather-error": Returns 500 error
+  - "mixed-results": Returns 503 error
+  - "slow-network": Returns data after 2 second delay
+
+  Change the city in the URL path to test different locations.
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Get Active Scenario
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/__scenario__
+  body: none
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+docs {
+  Get the currently active scenario for this test ID.
+
+  Returns:
+  - 200: Active scenario details (testId, scenarioId, scenarioName, variantName)
+  - 404: No active scenario set for this test ID
+}

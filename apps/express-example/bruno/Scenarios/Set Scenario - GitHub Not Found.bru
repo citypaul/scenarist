@@ -1,0 +1,28 @@
+meta {
+  name: Set Scenario - GitHub Not Found
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/__scenario__
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "scenario": "github-not-found"
+  }
+}
+
+docs {
+  Set the active scenario to "github-not-found".
+
+  GitHub API will return 404 (user not found).
+  Other APIs fall back to default scenario responses.
+}
