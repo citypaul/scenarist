@@ -1,8 +1,14 @@
 import { http, passthrough } from 'msw';
 import type { HttpHandler } from 'msw';
-import type { ActiveScenario, ScenarioDefinition } from '@scenarist/core';
-import { findMatchingMock } from '../matching/mock-matcher.js';
+import type {
+  ActiveScenario,
+  ScenarioDefinition,
+  HttpRequestContext,
+  HttpMethod,
+} from '@scenarist/core';
+import { createResponseSelector } from '@scenarist/core';
 import { buildResponse } from '../conversion/response-builder.js';
+import { matchesUrl } from '../matching/url-matcher.js';
 
 export type DynamicHandlerOptions = {
   readonly getTestId: () => string;
@@ -14,29 +20,90 @@ export type DynamicHandlerOptions = {
   readonly defaultScenarioId: string;
 };
 
-const findMockInScenarios = (
+/**
+ * Extract HttpRequestContext from MSW Request object.
+ * Converts MSW request to the format expected by ResponseSelector.
+ */
+const extractHttpRequestContext = async (
+  request: Request
+): Promise<HttpRequestContext> => {
+  // Parse request body if present
+  let body: unknown = undefined;
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    try {
+      const clonedRequest = request.clone();
+      body = await clonedRequest.json();
+    } catch {
+      // Body is not JSON or doesn't exist
+      body = undefined;
+    }
+  }
+
+  // Extract headers as Record<string, string>
+  const headers: Record<string, string> = {};
+  request.headers.forEach((value, key) => {
+    headers[key] = value;
+  });
+
+  // Extract query parameters from URL
+  const url = new URL(request.url);
+  const query: Record<string, string> = {};
+  url.searchParams.forEach((value, key) => {
+    query[key] = value;
+  });
+
+  return {
+    method: request.method as HttpMethod,
+    url: request.url,
+    body,
+    headers,
+    query,
+  };
+};
+
+/**
+ * Get mocks from active scenario, falling back to default scenario.
+ * Returns URL-matching mocks for ResponseSelector to evaluate.
+ */
+const getMocksFromScenarios = (
   activeScenario: ActiveScenario | undefined,
   getScenarioDefinition: (scenarioId: string) => ScenarioDefinition | undefined,
   defaultScenarioId: string,
   method: string,
   url: string
-) => {
+): ReadonlyArray<import('@scenarist/core').MockDefinition> => {
+  const mocks: Array<import('@scenarist/core').MockDefinition> = [];
+
+  // First, try active scenario
   if (activeScenario) {
     const scenarioDefinition = getScenarioDefinition(activeScenario.scenarioId);
     if (scenarioDefinition) {
-      const mock = findMatchingMock(scenarioDefinition.mocks, method, url);
-      if (mock) {
-        return mock;
-      }
+      // Add all URL and method matching mocks from active scenario
+      scenarioDefinition.mocks.forEach((mock) => {
+        const methodMatches = mock.method.toUpperCase() === method.toUpperCase();
+        const urlMatch = matchesUrl(mock.url, url);
+        if (methodMatches && urlMatch.matches) {
+          mocks.push(mock);
+        }
+      });
     }
   }
 
-  const defaultScenario = getScenarioDefinition(defaultScenarioId);
-  if (defaultScenario) {
-    return findMatchingMock(defaultScenario.mocks, method, url);
+  // If no mocks found in active scenario, fall back to default
+  if (mocks.length === 0) {
+    const defaultScenario = getScenarioDefinition(defaultScenarioId);
+    if (defaultScenario) {
+      defaultScenario.mocks.forEach((mock) => {
+        const methodMatches = mock.method.toUpperCase() === method.toUpperCase();
+        const urlMatch = matchesUrl(mock.url, url);
+        if (methodMatches && urlMatch.matches) {
+          mocks.push(mock);
+        }
+      });
+    }
   }
 
-  return undefined;
+  return mocks;
 };
 
 export const createDynamicHandler = (
@@ -46,7 +113,11 @@ export const createDynamicHandler = (
     const testId = options.getTestId();
     const activeScenario = options.getActiveScenario(testId);
 
-    const mock = findMockInScenarios(
+    // Extract request context for matching
+    const context = await extractHttpRequestContext(request);
+
+    // Get candidate mocks from active or default scenario
+    const mocks = getMocksFromScenarios(
       activeScenario,
       options.getScenarioDefinition,
       options.defaultScenarioId,
@@ -54,8 +125,12 @@ export const createDynamicHandler = (
       request.url
     );
 
-    if (mock) {
-      return buildResponse(mock);
+    // Use ResponseSelector to find matching mock
+    const selector = createResponseSelector();
+    const result = selector.selectResponse(testId, context, mocks);
+
+    if (result.success) {
+      return buildResponse(result.data);
     }
 
     if (options.strictMode) {

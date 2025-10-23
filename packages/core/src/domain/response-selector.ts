@@ -36,7 +36,7 @@ export type ResponseSelector = {
 export const createResponseSelector = (): ResponseSelector => {
   return {
     selectResponse(
-      testId: string,
+      _testId: string,
       context: HttpRequestContext,
       mocks: ReadonlyArray<MockDefinition>
     ): Result<MockResponse, ResponseSelectionError> {
