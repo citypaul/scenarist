@@ -6,7 +6,8 @@
       "Bash(pnpm build:*)",
       "Bash(pnpm exec vitest:*)",
       "Bash(git rm:*)",
-      "Bash(gh api:*)"
+      "Bash(gh api:*)",
+      "Bash(pnpm test:coverage:*)"
     ],
     "deny": [],
     "ask": []

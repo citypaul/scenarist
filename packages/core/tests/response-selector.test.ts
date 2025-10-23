@@ -488,6 +488,87 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         expect(result.error.message).toContain("No mock matched");
       }
     });
+
+    it("should return first fallback when multiple fallback mocks exist", () => {
+      // When multiple mocks have no match criteria (all are fallbacks),
+      // the first fallback should win as tiebreaker (all have specificity 0)
+
+      const context: HttpRequestContext = {
+        method: "POST",
+        url: "/api/items",
+        body: { itemId: "standard" },
+        headers: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "POST",
+          url: "/api/items",
+          // First fallback (no match criteria)
+          response: { status: 200, body: { price: 50, source: "first-fallback" } },
+        },
+        {
+          method: "POST",
+          url: "/api/items",
+          // Second fallback (no match criteria)
+          response: { status: 200, body: { price: 60, source: "second-fallback" } },
+        },
+        {
+          method: "POST",
+          url: "/api/items",
+          // Third fallback (no match criteria)
+          response: { status: 200, body: { price: 70, source: "third-fallback" } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", context, mocks);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        // First fallback wins when all have equal specificity (0)
+        expect(result.data.body).toEqual({ price: 50, source: "first-fallback" });
+      }
+    });
+
+    it("should prefer specific match over fallback mock", () => {
+      // When a request matches both a specific mock and a fallback,
+      // the specific mock should win due to higher specificity
+
+      const context: HttpRequestContext = {
+        method: "POST",
+        url: "/api/items",
+        body: { itemId: "premium" },
+        headers: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "POST",
+          url: "/api/items",
+          // Fallback appears first
+          response: { status: 200, body: { price: 50, source: "fallback" } },
+        },
+        {
+          method: "POST",
+          url: "/api/items",
+          // Specific match appears second
+          match: { body: { itemId: "premium" } },
+          response: { status: 200, body: { price: 100, source: "specific" } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", context, mocks);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        // Specific match wins even though fallback appears first
+        expect(result.data.body).toEqual({ price: 100, source: "specific" });
+      }
+    });
   });
 
   describe("Combined Match Criteria", () => {
