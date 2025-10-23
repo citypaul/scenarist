@@ -9,7 +9,15 @@ export const setupGitHubRoutes = (router: Router): void => {
 
     try {
       // Call external GitHub API (will be mocked by Scenarist)
-      const response = await fetch(`https://api.github.com/users/${username}`);
+      // Forward custom headers for content matching
+      const headers: HeadersInit = {};
+      if (req.headers['x-user-tier']) {
+        headers['x-user-tier'] = req.headers['x-user-tier'] as string;
+      }
+
+      const response = await fetch(`https://api.github.com/users/${username}`, {
+        headers
+      });
       const data = await response.json();
 
       if (!response.ok) {

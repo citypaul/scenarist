@@ -5,7 +5,7 @@ import type { Request, Response, Router } from 'express';
  */
 export const setupStripeRoutes = (router: Router): void => {
   router.post('/api/payment', async (req: Request, res: Response) => {
-    const { amount, currency = 'usd' } = req.body;
+    const { amount, currency = 'usd', ...otherFields } = req.body;
 
     if (!amount || typeof amount !== 'number') {
       return res.status(400).json({
@@ -16,12 +16,13 @@ export const setupStripeRoutes = (router: Router): void => {
 
     try {
       // Call external Stripe API (will be mocked by Scenarist)
+      // Forward all fields from request body for content matching
       const response = await fetch('https://api.stripe.com/v1/charges', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ amount, currency }),
+        body: JSON.stringify({ amount, currency, ...otherFields }),
       });
 
       const data = await response.json();

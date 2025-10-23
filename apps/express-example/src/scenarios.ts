@@ -283,6 +283,162 @@ export const mixedResultsScenario: ScenarioDefinition = {
 };
 
 /**
+ * Scenario: Request content matching (Phase 1 - Dynamic Responses)
+ * Demonstrates matching on request body, headers, and query parameters
+ */
+export const contentMatchingScenario: ScenarioDefinition = {
+  id: 'content-matching',
+  name: 'Content Matching',
+  description: 'Different responses based on request content (body, headers, query)',
+  mocks: [
+    // Stripe: Premium items get discounted pricing (body match)
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      match: { body: { itemType: 'premium' } },
+      response: {
+        status: 200,
+        body: {
+          id: 'ch_premium123',
+          status: 'succeeded',
+          amount: 8000, // Discounted from 10000
+          currency: 'usd',
+          discount: 'premium_item_discount',
+        },
+      },
+    },
+    // Stripe: Standard items get regular pricing (body match)
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      match: { body: { itemType: 'standard' } },
+      response: {
+        status: 200,
+        body: {
+          id: 'ch_standard123',
+          status: 'succeeded',
+          amount: 5000,
+          currency: 'usd',
+        },
+      },
+    },
+    // Stripe: Fallback for other payment types
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      response: {
+        status: 200,
+        body: {
+          id: 'ch_fallback123',
+          status: 'succeeded',
+          amount: 1000,
+          currency: 'usd',
+        },
+      },
+    },
+    // GitHub: Premium users get enhanced data (header match)
+    {
+      method: 'GET',
+      url: 'https://api.github.com/users/:username',
+      match: { headers: { 'x-user-tier': 'premium' } },
+      response: {
+        status: 200,
+        body: {
+          login: 'premium-user',
+          id: 999,
+          name: 'Premium User',
+          bio: 'Premium tier access',
+          public_repos: 100,
+          followers: 5000,
+          private_repos: 50, // Extra field for premium users
+          total_private_repos: 50,
+        },
+      },
+    },
+    // GitHub: Standard users get basic data (header match)
+    {
+      method: 'GET',
+      url: 'https://api.github.com/users/:username',
+      match: { headers: { 'x-user-tier': 'standard' } },
+      response: {
+        status: 200,
+        body: {
+          login: 'standard-user',
+          id: 100,
+          name: 'Standard User',
+          bio: 'Standard tier access',
+          public_repos: 20,
+          followers: 100,
+        },
+      },
+    },
+    // GitHub: Fallback for users without tier header
+    {
+      method: 'GET',
+      url: 'https://api.github.com/users/:username',
+      response: {
+        status: 200,
+        body: {
+          login: 'guest-user',
+          id: 1,
+          name: 'Guest User',
+          bio: 'No tier specified',
+          public_repos: 5,
+          followers: 10,
+        },
+      },
+    },
+    // Weather: Filtered results (query param match)
+    {
+      method: 'GET',
+      url: 'https://api.weather.com/v1/weather/:city',
+      match: { query: { units: 'metric', detailed: 'true' } },
+      response: {
+        status: 200,
+        body: {
+          city: 'Paris',
+          temperature: 20,
+          conditions: 'Partly Cloudy',
+          humidity: 60,
+          windSpeed: 15, // Extra detail when detailed=true
+          pressure: 1013,
+          visibility: 10,
+        },
+      },
+    },
+    // Weather: Standard results (query param match for units only)
+    {
+      method: 'GET',
+      url: 'https://api.weather.com/v1/weather/:city',
+      match: { query: { units: 'imperial' } },
+      response: {
+        status: 200,
+        body: {
+          city: 'New York',
+          temperature: 68,
+          conditions: 'Sunny',
+          humidity: 50,
+        },
+      },
+    },
+    // Weather: Fallback
+    {
+      method: 'GET',
+      url: 'https://api.weather.com/v1/weather/:city',
+      response: {
+        status: 200,
+        body: {
+          city: 'Default City',
+          temperature: 15,
+          conditions: 'Clear',
+          humidity: 55,
+        },
+      },
+    },
+  ],
+};
+
+/**
  * Scenarios organized as typed object for easy access in tests.
  *
  * Use this to get type-safe access to scenario IDs:
@@ -302,5 +458,6 @@ export const scenarios = {
   stripeFailure: stripeFailureScenario,
   slowNetwork: slowNetworkScenario,
   mixedResults: mixedResultsScenario,
+  contentMatching: contentMatchingScenario,
 } as const;
 
