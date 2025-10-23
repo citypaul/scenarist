@@ -15,28 +15,7 @@ describe('Dynamic Response Sequences E2E (Phase 2)', () => {
 
   describe('Basic Sequence Progression', () => {
     it('should return responses in sequence order (pending → processing → complete)', async () => {
-      // Register a polling sequence scenario using GitHub API
-      scenarist.registerScenario({
-        id: 'github-polling',
-        name: 'GitHub Job Polling Sequence',
-        description: 'Simulates async GitHub job polling with state progression',
-        mocks: [
-          {
-            method: 'GET',
-            url: 'https://api.github.com/users/:username',
-            sequence: {
-              responses: [
-                { status: 200, body: { status: 'pending', progress: 0, login: 'user1' } },
-                { status: 200, body: { status: 'processing', progress: 50, login: 'user2' } },
-                { status: 200, body: { status: 'complete', progress: 100, login: 'user3' } },
-              ],
-              repeat: 'last', // Stay at 'complete' after third call
-            },
-          },
-        ],
-      });
-
-      // Switch to polling scenario
+      // Switch to polling scenario (already registered in scenarios.ts)
       await request(app)
         .post(scenarist.config.endpoints.setScenario)
         .set(scenarist.config.headers.testId, 'polling-test-1')
@@ -78,27 +57,7 @@ describe('Dynamic Response Sequences E2E (Phase 2)', () => {
 
   describe('Repeat Mode: cycle', () => {
     it('should cycle back to first response after sequence ends', async () => {
-      // Register cycling sequence scenario
-      scenarist.registerScenario({
-        id: 'weather-cycle',
-        name: 'Weather Cycle Sequence',
-        description: 'Cycles through weather states infinitely',
-        mocks: [
-          {
-            method: 'GET',
-            url: 'https://api.weather.com/v1/weather/:city',
-            sequence: {
-              responses: [
-                { status: 200, body: { city: 'London', conditions: 'Sunny', temp: 20 } },
-                { status: 200, body: { city: 'London', conditions: 'Cloudy', temp: 18 } },
-                { status: 200, body: { city: 'London', conditions: 'Rainy', temp: 15 } },
-              ],
-              repeat: 'cycle', // Wrap back to first response
-            },
-          },
-        ],
-      });
-
+      // Switch to cycling scenario (already registered in scenarios.ts)
       await request(app)
         .post(scenarist.config.endpoints.setScenario)
         .set(scenarist.config.headers.testId, 'cycle-test-1')
@@ -137,37 +96,7 @@ describe('Dynamic Response Sequences E2E (Phase 2)', () => {
 
   describe('Repeat Mode: none (with exhaustion)', () => {
     it('should fallback to next mock after sequence exhausted', async () => {
-      // Register exhaustible sequence with fallback
-      scenarist.registerScenario({
-        id: 'payment-limited',
-        name: 'Limited Payment Attempts',
-        description: 'Allows 3 attempts then falls back to error',
-        mocks: [
-          // Limited sequence (exhausts after 3 calls)
-          {
-            method: 'POST',
-            url: 'https://api.stripe.com/v1/charges',
-            sequence: {
-              responses: [
-                { status: 200, body: { id: 'ch_1', status: 'pending' } },
-                { status: 200, body: { id: 'ch_2', status: 'pending' } },
-                { status: 200, body: { id: 'ch_3', status: 'succeeded' } },
-              ],
-              repeat: 'none', // Exhaust after 3 calls
-            },
-          },
-          // Fallback mock (used after exhaustion)
-          {
-            method: 'POST',
-            url: 'https://api.stripe.com/v1/charges',
-            response: {
-              status: 429,
-              body: { error: { message: 'Rate limit exceeded' } },
-            },
-          },
-        ],
-      });
-
+      // Switch to payment limited scenario (already registered in scenarios.ts)
       await request(app)
         .post(scenarist.config.endpoints.setScenario)
         .set(scenarist.config.headers.testId, 'exhaust-test-1')
