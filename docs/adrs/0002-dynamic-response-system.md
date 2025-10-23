@@ -1,0 +1,595 @@
+# ADR-0002: Dynamic Response System
+
+**Status**: Proposed
+**Date**: 2025-10-23
+**Authors**: Claude Code
+
+## Context
+
+Scenarist currently provides a single static response per `MockDefinition`. Each mock maps one URL pattern to one response:
+
+```typescript
+{
+  method: 'GET',
+  url: '/api/job/:id',
+  response: { status: 200, body: { status: 'complete' } }
+}
+```
+
+This limitation makes it impossible to test common real-world scenarios:
+
+1. **Polling scenarios** - GET /job/:id should return "pending" → "processing" → "complete" over multiple calls
+2. **Content-based responses** - POST /items should return different prices depending on which item is requested
+3. **Stateful interactions** - POST /cart/items should affect what GET /cart returns
+4. **Multi-step processes** - Form steps where later steps depend on earlier steps being completed
+
+These patterns appear in **every significant application**. Without support for them, Scenarist cannot adequately test realistic user journeys.
+
+## Problem
+
+Users need to define different responses from the same endpoint based on:
+- **Request content** (body, headers, query parameters)
+- **Call sequence** (1st call, 2nd call, 3rd call - for polling)
+- **Application state** (responses depend on what happened in previous requests)
+
+**Critical constraints:**
+1. Must remain 100% serializable (JSON only, no functions) - see ADR-0001
+2. Must be self-contained (no runtime headers/configuration required beyond test ID)
+3. Must work in browsers (for future devtools)
+4. Features must compose (match + sequence + state working together)
+5. Clear precedence rules when multiple mocks match same URL
+
+## Decision
+
+We will implement a **Dynamic Response System** with three new capabilities that compose via a three-phase execution model.
+
+### Three New Capabilities
+
+#### 1. Request Content Matching
+
+Enable different responses based on request content:
+
+```typescript
+type MatchCriteria = {
+  readonly body?: Record<string, unknown>;      // Partial match on body
+  readonly headers?: Record<string, string>;    // Exact match on headers
+  readonly query?: Record<string, string>;      // Exact match on query
+};
+
+type MockDefinition = {
+  // ... existing fields
+  readonly match?: MatchCriteria;
+};
+```
+
+**Example:**
+```typescript
+// Premium items get higher price
+{
+  method: 'POST',
+  url: '/api/items',
+  match: { body: { itemId: 'premium-item' } },
+  response: { status: 200, body: { price: 100 } }
+},
+// Standard items get lower price (fallback)
+{
+  method: 'POST',
+  url: '/api/items',
+  response: { status: 200, body: { price: 50 } }
+}
+```
+
+#### 2. Response Sequences
+
+Enable ordered sequences of responses for polling:
+
+```typescript
+type MockDefinition = {
+  // ... existing fields
+  readonly response?: MockResponse;     // Single response (existing)
+  readonly sequence?: {                 // OR sequence (new)
+    readonly responses: ReadonlyArray<MockResponse>;
+    readonly repeat?: 'last' | 'cycle' | 'none';
+  };
+};
+```
+
+**Example:**
+```typescript
+{
+  method: 'GET',
+  url: '/api/job/:id',
+  sequence: {
+    responses: [
+      { status: 200, body: { status: 'pending' } },
+      { status: 200, body: { status: 'processing' } },
+      { status: 200, body: { status: 'complete' } }
+    ],
+    repeat: 'last'  // Keep returning 'complete' after sequence ends
+  }
+}
+```
+
+**Repeat modes:**
+- `last` (default): Return last response infinitely
+- `cycle`: Loop back to first response
+- `none`: Mark mock as exhausted, try next mock
+
+#### 3. Stateful Mocks
+
+Enable capturing data from requests and injecting it into responses:
+
+```typescript
+type MockDefinition = {
+  // ... existing fields
+  readonly captureState?: Record<string, string>;  // { stateKey: requestPath }
+};
+```
+
+**Example:**
+```typescript
+// Capture items as added
+{
+  method: 'POST',
+  url: '/api/cart/items',
+  captureState: { 'cartItems[]': 'body.item' },  // [] = append to array
+  response: { status: 200, body: { success: true } }
+},
+// Inject captured items into response
+{
+  method: 'GET',
+  url: '/api/cart',
+  response: {
+    status: 200,
+    body: {
+      items: '{{state.cartItems}}',
+      count: '{{state.cartItems.length}}'
+    }
+  }
+}
+```
+
+**State is:**
+- Stored per test ID (isolated between tests)
+- Reset when scenario switches
+- Lives in adapter runtime (not in scenario definitions)
+- Accessed via `{{state.key}}` template syntax
+
+### Architectural Layering: Core vs Adapters
+
+**CRITICAL**: The dynamic response logic is **domain logic** and must live in `packages/core/src/domain/`, not in adapters. Adapters are thin translation layers.
+
+**Core Domain Responsibilities:**
+- `ResponseSelector` domain service implementing all three phases:
+  - Phase 1: Match checking (body/headers/query matching)
+  - Phase 2: Sequence tracking (position management, repeat modes)
+  - Phase 3: State management (capture, storage, template replacement)
+- `SequenceTracker` port for tracking sequence positions per test ID
+- `StateManager` port for managing captured state per test ID
+
+**Adapter Responsibilities (Thin Layer):**
+- Extract request context from framework (Express, Fastify, Playwright)
+- Convert framework request to domain `RequestContext` type
+- Call core `ResponseSelector.selectResponse(testId, context, mocks)`
+- Convert domain `MockResponse` back to framework response
+
+**Why This Matters:**
+- ✅ **Single implementation** - All logic in core, tested once
+- ✅ **No duplication** - Adapters just translate, don't reimplement
+- ✅ **Consistency** - Every adapter behaves identically
+- ✅ **Maintainability** - Fix bugs once, benefits all adapters
+- ✅ **Hexagonal architecture** - Domain logic in hexagon, adapters are ports
+- ❌ **Without this**: Every adapter reimplements the same logic (maintenance nightmare)
+
+### Three-Phase Execution Model
+
+When a request arrives, the **core domain service** executes in three phases:
+
+#### Phase 1: Match (Does this mock apply?)
+
+For each mock with matching URL, in order:
+
+1. **Check sequence exhaustion**
+   - If `sequence` exists with `repeat: 'none'`
+   - If position > responses.length
+   - Skip this mock, try next
+
+2. **Check match criteria**
+   - If `match.body` exists, verify request body contains all specified keys/values (partial match)
+   - If `match.headers` exists, verify all specified headers match exactly
+   - If `match.query` exists, verify all specified query params match exactly
+   - If any check fails, skip this mock, try next
+
+3. **Mock applies**
+   - If all checks pass (or no checks defined), use this mock
+   - First matching mock wins
+
+#### Phase 2: Select Response (Which response to return?)
+
+1. **If `sequence` is defined:**
+   - Get response at current position
+   - Increment position for this `(testId, scenarioId, mockIndex)` tuple
+   - Apply repeat mode:
+     - `last`: Stay at last position after reaching end
+     - `cycle`: Wrap to position 0 after reaching end
+     - `none`: Mark as exhausted after reaching end
+   - Return selected response
+
+2. **Else if `response` is defined:**
+   - Return single response
+
+#### Phase 3: Transform (Modify based on state)
+
+1. **If `captureState` is defined:**
+   - Extract values from request using path syntax (e.g., `body.item`, `query.userId`)
+   - Store in state Map under test ID
+   - Handle array appending (`stateKey[]` syntax)
+
+2. **If response body contains templates:**
+   - Find all `{{state.X}}` patterns
+   - Replace with actual values from state
+   - Support nested paths (`state.user.profile.name`)
+   - Support special accessors (`state.items.length`)
+
+3. **Apply response modifiers:**
+   - Add configured delays
+   - Add configured headers
+   - Return final response
+
+### Precedence Rules
+
+**When multiple mocks match the same URL:**
+
+1. Iterate through mocks in array order
+2. Skip if sequence exhausted (`repeat: 'none'` and past end)
+3. Skip if `match` criteria present but don't pass
+4. Use first mock where all checks pass
+5. Mock without `match` criteria = catch-all fallback
+
+**Example:**
+```typescript
+[
+  // Mock 1: Specific match (checked first)
+  { url: '/api/data', match: { query: { tier: 'premium' } }, ... },
+
+  // Mock 2: Another specific match
+  { url: '/api/data', match: { query: { tier: 'standard' } }, ... },
+
+  // Mock 3: Fallback (no match criteria)
+  { url: '/api/data', response: { ... } }
+]
+```
+
+### Feature Composition
+
+All features work together naturally:
+
+```typescript
+// Exhaustible sequence → fallback to match-based
+[
+  // First 3 calls: polling sequence
+  {
+    method: 'GET',
+    url: '/api/job/:id',
+    sequence: {
+      responses: [
+        { status: 200, body: { status: 'pending' } },
+        { status: 200, body: { status: 'processing' } },
+        { status: 200, body: { status: 'complete' } }
+      ],
+      repeat: 'none'  // Exhausted after 3 calls
+    }
+  },
+  // After exhaustion: match-based
+  {
+    method: 'GET',
+    url: '/api/job/:id',
+    match: { query: { retry: 'true' } },
+    response: { status: 200, body: { status: 'retrying' } }
+  },
+  // Fallback
+  {
+    method: 'GET',
+    url: '/api/job/:id',
+    response: { status: 200, body: { status: 'cached' } }
+  }
+]
+```
+
+**All three features together:**
+```typescript
+{
+  method: 'POST',
+  url: '/api/batch',
+  match: { body: { priority: 'high' } },           // Only for high priority
+  captureState: { 'batchId': 'body.id' },          // Capture batch ID
+  sequence: {                                       // Progress through states
+    responses: [
+      { status: 202, body: { id: '{{state.batchId}}', status: 'queued' } },
+      { status: 200, body: { id: '{{state.batchId}}', status: 'complete' } }
+    ],
+    repeat: 'last'
+  }
+}
+```
+
+## Alternatives Considered
+
+### Alternative 1: Function-Based Responses
+
+**Decision**: Rejected
+
+**Approach**: Allow response to be a function that receives request and returns response:
+
+```typescript
+{
+  method: 'POST',
+  url: '/api/items',
+  response: (req) => {
+    if (req.body.itemId === 'premium') {
+      return { status: 200, body: { price: 100 } };
+    }
+    return { status: 200, body: { price: 50 } };
+  }
+}
+```
+
+**Why rejected:**
+- ❌ Violates ADR-0001 (must be serializable)
+- ❌ Cannot be stored in Redis, files, or databases
+- ❌ Cannot be version controlled effectively
+- ❌ Cannot be loaded in future devtools
+- ❌ Breaks hexagonal architecture
+
+### Alternative 2: Conditional Response Blocks
+
+**Decision**: Rejected
+
+**Approach**: Use JSON-based conditions with response blocks:
+
+```typescript
+{
+  method: 'POST',
+  url: '/api/items',
+  conditions: [
+    {
+      when: { bodyPath: 'itemId', equals: 'premium-item' },
+      response: { status: 200, body: { price: 100 } }
+    },
+    {
+      when: { bodyPath: 'itemId', equals: 'standard-item' },
+      response: { status: 200, body: { price: 50 } }
+    }
+  ],
+  fallback: { status: 200, body: { price: 25 } }
+}
+```
+
+**Why rejected:**
+- ⚠️ More complex type system
+- ⚠️ Harder to understand composition model
+- ⚠️ Doesn't handle sequences or state naturally
+- ✅ Could work, but our approach is cleaner
+
+**Key insight:** Our "multiple mocks with match criteria" approach is simpler and more flexible than nested conditions.
+
+### Alternative 3: State Machine Definitions
+
+**Decision**: Rejected for v1, may revisit
+
+**Approach**: Define explicit state machines for sequences:
+
+```typescript
+{
+  method: 'GET',
+  url: '/api/job/:id',
+  stateMachine: {
+    initial: 'pending',
+    states: {
+      pending: { response: {...}, after: 2, goto: 'processing' },
+      processing: { response: {...}, after: 1, goto: 'complete' },
+      complete: { response: {...}, terminal: true }
+    }
+  }
+}
+```
+
+**Why rejected for v1:**
+- ⚠️ Significantly more complex
+- ⚠️ Overkill for most use cases
+- ✅ Sequences with repeat modes cover 95% of cases
+- 🔮 May add in v2 if clear demand emerges
+
+### Alternative 4: Single Global State vs Per-Test-ID State
+
+**Decision**: Chose per-test-ID state
+
+**Why:**
+- ✅ Enables parallel test execution (critical for performance)
+- ✅ Tests don't interfere with each other
+- ✅ Each test gets predictable, isolated state
+- ✅ Aligns with existing test ID isolation model
+- ❌ Global state would break concurrent tests
+
+### Alternative 5: State Persists Across Scenario Switches
+
+**Decision**: Chose reset on scenario switch
+
+**Why:**
+- ✅ Each scenario starts with clean slate (predictable)
+- ✅ Prevents subtle bugs from state leakage
+- ✅ Makes scenarios truly independent
+- ✅ Easier to reason about and debug
+- ❌ Persisting would create implicit dependencies
+
+## Consequences
+
+### Positive
+
+✅ **Realistic user journeys testable** - Can finally test polling, multi-step processes, stateful interactions
+
+✅ **Self-contained scenarios** - No runtime configuration needed, works in browsers
+
+✅ **Maintains serializability** - All features are JSON data (ADR-0001 compliance)
+
+✅ **Clear composition model** - Three-phase execution makes feature interaction predictable
+
+✅ **Backward compatible** - Existing scenarios continue working (no breaking changes)
+
+✅ **Incremental adoption** - Can use features individually or composed
+
+✅ **Test ID isolation maintained** - Sequence state and application state both scoped per test ID
+
+✅ **Future-proof** - Enables devtools, visual scenario builders, browser-based testing
+
+✅ **No logic duplication** - Domain logic lives in core, adapters are thin translation layers. Every adapter (Express, Fastify, Playwright) gets identical behavior without reimplementing logic
+
+### Negative
+
+❌ **Increased complexity** - More concepts to learn (match, sequence, state)
+
+❌ **Larger type surface** - More fields on `MockDefinition`, more documentation needed
+
+❌ **Runtime state tracking** - Adapter must maintain sequence positions and application state
+
+❌ **Template engine required** - Need to parse and replace `{{state.X}}` in responses
+
+❌ **Potential performance impact** - Checking match criteria, sequence lookup, template replacement (needs benchmarking)
+
+### Risks & Mitigation
+
+**Risk 1: Composition ambiguity**
+- *Mitigation*: Clear three-phase model, explicit precedence rules, comprehensive tests
+
+**Risk 2: State grows unbounded**
+- *Mitigation*: State resets on scenario switch, scoped per test ID (tests are short-lived)
+
+**Risk 3: Template syntax limitations**
+- *Mitigation*: Start simple (no operations), can extend later if needed
+
+**Risk 4: Performance degradation**
+- *Mitigation*: Benchmark each phase, optimize hot paths, document performance characteristics
+
+**Risk 5: Learning curve**
+- *Mitigation*: Extensive documentation, examples, Bruno collection for exploration
+
+### Unknowns (To Be Discovered During Implementation)
+
+🔍 **Performance characteristics**
+- How much overhead does match checking add?
+- Is sequence lookup fast enough for high-volume polling?
+- Does template replacement become a bottleneck?
+
+🔍 **Template edge cases**
+- What happens with circular references in state?
+- How to handle undefined state keys?
+- Should we support escaping `{{` literals?
+
+🔍 **Composition edge cases**
+- What happens if match + sequence both defined but sequence exhausted?
+- How to debug when mock doesn't match expectation?
+- Are error messages clear enough?
+
+🔍 **Real-world usage patterns**
+- Which features get used most?
+- Do people compose all three or use separately?
+- What patterns emerge that we didn't anticipate?
+
+## Implementation Plan
+
+### Phase 1: Request Content Matching (REQ-1)
+
+**Core Package (`packages/core/`):**
+- Add `MatchCriteria` type and `match` field to `MockDefinition`
+- Add `RequestContext` type (method, url, body, headers, query)
+- Implement match checking logic in core domain service
+- Unit tests for matching logic (body partial match, headers/query exact match)
+
+**Express Adapter (`packages/express-adapter/`):**
+- Update adapter to extract `RequestContext` from Express request
+- Wire up core matching logic (no match logic in adapter!)
+- Integration tests using express-example
+
+**Example App:**
+- Add example scenarios with match criteria
+- Add Bruno collection requests demonstrating matching
+- **Success criteria**: Can match on request content, first match wins
+
+### Phase 2: Response Sequences (REQ-2)
+
+**Core Package:**
+- Add `sequence` field and `RepeatMode` type to `MockDefinition`
+- Create `SequenceTracker` port interface
+- Create `InMemorySequenceTracker` implementation
+- Implement sequence selection logic in core domain service
+- Unit tests for all repeat modes and exhaustion
+
+**Express Adapter:**
+- Wire up sequence tracking (no sequence logic in adapter!)
+- Integration tests for polling scenarios
+
+**Example App:**
+- Polling example scenarios
+- Bruno collection for testing sequences
+- **Success criteria**: Sequences advance correctly, repeat modes work, exhaustion enables fallback
+
+### Phase 3: Stateful Mocks (REQ-3)
+
+**Core Package:**
+- Add `captureState` field to `MockDefinition`
+- Create `StateManager` port interface
+- Create `InMemoryStateManager` implementation
+- Implement path extraction logic (e.g., `body.item`, `query.userId`)
+- Implement template replacement engine (`{{state.X}}`)
+- Unit tests for capture, storage, and injection
+
+**Express Adapter:**
+- Wire up state management (no state logic in adapter!)
+- Integration tests for stateful scenarios
+
+**Example App:**
+- Stateful scenarios (shopping cart, multi-step forms)
+- Bruno collection for state testing
+- **Success criteria**: Can capture from requests, inject into responses, state isolated per test ID
+
+### Phase 4: Feature Composition (REQ-4)
+
+**Core Package:**
+- Integration tests for all composition patterns
+- Performance benchmarking
+
+**Express Adapter:**
+- Complex composition integration tests
+
+**Example App:**
+- Complex real-world scenarios using all features
+- Documentation of composition patterns
+- **Success criteria**: All features work together correctly
+
+### Post-Implementation
+- Update this ADR with actual consequences discovered
+- Benchmark performance and document characteristics
+- Add lessons learned section
+- Update alternatives if new approaches emerge
+
+## Related Decisions
+
+- **ADR-0001**: Serializable Scenario Definitions (foundation for this decision)
+- **Future**: Template Expression Language (if we add operations like `{{state.count + 1}}`)
+- **Future**: State Schema Validation (if we need to validate captured state)
+
+## References
+
+- [ADR-0001: Serializable Scenario Definitions](./0001-serializable-scenario-definitions.md)
+- [Dynamic Responses Requirements](../dynamic-responses.md)
+- [Hexagonal Architecture](https://alistair.cockburn.us/hexagonal-architecture/)
+- [MSW Documentation](https://mswjs.io/docs/)
+
+## Update History
+
+- **2025-10-23**: Initial version (proposed)
+- **TBD**: Update after Phase 1 implementation
+- **TBD**: Update after Phase 2 implementation
+- **TBD**: Update after Phase 3 implementation
+- **TBD**: Update after Phase 4 implementation
+- **TBD**: Mark as accepted when complete

@@ -1,0 +1,906 @@
+# Dynamic Response System Requirements
+
+**Status:** 🚧 In Progress
+**Created:** 2025-10-23
+**Last Updated:** 2025-10-23
+**Related ADR:** [ADR-0002: Dynamic Response System](./adrs/0002-dynamic-response-system.md)
+
+## Overview
+
+This document defines requirements for enabling different responses from the same endpoint based on request content, call sequence, and application state. This feature is essential for testing realistic user journeys where the same endpoint is called multiple times with different expected behaviors.
+
+**See also:** [ADR-0002](./adrs/0002-dynamic-response-system.md) for the architectural decision record, including alternatives considered and expected consequences.
+
+## Problem Statement
+
+Current limitation: Each `MockDefinition` provides a single static response for a URL pattern. This makes it impossible to test:
+
+- **Polling scenarios** - GET /job/:id should return "pending" → "processing" → "complete" over multiple calls
+- **Content-based responses** - POST /items should return different prices based on which item is requested
+- **Stateful interactions** - POST /cart/add should affect what GET /cart returns
+- **Multi-step processes** - Form steps that depend on previous steps being completed
+
+These are common real-world scenarios that E2E tests need to verify.
+
+## Core Principles
+
+### Must Remain 100% Serializable
+All features must be expressible as pure JSON data (no functions). This is **non-negotiable** as it enables:
+- Storage in Redis, files, or databases
+- Version control of scenario definitions
+- Future devtools and browser-based testing
+- Hexagonal architecture compliance
+
+### Must Be Self-Contained
+Scenarios should work without requiring runtime configuration or special headers beyond the test ID. This ensures:
+- Scenarios work seamlessly in browsers
+- No special knowledge required by consumers
+- Future devtools can execute scenarios without setup
+- Consistent behavior across environments
+
+### State is Isolated
+- State is scoped per test ID (no cross-test contamination)
+- State resets when switching scenarios (clean slate)
+- State lives in adapter runtime (not in scenario definitions)
+
+## Architectural Implementation
+
+**CRITICAL:** The dynamic response logic is **domain logic** and lives in `packages/core/src/domain/`, not in adapters.
+
+### Core Domain Responsibilities
+The core package implements:
+- `ResponseSelector` domain service (orchestrates all three phases)
+- `SequenceTracker` port interface (tracks sequence positions per test ID)
+- `StateManager` port interface (manages captured state per test ID)
+- Match checking logic (body/headers/query)
+- Sequence selection logic (position management, repeat modes)
+- State capture and template replacement
+
+### Adapter Responsibilities (Thin Layer)
+Adapters only:
+- Extract request context from framework (Express, Fastify, etc.)
+- Convert framework request to domain `RequestContext` type
+- Call `ResponseSelector.selectResponse(testId, context, mocks)`
+- Convert domain `MockResponse` back to framework response
+
+**Why:** This prevents logic duplication across adapters. Each adapter (Express, Fastify, Playwright) gets identical behavior without reimplementing the three-phase execution model. Bugs are fixed once in core, benefits propagate to all adapters.
+
+**See:** [ADR-0002 § Architectural Layering](./adrs/0002-dynamic-response-system.md#architectural-layering-core-vs-adapters) for detailed rationale.
+
+## Requirements
+
+### REQ-1: Request Content Matching
+
+**Status:** ⏸️ Not Started
+
+Enable different responses based on request content (body, headers, query parameters).
+
+#### REQ-1.1: Match on Request Body (Partial)
+```typescript
+{
+  method: 'POST',
+  url: '/api/items',
+  match: { body: { itemId: 'premium-item' } },  // Partial match
+  response: {
+    status: 200,
+    body: { price: 100, features: ['premium'] }
+  }
+}
+```
+
+**Matching logic:** Request body must contain all keys from `match.body` with matching values. Additional keys in request are ignored (partial match).
+
+#### REQ-1.2: Match on Request Headers
+```typescript
+{
+  method: 'GET',
+  url: '/api/data',
+  match: { headers: { 'x-user-tier': 'premium' } },
+  response: {
+    status: 200,
+    body: { data: 'premium data', limit: 1000 }
+  }
+}
+```
+
+**Matching logic:** All headers in `match.headers` must be present with exact values (case-insensitive header names).
+
+#### REQ-1.3: Match on Query Parameters
+```typescript
+{
+  method: 'GET',
+  url: '/api/search',
+  match: { query: { filter: 'active', sort: 'asc' } },
+  response: {
+    status: 200,
+    body: { results: [...], filtered: true }
+  }
+}
+```
+
+**Matching logic:** All query params in `match.query` must be present with exact values.
+
+#### REQ-1.4: First Matching Mock Wins
+When multiple mocks match the same URL:
+1. Iterate through mocks in order
+2. Skip if `match` criteria present but don't pass
+3. Use first mock where all criteria pass
+4. Mock without `match` criteria serves as fallback
+
+**Test Requirements:**
+- Unit tests in `packages/msw-adapter/tests/`
+- Integration tests in `apps/express-example/tests/dynamic-matching.test.ts`
+- Example scenarios in `apps/express-example/src/scenarios.ts`
+- Bruno collection requests demonstrating feature
+
+---
+
+### REQ-2: Response Sequences
+
+**Status:** ⏸️ Not Started
+
+Enable ordered sequences of responses for polling and progressive scenarios.
+
+#### REQ-2.1: Define Response Sequences
+```typescript
+{
+  method: 'GET',
+  url: '/api/job/:id',
+  sequence: {
+    responses: [
+      { status: 200, body: { status: 'pending' } },
+      { status: 200, body: { status: 'pending' } },
+      { status: 200, body: { status: 'processing' } },
+      { status: 200, body: { status: 'complete' } }
+    ],
+    repeat: 'last'  // Options: 'last' | 'cycle' | 'none'
+  }
+}
+```
+
+**Type Definition:**
+```typescript
+type MockDefinition = {
+  method: HttpMethod;
+  url: string;
+  match?: MatchCriteria;
+  response?: MockResponse;     // Single response (current behavior)
+  sequence?: {                 // OR sequence (new)
+    responses: ReadonlyArray<MockResponse>;
+    repeat?: 'last' | 'cycle' | 'none';
+  };
+  captureState?: CaptureConfig;
+};
+```
+
+#### REQ-2.2: Track Sequence Position Per Test ID
+Adapter maintains runtime state:
+```typescript
+Map<string, {  // Key: `${testId}:${scenarioId}:${mockIndex}`
+  position: number;      // Current position in sequence
+  exhausted: boolean;    // True if repeat: 'none' and past end
+}>
+```
+
+#### REQ-2.3: Repeat Modes
+
+**`repeat: 'last'` (default)**
+- Return last response infinitely after sequence ends
+- Use case: Polling that eventually completes
+
+**`repeat: 'cycle'`
+- Return to first response after sequence ends
+- Use case: Alternating states, periodic patterns
+
+**`repeat: 'none'`
+- After sequence ends, mark mock as exhausted
+- Adapter skips exhausted mocks, tries next mock with same URL
+- Use case: Time-limited sequences with fallback behavior
+
+#### REQ-2.4: Exhausted Sequences Enable Fallback
+```typescript
+// Mock 1: First 3 calls (polling)
+{
+  method: 'GET',
+  url: '/api/job/:id',
+  sequence: {
+    responses: [
+      { status: 200, body: { status: 'pending' } },
+      { status: 200, body: { status: 'processing' } },
+      { status: 200, body: { status: 'complete' } }
+    ],
+    repeat: 'none'  // Exhausted after 3 calls
+  }
+},
+// Mock 2: After exhaustion, match-based responses
+{
+  method: 'GET',
+  url: '/api/job/:id',
+  match: { query: { retry: 'true' } },
+  response: { status: 200, body: { status: 'retrying' } }
+},
+// Mock 3: Fallback for all other calls
+{
+  method: 'GET',
+  url: '/api/job/:id',
+  response: { status: 200, body: { status: 'cached' } }
+}
+```
+
+**Execution:**
+- Calls 1-3: Mock 1 applies (sequence)
+- Call 4 with `?retry=true`: Mock 2 applies (Mock 1 exhausted, Mock 2 matches)
+- Call 4 without retry param: Mock 3 applies (Mock 1 exhausted, Mock 2 doesn't match)
+
+**Test Requirements:**
+- Unit tests for all repeat modes
+- Test sequence position tracking per test ID
+- Test exhaustion and fallback behavior
+- Integration tests in `apps/express-example/tests/dynamic-sequences.test.ts`
+- Example polling scenarios in `apps/express-example/src/scenarios.ts`
+- Bruno collection demonstrating sequences
+
+---
+
+### REQ-3: Stateful Mocks
+
+**Status:** ⏸️ Not Started
+
+Enable capturing data from requests and injecting it into subsequent responses.
+
+#### REQ-3.1: Capture State from Requests
+```typescript
+{
+  method: 'POST',
+  url: '/api/cart/items',
+  captureState: {
+    'cartItems[]': 'body.item'  // [] means append to array
+  },
+  response: { status: 200, body: { success: true } }
+}
+```
+
+**Path Syntax:**
+- `body.field` - Extract from request body
+- `headers.field` - Extract from request headers
+- `query.field` - Extract from query parameters
+- `params.field` - Extract from URL parameters
+
+**Array Syntax:**
+- `stateKey[]` - Append to array (creates array if doesn't exist)
+- `stateKey` - Overwrite value
+
+#### REQ-3.2: Store State Per Test ID
+Adapter maintains runtime state:
+```typescript
+Map<testId, stateObject>
+```
+
+**State object structure:**
+```typescript
+{
+  [stateKey: string]: unknown  // Any JSON-serializable value
+}
+```
+
+#### REQ-3.3: Reset State on Scenario Switch
+When `switchScenario()` is called:
+1. Clear all state for that test ID
+2. Start fresh state tracking for new scenario
+
+#### REQ-3.4: Inject State into Responses
+```typescript
+{
+  method: 'GET',
+  url: '/api/cart',
+  response: {
+    status: 200,
+    body: {
+      items: '{{state.cartItems}}',
+      count: '{{state.cartItems.length}}'
+    }
+  }
+}
+```
+
+**Template Syntax:**
+- `{{state.key}}` - Replace with value from state
+- `{{state.nested.key}}` - Support nested paths
+- `{{state.array.length}}` - Support array length
+
+**Template Processing:**
+1. Response body is serialized to JSON
+2. String values containing `{{state.X}}` are replaced with actual values
+3. If value is object/array, it replaces the entire value (not string interpolation)
+
+#### REQ-3.5: Support Nested Paths
+```typescript
+captureState: {
+  'user.profile.name': 'body.name',
+  'user.profile.email': 'body.email'
+}
+
+// Later in response:
+body: {
+  welcomeMessage: 'Hello {{state.user.profile.name}}'
+}
+```
+
+#### REQ-3.6: Support Array Appending
+```typescript
+// First request
+captureState: { 'items[]': 'body.item' }
+// State: { items: [{ id: 1, name: 'Apple' }] }
+
+// Second request
+captureState: { 'items[]': 'body.item' }
+// State: { items: [{ id: 1, name: 'Apple' }, { id: 2, name: 'Banana' }] }
+
+// Response uses captured array
+body: {
+  cart: '{{state.items}}',
+  total: '{{state.items.length}}'
+}
+```
+
+**Test Requirements:**
+- Unit tests for capture and injection logic
+- Test state isolation per test ID
+- Test state reset on scenario switch
+- Test nested paths and array appending
+- Integration tests in `apps/express-example/tests/dynamic-state.test.ts`
+- Example stateful scenarios (cart, multi-step forms)
+- Bruno collection demonstrating state
+
+---
+
+### REQ-4: Feature Composition
+
+**Status:** ⏸️ Not Started
+
+Define how features work together when combined on the same mock.
+
+#### REQ-4.1: Match + Sequence
+Sequence only advances for requests that pass match criteria:
+
+```typescript
+{
+  method: 'POST',
+  url: '/api/process',
+  match: { body: { type: 'batch' } },  // Only for batch requests
+  sequence: {
+    responses: [
+      { status: 202, body: { status: 'queued' } },
+      { status: 200, body: { status: 'processing' } },
+      { status: 200, body: { status: 'complete' } }
+    ],
+    repeat: 'last'
+  }
+}
+```
+
+**Behavior:**
+- Request must pass match criteria for mock to apply
+- If match fails, adapter tries next mock
+- If match passes, sequence advances and response returned
+- Non-matching requests don't affect sequence position
+
+#### REQ-4.2: Match + State
+State only captured/injected for requests that pass match criteria:
+
+```typescript
+{
+  method: 'POST',
+  url: '/api/items',
+  match: { body: { category: 'premium' } },
+  captureState: { 'premiumItems[]': 'body.item' },
+  response: { status: 200, body: { captured: true } }
+}
+```
+
+#### REQ-4.3: Sequence + State
+Each response in sequence can inject state:
+
+```typescript
+{
+  method: 'GET',
+  url: '/api/job/:id',
+  sequence: {
+    responses: [
+      {
+        status: 200,
+        body: {
+          status: 'pending',
+          processing: '{{state.itemCount}} items'
+        }
+      },
+      {
+        status: 200,
+        body: {
+          status: 'complete',
+          results: '{{state.processedItems}}'
+        }
+      }
+    ],
+    repeat: 'last'
+  }
+}
+```
+
+#### REQ-4.4: Match + Sequence + State (All Three)
+```typescript
+{
+  method: 'POST',
+  url: '/api/batch',
+  match: { body: { priority: 'high' } },
+  captureState: { 'batchId': 'body.id' },
+  sequence: {
+    responses: [
+      {
+        status: 202,
+        body: { status: 'queued', id: '{{state.batchId}}' }
+      },
+      {
+        status: 200,
+        body: { status: 'complete', id: '{{state.batchId}}' }
+      }
+    ],
+    repeat: 'last'
+  }
+}
+```
+
+**Test Requirements:**
+- Integration tests for all composition patterns
+- Tests verifying composition precedence
+- Real-world complex scenarios
+- Integration tests in `apps/express-example/tests/dynamic-composition.test.ts`
+
+---
+
+## Three-Phase Execution Model
+
+When a request matches a URL pattern, the adapter executes in three phases:
+
+### Phase 1: Match (Does this mock apply?)
+
+For each mock with matching URL:
+
+1. **Check sequence exhaustion**
+   - If `sequence` exists with `repeat: 'none'`
+   - If position > responses.length
+   - Skip this mock, try next
+
+2. **Check match criteria**
+   - If `match.body` exists, check partial match on request body
+   - If `match.headers` exists, check exact match on request headers
+   - If `match.query` exists, check exact match on query params
+   - If any check fails, skip this mock, try next
+
+3. **Mock applies**
+   - If all checks pass (or no checks defined), use this mock
+
+### Phase 2: Select Response (Which response to return?)
+
+1. **If `sequence` is defined:**
+   - Get response at current position
+   - Increment position for this (testId + scenarioId + mockIndex)
+   - Handle repeat mode:
+     - `last`: Stay at last position
+     - `cycle`: Wrap to position 0
+     - `none`: Mark as exhausted after last response
+   - Return selected response
+
+2. **Else if `response` is defined:**
+   - Return single response
+
+### Phase 3: Transform (Modify response based on state)
+
+1. **If `captureState` is defined:**
+   - Extract values from request using paths
+   - Store in state Map under testId
+   - Handle array appending (stateKey[])
+
+2. **If response body contains templates:**
+   - Find all `{{state.X}}` patterns
+   - Replace with actual values from state
+   - Handle nested paths (state.user.name)
+   - Handle special accessors (state.items.length)
+
+3. **Apply response modifiers:**
+   - Add configured delays
+   - Add configured headers
+   - Return final response
+
+## Precedence Rules
+
+### Multiple Mocks with Same URL
+
+Order of evaluation:
+1. Iterate through mocks in array order
+2. Skip if sequence exhausted (`repeat: 'none'` and past end)
+3. Skip if `match` criteria present but don't pass
+4. Use first mock where all checks pass
+5. Mock without `match` criteria = catch-all fallback
+
+**Example:**
+```typescript
+mocks: [
+  // Mock 1: Specific case (checked first)
+  {
+    url: '/api/data',
+    match: { query: { premium: 'true' } },
+    response: { status: 200, body: { tier: 'premium' } }
+  },
+  // Mock 2: Another specific case
+  {
+    url: '/api/data',
+    match: { query: { premium: 'false' } },
+    response: { status: 200, body: { tier: 'standard' } }
+  },
+  // Mock 3: Fallback (no match criteria)
+  {
+    url: '/api/data',
+    response: { status: 200, body: { tier: 'default' } }
+  }
+]
+```
+
+Request evaluation:
+- `GET /api/data?premium=true` → Mock 1
+- `GET /api/data?premium=false` → Mock 2
+- `GET /api/data` → Mock 3 (fallback)
+
+### State Template Priority
+
+When multiple templates reference same key:
+- Templates are resolved in order of appearance
+- Each template gets current value from state
+- No dependency resolution needed (values are already computed)
+
+## Type Definitions
+
+### MatchCriteria
+```typescript
+type MatchCriteria = {
+  readonly body?: Record<string, unknown>;      // Partial match on body
+  readonly headers?: Record<string, string>;    // Exact match on headers
+  readonly query?: Record<string, string>;      // Exact match on query
+};
+```
+
+### MockDefinition (Updated)
+```typescript
+type MockDefinition = {
+  readonly method: HttpMethod;
+  readonly url: string;
+  readonly match?: MatchCriteria;
+  readonly response?: MockResponse;
+  readonly sequence?: {
+    readonly responses: ReadonlyArray<MockResponse>;
+    readonly repeat?: 'last' | 'cycle' | 'none';
+  };
+  readonly captureState?: Record<string, string>;  // { stateKey: requestPath }
+};
+```
+
+### Runtime State (Adapter-Only)
+```typescript
+// Sequence tracking
+Map<string, {  // Key: `${testId}:${scenarioId}:${mockIndex}`
+  position: number;
+  exhausted: boolean;
+}>
+
+// State storage
+Map<string, Record<string, unknown>>  // Key: testId
+```
+
+## Implementation Phases
+
+### Phase 1: Request Content Matching (REQ-1)
+**Goal:** Enable match criteria on body/headers/query
+
+**Core Package Tasks:**
+1. Add `MatchCriteria` type to `packages/core/src/types/scenario.ts`
+2. Add `match` field to `MockDefinition` type
+3. Add `RequestContext` type (method, url, body, headers, query)
+4. Implement matching logic in `packages/core/src/domain/response-selector.ts`
+5. Add unit tests in `packages/core/tests/`
+
+**Express Adapter Tasks:**
+6. Update adapter to extract `RequestContext` from Express request
+7. Wire up core matching logic (no match logic in adapter!)
+8. Create `apps/express-example/tests/dynamic-matching.test.ts`
+
+**Example App Tasks:**
+9. Add example scenarios to `apps/express-example/src/scenarios.ts`
+10. Add Bruno collection requests
+11. Update `packages/express-adapter/README.md`
+
+**Acceptance Criteria:**
+- ✅ Can match on request body (partial)
+- ✅ Can match on request headers (exact)
+- ✅ Can match on query parameters (exact)
+- ✅ First matching mock wins
+- ✅ Fallback to unmatchable mock works
+- ✅ Core unit tests passing
+- ✅ Express integration tests passing
+
+### Phase 2: Response Sequences (REQ-2)
+**Goal:** Enable ordered sequences of responses
+
+**Core Package Tasks:**
+1. Add `sequence` field and `RepeatMode` type to `MockDefinition`
+2. Create `SequenceTracker` port interface in `packages/core/src/ports/`
+3. Create `InMemorySequenceTracker` implementation in `packages/core/src/domain/`
+4. Implement sequence selection logic in `ResponseSelector` domain service
+5. Implement position increment and repeat logic (last/cycle/none)
+6. Add unit tests for all repeat modes in `packages/core/tests/`
+
+**Express Adapter Tasks:**
+7. Wire up sequence tracking (no sequence logic in adapter!)
+8. Create `apps/express-example/tests/dynamic-sequences.test.ts`
+
+**Example App Tasks:**
+9. Add polling scenarios to examples
+10. Add Bruno collection requests
+11. Update documentation
+
+**Acceptance Criteria:**
+- ✅ Sequences advance on each call
+- ✅ `repeat: 'last'` works correctly
+- ✅ `repeat: 'cycle'` works correctly
+- ✅ `repeat: 'none'` exhaustion works
+- ✅ Sequence state isolated per test ID
+- ✅ Core unit tests passing
+- ✅ Express integration tests passing
+
+### Phase 3: Stateful Mocks (REQ-3)
+**Goal:** Enable state capture and injection
+
+**Core Package Tasks:**
+1. Add `captureState` field to `MockDefinition` type
+2. Create `StateManager` port interface in `packages/core/src/ports/`
+3. Create `InMemoryStateManager` implementation in `packages/core/src/domain/`
+4. Implement path extraction logic in `ResponseSelector` (e.g., `body.item`, `query.userId`)
+5. Implement array appending syntax (`stateKey[]`)
+6. Implement template replacement engine (`{{state.X}}`) in `ResponseSelector`
+7. Implement nested path support (`state.user.profile.name`)
+8. Implement state reset on scenario switch
+9. Add unit tests for capture, storage, and injection in `packages/core/tests/`
+
+**Express Adapter Tasks:**
+10. Wire up state management (no state logic in adapter!)
+11. Create `apps/express-example/tests/dynamic-state.test.ts`
+
+**Example App Tasks:**
+12. Add stateful scenarios (cart, forms)
+13. Add Bruno collection requests
+14. Update documentation
+
+**Acceptance Criteria:**
+- ✅ Can capture from body/headers/query/params
+- ✅ Array appending works
+- ✅ Template injection works
+- ✅ Nested paths work
+- ✅ State resets on scenario switch
+- ✅ State isolated per test ID
+- ✅ Core unit tests passing
+- ✅ Express integration tests passing
+
+### Phase 4: Feature Composition (REQ-4)
+**Goal:** Verify all features work together
+
+**Core Package Tasks:**
+1. Add integration tests for composition patterns in `packages/core/tests/`
+2. Test Match + Sequence composition
+3. Test Match + State composition
+4. Test Sequence + State composition
+5. Test Match + Sequence + State (all three)
+6. Performance benchmarking
+
+**Express Adapter Tasks:**
+7. Create `apps/express-example/tests/dynamic-composition.test.ts`
+8. Test complex real-world composition scenarios
+
+**Example App Tasks:**
+9. Add comprehensive composition examples to scenarios
+10. Add Bruno collection requests for composition patterns
+11. Update documentation with composition patterns and best practices
+
+**Acceptance Criteria:**
+- ✅ All composition patterns work
+- ✅ Precedence rules enforced
+- ✅ Complex scenarios working
+- ✅ Core unit tests passing
+- ✅ Express integration tests passing
+- ✅ Documentation complete
+
+## Test Coverage Requirements
+
+For **each requirement**, we must have:
+
+### 1. Unit Tests
+- Location: `packages/msw-adapter/tests/` or `packages/core/tests/`
+- Coverage: Specific feature logic in isolation
+- Focus: Edge cases, error handling, boundary conditions
+
+### 2. Integration Tests
+- Location: `apps/express-example/tests/dynamic-*.test.ts`
+- Coverage: Feature working end-to-end through Express app
+- Focus: Real request/response cycles, test ID isolation
+
+### 3. Example Scenarios
+- Location: `apps/express-example/src/scenarios.ts`
+- Purpose: Demonstrate feature usage patterns
+- Focus: Real-world use cases
+
+### 4. Bruno Collection
+- Location: `apps/express-example/bruno/`
+- Purpose: Manual testing and exploration
+- Focus: Interactive demonstration of features
+
+## Design Decisions
+
+### ✅ Serialization is Non-Negotiable
+**Decision:** All features must be expressible as pure JSON data (no functions)
+
+**Rationale:**
+- Enables Redis, file, and database storage
+- Scenarios can be version controlled
+- Future devtools can load/edit scenarios
+- Browser-based testing is possible
+- Maintains hexagonal architecture
+
+**Impact:** Template syntax instead of functions, state tracking in adapter runtime
+
+### ✅ Self-Contained Scenarios
+**Decision:** No runtime headers/configuration required beyond test ID
+
+**Rationale:**
+- Scenarios work in browsers without special setup
+- Devtools can execute scenarios without knowledge of app internals
+- Reduces consumer friction
+- Makes scenarios portable
+
+**Impact:** Match criteria and state capture embedded in scenario definitions
+
+### ✅ State Resets on Scenario Switch
+**Decision:** When switching scenarios, clear all state for that test ID
+
+**Rationale:**
+- Each scenario starts with clean slate
+- Prevents state leakage between scenarios
+- Makes scenarios predictable and reproducible
+- Simplifies debugging
+
+**Impact:** Can't carry state across scenarios (feature, not bug)
+
+### ✅ Partial Matching for Request Body
+**Decision:** `match.body` does partial matching (subset check)
+
+**Rationale:**
+- More flexible for real-world requests
+- Request may have additional fields we don't care about
+- Easier to write targeted matches
+- Can add exact match mode later if needed
+
+**Impact:** Match passes if request contains all specified keys with matching values
+
+### ❌ No Template Operations (Phase 1)
+**Decision:** Templates don't support operations like `{{state.count + 1}}`
+
+**Rationale:**
+- Keep template engine simple for v1
+- Operations require expression parser (complexity)
+- Most use cases satisfied by direct value injection
+- Can add later if demand is clear
+
+**Impact:** Consumers compute values before capturing, not in templates
+
+## Future Considerations
+
+### Exact Match Mode
+If partial matching proves insufficient:
+```typescript
+match: {
+  body: { ... },
+  bodyExact: true  // Require exact match, no extra fields
+}
+```
+
+### State Deletion
+If needed for cleanup scenarios:
+```typescript
+{
+  method: 'DELETE',
+  url: '/api/cart/:id',
+  clearState: ['cartItems', 'cartTotal']
+}
+```
+
+### Template Operations
+If demand is clear:
+```typescript
+body: {
+  nextPage: '{{state.currentPage + 1}}',
+  total: '{{state.items.length * state.pricePerItem}}'
+}
+```
+
+### Cross-Test State Sharing
+Currently not supported (by design). If needed:
+```typescript
+captureState: {
+  'global.userId': 'body.userId'  // 'global.' prefix = shared state
+}
+```
+
+## Success Criteria
+
+This feature is complete when:
+
+- ✅ All requirements (REQ-1 through REQ-4) implemented and tested
+- ✅ 100% test coverage for all features
+- ✅ Integration tests in express-example passing
+- ✅ Example scenarios demonstrating each feature
+- ✅ Bruno collection requests for manual testing
+- ✅ Documentation updated with examples and patterns
+- ✅ Features compose correctly without conflicts
+- ✅ Serialization maintained throughout
+- ✅ Performance acceptable (benchmarks TBD)
+
+---
+
+## Document Maintenance
+
+This is a **living document** that will be updated throughout implementation.
+
+### Requirements Document Updates
+
+As we implement features:
+- ✅ Update requirement statuses (⏸️ → 🏗️ → ✅)
+- ✅ Add discovered edge cases
+- ✅ Link to PRs and commits
+- ✅ Add test file references
+- ✅ Document lessons learned
+
+### ADR Updates
+
+After **each phase** implementation, update [ADR-0002](./adrs/0002-dynamic-response-system.md):
+
+**After Phase 1 (Matching):**
+- Update "Unknowns" section with discoveries
+- Add actual performance data if measured
+- Document any edge cases found
+- Update alternatives if new approaches emerged
+
+**After Phase 2 (Sequences):**
+- Document sequence tracking performance
+- Add any repeat mode edge cases discovered
+- Update exhaustion handling learnings
+
+**After Phase 3 (State):**
+- Document state storage performance
+- Add template replacement edge cases
+- Document state isolation verification
+
+**After Phase 4 (Composition):**
+- Document composition patterns that work well
+- Document composition patterns that are confusing
+- Add real-world usage patterns observed
+- Update consequences (positive/negative)
+- Change ADR status from "Proposed" to "Accepted"
+
+### Commit Message Template
+
+When updating these documents:
+```
+docs(dynamic-responses): update after Phase X implementation
+
+- Update requirement REQ-X status
+- Add discovered edge case: [description]
+- Update ADR-0002 with [learnings]
+- Link to PR #[number]
+```
