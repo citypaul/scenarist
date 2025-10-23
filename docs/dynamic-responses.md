@@ -73,20 +73,35 @@ Scenarios should work without requiring runtime configuration or special headers
 ### Core Domain Responsibilities
 The core package implements:
 - `ResponseSelector` domain service (orchestrates all three phases)
-- `SequenceTracker` port interface (tracks sequence positions per test ID)
-- `StateManager` port interface (manages captured state per test ID)
-- Match checking logic (body/headers/query)
+  - Created via factory: `createResponseSelector({ sequenceTracker, stateManager })`
+  - All ports INJECTED, never created internally
+  - Returns `Result<MockResponse, ResponseError>` (not exceptions)
+- `SequenceTracker` port (`interface` in `packages/core/src/ports/`)
+  - Default: `InMemorySequenceTracker` with explicit `implements SequenceTracker`
+  - Tracks sequence positions per `${testId}:${scenarioId}:${mockIndex}` key
+- `StateManager` port (`interface` in `packages/core/src/ports/`)
+  - Default: `InMemoryStateManager` with explicit `implements StateManager`
+  - Manages captured state per test ID
+- Match checking logic (body partial match, headers/query exact match)
 - Sequence selection logic (position management, repeat modes)
 - State capture and template replacement
+
+**Type System Conventions:**
+- **Data structures** use `type` with `readonly` (MatchCriteria, MockDefinition, RequestContext)
+- **Ports** use `interface` (SequenceTracker, StateManager)
+- **Implementations** use explicit `implements PortName`
 
 ### Adapter Responsibilities (Thin Layer)
 Adapters only:
 - Extract request context from framework (Express, Fastify, etc.)
 - Convert framework request to domain `RequestContext` type
-- Call `ResponseSelector.selectResponse(testId, context, mocks)`
+- Call injected `responseSelector.selectResponse(testId, context, mocks)`
 - Convert domain `MockResponse` back to framework response
+- **NO domain logic in adapters** - all logic in core
 
 **Why:** This prevents logic duplication across adapters. Each adapter (Express, Fastify, Playwright) gets identical behavior without reimplementing the three-phase execution model. Bugs are fixed once in core, benefits propagate to all adapters.
+
+**Dependency Injection:**  All ports are injected into `ResponseSelector`, never created internally. This enables multiple implementations (in-memory, Redis, file-based, remote).
 
 **See:** [ADR-0002 § Architectural Layering](./adrs/0002-dynamic-response-system.md#architectural-layering-core-vs-adapters) for detailed rationale.
 

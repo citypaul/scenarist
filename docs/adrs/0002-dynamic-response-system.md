@@ -164,14 +164,78 @@ type MockDefinition = {
   - Phase 1: Match checking (body/headers/query matching)
   - Phase 2: Sequence tracking (position management, repeat modes)
   - Phase 3: State management (capture, storage, template replacement)
-- `SequenceTracker` port for tracking sequence positions per test ID
-- `StateManager` port for managing captured state per test ID
+- `SequenceTracker` port (`interface` in `packages/core/src/ports/`)
+  - Tracks sequence positions per test ID
+  - Default implementation: `InMemorySequenceTracker` (uses `Map`)
+  - MUST use explicit `implements SequenceTracker`
+- `StateManager` port (`interface` in `packages/core/src/ports/`)
+  - Manages captured state per test ID
+  - Default implementation: `InMemoryStateManager` (uses `Map`)
+  - MUST use explicit `implements StateManager`
+
+**ResponseSelector Creation (Factory Pattern with Dependency Injection):**
+```typescript
+// Factory function in packages/core/src/domain/response-selector.ts
+export const createResponseSelector = (deps: {
+  readonly sequenceTracker: SequenceTracker;  // Injected port
+  readonly stateManager: StateManager;        // Injected port
+}): ResponseSelector => {
+  return {
+    selectResponse(
+      testId: string,
+      context: RequestContext,
+      mocks: ReadonlyArray<MockDefinition>
+    ): Result<MockResponse, ResponseError> {
+      // Implementation delegates to injected ports
+      // NEVER creates SequenceTracker or StateManager internally
+    }
+  };
+};
+```
+
+**CRITICAL**: `ResponseSelector` follows dependency injection pattern—all ports are injected, NEVER created internally. This enables multiple implementations (in-memory, Redis, etc.).
+
+**Type System Conventions:**
+- **Data structures** use `type` with `readonly`: `MatchCriteria`, `MockDefinition`, `MockResponse`, `RequestContext`
+- **Ports (behavior contracts)** use `interface`: `SequenceTracker`, `StateManager`, `ResponseSelector`
+- **All implementations** must explicitly use `implements PortName`
+- **Return types** use `Result<T, E>` pattern for expected errors (not exceptions)
+
+**Example Port Definitions:**
+```typescript
+// packages/core/src/ports/sequence-tracker.ts
+export interface SequenceTracker {
+  getPosition(key: string): number | undefined;
+  incrementPosition(key: string, maxPosition: number, repeatMode: RepeatMode): void;
+  isExhausted(key: string): boolean;
+  reset(testId: string): void;
+}
+
+// packages/core/src/ports/state-manager.ts
+export interface StateManager {
+  get(testId: string, key: string): unknown | undefined;
+  set(testId: string, key: string, value: unknown): void;
+  append(testId: string, key: string, value: unknown): void;
+  getAll(testId: string): Record<string, unknown>;
+  reset(testId: string): void;
+}
+
+// packages/core/src/domain/response-selector.ts
+export type ResponseSelector = {
+  selectResponse(
+    testId: string,
+    context: RequestContext,
+    mocks: ReadonlyArray<MockDefinition>
+  ): Result<MockResponse, ResponseError>;
+};
+```
 
 **Adapter Responsibilities (Thin Layer):**
 - Extract request context from framework (Express, Fastify, Playwright)
 - Convert framework request to domain `RequestContext` type
-- Call core `ResponseSelector.selectResponse(testId, context, mocks)`
+- Call injected `responseSelector.selectResponse(testId, context, mocks)`
 - Convert domain `MockResponse` back to framework response
+- NO domain logic in adapters
 
 **Why This Matters:**
 - ✅ **Single implementation** - All logic in core, tested once
@@ -209,6 +273,11 @@ For each mock with matching URL, in order:
 1. **If `sequence` is defined:**
    - Get response at current position
    - Increment position for this `(testId, scenarioId, mockIndex)` tuple
+     - **Key composition**: `${testId}:${scenarioId}:${mockIndex}`
+     - `testId`: From request header (e.g., `"my-test"`)
+     - `scenarioId`: From active scenario in store (e.g., `"checkout-flow"`)
+     - `mockIndex`: Position in `scenario.mocks` array (0-based index)
+     - **Example key**: `"my-test:checkout-flow:2"` (test my-test, scenario checkout-flow, mock at index 2)
    - Apply repeat mode:
      - `last`: Stay at last position after reaching end
      - `cycle`: Wrap to position 0 after reaching end
@@ -862,10 +931,14 @@ it('should handle missing headers in Express request', () => {
 - Is sequence lookup fast enough for high-volume polling?
 - Does template replacement become a bottleneck?
 
-🔍 **Template edge cases**
-- What happens with circular references in state?
-- How to handle undefined state keys?
-- Should we support escaping `{{` literals?
+🔍 **Template edge cases** (to be decided during Phase 3)
+- **Undefined state keys**: Return `null`, throw error, or preserve template string `{{state.missing}}`?
+- **Circular references**: Detect and error? Let JSON.stringify handle it? Infinite loop risk?
+- **Escaping literals**: Support `\{{` for literal `{{`? Or assume unnecessary (no real use case)?
+- **Array out of bounds**: `{{state.items.999}}` when array has 5 items - return `undefined`? Error?
+- **Nested property access**: `{{state.user.profile.avatar.url}}` when intermediate value is `null` - return `null`? Error?
+- **Type coercion**: `{{state.count}}` injected into string field - convert to string? Keep as number?
+- **Template in non-body fields**: Can templates appear in response `headers` or `status`? Body only?
 
 🔍 **Composition edge cases**
 - What happens if match + sequence both defined but sequence exhausted?
@@ -881,11 +954,19 @@ it('should handle missing headers in Express request', () => {
 
 ### Phase 1: Request Content Matching (REQ-1)
 
+**TDD Requirement:** Write FAILING tests BEFORE implementing `ResponseSelector` matching logic. No production code without a red test.
+
 **Core Package (`packages/core/`):**
-- Add `MatchCriteria` type and `match` field to `MockDefinition`
-- Add `RequestContext` type (method, url, body, headers, query)
-- Implement match checking logic in core domain service
-- Unit tests for matching logic (body partial match, headers/query exact match)
+1. **RED**: Write failing tests for match criteria logic
+   - Test body partial matching (request has extra fields, should still match)
+   - Test headers exact matching (all specified headers must match)
+   - Test query exact matching (all specified params must match)
+   - Test first matching mock wins (precedence order)
+   - Test fallback when no criteria specified
+2. **GREEN**: Add `MatchCriteria` type and `match` field to `MockDefinition`
+3. **GREEN**: Add `RequestContext` type (method, url, body, headers, query)
+4. **GREEN**: Implement MINIMUM match checking logic to pass tests
+5. **REFACTOR**: Extract match functions if needed, keep tests green
 
 **Express Adapter (`packages/express-adapter/`):**
 - Update adapter to extract `RequestContext` from Express request
@@ -899,12 +980,20 @@ it('should handle missing headers in Express request', () => {
 
 ### Phase 2: Response Sequences (REQ-2)
 
+**TDD Requirement:** Write FAILING tests BEFORE implementing sequence tracking. Test all repeat modes exhaustively.
+
 **Core Package:**
-- Add `sequence` field and `RepeatMode` type to `MockDefinition`
-- Create `SequenceTracker` port interface
-- Create `InMemorySequenceTracker` implementation
-- Implement sequence selection logic in core domain service
-- Unit tests for all repeat modes and exhaustion
+1. **RED**: Write failing tests for sequence behavior
+   - Test position advancement on each call
+   - Test `repeat: 'last'` stays at final position
+   - Test `repeat: 'cycle'` wraps to position 0
+   - Test `repeat: 'none'` marks as exhausted, enables fallback
+   - Test sequence state isolated per test ID
+2. **GREEN**: Add `sequence` field and `RepeatMode` type to `MockDefinition`
+3. **GREEN**: Create `SequenceTracker` port interface (in `packages/core/src/ports/`)
+4. **GREEN**: Create `InMemorySequenceTracker` implementation with explicit `implements SequenceTracker`
+5. **GREEN**: Implement MINIMUM sequence selection logic to pass tests
+6. **REFACTOR**: Extract sequence advancement logic if needed
 
 **Express Adapter:**
 - Wire up sequence tracking (no sequence logic in adapter!)
@@ -917,13 +1006,23 @@ it('should handle missing headers in Express request', () => {
 
 ### Phase 3: Stateful Mocks (REQ-3)
 
+**TDD Requirement:** Write FAILING tests BEFORE implementing state capture/injection. Test edge cases exhaustively.
+
 **Core Package:**
-- Add `captureState` field to `MockDefinition`
-- Create `StateManager` port interface
-- Create `InMemoryStateManager` implementation
-- Implement path extraction logic (e.g., `body.item`, `query.userId`)
-- Implement template replacement engine (`{{state.X}}`)
-- Unit tests for capture, storage, and injection
+1. **RED**: Write failing tests for state capture and injection
+   - Test capture from body/headers/query/params
+   - Test array appending with `stateKey[]` syntax
+   - Test template replacement `{{state.X}}`
+   - Test nested path access `{{state.user.profile.name}}`
+   - Test state isolated per test ID
+   - Test state resets on scenario switch
+   - Test edge cases (undefined keys, circular refs) - document actual behavior chosen
+2. **GREEN**: Add `captureState` field to `MockDefinition`
+3. **GREEN**: Create `StateManager` port interface (in `packages/core/src/ports/`)
+4. **GREEN**: Create `InMemoryStateManager` implementation with explicit `implements StateManager`
+5. **GREEN**: Implement MINIMUM path extraction logic to pass tests
+6. **GREEN**: Implement MINIMUM template replacement to pass tests
+7. **REFACTOR**: Extract template engine if complex, keep tests green
 
 **Express Adapter:**
 - Wire up state management (no state logic in adapter!)
@@ -936,17 +1035,27 @@ it('should handle missing headers in Express request', () => {
 
 ### Phase 4: Feature Composition (REQ-4)
 
+**TDD Requirement:** Write FAILING integration tests for all composition patterns BEFORE claiming success.
+
 **Core Package:**
-- Integration tests for all composition patterns
-- Performance benchmarking
+1. **RED**: Write failing tests for feature composition
+   - Test Match + Sequence (specific match exhausts, fallback to generic)
+   - Test Match + State (match on body, capture different fields)
+   - Test Sequence + State (sequence responses use captured state)
+   - Test Match + Sequence + State (all three features together)
+   - Test precedence rules (exhausted sequence → next mock)
+2. **GREEN**: Verify all features compose correctly (should already pass from previous phases)
+3. **REFACTOR**: Performance optimization if benchmarks show issues
+4. **BENCHMARK**: Measure overhead of match checking, sequence lookup, template replacement
 
 **Express Adapter:**
-- Complex composition integration tests
+- **RED**: Write failing E2E tests for complex real-world composition scenarios
+- **GREEN**: Wire up all features (should already work from previous phases)
 
 **Example App:**
-- Complex real-world scenarios using all features
-- Documentation of composition patterns
-- **Success criteria**: All features work together correctly
+- Add complex scenarios demonstrating all composition patterns
+- Document composition best practices
+- **Success criteria**: All composition tests passing, performance acceptable
 
 ### Post-Implementation
 - Update this ADR with actual consequences discovered
