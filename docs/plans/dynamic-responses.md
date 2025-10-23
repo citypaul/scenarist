@@ -184,7 +184,7 @@ When multiple mocks match the same URL:
 
 ### REQ-2: Response Sequences
 
-**Status:** ⏸️ Not Started
+**Status:** 🏗️ In Progress
 
 Enable ordered sequences of responses for polling and progressive scenarios.
 
@@ -706,6 +706,9 @@ Map<string, Record<string, unknown>>  // Key: testId
 - `apps/express-example/bruno/Dynamic Responses/Request Matching/` - 10 Bruno tests
 
 ### Phase 2: Response Sequences (REQ-2)
+
+**Status:** 🏗️ In Progress
+
 **Goal:** Enable ordered sequences of responses
 
 **Core Package Tasks:**
