@@ -682,6 +682,69 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       }
     });
 
+    it("should default to 'last' repeat mode when not specified", () => {
+      const selector = createResponseSelector({
+        sequenceTracker: createInMemorySequenceTracker(),
+      });
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "GET",
+          url: "/api/status",
+          sequence: {
+            responses: [
+              { status: 200, body: { attempt: 1 } },
+              { status: 200, body: { attempt: 2 } },
+            ],
+            // No repeat mode specified - should default to 'last'
+          },
+        },
+      ];
+
+      const context = {
+        method: "GET" as const,
+        url: "/api/status",
+        body: null,
+        headers: {},
+        query: {},
+      };
+
+      // First two calls go through sequence
+      const result1 = selector.selectResponse(
+        "test-default",
+        "default-scenario",
+        context,
+        mocks
+      );
+      expect(result1.success).toBe(true);
+      if (result1.success) {
+        expect((result1.data.body as { attempt: number }).attempt).toBe(1);
+      }
+
+      const result2 = selector.selectResponse(
+        "test-default",
+        "default-scenario",
+        context,
+        mocks
+      );
+      expect(result2.success).toBe(true);
+      if (result2.success) {
+        expect((result2.data.body as { attempt: number }).attempt).toBe(2);
+      }
+
+      // Third call should repeat last response (default behavior)
+      const result3 = selector.selectResponse(
+        "test-default",
+        "default-scenario",
+        context,
+        mocks
+      );
+      expect(result3.success).toBe(true);
+      if (result3.success) {
+        expect((result3.data.body as { attempt: number }).attempt).toBe(2);
+      }
+    });
+
     it("should repeat last response infinitely when repeat mode is 'last'", () => {
       const context: HttpRequestContext = {
         method: "GET",
@@ -1021,6 +1084,68 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         const body = result4.data.body as { type: string; attempt: number };
         expect(body.type).toBe("premium");
         expect(body.attempt).toBe(2);
+      }
+    });
+  });
+
+  describe("Error handling", () => {
+    const selector = createResponseSelector();
+    const context = {
+      method: "GET" as const,
+      url: "/api/test",
+      body: null,
+      headers: {},
+      query: {},
+    };
+
+    it("should return error for mock with neither response nor sequence", () => {
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "GET",
+          url: "/api/test",
+          // No response or sequence field - invalid mock
+        } as MockDefinition,
+      ];
+
+      const result = selector.selectResponse(
+        "test-invalid",
+        "scenario-invalid",
+        context,
+        mocks
+      );
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.message).toBe(
+          "Mock has neither response nor sequence field"
+        );
+      }
+    });
+
+    it("should return error for sequence with empty responses array", () => {
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "GET",
+          url: "/api/test",
+          sequence: {
+            responses: [], // Empty array
+            repeat: "last",
+          },
+        },
+      ];
+
+      const result = selector.selectResponse(
+        "test-empty",
+        "scenario-empty",
+        context,
+        mocks
+      );
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.message).toBe(
+          "Mock has neither response nor sequence field"
+        );
       }
     });
   });

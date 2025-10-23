@@ -49,12 +49,4 @@ export interface SequenceTracker {
     totalResponses: number,
     repeatMode: 'last' | 'cycle' | 'none'
   ): void;
-
-  /**
-   * Reset all sequence positions for a specific test ID.
-   * Called when switching scenarios to ensure clean state.
-   *
-   * @param testId - Test ID to reset
-   */
-  reset(testId: string): void;
 }

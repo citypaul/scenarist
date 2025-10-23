@@ -44,12 +44,8 @@ export const createResponseSelector = (
 
       // Find all matching mocks and score them by specificity
       for (let mockIndex = 0; mockIndex < mocks.length; mockIndex++) {
-        const mock = mocks[mockIndex];
-
-        // TypeScript readonly array access can return undefined
-        if (!mock) {
-          continue;
-        }
+        // Index is guaranteed in bounds by loop condition (0 <= mockIndex < length)
+        const mock = mocks[mockIndex]!;
 
         // Skip exhausted sequences (repeat: 'none' that have been exhausted)
         if (mock.sequence && sequenceTracker) {
@@ -149,24 +145,16 @@ const selectResponseFromMock = (
     }
 
     // Get current position from tracker
-    const { position, exhausted } = sequenceTracker.getPosition(
+    const { position } = sequenceTracker.getPosition(
       testId,
       scenarioId,
       mockIndex
     );
 
-    // If exhausted, this mock should have been skipped during matching
-    // But if we got here, return null to indicate no response
-    if (exhausted) {
-      return null;
-    }
-
     // Get response at current position
-    const response = mock.sequence.responses[position];
-
-    if (!response) {
-      return null;
-    }
+    // Note: Exhausted sequences are skipped during matching phase,
+    // so position should always be valid here
+    const response = mock.sequence.responses[position]!;
 
     // Advance position for next call
     const repeatMode = mock.sequence.repeat || 'last';
