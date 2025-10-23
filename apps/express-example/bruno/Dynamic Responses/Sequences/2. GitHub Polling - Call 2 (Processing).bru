@@ -1,0 +1,28 @@
+meta {
+  name: 2. GitHub Polling - Call 2 (Processing)
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/github/user/testuser
+  body: none
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq processing
+  res.body.progress: eq 50
+  res.body.login: eq user2
+}
+
+docs {
+  Second call in the sequence returns "processing" state.
+
+  Sequences maintain position per test ID, so each test ID gets independent progression.
+}

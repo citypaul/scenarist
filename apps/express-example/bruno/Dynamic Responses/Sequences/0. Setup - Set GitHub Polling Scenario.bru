@@ -1,0 +1,38 @@
+meta {
+  name: 0. Setup - Set GitHub Polling Scenario
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/__scenario__
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "scenario": "github-polling"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+  res.body.scenarioId: eq github-polling
+}
+
+docs {
+  Sets the active scenario to "github-polling" for testing response sequences.
+
+  This scenario demonstrates Phase 2 of Dynamic Responses (Response Sequences):
+  - GitHub job polling with repeat: 'last'
+  - Three-step progression: pending → processing → complete
+  - After reaching 'complete', all subsequent calls stay at 'complete'
+
+  All subsequent tests in this section depend on this scenario being active.
+}

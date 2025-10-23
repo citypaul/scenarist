@@ -1,0 +1,45 @@
+meta {
+  name: 14. Payment Limited - Call 4 (Rate Limited)
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/api/payment
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "amount": 1000,
+    "currency": "usd"
+  }
+}
+
+assert {
+  res.status: eq 429
+  res.body.error.message: eq Rate limit exceeded
+}
+
+docs {
+  Fourth payment attempt - sequence exhausted, fallback to rate limit error.
+
+  With repeat: 'none', once the sequence is exhausted, Scenarist skips this
+  mock during matching and falls through to the next matching mock in the
+  scenario's mocks array.
+
+  This scenario has a fallback mock:
+  - method: POST
+  - url: https://api.stripe.com/v1/charges
+  - response: 429 Rate limit exceeded
+
+  This pattern is perfect for:
+  - Rate limiting (N successful attempts, then errors)
+  - Trial periods (N free uses, then paywall)
+  - Quota systems (N operations allowed, then quota exceeded)
+}

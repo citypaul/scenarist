@@ -860,7 +860,7 @@ async function switchScenario(page: Page, scenario: string) {
 
 - **[Core Functionality Guide](./docs/core-functionality.md)** - Understanding Scenarist's domain logic (framework-agnostic)
   - Scenario definitions and mock definitions
-  - Dynamic response system (request content matching, specificity-based selection)
+  - Dynamic response system (request matching, response sequences, specificity-based selection)
   - Test isolation and architecture
   - Independent of any specific framework or adapter
 
@@ -873,7 +873,7 @@ async function switchScenario(page: Page, scenario: string) {
 
 - **[Express Example App](./apps/express-example/)** - Complete working Express application with Scenarist
   - Scenario definitions: `src/scenarios.ts`
-  - Integration tests: `tests/dynamic-matching.test.ts`
+  - Integration tests: `tests/dynamic-matching.test.ts`, `tests/dynamic-sequences.test.ts`
   - Bruno API tests: `bruno/Dynamic Responses/`
 
 ### Planning & Architecture

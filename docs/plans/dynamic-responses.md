@@ -1,10 +1,10 @@
 # Dynamic Response System - Requirements & Implementation Plan
 
-**Status:** 🏗️ Phase 1 Complete
+**Status:** 🏗️ Phase 2 Complete
 **Created:** 2025-10-23
 **Last Updated:** 2025-10-23
 **Related ADR:** [ADR-0002: Dynamic Response System](../adrs/0002-dynamic-response-system.md)
-**Related PR:** [#24](https://github.com/citypaul/scenarist/pull/24)
+**Related PRs:** [#24](https://github.com/citypaul/scenarist/pull/24), [#25](https://github.com/citypaul/scenarist/pull/25), [#26](https://github.com/citypaul/scenarist/pull/26), [#27](https://github.com/citypaul/scenarist/pull/27)
 
 ## Overview
 
@@ -184,7 +184,7 @@ When multiple mocks match the same URL:
 
 ### REQ-2: Response Sequences
 
-**Status:** 🏗️ In Progress (Core Complete, Adapters Pending)
+**Status:** ✅ Complete (PRs #25, #26, #27)
 
 Enable ordered sequences of responses for polling and progressive scenarios.
 
@@ -707,7 +707,7 @@ Map<string, Record<string, unknown>>  // Key: testId
 
 ### Phase 2: Response Sequences (REQ-2)
 
-**Status:** 🏗️ In Progress (Core Complete)
+**Status:** ✅ Complete (PRs #25, #26, #27)
 
 **Goal:** Enable ordered sequences of responses
 
@@ -720,18 +720,18 @@ Map<string, Record<string, unknown>>  // Key: testId
 6. ✅ Add unit tests for all repeat modes in `packages/core/tests/response-selector.test.ts`
 
 **Express Adapter Tasks:**
-7. Wire up sequence tracking (no sequence logic in adapter!)
-8. Create `apps/express-example/tests/dynamic-sequences.test.ts`
+7. ✅ Wire up sequence tracking in Express adapter (PR #26)
+8. ✅ Create `apps/express-example/tests/dynamic-sequences.test.ts` (PR #27)
 
 **Example App Tasks:**
-9. Add polling scenarios to examples
-10. Update documentation
+9. ✅ Add polling scenarios to `apps/express-example/src/scenarios.ts`
+10. ✅ Update documentation
 
 **Bruno Tests:**
-11. Create `apps/express-example/bruno/Dynamic Responses/Sequences/` folder
-12. Add polling flow tests (pending → processing → complete)
-13. Add tests for all repeat modes (last/cycle/none)
-14. Include automated assertions for sequence progression
+11. ✅ Create `apps/express-example/bruno/Dynamic Responses/Sequences/` folder
+12. ✅ Add polling flow tests (pending → processing → complete)
+13. ✅ Add tests for all repeat modes (last/cycle/none)
+14. ✅ Include automated assertions for sequence progression
 
 **Acceptance Criteria:**
 - ✅ Sequences advance on each call
@@ -739,10 +739,10 @@ Map<string, Record<string, unknown>>  // Key: testId
 - ✅ `repeat: 'cycle'` works correctly
 - ✅ `repeat: 'none'` exhaustion works
 - ✅ Sequence state isolated per test ID
-- ✅ Core unit tests passing (100% coverage) - 27 tests in response-selector.test.ts
-- ⏸️ Adapter unit tests passing (100% translation coverage)
-- ⏸️ Express integration tests passing
-- ⏸️ Bruno automated tests passing (`bru run`)
+- ✅ Core unit tests passing (100% coverage) - 30 tests in response-selector.test.ts
+- ✅ MSW adapter unit tests passing (100% translation coverage)
+- ✅ Express integration tests passing (44 tests total, 4 sequence tests)
+- ✅ Bruno automated tests created (15 sequence tests across 3 scenarios)
 
 **Implementation Details:**
 - Implemented **sequence tracking with dependency injection** (SequenceTracker injected into ResponseSelector)
@@ -751,15 +751,35 @@ Map<string, Record<string, unknown>>  // Key: testId
 - Sequence positions tracked per (testId, scenarioId, mockIndex) tuple
 - Full test coverage: basic progression, all repeat modes, test ID isolation, combination with match criteria
 
-**Files Changed (Core Package):**
+**Files Changed:**
+
+*Core Package (PR #25):*
 - `packages/core/src/types/scenario.ts` - Added `RepeatMode` and `ResponseSequence` types
 - `packages/core/src/ports/driven/sequence-tracker.ts` - Created `SequenceTracker` port interface
 - `packages/core/src/adapters/in-memory-sequence-tracker.ts` - Implementation with Map-based tracking
 - `packages/core/src/domain/response-selector.ts` - Integrated sequence logic and exhaustion checking
 - `packages/core/src/ports/driven/response-selector.ts` - Updated signature (added scenarioId parameter)
-- `packages/core/tests/response-selector.test.ts` - Added 6 new sequence tests (27 total)
+- `packages/core/tests/response-selector.test.ts` - Added 9 new sequence tests (30 total)
 - `packages/core/src/ports/index.ts` - Exported SequenceTracker port
 - `packages/core/src/adapters/index.ts` - Exported InMemorySequenceTracker
+
+*MSW Adapter (PR #25):*
+- `packages/msw-adapter/src/handlers/dynamic-handler.ts` - Updated selectResponse call with scenarioId
+
+*Express Adapter (PR #26):*
+- `packages/express-adapter/src/setup/setup-scenarist.ts` - Wired up InMemorySequenceTracker
+
+*Integration Tests (PR #27):*
+- `apps/express-example/tests/dynamic-sequences.test.ts` - 4 comprehensive E2E tests
+
+*Example Scenarios:*
+- `apps/express-example/src/scenarios.ts` - Added githubPolling, weatherCycle, paymentLimited scenarios
+
+*Bruno Tests:*
+- `apps/express-example/bruno/Dynamic Responses/Sequences/` - 15 tests across 3 scenarios:
+  - GitHub polling (5 tests) - repeat: 'last' behavior
+  - Weather cycling (5 tests) - repeat: 'cycle' behavior
+  - Payment limited (5 tests) - repeat: 'none' with exhaustion
 
 ### Phase 3: Stateful Mocks (REQ-3)
 **Goal:** Enable state capture and injection

@@ -1,0 +1,31 @@
+meta {
+  name: 9. Weather Cycle - Call 4 (Back to Sunny)
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/api/weather/london
+  body: none
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.city: eq London
+  res.body.conditions: eq Sunny
+  res.body.temp: eq 20
+}
+
+docs {
+  Fourth call in the cycling sequence - cycles back to "Sunny" weather.
+
+  With repeat: 'cycle', after reaching the end of the sequence, we wrap back
+  to the first response and continue cycling indefinitely.
+
+  Perfect for carousel content, rotating banners, or any cyclical data.
+}

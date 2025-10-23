@@ -1,0 +1,38 @@
+meta {
+  name: 11. Payment Limited - Call 1 (Pending 1)
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{baseUrl}}/api/payment
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "amount": 1000,
+    "currency": "usd"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: eq ch_1
+  res.body.status: eq pending
+}
+
+docs {
+  First payment attempt - returns pending (attempt 1 of 3).
+
+  The sequence allows 3 attempts before exhaustion:
+  1. pending (id: ch_1)
+  2. pending (id: ch_2)
+  3. succeeded (id: ch_3)
+  4. Exhausted → fallback to rate limit error
+}

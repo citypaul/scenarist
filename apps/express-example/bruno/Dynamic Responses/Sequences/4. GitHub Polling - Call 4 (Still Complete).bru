@@ -1,0 +1,30 @@
+meta {
+  name: 4. GitHub Polling - Call 4 (Still Complete)
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/github/user/testuser
+  body: none
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq complete
+  res.body.progress: eq 100
+  res.body.login: eq user3
+}
+
+docs {
+  Fourth call in the sequence - still returns "complete" state.
+
+  With repeat: 'last', once we reach the end of the sequence, we stay at the
+  last response for all subsequent calls. This is perfect for polling scenarios
+  where you want to simulate a job completing and staying complete.
+}

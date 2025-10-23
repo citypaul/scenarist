@@ -1,0 +1,28 @@
+meta {
+  name: 7. Weather Cycle - Call 2 (Cloudy)
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/api/weather/london
+  body: none
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.city: eq London
+  res.body.conditions: eq Cloudy
+  res.body.temp: eq 18
+}
+
+docs {
+  Second call in the cycling sequence returns "Cloudy" weather.
+
+  The sequence progresses through its states in order.
+}

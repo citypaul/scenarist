@@ -439,6 +439,86 @@ export const contentMatchingScenario: ScenarioDefinition = {
 };
 
 /**
+ * Scenario: GitHub job polling (Phase 2 - Response Sequences)
+ * Demonstrates sequence progression with repeat: 'last'
+ */
+export const githubPollingScenario: ScenarioDefinition = {
+  id: 'github-polling',
+  name: 'GitHub Job Polling Sequence',
+  description: 'Simulates async GitHub job polling with state progression',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.github.com/users/:username',
+      sequence: {
+        responses: [
+          { status: 200, body: { status: 'pending', progress: 0, login: 'user1' } },
+          { status: 200, body: { status: 'processing', progress: 50, login: 'user2' } },
+          { status: 200, body: { status: 'complete', progress: 100, login: 'user3' } },
+        ],
+        repeat: 'last',
+      },
+    },
+  ],
+};
+
+/**
+ * Scenario: Weather cycling (Phase 2 - Response Sequences)
+ * Demonstrates sequence cycling with repeat: 'cycle'
+ */
+export const weatherCycleScenario: ScenarioDefinition = {
+  id: 'weather-cycle',
+  name: 'Weather Cycle Sequence',
+  description: 'Cycles through weather states infinitely',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.weather.com/v1/weather/:city',
+      sequence: {
+        responses: [
+          { status: 200, body: { city: 'London', conditions: 'Sunny', temp: 20 } },
+          { status: 200, body: { city: 'London', conditions: 'Cloudy', temp: 18 } },
+          { status: 200, body: { city: 'London', conditions: 'Rainy', temp: 15 } },
+        ],
+        repeat: 'cycle',
+      },
+    },
+  ],
+};
+
+/**
+ * Scenario: Payment attempts with limits (Phase 2 - Response Sequences)
+ * Demonstrates sequence exhaustion with repeat: 'none' and fallback mock
+ */
+export const paymentLimitedScenario: ScenarioDefinition = {
+  id: 'payment-limited',
+  name: 'Limited Payment Attempts',
+  description: 'Allows 3 attempts then falls back to error',
+  mocks: [
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      sequence: {
+        responses: [
+          { status: 200, body: { id: 'ch_1', status: 'pending' } },
+          { status: 200, body: { id: 'ch_2', status: 'pending' } },
+          { status: 200, body: { id: 'ch_3', status: 'succeeded' } },
+        ],
+        repeat: 'none',
+      },
+    },
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      response: {
+        status: 429,
+        body: { error: { message: 'Rate limit exceeded' } },
+      },
+    },
+  ],
+};
+
+/**
  * Scenarios organized as typed object for easy access in tests.
  *
  * Use this to get type-safe access to scenario IDs:
@@ -459,5 +539,8 @@ export const scenarios = {
   slowNetwork: slowNetworkScenario,
   mixedResults: mixedResultsScenario,
   contentMatching: contentMatchingScenario,
+  githubPolling: githubPollingScenario,
+  weatherCycle: weatherCycleScenario,
+  paymentLimited: paymentLimitedScenario,
 } as const;
 
