@@ -4,27 +4,8 @@ import type {
   HttpRequestContext,
   Result,
 } from "../types/index.js";
-
-/**
- * Error type for response selection failures.
- */
-export class ResponseSelectionError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ResponseSelectionError";
-  }
-}
-
-/**
- * Response selector domain service interface.
- */
-export interface ResponseSelector {
-  selectResponse(
-    testId: string,
-    context: HttpRequestContext,
-    mocks: ReadonlyArray<MockDefinition>
-  ): Result<MockResponse, ResponseSelectionError>;
-}
+import type { ResponseSelector } from "../ports/index.js";
+import { ResponseSelectionError } from "../ports/driven/response-selector.js";
 
 /**
  * Creates a response selector domain service.
