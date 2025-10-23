@@ -838,5 +838,190 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         expect(result3.data.status).toBe(410);
       }
     });
+
+    it("should maintain independent sequence positions per test ID", () => {
+      const selector = createResponseSelector({
+        sequenceTracker: createInMemorySequenceTracker(),
+      });
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "GET",
+          url: "/api/status",
+          sequence: {
+            responses: [
+              { status: 200, body: { step: 1 } },
+              { status: 200, body: { step: 2 } },
+              { status: 200, body: { step: 3 } },
+            ],
+            repeat: "last",
+          },
+        },
+      ];
+
+      const context = {
+        method: "GET" as const,
+        url: "/api/status",
+        body: null,
+        headers: {},
+        query: {},
+      };
+
+      // Test ID "test-a" makes first call
+      const result1 = selector.selectResponse(
+        "test-a",
+        "status-scenario",
+        context,
+        mocks
+      );
+      expect(result1.success).toBe(true);
+      if (result1.success) {
+        expect((result1.data.body as { step: number }).step).toBe(1);
+      }
+
+      // Test ID "test-b" makes first call (should also get step 1)
+      const result2 = selector.selectResponse(
+        "test-b",
+        "status-scenario",
+        context,
+        mocks
+      );
+      expect(result2.success).toBe(true);
+      if (result2.success) {
+        expect((result2.data.body as { step: number }).step).toBe(1);
+      }
+
+      // Test ID "test-a" makes second call (should get step 2)
+      const result3 = selector.selectResponse(
+        "test-a",
+        "status-scenario",
+        context,
+        mocks
+      );
+      expect(result3.success).toBe(true);
+      if (result3.success) {
+        expect((result3.data.body as { step: number }).step).toBe(2);
+      }
+
+      // Test ID "test-b" makes second call (should also get step 2, not step 3)
+      const result4 = selector.selectResponse(
+        "test-b",
+        "status-scenario",
+        context,
+        mocks
+      );
+      expect(result4.success).toBe(true);
+      if (result4.success) {
+        expect((result4.data.body as { step: number }).step).toBe(2);
+      }
+    });
+
+    it("should work correctly with match criteria and specificity", () => {
+      const selector = createResponseSelector({
+        sequenceTracker: createInMemorySequenceTracker(),
+      });
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        // Generic sequence (no match criteria)
+        {
+          method: "POST",
+          url: "/api/process",
+          sequence: {
+            responses: [
+              { status: 200, body: { type: "generic", attempt: 1 } },
+              { status: 200, body: { type: "generic", attempt: 2 } },
+            ],
+            repeat: "last",
+          },
+        },
+        // Premium sequence (matches tier: premium)
+        {
+          method: "POST",
+          url: "/api/process",
+          match: {
+            body: { tier: "premium" },
+          },
+          sequence: {
+            responses: [
+              { status: 200, body: { type: "premium", attempt: 1 } },
+              { status: 200, body: { type: "premium", attempt: 2 } },
+            ],
+            repeat: "last",
+          },
+        },
+      ];
+
+      const genericContext = {
+        method: "POST" as const,
+        url: "/api/process",
+        body: { tier: "standard" },
+        headers: {},
+        query: {},
+      };
+
+      const premiumContext = {
+        method: "POST" as const,
+        url: "/api/process",
+        body: { tier: "premium" },
+        headers: {},
+        query: {},
+      };
+
+      // Generic request should use generic sequence
+      const result1 = selector.selectResponse(
+        "test-match",
+        "process-scenario",
+        genericContext,
+        mocks
+      );
+      expect(result1.success).toBe(true);
+      if (result1.success) {
+        const body = result1.data.body as { type: string; attempt: number };
+        expect(body.type).toBe("generic");
+        expect(body.attempt).toBe(1);
+      }
+
+      // Premium request should use premium sequence (more specific)
+      const result2 = selector.selectResponse(
+        "test-match",
+        "process-scenario",
+        premiumContext,
+        mocks
+      );
+      expect(result2.success).toBe(true);
+      if (result2.success) {
+        const body = result2.data.body as { type: string; attempt: number };
+        expect(body.type).toBe("premium");
+        expect(body.attempt).toBe(1);
+      }
+
+      // Second generic request should advance generic sequence
+      const result3 = selector.selectResponse(
+        "test-match",
+        "process-scenario",
+        genericContext,
+        mocks
+      );
+      expect(result3.success).toBe(true);
+      if (result3.success) {
+        const body = result3.data.body as { type: string; attempt: number };
+        expect(body.type).toBe("generic");
+        expect(body.attempt).toBe(2);
+      }
+
+      // Second premium request should advance premium sequence
+      const result4 = selector.selectResponse(
+        "test-match",
+        "process-scenario",
+        premiumContext,
+        mocks
+      );
+      expect(result4.success).toBe(true);
+      if (result4.success) {
+        const body = result4.data.body as { type: string; attempt: number };
+        expect(body.type).toBe("premium");
+        expect(body.attempt).toBe(2);
+      }
+    });
   });
 });
