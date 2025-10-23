@@ -1,9 +1,9 @@
-# Dynamic Response System Requirements
+# Dynamic Response System - Requirements & Implementation Plan
 
-**Status:** 🚧 In Progress
+**Status:** ⏳ Not Started
 **Created:** 2025-10-23
 **Last Updated:** 2025-10-23
-**Related ADR:** [ADR-0002: Dynamic Response System](./adrs/0002-dynamic-response-system.md)
+**Related ADR:** [ADR-0002: Dynamic Response System](../adrs/0002-dynamic-response-system.md)
 
 ## Overview
 
@@ -16,7 +16,7 @@ This document defines requirements for enabling different responses from the sam
 - **REQ-4**: Feature Composition (all features working together)
 - **REQ-5**: Developer Experience & Debugging (inspection API for complex scenarios)
 
-**See also:** [ADR-0002](./adrs/0002-dynamic-response-system.md) for the architectural decision record, including alternatives considered and expected consequences.
+**See also:** [ADR-0002](../adrs/0002-dynamic-response-system.md) for the architectural decision record (WHY), including alternatives considered and expected consequences. This document covers WHAT to build and HOW to implement it.
 
 ## Problem Statement
 

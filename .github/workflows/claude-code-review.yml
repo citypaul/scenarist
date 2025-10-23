@@ -45,21 +45,26 @@ jobs:
             **Review Guidelines:**
             Read `.claude/review-prompt.md` for comprehensive review rules specific to this repository.
             Also reference `CLAUDE.md` for general development guidance.
+            Review testing approach against `docs/testing-guidelines.md` and `docs/adrs/0003-testing-strategy.md`.
 
             **Key Architecture Rules to Enforce:**
             1. Hexagonal Architecture - Core has zero framework dependencies
             2. Serializable Scenarios - No functions in scenario definitions
             3. Dependency Injection - All ports injected, never created internally
             4. Explicit Implementation - Adapters must use `implements PortInterface`
-            5. TDD - All production code must have tests
+            5. TDD - All production code must have tests (RED → GREEN → REFACTOR)
             6. Type System - Ports use `interface`, data uses `type` with `readonly`
+            7. Four-Layer Testing - Core (100%), Adapter (translation), Integration (flows), Bruno (docs)
+            8. Behavior Testing - Test through public APIs, not implementation details
 
             **Your Task:**
             1. Read the PR changes using `gh pr diff ${{ github.event.pull_request.number }}`
             2. Review against the rules in `.claude/review-prompt.md`
             3. Check for violations of hexagonal architecture, serialization, dependency injection
-            4. Verify test coverage and code quality
-            5. Leave a constructive review comment using `gh pr comment ${{ github.event.pull_request.number }} --body "..."`
+            4. Verify test coverage follows four-layer strategy (see `docs/testing-guidelines.md`)
+            5. Ensure tests verify behavior, not implementation details
+            6. Check that tests are at the correct layer (core vs adapter vs integration)
+            7. Leave a constructive review comment using `gh pr comment ${{ github.event.pull_request.number }} --body "..."`
 
             Be specific, reference relevant documentation, and provide examples. Focus on architecture violations first, then code quality.
 
