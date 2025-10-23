@@ -1,0 +1,30 @@
+meta {
+  name: Set Scenario - Default
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/__scenario__
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "scenario": "default"
+  }
+}
+
+docs {
+  Set the active scenario to "default" - baseline responses for all APIs.
+
+  This scenario provides successful responses for:
+  - GitHub user lookup
+  - Weather data
+  - Payment processing
+}

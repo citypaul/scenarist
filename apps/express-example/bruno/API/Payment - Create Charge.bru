@@ -1,0 +1,36 @@
+meta {
+  name: Payment - Create Charge
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/payment
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "amount": 1000,
+    "currency": "usd"
+  }
+}
+
+docs {
+  Create a payment charge via Stripe.
+
+  This endpoint calls the external Stripe API, which is mocked by Scenarist.
+
+  Try different scenarios:
+  - "default" or "success": Payment succeeds
+  - "stripe-failure": Payment fails (402 insufficient funds)
+  - "mixed-results": Payment succeeds
+  - "slow-network": Payment succeeds after 1 second delay
+
+  The amount is in cents (1000 = $10.00).
+}

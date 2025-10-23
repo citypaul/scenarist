@@ -1,0 +1,27 @@
+meta {
+  name: Set Scenario - Success
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/__scenario__
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "scenario": "success"
+  }
+}
+
+docs {
+  Set the active scenario to "success" - all API calls succeed with valid data.
+
+  Similar to default but with different test data values.
+}

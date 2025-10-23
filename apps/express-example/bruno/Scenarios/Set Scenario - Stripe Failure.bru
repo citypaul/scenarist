@@ -1,0 +1,28 @@
+meta {
+  name: Set Scenario - Stripe Failure
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/__scenario__
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "scenario": "stripe-failure"
+  }
+}
+
+docs {
+  Set the active scenario to "stripe-failure".
+
+  Payment API will return 402 (insufficient funds).
+  Other APIs fall back to default scenario responses.
+}

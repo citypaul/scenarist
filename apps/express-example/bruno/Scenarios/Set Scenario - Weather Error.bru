@@ -1,0 +1,28 @@
+meta {
+  name: Set Scenario - Weather Error
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/__scenario__
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "scenario": "weather-error"
+  }
+}
+
+docs {
+  Set the active scenario to "weather-error".
+
+  Weather API will return 500 (server error).
+  Other APIs fall back to default scenario responses.
+}
