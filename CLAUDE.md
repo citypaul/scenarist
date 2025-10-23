@@ -684,13 +684,155 @@ const config = buildConfig({
 - ✅ MSW adapter package (framework-agnostic)
 - ✅ Express adapter package
 - ✅ Express example application with E2E tests
-- ✅ 142 tests passing, 100% coverage
+- ✅ **Dynamic Response System - Phase 1: Request Content Matching (PR #24)**
+  - Request body matching (partial match)
+  - Request headers matching (exact match)
+  - Request query parameters matching (exact match)
+  - Specificity-based selection algorithm
+  - 183 tests passing, 100% coverage maintained
 - ✅ TypeScript strict mode throughout
+- ✅ Core functionality documentation
 
 **Future Enhancements:**
+- 🔜 **Dynamic Response System - Phase 2: Response Sequences**
+  - Ordered sequences of responses for polling scenarios
+  - Repeat modes (last/cycle/none)
+  - Sequence exhaustion and fallback
+- 🔜 **Dynamic Response System - Phase 3: Stateful Mocks**
+  - Capture state from requests
+  - Inject state into responses via templates
+  - State reset on scenario switch
 - 🔜 Additional framework adapters (Fastify, Koa, Hono, Next.js)
 - 🔜 Additional storage adapters (Redis, PostgreSQL)
 - 🔜 Visual debugger for scenarios
 - 🔜 Playwright helper utilities
 - 🔜 Documentation site
 - 🔜 npm package publication
+
+## Phase 1 - Dynamic Response System Learnings
+
+**Completed:** 2025-10-23 (PR #24)
+
+### Key Architectural Insight: Specificity-Based Matching
+
+**Initial Design:** First-match-wins (REQ-1.4 original)
+- Mocks evaluated in order
+- First mock with passing match criteria wins
+- Created footgun: less specific mocks could shadow more specific ones
+- Required users to carefully order mocks from most-specific to least-specific
+
+**Improved Design:** Specificity-based matching (REQ-1.4 final)
+- Calculate specificity score (body fields + headers + query params)
+- Most specific mock wins regardless of position
+- Order only matters as tiebreaker when specificity is equal
+- More intuitive UX - users don't need to worry about ordering
+
+**Why It Matters:**
+- Initial requirement was technically correct but poor UX
+- User feedback during implementation led to design improvement
+- Better to catch these issues during implementation than after release
+- Shows value of TDD + tight feedback loops with user/stakeholder
+
+**Lesson:** When implementing matching/selection algorithms, consider specificity scoring over positional priority. More intuitive for users and prevents common gotchas.
+
+### ResponseSelector as a Port
+
+**Decision:** Make `ResponseSelector` an interface (port) instead of just a factory function
+
+**Rationale:**
+- Enables future implementations (sequence-aware, state-aware)
+- Follows ports & adapters pattern consistently
+- Allows test doubles for adapter testing
+- Sets up architecture for Phases 2 & 3
+
+**Implementation:**
+- Created `packages/core/src/ports/driven/response-selector.ts`
+- Moved from `domain/` to `ports/driven/` during PR review for architectural consistency
+- Follows same pattern as `ScenarioRegistry` and `ScenarioStore`
+
+**Lesson:** When creating domain services that will evolve (Phase 1 → Phase 2 → Phase 3), start with port interfaces even if you only have one implementation initially. Easier to do upfront than refactor later.
+
+### Test Coverage and Behavior-Driven Testing
+
+**Challenge:** Specificity-based matching introduced a branch that wasn't fully tested
+- Coverage dropped from 100% to 98.66% (branches)
+- Uncovered: logic for handling multiple fallback mocks
+
+**Solution:** Added behavior-based tests
+- "should return first fallback when multiple fallback mocks exist"
+- "should prefer specific match over fallback mock"
+
+**Key Principle:** Tests verify business behavior through public API, not implementation details
+- Tests document expected tiebreaker behavior
+- Tests are written as user scenarios, not code paths
+- Implementation can change as long as behavior stays consistent
+
+**Lesson:** When coverage drops, think "what business behavior am I not testing?" not "what line of code am I missing?". Add tests that document expected behavior, not tests that check implementation.
+
+### Bruno Tests for E2E Documentation
+
+**Pattern:** Use Bruno collections as executable documentation
+- 10 tests created for Phase 1 (body/headers/query matching)
+- Tests have clear descriptions and automated assertions
+- Run via `bru run` in CI
+- Serve dual purpose: docs for humans, regression tests for CI
+
+**Structure:**
+```
+bruno/Dynamic Responses/
+  Request Matching/
+    0. Setup - Set Content Matching Scenario.bru
+    1. Body Match - Premium Item.bru
+    2. Body Match - Standard Item.bru
+    3. Body Match - Fallback.bru
+    ...
+```
+
+**Lesson:** Bruno tests should be selective (happy paths, key flows), not comprehensive (every edge case). Use Vitest for comprehensive coverage, Bruno for documentation + smoke tests.
+
+### Port Location Consistency
+
+**PR Feedback:** Move ResponseSelector interface from `domain/` to `ports/driven/`
+
+**Rationale:**
+- Ports define behavior contracts → should live in `ports/`
+- Domain contains implementations → should live in `domain/`
+- Follow established pattern: `ScenarioRegistry`, `ScenarioStore` are in `ports/driven/`
+- Architectural consistency is valuable
+
+**Result:**
+- `packages/core/src/ports/driven/response-selector.ts` - Interface + error class
+- `packages/core/src/domain/response-selector.ts` - Implementation (factory function)
+- Exported from `packages/core/src/ports/index.ts`
+
+**Lesson:** When creating new ports, check where existing similar ports live. Follow the established pattern for consistency. Don't deviate without clear rationale.
+
+### Documentation Structure
+
+**Challenge:** Adapter READMEs mixed adapter-specific and core concepts
+
+**Solution:** Created `docs/core-functionality.md`
+- Framework-agnostic explanation of core concepts
+- Scenario definitions, mock definitions
+- Request content matching, specificity-based selection
+- Test isolation, hexagonal architecture
+- Separate from adapter-specific documentation
+
+**Benefits:**
+- Users understand core concepts once, apply to any adapter
+- Reduces duplication across adapter READMEs
+- Clear separation: core concepts vs. framework integration
+- Easier to maintain (update core docs in one place)
+
+**Structure:**
+```
+docs/
+  core-functionality.md        ← Framework-agnostic core concepts
+  plans/dynamic-responses.md   ← Implementation plan
+  adrs/0002-dynamic-response-system.md   ← Architectural decisions
+
+packages/express-adapter/README.md   ← Express-specific usage
+packages/fastify-adapter/README.md   ← Fastify-specific usage (future)
+```
+
+**Lesson:** Separate core domain documentation from adapter documentation. Core docs explain WHAT and WHY (concepts, architecture). Adapter docs explain HOW (framework integration, setup).

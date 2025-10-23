@@ -856,9 +856,30 @@ async function switchScenario(page: Page, scenario: string) {
 
 ## Documentation
 
-See the working example in `apps/express-example/` for a complete Express application with Scenarist integration.
+### Core Concepts
 
-Additional documentation coming soon.
+- **[Core Functionality Guide](./docs/core-functionality.md)** - Understanding Scenarist's domain logic (framework-agnostic)
+  - Scenario definitions and mock definitions
+  - Dynamic response system (request content matching, specificity-based selection)
+  - Test isolation and architecture
+  - Independent of any specific framework or adapter
+
+### Adapter Documentation
+
+- **[Express Adapter README](./packages/express-adapter/README.md)** - Express-specific usage and setup
+- **[MSW Adapter README](./packages/msw-adapter/README.md)** - MSW integration details
+
+### Examples
+
+- **[Express Example App](./apps/express-example/)** - Complete working Express application with Scenarist
+  - Scenario definitions: `src/scenarios.ts`
+  - Integration tests: `tests/dynamic-matching.test.ts`
+  - Bruno API tests: `bruno/Dynamic Responses/`
+
+### Planning & Architecture
+
+- **[Dynamic Responses Plan](./docs/plans/dynamic-responses.md)** - Complete implementation plan and requirements
+- **[ADR-0002: Dynamic Response System](./docs/adrs/0002-dynamic-response-system.md)** - Architectural decisions
 
 ---
 

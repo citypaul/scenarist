@@ -1,9 +1,10 @@
 # Dynamic Response System - Requirements & Implementation Plan
 
-**Status:** ⏳ Not Started
+**Status:** 🏗️ Phase 1 Complete
 **Created:** 2025-10-23
 **Last Updated:** 2025-10-23
 **Related ADR:** [ADR-0002: Dynamic Response System](../adrs/0002-dynamic-response-system.md)
+**Related PR:** [#24](https://github.com/citypaul/scenarist/pull/24)
 
 ## Overview
 
@@ -109,7 +110,7 @@ Adapters only:
 
 ### REQ-1: Request Content Matching
 
-**Status:** ⏸️ Not Started
+**Status:** ✅ Complete (PR #24)
 
 Enable different responses based on request content (body, headers, query parameters).
 
@@ -158,12 +159,20 @@ Enable different responses based on request content (body, headers, query parame
 
 **Matching logic:** All query params in `match.query` must be present with exact values.
 
-#### REQ-1.4: First Matching Mock Wins
+#### REQ-1.4: Specificity-Based Selection (Updated from First-Match-Wins)
+
+**Design Change:** Changed from first-match-wins to specificity-based matching for better UX.
+
 When multiple mocks match the same URL:
-1. Iterate through mocks in order
-2. Skip if `match` criteria present but don't pass
-3. Use first mock where all criteria pass
-4. Mock without `match` criteria serves as fallback
+1. Calculate specificity score for each matching mock:
+   - Each body field = +1 point
+   - Each header = +1 point
+   - Each query param = +1 point
+2. Select mock with highest specificity score
+3. Use order as tiebreaker when specificity is equal
+4. Mock without `match` criteria has specificity of 0 (fallback)
+
+**Rationale:** Prevents less specific mocks from shadowing more specific ones. More intuitive behavior - users don't need to carefully order mocks from most-specific to least-specific.
 
 **Test Requirements:**
 - Unit tests in `packages/msw-adapter/tests/`
@@ -637,40 +646,64 @@ Map<string, Record<string, unknown>>  // Key: testId
 ## Implementation Phases
 
 ### Phase 1: Request Content Matching (REQ-1)
+
+**Status:** ✅ Complete (PR #24)
+
 **Goal:** Enable match criteria on body/headers/query
 
 **Core Package Tasks:**
-1. Add `MatchCriteria` type to `packages/core/src/types/scenario.ts`
-2. Add `match` field to `MockDefinition` type
-3. Add `RequestContext` type (method, url, body, headers, query)
-4. Implement matching logic in `packages/core/src/domain/response-selector.ts`
-5. Add unit tests in `packages/core/tests/`
+1. ✅ Add `MatchCriteria` type to `packages/core/src/types/scenario.ts`
+2. ✅ Add `match` field to `MockDefinition` type
+3. ✅ Add `HttpRequestContext` type (method, url, body, headers, query)
+4. ✅ Implement matching logic in `packages/core/src/domain/response-selector.ts`
+5. ✅ Add unit tests in `packages/core/tests/response-selector.test.ts`
+6. ✅ Create `ResponseSelector` port in `packages/core/src/ports/driven/response-selector.ts`
 
 **Express Adapter Tasks:**
-6. Update adapter to extract `RequestContext` from Express request
-7. Wire up core matching logic (no match logic in adapter!)
-8. Create `apps/express-example/tests/dynamic-matching.test.ts`
+7. ✅ Update adapter to extract request context from Express request
+8. ✅ Wire up core matching logic (no match logic in adapter!)
+9. ✅ Create `apps/express-example/tests/dynamic-matching.test.ts`
 
 **Example App Tasks:**
-9. Add example scenarios to `apps/express-example/src/scenarios.ts`
-10. Add Bruno collection requests with automated tests
-11. Update `packages/express-adapter/README.md`
+10. ✅ Add example scenarios to `apps/express-example/src/scenarios.ts`
+11. ✅ Add Bruno collection requests with automated tests
+12. ✅ Update `packages/express-adapter/README.md`
 
 **Bruno Tests:**
-12. Create `apps/express-example/bruno/Dynamic Responses/Request Matching/` folder
-13. Add happy path tests for body/headers/query matching
-14. Include automated assertions via Bruno's `tests` blocks
+13. ✅ Create `apps/express-example/bruno/Dynamic Responses/Request Matching/` folder
+14. ✅ Add happy path tests for body/headers/query matching (10 tests)
+15. ✅ Include automated assertions via Bruno's `tests` blocks
+
+**Implementation Details:**
+- Implemented **specificity-based matching** (design improvement over first-match-wins)
+- ResponseSelector implemented as a port interface for future extensibility
+- Full dependency injection pattern followed (all ports injected)
+- 100% test coverage maintained across all packages
 
 **Acceptance Criteria:**
-- ✅ Can match on request body (partial)
-- ✅ Can match on request headers (exact)
-- ✅ Can match on query parameters (exact)
-- ✅ First matching mock wins
-- ✅ Fallback to unmatchable mock works
-- ✅ Core unit tests passing (100% coverage)
-- ✅ Adapter unit tests passing (100% translation coverage)
-- ✅ Express integration tests passing
-- ✅ Bruno automated tests passing (`bru run`)
+- ✅ Can match on request body (partial match - subset check)
+- ✅ Can match on request headers (exact match, case-insensitive names)
+- ✅ Can match on query parameters (exact match)
+- ✅ Specificity-based selection (most specific wins, order breaks ties)
+- ✅ Fallback to mocks without match criteria works
+- ✅ Multiple fallback mocks - first one wins as tiebreaker
+- ✅ Specific matches always win over fallbacks
+- ✅ Core unit tests passing (75 tests, 100% coverage)
+- ✅ MSW adapter unit tests passing (35 tests, 100% coverage)
+- ✅ Express adapter unit tests passing (33 tests, 100% coverage)
+- ✅ Integration tests passing (40 tests)
+- ✅ Bruno collection created (10 automated tests)
+
+**Files Changed:**
+- `packages/core/src/types/scenario.ts` - Added `MatchCriteria` type
+- `packages/core/src/types/http.ts` - Added `HttpRequestContext` type
+- `packages/core/src/ports/driven/response-selector.ts` - Created `ResponseSelector` port
+- `packages/core/src/domain/response-selector.ts` - Implemented matching + specificity logic
+- `packages/core/tests/response-selector.test.ts` - 21 behavior-driven tests
+- `packages/msw-adapter/src/dynamic-handler.ts` - Integrated ResponseSelector
+- `apps/express-example/src/scenarios.ts` - Added content-matching-scenario
+- `apps/express-example/tests/dynamic-matching.test.ts` - 13 integration tests
+- `apps/express-example/bruno/Dynamic Responses/Request Matching/` - 10 Bruno tests
 
 ### Phase 2: Response Sequences (REQ-2)
 **Goal:** Enable ordered sequences of responses
