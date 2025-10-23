@@ -344,13 +344,14 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       }
     });
 
-    it("should return less specific mock when it appears first (demonstrates ordering importance)", () => {
-      // This test demonstrates that mock ordering matters when one mock
-      // is more specific than another. First-match-wins means less specific
-      // mocks can "shadow" more specific ones if ordered incorrectly.
+    it("should return more specific mock regardless of position (specificity wins)", () => {
+      // With specificity-based matching, the most specific mock wins
+      // regardless of its position in the mocks array.
       //
-      // IMPORTANT: Users should order mocks from most specific to least specific
-      // to ensure the most appropriate mock is matched.
+      // Specificity scoring:
+      // - Each body field = +1
+      // - Each header = +1
+      // - Each query param = +1
 
       const context: HttpRequestContext = {
         method: "POST",
@@ -360,19 +361,19 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      // ❌ INCORRECT ORDERING (less specific first)
-      const incorrectlyOrderedMocks: ReadonlyArray<MockDefinition> = [
+      // Less specific mock appears FIRST
+      const mocksWithLessSpecificFirst: ReadonlyArray<MockDefinition> = [
         {
           method: "POST",
           url: "/api/charge",
-          match: { body: { itemType: "premium" } }, // Less specific (1 criterion)
+          match: { body: { itemType: "premium" } }, // Specificity: 1
           response: { status: 200, body: { discount: 10 } },
         },
         {
           method: "POST",
           url: "/api/charge",
           match: {
-            body: { itemType: "premium", quantity: 5 }, // More specific (2 body + 1 header)
+            body: { itemType: "premium", quantity: 5 }, // Specificity: 3 (2 body + 1 header)
             headers: { "x-user-tier": "gold" },
           },
           response: { status: 200, body: { discount: 20 } },
@@ -380,55 +381,49 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", context, incorrectlyOrderedMocks);
+      const result = selector.selectResponse("test-1", context, mocksWithLessSpecificFirst);
 
-      // Even though the request matches BOTH mocks, first-match-wins means
-      // the less specific mock (discount: 10) is returned.
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.body).toEqual({ discount: 10 });
-        // Note: More specific mock with discount: 20 is never checked!
-      }
-    });
-
-    it("should return more specific mock when it appears first (correct ordering)", () => {
-      // This test demonstrates the CORRECT pattern: order mocks from
-      // most specific to least specific.
-
-      const context: HttpRequestContext = {
-        method: "POST",
-        url: "/api/charge",
-        body: { itemType: "premium", quantity: 5 },
-        headers: { "x-user-tier": "gold" },
-        query: {},
-      };
-
-      // ✅ CORRECT ORDERING (most specific first)
-      const correctlyOrderedMocks: ReadonlyArray<MockDefinition> = [
-        {
-          method: "POST",
-          url: "/api/charge",
-          match: {
-            body: { itemType: "premium", quantity: 5 }, // More specific (2 body + 1 header)
-            headers: { "x-user-tier": "gold" },
-          },
-          response: { status: 200, body: { discount: 20 } },
-        },
-        {
-          method: "POST",
-          url: "/api/charge",
-          match: { body: { itemType: "premium" } }, // Less specific (1 criterion)
-          response: { status: 200, body: { discount: 10 } },
-        },
-      ];
-
-      const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", context, correctlyOrderedMocks);
-
-      // With correct ordering, the more specific mock is checked first and matches.
+      // The more specific mock (discount: 20) wins even though it appears second
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.body).toEqual({ discount: 20 });
+      }
+    });
+
+    it("should use order as tiebreaker when specificity is equal", () => {
+      // When multiple mocks have the same specificity, first one wins (tiebreaker).
+
+      const context: HttpRequestContext = {
+        method: "POST",
+        url: "/api/items",
+        body: { itemType: "premium", quantity: 5 },
+        headers: {},
+        query: {},
+      };
+
+      // Both mocks have specificity of 1 (equal)
+      const mocksWithEqualSpecificity: ReadonlyArray<MockDefinition> = [
+        {
+          method: "POST",
+          url: "/api/items",
+          match: { body: { itemType: "premium" } }, // Specificity: 1
+          response: { status: 200, body: { price: 100, source: "first" } },
+        },
+        {
+          method: "POST",
+          url: "/api/items",
+          match: { body: { quantity: 5 } }, // Specificity: 1
+          response: { status: 200, body: { price: 50, source: "second" } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", context, mocksWithEqualSpecificity);
+
+      // First mock wins as tiebreaker (both have specificity of 1)
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({ price: 100, source: "first" });
       }
     });
   });

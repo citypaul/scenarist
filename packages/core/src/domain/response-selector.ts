@@ -21,20 +21,40 @@ export const createResponseSelector = (): ResponseSelector => {
       context: HttpRequestContext,
       mocks: ReadonlyArray<MockDefinition>
     ): Result<MockResponse, ResponseSelectionError> {
-      // Iterate through mocks in order (first matching mock wins)
+      let bestMatch: { mock: MockDefinition; specificity: number } | null = null;
+
+      // Find all matching mocks and score them by specificity
       for (const mock of mocks) {
         // Check if this mock has match criteria
         if (mock.match) {
           // If match criteria exists, check if it matches the request
           if (matchesCriteria(context, mock.match)) {
-            return { success: true, data: mock.response };
+            const specificity = calculateSpecificity(mock.match);
+
+            // Keep this mock if it's more specific than current best
+            // (or if no best match yet)
+            if (!bestMatch || specificity > bestMatch.specificity) {
+              bestMatch = { mock, specificity };
+            }
           }
           // If match criteria exists but doesn't match, skip to next mock
           continue;
         }
 
         // No match criteria = fallback mock (always matches)
-        return { success: true, data: mock.response };
+        // Fallback has specificity of 0
+        if (!bestMatch || bestMatch.specificity === 0) {
+          // Only use fallback if no better match exists, or if we only have
+          // other fallbacks (first fallback wins as tiebreaker)
+          if (!bestMatch) {
+            bestMatch = { mock, specificity: 0 };
+          }
+        }
+      }
+
+      // Return the best matching mock
+      if (bestMatch) {
+        return { success: true, data: bestMatch.mock.response };
       }
 
       // No mock matched
@@ -46,6 +66,39 @@ export const createResponseSelector = (): ResponseSelector => {
       };
     },
   };
+};
+
+/**
+ * Calculate specificity score for match criteria.
+ * Higher score = more specific match.
+ *
+ * Scoring:
+ * - Each body field = +1 point
+ * - Each header = +1 point
+ * - Each query param = +1 point
+ *
+ * Example:
+ * { body: { itemType: 'premium' } } = 1 point
+ * { body: { itemType: 'premium', quantity: 5 }, headers: { 'x-tier': 'gold' } } = 3 points
+ */
+const calculateSpecificity = (
+  criteria: NonNullable<MockDefinition["match"]>
+): number => {
+  let score = 0;
+
+  if (criteria.body) {
+    score += Object.keys(criteria.body).length;
+  }
+
+  if (criteria.headers) {
+    score += Object.keys(criteria.headers).length;
+  }
+
+  if (criteria.query) {
+    score += Object.keys(criteria.query).length;
+  }
+
+  return score;
 };
 
 /**
