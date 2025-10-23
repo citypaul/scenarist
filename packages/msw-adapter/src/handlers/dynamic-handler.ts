@@ -113,6 +113,7 @@ export const createDynamicHandler = (
   return http.all('*', async ({ request }) => {
     const testId = options.getTestId();
     const activeScenario = options.getActiveScenario(testId);
+    const scenarioId = activeScenario?.scenarioId ?? options.defaultScenarioId;
 
     // Extract request context for matching
     const context = await extractHttpRequestContext(request);
@@ -127,7 +128,7 @@ export const createDynamicHandler = (
     );
 
     // Use injected ResponseSelector to find matching mock
-    const result = options.responseSelector.selectResponse(testId, context, mocks);
+    const result = options.responseSelector.selectResponse(testId, scenarioId, context, mocks);
 
     if (result.success) {
       return buildResponse(result.data);

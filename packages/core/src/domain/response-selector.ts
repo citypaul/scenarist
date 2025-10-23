@@ -46,6 +46,11 @@ export const createResponseSelector = (
       for (let mockIndex = 0; mockIndex < mocks.length; mockIndex++) {
         const mock = mocks[mockIndex];
 
+        // TypeScript readonly array access can return undefined
+        if (!mock) {
+          continue;
+        }
+
         // Skip exhausted sequences (repeat: 'none' that have been exhausted)
         if (mock.sequence && sequenceTracker) {
           const { exhausted } = sequenceTracker.getPosition(
