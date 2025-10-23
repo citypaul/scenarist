@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { MockDefinition, RequestContext } from "../src/types/index.js";
+import type { MockDefinition, HttpRequestContext } from "../src/types/index.js";
 import { createResponseSelector } from "../src/domain/response-selector.js";
 
 describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
   describe("Match on Request Body (Partial Match)", () => {
     it("should match when request body contains all required fields", () => {
-      const context: RequestContext = {
+      const context: HttpRequestContext = {
         method: "POST",
         url: "/api/items",
         body: { itemId: "premium", quantity: 5, extraField: "ignored" },
@@ -33,7 +33,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
     });
 
     it("should not match when required field is missing", () => {
-      const context: RequestContext = {
+      const context: HttpRequestContext = {
         method: "POST",
         url: "/api/items",
         body: { quantity: 5 }, // Missing itemId
@@ -57,7 +57,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
     });
 
     it("should not match when field value differs", () => {
-      const context: RequestContext = {
+      const context: HttpRequestContext = {
         method: "POST",
         url: "/api/items",
         body: { itemId: "standard" }, // Different value
@@ -81,7 +81,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
     });
 
     it("should match on multiple body fields (partial match)", () => {
-      const context: RequestContext = {
+      const context: HttpRequestContext = {
         method: "POST",
         url: "/api/items",
         body: { itemId: "premium", category: "electronics", inStock: true, quantity: 10 },
@@ -110,7 +110,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
 
   describe("Match on Request Headers (Exact Match)", () => {
     it("should match when all specified headers match exactly", () => {
-      const context: RequestContext = {
+      const context: HttpRequestContext = {
         method: "GET",
         url: "/api/data",
         body: undefined,
@@ -137,7 +137,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
     });
 
     it("should not match when header value differs", () => {
-      const context: RequestContext = {
+      const context: HttpRequestContext = {
         method: "GET",
         url: "/api/data",
         body: undefined,
@@ -161,7 +161,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
     });
 
     it("should not match when required header is missing", () => {
-      const context: RequestContext = {
+      const context: HttpRequestContext = {
         method: "GET",
         url: "/api/data",
         body: undefined,
@@ -187,7 +187,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
 
   describe("Match on Query Parameters (Exact Match)", () => {
     it("should match when all specified query params match exactly", () => {
-      const context: RequestContext = {
+      const context: HttpRequestContext = {
         method: "GET",
         url: "/api/search",
         body: undefined,
@@ -214,7 +214,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
     });
 
     it("should not match when query param value differs", () => {
-      const context: RequestContext = {
+      const context: HttpRequestContext = {
         method: "GET",
         url: "/api/search",
         body: undefined,
@@ -238,7 +238,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
     });
 
     it("should not match when required query param is missing", () => {
-      const context: RequestContext = {
+      const context: HttpRequestContext = {
         method: "GET",
         url: "/api/search",
         body: undefined,
@@ -264,7 +264,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
 
   describe("First Matching Mock Wins (Precedence)", () => {
     it("should return first mock when multiple mocks match", () => {
-      const context: RequestContext = {
+      const context: HttpRequestContext = {
         method: "POST",
         url: "/api/items",
         body: { itemId: "premium", quantity: 5 },
@@ -299,7 +299,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
 
   describe("Fallback to Mock Without Match Criteria", () => {
     it("should use fallback mock when no match criteria specified", () => {
-      const context: RequestContext = {
+      const context: HttpRequestContext = {
         method: "POST",
         url: "/api/items",
         body: { itemId: "standard" },
@@ -332,7 +332,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
     });
 
     it("should return error when no mocks match and no fallback exists", () => {
-      const context: RequestContext = {
+      const context: HttpRequestContext = {
         method: "POST",
         url: "/api/items",
         body: { itemId: "unknown" },
@@ -361,7 +361,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
 
   describe("Combined Match Criteria", () => {
     it("should match when body AND headers both match", () => {
-      const context: RequestContext = {
+      const context: HttpRequestContext = {
         method: "POST",
         url: "/api/items",
         body: { itemId: "premium" },
@@ -391,7 +391,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
     });
 
     it("should not match when body matches but headers don't", () => {
-      const context: RequestContext = {
+      const context: HttpRequestContext = {
         method: "POST",
         url: "/api/items",
         body: { itemId: "premium" },

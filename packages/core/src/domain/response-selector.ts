@@ -1,7 +1,7 @@
 import type {
   MockDefinition,
   MockResponse,
-  RequestContext,
+  HttpRequestContext,
   Result,
 } from "../types/index.js";
 
@@ -21,7 +21,7 @@ export class ResponseSelectionError extends Error {
 export type ResponseSelector = {
   selectResponse(
     testId: string,
-    context: RequestContext,
+    context: HttpRequestContext,
     mocks: ReadonlyArray<MockDefinition>
   ): Result<MockResponse, ResponseSelectionError>;
 };
@@ -37,7 +37,7 @@ export const createResponseSelector = (): ResponseSelector => {
   return {
     selectResponse(
       testId: string,
-      context: RequestContext,
+      context: HttpRequestContext,
       mocks: ReadonlyArray<MockDefinition>
     ): Result<MockResponse, ResponseSelectionError> {
       // Iterate through mocks in order (first matching mock wins)
@@ -72,7 +72,7 @@ export const createResponseSelector = (): ResponseSelector => {
  * All specified criteria must match for the overall match to succeed.
  */
 const matchesCriteria = (
-  context: RequestContext,
+  context: HttpRequestContext,
   criteria: NonNullable<MockDefinition["match"]>
 ): boolean => {
   // Check body match (partial match)

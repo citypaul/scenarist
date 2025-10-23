@@ -3,7 +3,7 @@ export type {
   MockResponse,
   MockDefinition,
   MatchCriteria,
-  RequestContext,
+  HttpRequestContext,
   VariantDefinition,
   ScenarioDefinition,
   ActiveScenario,

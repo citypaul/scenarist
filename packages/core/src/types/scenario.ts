@@ -25,10 +25,11 @@ export type MatchCriteria = {
 };
 
 /**
- * Request context extracted from incoming HTTP request.
+ * HTTP request data for response selection.
  * Framework adapters extract this from their specific request objects.
+ * Used by ResponseSelector to match requests against MockDefinition criteria.
  */
-export type RequestContext = {
+export type HttpRequestContext = {
   readonly method: HttpMethod;
   readonly url: string;
   readonly body?: unknown; // Request body (JSON-parsed)
