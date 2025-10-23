@@ -1,0 +1,35 @@
+meta {
+  name: 7. Query Match - Detailed Metric
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/api/weather/paris?units=metric&detailed=true
+  body: none
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.city: eq Paris
+  res.body.temperature: eq 20
+  res.body.windSpeed: eq 15
+  res.body.pressure: eq 1013
+}
+
+docs {
+  Tests exact query parameter matching for detailed metric weather.
+
+  The mock matches on `units=metric` AND `detailed=true` query parameters.
+  Both query params must be present and match exactly.
+
+  Expected behavior:
+  - Returns detailed weather data (includes windSpeed, pressure, visibility)
+  - All specified query params must match exactly
+  - Additional query params don't affect matching
+}

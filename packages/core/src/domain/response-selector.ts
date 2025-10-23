@@ -18,13 +18,13 @@ export class ResponseSelectionError extends Error {
 /**
  * Response selector domain service interface.
  */
-export type ResponseSelector = {
+export interface ResponseSelector {
   selectResponse(
     testId: string,
     context: HttpRequestContext,
     mocks: ReadonlyArray<MockDefinition>
   ): Result<MockResponse, ResponseSelectionError>;
-};
+}
 
 /**
  * Creates a response selector domain service.

@@ -1,0 +1,33 @@
+meta {
+  name: 8. Query Match - Imperial Units
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/api/weather/newyork?units=imperial
+  body: none
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.city: eq New York
+  res.body.temperature: eq 68
+  res.body.conditions: eq Sunny
+}
+
+docs {
+  Tests query parameter matching for imperial units.
+
+  The mock matches on `units=imperial` query parameter only.
+
+  Expected behavior:
+  - Returns standard weather data (no extra details)
+  - Query param value must match exactly
+  - Demonstrates partial query matching (only units param required)
+}

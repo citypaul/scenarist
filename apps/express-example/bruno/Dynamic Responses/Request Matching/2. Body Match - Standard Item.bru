@@ -1,0 +1,43 @@
+meta {
+  name: 2. Body Match - Standard Item
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/stripe/charge
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "amount": 5000,
+    "currency": "usd",
+    "itemType": "standard",
+    "description": "Standard item purchase"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: eq ch_standard123
+  res.body.status: eq succeeded
+  res.body.amount: eq 5000
+}
+
+docs {
+  Tests partial body matching for standard items.
+
+  The mock matches on `itemType: "standard"` in the request body.
+  Additional fields are ignored (partial match).
+
+  Expected behavior:
+  - Standard items get regular pricing (5000)
+  - No discount applied
+  - Demonstrates first-matching-mock-wins precedence
+}

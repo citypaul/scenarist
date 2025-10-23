@@ -1,0 +1,35 @@
+meta {
+  name: 5. Header Match - Standard User
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/github/user/testuser
+  body: none
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+  x-user-tier: standard
+}
+
+assert {
+  res.status: eq 200
+  res.body.login: eq standard-user
+  res.body.id: eq 100
+  res.body.bio: eq Standard tier access
+  res.body.public_repos: eq 20
+}
+
+docs {
+  Tests exact header matching for standard tier users.
+
+  The mock matches on `x-user-tier: "standard"` header.
+
+  Expected behavior:
+  - Standard users get basic data without private_repos field
+  - Demonstrates first-matching-mock-wins (standard matched before fallback)
+  - Header values must match exactly (case-sensitive)
+}
