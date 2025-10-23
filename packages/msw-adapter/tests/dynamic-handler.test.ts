@@ -190,4 +190,200 @@ describe('Dynamic Handler', () => {
       server.close();
     });
   });
+
+  describe('Request context extraction (body, headers, query)', () => {
+    it('should match mock based on request body content', async () => {
+      const scenarios = new Map<string, ScenarioDefinition>([
+        [
+          'premium-user',
+          mockScenario({
+            id: 'premium-user',
+            mocks: [
+              mockDefinition({
+                method: 'POST',
+                url: 'https://api.example.com/items',
+                match: { body: { tier: 'premium' } },
+                response: { status: 200, body: { price: 100 } },
+              }),
+            ],
+          }),
+        ],
+      ]);
+
+      const getTestId = () => 'test-123';
+      const getActiveScenario = (): ActiveScenario => ({
+        scenarioId: 'premium-user',
+      });
+      const getScenarioDefinition = (scenarioId: string) =>
+        scenarios.get(scenarioId);
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: false,
+        defaultScenarioId: 'default',
+        responseSelector,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch('https://api.example.com/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier: 'premium', quantity: 5 }),
+      });
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data).toEqual({ price: 100 });
+
+      server.close();
+    });
+
+    it('should match mock based on request headers', async () => {
+      const scenarios = new Map<string, ScenarioDefinition>([
+        [
+          'auth-scenario',
+          mockScenario({
+            id: 'auth-scenario',
+            mocks: [
+              mockDefinition({
+                method: 'GET',
+                url: 'https://api.example.com/protected',
+                match: { headers: { authorization: 'Bearer secret-token' } },
+                response: { status: 200, body: { access: 'granted' } },
+              }),
+            ],
+          }),
+        ],
+      ]);
+
+      const getTestId = () => 'test-123';
+      const getActiveScenario = (): ActiveScenario => ({
+        scenarioId: 'auth-scenario',
+      });
+      const getScenarioDefinition = (scenarioId: string) =>
+        scenarios.get(scenarioId);
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: false,
+        defaultScenarioId: 'default',
+        responseSelector,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch('https://api.example.com/protected', {
+        headers: { authorization: 'Bearer secret-token' },
+      });
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data).toEqual({ access: 'granted' });
+
+      server.close();
+    });
+
+    it('should extract and match query parameters from URL', async () => {
+      const scenarios = new Map<string, ScenarioDefinition>([
+        [
+          'default',
+          mockScenario({
+            id: 'default',
+            mocks: [
+              mockDefinition({
+                method: 'GET',
+                url: 'https://api.example.com/items*',
+                response: { status: 200, body: { items: ['item1', 'item2'] } },
+              }),
+            ],
+          }),
+        ],
+      ]);
+
+      const getTestId = () => 'test-123';
+      const getActiveScenario = (): ActiveScenario => ({
+        scenarioId: 'default',
+      });
+      const getScenarioDefinition = (scenarioId: string) =>
+        scenarios.get(scenarioId);
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: false,
+        defaultScenarioId: 'default',
+        responseSelector,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch(
+        'https://api.example.com/items?filter=active&sort=asc'
+      );
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data).toEqual({ items: ['item1', 'item2'] });
+
+      server.close();
+    });
+
+    it('should handle requests with malformed JSON body gracefully', async () => {
+      const scenarios = new Map<string, ScenarioDefinition>([
+        [
+          'default',
+          mockScenario({
+            id: 'default',
+            mocks: [
+              mockDefinition({
+                method: 'POST',
+                url: 'https://api.example.com/items',
+                response: { status: 200, body: { received: 'ok' } },
+              }),
+            ],
+          }),
+        ],
+      ]);
+
+      const getTestId = () => 'test-123';
+      const getActiveScenario = (): ActiveScenario => ({
+        scenarioId: 'default',
+      });
+      const getScenarioDefinition = (scenarioId: string) =>
+        scenarios.get(scenarioId);
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: false,
+        defaultScenarioId: 'default',
+        responseSelector,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch('https://api.example.com/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: 'not valid json{',
+      });
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data).toEqual({ received: 'ok' });
+
+      server.close();
+    });
+  });
 });
