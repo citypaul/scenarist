@@ -3,20 +3,66 @@ import type { StateManager } from '../ports/driven/state-manager.js';
 /**
  * In-memory implementation of StateManager port.
  * Fast, single-process state storage for stateful mocks.
+ *
+ * For distributed testing across multiple processes,
+ * consider implementing a Redis-based or database-backed state manager.
  */
-export const createInMemoryStateManager = (): StateManager => {
-  const storage = new Map<string, Record<string, unknown>>();
+export class InMemoryStateManager implements StateManager {
+  private readonly storage = new Map<string, Record<string, unknown>>();
 
-  const getOrCreateTestState = (testId: string): Record<string, unknown> => {
-    let testState = storage.get(testId);
+  get(testId: string, key: string): unknown {
+    const testState = this.storage.get(testId);
+    if (!testState) {
+      return undefined;
+    }
+
+    const path = key.split('.');
+    return this.getNestedValue(testState, path);
+  }
+
+  set(testId: string, key: string, value: unknown): void {
+    const testState = this.getOrCreateTestState(testId);
+
+    // Guard: Normal set (no array syntax)
+    if (!key.endsWith('[]')) {
+      const path = key.split('.');
+      this.setNestedValue(testState, path, value);
+      return;
+    }
+
+    // Array append syntax
+    const actualKey = key.slice(0, -2);
+    const path = actualKey.split('.');
+    const currentValue = this.get(testId, actualKey);
+
+    // Guard: If current value is already an array, just append
+    if (Array.isArray(currentValue)) {
+      currentValue.push(value);
+      return;
+    }
+
+    // Create new array (either undefined or non-array value)
+    this.setNestedValue(testState, path, [value]);
+  }
+
+  getAll(testId: string): Record<string, unknown> {
+    return this.storage.get(testId) ?? {};
+  }
+
+  reset(testId: string): void {
+    this.storage.delete(testId);
+  }
+
+  private getOrCreateTestState(testId: string): Record<string, unknown> {
+    let testState = this.storage.get(testId);
     if (!testState) {
       testState = {};
-      storage.set(testId, testState);
+      this.storage.set(testId, testState);
     }
     return testState;
-  };
+  }
 
-  const setNestedValue = (obj: Record<string, unknown>, path: string[], value: unknown): void => {
+  private setNestedValue(obj: Record<string, unknown>, path: string[], value: unknown): void {
     if (path.length === 1) {
       obj[path[0]!] = value;
       return;
@@ -27,10 +73,10 @@ export const createInMemoryStateManager = (): StateManager => {
       obj[key] = {};
     }
 
-    setNestedValue(obj[key] as Record<string, unknown>, path.slice(1), value);
-  };
+    this.setNestedValue(obj[key] as Record<string, unknown>, path.slice(1), value);
+  }
 
-  const getNestedValue = (obj: Record<string, unknown>, path: string[]): unknown => {
+  private getNestedValue(obj: Record<string, unknown>, path: readonly string[]): unknown {
     if (path.length === 1) {
       return obj[path[0]!];
     }
@@ -41,51 +87,14 @@ export const createInMemoryStateManager = (): StateManager => {
       return undefined;
     }
 
-    return getNestedValue(nested as Record<string, unknown>, path.slice(1));
-  };
+    return this.getNestedValue(nested as Record<string, unknown>, path.slice(1));
+  }
+}
 
-  return {
-    get(testId: string, key: string): unknown {
-      const testState = storage.get(testId);
-      if (!testState) {
-        return undefined;
-      }
-
-      const path = key.split('.');
-      return getNestedValue(testState, path);
-    },
-
-    set(testId: string, key: string, value: unknown): void {
-      const testState = getOrCreateTestState(testId);
-
-      // Guard: Normal set (no array syntax)
-      if (!key.endsWith('[]')) {
-        const path = key.split('.');
-        setNestedValue(testState, path, value);
-        return;
-      }
-
-      // Array append syntax
-      const actualKey = key.slice(0, -2); // Remove []
-      const path = actualKey.split('.');
-      const currentValue = this.get(testId, actualKey);
-
-      // Guard: If current value is already an array, just append
-      if (Array.isArray(currentValue)) {
-        currentValue.push(value);
-        return;
-      }
-
-      // Create new array (either undefined or non-array value)
-      setNestedValue(testState, path, [value]);
-    },
-
-    getAll(testId: string): Record<string, unknown> {
-      return storage.get(testId) ?? {};
-    },
-
-    reset(testId: string): void {
-      storage.delete(testId);
-    },
-  };
+/**
+ * Factory function for creating InMemoryStateManager instances.
+ * Consistent with existing adapter factory pattern.
+ */
+export const createInMemoryStateManager = (): StateManager => {
+  return new InMemoryStateManager();
 };
