@@ -1,10 +1,10 @@
 # Dynamic Response System - Requirements & Implementation Plan
 
-**Status:** 🏗️ Phase 2 Complete
+**Status:** 🏗️ Phase 3 In Progress (PR #29)
 **Created:** 2025-10-23
-**Last Updated:** 2025-10-23
+**Last Updated:** 2025-10-24
 **Related ADR:** [ADR-0002: Dynamic Response System](../adrs/0002-dynamic-response-system.md)
-**Related PRs:** [#24](https://github.com/citypaul/scenarist/pull/24), [#25](https://github.com/citypaul/scenarist/pull/25), [#26](https://github.com/citypaul/scenarist/pull/26), [#27](https://github.com/citypaul/scenarist/pull/27)
+**Related PRs:** [#24](https://github.com/citypaul/scenarist/pull/24), [#25](https://github.com/citypaul/scenarist/pull/25), [#26](https://github.com/citypaul/scenarist/pull/26), [#27](https://github.com/citypaul/scenarist/pull/27), [#28](https://github.com/citypaul/scenarist/pull/28)
 
 ## Overview
 
@@ -330,6 +330,15 @@ Map<testId, stateObject>
 }
 ```
 
+**Serialization Requirement:**
+All state values MUST be JSON-serializable:
+- ✅ Primitives: string, number, boolean, null
+- ✅ Objects and arrays (plain data)
+- ❌ Functions, classes, symbols, undefined
+- ❌ Circular references
+
+This ensures state can be stored in Redis, files, or remote services (future StateManager implementations).
+
 #### REQ-3.3: Reset State on Scenario Switch
 When `switchScenario()` is called:
 1. Clear all state for that test ID
@@ -563,29 +572,38 @@ For each mock with matching URL:
 
 ### Multiple Mocks with Same URL
 
-Order of evaluation:
-1. Iterate through mocks in array order
-2. Skip if sequence exhausted (`repeat: 'none'` and past end)
-3. Skip if `match` criteria present but don't pass
-4. Use first mock where all checks pass
-5. Mock without `match` criteria = catch-all fallback
+**Selection Algorithm: Specificity-Based Matching**
+
+When multiple mocks match the same request, the **most specific** mock is selected:
+
+1. **Iterate through mocks** in array order
+2. **Skip exhausted sequences** (`repeat: 'none'` and past end)
+3. **Skip non-matching mocks** (if `match` criteria present but don't pass)
+4. **Calculate specificity** for matching mocks:
+   - Each body field = +1 point
+   - Each header = +1 point
+   - Each query param = +1 point
+   - No match criteria (fallback) = 0 points
+5. **Select highest specificity**
+   - Most specific mock wins
+   - Ties broken by array order (first wins)
 
 **Example:**
 ```typescript
 mocks: [
-  // Mock 1: Specific case (checked first)
+  // Mock 1: Specificity 1 (one query param)
   {
     url: '/api/data',
     match: { query: { premium: 'true' } },
     response: { status: 200, body: { tier: 'premium' } }
   },
-  // Mock 2: Another specific case
+  // Mock 2: Specificity 1 (one query param)
   {
     url: '/api/data',
     match: { query: { premium: 'false' } },
     response: { status: 200, body: { tier: 'standard' } }
   },
-  // Mock 3: Fallback (no match criteria)
+  // Mock 3: Specificity 0 (fallback, no match criteria)
   {
     url: '/api/data',
     response: { status: 200, body: { tier: 'default' } }
@@ -594,9 +612,32 @@ mocks: [
 ```
 
 Request evaluation:
-- `GET /api/data?premium=true` → Mock 1
-- `GET /api/data?premium=false` → Mock 2
-- `GET /api/data` → Mock 3 (fallback)
+- `GET /api/data?premium=true` → Mock 1 (specificity 1 > 0)
+- `GET /api/data?premium=false` → Mock 2 (specificity 1 > 0)
+- `GET /api/data` → Mock 3 (only Mock 3 matches, fallback)
+
+**Complex Example (Overlapping Matches):**
+```typescript
+mocks: [
+  // Mock A: Specificity 1
+  {
+    url: '/api/items',
+    match: { body: { type: 'premium' } },
+    response: { status: 200, body: { price: 100 } }
+  },
+  // Mock B: Specificity 2 (more specific)
+  {
+    url: '/api/items',
+    match: { body: { type: 'premium', tier: 'gold' } },
+    response: { status: 200, body: { price: 75 } }
+  }
+]
+```
+
+Request: `POST /api/items` with body `{ type: 'premium', tier: 'gold', userId: 123 }`
+- Mock A matches (partial body match on `type`)
+- Mock B matches (partial body match on `type` and `tier`)
+- **Mock B selected** (specificity 2 > 1)
 
 ### State Template Priority
 
@@ -782,12 +823,15 @@ Map<string, Record<string, unknown>>  // Key: testId
   - Payment limited (5 tests) - repeat: 'none' with exhaustion
 
 ### Phase 3: Stateful Mocks (REQ-3)
+
+**Status:** 🏗️ In Progress (PR #29 - Documentation)
+
 **Goal:** Enable state capture and injection
 
 **Core Package Tasks:**
 1. Add `captureState` field to `MockDefinition` type
-2. Create `StateManager` port interface in `packages/core/src/ports/`
-3. Create `InMemoryStateManager` implementation in `packages/core/src/domain/`
+2. Create `StateManager` port interface in `packages/core/src/ports/driven/`
+3. Create `InMemoryStateManager` implementation in `packages/core/src/adapters/` (consistent with other InMemory* adapters)
 4. Implement path extraction logic in `ResponseSelector` (e.g., `body.item`, `query.userId`)
 5. Implement array appending syntax (`stateKey[]`)
 6. Implement template replacement engine (`{{state.X}}`) in `ResponseSelector`
@@ -810,16 +854,58 @@ Map<string, Record<string, unknown>>  // Key: testId
 17. Include automated assertions for state capture/injection
 
 **Acceptance Criteria:**
-- ✅ Can capture from body/headers/query/params
-- ✅ Array appending works
-- ✅ Template injection works
-- ✅ Nested paths work
-- ✅ State resets on scenario switch
-- ✅ State isolated per test ID
-- ✅ Core unit tests passing (100% coverage)
-- ✅ Adapter unit tests passing (100% translation coverage)
-- ✅ Express integration tests passing
-- ✅ Bruno automated tests passing (`bru run`)
+- ⏸️ Can capture from body/headers/query/params
+- ⏸️ Array appending works
+- ⏸️ Template injection works
+- ⏸️ Nested paths work
+- ⏸️ State resets on scenario switch
+- ⏸️ State isolated per test ID
+- ⏸️ Core unit tests passing (100% coverage)
+- ⏸️ Adapter unit tests passing (100% translation coverage)
+- ⏸️ Express integration tests passing
+- ⏸️ Bruno automated tests passing (`bru run`)
+
+**Incremental Implementation Plan (7 PRs):**
+
+**PR #29 (Current):** Documentation fixes
+- Fix Precedence Rules (specificity-based selection)
+- Fix StateManager location (adapters/ not domain/)
+- Add serialization requirement
+- Update Phase 3 status
+
+**PR #30:** Core types & port definition
+- Add `CaptureState` type to `MockDefinition`
+- Create `StateManager` port interface
+- Type-level tests only
+
+**PR #31:** Path extraction & state capture
+- Implement `InMemoryStateManager` in adapters/
+- Implement path extraction logic (`body.field`, `query.param`)
+- Implement state capture in ResponseSelector
+- Array appending syntax (`stateKey[]`)
+- Nested path support
+- Tests: StateManager behavior, path extraction, capture integration
+
+**PR #32:** Template replacement engine
+- Implement `{{state.key}}` pattern detection and replacement
+- Nested path templates: `{{state.user.name}}`
+- Array length: `{{state.items.length}}`
+- Tests: string/object replacement, nested paths, missing keys
+
+**PR #33:** State reset & scenario switch
+- ScenarioManager calls `stateManager.reset(testId)` on switch
+- Tests: state cleared after switch, new scenario starts fresh
+
+**PR #34:** Express adapter integration
+- Wire up InMemoryStateManager in Express adapter
+- Add stateful scenarios (cart, forms)
+- Integration tests (5-7 tests)
+
+**PR #35:** Bruno tests & documentation
+- Shopping cart Bruno flow (5 tests)
+- Form Bruno flow (5 tests)
+- Mark Phase 3 complete
+- Update README and CLAUDE.md
 
 ### Phase 4: Feature Composition (REQ-4)
 **Goal:** Verify all features work together
