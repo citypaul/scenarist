@@ -7,7 +7,10 @@
       "Bash(pnpm exec vitest:*)",
       "Bash(git rm:*)",
       "Bash(gh api:*)",
-      "Bash(pnpm test:coverage:*)"
+      "Bash(pnpm test:coverage:*)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat(core): implement template injection for Phase 3\n\nAdd template replacement engine for stateful mock responses:\n\n**Template Replacement Engine:**\n- Created `template-replacement.ts` domain utility\n- Supports `{{state.key}}` pattern detection and replacement\n- Nested path templates: `{{state.user.profile.name}}`\n- Array length templates: `{{state.items.length}}`\n- Missing state keys remain as templates (graceful degradation)\n- Recursive application to objects and arrays\n\n**Integration with ResponseSelector:**\n- Apply templates to response bodies after state capture\n- Templates injected from current state per test ID\n- Works with single responses and sequences\n- Backward compatible (no templates if no state manager)\n\n**Tests:**\n- 11 template replacement unit tests (100% coverage)\n- 7 integration tests in response-selector.test.ts\n- Tests cover: basic injection, nested paths, array length,\n  missing keys, capture+inject, sequences with templates\n\n**Test Results:**\n- 134 tests passing (up from 116)\n- 100% test coverage maintained\n- All edge cases covered (null traversal, non-object traversal)\n\nRelated to #32\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []
