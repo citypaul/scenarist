@@ -4,14 +4,16 @@ import type {
   HttpRequestContext,
   Result,
 } from "../types/index.js";
-import type { ResponseSelector, SequenceTracker } from "../ports/index.js";
+import type { ResponseSelector, SequenceTracker, StateManager } from "../ports/index.js";
 import { ResponseSelectionError } from "../ports/driven/response-selector.js";
+import { extractFromPath } from "./path-extraction.js";
 
 /**
  * Options for creating a response selector.
  */
 type CreateResponseSelectorOptions = {
   sequenceTracker?: SequenceTracker; // Optional for Phase 2
+  stateManager?: StateManager; // Optional for Phase 3
 };
 
 /**
@@ -23,11 +25,12 @@ type CreateResponseSelectorOptions = {
  *
  * @param options - Configuration options
  * @param options.sequenceTracker - Optional sequence position tracker (Phase 2)
+ * @param options.stateManager - Optional state manager for capture/injection (Phase 3)
  */
 export const createResponseSelector = (
   options: CreateResponseSelectorOptions = {}
 ): ResponseSelector => {
-  const { sequenceTracker } = options;
+  const { sequenceTracker, stateManager } = options;
 
   return {
     selectResponse(
@@ -104,6 +107,11 @@ export const createResponseSelector = (
               `Mock has neither response nor sequence field`
             ),
           };
+        }
+
+        // Phase 3: Capture state from request if configured
+        if (bestMatch.mock.captureState && stateManager) {
+          captureState(testId, context, bestMatch.mock.captureState, stateManager);
         }
 
         return { success: true, data: response };
@@ -303,4 +311,30 @@ const matchesQuery = (
   }
 
   return true;
+};
+
+/**
+ * Captures state from request based on CaptureState configuration.
+ *
+ * @param testId - Test ID for state isolation
+ * @param context - HTTP request context
+ * @param captureConfig - Capture configuration (state key -> path expression)
+ * @param stateManager - State manager to store captured values
+ */
+const captureState = (
+  testId: string,
+  context: HttpRequestContext,
+  captureConfig: Readonly<Record<string, string>>,
+  stateManager: StateManager
+): void => {
+  for (const [stateKey, pathExpression] of Object.entries(captureConfig)) {
+    const value = extractFromPath(context, pathExpression);
+
+    // Guard: Only capture if value exists
+    if (value === undefined) {
+      continue;
+    }
+
+    stateManager.set(testId, stateKey, value);
+  }
 };

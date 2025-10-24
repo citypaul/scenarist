@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { MockDefinition, HttpRequestContext } from "../src/types/index.js";
 import { createResponseSelector } from "../src/domain/response-selector.js";
 import { createInMemorySequenceTracker } from "../src/adapters/in-memory-sequence-tracker.js";
+import { createInMemoryStateManager } from "../src/adapters/in-memory-state-manager.js";
 
 describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
   describe("Match on Request Body (Partial Match)", () => {
@@ -1269,5 +1270,244 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         );
       }
     });
+  });
+});
+
+describe("ResponseSelector - State Capture (Phase 3)", () => {
+  it("should capture value from request body", () => {
+    const stateManager = createInMemoryStateManager();
+    const selector = createResponseSelector({ stateManager });
+
+    const context: HttpRequestContext = {
+      method: "POST",
+      url: "/api/test",
+      body: { userId: "user-123" },
+      headers: {},
+      query: {},
+    };
+
+    const mocks: ReadonlyArray<MockDefinition> = [
+      {
+        method: "POST",
+        url: "/api/test",
+        captureState: { userId: "body.userId" },
+        response: { status: 200, body: { success: true } },
+      },
+    ];
+
+    selector.selectResponse("test-1", "scenario-1", context, mocks);
+
+    expect(stateManager.get("test-1", "userId")).toBe("user-123");
+  });
+
+  it("should capture value from request headers", () => {
+    const stateManager = createInMemoryStateManager();
+    const selector = createResponseSelector({ stateManager });
+
+    const context: HttpRequestContext = {
+      method: "GET",
+      url: "/api/test",
+      headers: { "x-session-id": "session-456" },
+      query: {},
+    };
+
+    const mocks: ReadonlyArray<MockDefinition> = [
+      {
+        method: "GET",
+        url: "/api/test",
+        captureState: { sessionId: "headers.x-session-id" },
+        response: { status: 200, body: { success: true } },
+      },
+    ];
+
+    selector.selectResponse("test-1", "scenario-1", context, mocks);
+
+    expect(stateManager.get("test-1", "sessionId")).toBe("session-456");
+  });
+
+  it("should capture value from query params", () => {
+    const stateManager = createInMemoryStateManager();
+    const selector = createResponseSelector({ stateManager });
+
+    const context: HttpRequestContext = {
+      method: "GET",
+      url: "/api/test",
+      headers: {},
+      query: { page: "2" },
+    };
+
+    const mocks: ReadonlyArray<MockDefinition> = [
+      {
+        method: "GET",
+        url: "/api/test",
+        captureState: { currentPage: "query.page" },
+        response: { status: 200, body: { success: true } },
+      },
+    ];
+
+    selector.selectResponse("test-1", "scenario-1", context, mocks);
+
+    expect(stateManager.get("test-1", "currentPage")).toBe("2");
+  });
+
+  it("should handle array append syntax", () => {
+    const stateManager = createInMemoryStateManager();
+    const selector = createResponseSelector({ stateManager });
+
+    const mocks: ReadonlyArray<MockDefinition> = [
+      {
+        method: "POST",
+        url: "/api/cart/add",
+        captureState: { "items[]": "body.item" },
+        response: { status: 200, body: { added: true } },
+      },
+    ];
+
+    // First request
+    const context1: HttpRequestContext = {
+      method: "POST",
+      url: "/api/cart/add",
+      body: { item: "Widget" },
+      headers: {},
+      query: {},
+    };
+    selector.selectResponse("test-1", "scenario-1", context1, mocks);
+
+    // Second request
+    const context2: HttpRequestContext = {
+      method: "POST",
+      url: "/api/cart/add",
+      body: { item: "Gadget" },
+      headers: {},
+      query: {},
+    };
+    selector.selectResponse("test-1", "scenario-1", context2, mocks);
+
+    expect(stateManager.get("test-1", "items")).toEqual(["Widget", "Gadget"]);
+  });
+
+  it("should capture multiple values from single request", () => {
+    const stateManager = createInMemoryStateManager();
+    const selector = createResponseSelector({ stateManager });
+
+    const context: HttpRequestContext = {
+      method: "POST",
+      url: "/api/test",
+      body: { userId: "user-123", action: "login" },
+      headers: { "x-session-id": "session-456" },
+      query: {},
+    };
+
+    const mocks: ReadonlyArray<MockDefinition> = [
+      {
+        method: "POST",
+        url: "/api/test",
+        captureState: {
+          userId: "body.userId",
+          action: "body.action",
+          sessionId: "headers.x-session-id",
+        },
+        response: { status: 200, body: { success: true } },
+      },
+    ];
+
+    selector.selectResponse("test-1", "scenario-1", context, mocks);
+
+    expect(stateManager.get("test-1", "userId")).toBe("user-123");
+    expect(stateManager.get("test-1", "action")).toBe("login");
+    expect(stateManager.get("test-1", "sessionId")).toBe("session-456");
+  });
+
+  it("should isolate captured state per test ID", () => {
+    const stateManager = createInMemoryStateManager();
+    const selector = createResponseSelector({ stateManager });
+
+    const mocks: ReadonlyArray<MockDefinition> = [
+      {
+        method: "POST",
+        url: "/api/test",
+        captureState: { count: "body.value" },
+        response: { status: 200, body: { success: true } },
+      },
+    ];
+
+    const context1: HttpRequestContext = {
+      method: "POST",
+      url: "/api/test",
+      body: { value: 5 },
+      headers: {},
+      query: {},
+    };
+    selector.selectResponse("test-1", "scenario-1", context1, mocks);
+
+    const context2: HttpRequestContext = {
+      method: "POST",
+      url: "/api/test",
+      body: { value: 10 },
+      headers: {},
+      query: {},
+    };
+    selector.selectResponse("test-2", "scenario-1", context2, mocks);
+
+    expect(stateManager.get("test-1", "count")).toBe(5);
+    expect(stateManager.get("test-2", "count")).toBe(10);
+  });
+
+  it("should not capture when path returns undefined", () => {
+    const stateManager = createInMemoryStateManager();
+    const selector = createResponseSelector({ stateManager });
+
+    const context: HttpRequestContext = {
+      method: "POST",
+      url: "/api/test",
+      body: { foo: "bar" },
+      headers: {},
+      query: {},
+    };
+
+    const mocks: ReadonlyArray<MockDefinition> = [
+      {
+        method: "POST",
+        url: "/api/test",
+        captureState: { missing: "body.nonexistent" },
+        response: { status: 200, body: { success: true } },
+      },
+    ];
+
+    selector.selectResponse("test-1", "scenario-1", context, mocks);
+
+    expect(stateManager.get("test-1", "missing")).toBeUndefined();
+  });
+
+  it("should work with match criteria and capture together", () => {
+    const stateManager = createInMemoryStateManager();
+    const selector = createResponseSelector({ stateManager });
+
+    const context: HttpRequestContext = {
+      method: "POST",
+      url: "/api/test",
+      body: { tier: "premium", userId: "user-123" },
+      headers: {},
+      query: {},
+    };
+
+    const mocks: ReadonlyArray<MockDefinition> = [
+      {
+        method: "POST",
+        url: "/api/test",
+        match: { body: { tier: "premium" } },
+        captureState: { userId: "body.userId" },
+        response: { status: 200, body: { price: 100 } },
+      },
+      {
+        method: "POST",
+        url: "/api/test",
+        response: { status: 200, body: { price: 50 } },
+      },
+    ];
+
+    selector.selectResponse("test-1", "scenario-1", context, mocks);
+
+    expect(stateManager.get("test-1", "userId")).toBe("user-123");
   });
 });
