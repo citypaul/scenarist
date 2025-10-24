@@ -129,6 +129,133 @@ describe('ScenarioManager - registerScenario', () => {
 });
 ```
 
+#### When to Test Port Implementations (Adapters in Core)
+
+**Key Question:** Should we test adapters that implement port interfaces in the core package?
+
+**Answer:** It depends on the adapter's complexity and whether it could have multiple implementations.
+
+**Test port implementations when:**
+1. **Multiple implementations are expected** (InMemoryStateManager, RedisStateManager, FileSystemStateManager)
+2. **Complex contracts** (nested paths, array append syntax, test ID isolation)
+3. **Similar to existing adapter patterns** (InMemoryScenarioStore, InMemoryScenarioRegistry have tests)
+4. **Behavior can't be fully tested until later PRs** (e.g., capture without injection in incremental work)
+
+**Don't test port implementations when:**
+1. **Simple implementation** (trivial mapping or delegation)
+2. **Only one realistic implementation** (unlikely to have Redis/file variants)
+3. **Behavior is fully testable through domain logic** (no need for separate adapter tests)
+
+**Example: StateManager Decision**
+
+In Phase 3 (Stateful Mocks), we split implementation across incremental PRs:
+- **PR #31**: State capture (but no template injection yet)
+- **PR #32**: Template injection (completes the feature)
+
+**Problem:** Can't test full behavior (capture → inject) until PR #32.
+
+**Solution:** Adapter-level tests in PR #31, full behavior tests in PR #32.
+
+```typescript
+// packages/core/tests/in-memory-state-manager.test.ts (PR #31)
+// Adapter contract tests - proves adapter implements port correctly
+
+describe('InMemoryStateManager', () => {
+  // These test the adapter, not business behavior
+
+  it('should isolate state between test IDs', () => {
+    const manager = createInMemoryStateManager();
+
+    manager.set('test-1', 'userId', '123');
+    manager.set('test-2', 'userId', '456');
+
+    expect(manager.get('test-1', 'userId')).toBe('123');
+    expect(manager.get('test-2', 'userId')).toBe('456');
+  });
+
+  it('should handle array append syntax', () => {
+    const manager = createInMemoryStateManager();
+
+    manager.set('test-1', 'items[]', 'item1');
+    manager.set('test-1', 'items[]', 'item2');
+
+    expect(manager.get('test-1', 'items')).toEqual(['item1', 'item2']);
+  });
+
+  it('should reset all state for test ID', () => {
+    const manager = createInMemoryStateManager();
+    manager.set('test-1', 'key1', 'value1');
+    manager.set('test-1', 'key2', 'value2');
+
+    manager.reset('test-1');
+
+    expect(manager.get('test-1', 'key1')).toBeUndefined();
+    expect(manager.get('test-1', 'key2')).toBeUndefined();
+  });
+
+  // ... more adapter contract tests
+});
+
+// packages/core/tests/response-selector.test.ts (PR #32)
+// Full behavior tests - proves capture + injection works end-to-end
+
+describe('ResponseSelector - State Capture and Injection', () => {
+  it('should capture value from first request and inject into second request', () => {
+    const selector = createResponseSelector({
+      stateManager: createInMemoryStateManager()
+    });
+
+    const mocks: MockDefinition[] = [{
+      method: 'POST',
+      url: '/api/cart/add',
+      captureState: { 'cartItems[]': 'body.item' },
+      response: { status: 200, body: { added: true } }
+    }, {
+      method: 'GET',
+      url: '/api/cart',
+      response: {
+        status: 200,
+        body: { items: '{{state.cartItems}}' }  // Template injection
+      }
+    }];
+
+    // First request: capture item
+    const addContext = {
+      method: 'POST',
+      url: '/api/cart/add',
+      body: { item: 'Widget' }
+    };
+    selector.selectResponse('test-1', 'cart-scenario', addContext, mocks);
+
+    // Second request: should see captured item injected
+    const getContext = { method: 'GET', url: '/api/cart' };
+    const result = selector.selectResponse('test-1', 'cart-scenario', getContext, mocks);
+
+    expect(result.success).toBe(true);
+    expect(result.data.body).toEqual({ items: ['Widget'] });  // Captured value injected!
+  });
+});
+```
+
+**Why This Approach Works:**
+
+✅ **PR #31**: Adapter tests prove StateManager contract is correctly implemented
+✅ **PR #32**: Behavior tests prove capture + injection works end-to-end
+✅ **Incremental**: Each PR is independently testable
+✅ **Follows precedent**: Same pattern as InMemoryScenarioStore and InMemoryScenarioRegistry
+✅ **Architecture-aligned**: Testing adapters that implement ports is different from testing implementation details
+
+**Precedent in Codebase:**
+
+- ✅ `packages/core/tests/in-memory-store.test.ts` (12 tests for ScenarioStore adapter)
+- ✅ `packages/core/tests/in-memory-registry.test.ts` (12 tests for ScenarioRegistry adapter)
+- ❌ No `in-memory-sequence-tracker.test.ts` (simple enough to test through ResponseSelector)
+
+**The Pattern:**
+
+Complex port implementations with multiple possible adapters → Get adapter-level tests
+Simple port implementations with obvious behavior → Test through domain logic only
+
 ### Layer 2: Adapter Tests
 
 **Location:** `packages/*/tests/` (in adapter packages)
