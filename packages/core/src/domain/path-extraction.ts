@@ -23,28 +23,27 @@ export const extractFromPath = (context: HttpRequestContext, path: string): unkn
   }
 
   const prefix = segments[0]!;
-  const remainingPath = segments.slice(1);
 
-  // Determine source object based on prefix
-  let source: unknown;
-
-  if (prefix === 'body') {
-    source = context.body;
-  } else if (prefix === 'headers') {
-    source = context.headers;
-  } else if (prefix === 'query') {
-    source = context.query;
-  } else {
-    // Invalid prefix
+  // Guard: Must be valid prefix
+  if (prefix !== 'body' && prefix !== 'headers' && prefix !== 'query') {
     return undefined;
   }
+
+  const remainingPath = segments.slice(1);
+
+  const sourceMap = {
+    body: context.body,
+    headers: context.headers,
+    query: context.query,
+  };
+
+  const source = sourceMap[prefix];
 
   // Guard: Source must exist
   if (source === undefined || source === null) {
     return undefined;
   }
 
-  // Traverse remaining path
   return traversePath(source, remainingPath);
 };
 

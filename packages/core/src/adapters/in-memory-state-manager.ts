@@ -58,29 +58,26 @@ export const createInMemoryStateManager = (): StateManager => {
     set(testId: string, key: string, value: unknown): void {
       const testState = getOrCreateTestState(testId);
 
-      // Check for array append syntax (key ends with [])
-      if (key.endsWith('[]')) {
-        const actualKey = key.slice(0, -2); // Remove []
-        const path = actualKey.split('.');
-
-        // Get current value at path
-        const currentValue = this.get(testId, actualKey);
-
-        if (currentValue === undefined) {
-          // Create new array
-          setNestedValue(testState, path, [value]);
-        } else if (Array.isArray(currentValue)) {
-          // Append to existing array
-          currentValue.push(value);
-        } else {
-          // Overwrite non-array with new array
-          setNestedValue(testState, path, [value]);
-        }
-      } else {
-        // Normal set (overwrite)
+      // Guard: Normal set (no array syntax)
+      if (!key.endsWith('[]')) {
         const path = key.split('.');
         setNestedValue(testState, path, value);
+        return;
       }
+
+      // Array append syntax
+      const actualKey = key.slice(0, -2); // Remove []
+      const path = actualKey.split('.');
+      const currentValue = this.get(testId, actualKey);
+
+      // Guard: If current value is already an array, just append
+      if (Array.isArray(currentValue)) {
+        currentValue.push(value);
+        return;
+      }
+
+      // Create new array (either undefined or non-array value)
+      setNestedValue(testState, path, [value]);
     },
 
     getAll(testId: string): Record<string, unknown> {
