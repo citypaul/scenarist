@@ -45,7 +45,12 @@ export interface StateManager {
 
   /**
    * Reset all state for a specific test ID.
-   * Called automatically when switching scenarios.
+   *
+   * Called automatically by ScenarioManager when switching scenarios to prevent
+   * state pollution between scenarios. Tests may also call this manually to reset
+   * state mid-test.
+   *
+   * Note: New test IDs start with empty state automatically (no reset needed).
    *
    * @param testId - Test identifier
    */
