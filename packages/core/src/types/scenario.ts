@@ -58,7 +58,6 @@ export type ResponseSequence = {
  * - 'body.field' - Extract from request body
  * - 'headers.field' - Extract from request headers
  * - 'query.field' - Extract from query parameters
- * - 'params.field' - Extract from URL parameters
  *
  * Array syntax:
  * - 'stateKey[]' - Append to array (creates array if doesn't exist)
