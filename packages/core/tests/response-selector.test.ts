@@ -1086,6 +1086,127 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         expect(body.attempt).toBe(2);
       }
     });
+
+    it("should NOT advance sequence when request doesn't match criteria", () => {
+      const selector = createResponseSelector({
+        sequenceTracker: createInMemorySequenceTracker(),
+      });
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        // Sequence with match criteria (premium only)
+        {
+          method: "POST",
+          url: "/api/action",
+          match: {
+            body: { tier: "premium" },
+          },
+          sequence: {
+            responses: [
+              { status: 200, body: { step: 1, type: "premium" } },
+              { status: 200, body: { step: 2, type: "premium" } },
+              { status: 200, body: { step: 3, type: "premium" } },
+            ],
+            repeat: "last",
+          },
+        },
+        // Fallback mock (no match criteria)
+        {
+          method: "POST",
+          url: "/api/action",
+          response: { status: 200, body: { step: 0, type: "fallback" } },
+        },
+      ];
+
+      const premiumContext = {
+        method: "POST" as const,
+        url: "/api/action",
+        body: { tier: "premium" },
+        headers: {},
+        query: {},
+      };
+
+      const standardContext = {
+        method: "POST" as const,
+        url: "/api/action",
+        body: { tier: "standard" },
+        headers: {},
+        query: {},
+      };
+
+      // Request 1: Premium request → matches → returns step 1, advances to position 1
+      const result1 = selector.selectResponse(
+        "test-no-advance",
+        "action-scenario",
+        premiumContext,
+        mocks
+      );
+      expect(result1.success).toBe(true);
+      if (result1.success) {
+        const body = result1.data.body as { step: number; type: string };
+        expect(body.step).toBe(1);
+        expect(body.type).toBe("premium");
+      }
+
+      // Request 2: Standard request → doesn't match → uses fallback
+      // CRITICAL: This should NOT advance the premium sequence
+      const result2 = selector.selectResponse(
+        "test-no-advance",
+        "action-scenario",
+        standardContext,
+        mocks
+      );
+      expect(result2.success).toBe(true);
+      if (result2.success) {
+        const body = result2.data.body as { step: number; type: string };
+        expect(body.step).toBe(0);
+        expect(body.type).toBe("fallback");
+      }
+
+      // Request 3: Premium request again → matches → should return step 2
+      // This proves the non-matching request didn't advance the sequence
+      const result3 = selector.selectResponse(
+        "test-no-advance",
+        "action-scenario",
+        premiumContext,
+        mocks
+      );
+      expect(result3.success).toBe(true);
+      if (result3.success) {
+        const body = result3.data.body as { step: number; type: string };
+        expect(body.step).toBe(2); // Position 1, not position 2
+        expect(body.type).toBe("premium");
+      }
+
+      // Request 4: Another standard request → still uses fallback
+      // Sequence still at position 2 (not advanced by this non-matching request)
+      const result4 = selector.selectResponse(
+        "test-no-advance",
+        "action-scenario",
+        standardContext,
+        mocks
+      );
+      expect(result4.success).toBe(true);
+      if (result4.success) {
+        const body = result4.data.body as { step: number; type: string };
+        expect(body.step).toBe(0);
+        expect(body.type).toBe("fallback");
+      }
+
+      // Request 5: Premium request → should return step 3
+      // Proves previous non-matching request didn't advance
+      const result5 = selector.selectResponse(
+        "test-no-advance",
+        "action-scenario",
+        premiumContext,
+        mocks
+      );
+      expect(result5.success).toBe(true);
+      if (result5.success) {
+        const body = result5.data.body as { step: number; type: string };
+        expect(body.step).toBe(3); // Position 2
+        expect(body.type).toBe("premium");
+      }
+    });
   });
 
   describe("Error handling", () => {
