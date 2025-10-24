@@ -2,6 +2,7 @@ import type {
   ScenarioManager,
   ScenarioRegistry,
   ScenarioStore,
+  StateManager,
 } from "../ports/index.js";
 import type {
   ActiveScenario,
@@ -26,21 +27,23 @@ class DuplicateScenarioError extends Error {
 /**
  * Factory function to create a ScenarioManager implementation.
  *
- * Follows dependency injection principle - both ScenarioRegistry and
- * ScenarioStore are injected, never created internally.
+ * Follows dependency injection principle - all ports are injected, never created internally.
  *
  * This enables:
  * - Any registry implementation (in-memory, Redis, files, remote)
  * - Any store implementation (in-memory, Redis, database)
+ * - Any state manager implementation (in-memory, Redis, database)
  * - Proper testing with mock dependencies
  * - True hexagonal architecture
  */
 export const createScenarioManager = ({
   registry,
   store,
+  stateManager,
 }: {
   registry: ScenarioRegistry;
   store: ScenarioStore;
+  stateManager?: StateManager;
 }): ScenarioManager => {
   return {
     registerScenario(definition: ScenarioDefinition): void {
@@ -79,6 +82,11 @@ export const createScenarioManager = ({
       };
 
       store.set(testId, activeScenario);
+
+      // Phase 3: Reset state on scenario switch (clean slate)
+      if (stateManager) {
+        stateManager.reset(testId);
+      }
 
       return { success: true, data: undefined };
     },
