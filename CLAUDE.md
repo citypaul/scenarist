@@ -1083,3 +1083,98 @@ scenarist.registerScenarios(Object.values(scenarios));
 4. Link related PRs
 
 **Lesson:** Documentation is part of "done". A phase isn't complete until docs are updated. Capture learnings immediately while they're fresh - future you (or next developer) will thank you.
+
+### Test Coverage Gap: Match + Sequence Composition
+
+**Discovery:** User asked critical question: "What happens when we combine `match` and `sequence`?"
+
+**Existing Test Coverage:**
+- ✅ Sequences advance when requests match criteria
+- ✅ Multiple sequences on same URL work independently
+- ✅ Specificity-based selection works with sequences
+
+**CRITICAL GAP FOUND:**
+- ❌ Missing explicit test: non-matching requests DON'T advance sequences
+
+**Why This Matters:**
+The existing test proved sequences advance when matching, but didn't prove they DON'T advance when not matching. This is a critical property that enables powerful use cases:
+
+**Use Case Example:**
+```typescript
+// Premium-only onboarding sequence
+{
+  method: 'GET',
+  url: '/api/onboarding/step',
+  match: { headers: { 'x-tier': 'premium' } },
+  sequence: {
+    responses: [
+      { status: 200, body: { step: 1, message: 'Welcome!' } },
+      { status: 200, body: { step: 2, message: 'Configure...' } },
+      { status: 200, body: { step: 3, message: 'Complete!' } },
+    ],
+    repeat: 'last',
+  },
+},
+// Standard users get single response
+{
+  method: 'GET',
+  url: '/api/onboarding/step',
+  response: { status: 200, body: { step: 0, message: 'Upgrade to premium' } },
+}
+```
+
+If non-matching requests advanced the sequence, the premium sequence would progress even for standard users, breaking the isolation.
+
+**Implementation Behavior (Already Correct):**
+From `response-selector.ts` lines 62-76:
+```typescript
+if (mock.match) {
+  if (matchesCriteria(context, mock.match)) {
+    // ... track as bestMatch
+  }
+  continue;  // ← Non-matching request skips mock entirely
+}
+```
+
+Then later (lines 90-98):
+```typescript
+if (bestMatch) {
+  const response = selectResponseFromMock(  // ← Only called for bestMatch
+    testId,
+    scenarioId,
+    bestMatch.mockIndex,
+    bestMatch.mock,
+    sequenceTracker  // ← Sequence advances only when mock is selected
+  );
+```
+
+**Correct Behavior:**
+- Matching request → mock selected → `selectResponseFromMock()` called → sequence advances ✅
+- Non-matching request → `continue` on line 75 → mock skipped → `selectResponseFromMock()` never called → sequence does NOT advance ✅
+
+**Test Added:**
+`"should NOT advance sequence when request doesn't match criteria"` in `response-selector.test.ts`
+
+**Test Flow:**
+1. Premium request (matches) → returns step 1 → advances to position 1
+2. Standard request (doesn't match) → uses fallback → **sequence stays at position 1**
+3. Premium request (matches) → returns step 2 (NOT step 3) → **proves non-matching request didn't advance**
+4. Standard request (doesn't match) → uses fallback → **sequence stays at position 2**
+5. Premium request (matches) → returns step 3 → **proves previous non-matching request didn't advance**
+
+**Result:**
+- ✅ Test passes GREEN (implementation already correct)
+- ✅ 100% coverage maintained (85 tests, up from 84)
+- ✅ Critical property now explicitly documented by test
+
+**Documentation Status:**
+- ✅ Already documented in `docs/plans/dynamic-responses.md` (REQ-4.1)
+- ✅ Test now explicitly verifies documented behavior
+
+**Key Lesson:** When implementing feature composition (match + sequence, match + state, etc.), don't just test the positive case ("feature works when combined"). Test the negative case too ("features don't interfere when they shouldn't"). The gap between "sequences advance when matching" and "sequences don't advance when not matching" seems obvious but must be explicitly tested. Edge cases at composition boundaries are where subtle bugs hide.
+
+**Question Pattern:** User's question "what would happen if..." is gold for finding test coverage gaps. When feature composition is involved, always ask:
+- What happens when both features apply?
+- What happens when only one feature applies?
+- What happens when neither feature applies?
+- What happens when features should NOT interact?
