@@ -7,6 +7,7 @@ import type {
 import type { ResponseSelector, SequenceTracker, StateManager } from "../ports/index.js";
 import { ResponseSelectionError } from "../ports/driven/response-selector.js";
 import { extractFromPath } from "./path-extraction.js";
+import { applyTemplates } from "./template-replacement.js";
 
 /**
  * Options for creating a response selector.
@@ -114,7 +115,14 @@ export const createResponseSelector = (
           captureState(testId, context, bestMatch.mock.captureState, stateManager);
         }
 
-        return { success: true, data: response };
+        // Phase 3: Apply state templates to response if state manager available
+        let finalResponse = response;
+        if (stateManager) {
+          const currentState = stateManager.getAll(testId);
+          finalResponse = applyTemplates(response, currentState) as MockResponse;
+        }
+
+        return { success: true, data: finalResponse };
       }
 
       // No mock matched
