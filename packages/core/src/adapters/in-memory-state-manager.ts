@@ -35,9 +35,9 @@ export class InMemoryStateManager implements StateManager {
     const path = actualKey.split('.');
     const currentValue = this.get(testId, actualKey);
 
-    // Guard: If current value is already an array, just append
+    // Guard: If current value is already an array, append immutably
     if (Array.isArray(currentValue)) {
-      currentValue.push(value);
+      this.setNestedValue(testState, path, [...currentValue, value]);
       return;
     }
 
