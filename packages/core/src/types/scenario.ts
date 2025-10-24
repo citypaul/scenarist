@@ -51,6 +51,32 @@ export type ResponseSequence = {
 };
 
 /**
+ * State capture configuration for stateful mocks (Phase 3).
+ * Maps state keys to path expressions for extracting values from requests.
+ *
+ * Path syntax:
+ * - 'body.field' - Extract from request body
+ * - 'headers.field' - Extract from request headers
+ * - 'query.field' - Extract from query parameters
+ * - 'params.field' - Extract from URL parameters
+ *
+ * Array syntax:
+ * - 'stateKey[]' - Append to array (creates array if doesn't exist)
+ * - 'stateKey' - Overwrite value
+ *
+ * Example:
+ * ```typescript
+ * captureState: {
+ *   'cartItems[]': 'body.item',  // Append item to cartItems array
+ *   'userId': 'headers.x-user-id' // Store user ID from header
+ * }
+ * ```
+ */
+export type CaptureState = {
+  readonly [stateKey: string]: string; // Path expression
+};
+
+/**
  * Serializable mock definition.
  * Represents an HTTP mock that can be converted to MSW handlers at runtime.
  *
@@ -62,6 +88,7 @@ export type MockDefinition = {
   readonly match?: MatchCriteria; // Optional: Request content matching criteria
   readonly response?: MockResponse; // Single response (Phase 1)
   readonly sequence?: ResponseSequence; // OR sequence of responses (Phase 2)
+  readonly captureState?: CaptureState; // Optional: State capture configuration (Phase 3)
 };
 
 /**
