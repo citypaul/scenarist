@@ -2,6 +2,7 @@ import type {
   ScenarioManager,
   ScenarioRegistry,
   ScenarioStore,
+  SequenceTracker,
   StateManager,
 } from "../ports/index.js";
 import type {
@@ -40,10 +41,12 @@ export const createScenarioManager = ({
   registry,
   store,
   stateManager,
+  sequenceTracker,
 }: {
   registry: ScenarioRegistry;
   store: ScenarioStore;
   stateManager?: StateManager;
+  sequenceTracker?: SequenceTracker;
 }): ScenarioManager => {
   return {
     registerScenario(definition: ScenarioDefinition): void {
@@ -82,6 +85,11 @@ export const createScenarioManager = ({
       };
 
       store.set(testId, activeScenario);
+
+      // Phase 2: Reset sequence positions on scenario switch (clean slate)
+      if (sequenceTracker) {
+        sequenceTracker.reset(testId);
+      }
 
       // Phase 3: Reset state on scenario switch (clean slate)
       if (stateManager) {

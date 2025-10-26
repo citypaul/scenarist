@@ -90,6 +90,20 @@ export class InMemorySequenceTracker implements SequenceTracker {
       });
     }
   }
+
+  reset(testId: string): void {
+    const keysToDelete: string[] = [];
+
+    for (const key of this.positions.keys()) {
+      if (key.startsWith(`${testId}:`)) {
+        keysToDelete.push(key);
+      }
+    }
+
+    for (const key of keysToDelete) {
+      this.positions.delete(key);
+    }
+  }
 }
 
 /**

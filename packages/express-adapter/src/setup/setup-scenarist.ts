@@ -56,12 +56,11 @@ export const createScenarist = (
   const store = options.store ?? new InMemoryScenarioStore();
 
   const stateManager = createInMemoryStateManager();
+  const sequenceTracker = createInMemorySequenceTracker();
 
-  const manager = createScenarioManager({ registry, store, stateManager });
+  const manager = createScenarioManager({ registry, store, stateManager, sequenceTracker });
 
   manager.registerScenario(options.defaultScenario);
-
-  const sequenceTracker = createInMemorySequenceTracker();
 
   const responseSelector = createResponseSelector({ sequenceTracker, stateManager });
 
