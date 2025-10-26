@@ -519,6 +519,120 @@ export const paymentLimitedScenario: ScenarioDefinition = {
 };
 
 /**
+ * Scenario: Shopping Cart (Phase 3 - Stateful Mocks)
+ * Demonstrates state capture and injection across multiple requests.
+ *
+ * Flow:
+ * 1. POST /cart/add - Captures item and appends to cartItems[] array
+ * 2. GET /cart - Injects cartItems into response with count
+ */
+export const shoppingCartScenario: ScenarioDefinition = {
+  id: 'shoppingCart',
+  name: 'Shopping Cart (Stateful)',
+  description: 'Stateful shopping cart with capture and injection',
+  mocks: [
+    // Add item to cart - captures item
+    {
+      method: 'POST',
+      url: 'https://api.store.com/cart/add',
+      captureState: {
+        'cartItems[]': 'body.item',  // Append to array
+      },
+      response: {
+        status: 200,
+        body: {
+          success: true,
+          message: 'Item added to cart',
+        },
+      },
+    },
+    // Get cart - injects captured items
+    {
+      method: 'GET',
+      url: 'https://api.store.com/cart',
+      response: {
+        status: 200,
+        body: {
+          items: '{{state.cartItems}}',  // Inject items array
+          count: '{{state.cartItems.length}}',  // Inject array length
+          total: 0,  // Would calculate from items in real app
+        },
+      },
+    },
+  ],
+};
+
+/**
+ * Scenario: Multi-Step Form (Phase 3 - Stateful Mocks)
+ * Demonstrates state capture across form steps with validation.
+ *
+ * Flow:
+ * 1. POST /form/step1 - Captures user info (name, email)
+ * 2. POST /form/step2 - Captures address, injects user info in response
+ * 3. POST /form/submit - Injects all captured state in confirmation
+ */
+export const multiStepFormScenario: ScenarioDefinition = {
+  id: 'multiStepForm',
+  name: 'Multi-Step Form (Stateful)',
+  description: 'Multi-step form with state persistence',
+  mocks: [
+    // Step 1: User info
+    {
+      method: 'POST',
+      url: 'https://api.forms.com/form/step1',
+      captureState: {
+        'userName': 'body.name',
+        'userEmail': 'body.email',
+      },
+      response: {
+        status: 200,
+        body: {
+          success: true,
+          message: 'Step 1 completed',
+          nextStep: '/form/step2',
+        },
+      },
+    },
+    // Step 2: Address
+    {
+      method: 'POST',
+      url: 'https://api.forms.com/form/step2',
+      captureState: {
+        'userAddress': 'body.address',
+        'userCity': 'body.city',
+      },
+      response: {
+        status: 200,
+        body: {
+          success: true,
+          message: 'Step 2 completed for {{state.userName}}',
+          nextStep: '/form/submit',
+        },
+      },
+    },
+    // Step 3: Submit - inject all captured state
+    {
+      method: 'POST',
+      url: 'https://api.forms.com/form/submit',
+      response: {
+        status: 200,
+        body: {
+          success: true,
+          message: 'Form submitted successfully',
+          confirmation: {
+            name: '{{state.userName}}',
+            email: '{{state.userEmail}}',
+            address: '{{state.userAddress}}',
+            city: '{{state.userCity}}',
+            confirmationId: 'CONF-12345',
+          },
+        },
+      },
+    },
+  ],
+};
+
+/**
  * Scenarios organized as typed object for easy access in tests.
  *
  * Use this to get type-safe access to scenario IDs:
@@ -542,5 +656,7 @@ export const scenarios = {
   githubPolling: githubPollingScenario,
   weatherCycle: weatherCycleScenario,
   paymentLimited: paymentLimitedScenario,
+  shoppingCart: shoppingCartScenario,
+  multiStepForm: multiStepFormScenario,
 } as const;
 

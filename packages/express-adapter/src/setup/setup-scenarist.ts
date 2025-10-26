@@ -7,6 +7,7 @@ import {
   InMemoryScenarioRegistry,
   InMemoryScenarioStore,
   createInMemorySequenceTracker,
+  createInMemoryStateManager,
   type BaseAdapterOptions,
   type ScenaristAdapter,
 } from '@scenarist/core';
@@ -53,7 +54,11 @@ export const createScenarist = (
   const config = buildConfig(options);
   const registry = options.registry ?? new InMemoryScenarioRegistry();
   const store = options.store ?? new InMemoryScenarioStore();
-  const manager = createScenarioManager({ registry, store });
+
+  // Create StateManager for Phase 3 stateful mocks
+  const stateManager = createInMemoryStateManager();
+
+  const manager = createScenarioManager({ registry, store, stateManager });
 
   // Auto-register the default scenario
   manager.registerScenario(options.defaultScenario);
@@ -62,7 +67,8 @@ export const createScenarist = (
   const sequenceTracker = createInMemorySequenceTracker();
 
   // Create ResponseSelector once for the lifetime of the adapter
-  const responseSelector = createResponseSelector({ sequenceTracker });
+  // Pass both sequenceTracker (Phase 2) and stateManager (Phase 3)
+  const responseSelector = createResponseSelector({ sequenceTracker, stateManager });
 
   const handler = createDynamicHandler({
     getTestId: () => testIdStorage.getStore() ?? config.defaultTestId,
