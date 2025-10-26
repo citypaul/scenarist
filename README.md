@@ -316,6 +316,10 @@ Parameterize scenarios with variants. Test the same flow with different user tie
 
 Leverage the power of MSW's battle-tested HTTP interception. Scenarist adds runtime management, test isolation, and framework adapters on top of MSW's solid foundation.
 
+### 🧠 Stateful Mocks for Multi-Step Flows
+
+Capture state from requests and inject it into subsequent responses. Perfect for testing shopping carts, multi-step forms, user sessions, and any flow where responses depend on previous requests. State is isolated per test ID for parallel execution.
+
 ### 🗄️ Serializable Scenarios for Distributed Testing
 
 Scenarios are pure JSON—store them in Redis for distributed testing, save to files for version control, or fetch from remote APIs. No functions or closures means scenarios work across processes, containers, and even different machines.
@@ -619,7 +623,70 @@ console.log(response.body);
 // }
 ```
 
-For more advanced usage patterns, see the [Express Adapter README](./packages/express-adapter/README.md) or the [Express Example App](./apps/express-example/).
+### Stateful Mocks
+
+Capture state from requests and inject it into responses for multi-step flows:
+
+```typescript
+// Define a scenario with state capture and injection
+const shoppingCartScenario: ScenarioDefinition = {
+  id: "shopping-cart",
+  name: "Shopping Cart",
+  mocks: [
+    {
+      method: "POST",
+      url: "https://api.store.com/cart/add",
+      captureState: {
+        "items[]": "body.item", // Append to array
+      },
+      response: {
+        status: 200,
+        body: { success: true },
+      },
+    },
+    {
+      method: "GET",
+      url: "https://api.store.com/cart",
+      response: {
+        status: 200,
+        body: {
+          items: "{{state.items}}", // Inject captured items
+          count: "{{state.items.length}}", // Inject array length
+        },
+      },
+    },
+  ],
+};
+
+// Use in tests
+test("shopping cart accumulates items", async () => {
+  await request(app)
+    .post("/__scenario__")
+    .set("x-test-id", "cart-1")
+    .send({ scenario: "shopping-cart" });
+
+  // Add items
+  await request(app)
+    .post("/api/cart/add")
+    .set("x-test-id", "cart-1")
+    .send({ item: "Apple" });
+
+  await request(app)
+    .post("/api/cart/add")
+    .set("x-test-id", "cart-1")
+    .send({ item: "Banana" });
+
+  // Get cart - state is injected
+  const response = await request(app)
+    .get("/api/cart")
+    .set("x-test-id", "cart-1");
+
+  expect(response.body.items).toEqual(["Apple", "Banana"]);
+  expect(response.body.count).toBe(2);
+});
+```
+
+For more advanced usage patterns, see the [Express Adapter README](./packages/express-adapter/README.md), [Stateful Mocks Guide](./docs/stateful-mocks.md), or the [Express Example App](./apps/express-example/).
 
 ---
 
@@ -864,6 +931,18 @@ async function switchScenario(page: Page, scenario: string) {
   - Test isolation and architecture
   - Independent of any specific framework or adapter
 
+- **[Stateful Mocks Guide](./docs/stateful-mocks.md)** - Complete guide to stateful mock testing
+  - State capture from request body, headers, and query parameters
+  - Template injection with type preservation
+  - Multi-step flows (shopping carts, forms, sessions)
+  - Advanced patterns and troubleshooting
+
+- **[State API Reference](./docs/api-reference-state.md)** - Quick reference for state features
+  - State capture syntax and examples
+  - Template injection rules
+  - Type preservation behavior
+  - Complete API documentation
+
 ### Adapter Documentation
 
 - **[Express Adapter README](./packages/express-adapter/README.md)** - Express-specific usage and setup
@@ -873,7 +952,7 @@ async function switchScenario(page: Page, scenario: string) {
 
 - **[Express Example App](./apps/express-example/)** - Complete working Express application with Scenarist
   - Scenario definitions: `src/scenarios.ts`
-  - Integration tests: `tests/dynamic-matching.test.ts`, `tests/dynamic-sequences.test.ts`
+  - Integration tests: `tests/dynamic-matching.test.ts`, `tests/dynamic-sequences.test.ts`, `tests/stateful-scenarios.test.ts`
   - Bruno API tests: `bruno/Dynamic Responses/`
 
 ### Planning & Architecture
