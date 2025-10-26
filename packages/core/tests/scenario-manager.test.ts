@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createScenarioManager } from "../src/domain/scenario-manager.js";
-import type { ScenarioRegistry, ScenarioStore } from "../src/ports/index.js";
+import type { ScenarioRegistry, ScenarioStore, StateManager } from "../src/ports/index.js";
 import type { ActiveScenario, ScenarioDefinition } from "../src/types/index.js";
 
 // In-memory registry for testing (simple Map-based implementation)
@@ -33,6 +33,29 @@ const createTestStore = (): ScenarioStore => {
   };
 };
 
+// In-memory state manager for testing (simple Map-based implementation)
+const createTestStateManager = (): StateManager => {
+  const storage = new Map<string, Record<string, unknown>>();
+
+  return {
+    get: (testId, key) => {
+      const testState = storage.get(testId);
+      return testState?.[key];
+    },
+    set: (testId, key, value) => {
+      const testState = storage.get(testId) || {};
+      testState[key] = value;
+      storage.set(testId, testState);
+    },
+    getAll: (testId) => {
+      return storage.get(testId) ?? {};
+    },
+    reset: (testId) => {
+      storage.delete(testId);
+    },
+  };
+};
+
 // Test scenario definition factory
 const createTestScenarioDefinition = (
   id: string,
@@ -57,13 +80,14 @@ const createTestScenarioDefinition = (
  * Factory function to create test setup with fresh dependencies.
  * This functional approach avoids mutation and provides clean isolation between tests.
  */
-const createTestSetup = () => {
+const createTestSetup = (options?: { stateManager?: StateManager }) => {
   const registry = createTestRegistry();
   const store = createTestStore();
+  const stateManager = options?.stateManager;
 
-  const manager = createScenarioManager({ registry, store });
+  const manager = createScenarioManager({ registry, store, stateManager });
 
-  return { registry, store, manager };
+  return { registry, store, stateManager, manager };
 };
 
 describe("ScenarioManager", () => {
@@ -338,6 +362,93 @@ describe("ScenarioManager", () => {
       const retrieved = manager.getScenarioById("test");
 
       expect(retrieved).toEqual(registry.get("test"));
+    });
+  });
+
+  describe("State Reset on Scenario Switch", () => {
+    it("should reset state when switching scenarios", () => {
+      const stateManager = createTestStateManager();
+      const { manager } = createTestSetup({ stateManager });
+
+      const scenario1 = createTestScenarioDefinition("scenario-1", "Scenario 1");
+      const scenario2 = createTestScenarioDefinition("scenario-2", "Scenario 2");
+
+      manager.registerScenario(scenario1);
+      manager.registerScenario(scenario2);
+
+      // Set some state for test-1
+      stateManager.set("test-1", "userId", "user-123");
+      stateManager.set("test-1", "count", 5);
+
+      // Verify state exists
+      expect(stateManager.get("test-1", "userId")).toBe("user-123");
+      expect(stateManager.get("test-1", "count")).toBe(5);
+
+      // Switch to scenario-2
+      manager.switchScenario("test-1", "scenario-2");
+
+      // State should be cleared
+      expect(stateManager.get("test-1", "userId")).toBeUndefined();
+      expect(stateManager.get("test-1", "count")).toBeUndefined();
+      expect(stateManager.getAll("test-1")).toEqual({});
+    });
+
+    it("should not reset state when switching fails", () => {
+      const stateManager = createTestStateManager();
+      const { manager } = createTestSetup({ stateManager });
+
+      const scenario1 = createTestScenarioDefinition("scenario-1", "Scenario 1");
+      manager.registerScenario(scenario1);
+
+      // Set some state for test-1
+      stateManager.set("test-1", "userId", "user-123");
+
+      // Try to switch to non-existent scenario
+      const result = manager.switchScenario("test-1", "non-existent");
+
+      // Switch should fail
+      expect(result.success).toBe(false);
+
+      // State should NOT be cleared (switch failed)
+      expect(stateManager.get("test-1", "userId")).toBe("user-123");
+    });
+
+    it("should work without state manager (backward compatibility)", () => {
+      const { manager } = createTestSetup(); // No state manager
+
+      const scenario1 = createTestScenarioDefinition("scenario-1", "Scenario 1");
+      const scenario2 = createTestScenarioDefinition("scenario-2", "Scenario 2");
+
+      manager.registerScenario(scenario1);
+      manager.registerScenario(scenario2);
+
+      // Should not throw when switching without state manager
+      const result = manager.switchScenario("test-1", "scenario-2");
+
+      expect(result.success).toBe(true);
+    });
+
+    it("should isolate state reset per test ID", () => {
+      const stateManager = createTestStateManager();
+      const { manager } = createTestSetup({ stateManager });
+
+      const scenario1 = createTestScenarioDefinition("scenario-1", "Scenario 1");
+      const scenario2 = createTestScenarioDefinition("scenario-2", "Scenario 2");
+
+      manager.registerScenario(scenario1);
+      manager.registerScenario(scenario2);
+
+      // Set state for multiple test IDs
+      stateManager.set("test-1", "userId", "user-123");
+      stateManager.set("test-2", "userId", "user-456");
+
+      // Switch only test-1
+      manager.switchScenario("test-1", "scenario-2");
+
+      // Only test-1 state should be cleared
+      expect(stateManager.get("test-1", "userId")).toBeUndefined();
+      // test-2 state should remain
+      expect(stateManager.get("test-2", "userId")).toBe("user-456");
     });
   });
 });
