@@ -62,10 +62,11 @@ Scenarios should work without requiring runtime configuration or special headers
 - Future devtools can execute scenarios without setup
 - Consistent behavior across environments
 
-### State is Isolated
-- State is scoped per test ID (no cross-test contamination)
-- State resets when switching scenarios (clean slate)
-- State lives in adapter runtime (not in scenario definitions)
+### State and Sequences are Isolated
+- State and sequences are scoped per test ID (no cross-test contamination)
+- **State resets when switching scenarios** (clean slate for each scenario)
+- **Sequences reset when switching scenarios** (all positions back to 0)
+- State and sequences live in adapter runtime (not in scenario definitions)
 
 ## Architectural Implementation
 
@@ -286,6 +287,53 @@ Map<string, {  // Key: `${testId}:${scenarioId}:${mockIndex}`
 - Integration tests in `apps/express-example/tests/dynamic-sequences.test.ts`
 - Example polling scenarios in `apps/express-example/src/scenarios.ts`
 - Bruno collection demonstrating sequences
+
+#### REQ-2.5: Reset Sequences on Scenario Switch
+
+**Status:** ✅ Complete (Idempotency Fix)
+
+When `switchScenario()` is called:
+1. Clear all sequence positions for that test ID
+2. All sequences start fresh at position 0 for new scenario
+3. Exhausted sequences are un-exhausted
+4. Enables idempotent test execution (tests can run multiple times)
+
+**Behavior:**
+```typescript
+// Test run 1
+switchScenario('test-1', 'github-polling');
+// Sequences: position 0
+
+// Multiple requests advance sequences
+request(url); // position 1
+request(url); // position 2
+request(url); // position 3 (exhausted if repeat: 'none')
+
+// Switch to another scenario
+switchScenario('test-1', 'weather-cycle');
+// Sequences: all reset to position 0 (clean slate)
+
+// Can switch back to original scenario
+switchScenario('test-1', 'github-polling');
+// Sequences: back to position 0 (not 3!)
+```
+
+**Why This Matters:**
+- **Test Idempotency:** Tests produce same results when run multiple times
+- **No State Leakage:** Each scenario switch gives predictable starting state
+- **Bruno Test Success:** Manual/automated tests can re-run without server restart
+- **Scenario Isolation:** Switching scenarios doesn't carry over sequence state
+
+**Implementation:**
+- `ScenarioManager.switchScenario()` calls `sequenceTracker.reset(testId)` after successful scenario switch
+- Failed scenario switches do NOT reset sequences
+- Reset only affects the specified test ID (other test IDs unaffected)
+- Consistent with state reset behavior (Phase 3)
+
+**Test Coverage:**
+- Unit tests: `packages/core/tests/in-memory-sequence-tracker.test.ts` (7 tests)
+- Integration tests: `packages/core/tests/scenario-manager.test.ts` (4 tests)
+- E2E verification: Bruno tests pass with 133/133 assertions on multiple runs
 
 ---
 
@@ -748,9 +796,9 @@ Map<string, Record<string, unknown>>  // Key: testId
 
 ### Phase 2: Response Sequences (REQ-2)
 
-**Status:** ✅ Complete (PRs #25, #26, #27)
+**Status:** ✅ Complete (PRs #25, #26, #27 + Idempotency Fix)
 
-**Goal:** Enable ordered sequences of responses
+**Goal:** Enable ordered sequences of responses with scenario switch reset
 
 **Core Package Tasks:**
 1. ✅ Add `sequence` field and `RepeatMode` type to `MockDefinition`
@@ -780,9 +828,11 @@ Map<string, Record<string, unknown>>  // Key: testId
 - ✅ `repeat: 'cycle'` works correctly
 - ✅ `repeat: 'none'` exhaustion works
 - ✅ Sequence state isolated per test ID
-- ✅ Core unit tests passing (100% coverage) - 30 tests in response-selector.test.ts
+- ✅ **Sequences reset on scenario switch** (idempotency fix)
+- ✅ **Bruno tests idempotent** (133/133 assertions on multiple runs)
+- ✅ Core unit tests passing (100% coverage) - 30 tests in response-selector.test.ts, 7 tests in sequence-tracker.test.ts
 - ✅ MSW adapter unit tests passing (100% translation coverage)
-- ✅ Express integration tests passing (44 tests total, 4 sequence tests)
+- ✅ Express integration tests passing (48 tests total, 4 sequence tests, 4 reset tests)
 - ✅ Bruno automated tests created (15 sequence tests across 3 scenarios)
 
 **Implementation Details:**
@@ -821,6 +871,23 @@ Map<string, Record<string, unknown>>  // Key: testId
   - GitHub polling (5 tests) - repeat: 'last' behavior
   - Weather cycling (5 tests) - repeat: 'cycle' behavior
   - Payment limited (5 tests) - repeat: 'none' with exhaustion
+
+*Idempotency Fix (Sequence Reset on Scenario Switch):*
+- `packages/core/src/ports/driven/sequence-tracker.ts` - Added `reset(testId)` to port interface
+- `packages/core/src/adapters/in-memory-sequence-tracker.ts` - Implemented `reset()` method
+- `packages/core/src/domain/scenario-manager.ts` - Call `sequenceTracker.reset()` on scenario switch
+- `packages/express-adapter/src/setup/setup-scenarist.ts` - Inject sequenceTracker into ScenarioManager
+- `packages/core/tests/in-memory-sequence-tracker.test.ts` - NEW: 7 unit tests for reset behavior
+- `packages/core/tests/scenario-manager.test.ts` - Added 4 integration tests for scenario switch reset
+- `packages/express-adapter/tests/scenario-endpoints.test.ts` - Updated field name (scenario → scenarioId)
+- `apps/express-example/tests/scenario-switching.test.ts` - Updated field name (scenario → scenarioId)
+- `apps/express-example/bruno/environments/local.bru` - Renamed from Local.bru for case-sensitive filesystems
+
+### Phase 2 Final Results:
+- **Total Tests:** 157 tests in core (up from 134), 281 tests across all packages
+- **Bruno Tests:** 133/133 assertions passing (idempotent across multiple runs)
+- **Test Coverage:** 100% maintained across all packages
+- **Sequence Reset:** Fully implemented and tested for test idempotency
 
 ### Phase 3: Stateful Mocks (REQ-3)
 

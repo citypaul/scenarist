@@ -57,8 +57,8 @@ headers: { 'x-test-id': 'test-B' }
 
 Each test ID has its own:
 - Active scenario
-- Sequence positions (future)
-- Captured state (future)
+- Sequence positions (reset on scenario switch)
+- Captured state (reset on scenario switch)
 
 ### Mock Definition
 
