@@ -9,6 +9,19 @@
 export const applyTemplates = (value: unknown, state: Record<string, unknown>): unknown => {
   // Guard: Handle strings (base case)
   if (typeof value === 'string') {
+    // Check if entire string is a single pure template (no surrounding text)
+    const pureTemplateMatch = /^\{\{state\.([^}]+)\}\}$/.exec(value);
+
+    if (pureTemplateMatch) {
+      // Pure template: return raw value (preserves type - arrays, numbers, objects)
+      const path = pureTemplateMatch[1]!; // Guaranteed to exist by regex capture group
+      const stateValue = resolveStatePath(state, path);
+
+      // Return raw value if found, otherwise keep template string unchanged
+      return stateValue !== undefined ? stateValue : value;
+    }
+
+    // Mixed template (has surrounding text): use string replacement
     return value.replace(/\{\{state\.([^}]+)\}\}/g, (match, path: string) => {
       const stateValue = resolveStatePath(state, path);
 
@@ -17,7 +30,7 @@ export const applyTemplates = (value: unknown, state: Record<string, unknown>): 
         return match;
       }
 
-      // Convert to string for replacement
+      // Convert to string for concatenation with surrounding text
       return String(stateValue);
     });
   }
