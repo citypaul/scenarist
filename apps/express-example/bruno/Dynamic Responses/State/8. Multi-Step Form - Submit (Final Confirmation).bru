@@ -1,0 +1,51 @@
+meta {
+  name: 8. Multi-Step Form - Submit (Final Confirmation)
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/form/submit
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {}
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+  res.body.message: eq Form submitted successfully
+  res.body.confirmation.name: eq Alice
+  res.body.confirmation.email: eq alice@example.com
+  res.body.confirmation.address: eq 123 Main St
+  res.body.confirmation.city: eq Portland
+  res.body.confirmation.confirmationId: eq CONF-12345
+}
+
+docs {
+  Submits the completed form and receives confirmation with all captured state.
+
+  State injection in response:
+  - name: '{{state.userName}}' → 'Alice'
+  - email: '{{state.userEmail}}' → 'alice@example.com'
+  - address: '{{state.userAddress}}' → '123 Main St'
+  - city: '{{state.userCity}}' → 'Portland'
+
+  This demonstrates the complete Phase 3 stateful mock journey:
+  1. Capture state across multiple requests (steps 1 and 2)
+  2. State persists between requests (per test ID)
+  3. Inject all captured state into final response
+
+  Key capabilities demonstrated:
+  - Multi-step flows with state accumulation
+  - Pure template injection (preserves types)
+  - Cross-request state persistence
+  - Template injection in nested response objects
+}

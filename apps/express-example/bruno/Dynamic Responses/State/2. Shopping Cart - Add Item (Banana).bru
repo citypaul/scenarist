@@ -1,0 +1,36 @@
+meta {
+  name: 2. Shopping Cart - Add Item (Banana)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/cart/add
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "item": "Banana"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+}
+
+docs {
+  Adds "Banana" to the shopping cart.
+
+  This demonstrates array append behavior:
+  - State before: cartItems: ['Apple']
+  - State after: cartItems: ['Apple', 'Banana']
+
+  The `cartItems[]` syntax in captureState appends to the array rather than replacing it.
+}

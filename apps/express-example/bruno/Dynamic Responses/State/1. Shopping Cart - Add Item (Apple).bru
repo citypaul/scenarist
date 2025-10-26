@@ -1,0 +1,39 @@
+meta {
+  name: 1. Shopping Cart - Add Item (Apple)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/cart/add
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "item": "Apple"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+  res.body.message: eq Item added to cart
+}
+
+docs {
+  Adds "Apple" to the shopping cart.
+
+  This request is intercepted by Scenarist and mocked with state capture:
+  - Mock URL: https://api.store.com/cart/add
+  - captureState: { "cartItems[]": "body.item" }
+  - Appends item to cartItems array
+
+  After this call, the state contains:
+  - cartItems: ['Apple']
+}

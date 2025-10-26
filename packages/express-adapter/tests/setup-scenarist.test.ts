@@ -351,4 +351,612 @@ describe('createScenarist', () => {
     const afterClear = scenarist.getActiveScenario('test-123');
     expect(afterClear).toBeUndefined();
   });
+
+  describe('Phase 3: Stateful Mocks', () => {
+    it('should capture state from request and inject into response template', async () => {
+      const scenarist = createScenarist({
+        enabled: true,
+        defaultScenario: mockDefaultScenario,
+      });
+
+      scenarist.registerScenario({
+        id: 'stateful',
+        name: 'Stateful Scenario',
+        description: 'Captures and injects state',
+        mocks: [
+          {
+            method: 'POST',
+            url: 'https://api.example.com/user',
+            captureState: {
+              userName: 'body.name',
+              userEmail: 'body.email',
+            },
+            response: {
+              status: 201,
+              body: { success: true },
+            },
+          },
+          {
+            method: 'GET',
+            url: 'https://api.example.com/profile',
+            response: {
+              status: 200,
+              body: {
+                name: '{{state.userName}}',
+                email: '{{state.userEmail}}',
+              },
+            },
+          },
+        ],
+      });
+
+      scenarist.start();
+
+      const app = express();
+      app.use(express.json());
+      app.use(scenarist.middleware);
+
+      app.post('/capture', async (req, res) => {
+        const response = await fetch('https://api.example.com/user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(req.body),
+        });
+        const data = await response.json();
+        res.json(data);
+      });
+
+      app.get('/inject', async (_req, res) => {
+        const response = await fetch('https://api.example.com/profile');
+        const data = await response.json();
+        res.json(data);
+      });
+
+      await request(app)
+        .post(scenarist.config.endpoints.setScenario)
+        .set(scenarist.config.headers.testId, 'test-state-1')
+        .send({ scenario: 'stateful' });
+
+      await request(app)
+        .post('/capture')
+        .set(scenarist.config.headers.testId, 'test-state-1')
+        .send({ name: 'Alice', email: 'alice@example.com' });
+
+      const response = await request(app)
+        .get('/inject')
+        .set(scenarist.config.headers.testId, 'test-state-1');
+
+      await scenarist.stop();
+
+      expect(response.status).toBe(200);
+      expect(response.body.name).toBe('Alice');
+      expect(response.body.email).toBe('alice@example.com');
+    });
+
+    it('should reset state when switching scenarios', async () => {
+      const scenarist = createScenarist({
+        enabled: true,
+        defaultScenario: mockDefaultScenario,
+      });
+
+      scenarist.registerScenario({
+        id: 'scenario-with-capture',
+        name: 'Scenario With Capture',
+        description: 'Captures state',
+        mocks: [
+          {
+            method: 'POST',
+            url: 'https://api.example.com/data',
+            captureState: {
+              capturedValue: 'body.value',
+            },
+            response: {
+              status: 200,
+              body: { success: true },
+            },
+          },
+        ],
+      });
+
+      scenarist.registerScenario({
+        id: 'scenario-with-injection',
+        name: 'Scenario With Injection',
+        description: 'Uses state in template',
+        mocks: [
+          {
+            method: 'GET',
+            url: 'https://api.example.com/data',
+            response: {
+              status: 200,
+              body: {
+                value: '{{state.capturedValue}}',
+              },
+            },
+          },
+        ],
+      });
+
+      scenarist.start();
+
+      const app = express();
+      app.use(express.json());
+      app.use(scenarist.middleware);
+
+      app.post('/data', async (req, res) => {
+        const response = await fetch('https://api.example.com/data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(req.body),
+        });
+        const data = await response.json();
+        res.json(data);
+      });
+
+      app.get('/data', async (_req, res) => {
+        const response = await fetch('https://api.example.com/data');
+        const data = await response.json();
+        res.json(data);
+      });
+
+      await request(app)
+        .post(scenarist.config.endpoints.setScenario)
+        .set(scenarist.config.headers.testId, 'test-reset-1')
+        .send({ scenario: 'scenario-with-capture' });
+
+      await request(app)
+        .post('/data')
+        .set(scenarist.config.headers.testId, 'test-reset-1')
+        .send({ value: 'captured-data' });
+
+      await request(app)
+        .post(scenarist.config.endpoints.setScenario)
+        .set(scenarist.config.headers.testId, 'test-reset-1')
+        .send({ scenario: 'scenario-with-injection' });
+
+      const response = await request(app)
+        .get('/data')
+        .set(scenarist.config.headers.testId, 'test-reset-1');
+
+      await scenarist.stop();
+
+      expect(response.status).toBe(200);
+      expect(response.body.value).toBe('{{state.capturedValue}}');
+    });
+
+    it('should isolate state per test ID', async () => {
+      const scenarist = createScenarist({
+        enabled: true,
+        defaultScenario: mockDefaultScenario,
+      });
+
+      scenarist.registerScenario({
+        id: 'isolated-state',
+        name: 'Isolated State',
+        description: 'State isolated per test ID',
+        mocks: [
+          {
+            method: 'POST',
+            url: 'https://api.example.com/user',
+            captureState: {
+              userName: 'body.name',
+            },
+            response: {
+              status: 200,
+              body: { success: true },
+            },
+          },
+          {
+            method: 'GET',
+            url: 'https://api.example.com/user',
+            response: {
+              status: 200,
+              body: {
+                name: '{{state.userName}}',
+              },
+            },
+          },
+        ],
+      });
+
+      scenarist.start();
+
+      const app = express();
+      app.use(express.json());
+      app.use(scenarist.middleware);
+
+      app.post('/user', async (req, res) => {
+        const response = await fetch('https://api.example.com/user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(req.body),
+        });
+        const data = await response.json();
+        res.json(data);
+      });
+
+      app.get('/user', async (_req, res) => {
+        const response = await fetch('https://api.example.com/user');
+        const data = await response.json();
+        res.json(data);
+      });
+
+      await request(app)
+        .post(scenarist.config.endpoints.setScenario)
+        .set(scenarist.config.headers.testId, 'test-isolation-1')
+        .send({ scenario: 'isolated-state' });
+
+      await request(app)
+        .post(scenarist.config.endpoints.setScenario)
+        .set(scenarist.config.headers.testId, 'test-isolation-2')
+        .send({ scenario: 'isolated-state' });
+
+      await request(app)
+        .post('/user')
+        .set(scenarist.config.headers.testId, 'test-isolation-1')
+        .send({ name: 'Alice' });
+
+      await request(app)
+        .post('/user')
+        .set(scenarist.config.headers.testId, 'test-isolation-2')
+        .send({ name: 'Bob' });
+
+      const response1 = await request(app)
+        .get('/user')
+        .set(scenarist.config.headers.testId, 'test-isolation-1');
+
+      const response2 = await request(app)
+        .get('/user')
+        .set(scenarist.config.headers.testId, 'test-isolation-2');
+
+      await scenarist.stop();
+
+      expect(response1.status).toBe(200);
+      expect(response1.body.name).toBe('Alice');
+
+      expect(response2.status).toBe(200);
+      expect(response2.body.name).toBe('Bob');
+    });
+
+    it('should handle missing state keys gracefully (templates remain as-is)', async () => {
+      const scenarist = createScenarist({
+        enabled: true,
+        defaultScenario: mockDefaultScenario,
+      });
+
+      scenarist.registerScenario({
+        id: 'array-append',
+        name: 'Array Append',
+        description: 'Appends items to array',
+        mocks: [
+          {
+            method: 'POST',
+            url: 'https://api.example.com/cart/add',
+            captureState: {
+              'items[]': 'body.item',
+            },
+            response: {
+              status: 200,
+              body: { success: true },
+            },
+          },
+          {
+            method: 'GET',
+            url: 'https://api.example.com/cart',
+            response: {
+              status: 200,
+              body: {
+                items: '{{state.items}}',
+              },
+            },
+          },
+        ],
+      });
+
+      scenarist.start();
+
+      const app = express();
+      app.use(express.json());
+      app.use(scenarist.middleware);
+
+      app.post('/cart/add', async (req, res) => {
+        const response = await fetch('https://api.example.com/cart/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(req.body),
+        });
+        const data = await response.json();
+        res.json(data);
+      });
+
+      app.get('/cart', async (_req, res) => {
+        const response = await fetch('https://api.example.com/cart');
+        const data = await response.json();
+        res.json(data);
+      });
+
+      await request(app)
+        .post(scenarist.config.endpoints.setScenario)
+        .set(scenarist.config.headers.testId, 'test-array-1')
+        .send({ scenario: 'array-append' });
+
+      await request(app)
+        .post('/cart/add')
+        .set(scenarist.config.headers.testId, 'test-array-1')
+        .send({ item: 'Apple' });
+
+      await request(app)
+        .post('/cart/add')
+        .set(scenarist.config.headers.testId, 'test-array-1')
+        .send({ item: 'Banana' });
+
+      await request(app)
+        .post('/cart/add')
+        .set(scenarist.config.headers.testId, 'test-array-1')
+        .send({ item: 'Cherry' });
+
+      const response = await request(app)
+        .get('/cart')
+        .set(scenarist.config.headers.testId, 'test-array-1');
+
+      await scenarist.stop();
+
+      expect(response.status).toBe(200);
+      expect(response.body.items).toEqual(['Apple', 'Banana', 'Cherry']);
+    });
+
+    it('should support array length templates', async () => {
+      const scenarist = createScenarist({
+        enabled: true,
+        defaultScenario: mockDefaultScenario,
+      });
+
+      scenarist.registerScenario({
+        id: 'array-length',
+        name: 'Array Length',
+        description: 'Injects array length',
+        mocks: [
+          {
+            method: 'POST',
+            url: 'https://api.example.com/items/add',
+            captureState: {
+              'items[]': 'body.item',
+            },
+            response: {
+              status: 200,
+              body: { success: true },
+            },
+          },
+          {
+            method: 'GET',
+            url: 'https://api.example.com/items/count',
+            response: {
+              status: 200,
+              body: {
+                count: '{{state.items.length}}',
+                items: '{{state.items}}',
+              },
+            },
+          },
+        ],
+      });
+
+      scenarist.start();
+
+      const app = express();
+      app.use(express.json());
+      app.use(scenarist.middleware);
+
+      app.post('/items/add', async (req, res) => {
+        const response = await fetch('https://api.example.com/items/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(req.body),
+        });
+        const data = await response.json();
+        res.json(data);
+      });
+
+      app.get('/items/count', async (_req, res) => {
+        const response = await fetch('https://api.example.com/items/count');
+        const data = await response.json();
+        res.json(data);
+      });
+
+      await request(app)
+        .post(scenarist.config.endpoints.setScenario)
+        .set(scenarist.config.headers.testId, 'test-length-1')
+        .send({ scenario: 'array-length' });
+
+      await request(app)
+        .post('/items/add')
+        .set(scenarist.config.headers.testId, 'test-length-1')
+        .send({ item: 'Item1' });
+
+      await request(app)
+        .post('/items/add')
+        .set(scenarist.config.headers.testId, 'test-length-1')
+        .send({ item: 'Item2' });
+
+      await request(app)
+        .post('/items/add')
+        .set(scenarist.config.headers.testId, 'test-length-1')
+        .send({ item: 'Item3' });
+
+      const response = await request(app)
+        .get('/items/count')
+        .set(scenarist.config.headers.testId, 'test-length-1');
+
+      await scenarist.stop();
+
+      expect(response.status).toBe(200);
+      expect(response.body.count).toBe(3);
+      expect(response.body.items).toEqual(['Item1', 'Item2', 'Item3']);
+    });
+
+    it('should support nested path templates', async () => {
+      const scenarist = createScenarist({
+        enabled: true,
+        defaultScenario: mockDefaultScenario,
+      });
+
+      scenarist.registerScenario({
+        id: 'nested-paths',
+        name: 'Nested Paths',
+        description: 'Injects nested object values',
+        mocks: [
+          {
+            method: 'POST',
+            url: 'https://api.example.com/form/step1',
+            captureState: {
+              'user.name': 'body.name',
+              'user.email': 'body.email',
+            },
+            response: {
+              status: 200,
+              body: { success: true },
+            },
+          },
+          {
+            method: 'POST',
+            url: 'https://api.example.com/form/step2',
+            captureState: {
+              'user.address.street': 'body.street',
+              'user.address.city': 'body.city',
+            },
+            response: {
+              status: 200,
+              body: { success: true },
+            },
+          },
+          {
+            method: 'GET',
+            url: 'https://api.example.com/form/summary',
+            response: {
+              status: 200,
+              body: {
+                userName: '{{state.user.name}}',
+                userEmail: '{{state.user.email}}',
+                userStreet: '{{state.user.address.street}}',
+                userCity: '{{state.user.address.city}}',
+              },
+            },
+          },
+        ],
+      });
+
+      scenarist.start();
+
+      const app = express();
+      app.use(express.json());
+      app.use(scenarist.middleware);
+
+      app.post('/form/step1', async (req, res) => {
+        const response = await fetch('https://api.example.com/form/step1', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(req.body),
+        });
+        const data = await response.json();
+        res.json(data);
+      });
+
+      app.post('/form/step2', async (req, res) => {
+        const response = await fetch('https://api.example.com/form/step2', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(req.body),
+        });
+        const data = await response.json();
+        res.json(data);
+      });
+
+      app.get('/form/summary', async (_req, res) => {
+        const response = await fetch('https://api.example.com/form/summary');
+        const data = await response.json();
+        res.json(data);
+      });
+
+      await request(app)
+        .post(scenarist.config.endpoints.setScenario)
+        .set(scenarist.config.headers.testId, 'test-nested-1')
+        .send({ scenario: 'nested-paths' });
+
+      await request(app)
+        .post('/form/step1')
+        .set(scenarist.config.headers.testId, 'test-nested-1')
+        .send({ name: 'Charlie', email: 'charlie@example.com' });
+
+      await request(app)
+        .post('/form/step2')
+        .set(scenarist.config.headers.testId, 'test-nested-1')
+        .send({ street: '123 Main St', city: 'Springfield' });
+
+      const response = await request(app)
+        .get('/form/summary')
+        .set(scenarist.config.headers.testId, 'test-nested-1');
+
+      await scenarist.stop();
+
+      expect(response.status).toBe(200);
+      expect(response.body.userName).toBe('Charlie');
+      expect(response.body.userEmail).toBe('charlie@example.com');
+      expect(response.body.userStreet).toBe('123 Main St');
+      expect(response.body.userCity).toBe('Springfield');
+    });
+
+    it('should handle missing state keys gracefully (templates remain as-is)', async () => {
+      const scenarist = createScenarist({
+        enabled: true,
+        defaultScenario: mockDefaultScenario,
+      });
+
+      scenarist.registerScenario({
+        id: 'missing-keys',
+        name: 'Missing Keys',
+        description: 'Templates with missing keys remain unreplaced',
+        mocks: [
+          {
+            method: 'GET',
+            url: 'https://api.example.com/profile',
+            response: {
+              status: 200,
+              body: {
+                name: '{{state.userName}}',
+                email: '{{state.userEmail}}',
+                address: '{{state.userAddress}}',
+              },
+            },
+          },
+        ],
+      });
+
+      scenarist.start();
+
+      const app = express();
+      app.use(express.json());
+      app.use(scenarist.middleware);
+
+      app.get('/profile', async (_req, res) => {
+        const response = await fetch('https://api.example.com/profile');
+        const data = await response.json();
+        res.json(data);
+      });
+
+      await request(app)
+        .post(scenarist.config.endpoints.setScenario)
+        .set(scenarist.config.headers.testId, 'test-missing-1')
+        .send({ scenario: 'missing-keys' });
+
+      const response = await request(app)
+        .get('/profile')
+        .set(scenarist.config.headers.testId, 'test-missing-1');
+
+      await scenarist.stop();
+
+      expect(response.status).toBe(200);
+      expect(response.body.name).toBe('{{state.userName}}');
+      expect(response.body.email).toBe('{{state.userEmail}}');
+      expect(response.body.address).toBe('{{state.userAddress}}');
+    });
+  });
 });
