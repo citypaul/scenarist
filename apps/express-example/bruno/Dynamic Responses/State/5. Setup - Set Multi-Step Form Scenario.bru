@@ -1,0 +1,42 @@
+meta {
+  name: 5. Setup - Set Multi-Step Form Scenario
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/__scenario__
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "scenario": "multiStepForm"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+  res.body.scenario: eq multiStepForm
+}
+
+docs {
+  Sets the active scenario to "multiStepForm" for testing multi-step form with state accumulation.
+
+  This scenario demonstrates Phase 3 Stateful Mocks with nested state:
+  - Step 1: Captures user.name and user.email
+  - Step 2: Captures user.address.street and user.address.city
+  - Step 3: Injects all captured state into confirmation response
+
+  State accumulates across multiple requests and can be injected via:
+  - Nested paths: {{state.user.profile.name}}
+  - Template injection in response templates
+
+  All subsequent form tests depend on this scenario being active.
+}

@@ -1,0 +1,39 @@
+meta {
+  name: 0. Setup - Set Shopping Cart Scenario
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/__scenario__
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "scenario": "shoppingCart"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+  res.body.scenario: eq shoppingCart
+}
+
+docs {
+  Sets the active scenario to "shoppingCart" for testing stateful mocks with state capture and injection.
+
+  This scenario demonstrates Phase 3 of Dynamic Responses (Stateful Mocks):
+  - Captures items added to cart (POST /api/cart/add)
+  - Injects captured items into cart response (GET /api/cart)
+  - Uses array append syntax: `cartItems[]`
+  - Uses array length templates: `{{state.cartItems.length}}`
+
+  All subsequent shopping cart tests depend on this scenario being active.
+}

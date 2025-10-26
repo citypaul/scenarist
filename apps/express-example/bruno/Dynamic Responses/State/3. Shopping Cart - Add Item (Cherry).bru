@@ -1,0 +1,36 @@
+meta {
+  name: 3. Shopping Cart - Add Item (Cherry)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/cart/add
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "item": "Cherry"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+}
+
+docs {
+  Adds "Cherry" to the shopping cart.
+
+  State after this call:
+  - cartItems: ['Apple', 'Banana', 'Cherry']
+  - cartItems.length: 3
+
+  The next request will retrieve the cart and verify all three items are injected.
+}

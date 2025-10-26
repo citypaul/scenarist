@@ -6,6 +6,8 @@ import express, { type Express } from "express";
 import { setupGitHubRoutes } from "./routes/github.js";
 import { setupStripeRoutes } from "./routes/stripe.js";
 import { setupWeatherRoutes } from "./routes/weather.js";
+import { setupCartRoutes } from "./routes/cart.js";
+import { setupFormRoutes } from "./routes/form.js";
 import { defaultScenario, scenarios } from "./scenarios.js";
 
 /**
@@ -35,6 +37,8 @@ export const createApp = (): { app: Express; scenarist: ExpressScenarist } => {
   setupGitHubRoutes(router);
   setupWeatherRoutes(router);
   setupStripeRoutes(router);
+  setupCartRoutes(router);
+  setupFormRoutes(router);
   app.use(router);
 
   // Health check endpoint

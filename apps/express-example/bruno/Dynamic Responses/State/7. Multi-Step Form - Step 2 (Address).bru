@@ -1,0 +1,49 @@
+meta {
+  name: 7. Multi-Step Form - Step 2 (Address)
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/form/step2
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "address": "123 Main St",
+    "city": "Portland"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+  res.body.message: eq Step 2 completed for Alice
+  res.body.nextStep: eq /form/submit
+}
+
+docs {
+  Submits step 2 of the multi-step form with address information.
+
+  State capture:
+  - userAddress: 'body.address' → Captures '123 Main St'
+  - userCity: 'body.city' → Captures 'Portland'
+
+  State after this call (accumulated from both steps):
+  - userName: 'Alice'
+  - userEmail: 'alice@example.com'
+  - userAddress: '123 Main St'
+  - userCity: 'Portland'
+
+  Note the response message: "Step 2 completed for Alice"
+  - This demonstrates template injection in responses
+  - {{state.userName}} is injected into the message template
+
+  The next step will submit the form and inject all captured state into the confirmation.
+}

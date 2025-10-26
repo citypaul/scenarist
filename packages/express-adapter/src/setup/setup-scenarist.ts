@@ -55,19 +55,14 @@ export const createScenarist = (
   const registry = options.registry ?? new InMemoryScenarioRegistry();
   const store = options.store ?? new InMemoryScenarioStore();
 
-  // Create StateManager for Phase 3 stateful mocks
   const stateManager = createInMemoryStateManager();
 
   const manager = createScenarioManager({ registry, store, stateManager });
 
-  // Auto-register the default scenario
   manager.registerScenario(options.defaultScenario);
 
-  // Create SequenceTracker for Phase 2 sequence support
   const sequenceTracker = createInMemorySequenceTracker();
 
-  // Create ResponseSelector once for the lifetime of the adapter
-  // Pass both sequenceTracker (Phase 2) and stateManager (Phase 3)
   const responseSelector = createResponseSelector({ sequenceTracker, stateManager });
 
   const handler = createDynamicHandler({

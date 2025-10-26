@@ -1,0 +1,43 @@
+meta {
+  name: 6. Multi-Step Form - Step 1 (User Info)
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/form/step1
+  body: json
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+body:json {
+  {
+    "name": "Alice",
+    "email": "alice@example.com"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+  res.body.message: eq Step 1 completed
+  res.body.nextStep: eq /form/step2
+}
+
+docs {
+  Submits step 1 of the multi-step form with user information.
+
+  State capture:
+  - userName: 'body.name' → Captures 'Alice'
+  - userEmail: 'body.email' → Captures 'alice@example.com'
+
+  State after this call:
+  - userName: 'Alice'
+  - userEmail: 'alice@example.com'
+
+  The next step will capture additional information and accumulate it in state.
+}

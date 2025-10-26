@@ -1,0 +1,41 @@
+meta {
+  name: 4. Shopping Cart - Get Cart (shows 3 items)
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/cart
+  body: none
+  auth: none
+}
+
+headers {
+  x-test-id: {{testId}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.items: isArray
+  res.body.items: length 3
+  res.body.items[0]: eq Apple
+  res.body.items[1]: eq Banana
+  res.body.items[2]: eq Cherry
+  res.body.count: eq 3
+  res.body.total: eq 0
+}
+
+docs {
+  Retrieves the shopping cart contents.
+
+  This response demonstrates pure template injection:
+  - items: '{{state.cartItems}}' → Injects raw array ['Apple', 'Banana', 'Cherry']
+  - count: '{{state.cartItems.length}}' → Injects raw number 3 (not '3')
+
+  Key behavior:
+  - Pure templates (entire value is template) preserve types
+  - Arrays remain arrays (not stringified)
+  - Numbers remain numbers (not converted to strings)
+
+  This is Phase 3 stateful mock behavior in action.
+}

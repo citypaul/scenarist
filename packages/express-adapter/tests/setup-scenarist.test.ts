@@ -617,7 +617,7 @@ describe('createScenarist', () => {
       expect(response2.body.name).toBe('Bob');
     });
 
-    it('should support array append syntax for state capture', async () => {
+    it('should handle missing state keys gracefully (templates remain as-is)', async () => {
       const scenarist = createScenarist({
         enabled: true,
         defaultScenario: mockDefaultScenario,
