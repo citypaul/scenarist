@@ -12,6 +12,11 @@
       "outputs": ["coverage/**"],
       "env": ["NODE_ENV"]
     },
+    "test:bruno:ci": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "env": ["NODE_ENV"]
+    },
     "lint": {
       "dependsOn": ["^lint"]
     },
