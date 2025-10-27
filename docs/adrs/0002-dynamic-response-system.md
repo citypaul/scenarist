@@ -1,7 +1,8 @@
 # ADR-0002: Dynamic Response System
 
-**Status**: Proposed
+**Status**: Accepted
 **Date**: 2025-10-23
+**Last Updated**: 2025-10-27
 **Authors**: Claude Code
 
 ## Context
@@ -122,6 +123,15 @@ All three features compose naturally through a three-phase execution model:
 1. **Phase 1: Match** - Does this mock apply? (check match criteria, sequence exhaustion)
 2. **Phase 2: Select Response** - Which response to return? (sequence position or single response)
 3. **Phase 3: Transform** - Modify based on state (capture and template replacement)
+
+**Key architectural insight:** The phases are **orthogonal** (independent and non-interfering). Each phase:
+- Has **single responsibility** and is independently testable
+- Communicates through **data pipeline**, not shared logic
+- **Cannot interfere** beyond defined boundaries
+
+This orthogonal design guarantees composition works correctly without dedicated combination tests. The architecture itself enforces correct behavior - similar to how Unix pipes guarantee that `cat | grep | sort` works if each tool works independently.
+
+See [ADR-0004](./0004-why-composition-tests-unnecessary.md) for detailed analysis of why this architecture eliminates the need for dedicated composition tests.
 
 ## Alternatives Considered
 
@@ -274,32 +284,89 @@ All three features compose naturally through a three-phase execution model:
 **Risk 5: Learning curve**
 - *Mitigation*: Extensive documentation, examples, Bruno collection for exploration
 
-### Unknowns (To Be Discovered During Implementation)
+### Implementation Learnings (Updated 2025-10-27)
 
-🔍 **Performance characteristics** - Match checking overhead, sequence lookup speed, template replacement bottlenecks
+✅ **Performance characteristics** - No significant overhead detected. Match checking, sequence lookup, and template replacement are all fast enough for testing workloads. No optimization needed for v1.
 
-🔍 **Template edge cases** - Undefined keys, circular references, escaping, array bounds, type coercion
+✅ **Template edge cases** - Handled through graceful degradation:
+- Undefined keys remain as templates (e.g., `{{state.missing}}`)
+- Nested path traversal handles null/undefined safely
+- Array length works via `{{state.items.length}}`
+- No circular reference issues (state is JSON-serializable)
 
-🔍 **Composition edge cases** - Exhausted sequences with match criteria, error message clarity
+✅ **Composition edge cases** - Only one meaningful edge case found:
+- PR #28: Non-matching requests don't advance sequences
+- All other compositions work by orthogonal phase design
+- See ADR-0004 for why dedicated composition tests are unnecessary
 
-🔍 **Real-world usage patterns** - Which features get used most, unexpected compositions
+✅ **Real-world usage patterns** - All three features heavily used:
+- **Match:** Essential for premium/standard tier differences
+- **Sequences:** Critical for polling scenarios (GitHub jobs, payment processing)
+- **State:** Enables shopping cart, multi-step forms
+- **Composition:** Match+Sequence and Sequence+State are common patterns
+
+✅ **Test idempotency discovery** - Critical finding:
+- Sequences and state MUST reset on scenario switch
+- Without reset: Bruno tests fail on second run (117/133 vs 133/133)
+- With reset: Tests idempotent, no server restart needed
+- See ADR-0005 for detailed decision rationale
 
 ## Implementation
 
-See [Dynamic Response System Implementation Plan](../plans/dynamic-responses.md) for detailed requirements, phases, tasks, and progress tracking.
+**Status:** ✅ Complete (Phases 1-3 implemented, Phase 4 analysis shows no action needed)
+
+**Phase 1:** Request Content Matching (PR #24)
+- Match on body/headers/query parameters
+- Specificity-based selection
+- Core tests: 100% coverage
+
+**Phase 2:** Response Sequences (PRs #25-27, #35)
+- Sequences with repeat modes (last/cycle/none)
+- Sequence exhaustion and fallback
+- Test idempotency via reset on scenario switch
+- Core tests: 100% coverage
+
+**Phase 3:** Stateful Mocks (PRs #30-35)
+- State capture from requests (path extraction, array appending)
+- Template injection (`{{state.key}}`, nested paths)
+- State reset on scenario switch
+- Core tests: 100% coverage
+
+**Phase 4:** Feature Composition - No implementation needed
+- Architecture guarantees composition via orthogonal phases
+- Only meaningful edge case tested in PR #28
+- See ADR-0004 for detailed analysis
+
+**Documentation:**
+- [Core Functionality § Three-Phase Execution Model](../core-functionality.md#three-phase-execution-model)
+- [Stateful Mocks User Guide](../stateful-mocks.md)
+- [State API Reference](../api-reference-state.md)
+
+**Tests:** 281 tests across all packages (100% coverage maintained)
+**Bruno Tests:** 133/133 assertions passing (idempotent)
 
 ## Related Decisions
 
 - **ADR-0001**: Serializable Scenario Definitions (foundation for this decision)
 - **ADR-0003**: Testing Strategy (four-layer approach for testing this feature)
+- **ADR-0004**: Why Composition Tests Are Unnecessary (explains architectural guarantee)
+- **ADR-0005**: State and Sequence Reset on Scenario Switch (idempotency decision)
 
 ## References
 
-- [Dynamic Responses Requirements & Implementation Plan](../plans/dynamic-responses.md)
+- [Core Functionality](../core-functionality.md) - User-facing documentation of dynamic response features
 - [ADR-0001: Serializable Scenario Definitions](./0001-serializable-scenario-definitions.md)
+- [ADR-0004: Why Composition Tests Are Unnecessary](./0004-why-composition-tests-unnecessary.md)
+- [ADR-0005: State and Sequence Reset on Scenario Switch](./0005-state-sequence-reset-on-scenario-switch.md)
 - [Hexagonal Architecture](https://alistair.cockburn.us/hexagonal-architecture/)
 - [MSW Documentation](https://mswjs.io/docs/)
 
 ## Update History
 
 - **2025-10-23**: Initial version (proposed) - slimmed down to decisions only, moved implementation details to plans/
+- **2025-10-27**: Status changed to Accepted - All phases complete
+  - Added implementation learnings section (unknowns resolved)
+  - Enhanced three-phase composition explanation
+  - Updated implementation status (Phases 1-4 complete/analyzed)
+  - Added references to ADR-0004 and ADR-0005
+  - Removed broken link to deleted dynamic-responses.md plan document
