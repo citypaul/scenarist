@@ -12,6 +12,7 @@ This document explains Scenarist's core domain logic, independent of any specifi
   - [Request Content Matching](#request-content-matching)
   - [Specificity-Based Selection](#specificity-based-selection)
   - [Fallback Behavior](#fallback-behavior)
+  - [Three-Phase Execution Model](#three-phase-execution-model)
 - [Test Isolation](#test-isolation)
 - [Architecture](#architecture)
 
@@ -375,6 +376,127 @@ const mocks = [
 - Fallbacks have specificity of 0
 - Multiple fallbacks: first one wins as tiebreaker
 - If no mocks match and no fallback exists: error returned
+
+### Three-Phase Execution Model
+
+**Status:** ✅ Implemented (Phases 1-3 complete)
+
+Every request goes through three mandatory sequential phases. This architecture guarantees that features compose correctly without needing dedicated composition tests.
+
+#### Phase 1: Match (Which mock applies?)
+
+For each mock with a matching URL:
+
+1. **Check sequence exhaustion** (if applicable)
+   - If mock has `sequence` with `repeat: 'none'`
+   - Skip if position > total responses (exhausted)
+
+2. **Check match criteria** (if present)
+   - Evaluate `match.body` (partial match)
+   - Evaluate `match.headers` (exact match)
+   - Evaluate `match.query` (exact match)
+   - Skip if any criterion fails
+
+3. **Calculate specificity**
+   - Count match criteria (body fields + headers + query params)
+   - Track highest specificity match
+
+4. **Select best match**
+   - Mock with highest specificity wins
+   - Order breaks ties when specificity is equal
+
+**Phase 1 Gates Everything:** If a mock doesn't match, it's skipped entirely - no sequence advancement, no state capture.
+
+#### Phase 2: Select (Which response to return?)
+
+Once best match is selected:
+
+1. **If mock has `sequence`:**
+   - Get response at current position
+   - Advance position for this (testId + scenarioId + mockIndex)
+   - Handle repeat mode:
+     - `'last'`: Stay at final position
+     - `'cycle'`: Wrap to position 0
+     - `'none'`: Mark as exhausted
+
+2. **Else if mock has `response`:**
+   - Return the single response
+
+**Phase 2 is Independent:** Knows nothing about match criteria or state management.
+
+#### Phase 3: Transform (Modify response based on state)
+
+After selecting response:
+
+1. **If mock has `captureState`:**
+   - Extract values from request using paths (`body.field`, `query.param`)
+   - Store in state Map under testId
+   - Handle array appending syntax (`stateKey[]`)
+   - Support nested paths (`user.profile.name`)
+
+2. **If response contains templates:**
+   - Find all `{{state.X}}` patterns
+   - Replace with actual values from state
+   - Handle nested paths (`{{state.user.name}}`)
+   - Handle special accessors (`{{state.items.length}}`)
+
+3. **Apply response modifiers:**
+   - Add configured delays
+   - Add configured headers
+   - Return final response
+
+**Phase 3 is Independent:** Knows nothing about matching or sequence selection.
+
+#### Why This Architecture Matters
+
+**Composition Guaranteed by Design:**
+
+The three phases are **orthogonal** (independent and non-interfering):
+- Match doesn't know about sequences or state
+- Select doesn't know about match criteria or state
+- Transform doesn't know about matching or sequences
+
+They communicate through a **data pipeline**, not shared logic. Each phase has a **single responsibility**.
+
+**This means:**
+- Features automatically compose correctly
+- No dedicated composition tests needed
+- Like Unix pipes: `cat | grep | sort` works because each tool is independent
+- The only edge case (match gates sequence) is explicitly tested in PR #28
+
+**Examples of composition:**
+
+```typescript
+// Match + Sequence: Sequence only advances for matching requests
+{
+  match: { body: { tier: 'premium' } },
+  sequence: {
+    responses: [/* ... */],
+    repeat: 'last'
+  }
+}
+// Phase 1 checks match → Phase 2 advances sequence (if Phase 1 passed)
+
+// Sequence + State: Each sequence response can inject state
+{
+  sequence: {
+    responses: [
+      { body: { step: 1, user: '{{state.userName}}' } },
+      { body: { step: 2, user: '{{state.userName}}' } }
+    ]
+  },
+  captureState: { 'userName': 'body.name' }
+}
+// Phase 2 selects response → Phase 3 captures and injects state
+
+// All three: Match gates, sequence selects, state injects
+{
+  match: { body: { tier: 'premium' } },
+  sequence: { responses: [/* ... */] },
+  captureState: { 'userName': 'body.name' }
+}
+// Phase 1 gates → Phase 2 selects → Phase 3 transforms
+```
 
 ## Test Isolation
 

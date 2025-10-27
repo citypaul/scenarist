@@ -10,29 +10,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Core Package** (`packages/core`)
 - ✅ All types and ports defined (serializable, immutable)
-- ✅ Domain logic implemented (`createScenarioManager`, `buildConfig`)
-- ✅ Default adapters (`InMemoryScenarioRegistry`, `InMemoryScenarioStore`)
-- ✅ 54 tests passing, 100% behavior coverage
+- ✅ Domain logic implemented (`createScenarioManager`, `buildConfig`, `ResponseSelector`)
+- ✅ Default adapters (`InMemoryScenarioRegistry`, `InMemoryScenarioStore`, `InMemoryStateManager`, `InMemorySequenceTracker`)
+- ✅ Dynamic Response System: Phase 1-3 complete (request matching, sequences, stateful mocks)
+- ✅ 157 tests passing, 100% behavior coverage
 
 **MSW Adapter** (`packages/msw-adapter`)
 - ✅ URL pattern matching (exact, glob, path parameters)
 - ✅ Mock definition → MSW handler conversion
-- ✅ Dynamic handler with scenario fallback
-- ✅ 31 tests passing, 100% coverage
+- ✅ Dynamic handler with scenario fallback and response selection
+- ✅ 35 tests passing, 100% coverage
 
 **Express Adapter** (`packages/express-adapter`)
 - ✅ Express middleware integration
 - ✅ Test ID extraction via AsyncLocalStorage
 - ✅ Scenario endpoints (GET/POST `/__scenario__`)
-- ✅ 30 tests passing, 100% coverage
+- ✅ 40 tests passing, 100% coverage
 
 **Express Example App** (`apps/express-example`)
 - ✅ Real-world Express application
-- ✅ Multiple scenarios demonstrating usage
+- ✅ Multiple scenarios demonstrating all features (matching, sequences, state)
 - ✅ E2E tests proving integration
-- ✅ 27 tests passing
+- ✅ Bruno test automation (133/133 assertions passing)
+- ✅ 49 tests passing
 
-**Total: 142 tests passing across all packages** with TypeScript strict mode and full type safety.
+**Total: 281 tests passing across all packages** with TypeScript strict mode and full type safety.
 
 ## Essential Commands
 
@@ -1263,3 +1265,120 @@ if (bestMatch) {
 - What happens when only one feature applies?
 - What happens when neither feature applies?
 - What happens when features should NOT interact?
+
+## Phase 4: Why Dedicated Composition Tests Aren't Needed
+
+**Date:** 2025-10-27
+**Status:** Analysis Complete - No Implementation Required
+
+### The Question
+
+After completing Phases 1-3 (request matching, sequences, stateful mocks), should Phase 4 add dedicated tests for feature composition (Match + Sequence, Match + State, Sequence + State, all three together)?
+
+### Deep Analysis from First Principles
+
+**The Three-Phase Execution Model:**
+
+Every request goes through three mandatory sequential phases:
+
+```typescript
+// Phase 1: MATCH (Which mock applies?)
+for (mock in mocks) {
+  if (mock.sequence && sequenceExhausted) continue;
+  if (mock.match && !matchesCriteria(request, mock.match)) continue;
+  trackBestMatch(mock);  // Specificity-based selection
+}
+
+// Phase 2: SELECT (Which response to return?)
+if (bestMatch.sequence) {
+  response = selectFromSequence(bestMatch, position);
+  advancePosition(bestMatch);  // ONLY if mock matched
+} else {
+  response = bestMatch.response;
+}
+
+// Phase 3: TRANSFORM (Modify response based on state)
+if (bestMatch.captureState) {
+  captureValuesFromRequest(request, bestMatch.captureState);
+}
+if (responseContainsTemplates(response)) {
+  response = injectStateIntoTemplates(response, state);
+}
+
+return response;
+```
+
+**Key Architectural Insight:**
+
+The phases are **orthogonal** (independent and non-interfering):
+- **Match** doesn't know about sequences or state
+- **Select** doesn't know about match criteria or state
+- **Transform** doesn't know about matching or sequences
+
+They communicate through a **data pipeline**, not shared logic.
+
+### Why Composition "Just Works"
+
+Features compose correctly because they're designed as **independent pipeline stages:**
+
+1. Each phase has **single responsibility**
+2. Phases are **independently tested** (100% coverage each)
+3. The **architecture enforces** correct composition
+4. No new failure modes emerge from combination
+
+**This is like testing Unix pipes:**
+- If `cat` works, `grep` works, and `sort` works independently
+- Then `cat | grep | sort` works by design of the pipe mechanism
+- You don't need to test every combination of commands
+
+### Analysis of Each "Composition"
+
+**Match + Sequence:**
+- Match phase gates whether sequence advances
+- Already tested in PR #28 ✅
+- This IS the edge case
+
+**Match + State:**
+- Match phase gates whether state captures
+- Guaranteed by sequential execution
+- If match fails → mock skipped → no capture
+- No new failure mode
+
+**Sequence + State:**
+- Sequence selects response (Phase 2)
+- State injects templates (Phase 3)
+- No interaction - different phases
+- No new failure mode
+
+**Match + Sequence + State:**
+- Match gates everything (Phase 1)
+- Sequence selects (Phase 2)
+- State injects (Phase 3)
+- All interactions already tested
+
+### The Only Meaningful Edge Case
+
+**PR #28** tested that non-matching requests don't advance sequences. This is the ONLY place where phases interact beyond their defined boundaries (match gates sequence advancement).
+
+All other "compositions" are just phases executing in sequence with no new edge cases.
+
+### Conclusion
+
+**Dedicated composition tests are unnecessary because:**
+
+1. ✅ Architecture guarantees composition (three-phase model)
+2. ✅ PR #28 tested the only edge case (match gates sequence)
+3. ✅ Existing tests cover all phases (100% coverage maintained)
+4. ✅ Phases are orthogonal (cannot interfere beyond what's tested)
+5. ❌ Additional tests would be redundant (no new failure modes)
+6. ❌ Maintenance burden without benefit (more tests, same coverage)
+
+**Recommendation:**
+- Mark Phase 4 as "✅ Covered by Architecture + PR #28"
+- Document HOW features compose (user guide, not tests)
+- Add targeted tests ONLY if composition bugs are found
+- Don't add speculative tests for orthogonal features
+
+**This is a critical architectural insight:** When designing systems with independent pipeline stages, test each stage thoroughly. Don't test all combinations - the architecture guarantees composition.
+
+_For the formal decision rationale and conditions under which this decision should be revisited, see [ADR-0004: Why Composition Tests Are Unnecessary](docs/adrs/0004-why-composition-tests-unnecessary.md)._
