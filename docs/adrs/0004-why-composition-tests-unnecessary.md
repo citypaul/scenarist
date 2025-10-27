@@ -162,6 +162,24 @@ The phases are **orthogonal** (independent and non-interfering):
    - Update this ADR with learnings
    - Re-evaluate if architecture assumptions were wrong
 
+## When to Revisit This Decision
+
+This decision should be reconsidered if:
+
+1. **Composition bugs found in production/testing** - If bugs emerge specifically from feature interactions that weren't caught by phase-level tests, this indicates the orthogonality assumption may be incorrect.
+
+2. **Phases become coupled** - If changes to one phase start requiring changes to other phases, this would indicate architectural regression. Coupling between phases would break the orthogonality guarantee.
+
+3. **New features create interactions beyond three-phase model** - If future features introduce interactions that don't fit the Match → Select → Transform pipeline, dedicated composition tests may become necessary.
+
+4. **Performance issues from composition** - If the combination of features creates performance problems not evident when testing phases independently.
+
+**Signs the decision is still valid:**
+- Bug reports remain phase-specific (matching bugs, sequence bugs, state bugs)
+- Phases remain independently modifiable
+- New features fit naturally into the three-phase model
+- Test coverage remains 100% at phase level
+
 ## Related Documents
 
 - [CLAUDE.md § Phase 4: Why Dedicated Composition Tests Aren't Needed](../../CLAUDE.md#phase-4-why-dedicated-composition-tests-arent-needed)

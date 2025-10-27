@@ -182,7 +182,7 @@ switchScenario(testId, scenarioId, variantName): Result<void, Error> {
 
   store.set(testId, { scenarioId, variantName });
 
-  // Phase 2: Reset sequence positions on scenario switch
+  // Reset sequence positions (from Dynamic Response Phase 2: Sequences)
   if (sequenceTracker) {
     sequenceTracker.reset(testId);
   }
@@ -209,12 +209,12 @@ switchScenario(testId, scenarioId, variantName): Result<void, Error> {
 
   store.set(testId, { scenarioId, variantName });
 
-  // Phase 2: Reset sequence positions
+  // Reset sequence positions (from Dynamic Response Phase 2: Sequences)
   if (sequenceTracker) {
     sequenceTracker.reset(testId);
   }
 
-  // Phase 3: Reset captured state
+  // Reset captured state (from Dynamic Response Phase 3: Stateful Mocks)
   if (stateManager) {
     stateManager.reset(testId);
   }

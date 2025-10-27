@@ -1380,3 +1380,5 @@ All other "compositions" are just phases executing in sequence with no new edge 
 - Don't add speculative tests for orthogonal features
 
 **This is a critical architectural insight:** When designing systems with independent pipeline stages, test each stage thoroughly. Don't test all combinations - the architecture guarantees composition.
+
+_For the formal decision rationale and conditions under which this decision should be revisited, see [ADR-0004: Why Composition Tests Are Unnecessary](docs/adrs/0004-why-composition-tests-unnecessary.md)._
