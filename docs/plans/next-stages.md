@@ -83,81 +83,106 @@ docs-site/
 ```
 
 **Tasks:**
-1. ✅ Create Nextra site (scaffold)
-2. ✅ Migrate existing docs to MDX
-3. ✅ Add navigation and search
-4. ✅ Add code examples (syntax highlighting)
-5. ✅ Add interactive examples (embedded CodeSandbox?)
-6. ✅ Deploy to Vercel (scenarist.dev domain?)
-7. ✅ Add Open Graph images
-8. ✅ Add Google Analytics (optional)
+1. [ ] Create Nextra site (scaffold)
+2. [ ] Migrate existing docs to MDX
+3. [ ] Add navigation and search
+4. [ ] Add code examples (syntax highlighting)
+5. [ ] Add interactive examples (embedded CodeSandbox?)
+6. [ ] Deploy to Vercel (scenarist.dev domain?)
+7. [ ] Add Open Graph images
+8. [ ] Add Google Analytics (optional)
 
 **Estimated Time:** 5-7 days
 **Priority:** CRITICAL - Must have before v1.0
+**Status:** ⏳ Not Started (planned for after Next.js examples)
 
 ---
 
-### 2. Next.js Example Application (REQUIRED)
+### 2. Next.js Example Applications (REQUIRED)
 
 **Goal:** Demonstrate Scenarist works with Next.js (most popular framework)
+
+**Strategy:** Create TWO separate example apps to cover both routing approaches:
+
+#### 2a. Pages Router Example (`apps/nextjs-pages-example`)
+
+**Status:** 🚧 In Progress - [Implementation Plan](./nextjs-pages-and-playwright-helpers.md) | [PR #38](https://github.com/citypaul/scenarist/pull/38)
+
+**Scope:**
+- **Pages Router** (traditional, widely used)
+- API routes (`pages/api/`)
+- E2E testing with Playwright
+- Demonstrates all three Scenarist features
+
+**Example App:** E-commerce checkout flow (products → cart → checkout → payment)
+
+**Companion Package:** `packages/playwright-helpers`
+- Reusable Playwright test utilities
+- Auto test ID management
+- Scenario switching helpers
+- 70% reduction in test boilerplate
+- Framework-agnostic (works with any HTTP server)
+
+**Test Scenarios:**
+1. **Premium/Standard User:** Different pricing tiers (request matching)
+2. **Shopping Cart:** Item accumulation (stateful mocks)
+3. **Free Shipping:** UK vs US shipping (matching on country)
+4. **Payment Polling:** Status progression (sequences)
+5. **Payment Declined:** Error handling
+6. **Parallel Isolation:** Multiple tests with different scenarios concurrently
+
+**Tasks:**
+- [ ] Phase 0: Setup both packages (Next.js app + Playwright helpers)
+- [ ] Phase 1: Scenarist integration + first helper (scenario switching)
+- [ ] Phase 2: Products page (request matching)
+- [ ] Phase 3: Shopping cart (stateful mocks)
+- [ ] Phase 4: Checkout (matching + stateful composition)
+- [ ] Phase 5: Payment (sequences with polling)
+- [ ] Phase 6: Parallel test isolation proof
+- [ ] Phase 7: Documentation & polish
+
+**Deliverables:**
+- [ ] `apps/nextjs-pages-example` - Full e-commerce app
+- [ ] `packages/playwright-helpers` - Reusable test package
+- [ ] 20+ Playwright E2E tests
+- [ ] 100% API route coverage (Vitest)
+- [ ] Bruno collection (10+ requests)
+- [ ] Comprehensive READMEs
+
+**Estimated Time:** 5-6 days (includes Playwright helpers development)
+**Priority:** CRITICAL - Must have before v1.0
+
+#### 2b. App Router Example (`apps/nextjs-app-example`)
+
+**Status:** ⏳ Not Started (after Pages Router complete)
 
 **Scope:**
 - **App Router** (modern, recommended)
 - Server Components
 - Server Actions
 - Route Handlers (API routes)
-- Integration tests with Scenarist
+- Same e-commerce flow, different architecture
 
-**Example App:** E-commerce checkout flow
-```
-apps/nextjs-example/
-├── app/
-│   ├── layout.tsx
-│   ├── page.tsx                         # Product listing
-│   ├── cart/
-│   │   └── page.tsx                     # Shopping cart
-│   ├── checkout/
-│   │   ├── page.tsx                     # Checkout form
-│   │   └── actions.ts                   # Server Actions (submit payment)
-│   └── api/
-│       ├── products/route.ts            # GET /api/products
-│       ├── cart/route.ts                # GET/POST /api/cart
-│       └── payment/route.ts             # POST /api/payment
-├── src/
-│   ├── scenarios.ts                     # Scenario definitions
-│   └── scenarist.ts                     # Scenarist setup
-├── tests/
-│   ├── cart.test.ts                     # Cart flows (stateful)
-│   ├── checkout.test.ts                 # Payment flows (sequences)
-│   └── products.test.ts                 # Product listing (matching)
-└── README.md
-```
-
-**External API Mocks:**
-- Stripe API (payment processing)
-- Product catalog API
-- Inventory API
-- Tax calculation API
-
-**Test Scenarios:**
-1. **Success Flow:** Add items → checkout → payment succeeds
-2. **Payment Declined:** Card declined scenario
-3. **Out of Stock:** Inventory check fails
-4. **Premium User:** Different pricing tiers (match criteria)
-5. **Payment Retry:** Polling for async payment status (sequences)
+**Why After Pages Router:**
+- Pages Router is simpler, better for initial demonstration
+- App Router can reuse scenarios and patterns from Pages Router
+- Shows migration path (Pages → App Router)
+- Playwright helpers package already exists
 
 **Tasks:**
-1. ✅ Create Next.js app (App Router)
-2. ✅ Build e-commerce UI (product list, cart, checkout)
-3. ✅ Add Server Actions for mutations
-4. ✅ Define scenarios (success, error, edge cases)
-5. ✅ Write integration tests
-6. ✅ Add Bruno collection for manual testing
-7. ✅ Document Next.js setup in README
-8. ✅ Add to documentation site
+- [ ] Create Next.js app (App Router)
+- [ ] Adapt e-commerce flow to Server Components
+- [ ] Use Server Actions for mutations
+- [ ] Reuse Playwright helpers package
+- [ ] Demonstrate SSR/RSC with Scenarist
+- [ ] Write tests (Playwright + Vitest)
+- [ ] Bruno collection
+- [ ] Documentation
 
-**Estimated Time:** 3-5 days
+**Estimated Time:** 3-4 days (faster due to Pages Router learnings)
 **Priority:** CRITICAL - Must have before v1.0
+
+**Combined Time for Both:** 8-10 days
 
 ---
 
@@ -168,9 +193,9 @@ apps/nextjs-example/
 **Tasks:**
 
 **Licensing:**
-- ✅ Add LICENSE file (MIT) to repo root
-- ✅ Add LICENSE to each package
-- ✅ Update package.json license field
+- [ ] Add LICENSE file (MIT) to repo root
+- [ ] Add LICENSE to each package
+- [ ] Update package.json license field
 
 **Package.json Updates:**
 ```json
@@ -212,21 +237,22 @@ apps/nextjs-example/
 ```
 
 **README.md Per Package:**
-- ✅ @scenarist/core - Core functionality overview
-- ✅ @scenarist/msw-adapter - MSW integration
-- ✅ @scenarist/express-adapter - Express setup
-- ✅ (future) @scenarist/nextjs-adapter - Next.js setup
+- [ ] @scenarist/core - Core functionality overview
+- [ ] @scenarist/msw-adapter - MSW integration
+- [ ] @scenarist/express-adapter - Express setup
+- [ ] @scenarist/playwright-helpers - Playwright test utilities
 
 **Tasks:**
-1. ✅ Create LICENSE files
-2. ✅ Update all package.json files
-3. ✅ Write package READMEs
-4. ✅ Verify exports and entry points
-5. ✅ Test package builds locally
-6. ✅ Create .npmignore files if needed
+1. [ ] Create LICENSE files
+2. [ ] Update all package.json files
+3. [ ] Write package READMEs
+4. [ ] Verify exports and entry points
+5. [ ] Test package builds locally
+6. [ ] Create .npmignore files if needed
 
 **Estimated Time:** 1-2 days
 **Priority:** CRITICAL - Must have before v1.0
+**Status:** ⏳ Not Started (after Next.js examples)
 
 ---
 
@@ -239,16 +265,17 @@ apps/nextjs-example/
 - 1 moderate severity Dependabot alert
 
 **Tasks:**
-1. ✅ Run `npm audit` across all packages
-2. ✅ Fix Dependabot vulnerabilities
-3. ✅ Review all dependencies (remove unused)
-4. ✅ Add CI checks for vulnerabilities
-5. ✅ Run final test suite (all 281 tests)
-6. ✅ Run type checking (strict mode)
-7. ✅ Run linting (no warnings)
+1. [ ] Run `npm audit` across all packages
+2. [ ] Fix Dependabot vulnerabilities (1 high, 1 moderate)
+3. [ ] Review all dependencies (remove unused)
+4. [ ] Add CI checks for vulnerabilities
+5. [ ] Run final test suite (all 281 tests)
+6. [ ] Run type checking (strict mode)
+7. [ ] Run linting (no warnings)
 
 **Estimated Time:** 4-8 hours
 **Priority:** CRITICAL - Must have before v1.0
+**Status:** ⏳ Not Started (can be done in parallel with other work)
 
 ---
 
@@ -385,38 +412,48 @@ Response:
 
 ### Pre-v1.0 (Required Work)
 
-**Week 1-2: Documentation Site**
+**Current Approach:** Next.js examples first, then documentation site
+
+**Weeks 1-2: Next.js Examples + Playwright Helpers**
+- Days 1-6: Pages Router example + Playwright helpers package (5-6 days)
+- Days 7-10: App Router example (3-4 days)
+- Both apps demonstrate all Scenarist features
+- Playwright helpers reduce test boilerplate by 70%
+
+**Weeks 3-4: Documentation Site**
 - Days 1-2: Nextra setup, structure
 - Days 3-5: Migrate existing docs to MDX
-- Days 6-7: Cookbook recipes, polish
-- Days 8-10: Review, test, deploy
+- Days 6-7: Add Next.js examples documentation
+- Days 8-10: Cookbook recipes, polish, deploy
 
-**Week 3: Next.js Example**
-- Days 1-2: App setup, UI building
-- Day 3: Scenarist integration
-- Day 4: Scenarios and tests
-- Day 5: Documentation and polish
-
-**Week 4: Security & Metadata**
-- Days 1-2: Fix vulnerabilities
-- Day 3: Package metadata
+**Week 5: Polish & Release Prep**
+- Days 1-2: Fix security vulnerabilities
+- Day 3: Package metadata & licensing
 - Days 4-5: Package READMEs
-- Day 6-7: Final review and testing
+- Days 6-7: Final review, testing, release prep
 
-**Total Time:** ~4 weeks
+**Total Time:** ~5 weeks
+
+**Why This Order:**
+1. Next.js examples provide concrete demos for documentation
+2. Playwright helpers are battle-tested before documenting
+3. Documentation can reference real working examples
+4. Examples validate architecture before committing to docs
 
 ### v1.0 Release
 
 **Release Checklist:**
-- ✅ All 281 tests passing
-- ✅ Documentation site live
-- ✅ Express example complete
-- ✅ Next.js example complete
-- ✅ Security issues resolved
-- ✅ Package metadata complete
-- ✅ READMEs written
-- ✅ CHANGELOG created
-- ✅ Changesets configured
+- [x] All 281 tests passing (core features complete)
+- [x] Express example complete (with Bruno tests)
+- [ ] Next.js Pages Router example complete
+- [ ] Next.js App Router example complete
+- [ ] Playwright helpers package complete
+- [ ] Documentation site live
+- [ ] Security issues resolved
+- [ ] Package metadata complete
+- [ ] Package READMEs written
+- [ ] CHANGELOG created
+- [ ] Changesets configured
 
 **Release Process:**
 1. Create v1.0.0 changeset
@@ -557,15 +594,27 @@ Do we need:
 
 ---
 
-## Next Actions (Immediate)
+## Next Actions (Current State)
 
-1. **Merge PR #36** (documentation cleanup)
-2. **Create Nextra site** (scaffold, basic structure)
-3. **Start migrating docs** to MDX format
-4. **Fix Dependabot issues** (security first)
-5. **Create Next.js example** (parallel with docs)
+**Recently Completed:**
+- ✅ PR #36 merged (documentation cleanup, ADRs)
+- ✅ PR #38 created (living plan for Next.js + Playwright helpers)
+- ✅ Implementation plan document created
 
-**Estimated time to v1.0:** 4 weeks of focused work
+**In Progress:**
+- 🚧 Next.js Pages Router example + Playwright helpers ([Plan](./nextjs-pages-and-playwright-helpers.md) | [PR #38](https://github.com/citypaul/scenarist/pull/38))
+  - Status: Phase 0 - Ready to Start
+  - Next: Setup both packages (0.5 day)
+
+**Up Next:**
+1. **Complete Pages Router example** (Phases 0-7, ~5-6 days)
+2. **Complete App Router example** (~3-4 days)
+3. **Build documentation site** (Nextra, ~5-7 days)
+4. **Fix security vulnerabilities** (~4-8 hours)
+5. **Package metadata & licensing** (~1-2 days)
+6. **Final polish & release** (~1-2 days)
+
+**Estimated time to v1.0:** ~5 weeks of focused work
 
 ---
 
