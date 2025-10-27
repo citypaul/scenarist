@@ -677,6 +677,91 @@ const config = buildConfig({
 
 **The principle:** ALL data structures in ports and domain must be serializable. No exceptions.
 
+### Sequence Reset on Scenario Switch - Idempotency Fix
+
+**Problem:** Bruno tests passed on first run (133/133 assertions) but failed on second run (117/133 assertions)
+
+**Root Cause:** Sequences and state persisted across test runs
+- SequenceTracker had no reset mechanism
+- ScenarioManager didn't reset sequences on scenario switch
+- Sequences advanced on each request but never reset
+- Second test run started with advanced sequence positions
+
+**Impact:**
+- Bruno tests non-idempotent (different results on repeated runs)
+- Manual testing unreliable (required server restart)
+- Integration test failures when running multiple times
+- Shopping cart accumulated items across runs (6 instead of 3)
+- Payment sequences exhausted prematurely
+
+**Solution: Implement Sequence Reset with Strict TDD**
+
+**Phase 1 - Unit Tests (RED → GREEN):**
+1. Created `packages/core/tests/in-memory-sequence-tracker.test.ts` with 7 comprehensive tests:
+   - Basic reset (all positions cleared)
+   - Test ID isolation (reset test-1 doesn't affect test-2)
+   - Exhausted sequences reset to non-exhausted
+   - Reset with no existing sequences (edge case)
+   - Re-advancing after reset works
+   - Multiple scenarios per test ID reset
+   - Multiple mocks per scenario reset
+
+2. Tests PASSED immediately (implementation existed from Phase 2 cleanup but wasn't used)
+
+**Phase 2 - Integration Tests (RED → GREEN):**
+3. Added 4 tests to `packages/core/tests/scenario-manager.test.ts`:
+   - ScenarioManager calls sequenceTracker.reset() on successful scenario switch
+   - Failed scenario switches don't reset sequences
+   - Backward compatibility (optional sequenceTracker parameter)
+   - Test ID isolation at manager level
+
+4. Tests PASSED - implementation already correct
+
+**Phase 3 - Implementation Verification:**
+- Added `reset(testId)` method to SequenceTracker port interface
+- Implemented in InMemorySequenceTracker (deletes all positions for test ID)
+- ScenarioManager.switchScenario() calls `sequenceTracker.reset(testId)` after successful switch
+- Express adapter injects sequenceTracker into ScenarioManager
+- Reset happens AFTER scenario is set, before returning success
+
+**Phase 4 - E2E Verification:**
+- Bruno tests: 133/133 assertions ✓ PASS (first run)
+- Bruno tests: 133/133 assertions ✓ PASS (second run) ← **Idempotency achieved!**
+- All 281 Vitest tests passing across all packages
+- 100% test coverage maintained
+
+**Architectural Notes:**
+- Consistent with state reset pattern (Phase 3)
+- Dependency injection throughout (sequenceTracker injected, not created)
+- Backward compatible (sequenceTracker is optional)
+- Test ID isolation preserved
+
+**Lesson Learned from Phase 2 TDD Violation:**
+
+During Phase 2 initial implementation, `reset()` was added speculatively without tests and then deleted. The note said "not needed for Phase 2, belongs in Phase 3".
+
+**This was WRONG.** Sequence reset is absolutely needed for Phase 2 to work correctly in real-world usage:
+- Without reset, tests are non-idempotent
+- Without reset, Bruno tests fail on second run
+- Without reset, manual testing requires server restart
+- Sequence reset is NOT a "Phase 3 feature" - it's a Phase 2 requirement for correctness
+
+**The real lesson:** Don't assume features "belong" in future phases. If the current phase doesn't work correctly without a feature, implement it now with proper TDD. The idempotency issue was a Phase 2 bug that needed fixing before Phase 2 could be considered truly complete.
+
+**Documentation Updated:**
+- `docs/plans/dynamic-responses.md` - Added REQ-2.5 for sequence reset
+- `docs/core-functionality.md` - Updated sequences from "future" to "implemented"
+- `CLAUDE.md` - Added this section!
+- All acceptance criteria updated to include idempotency
+
+**Files Modified:**
+- `packages/core/src/ports/driven/sequence-tracker.ts` - Added reset() to interface
+- `packages/core/src/adapters/in-memory-sequence-tracker.ts` - Implemented reset()
+- `packages/core/src/domain/scenario-manager.ts` - Wire up reset on scenario switch
+- `packages/express-adapter/src/setup/setup-scenarist.ts` - Inject sequenceTracker
+- `packages/core/tests/in-memory-sequence-tracker.test.ts` - NEW: 7 unit tests
+- `packages/core/tests/scenario-manager.test.ts` - Added 4 integration tests
+
 ## Current Status & Next Steps
 
 **Completed:**

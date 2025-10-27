@@ -73,7 +73,7 @@ describe('Scenario Switching E2E', () => {
       expect(switchResponse.body).toEqual({
         success: true,
         testId: 'success-test-1',
-        scenario: 'success',
+        scenarioId: 'success',
       });
 
       // Verify GitHub uses success scenario

@@ -249,7 +249,7 @@ describe('ResponseSelector - State Capture and Injection', () => {
 
 - ✅ `packages/core/tests/in-memory-store.test.ts` (12 tests for ScenarioStore adapter)
 - ✅ `packages/core/tests/in-memory-registry.test.ts` (12 tests for ScenarioRegistry adapter)
-- ❌ No `in-memory-sequence-tracker.test.ts` (simple enough to test through ResponseSelector)
+- ✅ `packages/core/tests/in-memory-sequence-tracker.test.ts` (7 tests for SequenceTracker adapter, focused on reset behavior)
 
 **The Pattern:**
 

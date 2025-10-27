@@ -30,7 +30,7 @@ const handleSetScenario = (
       res.status(200).json({
         success: true,
         testId,
-        scenario,
+        scenarioId: scenario,
         ...(variant && { variant }),
       });
     } catch (error) {

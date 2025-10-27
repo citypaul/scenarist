@@ -90,6 +90,13 @@ export class InMemorySequenceTracker implements SequenceTracker {
       });
     }
   }
+
+  reset(testId: string): void {
+    const prefix = `${testId}:`;
+    Array.from(this.positions.keys())
+      .filter(key => key.startsWith(prefix))
+      .forEach(key => this.positions.delete(key));
+  }
 }
 
 /**

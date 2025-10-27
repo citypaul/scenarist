@@ -26,7 +26,7 @@ describe('Scenario Endpoints', () => {
       expect(response.body).toEqual({
         success: true,
         testId: 'test-123',
-        scenario: 'happy-path',
+        scenarioId: 'happy-path',
       });
     });
 

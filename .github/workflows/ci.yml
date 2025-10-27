@@ -66,3 +66,6 @@ jobs:
           name: coverage-reports
           path: '**/coverage/**'
           if-no-files-found: ignore
+
+      - name: Bruno API Tests
+        run: pnpm test:bruno:ci
