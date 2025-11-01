@@ -1,16 +1,125 @@
 # @scenarist/nextjs-adapter
 
-Next.js adapter for [Scenarist](https://github.com/citypaul/scenarist) - manage MSW mock scenarios in your Next.js applications for testing **and** development.
+Next.js adapter for [Scenarist](https://github.com/citypaul/scenarist) - test different backend states in your Next.js applications without restarting your dev server or maintaining multiple test environments.
+
+**Problem it solves:** Testing error scenarios, loading states, and edge cases in Next.js is painful. You either restart your app repeatedly, maintain complex mock setups per test, or run tests serially to avoid conflicts. Scenarist lets you switch between complete API scenarios instantly via HTTP calls, enabling parallel testing with isolated backend states.
 
 ## What is this?
 
-This package provides complete Next.js integration for Scenarist's scenario management system, supporting both Pages Router and App Router. With one function call, you get:
+**Before Scenarist:**
+```typescript
+// Every test has fragile per-test mocking
+beforeEach(() => {
+  server.use(
+    http.get('/api/user', () => HttpResponse.json({ role: 'admin' }))
+  );
+});
+// Repeat 100 times across test files, hope they don't conflict
+```
 
-- **Runtime scenario switching** via HTTP endpoints
-- **Test isolation** using unique test IDs
-- **Automatic MSW integration** for request interception
-- **Zero boilerplate** - everything wired automatically
-- **Both routers supported** - Pages Router and App Router in one package
+**With Scenarist:**
+```typescript
+// Define scenario once
+const adminScenario = { id: 'admin', mocks: [/* complete backend state */] };
+
+// Use in any test with one line
+await setScenario('test-1', 'admin');
+// Test runs with complete "admin" backend state, isolated from other tests
+```
+
+This package provides complete Next.js integration for Scenarist's scenario management system, supporting both Pages Router and App Router:
+
+- **Runtime scenario switching** via HTTP endpoints - no restarts needed
+- **Test isolation** using unique test IDs - run 100 tests in parallel
+- **Automatic MSW integration** for request interception - no MSW setup required
+- **Zero boilerplate** - everything wired automatically with one function call
+- **Both routers supported** - Pages Router and App Router with identical functionality
+
+## Quick Navigation
+
+| I want to... | Go to |
+|-------------|--------|
+| See what problems this solves | [What is this?](#what-is-this) |
+| Get started in 5 minutes | [Quick Start (5 Minutes)](#quick-start-5-minutes) |
+| Choose between routers | [Pages Router vs App Router](#pages-router-vs-app-router) |
+| Set up Pages Router | [Pages Router Setup](#pages-router-setup) |
+| Set up App Router | [App Router Setup](#app-router-setup) |
+| Switch scenarios in tests | [Use in Tests](#4-use-in-tests) |
+| Understand test isolation | [Test ID Isolation](#test-id-isolation) |
+| Reduce test boilerplate | [Common Patterns](#common-patterns) |
+| Debug issues | [Troubleshooting](#troubleshooting) |
+| See full API reference | [API Reference](#api-reference) |
+| Learn about advanced features | [Core Functionality Docs](../../docs/core-functionality.md) |
+
+## Common Use Cases
+
+### Testing Error Scenarios
+
+Test how your UI handles API errors without maintaining separate error mocks per test:
+
+```typescript
+// Define once
+const errorScenario = {
+  id: 'api-error',
+  name: 'API Error',
+  mocks: [{ method: 'GET', url: '*/api/*', response: { status: 500 } }]
+};
+
+// Use in many tests
+await setScenario('test-1', 'api-error');
+// All API calls return 500 for this test
+```
+
+### Testing Loading States
+
+Test slow API responses without actual network delays:
+
+```typescript
+const slowScenario = {
+  id: 'slow-api',
+  name: 'Slow API',
+  mocks: [{
+    method: 'GET',
+    url: '*/api/data',
+    response: { status: 200, body: { data: [] }, delay: 3000 } // 3s delay
+  }]
+};
+
+// Perfect for testing loading spinners and skeleton screens
+```
+
+### Testing User Tiers
+
+Test different user permission levels by switching scenarios:
+
+```typescript
+const freeUserScenario = { id: 'free', mocks: [/* limited features */] };
+const premiumUserScenario = { id: 'premium', mocks: [/* all features */] };
+
+// Test switches scenarios mid-suite - no app restart needed
+test('free user sees upgrade prompt', async () => {
+  await setScenario('test-1', 'free');
+  // ... test free tier behavior
+});
+
+test('premium user sees all features', async () => {
+  await setScenario('test-2', 'premium');
+  // ... test premium tier behavior
+});
+```
+
+### Parallel Test Execution
+
+Run 100 tests concurrently with different backend states - no conflicts:
+
+```typescript
+// Test 1: Uses 'success' scenario with test-id-1
+// Test 2: Uses 'error' scenario with test-id-2
+// Test 3: Uses 'slow' scenario with test-id-3
+// All running in parallel, completely isolated via test IDs
+```
+
+**Want to see these in action?** Jump to [Quick Start (5 Minutes)](#quick-start-5-minutes).
 
 ## Installation
 
@@ -29,17 +138,111 @@ yarn add -D @scenarist/nextjs-adapter @scenarist/core msw
 - `next` ^14.0.0 || ^15.0.0
 - `msw` ^2.0.0
 
-## Quick Start
+## Quick Start (5 Minutes)
 
-Choose your router:
-- **[Pages Router](#pages-router-usage)** - Traditional Next.js with `pages/` directory
-- **[App Router](#app-router-usage)** - Modern Next.js with `app/` directory
+**Goal:** Switch between success and error scenarios in your tests.
 
-Both routers follow the same core concepts—only the setup differs slightly.
+### 1. Define One Scenario
+
+```typescript
+// lib/scenarios.ts
+import type { ScenarioDefinition } from '@scenarist/core';
+
+export const successScenario: ScenarioDefinition = {
+  id: 'success',
+  name: 'API Success',
+  mocks: [{
+    method: 'GET',
+    url: 'https://api.example.com/user',
+    response: { status: 200, body: { name: 'Alice', role: 'user' } }
+  }]
+};
+```
+
+### 2. Create Scenarist Instance
+
+```typescript
+// lib/scenarist.ts
+import { createScenarist } from '@scenarist/nextjs-adapter/pages'; // or /app
+import { successScenario } from './scenarios';
+
+export const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  defaultScenario: successScenario, // Fallback for unmocked requests
+});
+```
+
+### 3. Create Scenario Endpoint
+
+**Pages Router:** Create `pages/api/__scenario__.ts`:
+```typescript
+import { scenarist } from '@/lib/scenarist';
+export default scenarist.createScenarioEndpoint();
+```
+
+**App Router:** Create `app/api/__scenario__/route.ts`:
+```typescript
+import { scenarist } from '@/lib/scenarist';
+const handler = scenarist.createScenarioEndpoint();
+export const POST = handler;
+export const GET = handler;
+```
+
+### 4. Use in Tests
+
+```typescript
+import { scenarist } from '@/lib/scenarist';
+
+beforeAll(() => scenarist.start()); // Start MSW server
+afterAll(() => scenarist.stop());   // Stop MSW server
+
+it('fetches user successfully', async () => {
+  // Set scenario for this test
+  await fetch('http://localhost:3000/__scenario__', {
+    method: 'POST',
+    headers: { 'x-test-id': 'test-1', 'content-type': 'application/json' },
+    body: JSON.stringify({ scenario: 'success' })
+  });
+
+  // Make request - MSW intercepts automatically
+  const response = await fetch('http://localhost:3000/api/user', {
+    headers: { 'x-test-id': 'test-1' }
+  });
+
+  expect(response.status).toBe(200);
+  const user = await response.json();
+  expect(user.name).toBe('Alice');
+});
+```
+
+**That's it!** You've got runtime scenario switching.
+
+**Next steps:**
+- [Add more scenarios](#pages-router-setup) for different backend states
+- [Use test helpers](#pattern-1-test-helpers) to reduce boilerplate
+- [Learn about test isolation](#test-id-isolation) for parallel tests
+- [See advanced features](../../docs/core-functionality.md#dynamic-response-system) like request matching and sequences
 
 ---
 
-## Pages Router Usage
+## Pages Router vs App Router
+
+| Aspect | Pages Router | App Router |
+|--------|-------------|------------|
+| **Import Path** | `@scenarist/nextjs-adapter/pages` | `@scenarist/nextjs-adapter/app` |
+| **Setup File** | `pages/api/__scenario__.ts` | `app/api/__scenario__/route.ts` |
+| **Scenario Endpoint** | `export default scenarist.createScenarioEndpoint()` | `const handler = scenarist.createScenarioEndpoint();`<br>`export const POST = handler;`<br>`export const GET = handler;` |
+| **Core Functionality** | ✅ Same scenarios, same behavior | ✅ Same scenarios, same behavior |
+
+**Key Insight:** Choose based on your Next.js version - all Scenarist features work identically in both routers.
+
+**Detailed setup guides:**
+- **[Pages Router Setup](#pages-router-setup)** - Full walkthrough for Pages Router
+- **[App Router Setup](#app-router-setup)** - Full walkthrough for App Router
+
+---
+
+## Pages Router Setup
 
 ### 1. Define Scenarios
 
@@ -98,8 +301,10 @@ import { defaultScenario, adminUserScenario } from './scenarios';
 
 export const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
-  defaultScenario: defaultScenario, // REQUIRED - fallback for unmocked requests
-  strictMode: false,
+  // REQUIRED: Fallback when no mock matches a request
+  // This scenario is also auto-registered, no need to call registerScenario() for it
+  defaultScenario: defaultScenario,
+  strictMode: false, // Allow unmocked requests to pass through to real APIs
 });
 
 // Register additional scenarios (default is auto-registered)
@@ -152,7 +357,7 @@ describe('User API', () => {
 
 ---
 
-## App Router Usage
+## App Router Setup
 
 ### 1. Define Scenarios
 
@@ -167,10 +372,13 @@ import { defaultScenario, adminUserScenario } from './scenarios';
 
 export const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
-  defaultScenario: defaultScenario, // REQUIRED
-  strictMode: false,
+  // REQUIRED: Fallback when no mock matches a request
+  // This scenario is also auto-registered, no need to call registerScenario() for it
+  defaultScenario: defaultScenario,
+  strictMode: false, // Allow unmocked requests to pass through to real APIs
 });
 
+// Register additional scenarios (default is auto-registered)
 scenarist.registerScenario(adminUserScenario);
 ```
 
@@ -324,58 +532,69 @@ console.log(data.scenarioId); // 'user-logged-in'
 
 ## Core Concepts
 
+Scenarist's core functionality is framework-agnostic. For deep understanding of these concepts (request matching, sequences, stateful mocks), see **[Core Functionality Documentation](../../docs/core-functionality.md)**.
+
+**Quick reference for Next.js:**
+
 ### Test ID Isolation
 
-Each request can include an `x-test-id` header. Scenarist uses this to isolate scenarios, enabling concurrent tests with different backend states:
+Each request includes an `x-test-id` header for parallel test isolation:
 
 ```typescript
-// Test 1 uses scenario A
-await fetch('http://localhost:3000/api/data', {
-  headers: { 'x-test-id': 'test-1' },
-}); // Uses scenario A
+// Test 1
+headers: { 'x-test-id': 'test-1' } // Uses scenario A
 
-// Test 2 uses scenario B (runs concurrently!)
-await fetch('http://localhost:3000/api/data', {
-  headers: { 'x-test-id': 'test-2' },
-}); // Uses scenario B
+// Test 2 (parallel!)
+headers: { 'x-test-id': 'test-2' } // Uses scenario B
 ```
+
+Each test ID has completely isolated:
+- Active scenario selection
+- Sequence positions (for polling scenarios)
+- Captured state (for stateful mocks)
+
+**Learn more:** [Test Isolation in Core Docs](../../docs/core-functionality.md#test-isolation)
 
 ### Automatic MSW Integration
 
-The `createScenarist()` function automatically:
-1. Creates an MSW server with a dynamic handler
-2. Wires test ID extraction from headers
-3. Sets up scenario control endpoint handler (`/__scenario__`)
-4. Looks up the active scenario for each test ID
-5. Returns mocked responses based on the scenario
+`createScenarist()` automatically wires MSW for request interception. You never see MSW code directly.
 
-You never see MSW code - it's all handled internally.
+**What it does:**
+1. Creates MSW server with dynamic handler
+2. Extracts test ID from request headers
+3. Looks up active scenario for that test ID
+4. Returns mocked responses based on scenario
+
+**Next.js-specific details:**
+- Pages Router: Uses Next.js API routes
+- App Router: Uses Web standard Request/Response
+- Both: Full test ID isolation via headers
 
 ### Default Scenario Fallback
 
-If a mock isn't found in the active scenario, Scenarist falls back to the "default" scenario:
+Active scenario mocks take precedence; unmocked endpoints fall back to default scenario:
 
 ```typescript
-// Default scenario with common responses
-const defaultScenario: ScenarioDefinition = {
+// Default covers all endpoints
+const defaultScenario = {
   id: 'default',
-  name: 'Default Happy Path',
   mocks: [
     { method: 'GET', url: '*/api/users', response: { status: 200, body: [] } },
     { method: 'GET', url: '*/api/orders', response: { status: 200, body: [] } },
-  ],
+  ]
 };
 
-// Test scenario only overrides specific endpoints
-const userErrorScenario: ScenarioDefinition = {
-  id: 'user-error',
-  name: 'User API Error',
+// Test scenario overrides only specific endpoints
+const errorScenario = {
+  id: 'error',
   mocks: [
-    { method: 'GET', url: '*/api/users', response: { status: 500, body: { error: 'Server error' } } },
-    // Orders endpoint falls back to default scenario
-  ],
+    { method: 'GET', url: '*/api/users', response: { status: 500 } }
+    // Orders uses default scenario
+  ]
 };
 ```
+
+**Learn more:** [Fallback Behavior in Core Docs](../../docs/core-functionality.md#fallback-behavior)
 
 ## Scenario Registration
 
@@ -495,40 +714,63 @@ test('payment flow', async () => {
 
 ### Pattern 2: Unique Test IDs
 
-Generate unique test IDs automatically:
+Generate unique test IDs automatically using a factory function:
 
 ```typescript
 import { randomUUID } from 'crypto';
 
 describe('API Tests', () => {
-  let testId: string;
-
-  beforeEach(() => {
-    testId = randomUUID();
-  });
+  // Factory function - no shared mutable state
+  const createTestId = () => randomUUID();
 
   it('should process payment', async () => {
+    const testId = createTestId(); // Fresh ID per test
+
     await setScenario(testId, 'payment-success');
     const response = await makeRequest(testId, '/api/charge', { method: 'POST' });
     expect(response.status).toBe(200);
+  });
+
+  it('should handle payment decline', async () => {
+    const testId = createTestId(); // Independent state
+
+    await setScenario(testId, 'payment-declined');
+    const response = await makeRequest(testId, '/api/charge', { method: 'POST' });
+    expect(response.status).toBe(402);
   });
 });
 ```
 
 ### Pattern 3: Development Workflows
 
-Enable scenario switching during development:
+**⚠️ Security Warning:** Only enable scenario endpoints in development/test environments, **NEVER in production**.
+
+**Why?** The `/__scenario__` endpoint allows arbitrary mock switching, which could be exploited in production to bypass security, fake data, or cause unexpected behavior.
+
+**Safe configuration:**
 
 ```typescript
 // lib/scenarist.ts
+// ✅ CORRECT - Only enabled in safe environments
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test',
   defaultScenario: myDefaultScenario,
   strictMode: false,
 });
+
+// ❌ WRONG - Dangerous in production
+const scenarist = createScenarist({
+  enabled: true, // Always on, including production!
+  defaultScenario: myDefaultScenario,
+});
 ```
 
-Manually switch scenarios with curl:
+**Production checklist:**
+- ✅ `enabled` is conditional (never hardcoded `true`)
+- ✅ Environment checks use `process.env.NODE_ENV`
+- ✅ `/__scenario__` endpoints not exposed in production builds
+
+**During development**, manually switch scenarios with curl:
 
 ```bash
 # Switch to error scenario
@@ -566,6 +808,50 @@ const scenarist = createScenarist({
   strictMode: false,
 });
 ```
+
+### strictMode Option
+
+Controls behavior when no mock matches a request.
+
+**`strictMode: false` (recommended for development):**
+- Unmocked requests pass through to real APIs
+- Useful when only mocking specific endpoints
+- Default scenario provides fallback for common endpoints
+- Best for development where you want partial mocking
+
+**`strictMode: true` (recommended for tests):**
+- Unmocked requests return 501 Not Implemented
+- Ensures tests don't accidentally hit real APIs
+- Catches missing mocks early in test development
+- Best for test isolation and reproducibility
+
+**Example:**
+
+```typescript
+// Development: Only mock failing endpoints, let others pass through
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'development',
+  defaultScenario: minimalScenario, // Only critical mocks
+  strictMode: false, // Let unmocked APIs pass through to real services
+});
+
+// Testing: Ensure complete isolation
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  defaultScenario: completeScenario, // Mock all endpoints
+  strictMode: true, // Fail loudly if any endpoint isn't mocked
+});
+```
+
+**When strictMode is true:**
+- Request for mocked endpoint → Returns defined mock response ✅
+- Request for unmocked endpoint → Returns 501 Not Implemented ❌
+- Easy to spot missing mocks during test development
+
+**When strictMode is false:**
+- Request for mocked endpoint → Returns defined mock response ✅
+- Request for unmocked endpoint → Passes through to real API 🌐
+- Useful for incremental mocking in development
 
 ### Custom Headers
 
@@ -672,23 +958,36 @@ import type {
 
 ## Advanced Usage
 
-For advanced scenarios, you can access low-level components:
+**Note:** Most users should use `createScenarist()`, which handles everything automatically.
+
+<details>
+<summary><strong>For framework authors or custom integrations only - click to expand</strong></summary>
+
+If you need custom wiring for specialized use cases, you can access low-level components:
 
 ```typescript
-// Pages Router
+// Pages Router low-level components
 import {
   PagesRequestContext,
   createScenarioEndpoint,
 } from '@scenarist/nextjs-adapter/pages';
 
-// App Router
+// App Router low-level components
 import {
   AppRequestContext,
   createScenarioEndpoint,
 } from '@scenarist/nextjs-adapter/app';
 ```
 
-Most users should use the `createScenarist()` convenience function, which handles all wiring automatically.
+**Use cases for low-level APIs:**
+- Building a custom adapter for a Next.js-like framework
+- Integrating with non-standard request handling
+- Creating custom middleware chains
+- Implementing custom test ID extraction logic
+
+**For typical Next.js applications, use `createScenarist()` instead.** It provides the same functionality with zero configuration.
+
+</details>
 
 ## Contributing
 

@@ -22,7 +22,10 @@
       "Bash(pnpm install:*)",
       "Bash(pnpm typecheck:*)",
       "Bash(pnpm --filter=@scenarist/nextjs-adapter typecheck:*)",
-      "Bash(pnpm --filter=@scenarist/nextjs-adapter clean:*)"
+      "Bash(pnpm --filter=@scenarist/nextjs-adapter clean:*)",
+      "Bash(pnpm --filter=@scenarist/nextjs-adapter test)",
+      "Bash(pnpm --filter=@scenarist/nextjs-adapter lint:*)",
+      "Bash(pnpm --filter=@scenarist/nextjs-adapter build)"
     ],
     "deny": [],
     "ask": []
