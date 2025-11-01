@@ -18,9 +18,9 @@ test('can switch to premium scenario manually', async ({ page }) => {
   const testId = `test-premium-${Date.now()}`;
 
   // VERBOSE: Manually call scenario endpoint
-  const response = await page.request.post('http://localhost:3000/__scenario__', {
+  const response = await page.request.post('http://localhost:3000/api/__scenario__', {
     headers: { 'x-test-id': testId },
-    data: { scenarioId: 'premiumUser' },
+    data: { scenario: 'premiumUser' },
   });
 
   // Verify scenario switch succeeded

@@ -17,6 +17,10 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
 
+  // Global setup/teardown for MSW server
+  globalSetup: './tests/playwright/globalSetup.ts',
+  globalTeardown: './tests/playwright/globalTeardown.ts',
+
   projects: [
     {
       name: 'chromium',
