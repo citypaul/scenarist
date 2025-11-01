@@ -795,9 +795,98 @@ The example app's README will include a prominent comparison table:
 
 ---
 
+## Implementation Approach: Small Increments with Agent Verification
+
+**Philosophy**: Work in small, mergeable increments. Each increment should be a known-good state that can be merged independently. Use specialized agents at every step to maintain quality and capture learnings.
+
+### Small-Increment Strategy
+
+Instead of large monolithic PRs, we break each phase into **multiple small PRs**:
+
+1. **Each PR is independently valuable** - Can be merged on its own
+2. **Each PR has clear success criteria** - Objective validation
+3. **Each PR includes agent verification** - Quality gates at every step
+4. **Merge frequently** - Reduce integration risk, maintain momentum
+
+### Agent Usage Throughout
+
+**Required agents for every increment**:
+
+1. 🤖 **TDD Guardian** (`tdd-guardian` agent)
+   - **When**: After writing tests, after implementation, after refactoring
+   - **Purpose**: Verify RED → GREEN → REFACTOR discipline followed
+   - **Use**: Proactively during development, reactively for verification
+   - **Example**: `After GREEN phase: Run tdd-guardian to verify minimal implementation`
+
+2. 🔧 **Refactor-Scan** (`refactor-scan` agent)
+   - **When**: During REFACTOR step (after tests green)
+   - **Purpose**: Assess refactoring opportunities, guide decisions
+   - **Use**: Check for semantic duplication, evaluate abstraction value
+   - **Example**: `Tests green: Run refactor-scan to assess improvement opportunities`
+
+3. 📚 **Docs Guardian** (`docs-guardian` agent)
+   - **When**: After creating/updating documentation
+   - **Purpose**: Ensure world-class documentation quality
+   - **Use**: Review READMEs, API docs, user-facing documentation
+   - **Example**: `After README creation: Run docs-guardian for quality review`
+
+4. 🧠 **Learn Agent** (`learn` agent)
+   - **When**: After discoveries, bug fixes, architectural decisions
+   - **Purpose**: Capture learnings for CLAUDE.md while context is fresh
+   - **Use**: Document gotchas, patterns, decisions, edge cases
+   - **Example**: `After completing increment: Run learn agent to capture insights`
+
+### Checkpoint Pattern
+
+**Every PR follows this pattern**:
+
+```
+1. Plan the increment (what will be achieved)
+2. Write failing tests (RED phase)
+3. Implement minimal code (GREEN phase)
+   ├─ ✅ Run TDD Guardian (verify minimal implementation)
+4. Assess refactoring (REFACTOR phase)
+   ├─ ✅ Run Refactor-Scan (evaluate opportunities)
+   └─ If refactoring: Refactor, then re-verify with TDD Guardian
+5. Update documentation
+   ├─ ✅ Run Docs Guardian (quality check)
+6. Capture learnings
+   ├─ ✅ Run Learn Agent (document discoveries)
+7. Commit and create PR
+8. Merge to main (known-good state)
+```
+
+### Phase 0 Breakdown Example
+
+Phase 0 will be implemented as **one cohesive PR** (not three separate ones - scaffolding is too tightly coupled to split):
+
+**PR: Phase 0 - Setup & Configuration**
+- Part A: Next.js example scaffold
+- Part B: Playwright helpers scaffold
+- Part C: Test infrastructure (Playwright + Vitest configs)
+- Part D: First failing test (smoke test)
+
+**Agent Checkpoints**:
+1. After Part A: `pnpm build` passes, `pnpm typecheck` passes
+2. After Part B: `pnpm build --filter=@scenarist/playwright-helpers` passes
+3. After Part C: Configs valid, scripts work
+4. After Part D: First test fails (RED phase), TDD Guardian verification
+5. Before PR: Docs Guardian (review READMEs), Learn Agent (capture setup learnings)
+
+**Merge Criteria**:
+- Both packages build successfully
+- TypeScript strict mode, 0 errors
+- Test infrastructure configured
+- First failing test exists (documented RED phase)
+- All agent checkpoints passed
+
+This ensures Phase 0 ships as a complete, working foundation for Phase 1.
+
+---
+
 ## TDD Implementation Phases
 
-### Phase 0: Setup Both Packages (⏳ Not Started)
+### Phase 0: Setup Both Packages (🔄 In Progress)
 
 **Estimated**: 0.5 day
 
