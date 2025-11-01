@@ -123,6 +123,15 @@ describe('Pages Router createScenarist', () => {
     expect(typeof scenarist.createScenarioEndpoint).toBe('function');
   });
 
+  it('should create working scenario endpoint when called', async () => {
+    const { scenarist } = createTestSetup();
+
+    const endpoint = scenarist.createScenarioEndpoint();
+
+    expect(endpoint).toBeDefined();
+    expect(typeof endpoint).toBe('function');
+  });
+
   it('should start MSW server', () => {
     const { scenarist } = createTestSetup();
 

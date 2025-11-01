@@ -131,6 +131,32 @@ describe('App Router Scenario Endpoints', () => {
       expect(response.status).toBe(400);
       expect(data.error).toBe('Invalid request body');
     });
+
+    it('should return 500 for unexpected errors during request handling', async () => {
+      const { handler, manager } = createTestSetup();
+
+      // Mock switchScenario to throw an unexpected error
+      vi.spyOn(manager, 'switchScenario').mockImplementation(() => {
+        throw new Error('Unexpected database error');
+      });
+
+      const req = new Request('http://localhost:3000/__scenario__', {
+        method: 'POST',
+        headers: {
+          'x-test-id': 'test-error',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          scenario: 'premium',
+        }),
+      });
+
+      const response = await handler(req);
+      const data = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(data.error).toBe('Internal server error');
+    });
   });
 
   describe('GET (retrieve active scenario)', () => {

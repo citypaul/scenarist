@@ -124,5 +124,16 @@ describe('AppRequestContext', () => {
 
       expect(context.getHostname()).toBe('localhost:8080');
     });
+
+    it('should return empty string for malformed URLs', () => {
+      const req = {
+        url: 'not-a-valid-url',
+        headers: new Headers(),
+      } as Request;
+
+      const context = new AppRequestContext(req, config);
+
+      expect(context.getHostname()).toBe('');
+    });
   });
 });

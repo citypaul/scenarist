@@ -705,6 +705,75 @@ describe('MyTest', () => {
 - Aligns with functional programming principles
 - Prevents test pollution and flakiness
 
+### Adapter Test Coverage Pattern
+
+**CRITICAL INSIGHT**: Adapter packages achieve different coverage levels between unit tests and integration tests.
+
+**Pattern Observed:**
+- **Adapter unit tests** (packages/*/tests/): Focus on Layer 2 (translation layer)
+  - Test request context extraction
+  - Test endpoint request/response handling
+  - Test framework-specific edge cases
+  - Achieve ~85-90% function coverage
+
+- **Integration tests** (apps/*/tests/): Exercise full HTTP request flows
+  - MSW handlers execute (triggers adapter arrow functions)
+  - Full end-to-end scenario switching
+  - Achieve remaining 10-15% function coverage
+
+**Why This Happens:**
+
+Arrow functions passed to `createDynamicHandler()` are only executed when MSW actually handles HTTP requests:
+
+```typescript
+// In adapter setup.ts
+const handler = createDynamicHandler({
+  getTestId: () => currentTestId,              // Only called during HTTP request
+  getActiveScenario: (testId) => ...,          // Only called during HTTP request
+  getScenarioDefinition: (scenarioId) => ...,  // Only called during HTTP request
+  // ...
+});
+```
+
+**Examples:**
+
+**Express Adapter:**
+- Unit tests: `packages/express-adapter/tests/` - Layer 2 testing
+- Integration tests: `apps/express-example/tests/` - Full HTTP flows with supertest
+- Combined result: 100% coverage
+
+**Next.js Adapter:**
+- Unit tests: `packages/nextjs-adapter/tests/` - Layer 2 testing (~86% functions)
+- Integration tests: `apps/nextjs-example/tests/` - Will add full HTTP flows (Phase 0)
+- Expected combined result: 100% coverage
+
+**The Pattern:**
+
+1. **Adapter unit tests** test translation layer (Layer 2)
+   - Focus: Framework types → domain types → framework types
+   - Coverage: 85-90% (unit tests alone)
+
+2. **Example app integration tests** exercise full flows (Layer 3)
+   - Focus: Full HTTP request/response cycle
+   - Coverage: Remaining 10-15% (handler arrow functions)
+
+3. **Combined**: 100% coverage across both test suites
+
+**Why This is Correct:**
+
+- Maintains clean separation of testing layers (ADR-0003)
+- Adapter tests focused on their responsibility (translation)
+- Integration tests verify end-to-end behavior
+- Each test suite at appropriate layer for what it's testing
+
+**Recommendation:**
+
+- Accept ~85-90% function coverage in adapter package unit tests
+- Document that remaining coverage comes from integration tests
+- Verify combined coverage across adapter + example app = 100%
+
+**This pattern applies to ALL framework adapters going forward.**
+
 ### TypeScript Strict Mode Forces Good Architecture
 
 The `noUnusedParameters` rule caught that `config` wasn't being used in `ScenarioManager`, leading us to discover it didn't belong there. This is strict mode working as intended - if a parameter isn't used, question whether it should exist.

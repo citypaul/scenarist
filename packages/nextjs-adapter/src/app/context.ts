@@ -54,6 +54,8 @@ export class AppRequestContext implements RequestContext {
       const url = new URL(this.req.url);
       return url.host;
     } catch {
+      // Return empty string for malformed URLs (e.g., relative URLs without base)
+      // This is expected behavior - hostname extraction is best-effort
       return '';
     }
   }

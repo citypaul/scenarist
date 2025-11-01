@@ -153,6 +153,37 @@ describe('Pages Router Scenario Endpoints', () => {
         })
       );
     });
+
+    it('should return 500 for unexpected errors during request handling', async () => {
+      const { handler, manager } = createTestSetup();
+
+      // Mock switchScenario to throw an unexpected error
+      vi.spyOn(manager, 'switchScenario').mockImplementation(() => {
+        throw new Error('Unexpected database error');
+      });
+
+      const req = {
+        method: 'POST',
+        headers: {
+          'x-test-id': 'test-error',
+        },
+        body: {
+          scenario: 'premium',
+        },
+      } as NextApiRequest;
+
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn(),
+      } as unknown as NextApiResponse;
+
+      await handler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Internal server error',
+      });
+    });
   });
 
   describe('GET (retrieve active scenario)', () => {
