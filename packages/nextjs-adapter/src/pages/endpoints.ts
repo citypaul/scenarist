@@ -15,10 +15,13 @@ const handlePost = (manager: ScenarioManager, config: ScenaristConfig) => {
     const result = await handlePostLogic(req.body, context, manager);
 
     if (!result.success) {
-      res.status(result.status).json({
+      const response: { error: string; details?: unknown } = {
         error: result.error,
-        ...(result.details && { details: result.details }),
-      });
+      };
+      if (result.details) {
+        response.details = result.details;
+      }
+      res.status(result.status).json(response);
       return;
     }
 
