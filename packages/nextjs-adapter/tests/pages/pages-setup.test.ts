@@ -1,39 +1,39 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import type { ScenarioDefinition } from '@scenarist/core';
 import { createScenarist } from '../../src/pages/setup.js';
 
-describe('Pages Router createScenarist', () => {
+const createTestSetup = () => {
   const defaultScenario: ScenarioDefinition = {
     id: 'default',
     name: 'Default Scenario',
     mocks: [],
   };
 
+  const scenarist = createScenarist({
+    enabled: true,
+    defaultScenario,
+  });
+
+  return { scenarist, defaultScenario };
+};
+
+describe('Pages Router createScenarist', () => {
   const premiumScenario: ScenarioDefinition = {
     id: 'premium',
     name: 'Premium Scenario',
     mocks: [],
   };
 
-  let scenarist: ReturnType<typeof createScenarist>;
-
-  beforeEach(() => {
-    scenarist = createScenarist({
-      enabled: true,
-      defaultScenario,
-    });
-  });
-
-  afterEach(async () => {
-    await scenarist.stop();
-  });
-
   it('should create scenarist instance with config', () => {
+    const { scenarist } = createTestSetup();
+
     expect(scenarist.config).toBeDefined();
     expect(scenarist.config.enabled).toBe(true);
   });
 
   it('should register default scenario automatically', () => {
+    const { scenarist } = createTestSetup();
+
     const scenarios = scenarist.listScenarios();
 
     expect(scenarios).toHaveLength(1);
@@ -41,6 +41,8 @@ describe('Pages Router createScenarist', () => {
   });
 
   it('should register additional scenarios', () => {
+    const { scenarist } = createTestSetup();
+
     scenarist.registerScenario(premiumScenario);
 
     const scenarios = scenarist.listScenarios();
@@ -50,6 +52,8 @@ describe('Pages Router createScenarist', () => {
   });
 
   it('should register multiple scenarios at once', () => {
+    const { scenarist } = createTestSetup();
+
     const scenario2: ScenarioDefinition = {
       id: 'scenario2',
       name: 'Scenario 2',
@@ -64,6 +68,8 @@ describe('Pages Router createScenarist', () => {
   });
 
   it('should switch scenarios', () => {
+    const { scenarist } = createTestSetup();
+
     scenarist.registerScenario(premiumScenario);
 
     const result = scenarist.switchScenario('test-1', 'premium', undefined);
@@ -72,6 +78,8 @@ describe('Pages Router createScenarist', () => {
   });
 
   it('should get active scenario', () => {
+    const { scenarist } = createTestSetup();
+
     scenarist.registerScenario(premiumScenario);
     scenarist.switchScenario('test-2', 'premium', undefined);
 
@@ -84,6 +92,8 @@ describe('Pages Router createScenarist', () => {
   });
 
   it('should get scenario by ID', () => {
+    const { scenarist } = createTestSetup();
+
     scenarist.registerScenario(premiumScenario);
 
     const scenario = scenarist.getScenarioById('premium');
@@ -92,6 +102,8 @@ describe('Pages Router createScenarist', () => {
   });
 
   it('should clear scenario for test ID', () => {
+    const { scenarist } = createTestSetup();
+
     scenarist.registerScenario(premiumScenario);
     scenarist.switchScenario('test-3', 'premium', undefined);
 
@@ -102,15 +114,21 @@ describe('Pages Router createScenarist', () => {
   });
 
   it('should provide scenario endpoint handler', () => {
+    const { scenarist } = createTestSetup();
+
     expect(scenarist.createScenarioEndpoint).toBeDefined();
     expect(typeof scenarist.createScenarioEndpoint).toBe('function');
   });
 
   it('should start MSW server', () => {
+    const { scenarist } = createTestSetup();
+
     expect(() => scenarist.start()).not.toThrow();
   });
 
   it('should stop MSW server', async () => {
+    const { scenarist } = createTestSetup();
+
     scenarist.start();
     await expect(scenarist.stop()).resolves.not.toThrow();
   });

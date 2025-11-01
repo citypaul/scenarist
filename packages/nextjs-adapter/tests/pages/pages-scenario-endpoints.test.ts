@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import {
   buildConfig,
@@ -9,7 +9,7 @@ import {
 } from '@scenarist/core';
 import { createScenarioEndpoint } from '../../src/pages/endpoints.js';
 
-describe('Pages Router Scenario Endpoints', () => {
+const createTestSetup = () => {
   const defaultScenario: ScenarioDefinition = {
     id: 'default',
     name: 'Default Scenario',
@@ -22,24 +22,25 @@ describe('Pages Router Scenario Endpoints', () => {
     mocks: [],
   };
 
-  let manager: ReturnType<typeof createScenarioManager>;
-  let config: ReturnType<typeof buildConfig>;
-  let handler: ReturnType<typeof createScenarioEndpoint>;
+  const registry = new InMemoryScenarioRegistry();
+  const store = new InMemoryScenarioStore();
+  const config = buildConfig({ enabled: true, defaultScenario });
+  const manager = createScenarioManager({ registry, store });
 
-  beforeEach(() => {
-    const registry = new InMemoryScenarioRegistry();
-    const store = new InMemoryScenarioStore();
-    config = buildConfig({ enabled: true, defaultScenario });
-    manager = createScenarioManager({ registry, store });
+  manager.registerScenario(defaultScenario);
+  manager.registerScenario(premiumScenario);
 
-    manager.registerScenario(defaultScenario);
-    manager.registerScenario(premiumScenario);
+  const handler = createScenarioEndpoint(manager, config);
 
-    handler = createScenarioEndpoint(manager, config);
-  });
+  return { handler, manager, config };
+};
+
+describe('Pages Router Scenario Endpoints', () => {
 
   describe('POST (switch scenario)', () => {
     it('should switch to a valid scenario', async () => {
+      const { handler } = createTestSetup();
+
       const req = {
         method: 'POST',
         headers: {
@@ -66,6 +67,8 @@ describe('Pages Router Scenario Endpoints', () => {
     });
 
     it('should switch scenario with variant', async () => {
+      const { handler } = createTestSetup();
+
       const req = {
         method: 'POST',
         headers: {
@@ -94,6 +97,8 @@ describe('Pages Router Scenario Endpoints', () => {
     });
 
     it('should return 400 when scenario does not exist', async () => {
+      const { handler } = createTestSetup();
+
       const req = {
         method: 'POST',
         headers: {
@@ -120,6 +125,8 @@ describe('Pages Router Scenario Endpoints', () => {
     });
 
     it('should return 400 when request body is invalid', async () => {
+      const { handler } = createTestSetup();
+
       const req = {
         method: 'POST',
         headers: {
@@ -148,6 +155,8 @@ describe('Pages Router Scenario Endpoints', () => {
 
   describe('GET (retrieve active scenario)', () => {
     it('should return active scenario for test ID', async () => {
+      const { handler, manager } = createTestSetup();
+
       // First, switch to a scenario
       manager.switchScenario('test-abc', 'premium', undefined);
 
@@ -174,6 +183,8 @@ describe('Pages Router Scenario Endpoints', () => {
     });
 
     it('should return 404 when no active scenario exists', async () => {
+      const { handler } = createTestSetup();
+
       const req = {
         method: 'GET',
         headers: {
@@ -198,6 +209,8 @@ describe('Pages Router Scenario Endpoints', () => {
     });
 
     it('should include variant name when present', async () => {
+      const { handler, manager } = createTestSetup();
+
       // Switch to scenario with variant
       manager.switchScenario('test-variant', 'premium', 'high-tier');
 
@@ -227,6 +240,8 @@ describe('Pages Router Scenario Endpoints', () => {
 
   describe('unsupported methods', () => {
     it('should return 405 for unsupported methods', async () => {
+      const { handler } = createTestSetup();
+
       const req = {
         method: 'PUT',
         headers: {
