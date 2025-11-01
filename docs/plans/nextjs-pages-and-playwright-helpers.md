@@ -1,9 +1,9 @@
 # Next.js Pages Router + Playwright Helpers - Living Implementation Plan
 
-**Status**: ✅ Phase -1 Complete, Ready for Phase 0
+**Status**: ✅ Phase -1 Complete & Merged, Ready for Phase 0
 **Started**: 2025-11-01
 **Last Updated**: 2025-11-01
-**PR**: [#39](https://github.com/citypaul/scenarist/pull/39) (planning), [#TBD](https://github.com/citypaul/scenarist/pull/TBD) (Phase -1 implementation)
+**PR**: [#39](https://github.com/citypaul/scenarist/pull/39) (planning), [#40](https://github.com/citypaul/scenarist/pull/40) (Phase -1 implementation - MERGED)
 **Related**: [next-stages.md](./next-stages.md) (Overall v1.0 roadmap)
 
 ---
@@ -69,7 +69,7 @@ None! Phase -1 complete. Ready to proceed with Phase 0.
 
 | Phase | Status | Estimated | Actual | Files Changed |
 |-------|--------|-----------|--------|---------------|
-| **-1: Next.js Adapter** | ✅ **COMPLETE** | **2-3 days** | **1 day** | **18** |
+| **-1: Next.js Adapter** | ✅ **COMPLETE & MERGED** | **2-3 days** | **1 day** | **21** |
 | 0: Setup | ⏳ Not Started | 0.5 day | - | 0 |
 | 1: Integration + First Helper | ⏳ Not Started | 1 day | - | 0 |
 | 2: Products/Matching | ⏳ Not Started | 1 day | - | 0 |
@@ -284,9 +284,13 @@ packages/nextjs-adapter/
 
 **Completed**: 2025-11-01
 **Time Taken**: 1 day (50% faster than estimated!)
-**Files Created**: 18
-**Tests Passing**: 58
-**Test Coverage**: 100%
+**Files Created**: 21 (18 initial + 3 common modules from refactorings)
+**Tests Passing**: 66 (58 initial + 8 added for coverage)
+**Test Coverage**:
+- Lines: 100% ✅
+- Statements: 100% ✅
+- Branches: 100% ✅
+- Functions: 93.2% ✅ (explicit exception documented)
 
 **What Was Built:**
 
@@ -294,19 +298,25 @@ packages/nextjs-adapter/
    - `PagesRequestContext` - Adapts `NextApiRequest` to RequestContext port
    - `createScenarioEndpoint()` - Factory for `pages/api/__scenario__.ts` handler
    - `createScenarist()` - Wires MSW server, ScenarioManager, state, sequences
-   - 28 tests passing
+   - 33 tests passing (28 initial + 5 added)
 
 2. **App Router Support** (`@scenarist/nextjs-adapter/app`)
    - `AppRequestContext` - Adapts Web standard `Request` to RequestContext port
    - `createScenarioEndpoint()` - Factory for `app/api/__scenario__/route.ts` handler
    - `createScenarist()` - Same wiring as Pages Router, different Request/Response types
-   - 30 tests passing
+   - 33 tests passing (30 initial + 3 added)
 
-3. **Documentation**
-   - Comprehensive README with both routers documented
+3. **Common Modules** (extracted via refactoring)
+   - `src/common/create-scenarist-base.ts` - Shared setup logic (~150 lines eliminated)
+   - `src/common/endpoint-handlers.ts` - Framework-agnostic business logic (~80 lines eliminated)
+   - `tests/common/test-setup.ts` - Reusable test factories (~50 lines eliminated)
+
+4. **Documentation**
+   - Comprehensive README (996 lines) with both routers documented
    - Usage examples for both Pages Router and App Router
    - Comparison table showing differences
    - API reference, troubleshooting, common patterns
+   - Explicit coverage exception documentation
 
 **Key Architectural Decisions:**
 
@@ -314,27 +324,50 @@ packages/nextjs-adapter/
 2. **Web Standard APIs** - App Router uses native Request/Response (no Next.js types)
 3. **No Middleware** - Unlike Express, Next.js requires manual endpoint creation
 4. **Factory Function Tests** - No `let` or `beforeEach`, pure factory pattern throughout
+5. **Semantic Refactoring** - Three refactorings eliminated ~280 lines of semantic duplication
+6. **Explicit Coverage Exception** - 93.2% function coverage documented (arrow functions only execute during HTTP)
+
+**Implementation Timeline:**
+
+1. **Initial Implementation** (Commit 1) - 58 tests, 97.11% lines, 81.81% functions
+2. **Coverage Improvements** (Commit 2) - Added 7 tests, achieved 100% lines/statements/branches, 86.36% functions
+3. **Documentation Updates** (Commit 3) - Added user reassurance, removed duplicates
+4. **Refactoring #1** (Commit 4) - Extracted `create-scenarist-base.ts` (93% functions)
+5. **Refactoring #2** (Commit 5) - Extracted `endpoint-handlers.ts` (93.2% functions)
+6. **Refactoring #3** (Commit 6) - Extracted `test-setup.ts` (maintained 93.2% functions)
+7. **TypeScript Fix** (Commit 7) - Fixed TS2698 spread type errors in strict mode
 
 **Learnings:**
 
-1. **TypeScript Strict Mode Challenge**: Web standard `Headers` object required type assertion for `host` header (TS control flow limitation). Documented with explanatory comment.
+1. **Coverage Verification is Mandatory**: Never trust coverage claims without running `pnpm exec vitest run --coverage`. Initial PR claimed 100% but was actually 97.11% lines, 81.81% functions. Added "Coverage Verification - CRITICAL" section to CLAUDE.md.
 
-2. **Factory Pattern Success**: Using factory functions instead of `beforeEach` in tests kept state isolated and tests pure. Pattern worked perfectly for creating fresh dependencies per test.
+2. **100% Rule is Non-Negotiable**: Exceptions require explicit approval and three-level documentation (config, README, CLAUDE.md). Next.js adapter is the ONLY exception in the project. Added "Test Coverage: 100% Required" section to CLAUDE.md.
 
-3. **Ahead of Schedule**: Strict TDD with RED → GREEN → REFACTOR kept implementation focused. No speculative code = faster completion.
+3. **Refactoring Improved Coverage**: Three systematic refactorings improved function coverage from 86.36% → 93.2% by eliminating semantic duplication and creating reusable modules.
 
-4. **Pattern Reuse**: Following Express adapter patterns made implementation smooth. Hexagonal architecture meant only the Next.js-specific parts needed work.
+4. **TypeScript Strict Mode Limitations**: Cannot spread `unknown` types. Must use explicit property assignment with type annotation when conditionally including properties. Fixed in both `src/pages/endpoints.ts` and `src/app/endpoints.ts`.
+
+5. **TDD Guardian Verification**: Used tdd-guardian agent to verify TDD discipline followed throughout (RED → GREEN → REFACTOR). Received 95/100 score with "APPROVED WITHOUT RESERVATION" for exception legitimacy.
+
+6. **Factory Pattern Success**: Using factory functions instead of `beforeEach` in tests kept state isolated and tests pure. Pattern worked perfectly for creating fresh dependencies per test.
+
+7. **Ahead of Schedule**: Strict TDD with RED → GREEN → REFACTOR kept implementation focused. No speculative code = faster completion.
+
+8. **Pattern Reuse**: Following Express adapter patterns made implementation smooth. Hexagonal architecture meant only the Next.js-specific parts needed work.
 
 **Success Criteria Met:**
 
 - [x] Pages Router RequestContext extracts test ID correctly
 - [x] App Router RequestContext extracts test ID correctly
 - [x] Scenario endpoints work with both routers
-- [x] 100% test coverage (58/58 tests passing)
-- [x] Comprehensive README (707 lines)
+- [x] 100% test coverage (lines, statements, branches) - 66/66 tests passing
+- [x] 93.2% function coverage (explicit exception documented)
+- [x] Comprehensive README (996 lines)
 - [x] Ready for example apps to use
+- [x] TDD discipline verified by tdd-guardian agent
+- [x] All refactorings completed with semantic duplication eliminated
 
-**PR**: #TBD (creating next)
+**PR**: [#40](https://github.com/citypaul/scenarist/pull/40) (MERGED)
 
 ---
 
@@ -2065,6 +2098,7 @@ Track when this document was updated and why. This helps maintain document histo
 | 2025-10-27 | Planning | Initial comprehensive plan created | Claude |
 | 2025-10-27 | Planning | Merged with working document for unified tracking | Claude |
 | 2025-11-01 | Phase -1 | Next.js adapter implementation complete (1 day, 58 tests, 100% coverage) | Claude |
+| 2025-11-01 | Phase -1 | Phase -1 complete and merged via PR #40. Added refactorings (3 refactorings, ~280 lines eliminated), coverage improvements (66 tests, 93.2% functions), TDD verification (95/100, APPROVED), and comprehensive learnings section | Claude |
 
 **Update Guidelines:**
 - Add entry when making significant changes (not typo fixes)
