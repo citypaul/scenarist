@@ -1,10 +1,8 @@
 {
   "name": "@scenarist/playwright-helpers",
   "version": "0.1.0",
-  "description": "Playwright test helpers for Scenarist - simplify scenario switching and test ID management",
+  "description": "Playwright test helpers for Scenarist scenario management",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -15,26 +13,25 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup",
-    "typecheck": "tsc --noEmit"
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
   },
-  "peerDependencies": {
-    "@playwright/test": "^1.40.0"
+  "dependencies": {
+    "@playwright/test": "^1.48.2"
   },
   "devDependencies": {
-    "@playwright/test": "^1.40.0",
-    "@types/node": "^20.0.0",
-    "tsup": "^8.0.0",
-    "typescript": "^5.6.0"
+    "@scenarist/eslint-config": "workspace:*",
+    "@scenarist/typescript-config": "workspace:*",
+    "@types/node": "^22.10.1",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
   },
-  "keywords": [
-    "playwright",
-    "testing",
-    "mocking",
-    "msw",
-    "scenarist",
-    "e2e"
-  ],
-  "author": "Scenarist",
-  "license": "MIT"
+  "publishConfig": {
+    "access": "public"
+  }
 }

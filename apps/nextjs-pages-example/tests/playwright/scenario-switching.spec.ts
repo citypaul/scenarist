@@ -12,6 +12,7 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { switchScenario } from '@scenarist/playwright-helpers';
 
 test('can switch to premium scenario manually', async ({ page }) => {
   // VERBOSE: Manually construct test ID
@@ -28,6 +29,24 @@ test('can switch to premium scenario manually', async ({ page }) => {
 
   // VERBOSE: Manually set test ID header for all subsequent requests
   await page.setExtraHTTPHeaders({ 'x-test-id': testId });
+
+  // Navigate to home page
+  await page.goto('/');
+
+  // Verify page loaded successfully
+  await expect(page).toHaveTitle(/Scenarist E-commerce Example/);
+
+  // Verify main heading is visible
+  const heading = page.locator('h1');
+  await expect(heading).toBeVisible();
+});
+
+test('can switch to premium scenario using helper (Phase 1b)', async ({ page }) => {
+  // RED Phase: Helper doesn't exist yet - this will fail
+  await switchScenario(page, 'premiumUser', {
+    baseURL: 'http://localhost:3000',
+    endpoint: '/api/__scenario__',
+  });
 
   // Navigate to home page
   await page.goto('/');
