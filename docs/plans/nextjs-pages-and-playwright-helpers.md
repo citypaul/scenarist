@@ -1,13 +1,77 @@
-# Next.js Pages Router Example + Playwright Helpers Package - Implementation Plan
+# Next.js Pages Router + Playwright Helpers - Living Implementation Plan
 
 **Status**: 🚧 Phase 0 - Ready to Start
-**Created**: 2025-10-27
+**Started**: TBD (after approval)
 **Last Updated**: 2025-10-27
+**PR**: [#39](https://github.com/citypaul/scenarist/pull/39)
+**Related**: [next-stages.md](./next-stages.md) (Overall v1.0 roadmap)
 
-## Quick Links
-- PR: TBD (will be added after PR creation)
-- Related: [docs/plans/next-stages.md](./next-stages.md) (Pre-Release Requirements #2)
-- Express Example: [apps/express-example](../../apps/express-example)
+---
+
+## Quick Navigation
+
+- [Current Status](#current-status) ← What's happening NOW
+- [Overall Progress](#overall-progress) ← High-level tracking
+- [Architecture](#architecture-playwright-helpers-package) ← WHY decisions made
+- [Fake API Strategy](#fake-api-strategy) ← Comparison demo
+- [Phase Details](#tdd-implementation-phases) ← HOW to implement each phase
+- [Decision Log](#decision-log) ← Decisions during implementation
+- [Metrics](#metrics) ← Actual vs estimated
+- [Risk Tracking](#risk-tracking) ← Issues and mitigations
+
+---
+
+## Current Status
+
+### What We're Working On
+
+**Phase 0: Setup (0.5 day estimate)**
+
+Validating MSW + Scenarist + Next.js integration with absolute minimum setup.
+
+### Progress
+
+- [ ] Create Next.js app (Pages Router + TypeScript)
+- [ ] Install dependencies (MSW, Playwright, Vitest, Tailwind)
+- [ ] Create playwright-helpers package structure
+- [ ] Configure TypeScript strict mode
+- [ ] Configure Playwright
+- [ ] Configure Vitest
+- [ ] Create lib/scenarist.ts (MSW setup)
+- [ ] Create pages/api/__scenario__.ts
+- [ ] Create default scenario (empty mocks)
+- [ ] Create index.tsx (static "Hello E-commerce" page)
+- [ ] Write ONE Playwright test (verbose, loads page)
+- [ ] Setup fake API (json-server + db.json)
+- [ ] Verify builds pass
+
+### Blockers
+
+None currently.
+
+### Next Steps
+
+1. Begin Phase 0 implementation
+2. Validate MSW intercepts Next.js API routes
+3. Move to Phase 1 if validation succeeds
+
+---
+
+## Overall Progress
+
+| Phase | Status | Estimated | Actual | Files Changed |
+|-------|--------|-----------|--------|---------------|
+| 0: Setup | ⏳ Not Started | 0.5 day | - | 0 |
+| 1: Integration + First Helper | ⏳ Not Started | 1 day | - | 0 |
+| 2: Products/Matching | ⏳ Not Started | 1 day | - | 0 |
+| 3: Cart/Stateful | ⏳ Not Started | 1 day | - | 0 |
+| 4: Checkout/Composition | ⏳ Not Started | 0.5 day | - | 0 |
+| 5: Payment/Sequences | ⏳ Not Started | 1 day | - | 0 |
+| 6: Parallel Isolation | ⏳ Not Started | 0.5 day | - | 0 |
+| 7: Documentation | ⏳ Not Started | 1 day | - | 0 |
+| **Total** | **0%** | **6 days** | **-** | **0** |
+
+**Next**: Begin Phase 0 after document approval
 
 ---
 
@@ -292,6 +356,114 @@ export const premiumUserScenario: ScenarioDefinition = {
   ]
 };
 ```
+
+---
+
+## Fake API Strategy
+
+### Why We Need This
+
+To demonstrate Scenarist's value clearly, we need to show the comparison:
+
+1. **Without Scenarist**: Tests hitting "real" backend (slow, flaky, requires external service running)
+2. **With Scenarist**: Tests using mocked scenarios (fast, reliable, zero external dependencies)
+
+This makes the value proposition obvious: Scenarist eliminates the pain of managing test backends.
+
+### Technology Choice: json-server
+
+**Selected**: json-server
+**Why**: Simple, zero-code, automatically generates REST endpoints from JSON
+**Installation**: `pnpm add -D json-server`
+
+**Alternatives Considered**:
+- **Prism** (OpenAPI mock server): More powerful but overkill for our needs
+- **Custom Express server**: More work, not needed for simple demo
+
+**Decision**: json-server is intentionally simple. Its limitations (no sequences, no state, static responses) highlight why Scenarist is better.
+
+### Endpoints to Mock
+
+All external API calls that our Next.js app makes:
+
+1. **Product Catalog API** (`http://localhost:3001/products`)
+   - `GET /products` → List of products with pricing (tier-based)
+
+2. **Shopping Cart API** (`http://localhost:3001/cart`)
+   - `POST /cart/add` → Add item to cart
+   - `GET /cart` → Get current cart items
+
+3. **Shipping API** (`http://localhost:3001/shipping`)
+   - `POST /shipping/calculate` → Calculate shipping cost
+
+4. **Payment API** (`http://localhost:3001/payment`)
+   - `POST /payment/create` → Create payment intent
+   - `GET /payment/:id/status` → Get payment status
+
+### File Structure
+
+```
+apps/nextjs-pages-example/
+├── fake-api/
+│   ├── db.json              # json-server database
+│   ├── routes.json          # Custom route mappings (optional)
+│   └── README.md            # How to run fake API
+├── package.json             # Script: "fake-api": "json-server fake-api/db.json --port 3001"
+└── ...
+```
+
+### Usage Comparison
+
+**Without Scenarist (using fake API)**:
+```bash
+# Terminal 1: Start json-server on port 3001
+npm run fake-api &
+
+# Terminal 2: Start Next.js app
+npm run dev &
+
+# Terminal 3: Run tests
+npm test
+
+# Limitations:
+# - Requires running json-server (extra process)
+# - Can't test error scenarios easily (json-server returns 404s)
+# - Can't test sequences (payment status polling)
+# - Can't test stateful behavior (cart state)
+# - Slower (real HTTP calls to json-server)
+# - Flaky (timing issues, port conflicts)
+
+# Approximate test run time: 10-15 seconds
+```
+
+**With Scenarist**:
+```bash
+# Start Next.js app (Scenarist built-in)
+npm run dev
+
+# Run tests
+npm test
+
+# Benefits:
+# ✅ No external dependencies
+# ✅ Test error scenarios (payment declined, out of stock)
+# ✅ Test sequences (payment status: pending → processing → succeeded)
+# ✅ Test stateful behavior (cart accumulates items)
+# ✅ Fast (in-memory mocks, no network calls)
+# ✅ Reliable (no timing issues, no port conflicts)
+# ✅ Parallel tests (isolated via test IDs)
+
+# Approximate test run time: 2-3 seconds
+```
+
+### Metrics to Track
+
+After implementation, we'll document:
+- Test execution time: fake API vs Scenarist (target: 5-10x faster)
+- Setup complexity: 2 processes vs 1 process
+- Scenario coverage: limited (fake API) vs comprehensive (Scenarist)
+
+This comparison will be prominently featured in the README to demonstrate value.
 
 ---
 
@@ -1314,21 +1486,180 @@ _(This section will be filled in during implementation with discoveries, gotchas
 
 ## Metrics
 
-_(To be filled in after completion)_
+### Test Coverage
+
+- **Playwright E2E tests**: 0 / 20 (target)
+- **Vitest API tests**: 0 (100% coverage target)
+- **Bruno requests**: 0 / 10 (target)
+
+### Code Quality
+
+- **TypeScript errors**: 0 (always, strict mode)
+- **Linting warnings**: 0 (always)
+- **Test boilerplate reduction**: TBD (70% target after Phase 1)
+
+### Performance
+
+- **Fake API test run**: TBD seconds (baseline)
+- **Scenarist test run**: TBD seconds (with mocks)
+- **Speed improvement**: TBD% (target: 5-10x faster)
+
+### Build Times
+
+- **Next.js app build**: TBD seconds
+- **Playwright helpers build**: TBD seconds
+
+### LOC Comparison (Phase 1)
+
+**Before (verbose test without helpers)**:
+- Lines of code: TBD
+- Boilerplate: TBD lines
+
+**After (with helpers)**:
+- Lines of code: TBD
+- Boilerplate: TBD lines
+- Reduction: TBD%
+
+### Final Summary (After Phase 7)
 
 **Playwright Helpers:**
-- LOC reduction: Before (X lines) → After (Y lines) = Z% reduction
-- Test count: X tests using helpers
-- Build size: X KB
+- Total LOC reduction: TBD%
+- Test count using helpers: TBD
+- Build size: TBD KB
+- Package exports: TBD
 
 **Next.js Pages Example:**
-- Total files: X
-- Total lines of code: X
-- Playwright tests: X specs, X total tests
-- Vitest tests: X tests
-- Bruno requests: X requests
+- Total files created: TBD
+- Total lines of code: TBD
+- Playwright E2E tests: TBD specs, TBD total tests
+- Vitest API tests: TBD tests
+- Bruno collection: TBD requests
 - TypeScript errors: 0
-- Test coverage: X%
+- Test coverage: TBD%
+- Scenarios implemented: TBD / 7
+
+---
+
+## Decision Log
+
+### Decisions Made During Implementation
+
+[This section will be filled in as we make decisions during implementation]
+
+**Template format:**
+- **Date**: YYYY-MM-DD
+- **Phase**: Phase N
+- **Decision**: What was decided
+- **Rationale**: Why this decision was made
+- **Alternatives Considered**: What else was considered and why rejected
+- **Impact**: What this affects
+
+**Example:**
+- **Date**: 2025-10-27
+- **Phase**: Phase 0
+- **Decision**: Use json-server for fake API
+- **Rationale**: Simple, zero-code, highlights Scenarist's advantages through limitations
+- **Alternatives Considered**: Prism (too complex), custom Express (too much work), MSW standalone (defeats comparison purpose)
+- **Impact**: Enables clear before/after comparison in README
+
+### Decisions Deferred
+
+[Things we consciously decided NOT to do yet]
+
+**Template format:**
+- **Decision**: What was deferred
+- **Rationale**: Why not doing it now
+- **Revisit**: When to reconsider
+- **Phase**: When this came up
+
+### Mistakes & Corrections
+
+[What didn't work and how we fixed it - learning opportunities]
+
+**Template format:**
+- **Issue**: What went wrong
+- **Cause**: Root cause analysis
+- **Fix**: How we resolved it
+- **Learning**: What we learned for future phases
+- **Phase**: When this happened
+
+---
+
+## Risk Tracking
+
+### High Priority Risks
+
+Track and monitor risks identified in planning:
+
+**1. MSW + Next.js Integration**
+- **Risk**: MSW might not intercept Next.js API routes correctly
+- **Status**: Not yet validated
+- **Mitigation**: Phase 0 validates this immediately (fail fast if broken)
+- **Validation**: ONE test must pass calling API route through MSW
+- **Outcome**: TBD
+
+**2. Playwright Fixtures with Next.js**
+- **Risk**: Fixture pattern might not work with Next.js Pages Router
+- **Status**: Not yet validated
+- **Mitigation**: Phase 1 extracts from working verbose test (proven pattern)
+- **Validation**: Helper must work after extraction
+- **Outcome**: TBD
+
+**3. Test ID Propagation**
+- **Risk**: Test ID headers might not propagate from page → API route
+- **Status**: Not yet validated
+- **Mitigation**: Phase 0 validates header flow, Phase 6 proves isolation
+- **Validation**: Different test IDs must not interfere in parallel
+- **Outcome**: TBD
+
+**4. Scope Creep in Scenarios**
+- **Risk**: Scenarios become too complex, obscure core value
+- **Status**: Watching
+- **Mitigation**: Keep scenarios simple, focus on demonstrating ONE feature each
+- **Validation**: Each scenario should be <20 lines of definition
+- **Outcome**: TBD
+
+### Medium Priority Risks
+
+**5. Premature Helper Extraction**
+- **Risk**: Extracting helpers before understanding real needs
+- **Status**: Watching
+- **Mitigation**: TDD approach - write verbose test first, extract after proven
+- **Validation**: Helper API must feel natural, not forced
+- **Outcome**: TBD
+
+**6. Feature Dependencies**
+- **Risk**: Features become coupled, hard to test independently
+- **Status**: Watching
+- **Mitigation**: Keep features independent (cart doesn't need products)
+- **Validation**: Each feature should work standalone
+- **Outcome**: TBD
+
+**7. Time Estimation**
+- **Risk**: 6-day estimate might be optimistic
+- **Status**: Watching
+- **Mitigation**: Track actual time per phase, adjust if needed
+- **Validation**: If Phase 0 takes >1 day, something's wrong
+- **Outcome**: TBD
+
+### Low Priority Risks
+
+**8. Documentation Clarity**
+- **Risk**: README might not clearly show Scenarist value
+- **Status**: Low concern
+- **Mitigation**: Prominently feature before/after comparison
+- **Validation**: New developer should understand value in <5 minutes
+- **Outcome**: TBD
+
+### Mitigations Applied
+
+[Track what we did to mitigate risks as we discover them]
+
+**Template format:**
+- **Risk**: Which risk from above
+- **Mitigation**: What we did
+- **Effective?**: Yes/No/Partial
+- **Phase**: When applied
 
 ---
 
@@ -1420,6 +1751,24 @@ Quick reference of all files to be created/modified:
 - [ ] (10+ total requests)
 
 **Total New Files**: ~50+
+
+---
+
+## Update Log
+
+Track when this document was updated and why. This helps maintain document history and shows evolution of the plan.
+
+| Date | Phase | Update | Author |
+|------|-------|--------|--------|
+| 2025-10-27 | Planning | Initial comprehensive plan created | Claude |
+| 2025-10-27 | Planning | Merged with working document for unified tracking | Claude |
+| TBD | Phase 0 | TBD | TBD |
+
+**Update Guidelines:**
+- Add entry when making significant changes (not typo fixes)
+- Include phase, what changed, and why
+- Be concise but informative
+- Date format: YYYY-MM-DD
 
 ---
 
