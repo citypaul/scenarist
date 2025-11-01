@@ -2,9 +2,17 @@
 
 **Status**: 🚧 Phase 0 - Ready to Start
 **Started**: TBD (after approval)
-**Last Updated**: 2025-10-27
+**Last Updated**: 2025-11-01
 **PR**: [#39](https://github.com/citypaul/scenarist/pull/39)
 **Related**: [next-stages.md](./next-stages.md) (Overall v1.0 roadmap)
+
+---
+
+## ⚠️ Important Notes
+
+**Code Examples:** All TypeScript code examples in this document are **illustrative** and may require adjustment during implementation. They demonstrate intended API design but have not been type-checked or validated. Treat them as guidance, not final implementation.
+
+**Living Document:** This plan will be updated throughout implementation as learnings emerge. Expect sections to evolve as we discover better approaches through TDD.
 
 ---
 
@@ -284,7 +292,9 @@ packages/nextjs-adapter/
 1. **Scenario switching**: `scenarist.switchScenario('premiumUser')`
 2. **Test ID management**: Auto-generated unique IDs, automatic header injection
 3. **Playwright fixtures**: Extends base test with `scenarist` context
-4. **Future (Phase 5)**: Debug/inspection helpers when inspection API exists
+
+**Future Work (Post-v1.0):**
+- Debug/inspection helpers - **BLOCKED** on core inspection API (not yet implemented, see `next-stages.md` Section 5)
 
 **Package exports:**
 
@@ -638,6 +648,63 @@ After implementation, we'll document:
 
 This comparison will be prominently featured in the README to demonstrate value.
 
+### Implementation Details for Comparison
+
+**package.json Scripts:**
+```json
+{
+  "scripts": {
+    "dev": "next dev",
+    "fake-api": "json-server fake-api/db.json --port 3001",
+    "test": "playwright test",
+    "test:fake": "concurrently \"npm run fake-api\" \"npm test\" --kill-others --success first",
+    "test:scenarist": "npm test"
+  }
+}
+```
+
+**Bruno Collection Structure:**
+```
+apps/nextjs-pages-example/bruno/
+├── Fake API/
+│   ├── Products - Get All.bru
+│   ├── Cart - Add Item.bru
+│   ├── Cart - Get Items.bru
+│   ├── Shipping - Calculate.bru
+│   └── Payment - Create.bru
+├── Scenarist/
+│   ├── Setup/
+│   │   └── Switch to Premium Scenario.bru
+│   ├── Products/
+│   │   ├── Premium Pricing.bru
+│   │   └── Standard Pricing.bru
+│   ├── Cart/
+│   │   ├── Add Multiple Items.bru
+│   │   └── Verify State Accumulation.bru
+│   ├── Checkout/
+│   │   ├── UK Free Shipping.bru
+│   │   └── US Paid Shipping.bru
+│   └── Payment/
+│       ├── Polling Sequence.bru
+│       └── Declined Scenario.bru
+└── README.md  # Explains Fake API vs Scenarist collections
+```
+
+**README Comparison Table:**
+
+The example app's README will include a prominent comparison table:
+
+| Feature | Fake API (json-server) | Scenarist |
+|---------|------------------------|-----------|
+| **Setup** | 2 processes (json-server + Next.js) | 1 process (Next.js only) |
+| **Test Speed** | 10-15 seconds | 2-3 seconds |
+| **Error Scenarios** | Limited (only 404s) | Full control (any status code) |
+| **Sequences** | ❌ Not possible | ✅ Payment polling, multi-step flows |
+| **Stateful Mocks** | ❌ Static data | ✅ Cart accumulation, state capture |
+| **Parallel Tests** | ❌ Shared state conflicts | ✅ Test ID isolation |
+| **Port Conflicts** | ⚠️ Possible (port 3001) | ✅ No external ports |
+| **Maintenance** | Maintain separate db.json | Scenarios in codebase |
+
 ---
 
 ## TDD Implementation Phases
@@ -811,6 +878,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 - [ ] Implement `test` fixture with auto test ID and `switchScenario` method
 - [ ] Export from `src/index.ts`
 - [ ] Add `@scenarist/playwright-helpers` as dependency in Next.js app
+- [ ] **Create `packages/playwright-helpers/tests/` directory**
+- [ ] **Add unit tests for helper utilities** (Layer 2 - Adapter tests):
+  - [ ] Test `generateTestId` function (unique IDs, format)
+  - [ ] Test `switchScenario` error handling (network errors, 404s)
+  - [ ] Test fixture behavior (test ID injection, header setting)
+  - [ ] Test testId accessibility from fixture
+  - [ ] Target: 100% coverage of helper utilities
 
 **Helper code:**
 
