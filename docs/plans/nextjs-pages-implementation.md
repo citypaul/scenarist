@@ -4,7 +4,7 @@
 **Started**: TBD (after document approved)
 **Last Updated**: 2025-10-27
 **Main Plan**: [nextjs-pages-and-playwright-helpers.md](./nextjs-pages-and-playwright-helpers.md)
-**PR**: [#38](https://github.com/citypaul/scenarist/pull/38)
+**PR**: [#39](https://github.com/citypaul/scenarist/pull/39)
 
 ---
 
