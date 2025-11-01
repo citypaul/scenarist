@@ -1,0 +1,35 @@
+/**
+ * Next.js App Router adapter for Scenarist.
+ *
+ * Provides MSW-based scenario management for Next.js applications using App Router.
+ *
+ * @module @scenarist/nextjs-adapter/app
+ *
+ * @example
+ * ```typescript
+ * // lib/scenarist.ts
+ * import { createScenarist } from '@scenarist/nextjs-adapter/app';
+ *
+ * export const scenarist = createScenarist({
+ *   enabled: process.env.NODE_ENV === 'development',
+ *   defaultScenario: myDefaultScenario,
+ * });
+ *
+ * // app/api/__scenario__/route.ts
+ * import { scenarist } from '@/lib/scenarist';
+ *
+ * export const POST = scenarist.createScenarioEndpoint();
+ * export const GET = scenarist.createScenarioEndpoint();
+ *
+ * // tests/setup.ts
+ * import { scenarist } from '../lib/scenarist';
+ *
+ * beforeAll(() => scenarist.start());
+ * afterAll(() => scenarist.stop());
+ * ```
+ */
+
+export { createScenarist } from './setup.js';
+export { AppRequestContext } from './context.js';
+export { createScenarioEndpoint } from './endpoints.js';
+export type { AppAdapterOptions, AppScenarist } from './setup.js';

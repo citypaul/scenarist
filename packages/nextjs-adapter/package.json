@@ -1,0 +1,51 @@
+{
+  "name": "@scenarist/nextjs-adapter",
+  "version": "0.0.0",
+  "description": "Next.js adapter for Scenarist (Pages Router and App Router)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./pages": {
+      "types": "./dist/pages/index.d.ts",
+      "import": "./dist/pages/index.js"
+    },
+    "./app": {
+      "types": "./dist/app/index.d.ts",
+      "import": "./dist/app/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --project tsconfig.typecheck.json --noEmit",
+    "lint": "eslint .",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@scenarist/core": "workspace:*",
+    "@scenarist/msw-adapter": "workspace:*",
+    "zod": "^3.22.4"
+  },
+  "peerDependencies": {
+    "next": "^14.0.0 || ^15.0.0",
+    "msw": "^2.0.0"
+  },
+  "devDependencies": {
+    "@scenarist/eslint-config": "workspace:^",
+    "@scenarist/typescript-config": "workspace:*",
+    "@types/node": "^20.11.5",
+    "@vitest/coverage-v8": "^1.6.1",
+    "eslint": "^9.34.0",
+    "msw": "^2.0.0",
+    "next": "^14.0.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.6.1"
+  }
+}

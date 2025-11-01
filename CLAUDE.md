@@ -111,6 +111,191 @@ Scenarist follows **strict hexagonal architecture** to remain framework-agnostic
 - Implement port interfaces from core
 - No adapter should depend on another adapter
 
+### Schemas (Validation & Domain Contracts)
+
+**CRITICAL RULE**: Schemas ALWAYS belong in core, NEVER in adapters.
+
+**Location**: `packages/core/src/schemas/`
+
+**Why schemas belong in core:**
+- Schemas define **domain validation rules** (business logic)
+- Same schema across all adapters → NOT framework-specific
+- Prevents duplication and multiple sources of truth
+- Adapters are thin translation layers, not domain logic containers
+
+#### Gotcha: Schema Duplication Across Adapters
+
+**What Happened:**
+During Next.js adapter development, we discovered `scenarioRequestSchema` was duplicated in 3 adapter files:
+- `packages/express-adapter/src/endpoints/scenario-endpoints.ts`
+- `packages/nextjs-adapter/src/pages/endpoints.ts`
+- `packages/nextjs-adapter/src/app/endpoints.ts`
+
+Each adapter defined the EXACT same Zod schema locally:
+```typescript
+const scenarioRequestSchema = z.object({
+  scenario: z.string().min(1),
+  variant: z.string().optional(),
+});
+```
+
+**Why This Was Wrong:**
+- ❌ Schema defines domain validation → belongs in CORE, not adapters
+- ❌ Duplication creates multiple sources of truth
+- ❌ Changes require updating 3 files instead of 1
+- ❌ Violates hexagonal architecture (domain logic leaking into adapters)
+- ❌ Breaks DRY principle at the knowledge level
+
+**The Fix:**
+1. Created `packages/core/src/schemas/scenario-requests.ts` with `ScenarioRequestSchema`
+2. Created `packages/core/src/schemas/index.ts` barrel export
+3. Updated `packages/core/src/index.ts` to export schemas
+4. Added Zod to core package dependencies
+5. All adapters now import `ScenarioRequestSchema` from `@scenarist/core`
+
+```typescript
+// ✅ CORRECT - Schema in core
+// packages/core/src/schemas/scenario-requests.ts
+export const ScenarioRequestSchema = z.object({
+  scenario: z.string().min(1),
+  variant: z.string().optional(),
+});
+
+export type ScenarioRequest = z.infer<typeof ScenarioRequestSchema>;
+
+// ✅ CORRECT - Adapters import from core
+// packages/express-adapter/src/endpoints/scenario-endpoints.ts
+import { ScenarioRequestSchema } from '@scenarist/core';
+
+const validated = ScenarioRequestSchema.parse(req.body);
+```
+
+```typescript
+// ❌ WRONG - Schema defined in adapter
+// packages/express-adapter/src/endpoints/scenario-endpoints.ts
+const scenarioRequestSchema = z.object({
+  scenario: z.string().min(1),
+  variant: z.string().optional(),
+});
+```
+
+#### Decision Framework: Does This Schema Belong in Core?
+
+Ask these questions **in order**:
+
+1. **Is this schema used by multiple adapters?**
+   - YES → ✅ Schema belongs in CORE
+   - NO → Continue
+
+2. **Does it define domain validation rules (not framework-specific)?**
+   - YES → ✅ Schema belongs in CORE
+   - NO → Continue
+
+3. **Is it part of the API contract for Scenarist?**
+   - YES → ✅ Schema belongs in CORE
+   - NO → Consider if it's truly adapter-specific
+
+**Examples:**
+
+```typescript
+// ✅ CORE - Used by all adapters (scenario switching API)
+export const ScenarioRequestSchema = z.object({
+  scenario: z.string().min(1),
+  variant: z.string().optional(),
+});
+
+// ✅ CORE - Domain validation (scenario definition structure)
+export const ScenarioDefinitionSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().optional(),
+  mocks: z.array(MockDefinitionSchema),
+});
+
+// ✅ CORE - Domain validation (mock structure)
+export const MockDefinitionSchema = z.object({
+  method: z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH']),
+  url: z.string().min(1),
+  response: ResponseSchema.optional(),
+  sequence: SequenceSchema.optional(),
+});
+
+// ❌ ADAPTER - Framework-specific (Express request validation)
+// Only if it's truly Express-specific and not reusable
+const expressRequestSchema = z.object({
+  headers: z.record(z.string()),
+  query: z.record(z.string()),
+  // Express-specific fields
+});
+```
+
+#### Red Flags to Watch For
+
+**When working in adapters, watch for these warning signs:**
+
+1. ❌ Defining Zod schemas in adapter files
+2. ❌ Importing `zod` in adapter code (often means defining schema locally)
+3. ❌ Similar validation logic across multiple adapters
+4. ❌ Type definitions that aren't imported from core
+5. ❌ Using `z.object()`, `z.string()`, etc. in adapter code
+
+**When you see these, ask:** "Should this schema be in core?"
+
+#### The Pattern: Schema-First Development in Core
+
+**Correct pattern:**
+
+```typescript
+// 1. Define schema in core
+// packages/core/src/schemas/my-domain-object.ts
+import { z } from 'zod';
+
+export const MyDomainObjectSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().min(1),
+  value: z.number().positive(),
+});
+
+export type MyDomainObject = z.infer<typeof MyDomainObjectSchema>;
+
+// 2. Export from barrel file
+// packages/core/src/schemas/index.ts
+export { MyDomainObjectSchema, type MyDomainObject } from './my-domain-object';
+
+// 3. Export from package root
+// packages/core/src/index.ts
+export { MyDomainObjectSchema, type MyDomainObject } from './schemas';
+
+// 4. Use in adapters
+// packages/express-adapter/src/endpoints/my-endpoint.ts
+import { MyDomainObjectSchema, type MyDomainObject } from '@scenarist/core';
+
+export const createEndpoint = () => {
+  return async (req, res) => {
+    const validated = MyDomainObjectSchema.parse(req.body);
+    // Use validated data
+  };
+};
+
+// packages/nextjs-adapter/src/app/endpoints.ts
+import { MyDomainObjectSchema } from '@scenarist/core';
+
+export async function POST(request: Request) {
+  const body = await request.json();
+  const validated = MyDomainObjectSchema.parse(body);
+  // Use validated data
+}
+```
+
+**Key Benefits:**
+- ✅ Single source of truth for validation
+- ✅ Schema changes automatically propagate to all adapters
+- ✅ Type safety maintained across all packages
+- ✅ Hexagonal architecture preserved (domain in core, adapters thin)
+- ✅ DRY principle at knowledge level
+
+**Remember:** If validation logic is duplicated across adapters, it's domain knowledge that belongs in core.
+
 ### Dependency Injection Pattern
 
 **CRITICAL**: Domain logic (implementations) must NEVER create port implementations internally.
@@ -180,6 +365,7 @@ packages/
 │   │   ├── adapters/        # Default adapters (InMemoryScenarioRegistry, InMemoryScenarioStore)
 │   │   ├── domain/          # Business logic (createScenarioManager, buildConfig)
 │   │   ├── ports/           # Interfaces (contracts) - use `interface`
+│   │   ├── schemas/         # Zod schemas for validation (ScenarioRequestSchema, etc.)
 │   │   └── types/           # Data structures - use `type` with `readonly`
 │   ├── tests/               # Behavior-driven tests (54 tests, all passing)
 │   └── dist/                # Built output (.js, .d.ts files)
@@ -340,8 +526,71 @@ docs: update architecture documentation
 
 - All tests must pass
 - All linting and type checks must pass
+- **Coverage verification REQUIRED** - claims must be verified before review/approval
 - PRs focused on single feature or fix
 - Include behavior description (not implementation details)
+
+#### Coverage Verification - CRITICAL
+
+**NEVER trust coverage claims without verification.** Always run coverage yourself before approving PRs.
+
+**Before approving any PR claiming "100% coverage":**
+
+1. Check out the branch
+2. Run coverage verification:
+   ```bash
+   cd packages/[package-name]
+   pnpm exec vitest run --coverage
+   ```
+3. Verify ALL metrics hit 100%:
+   - Lines: 100% ✅
+   - Statements: 100% ✅
+   - Branches: 100% ✅
+   - Functions: 100% ✅
+
+**Red Flags:**
+- ❌ PR claims "100% coverage" but you haven't verified
+- ❌ Coverage summary shows <100% on any metric
+- ❌ "Uncovered Line #s" column shows line numbers
+- ❌ Coverage gaps without explicit exception documentation
+
+**Example - Coverage Violation:**
+
+```
+File           | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+---------------|---------|----------|---------|---------|-------------------
+All files      |   97.11 |    93.97 |   81.81 |   97.11 |
+setup.ts       |   95.23 |      100 |      60 |   95.23 | 45-48, 52-55
+context.ts     |     100 |      100 |     100 |     100 |
+endpoints.ts   |     100 |      100 |     100 |     100 |
+
+❌ This is NOT 100% coverage
+❌ Functions: 81.81% (should be 100%)
+❌ Lines: 97.11% (should be 100%)
+❌ setup.ts has uncovered lines 45-48, 52-55
+```
+
+**When coverage drops, ask:** "What business behavior am I not testing?" not "What line am I missing?" Add tests for behavior, coverage follows naturally.
+
+#### 100% Coverage Exceptions
+
+**Default Rule:** 100% coverage required. No exceptions without explicit approval and documentation.
+
+**Requesting an Exception:**
+
+1. **Document in package README** explaining:
+   - Current coverage metrics
+   - WHY 100% cannot be achieved in this package
+   - WHERE the missing coverage will come from
+
+2. **Get explicit approval** from project maintainer
+
+3. **Document in CLAUDE.md** under "Test Coverage: 100% Required"
+
+**Current Exceptions:**
+- Next.js Adapter: 86% function coverage (documented in `/packages/nextjs-adapter/README.md`)
+
+**Remember:** The burden of proof is on the requester. 100% is the default expectation.
 
 ## Important Files
 
@@ -519,6 +768,27 @@ describe('MyTest', () => {
 - Aligns with functional programming principles
 - Prevents test pollution and flakiness
 
+### Test Coverage: 100% Required
+
+**NON-NEGOTIABLE RULE**: All packages must maintain 100% test coverage (lines, statements, branches, functions).
+
+**Explicit Exceptions:**
+
+Exceptions to the 100% rule require explicit documentation and justification. As of now:
+
+- **Next.js Adapter**: 86% function coverage in adapter package (explicit exception)
+  - **Reason**: Arrow functions in `createDynamicHandler()` only execute during HTTP requests
+  - **Resolution**: Phase 0 integration tests will achieve 100% combined coverage
+  - **Documented in**: packages/nextjs-adapter/README.md
+
+**If you need to request an exception:**
+1. Document why 100% cannot be achieved in the package
+2. Explain where the remaining coverage will come from
+3. Get explicit approval
+4. Document the exception clearly
+
+**Default assumption: 100% coverage required, no exceptions.**
+
 ### TypeScript Strict Mode Forces Good Architecture
 
 The `noUnusedParameters` rule caught that `config` wasn't being used in `ScenarioManager`, leading us to discover it didn't belong there. This is strict mode working as intended - if a parameter isn't used, question whether it should exist.
@@ -530,6 +800,12 @@ The `noUnusedParameters` rule caught that `config` wasn't being used in `Scenari
 - ❌ Using classes for ports (use `interface`)
 - ❌ Using interfaces for types (use `type` with `readonly`)
 - ❌ Mutable data structures
+
+### In Adapters
+- ❌ Defining Zod schemas locally (schemas belong in core)
+- ❌ Duplicating validation logic across adapters
+- ❌ Containing domain logic (adapters should be thin translation layers)
+- ❌ Depending on other adapters (only depend on core)
 
 ### In Tests
 - ❌ Using `let` declarations or mutable state
