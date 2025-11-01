@@ -989,6 +989,54 @@ import {
 
 </details>
 
+## Development & Testing
+
+### Test Coverage Exception
+
+**IMPORTANT**: This package has an explicit exception to the project's 100% coverage requirement.
+
+**Current Coverage:**
+- Lines: 100% ✅
+- Statements: 100% ✅
+- Branches: 100% ✅
+- Functions: **86%** (explicit exception)
+
+**Reason for Exception:**
+
+Arrow functions passed to `createDynamicHandler()` in the setup files are only executed when MSW handles actual HTTP requests:
+
+```typescript
+const handler = createDynamicHandler({
+  getTestId: () => currentTestId,              // Only called during HTTP request
+  getActiveScenario: (testId) => ...,          // Only called during HTTP request
+  getScenarioDefinition: (scenarioId) => ...,  // Only called during HTTP request
+});
+```
+
+Adapter unit tests focus on Layer 2 (translation layer):
+- Request context extraction
+- Endpoint request/response handling
+- Framework-specific edge cases
+
+These tests do NOT make real HTTP requests, so the handler arrow functions are never executed.
+
+**Resolution:**
+
+Phase 0 (Next.js example app) will add integration tests that:
+- Make real HTTP requests (like Express example app does with supertest)
+- Trigger MSW handlers
+- Execute the remaining arrow functions
+- Achieve 100% combined coverage across adapter + example app
+
+**Precedent:**
+
+The Express adapter follows the same pattern:
+- Adapter unit tests: `packages/express-adapter/tests/`
+- Integration tests: `apps/express-example/tests/` (with supertest)
+- Combined result: 100% coverage
+
+**This is the ONLY explicit exception to the 100% coverage rule in the project.**
+
 ## Contributing
 
 See [CONTRIBUTING.md](../../CONTRIBUTING.md) for development setup and guidelines.
