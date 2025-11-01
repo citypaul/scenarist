@@ -1,11 +1,10 @@
 import { z } from 'zod';
-import type { ScenarioManager, ScenaristConfig } from '@scenarist/core';
+import {
+  ScenarioRequestSchema,
+  type ScenarioManager,
+  type ScenaristConfig,
+} from '@scenarist/core';
 import { AppRequestContext } from './context.js';
-
-const scenarioRequestSchema = z.object({
-  scenario: z.string().min(1),
-  variant: z.string().optional(),
-});
 
 /**
  * Handle POST request to switch scenarios.
@@ -14,7 +13,7 @@ const handlePost = (manager: ScenarioManager, config: ScenaristConfig) => {
   return async (req: Request): Promise<Response> => {
     try {
       const body = await req.json();
-      const { scenario, variant } = scenarioRequestSchema.parse(body);
+      const { scenario, variant } = ScenarioRequestSchema.parse(body);
       const context = new AppRequestContext(req, config);
       const testId = context.getTestId();
 

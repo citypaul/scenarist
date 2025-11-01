@@ -1,12 +1,11 @@
 import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
-import type { ScenarioManager, ScenaristConfig } from '@scenarist/core';
+import {
+  ScenarioRequestSchema,
+  type ScenarioManager,
+  type ScenaristConfig,
+} from '@scenarist/core';
 import { ExpressRequestContext } from '../context/express-request-context.js';
-
-const scenarioRequestSchema = z.object({
-  scenario: z.string().min(1),
-  variant: z.string().optional(),
-});
 
 const handleSetScenario = (
   manager: ScenarioManager,
@@ -14,7 +13,7 @@ const handleSetScenario = (
 ) => {
   return (req: Request, res: Response): void => {
     try {
-      const { scenario, variant } = scenarioRequestSchema.parse(req.body);
+      const { scenario, variant } = ScenarioRequestSchema.parse(req.body);
       const context = new ExpressRequestContext(req, config);
       const testId = context.getTestId();
 

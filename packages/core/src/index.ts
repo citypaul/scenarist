@@ -1,6 +1,9 @@
 // Types (data structures)
 export type * from './types/index.js';
 
+// Schemas (runtime validation)
+export * from './schemas/index.js';
+
 // Ports (interfaces the hexagon uses/exposes)
 export type * from './ports/index.js';
 

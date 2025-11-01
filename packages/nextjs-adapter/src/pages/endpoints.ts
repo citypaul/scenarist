@@ -1,12 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
-import type { ScenarioManager, ScenaristConfig } from '@scenarist/core';
+import {
+  ScenarioRequestSchema,
+  type ScenarioManager,
+  type ScenaristConfig,
+} from '@scenarist/core';
 import { PagesRequestContext } from './context.js';
-
-const scenarioRequestSchema = z.object({
-  scenario: z.string().min(1),
-  variant: z.string().optional(),
-});
 
 /**
  * Handle POST request to switch scenarios.
@@ -14,7 +13,7 @@ const scenarioRequestSchema = z.object({
 const handlePost = (manager: ScenarioManager, config: ScenaristConfig) => {
   return async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
     try {
-      const { scenario, variant } = scenarioRequestSchema.parse(req.body);
+      const { scenario, variant } = ScenarioRequestSchema.parse(req.body);
       const context = new PagesRequestContext(req, config);
       const testId = context.getTestId();
 

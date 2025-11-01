@@ -19,7 +19,8 @@
     "typecheck": "tsc --project tsconfig.typecheck.json --noEmit"
   },
   "dependencies": {
-    "msw": "^2.0.0"
+    "msw": "^2.0.0",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@scenarist/eslint-config": "workspace:*",
