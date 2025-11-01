@@ -38,7 +38,9 @@
       "Bash(gh run view:*)",
       "Bash(pnpm lint:*)",
       "Bash(pnpm --filter=@scenarist/nextjs-pages-example lint:*)",
-      "Bash(pnpm --filter=@scenarist/nextjs-pages-example build)"
+      "Bash(pnpm --filter=@scenarist/nextjs-pages-example build)",
+      "Bash(pnpm --filter=@scenarist/nextjs-pages-example test:api:*)",
+      "Bash(pnpm --filter=@scenarist/nextjs-pages-example test)"
     ],
     "deny": [],
     "ask": []
