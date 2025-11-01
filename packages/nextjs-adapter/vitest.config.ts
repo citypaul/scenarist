@@ -18,7 +18,7 @@ export default defineConfig({
       thresholds: {
         statements: 100,
         branches: 100,
-        functions: 92.85, // Explicit exception: arrow functions in createDynamicHandler only execute during HTTP (Phase 0 will achieve 100%)
+        functions: 93.18, // Explicit exception: arrow functions in createDynamicHandler only execute during HTTP (Phase 0 will achieve 100%)
         lines: 100,
       },
     },

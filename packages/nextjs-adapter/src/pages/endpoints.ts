@@ -1,78 +1,60 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { z } from 'zod';
-import {
-  ScenarioRequestSchema,
-  type ScenarioManager,
-  type ScenaristConfig,
-} from '@scenarist/core';
+import type { ScenarioManager, ScenaristConfig } from '@scenarist/core';
 import { PagesRequestContext } from './context.js';
+import { handlePostLogic, handleGetLogic } from '../common/endpoint-handlers.js';
 
 /**
  * Handle POST request to switch scenarios.
+ *
+ * Thin wrapper that adapts Next.js Pages Router Request/Response
+ * to shared business logic.
  */
 const handlePost = (manager: ScenarioManager, config: ScenaristConfig) => {
   return async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
-    try {
-      const { scenario, variant } = ScenarioRequestSchema.parse(req.body);
-      const context = new PagesRequestContext(req, config);
-      const testId = context.getTestId();
+    const context = new PagesRequestContext(req, config);
+    const result = await handlePostLogic(req.body, context, manager);
 
-      const result = manager.switchScenario(testId, scenario, variant);
-
-      if (!result.success) {
-        res.status(400).json({
-          error: result.error.message,
-        });
-        return;
-      }
-
-      res.status(200).json({
-        success: true,
-        testId,
-        scenarioId: scenario,
-        ...(variant && { variant }),
+    if (!result.success) {
+      res.status(result.status).json({
+        error: result.error,
+        ...(result.details && { details: result.details }),
       });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({
-          error: 'Invalid request body',
-          details: error.errors,
-        });
-        return;
-      }
-
-      res.status(500).json({
-        error: 'Internal server error',
-      });
+      return;
     }
+
+    res.status(200).json({
+      success: true,
+      testId: result.testId,
+      scenarioId: result.scenarioId,
+      ...(result.variant && { variant: result.variant }),
+    });
   };
 };
 
 /**
  * Handle GET request to retrieve active scenario.
+ *
+ * Thin wrapper that adapts Next.js Pages Router Request/Response
+ * to shared business logic.
  */
 const handleGet = (manager: ScenarioManager, config: ScenaristConfig) => {
   return async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
     const context = new PagesRequestContext(req, config);
-    const testId = context.getTestId();
+    const result = handleGetLogic(context, manager);
 
-    const activeScenario = manager.getActiveScenario(testId);
-
-    if (!activeScenario) {
-      res.status(404).json({
-        error: 'No active scenario for this test ID',
-        testId,
+    if (!result.success) {
+      res.status(result.status).json({
+        error: result.error,
+        testId: result.testId,
       });
       return;
     }
 
-    const scenarioDefinition = manager.getScenarioById(activeScenario.scenarioId);
-
     res.status(200).json({
-      testId,
-      scenarioId: activeScenario.scenarioId,
-      ...(scenarioDefinition && { scenarioName: scenarioDefinition.name }),
-      ...(activeScenario.variantName && { variantName: activeScenario.variantName }),
+      testId: result.testId,
+      scenarioId: result.scenarioId,
+      ...(result.scenarioName && { scenarioName: result.scenarioName }),
+      ...(result.variantName && { variantName: result.variantName }),
     });
   };
 };

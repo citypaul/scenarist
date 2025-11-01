@@ -988,7 +988,7 @@ import {
 - Lines: 100% ✅
 - Statements: 100% ✅
 - Branches: 100% ✅
-- Functions: **93%** (explicit exception - improved from 86% after refactoring)
+- Functions: **93.2%** (explicit exception - improved from 86% after refactoring)
 
 **Reason for Exception:**
 
