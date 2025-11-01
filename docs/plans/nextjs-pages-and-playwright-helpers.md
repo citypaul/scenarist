@@ -25,35 +25,36 @@
 
 ### What We're Working On
 
-**Phase 0: Setup (0.5 day estimate)**
+**Phase -1: Next.js Adapter Package (2-3 days estimate) - CRITICAL DEPENDENCY**
 
-Validating MSW + Scenarist + Next.js integration with absolute minimum setup.
+Building the `@scenarist/nextjs-adapter` package. This MUST be complete before starting the example app.
 
 ### Progress
 
-- [ ] Create Next.js app (Pages Router + TypeScript)
-- [ ] Install dependencies (MSW, Playwright, Vitest, Tailwind)
-- [ ] Create playwright-helpers package structure
-- [ ] Configure TypeScript strict mode
-- [ ] Configure Playwright
-- [ ] Configure Vitest
-- [ ] Create lib/scenarist.ts (MSW setup)
-- [ ] Create pages/api/__scenario__.ts
-- [ ] Create default scenario (empty mocks)
-- [ ] Create index.tsx (static "Hello E-commerce" page)
-- [ ] Write ONE Playwright test (verbose, loads page)
-- [ ] Setup fake API (json-server + db.json)
-- [ ] Verify builds pass
+**Next.js Adapter:**
+- [ ] Create package structure (packages/nextjs-adapter)
+- [ ] Implement Pages Router middleware
+- [ ] Implement App Router middleware
+- [ ] Create RequestContext for Pages Router
+- [ ] Create RequestContext for App Router
+- [ ] Implement scenario endpoints (both routers)
+- [ ] Write unit tests (100% coverage)
+- [ ] Write integration tests
+- [ ] Document API (README)
+- [ ] Build and verify package exports
 
 ### Blockers
 
-None currently.
+None currently. This is the FIRST thing to build - it's a dependency for everything else.
 
 ### Next Steps
 
-1. Begin Phase 0 implementation
-2. Validate MSW intercepts Next.js API routes
-3. Move to Phase 1 if validation succeeds
+1. **Build Next.js adapter package** (Days 1-3)
+   - Pages Router support
+   - App Router support
+   - Tests + documentation
+2. **Then Phase 0**: Setup example app using the new adapter
+3. **Then Phases 1-7**: Build example + helpers
 
 ---
 
@@ -61,6 +62,7 @@ None currently.
 
 | Phase | Status | Estimated | Actual | Files Changed |
 |-------|--------|-----------|--------|---------------|
+| **-1: Next.js Adapter** | ⏳ Not Started | **2-3 days** | - | 0 |
 | 0: Setup | ⏳ Not Started | 0.5 day | - | 0 |
 | 1: Integration + First Helper | ⏳ Not Started | 1 day | - | 0 |
 | 2: Products/Matching | ⏳ Not Started | 1 day | - | 0 |
@@ -69,19 +71,21 @@ None currently.
 | 5: Payment/Sequences | ⏳ Not Started | 1 day | - | 0 |
 | 6: Parallel Isolation | ⏳ Not Started | 0.5 day | - | 0 |
 | 7: Documentation | ⏳ Not Started | 1 day | - | 0 |
-| **Total** | **0%** | **6 days** | **-** | **0** |
+| **Total** | **0%** | **8-9 days** | **-** | **0** |
 
-**Next**: Begin Phase 0 after document approval
+**Next**: Begin Phase -1 (Next.js adapter) - CRITICAL DEPENDENCY
 
 ---
 
 ## Overview
 
-**Dual implementation**: Create `apps/nextjs-pages-example` (e-commerce demo) AND `packages/playwright-helpers` (reusable test utilities) in parallel using TDD to drive helper design.
+**Triple implementation**: Create `packages/nextjs-adapter` (framework adapter) + `apps/nextjs-pages-example` (e-commerce demo) + `packages/playwright-helpers` (reusable test utilities).
+
+**Critical Dependency**: Next.js adapter MUST be built FIRST - it's required for the example app to work.
 
 **Key Insight**: Write verbose Playwright tests first, then extract reusable patterns into the helpers package. This ensures helpers solve real problems, not speculative ones.
 
-**Timeline**: 5-6 days of focused work
+**Timeline**: 2-3 days (adapter) + 5-6 days (example + helpers) = 7-9 days total
 
 ---
 
@@ -99,6 +103,175 @@ These decisions were made during the ultrathinking/planning phase:
 | **Helpers Scope** | Scenario switching + Test ID + Fixtures | Auto test ID generation, switchScenario helper, Playwright fixtures. Debug helpers when Phase 5 implemented. |
 | **Test Location** | Co-located in each app | `apps/nextjs-pages-example/tests/playwright/` - Tests live with the app they're testing. Traditional, easy to understand. |
 | **Demo Priority** | Ease of use (DX) | Show how helpers make tests dramatically simpler/cleaner. 70% less boilerplate. Before/after comparison in README. |
+
+---
+
+## Architecture: Next.js Adapter Package
+
+### Package: `packages/nextjs-adapter/`
+
+**CRITICAL REQUIREMENT**: This package MUST be built BEFORE the Next.js example apps. It's not optional - it's a core dependency.
+
+**Why We Need This:**
+- Next.js has different request/response patterns than Express
+- Pages Router uses API routes with Next.js-specific `req`/`res` objects
+- App Router uses Route Handlers with Web Request/Response objects
+- Test ID extraction needs to work with both patterns
+- Scenario endpoints need Next.js-specific implementation
+
+**What it provides:**
+
+1. **Pages Router Support** (`@scenarist/nextjs-adapter/pages`)
+   - Middleware for API routes
+   - RequestContext implementation for Next.js `req`
+   - Scenario endpoint (`pages/api/__scenario__.ts`)
+   - Test ID extraction from Next.js requests
+
+2. **App Router Support** (`@scenarist/nextjs-adapter/app`)
+   - Middleware for Route Handlers
+   - RequestContext implementation for Web Request
+   - Scenario endpoint Route Handler
+   - Test ID extraction from Web Request headers
+
+**Similar To**: `@scenarist/express-adapter` (follow same patterns, adapt for Next.js)
+
+**API Design (Pages Router):**
+
+```typescript
+// lib/scenarist.ts
+import { createScenarist } from '@scenarist/nextjs-adapter/pages';
+import { scenarios } from './scenarios';
+
+export const scenarist = createScenarist({
+  scenarios,
+  config: {
+    enabled: process.env.NODE_ENV === 'development',
+    defaultScenarioId: 'default'
+  }
+});
+
+// pages/api/products.ts
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { scenarist } from '../../lib/scenarist';
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Get request context (extracts test ID, active scenario)
+  const context = scenarist.getContext(req);
+
+  // Make external API call - MSW intercepts using test ID
+  const response = await fetch('https://api.catalog.com/products', {
+    headers: {
+      'x-test-id': context.testId,
+      'x-user-tier': req.headers['x-user-tier'] as string
+    }
+  });
+
+  const products = await response.json();
+  res.status(200).json(products);
+}
+
+// pages/api/__scenario__.ts (provided by adapter)
+import { createScenarioEndpoint } from '@scenarist/nextjs-adapter/pages';
+import { scenarist } from '../../lib/scenarist';
+
+export default createScenarioEndpoint(scenarist);
+```
+
+**API Design (App Router):**
+
+```typescript
+// lib/scenarist.ts
+import { createScenarist } from '@scenarist/nextjs-adapter/app';
+import { scenarios } from './scenarios';
+
+export const scenarist = createScenarist({
+  scenarios,
+  config: {
+    enabled: process.env.NODE_ENV === 'development',
+    defaultScenarioId: 'default'
+  }
+});
+
+// app/api/products/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { scenarist } from '../../../lib/scenarist';
+
+export async function GET(request: NextRequest) {
+  // Get request context (Web Request pattern)
+  const context = scenarist.getContext(request);
+
+  // Make external API call
+  const response = await fetch('https://api.catalog.com/products', {
+    headers: {
+      'x-test-id': context.testId,
+      'x-user-tier': request.headers.get('x-user-tier') || 'standard'
+    }
+  });
+
+  const products = await response.json();
+  return NextResponse.json(products);
+}
+
+// app/api/__scenario__/route.ts (provided by adapter)
+import { createScenarioEndpoint } from '@scenarist/nextjs-adapter/app';
+import { scenarist } from '../../../lib/scenarist';
+
+export const { POST } = createScenarioEndpoint(scenarist);
+```
+
+**Implementation Requirements:**
+
+1. **Package Structure:**
+```
+packages/nextjs-adapter/
+├── src/
+│   ├── pages/
+│   │   ├── context.ts           # RequestContext for Pages Router
+│   │   ├── setup.ts             # createScenarist()
+│   │   └── endpoints.ts         # createScenarioEndpoint()
+│   ├── app/
+│   │   ├── context.ts           # RequestContext for App Router
+│   │   ├── setup.ts             # createScenarist()
+│   │   └── endpoints.ts         # createScenarioEndpoint()
+│   ├── types.ts                 # Shared types
+│   └── index.ts                 # Main exports
+├── tests/
+│   ├── pages/                   # Pages Router tests
+│   └── app/                     # App Router tests
+├── package.json
+├── tsconfig.json
+├── README.md
+└── CHANGELOG.md
+```
+
+2. **Dependencies:**
+   - `@scenarist/core` (core functionality)
+   - `@scenarist/msw-adapter` (MSW integration)
+   - `next` (peer dependency)
+   - `msw` (peer dependency)
+
+3. **Testing Strategy:**
+   - Unit tests for RequestContext implementations
+   - Unit tests for scenario endpoints
+   - Integration tests with mock Next.js requests
+   - 100% test coverage (behavior-driven)
+
+**Implementation Timeline:**
+
+- **Day 1**: Package structure, Pages Router middleware
+- **Day 2**: App Router middleware, RequestContext implementations
+- **Day 3**: Scenario endpoints, tests, documentation
+
+**Success Criteria:**
+
+- [ ] Pages Router RequestContext extracts test ID correctly
+- [ ] App Router RequestContext extracts test ID correctly
+- [ ] Scenario endpoints work with both routers
+- [ ] 100% test coverage
+- [ ] Comprehensive README
+- [ ] Example apps can use the adapter
+
+**This adapter is REQUIRED before starting the Next.js example app. It cannot be skipped or done in parallel - it's a dependency.**
 
 ---
 
