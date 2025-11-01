@@ -19,7 +19,10 @@
       "Bash(gh pr create:*)",
       "Bash(gh pr view:*)",
       "Bash(gh pr edit:*)",
-      "Bash(pnpm install:*)"
+      "Bash(pnpm install:*)",
+      "Bash(pnpm typecheck:*)",
+      "Bash(pnpm --filter=@scenarist/nextjs-adapter typecheck:*)",
+      "Bash(pnpm --filter=@scenarist/nextjs-adapter clean:*)"
     ],
     "deny": [],
     "ask": []
