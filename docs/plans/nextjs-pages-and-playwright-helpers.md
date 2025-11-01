@@ -1,23 +1,99 @@
-# Next.js Pages Router Example + Playwright Helpers Package - Implementation Plan
+# Next.js Pages Router + Playwright Helpers - Living Implementation Plan
 
 **Status**: 🚧 Phase 0 - Ready to Start
-**Created**: 2025-10-27
-**Last Updated**: 2025-10-27
+**Started**: TBD (after approval)
+**Last Updated**: 2025-11-01
+**PR**: [#39](https://github.com/citypaul/scenarist/pull/39)
+**Related**: [next-stages.md](./next-stages.md) (Overall v1.0 roadmap)
 
-## Quick Links
-- PR: TBD (will be added after PR creation)
-- Related: [docs/plans/next-stages.md](./next-stages.md) (Pre-Release Requirements #2)
-- Express Example: [apps/express-example](../../apps/express-example)
+---
+
+## ⚠️ Important Notes
+
+**Code Examples:** All TypeScript code examples in this document are **illustrative** and may require adjustment during implementation. They demonstrate intended API design but have not been type-checked or validated. Treat them as guidance, not final implementation.
+
+**Living Document:** This plan will be updated throughout implementation as learnings emerge. Expect sections to evolve as we discover better approaches through TDD.
+
+---
+
+## Quick Navigation
+
+- [Current Status](#current-status) ← What's happening NOW
+- [Overall Progress](#overall-progress) ← High-level tracking
+- [Architecture](#architecture-playwright-helpers-package) ← WHY decisions made
+- [Fake API Strategy](#fake-api-strategy) ← Comparison demo
+- [Phase Details](#tdd-implementation-phases) ← HOW to implement each phase
+- [Decision Log](#decision-log) ← Decisions during implementation
+- [Metrics](#metrics) ← Actual vs estimated
+- [Risk Tracking](#risk-tracking) ← Issues and mitigations
+
+---
+
+## Current Status
+
+### What We're Working On
+
+**Phase -1: Next.js Adapter Package (2-3 days estimate) - CRITICAL DEPENDENCY**
+
+Building the `@scenarist/nextjs-adapter` package. This MUST be complete before starting the example app.
+
+### Progress
+
+**Next.js Adapter:**
+- [ ] Create package structure (packages/nextjs-adapter)
+- [ ] Implement Pages Router middleware
+- [ ] Implement App Router middleware
+- [ ] Create RequestContext for Pages Router
+- [ ] Create RequestContext for App Router
+- [ ] Implement scenario endpoints (both routers)
+- [ ] Write unit tests (100% coverage)
+- [ ] Write integration tests
+- [ ] Document API (README)
+- [ ] Build and verify package exports
+
+### Blockers
+
+None currently. This is the FIRST thing to build - it's a dependency for everything else.
+
+### Next Steps
+
+1. **Build Next.js adapter package** (Days 1-3)
+   - Pages Router support
+   - App Router support
+   - Tests + documentation
+2. **Then Phase 0**: Setup example app using the new adapter
+3. **Then Phases 1-7**: Build example + helpers
+
+---
+
+## Overall Progress
+
+| Phase | Status | Estimated | Actual | Files Changed |
+|-------|--------|-----------|--------|---------------|
+| **-1: Next.js Adapter** | ⏳ Not Started | **2-3 days** | - | 0 |
+| 0: Setup | ⏳ Not Started | 0.5 day | - | 0 |
+| 1: Integration + First Helper | ⏳ Not Started | 1 day | - | 0 |
+| 2: Products/Matching | ⏳ Not Started | 1 day | - | 0 |
+| 3: Cart/Stateful | ⏳ Not Started | 1 day | - | 0 |
+| 4: Checkout/Composition | ⏳ Not Started | 0.5 day | - | 0 |
+| 5: Payment/Sequences | ⏳ Not Started | 1 day | - | 0 |
+| 6: Parallel Isolation | ⏳ Not Started | 0.5 day | - | 0 |
+| 7: Documentation | ⏳ Not Started | 1 day | - | 0 |
+| **Total** | **0%** | **8-9 days** | **-** | **0** |
+
+**Next**: Begin Phase -1 (Next.js adapter) - CRITICAL DEPENDENCY
 
 ---
 
 ## Overview
 
-**Dual implementation**: Create `apps/nextjs-pages-example` (e-commerce demo) AND `packages/playwright-helpers` (reusable test utilities) in parallel using TDD to drive helper design.
+**Triple implementation**: Create `packages/nextjs-adapter` (framework adapter) + `apps/nextjs-pages-example` (e-commerce demo) + `packages/playwright-helpers` (reusable test utilities).
+
+**Critical Dependency**: Next.js adapter MUST be built FIRST - it's required for the example app to work.
 
 **Key Insight**: Write verbose Playwright tests first, then extract reusable patterns into the helpers package. This ensures helpers solve real problems, not speculative ones.
 
-**Timeline**: 5-6 days of focused work
+**Timeline**: 2-3 days (adapter) + 5-6 days (example + helpers) = 7-9 days total
 
 ---
 
@@ -38,6 +114,175 @@ These decisions were made during the ultrathinking/planning phase:
 
 ---
 
+## Architecture: Next.js Adapter Package
+
+### Package: `packages/nextjs-adapter/`
+
+**CRITICAL REQUIREMENT**: This package MUST be built BEFORE the Next.js example apps. It's not optional - it's a core dependency.
+
+**Why We Need This:**
+- Next.js has different request/response patterns than Express
+- Pages Router uses API routes with Next.js-specific `req`/`res` objects
+- App Router uses Route Handlers with Web Request/Response objects
+- Test ID extraction needs to work with both patterns
+- Scenario endpoints need Next.js-specific implementation
+
+**What it provides:**
+
+1. **Pages Router Support** (`@scenarist/nextjs-adapter/pages`)
+   - Middleware for API routes
+   - RequestContext implementation for Next.js `req`
+   - Scenario endpoint (`pages/api/__scenario__.ts`)
+   - Test ID extraction from Next.js requests
+
+2. **App Router Support** (`@scenarist/nextjs-adapter/app`)
+   - Middleware for Route Handlers
+   - RequestContext implementation for Web Request
+   - Scenario endpoint Route Handler
+   - Test ID extraction from Web Request headers
+
+**Similar To**: `@scenarist/express-adapter` (follow same patterns, adapt for Next.js)
+
+**API Design (Pages Router):**
+
+```typescript
+// lib/scenarist.ts
+import { createScenarist } from '@scenarist/nextjs-adapter/pages';
+import { scenarios } from './scenarios';
+
+export const scenarist = createScenarist({
+  scenarios,
+  config: {
+    enabled: process.env.NODE_ENV === 'development',
+    defaultScenarioId: 'default'
+  }
+});
+
+// pages/api/products.ts
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { scenarist } from '../../lib/scenarist';
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Get request context (extracts test ID, active scenario)
+  const context = scenarist.getContext(req);
+
+  // Make external API call - MSW intercepts using test ID
+  const response = await fetch('https://api.catalog.com/products', {
+    headers: {
+      'x-test-id': context.testId,
+      'x-user-tier': req.headers['x-user-tier'] as string
+    }
+  });
+
+  const products = await response.json();
+  res.status(200).json(products);
+}
+
+// pages/api/__scenario__.ts (provided by adapter)
+import { createScenarioEndpoint } from '@scenarist/nextjs-adapter/pages';
+import { scenarist } from '../../lib/scenarist';
+
+export default createScenarioEndpoint(scenarist);
+```
+
+**API Design (App Router):**
+
+```typescript
+// lib/scenarist.ts
+import { createScenarist } from '@scenarist/nextjs-adapter/app';
+import { scenarios } from './scenarios';
+
+export const scenarist = createScenarist({
+  scenarios,
+  config: {
+    enabled: process.env.NODE_ENV === 'development',
+    defaultScenarioId: 'default'
+  }
+});
+
+// app/api/products/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { scenarist } from '../../../lib/scenarist';
+
+export async function GET(request: NextRequest) {
+  // Get request context (Web Request pattern)
+  const context = scenarist.getContext(request);
+
+  // Make external API call
+  const response = await fetch('https://api.catalog.com/products', {
+    headers: {
+      'x-test-id': context.testId,
+      'x-user-tier': request.headers.get('x-user-tier') || 'standard'
+    }
+  });
+
+  const products = await response.json();
+  return NextResponse.json(products);
+}
+
+// app/api/__scenario__/route.ts (provided by adapter)
+import { createScenarioEndpoint } from '@scenarist/nextjs-adapter/app';
+import { scenarist } from '../../../lib/scenarist';
+
+export const { POST } = createScenarioEndpoint(scenarist);
+```
+
+**Implementation Requirements:**
+
+1. **Package Structure:**
+```
+packages/nextjs-adapter/
+├── src/
+│   ├── pages/
+│   │   ├── context.ts           # RequestContext for Pages Router
+│   │   ├── setup.ts             # createScenarist()
+│   │   └── endpoints.ts         # createScenarioEndpoint()
+│   ├── app/
+│   │   ├── context.ts           # RequestContext for App Router
+│   │   ├── setup.ts             # createScenarist()
+│   │   └── endpoints.ts         # createScenarioEndpoint()
+│   ├── types.ts                 # Shared types
+│   └── index.ts                 # Main exports
+├── tests/
+│   ├── pages/                   # Pages Router tests
+│   └── app/                     # App Router tests
+├── package.json
+├── tsconfig.json
+├── README.md
+└── CHANGELOG.md
+```
+
+2. **Dependencies:**
+   - `@scenarist/core` (core functionality)
+   - `@scenarist/msw-adapter` (MSW integration)
+   - `next` (peer dependency)
+   - `msw` (peer dependency)
+
+3. **Testing Strategy:**
+   - Unit tests for RequestContext implementations
+   - Unit tests for scenario endpoints
+   - Integration tests with mock Next.js requests
+   - 100% test coverage (behavior-driven)
+
+**Implementation Timeline:**
+
+- **Day 1**: Package structure, Pages Router middleware
+- **Day 2**: App Router middleware, RequestContext implementations
+- **Day 3**: Scenario endpoints, tests, documentation
+
+**Success Criteria:**
+
+- [ ] Pages Router RequestContext extracts test ID correctly
+- [ ] App Router RequestContext extracts test ID correctly
+- [ ] Scenario endpoints work with both routers
+- [ ] 100% test coverage
+- [ ] Comprehensive README
+- [ ] Example apps can use the adapter
+
+**This adapter is REQUIRED before starting the Next.js example app. It cannot be skipped or done in parallel - it's a dependency.**
+
+---
+
 ## Architecture: Playwright Helpers Package
 
 ### Package: `packages/playwright-helpers/`
@@ -47,7 +292,9 @@ These decisions were made during the ultrathinking/planning phase:
 1. **Scenario switching**: `scenarist.switchScenario('premiumUser')`
 2. **Test ID management**: Auto-generated unique IDs, automatic header injection
 3. **Playwright fixtures**: Extends base test with `scenarist` context
-4. **Future (Phase 5)**: Debug/inspection helpers when inspection API exists
+
+**Future Work (Post-v1.0):**
+- Debug/inspection helpers - **BLOCKED** on core inspection API (not yet implemented, see `next-stages.md` Section 5)
 
 **Package exports:**
 
@@ -295,6 +542,171 @@ export const premiumUserScenario: ScenarioDefinition = {
 
 ---
 
+## Fake API Strategy
+
+### Why We Need This
+
+To demonstrate Scenarist's value clearly, we need to show the comparison:
+
+1. **Without Scenarist**: Tests hitting "real" backend (slow, flaky, requires external service running)
+2. **With Scenarist**: Tests using mocked scenarios (fast, reliable, zero external dependencies)
+
+This makes the value proposition obvious: Scenarist eliminates the pain of managing test backends.
+
+### Technology Choice: json-server
+
+**Selected**: json-server
+**Why**: Simple, zero-code, automatically generates REST endpoints from JSON
+**Installation**: `pnpm add -D json-server`
+
+**Alternatives Considered**:
+- **Prism** (OpenAPI mock server): More powerful but overkill for our needs
+- **Custom Express server**: More work, not needed for simple demo
+
+**Decision**: json-server is intentionally simple. Its limitations (no sequences, no state, static responses) highlight why Scenarist is better.
+
+### Endpoints to Mock
+
+All external API calls that our Next.js app makes:
+
+1. **Product Catalog API** (`http://localhost:3001/products`)
+   - `GET /products` → List of products with pricing (tier-based)
+
+2. **Shopping Cart API** (`http://localhost:3001/cart`)
+   - `POST /cart/add` → Add item to cart
+   - `GET /cart` → Get current cart items
+
+3. **Shipping API** (`http://localhost:3001/shipping`)
+   - `POST /shipping/calculate` → Calculate shipping cost
+
+4. **Payment API** (`http://localhost:3001/payment`)
+   - `POST /payment/create` → Create payment intent
+   - `GET /payment/:id/status` → Get payment status
+
+### File Structure
+
+```
+apps/nextjs-pages-example/
+├── fake-api/
+│   ├── db.json              # json-server database
+│   ├── routes.json          # Custom route mappings (optional)
+│   └── README.md            # How to run fake API
+├── package.json             # Script: "fake-api": "json-server fake-api/db.json --port 3001"
+└── ...
+```
+
+### Usage Comparison
+
+**Without Scenarist (using fake API)**:
+```bash
+# Terminal 1: Start json-server on port 3001
+npm run fake-api &
+
+# Terminal 2: Start Next.js app
+npm run dev &
+
+# Terminal 3: Run tests
+npm test
+
+# Limitations:
+# - Requires running json-server (extra process)
+# - Can't test error scenarios easily (json-server returns 404s)
+# - Can't test sequences (payment status polling)
+# - Can't test stateful behavior (cart state)
+# - Slower (real HTTP calls to json-server)
+# - Flaky (timing issues, port conflicts)
+
+# Approximate test run time: 10-15 seconds
+```
+
+**With Scenarist**:
+```bash
+# Start Next.js app (Scenarist built-in)
+npm run dev
+
+# Run tests
+npm test
+
+# Benefits:
+# ✅ No external dependencies
+# ✅ Test error scenarios (payment declined, out of stock)
+# ✅ Test sequences (payment status: pending → processing → succeeded)
+# ✅ Test stateful behavior (cart accumulates items)
+# ✅ Fast (in-memory mocks, no network calls)
+# ✅ Reliable (no timing issues, no port conflicts)
+# ✅ Parallel tests (isolated via test IDs)
+
+# Approximate test run time: 2-3 seconds
+```
+
+### Metrics to Track
+
+After implementation, we'll document:
+- Test execution time: fake API vs Scenarist (target: 5-10x faster)
+- Setup complexity: 2 processes vs 1 process
+- Scenario coverage: limited (fake API) vs comprehensive (Scenarist)
+
+This comparison will be prominently featured in the README to demonstrate value.
+
+### Implementation Details for Comparison
+
+**package.json Scripts:**
+```json
+{
+  "scripts": {
+    "dev": "next dev",
+    "fake-api": "json-server fake-api/db.json --port 3001",
+    "test": "playwright test",
+    "test:fake": "concurrently \"npm run fake-api\" \"npm test\" --kill-others --success first",
+    "test:scenarist": "npm test"
+  }
+}
+```
+
+**Bruno Collection Structure:**
+```
+apps/nextjs-pages-example/bruno/
+├── Fake API/
+│   ├── Products - Get All.bru
+│   ├── Cart - Add Item.bru
+│   ├── Cart - Get Items.bru
+│   ├── Shipping - Calculate.bru
+│   └── Payment - Create.bru
+├── Scenarist/
+│   ├── Setup/
+│   │   └── Switch to Premium Scenario.bru
+│   ├── Products/
+│   │   ├── Premium Pricing.bru
+│   │   └── Standard Pricing.bru
+│   ├── Cart/
+│   │   ├── Add Multiple Items.bru
+│   │   └── Verify State Accumulation.bru
+│   ├── Checkout/
+│   │   ├── UK Free Shipping.bru
+│   │   └── US Paid Shipping.bru
+│   └── Payment/
+│       ├── Polling Sequence.bru
+│       └── Declined Scenario.bru
+└── README.md  # Explains Fake API vs Scenarist collections
+```
+
+**README Comparison Table:**
+
+The example app's README will include a prominent comparison table:
+
+| Feature | Fake API (json-server) | Scenarist |
+|---------|------------------------|-----------|
+| **Setup** | 2 processes (json-server + Next.js) | 1 process (Next.js only) |
+| **Test Speed** | 10-15 seconds | 2-3 seconds |
+| **Error Scenarios** | Limited (only 404s) | Full control (any status code) |
+| **Sequences** | ❌ Not possible | ✅ Payment polling, multi-step flows |
+| **Stateful Mocks** | ❌ Static data | ✅ Cart accumulation, state capture |
+| **Parallel Tests** | ❌ Shared state conflicts | ✅ Test ID isolation |
+| **Port Conflicts** | ⚠️ Possible (port 3001) | ✅ No external ports |
+| **Maintenance** | Maintain separate db.json | Scenarios in codebase |
+
+---
+
 ## TDD Implementation Phases
 
 ### Phase 0: Setup Both Packages (⏳ Not Started)
@@ -466,6 +878,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 - [ ] Implement `test` fixture with auto test ID and `switchScenario` method
 - [ ] Export from `src/index.ts`
 - [ ] Add `@scenarist/playwright-helpers` as dependency in Next.js app
+- [ ] **Create `packages/playwright-helpers/tests/` directory**
+- [ ] **Add unit tests for helper utilities** (Layer 2 - Adapter tests):
+  - [ ] Test `generateTestId` function (unique IDs, format)
+  - [ ] Test `switchScenario` error handling (network errors, 404s)
+  - [ ] Test fixture behavior (test ID injection, header setting)
+  - [ ] Test testId accessibility from fixture
+  - [ ] Target: 100% coverage of helper utilities
 
 **Helper code:**
 
@@ -1314,21 +1733,180 @@ _(This section will be filled in during implementation with discoveries, gotchas
 
 ## Metrics
 
-_(To be filled in after completion)_
+### Test Coverage
+
+- **Playwright E2E tests**: 0 / 20 (target)
+- **Vitest API tests**: 0 (100% coverage target)
+- **Bruno requests**: 0 / 10 (target)
+
+### Code Quality
+
+- **TypeScript errors**: 0 (always, strict mode)
+- **Linting warnings**: 0 (always)
+- **Test boilerplate reduction**: TBD (70% target after Phase 1)
+
+### Performance
+
+- **Fake API test run**: TBD seconds (baseline)
+- **Scenarist test run**: TBD seconds (with mocks)
+- **Speed improvement**: TBD% (target: 5-10x faster)
+
+### Build Times
+
+- **Next.js app build**: TBD seconds
+- **Playwright helpers build**: TBD seconds
+
+### LOC Comparison (Phase 1)
+
+**Before (verbose test without helpers)**:
+- Lines of code: TBD
+- Boilerplate: TBD lines
+
+**After (with helpers)**:
+- Lines of code: TBD
+- Boilerplate: TBD lines
+- Reduction: TBD%
+
+### Final Summary (After Phase 7)
 
 **Playwright Helpers:**
-- LOC reduction: Before (X lines) → After (Y lines) = Z% reduction
-- Test count: X tests using helpers
-- Build size: X KB
+- Total LOC reduction: TBD%
+- Test count using helpers: TBD
+- Build size: TBD KB
+- Package exports: TBD
 
 **Next.js Pages Example:**
-- Total files: X
-- Total lines of code: X
-- Playwright tests: X specs, X total tests
-- Vitest tests: X tests
-- Bruno requests: X requests
+- Total files created: TBD
+- Total lines of code: TBD
+- Playwright E2E tests: TBD specs, TBD total tests
+- Vitest API tests: TBD tests
+- Bruno collection: TBD requests
 - TypeScript errors: 0
-- Test coverage: X%
+- Test coverage: TBD%
+- Scenarios implemented: TBD / 7
+
+---
+
+## Decision Log
+
+### Decisions Made During Implementation
+
+[This section will be filled in as we make decisions during implementation]
+
+**Template format:**
+- **Date**: YYYY-MM-DD
+- **Phase**: Phase N
+- **Decision**: What was decided
+- **Rationale**: Why this decision was made
+- **Alternatives Considered**: What else was considered and why rejected
+- **Impact**: What this affects
+
+**Example:**
+- **Date**: 2025-10-27
+- **Phase**: Phase 0
+- **Decision**: Use json-server for fake API
+- **Rationale**: Simple, zero-code, highlights Scenarist's advantages through limitations
+- **Alternatives Considered**: Prism (too complex), custom Express (too much work), MSW standalone (defeats comparison purpose)
+- **Impact**: Enables clear before/after comparison in README
+
+### Decisions Deferred
+
+[Things we consciously decided NOT to do yet]
+
+**Template format:**
+- **Decision**: What was deferred
+- **Rationale**: Why not doing it now
+- **Revisit**: When to reconsider
+- **Phase**: When this came up
+
+### Mistakes & Corrections
+
+[What didn't work and how we fixed it - learning opportunities]
+
+**Template format:**
+- **Issue**: What went wrong
+- **Cause**: Root cause analysis
+- **Fix**: How we resolved it
+- **Learning**: What we learned for future phases
+- **Phase**: When this happened
+
+---
+
+## Risk Tracking
+
+### High Priority Risks
+
+Track and monitor risks identified in planning:
+
+**1. MSW + Next.js Integration**
+- **Risk**: MSW might not intercept Next.js API routes correctly
+- **Status**: Not yet validated
+- **Mitigation**: Phase 0 validates this immediately (fail fast if broken)
+- **Validation**: ONE test must pass calling API route through MSW
+- **Outcome**: TBD
+
+**2. Playwright Fixtures with Next.js**
+- **Risk**: Fixture pattern might not work with Next.js Pages Router
+- **Status**: Not yet validated
+- **Mitigation**: Phase 1 extracts from working verbose test (proven pattern)
+- **Validation**: Helper must work after extraction
+- **Outcome**: TBD
+
+**3. Test ID Propagation**
+- **Risk**: Test ID headers might not propagate from page → API route
+- **Status**: Not yet validated
+- **Mitigation**: Phase 0 validates header flow, Phase 6 proves isolation
+- **Validation**: Different test IDs must not interfere in parallel
+- **Outcome**: TBD
+
+**4. Scope Creep in Scenarios**
+- **Risk**: Scenarios become too complex, obscure core value
+- **Status**: Watching
+- **Mitigation**: Keep scenarios simple, focus on demonstrating ONE feature each
+- **Validation**: Each scenario should be <20 lines of definition
+- **Outcome**: TBD
+
+### Medium Priority Risks
+
+**5. Premature Helper Extraction**
+- **Risk**: Extracting helpers before understanding real needs
+- **Status**: Watching
+- **Mitigation**: TDD approach - write verbose test first, extract after proven
+- **Validation**: Helper API must feel natural, not forced
+- **Outcome**: TBD
+
+**6. Feature Dependencies**
+- **Risk**: Features become coupled, hard to test independently
+- **Status**: Watching
+- **Mitigation**: Keep features independent (cart doesn't need products)
+- **Validation**: Each feature should work standalone
+- **Outcome**: TBD
+
+**7. Time Estimation**
+- **Risk**: 6-day estimate might be optimistic
+- **Status**: Watching
+- **Mitigation**: Track actual time per phase, adjust if needed
+- **Validation**: If Phase 0 takes >1 day, something's wrong
+- **Outcome**: TBD
+
+### Low Priority Risks
+
+**8. Documentation Clarity**
+- **Risk**: README might not clearly show Scenarist value
+- **Status**: Low concern
+- **Mitigation**: Prominently feature before/after comparison
+- **Validation**: New developer should understand value in <5 minutes
+- **Outcome**: TBD
+
+### Mitigations Applied
+
+[Track what we did to mitigate risks as we discover them]
+
+**Template format:**
+- **Risk**: Which risk from above
+- **Mitigation**: What we did
+- **Effective?**: Yes/No/Partial
+- **Phase**: When applied
 
 ---
 
@@ -1420,6 +1998,24 @@ Quick reference of all files to be created/modified:
 - [ ] (10+ total requests)
 
 **Total New Files**: ~50+
+
+---
+
+## Update Log
+
+Track when this document was updated and why. This helps maintain document history and shows evolution of the plan.
+
+| Date | Phase | Update | Author |
+|------|-------|--------|--------|
+| 2025-10-27 | Planning | Initial comprehensive plan created | Claude |
+| 2025-10-27 | Planning | Merged with working document for unified tracking | Claude |
+| TBD | Phase 0 | TBD | TBD |
+
+**Update Guidelines:**
+- Add entry when making significant changes (not typo fixes)
+- Include phase, what changed, and why
+- Be concise but informative
+- Date format: YYYY-MM-DD
 
 ---
 
