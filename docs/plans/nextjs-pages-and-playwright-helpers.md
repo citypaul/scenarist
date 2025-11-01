@@ -33,35 +33,36 @@
 
 ### What We're Working On
 
-**Phase -1: Next.js Adapter Package ✅ COMPLETE**
+**Phase 1: Scenarist Integration + First Helper 🔄 IN PROGRESS**
 
-The `@scenarist/nextjs-adapter` package is complete and ready to use!
+Implementing MSW + Scenarist setup and extracting first Playwright helper.
 
 ### Progress
 
-**Next.js Adapter:**
-- [x] Create package structure (packages/nextjs-adapter)
-- [x] Implement Pages Router RequestContext
-- [x] Implement Pages Router scenario endpoints
-- [x] Implement Pages Router createScenarist setup
-- [x] Implement App Router RequestContext
-- [x] Implement App Router scenario endpoints
-- [x] Implement App Router createScenarist setup
-- [x] Write unit tests (100% coverage - 58 tests passing)
-- [x] Document API (comprehensive README)
-- [x] Build and verify package exports
+**Phase -1: Next.js Adapter** - ✅ COMPLETE & MERGED (PR #40)
+**Phase 0: Infrastructure Setup** - ✅ COMPLETE & MERGED (PR #41)
+- [x] Next.js app scaffolding
+- [x] Playwright configuration
+- [x] Vitest configuration
+- [x] Playwright helpers package structure
+- [x] TypeScript strict mode throughout
+- [x] Smoke tests passing
+- [x] README documentation
 
-**Actual Time**: 1 day (estimated 2-3 days - came in ahead of schedule!)
+**Phase 1: Scenarist Integration** - 🔄 IN PROGRESS
+- [ ] Write verbose Playwright test (RED)
+- [ ] Implement Scenarist setup in Next.js app (GREEN)
+- [ ] Extract first helper from verbose test (REFACTOR)
 
 ### Blockers
 
-None! Phase -1 complete. Ready to proceed with Phase 0.
+None
 
 ### Next Steps
 
-1. **Create PR for Phase -1** ✅ Next immediate task
-2. **Then Phase 0**: Setup example app using the new adapter
-3. **Then Phases 1-7**: Build example + helpers
+1. **Phase 1a (RED)**: Write failing test for scenario switching
+2. **Phase 1b (GREEN)**: Implement Scenarist integration to make test pass
+3. **Phase 1c (REFACTOR)**: Extract `switchScenario` helper
 
 ---
 
@@ -70,17 +71,17 @@ None! Phase -1 complete. Ready to proceed with Phase 0.
 | Phase | Status | Estimated | Actual | Files Changed |
 |-------|--------|-----------|--------|---------------|
 | **-1: Next.js Adapter** | ✅ **COMPLETE & MERGED** | **2-3 days** | **1 day** | **21** |
-| 0: Setup | ⏳ Not Started | 0.5 day | - | 0 |
-| 1: Integration + First Helper | ⏳ Not Started | 1 day | - | 0 |
+| **0: Setup** | ✅ **COMPLETE & MERGED (PR #41)** | **0.5 day** | **0.5 day** | **27** |
+| 1: Integration + First Helper | 🔄 **IN PROGRESS** | 1 day | - | 0 |
 | 2: Products/Matching | ⏳ Not Started | 1 day | - | 0 |
 | 3: Cart/Stateful | ⏳ Not Started | 1 day | - | 0 |
 | 4: Checkout/Composition | ⏳ Not Started | 0.5 day | - | 0 |
 | 5: Payment/Sequences | ⏳ Not Started | 1 day | - | 0 |
 | 6: Parallel Isolation | ⏳ Not Started | 0.5 day | - | 0 |
 | 7: Documentation | ⏳ Not Started | 1 day | - | 0 |
-| **Total** | **0%** | **8-9 days** | **-** | **0** |
+| **Total** | **12.5% complete** | **8-9 days** | **1.5 days** | **48** |
 
-**Next**: Phase -1 ✅ COMPLETE (ahead of schedule!), now proceed to Phase 0
+**Next**: Phase 1 - Scenarist Integration + First Helper (🔄 IN PROGRESS)
 
 ---
 
