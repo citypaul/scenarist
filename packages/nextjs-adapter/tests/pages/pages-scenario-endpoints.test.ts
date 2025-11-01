@@ -1,41 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { NextApiRequest, NextApiResponse } from 'next';
-import {
-  buildConfig,
-  createScenarioManager,
-  InMemoryScenarioRegistry,
-  InMemoryScenarioStore,
-  type ScenarioDefinition,
-} from '@scenarist/core';
 import { createScenarioEndpoint } from '../../src/pages/endpoints.js';
+import { createEndpointTestSetup } from '../common/test-setup.js';
 
-const createTestSetup = () => {
-  const defaultScenario: ScenarioDefinition = {
-    id: 'default',
-    name: 'Default Scenario',
-    description: 'Default test scenario',
-    mocks: [],
-  };
-
-  const premiumScenario: ScenarioDefinition = {
-    id: 'premium',
-    name: 'Premium Scenario',
-    description: 'Premium test scenario',
-    mocks: [],
-  };
-
-  const registry = new InMemoryScenarioRegistry();
-  const store = new InMemoryScenarioStore();
-  const config = buildConfig({ enabled: true, defaultScenario });
-  const manager = createScenarioManager({ registry, store });
-
-  manager.registerScenario(defaultScenario);
-  manager.registerScenario(premiumScenario);
-
-  const handler = createScenarioEndpoint(manager, config);
-
-  return { handler, manager, config };
-};
+const createTestSetup = () =>
+  createEndpointTestSetup(createScenarioEndpoint);
 
 describe('Pages Router Scenario Endpoints', () => {
 
