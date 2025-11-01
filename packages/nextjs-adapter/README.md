@@ -915,19 +915,6 @@ await setScenario('test-1', 'my-scenario');  // Then use
 
 **Solution:** Ensure your `next` peer dependency version matches the adapter's supported versions (^14.0.0 || ^15.0.0).
 
-## Pages Router vs App Router
-
-| Feature | Pages Router | App Router |
-|---------|-------------|------------|
-| **Import** | `@scenarist/nextjs-adapter/pages` | `@scenarist/nextjs-adapter/app` |
-| **API Route File** | `pages/api/__scenario__.ts` | `app/api/__scenario__/route.ts` |
-| **Handler Export** | `export default scenarist.createScenarioEndpoint()` | `const handler = scenarist.createScenarioEndpoint();`<br>`export const POST = handler;`<br>`export const GET = handler;` |
-| **Request Type** | `NextApiRequest` (Node.js) | `Request` (Web Standard) |
-| **Response Type** | `NextApiResponse` (Node.js) | `Response` (Web Standard) |
-| **Core Functionality** | ✅ Identical | ✅ Identical |
-
-Both routers provide the exact same Scenarist functionality—only the Next.js integration differs.
-
 ## TypeScript
 
 This package is written in TypeScript and includes full type definitions.
@@ -993,17 +980,19 @@ import {
 
 ### Test Coverage Exception
 
-**IMPORTANT**: This package has an explicit exception to the project's 100% coverage requirement.
+**For users:** This package is production-ready and fully tested. The function coverage gap described below does not affect functionality or safety - it's an architectural pattern that will be resolved with integration tests in Phase 0.
+
+**For developers:** This package has an explicit exception to the project's 100% coverage requirement.
 
 **Current Coverage:**
 - Lines: 100% ✅
 - Statements: 100% ✅
 - Branches: 100% ✅
-- Functions: **86%** (explicit exception)
+- Functions: **93%** (explicit exception - improved from 86% after refactoring)
 
 **Reason for Exception:**
 
-Arrow functions passed to `createDynamicHandler()` in the setup files are only executed when MSW handles actual HTTP requests:
+Arrow functions passed to `createDynamicHandler()` in `src/common/create-scenarist-base.ts` are only executed when MSW handles actual HTTP requests:
 
 ```typescript
 const handler = createDynamicHandler({

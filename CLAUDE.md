@@ -526,8 +526,71 @@ docs: update architecture documentation
 
 - All tests must pass
 - All linting and type checks must pass
+- **Coverage verification REQUIRED** - claims must be verified before review/approval
 - PRs focused on single feature or fix
 - Include behavior description (not implementation details)
+
+#### Coverage Verification - CRITICAL
+
+**NEVER trust coverage claims without verification.** Always run coverage yourself before approving PRs.
+
+**Before approving any PR claiming "100% coverage":**
+
+1. Check out the branch
+2. Run coverage verification:
+   ```bash
+   cd packages/[package-name]
+   pnpm exec vitest run --coverage
+   ```
+3. Verify ALL metrics hit 100%:
+   - Lines: 100% ✅
+   - Statements: 100% ✅
+   - Branches: 100% ✅
+   - Functions: 100% ✅
+
+**Red Flags:**
+- ❌ PR claims "100% coverage" but you haven't verified
+- ❌ Coverage summary shows <100% on any metric
+- ❌ "Uncovered Line #s" column shows line numbers
+- ❌ Coverage gaps without explicit exception documentation
+
+**Example - Coverage Violation:**
+
+```
+File           | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+---------------|---------|----------|---------|---------|-------------------
+All files      |   97.11 |    93.97 |   81.81 |   97.11 |
+setup.ts       |   95.23 |      100 |      60 |   95.23 | 45-48, 52-55
+context.ts     |     100 |      100 |     100 |     100 |
+endpoints.ts   |     100 |      100 |     100 |     100 |
+
+❌ This is NOT 100% coverage
+❌ Functions: 81.81% (should be 100%)
+❌ Lines: 97.11% (should be 100%)
+❌ setup.ts has uncovered lines 45-48, 52-55
+```
+
+**When coverage drops, ask:** "What business behavior am I not testing?" not "What line am I missing?" Add tests for behavior, coverage follows naturally.
+
+#### 100% Coverage Exceptions
+
+**Default Rule:** 100% coverage required. No exceptions without explicit approval and documentation.
+
+**Requesting an Exception:**
+
+1. **Document in package README** explaining:
+   - Current coverage metrics
+   - WHY 100% cannot be achieved in this package
+   - WHERE the missing coverage will come from
+
+2. **Get explicit approval** from project maintainer
+
+3. **Document in CLAUDE.md** under "Test Coverage: 100% Required"
+
+**Current Exceptions:**
+- Next.js Adapter: 86% function coverage (documented in `/packages/nextjs-adapter/README.md`)
+
+**Remember:** The burden of proof is on the requester. 100% is the default expectation.
 
 ## Important Files
 

@@ -1,16 +1,5 @@
-import { setupServer } from 'msw/node';
-import {
-  buildConfig,
-  createScenarioManager,
-  createResponseSelector,
-  InMemoryScenarioRegistry,
-  InMemoryScenarioStore,
-  createInMemorySequenceTracker,
-  createInMemoryStateManager,
-  type BaseAdapterOptions,
-  type ScenaristAdapter,
-} from '@scenarist/core';
-import { createDynamicHandler } from '@scenarist/msw-adapter';
+import type { BaseAdapterOptions, ScenaristAdapter } from '@scenarist/core';
+import { createScenaristBase } from '../common/create-scenarist-base.js';
 import { createScenarioEndpoint } from './endpoints.js';
 
 /**
@@ -75,33 +64,8 @@ export type PagesScenarist = Omit<ScenaristAdapter<never>, 'middleware'> & {
 export const createScenarist = (
   options: PagesAdapterOptions
 ): PagesScenarist => {
-  const config = buildConfig(options);
-  const registry = options.registry ?? new InMemoryScenarioRegistry();
-  const store = options.store ?? new InMemoryScenarioStore();
-
-  const stateManager = createInMemoryStateManager();
-  const sequenceTracker = createInMemorySequenceTracker();
-
-  const manager = createScenarioManager({ registry, store, stateManager, sequenceTracker });
-
-  manager.registerScenario(options.defaultScenario);
-
-  const responseSelector = createResponseSelector({ sequenceTracker, stateManager });
-
-  // For Next.js, we don't have AsyncLocalStorage context like Express
-  // Instead, test ID is extracted per-request in the endpoint handlers
-  let currentTestId = config.defaultTestId;
-
-  const handler = createDynamicHandler({
-    getTestId: () => currentTestId,
-    getActiveScenario: (testId) => manager.getActiveScenario(testId),
-    getScenarioDefinition: (scenarioId) => manager.getScenarioById(scenarioId),
-    strictMode: config.strictMode,
-    defaultScenarioId: config.defaultScenarioId,
-    responseSelector,
-  });
-
-  const server = setupServer(handler);
+  const { config, manager, server, currentTestId } =
+    createScenaristBase(options);
 
   return {
     config,
@@ -110,7 +74,7 @@ export const createScenarist = (
       definitions.forEach((definition) => manager.registerScenario(definition));
     },
     switchScenario: (testId, scenarioId, variantName) => {
-      currentTestId = testId; // Update for MSW handler
+      currentTestId.value = testId; // Update for MSW handler
       return manager.switchScenario(testId, scenarioId, variantName);
     },
     getActiveScenario: (testId) => manager.getActiveScenario(testId),
