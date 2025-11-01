@@ -6,6 +6,7 @@ const createTestSetup = () => {
   const defaultScenario: ScenarioDefinition = {
     id: 'default',
     name: 'Default Scenario',
+    description: 'Default test scenario',
     mocks: [],
   };
 
@@ -21,6 +22,7 @@ describe('Pages Router createScenarist', () => {
   const premiumScenario: ScenarioDefinition = {
     id: 'premium',
     name: 'Premium Scenario',
+    description: 'Premium test scenario',
     mocks: [],
   };
 
@@ -57,6 +59,7 @@ describe('Pages Router createScenarist', () => {
     const scenario2: ScenarioDefinition = {
       id: 'scenario2',
       name: 'Scenario 2',
+      description: 'Second test scenario',
       mocks: [],
     };
 

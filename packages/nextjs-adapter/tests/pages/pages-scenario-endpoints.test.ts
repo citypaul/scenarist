@@ -13,12 +13,14 @@ const createTestSetup = () => {
   const defaultScenario: ScenarioDefinition = {
     id: 'default',
     name: 'Default Scenario',
+    description: 'Default test scenario',
     mocks: [],
   };
 
   const premiumScenario: ScenarioDefinition = {
     id: 'premium',
     name: 'Premium Scenario',
+    description: 'Premium test scenario',
     mocks: [],
   };
 

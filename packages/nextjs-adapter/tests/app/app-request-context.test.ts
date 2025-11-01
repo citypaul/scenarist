@@ -6,6 +6,7 @@ describe('AppRequestContext', () => {
   const defaultScenario: ScenarioDefinition = {
     id: 'default',
     name: 'Default',
+    description: 'Default test scenario',
     mocks: [],
   };
 
