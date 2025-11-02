@@ -1,6 +1,60 @@
 # @scenarist/core
 
-The core domain logic for Scenarist - a hexagonal architecture library for managing MSW mock scenarios in integration testing.
+The core domain logic for Scenarist - a framework-agnostic library for managing MSW mock scenarios in E2E testing environments.
+
+## What is Scenarist?
+
+**Scenarist** enables concurrent E2E tests to run with different backend states by switching mock scenarios at runtime via test IDs. No application restarts needed, no complex per-test mocking, just simple scenario switching.
+
+**Problem it solves:**
+
+Testing multiple backend states (success, errors, loading, edge cases) traditionally requires:
+- Restarting your app for each scenario
+- Complex per-test MSW handler setup
+- Serial test execution to avoid conflicts
+- Brittle mocks duplicated across test files
+
+**Scenarist's solution:**
+
+Define scenarios once, switch at runtime via HTTP calls, run tests in parallel with complete isolation.
+
+```typescript
+// Define once
+const errorScenario = { id: 'error', mocks: [{ method: 'GET', url: '*/api/*', response: { status: 500 } }] };
+
+// Switch instantly
+await switchScenario('test-1', 'error'); // Test 1 sees errors
+await switchScenario('test-2', 'success'); // Test 2 sees success (parallel!)
+
+// Tests run concurrently with different backend states
+```
+
+## Why Use Scenarist?
+
+**Runtime Scenario Switching**
+- Change entire backend state with one API call
+- No server restarts between tests
+- Instant feedback during development
+
+**True Parallel Testing**
+- 100+ tests run concurrently with different scenarios
+- Each test ID has isolated scenario state
+- No conflicts, no serialization needed
+
+**Reusable Scenarios**
+- Define scenarios once, use across all tests
+- Version control your mock scenarios
+- Share scenarios across teams
+
+**Framework-Agnostic Core**
+- Zero framework dependencies
+- Works with Express, Fastify, Next.js, Remix, any framework
+- Hexagonal architecture enables custom adapters
+
+**Type-Safe & Tested**
+- TypeScript strict mode throughout
+- 100% test coverage
+- Immutable, serializable data structures
 
 ## Architecture
 
@@ -35,27 +89,120 @@ src/
 - No framework dependencies
 - Implements the core business logic
 
+## Core Capabilities
+
+Scenarist provides 20+ powerful features for E2E testing. All capabilities are framework-agnostic and available via any adapter (Express, Next.js, etc.).
+
+### Request Matching (6 capabilities)
+
+**1. Body matching (partial match)**
+- Match requests based on request body fields
+- Additional fields in request are ignored
+- Perfect for testing different payload scenarios
+
+**2. Header matching (exact match, case-insensitive)**
+- Match requests based on header values
+- Header names are case-insensitive
+- Ideal for user tier testing (`x-user-tier: premium`)
+
+**3. Query parameter matching (exact match)**
+- Match requests based on query string parameters
+- Enables different responses for filtered requests
+
+**4. Combined matching (all criteria together)**
+- Combine body + headers + query parameters
+- ALL criteria must pass for mock to apply
+
+**5. Specificity-based selection**
+- Most specific mock wins regardless of position
+- Calculated score: body fields + headers + query params
+- No need to carefully order your mocks
+
+**6. Fallback mocks**
+- Mocks without match criteria act as catch-all
+- Specific mocks always take precedence
+- Perfect for default responses
+
+### Response Sequences (4 capabilities)
+
+**7. Single responses**
+- Return same response every time
+- Simplest mock definition
+
+**8. Response sequences (ordered)**
+- Return different response on each call
+- Perfect for polling APIs (pending → processing → complete)
+
+**9. Repeat modes (last, cycle, none)**
+- `last`: Stay at final response forever
+- `cycle`: Loop back to first response
+- `none`: Mark as exhausted after last response
+
+**10. Sequence exhaustion with fallback**
+- Exhausted sequences (`repeat: none`) skip to next mock
+- Enables rate limiting scenarios
+
+### Stateful Mocks (6 capabilities)
+
+**11. State capture from requests**
+- Extract values from request body, headers, or query
+- Store in per-test-ID state
+
+**12. State injection via templates**
+- Inject captured state into responses using `{{state.X}}`
+- Dynamic responses based on earlier requests
+
+**13. Array append support**
+- Syntax: `stateKey[]` appends to array
+- Perfect for shopping cart scenarios
+
+**14. Nested state paths**
+- Support dot notation: `user.profile.name`
+- Both capture and injection support nesting
+
+**15. State isolation per test ID**
+- Each test ID has isolated state
+- Parallel tests don't interfere
+
+**16. State reset on scenario switch**
+- State cleared when switching scenarios
+- Fresh state for each scenario
+
+### Core Features (4 capabilities)
+
+**17. Multiple API mocking**
+- Mock any number of external APIs
+- Combine APIs in single scenario
+
+**18. Default scenario fallback**
+- Unmocked endpoints fall back to default scenario
+- Define baseline responses once
+
+**19. Test ID isolation (parallel tests)**
+- Run 100+ tests concurrently
+- Each test ID has isolated scenario/state
+
+**20. Scenario switching at runtime**
+- Change backend state with one HTTP call
+- No application restart needed
+
+### Additional Features
+
+**21. Path parameters** (`/users/:id`)
+**22. Wildcard URLs** (`*/api/*`)
+**23. Response delays** (simulate slow networks)
+**24. Custom headers** in responses
+**25. Strict mode** (fail on unmocked requests)
+
 ## Current Status
 
-**Phase 1: Initial Setup** ✅
-- Type definitions created
-- Port interfaces defined
-- Directory structure established
-- TypeScript and Vitest configured
+**All Core Features Implemented** ✅
 
-**Phase 2: Domain Implementation** ✅
-- Implemented `createScenarioManager()` with dependency injection
-- Implemented `buildConfig()` helper with defaults
-- Implemented `InMemoryScenarioRegistry` adapter
-- Implemented `InMemoryScenarioStore` adapter
-- **51 tests passing** with 100% behavior coverage
-- TypeScript strict mode enforced
-
-**Integration:** ✅
-- Used by `@scenarist/express-adapter` with 24 tests
-- Used by `@scenarist/msw-adapter` with 31 tests
-- Example app with 20 E2E tests
-- **Total: 126 tests across the ecosystem**
+- ✅ **Phase 1: Request Content Matching** - Body/headers/query matching with specificity-based selection
+- ✅ **Phase 2: Response Sequences** - Ordered sequences with repeat modes (last/cycle/none)
+- ✅ **Phase 3: Stateful Mocks** - State capture, injection, reset on scenario switch
+- ✅ **Integration**: Used by Express, Next.js, MSW adapters
+- ✅ **Total: 281 tests passing** across all packages with 100% coverage
 
 ## Installation
 

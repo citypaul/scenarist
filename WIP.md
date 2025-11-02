@@ -2,15 +2,22 @@
 
 **Last Updated**: 2025-11-02
 **Branch**: feat/phase-3-shopping-cart
-**Overall Progress**: 50% complete (5 of 10 phases)
+**Overall Progress**: 45% complete (5 of 11 phases - Phase 8 added for verification)
 
 ---
 
 ## Current Focus
 
-**Phase 3: Shopping Cart - Stateful Mocks** 🔄 IN PROGRESS
+**Phase 3: Shopping Cart - Stateful Mocks + Multi-API + Additional Matching** 🔄 IN PROGRESS
 
-Implementing shopping cart functionality with state capture (adding items) and state injection (displaying cart contents). This demonstrates Scenarist's stateful mock capabilities.
+Implementing shopping cart with state capture/injection PLUS:
+- Multiple API mocking (cart + analytics services)
+- Query parameter matching demonstration
+- Combined matching (body + headers + query)
+- Default scenario fallback demonstration
+- Nested state paths (cart.metadata.userId)
+
+**This phase addresses 10 capability gaps** (3 Phase 3, 3 Phase 1, 1 Core = 7 new demonstrations)
 
 **Status**: Starting RED phase
 **Tests Passing**: N/A (no tests yet)
@@ -18,10 +25,15 @@ Implementing shopping cart functionality with state capture (adding items) and s
 
 ---
 
-## Phase 3 Plan - Stateful Mocks
+## Phase 3 Plan - Stateful Mocks + Multi-API + Additional Matching
 
 ### Goal
-Implement shopping cart with state capture (adding items) and state injection (displaying cart contents). This demonstrates Scenarist's Phase 3 stateful mock capabilities.
+Implement shopping cart with state capture/injection PLUS demonstrate:
+- Multiple API mocking (cart service + analytics service)
+- Query parameter matching
+- Combined matching (body + headers + query)
+- Default scenario fallback
+- Nested state paths
 
 ### Tasks - RED-GREEN-REFACTOR
 
@@ -31,8 +43,13 @@ Implement shopping cart with state capture (adding items) and state injection (d
 - [ ] Test: "add multiple products accumulates cart"
 - [ ] Test: "cart displays correct products and quantities"
 - [ ] Test: "cart persists across page navigation"
+- [ ] Test: "query parameter matching - filter cart items" (NEW)
+- [ ] Test: "combined matching - body + headers + query" (NEW)
+- [ ] Test: "default scenario fallback when no match" (NEW)
+- [ ] Test: "nested state paths - cart.metadata.userId" (NEW)
+- [ ] Test: "analytics service tracks cart events" (NEW - second API)
 - [ ] Confirm RED state (failures expected)
-- [ ] Commit: `test(phase-3a): add failing tests for shopping cart stateful mocks (RED)`
+- [ ] Commit: `test(phase-3a): add failing tests for shopping cart + multi-API (RED)`
 
 **Phase 3b: GREEN - Shopping Cart Implementation**
 - [ ] Create `pages/cart.tsx` - Cart display page
@@ -40,13 +57,15 @@ Implement shopping cart with state capture (adding items) and state injection (d
 - [ ] Create `components/CartItem.tsx` - Individual cart item display
 - [ ] Update `pages/index.tsx` - Add "Add to Cart" buttons
 - [ ] Create `pages/api/cart/add.ts` - POST endpoint to add items
-- [ ] Create `pages/api/cart/get.ts` - GET endpoint to fetch cart
-- [ ] Update `lib/scenarios.ts` - Add cart scenarios with state capture/injection
+- [ ] Create `pages/api/cart/get.ts` - GET endpoint to fetch cart (with query params)
+- [ ] Create `pages/api/analytics/track.ts` - POST endpoint for analytics (NEW - second API)
+- [ ] Update `lib/scenarios.ts` - Add cart + analytics scenarios
 - [ ] All tests passing (100% GREEN)
-- [ ] Commit: `feat(phase-3b): implement shopping cart with stateful mocks (GREEN)`
+- [ ] Commit: `feat(phase-3b): implement shopping cart + analytics with stateful mocks (GREEN)`
 
 **Phase 3c: REFACTOR - Code Quality**
-- [ ] Extract Cart types (`CartItem`, `Cart`)
+- [ ] Extract Cart types (`CartItem`, `Cart`, `CartMetadata`)
+- [ ] Extract Analytics types (`AnalyticsEvent`)
 - [ ] Assess DRY violations
 - [ ] Improve naming/clarity if needed
 - [ ] Tests still passing after refactoring
@@ -55,14 +74,28 @@ Implement shopping cart with state capture (adding items) and state injection (d
 **Phase 3d: DOCUMENTATION**
 - [ ] Update TESTING.md if needed
 - [ ] Document stateful mock patterns
+- [ ] Document multi-API mocking approach
+- [ ] Update capability coverage matrix in WIP.md
 - [ ] Update plan document
-- [ ] Commit: `docs(phase-3d): document shopping cart stateful patterns`
+- [ ] Commit: `docs(phase-3d): document shopping cart + multi-API patterns`
 
 ### Key Scenarist Features Demonstrated
+
+**Phase 3 (Stateful Mocks):**
 - **State Capture**: `captureState` from request body (productId, quantity)
 - **State Injection**: `{{cart.items}}` templates in responses
+- **Array Append**: `cart.items[]` for accumulating cart items
+- **Nested State Paths**: `cart.metadata.userId` for complex state structures
 - **State Persistence**: Cart state maintained across requests
-- **Test Isolation**: Each test ID has independent cart state
+
+**Phase 1 (Request Matching) - Additional Coverage:**
+- **Query Parameter Matching**: Filter cart items by `?tier=premium`
+- **Combined Matching**: Body + headers + query together
+- **Default Scenario Fallback**: No match criteria → fallback mock
+
+**Core Features:**
+- **Multiple API Mocking**: Cart service `/api/cart/*` + Analytics service `/api/analytics/*`
+- **Test Isolation**: Each test ID has independent cart + analytics state
 
 ---
 
@@ -122,12 +155,126 @@ _Updated: 2025-11-02_
 
 ## Metrics
 
-**Time**: 3/8-9 days (33% time, 50% work - ahead by 17%)
+**Time**: 3/9-10 days (33% time, 45% work - ahead by 12%)
 **Tests**: 152 passing (5 E2E + 147 package)
-**Phases Complete**: 5 of 10 (50%)
+**Phases Complete**: 5 of 11 (45% - Phase 8 added for capability verification)
 **PRs Merged**: 5 (Phase -1, Phase 0, Phase 1, Phase 1 Post, Phase 2)
 **Quality**: 0 TS errors, 0 lint warnings, architecture verified
 **Coverage**: 100% on adapters, comprehensive E2E coverage
+**Capability Coverage**: 30% demonstrated (6/20 core capabilities)
+
+---
+
+## Capability Coverage Matrix
+
+This section tracks which Scenarist capabilities are implemented in core packages vs. demonstrated in the Next.js example app.
+
+### Legend
+- ✅ **Demonstrated** - Implemented AND explicitly shown in Next.js example with E2E tests
+- ⏳ **In Progress** - Implementation exists, adding to example now
+- 🔜 **Planned** - Implementation exists, planned for future phase
+- ⚠️ **Used but Implicit** - Working but not explicitly demonstrated
+- ❌ **Not Demonstrated** - Implementation exists but not shown in example
+
+---
+
+### Phase 1: Request Content Matching
+
+| Capability | Core Status | Example Status | Phase | Notes |
+|------------|-------------|----------------|-------|-------|
+| Body matching | ✅ Implemented | ✅ Demonstrated | Phase 2 | Tier-based pricing (`tier: "premium"`) |
+| Header matching | ✅ Implemented | ✅ Demonstrated | Phase 2 | `x-user-tier` header |
+| Query parameter matching | ✅ Implemented | ⏳ In Progress | Phase 3 | Filter cart items by `?tier=premium` |
+| Combined matching (all 3) | ✅ Implemented | ⏳ In Progress | Phase 3 | Body + headers + query together |
+| Specificity-based selection | ✅ Implemented | ⏳ In Progress | Phase 3 | Explicit test showing "more specific wins" |
+| Fallback mocks (no match criteria) | ✅ Implemented | ⏳ In Progress | Phase 3 | Explicit "no match → fallback" test |
+
+**Phase 1 Coverage: 33% → 100% after Phase 3** (2/6 → 6/6) - Phase 3 completes all Phase 1 gaps
+
+---
+
+### Phase 2: Response Sequences
+
+| Capability | Core Status | Example Status | Phase | Notes |
+|------------|-------------|----------------|-------|-------|
+| Basic sequence (ordered responses) | ✅ Implemented | 🔜 Planned | Phase 5 | Payment processing flow |
+| Repeat mode: `last` | ✅ Implemented | 🔜 Planned | Phase 5 | Payment settled state |
+| Repeat mode: `cycle` | ✅ Implemented | 🔜 Planned | Phase 5 | Status polling |
+| Repeat mode: `none` (exhaustion) | ✅ Implemented | 🔜 Planned | Phase 5 | Rate limiting |
+| Sequence + match criteria | ✅ Implemented | 🔜 Planned | Phase 5 | Premium-only sequence |
+
+**Phase 2 Coverage: 0% demonstrated (0/5)** - Phase 5 will add payment processing sequences
+
+---
+
+### Phase 3: Stateful Mocks
+
+| Capability | Core Status | Example Status | Phase | Notes |
+|------------|-------------|----------------|-------|-------|
+| State capture (request → state) | ✅ Implemented | ⏳ In Progress | Phase 3 | Shopping cart add items |
+| State injection (state → response) | ✅ Implemented | ⏳ In Progress | Phase 3 | Display cart contents |
+| Array append `[]` syntax | ✅ Implemented | ⏳ In Progress | Phase 3 | Cart items array |
+| Nested state paths | ✅ Implemented | ⏳ In Progress | Phase 3 | `cart.metadata.userId` example added |
+| Multiple state sources | ✅ Implemented | 🔜 Planned | Phase 4 | Cart + user profile state (next phase) |
+
+**Phase 3 Coverage: 60% → 80% after Phase 3** (3/5 → 4/5) - Only "multiple state sources" deferred to Phase 4
+
+---
+
+### Core Features (Architecture)
+
+| Capability | Core Status | Example Status | Phase | Notes |
+|------------|-------------|----------------|-------|-------|
+| Multiple API mocking | ✅ Implemented | ⏳ In Progress | Phase 3 | Cart service + Analytics service |
+| Default scenario | ✅ Implemented | ⏳ In Progress | Phase 3 | Explicit fallback test added |
+| Test isolation (test IDs) | ✅ Implemented | 🔜 Planned | Phase 6 | Need parallel test verification |
+| Scenario switching | ✅ Implemented | ✅ Demonstrated | Phase 2 | `setScenario()` helper works |
+
+**Core Coverage: 25% → 75% after Phase 3** (1/4 → 3/4) - Only "test isolation" deferred to Phase 6
+
+---
+
+### Overall Capability Coverage
+
+**Current Status:**
+- **Demonstrated**: 6 (30%)
+- **In Progress (Phase 3)**: 10 (50%) ← Phase 3 addresses 10 capabilities!
+- **Planned (Phase 4-6)**: 4 (20%)
+
+**After Phase 3 Completes:**
+- **Demonstrated**: 16 (80%) ← Massive jump from 30%!
+- **Remaining**: 4 (20%) - sequences (5 in Phase 5) + test isolation (1 in Phase 6) - multiple state sources (1 in Phase 4)
+
+**Total Capabilities**: 20
+**Target by Phase 8**: 100% demonstrated (all 20 capabilities explicitly shown and verified)
+
+---
+
+### Gaps to Address
+
+**Phase 3 Will Address (10 capabilities):**
+1. ⏳ **Multiple APIs** - Cart service + Analytics service
+2. ⏳ **Query parameter matching** - Filter cart items by `?tier=premium`
+3. ⏳ **Combined matching** - Body + headers + query together
+4. ⏳ **Default scenario fallback** - Explicit "no match → fallback" test
+5. ⏳ **Specificity selection** - Explicit "more specific wins" test
+6. ⏳ **Nested state paths** - `cart.metadata.userId` example
+7. ⏳ **State capture** - Shopping cart add items
+8. ⏳ **State injection** - Display cart contents
+9. ⏳ **Array append []** - Cart items array
+10. ⏳ **Default scenario** - Explicit test of default scenario behavior
+
+**Phase 4 Will Address (1 capability):**
+11. 🔜 **Multiple state sources** - Cart + user profile state
+
+**Phase 5 Will Address (5 capabilities):**
+12-16. 🔜 **All sequence capabilities** - Basic, repeat: last/cycle/none, sequence + match
+
+**Phase 6 Will Address (1 capability):**
+17. 🔜 **Test isolation** - Parallel test verification
+
+**Phase 8 Will Verify:**
+18-20. ✅ **All 20 capabilities explicitly demonstrated** - Final audit and verification
 
 ---
 
@@ -157,10 +304,103 @@ _Updated: 2025-11-02_
 7. **Phase 3d - DOCUMENTATION**: Document patterns and learnings
 
 ### Remaining Phases (After Phase 3)
-- Phase 4: Checkout Flow
-- Phase 5: Payment Processing
-- Phase 6: Test Isolation Verification
-- Phase 7: Documentation & Polish
+
+**Phase 4: Checkout Flow + Multiple State Sources**
+- Checkout form with user profile + cart state
+- Demonstrate combining multiple state sources
+- Address "Multiple state sources" gap (Phase 3 capability)
+
+**Phase 5: Payment Processing + Sequences**
+- Payment flow with sequences (pending → processing → complete)
+- Demonstrate all 5 sequence capabilities:
+  - Basic sequence, repeat: last, repeat: cycle, repeat: none, sequence + match
+- Address all Phase 2 capability gaps
+
+**Phase 6: Test Isolation Verification**
+- Parallel test execution with independent state
+- Explicit test ID isolation demonstration
+- Address "Test isolation" core capability gap
+
+**Phase 7: Documentation & Polish**
+- README updates
+- Example documentation
+- Final polish
+
+**Phase 8: Capability Coverage Verification (NEW)**
+- Comprehensive audit of all 20 capabilities
+- Verify 100% demonstration coverage
+- Create final capability checklist
+- Ensure no gaps remain
+
+---
+
+## Phase 8 Plan - Capability Coverage Verification
+
+### Goal
+Verify that ALL 20 Scenarist core capabilities are explicitly demonstrated in the Next.js example app with E2E tests. This is the final quality gate before considering the example complete.
+
+### Verification Checklist
+
+**Phase 1: Request Content Matching (6 capabilities)**
+- [ ] Body matching - Explicit test demonstrating body criteria
+- [ ] Header matching - Explicit test demonstrating header criteria
+- [ ] Query parameter matching - Explicit test demonstrating query criteria
+- [ ] Combined matching (all 3) - Test using body + headers + query together
+- [ ] Specificity-based selection - Test showing "more specific wins"
+- [ ] Fallback mocks - Test showing "no match → fallback"
+
+**Phase 2: Response Sequences (5 capabilities)**
+- [ ] Basic sequence - Ordered responses advancing on each call
+- [ ] Repeat mode: last - Sequence exhausts, repeats final response
+- [ ] Repeat mode: cycle - Sequence cycles back to first response
+- [ ] Repeat mode: none - Sequence exhausts, returns error/fallback
+- [ ] Sequence + match criteria - Sequence only advances when matching
+
+**Phase 3: Stateful Mocks (5 capabilities)**
+- [ ] State capture - Request data captured to state store
+- [ ] State injection - State injected into response templates
+- [ ] Array append [] - State appended to array (cart items)
+- [ ] Nested state paths - Deep state paths (e.g., cart.metadata.userId)
+- [ ] Multiple state sources - Combining state from multiple captures
+
+**Core Features (4 capabilities)**
+- [ ] Multiple API mocking - 2+ distinct APIs mocked (cart + analytics)
+- [ ] Default scenario - Explicit test of default scenario behavior
+- [ ] Test isolation - Parallel tests with independent state
+- [ ] Scenario switching - Runtime scenario switching via helper
+
+### Verification Tasks
+
+**Task 1: Audit Current Coverage**
+- [ ] Review all E2E tests
+- [ ] Check coverage matrix against actual tests
+- [ ] Identify any missing demonstrations
+- [ ] Document gaps
+
+**Task 2: Add Missing Tests (if any)**
+- [ ] Write tests for any gaps found
+- [ ] Ensure explicit assertion for each capability
+- [ ] Add descriptive test names showing capability
+
+**Task 3: Update Documentation**
+- [ ] Update capability coverage matrix to 100%
+- [ ] Document where each capability is demonstrated
+- [ ] Create capability → test mapping
+- [ ] Update README with capability showcase
+
+**Task 4: Final Verification**
+- [ ] Run all E2E tests (should be 20+ tests covering all capabilities)
+- [ ] Verify each capability has at least one explicit test
+- [ ] Confirm no implicit-only capabilities remain
+- [ ] Mark Phase 8 complete
+
+### Success Criteria
+
+- ✅ All 20 capabilities have explicit E2E tests
+- ✅ Capability coverage matrix shows 100% demonstrated
+- ✅ Each capability has clear test → implementation mapping
+- ✅ No "⚠️ Used but Implicit" or "❌ Not Demonstrated" statuses remain
+- ✅ Documentation clearly shows where each capability is demonstrated
 
 ---
 

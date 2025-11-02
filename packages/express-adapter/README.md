@@ -2,13 +2,66 @@
 
 Express.js adapter for [Scenarist](https://github.com/citypaul/scenarist) - manage MSW mock scenarios in your Express applications for testing **and** development.
 
-## What is this?
+## What is Scenarist?
+
+**Scenarist** enables concurrent E2E tests to run with different backend states by switching mock scenarios at runtime via test IDs. No application restarts needed, no complex per-test mocking, just simple scenario switching.
+
+**Before Scenarist:**
+```typescript
+// Every test has fragile per-test mocking
+beforeEach(() => {
+  server.use(
+    http.get('/api/user', () => HttpResponse.json({ role: 'admin' }))
+  );
+});
+// Repeat 100 times across test files, hope they don't conflict
+```
+
+**With Scenarist:**
+```typescript
+// Define scenario once
+const adminScenario = { id: 'admin', mocks: [/* complete backend state */] };
+
+// Use in any test with one line
+await setScenario('test-1', 'admin');
+// Test runs with complete "admin" backend state, isolated from other tests
+```
+
+## Why Use Scenarist with Express?
+
+**Runtime Scenario Switching**
+- Change entire backend state with one API call
+- No server restarts between tests
+- Instant feedback during development
+
+**True Parallel Testing**
+- 100+ tests run concurrently with different scenarios
+- Each test ID has isolated scenario state
+- No conflicts, no serialization needed
+
+**Automatic Test ID Propagation** (Express advantage)
+- AsyncLocalStorage propagates test IDs automatically
+- No manual header forwarding in route handlers
+- MSW handlers receive test ID transparently
+
+**Reusable Scenarios**
+- Define scenarios once, use across all tests
+- Version control your mock scenarios
+- Share scenarios across teams
+
+**Zero Boilerplate**
+- One function call (`createScenarist()`) wires everything
+- Middleware + endpoints + MSW automatically configured
+- Just add `app.use(scenarist.middleware)` and you're done
+
+## What is this package?
 
 This package provides a complete Express integration for Scenarist's scenario management system. With one function call, you get:
 
-- **Runtime scenario switching** via HTTP endpoints
-- **Test isolation** using unique test IDs
+- **Runtime scenario switching** via HTTP endpoints (`/__scenario__`)
+- **Test isolation** using unique test IDs (`x-test-id` header)
 - **Automatic MSW integration** for request interception
+- **AsyncLocalStorage** for automatic test ID propagation
 - **Zero boilerplate** - everything wired automatically
 
 ## Installation
@@ -282,6 +335,113 @@ const response2 = await request(app)
 expect(response2.status).toBe(404);
 expect(response2.body.error).toBe('No active scenario for this test ID');
 ```
+
+## Core Capabilities
+
+Scenarist provides 20+ powerful features for E2E testing. All capabilities work seamlessly with Express via automatic test ID propagation.
+
+### Request Matching (6 capabilities)
+
+**Body matching (partial match)** - Match requests based on request body fields
+```typescript
+{
+  method: 'POST',
+  url: '/api/items',
+  match: { body: { itemId: 'premium-item' } },
+  response: { status: 200, body: { price: 100 } }
+}
+```
+
+**Header matching (exact match)** - Perfect for user tier testing
+```typescript
+{
+  method: 'GET',
+  url: '/api/data',
+  match: { headers: { 'x-user-tier': 'premium' } },
+  response: { status: 200, body: { limit: 1000 } }
+}
+```
+
+**Query parameter matching** - Different responses for filtered requests
+```typescript
+{
+  method: 'GET',
+  url: '/api/search',
+  match: { query: { filter: 'active' } },
+  response: { status: 200, body: { results: [...] } }
+}
+```
+
+**Combined matching** - Combine body + headers + query (all must pass)
+**Specificity-based selection** - Most specific mock wins (no need to order carefully)
+**Fallback mocks** - Mocks without match criteria act as catch-all
+
+### Response Sequences (4 capabilities)
+
+**Single responses** - Return same response every time
+**Response sequences (ordered)** - Return different response on each call
+```typescript
+{
+  method: 'GET',
+  url: '/api/job/:id',
+  sequence: {
+    responses: [
+      { status: 200, body: { status: 'pending' } },
+      { status: 200, body: { status: 'processing' } },
+      { status: 200, body: { status: 'complete' } }
+    ],
+    repeat: 'last'  // Stay at final response
+  }
+}
+```
+
+**Repeat modes** - `last` (stay at final), `cycle` (loop), `none` (exhaust)
+**Sequence exhaustion with fallback** - Exhausted sequences skip to next mock
+
+### Stateful Mocks (6 capabilities)
+
+**State capture from requests** - Extract values from body/headers/query
+**State injection via templates** - Inject captured state using `{{state.X}}`
+```typescript
+// Capture from POST
+{
+  method: 'POST',
+  url: '/api/cart/items',
+  captureState: { 'cartItems[]': 'body.item' },  // Append to array
+  response: { status: 200 }
+}
+
+// Inject into GET
+{
+  method: 'GET',
+  url: '/api/cart',
+  response: {
+    status: 200,
+    body: {
+      items: '{{state.cartItems}}',
+      count: '{{state.cartItems.length}}'
+    }
+  }
+}
+```
+
+**Array append support** - Syntax: `stateKey[]` appends to array
+**Nested state paths** - Support dot notation: `user.profile.name`
+**State isolation per test ID** - Each test ID has isolated state
+**State reset on scenario switch** - Fresh state for each scenario
+
+### Core Features (4 capabilities)
+
+**Multiple API mocking** - Mock any number of external APIs in one scenario
+**Default scenario fallback** - Unmocked endpoints fall back to default scenario
+**Test ID isolation** - Run 100+ tests concurrently without conflicts
+**Runtime scenario switching** - Change backend state with one API call
+
+### Additional Features
+
+**Path parameters** (`/users/:id`), **Wildcard URLs** (`*/api/*`), **Response delays**, **Custom headers**, **Strict mode** (fail on unmocked requests)
+
+**Want to learn more?** See [Core Functionality Documentation](../../docs/core-functionality.md) for detailed explanations and examples.
 
 ## Core Concepts
 

@@ -52,6 +52,104 @@ This package provides complete Next.js integration for Scenarist's scenario mana
 | See full API reference | [API Reference](#api-reference) |
 | Learn about advanced features | [Core Functionality Docs](../../docs/core-functionality.md) |
 
+## Core Capabilities
+
+Scenarist provides 20+ powerful features for E2E testing. All capabilities work with Next.js (both Pages Router and App Router).
+
+### Request Matching (6 capabilities)
+
+**Body matching (partial match)** - Match requests based on request body fields
+```typescript
+{
+  method: 'POST',
+  url: '/api/items',
+  match: { body: { itemId: 'premium-item' } },
+  response: { status: 200, body: { price: 100 } }
+}
+```
+
+**Header matching (exact match)** - Perfect for user tier testing
+```typescript
+{
+  method: 'GET',
+  url: '/api/data',
+  match: { headers: { 'x-user-tier': 'premium' } },
+  response: { status: 200, body: { limit: 1000 } }
+}
+```
+
+**Query parameter matching** - Different responses for filtered requests
+**Combined matching** - Combine body + headers + query (all must pass)
+**Specificity-based selection** - Most specific mock wins (no need to order carefully)
+**Fallback mocks** - Mocks without match criteria act as catch-all
+
+### Response Sequences (4 capabilities)
+
+**Single responses** - Return same response every time
+**Response sequences (ordered)** - Perfect for polling APIs
+```typescript
+{
+  method: 'GET',
+  url: '/api/job/:id',
+  sequence: {
+    responses: [
+      { status: 200, body: { status: 'pending' } },
+      { status: 200, body: { status: 'processing' } },
+      { status: 200, body: { status: 'complete' } }
+    ],
+    repeat: 'last'  // Stay at final response
+  }
+}
+```
+
+**Repeat modes** - `last` (stay at final), `cycle` (loop), `none` (exhaust)
+**Sequence exhaustion with fallback** - Exhausted sequences skip to next mock
+
+### Stateful Mocks (6 capabilities)
+
+**State capture from requests** - Extract values from body/headers/query
+**State injection via templates** - Inject captured state using `{{state.X}}`
+```typescript
+// Capture from POST
+{
+  method: 'POST',
+  url: '/api/cart/items',
+  captureState: { 'cartItems[]': 'body.item' },  // Append to array
+  response: { status: 200 }
+}
+
+// Inject into GET response
+{
+  method: 'GET',
+  url: '/api/cart',
+  response: {
+    status: 200,
+    body: {
+      items: '{{state.cartItems}}',
+      count: '{{state.cartItems.length}}'
+    }
+  }
+}
+```
+
+**Array append support** - Syntax: `stateKey[]` appends to array
+**Nested state paths** - Support dot notation: `user.profile.name`
+**State isolation per test ID** - Each test ID has isolated state
+**State reset on scenario switch** - Fresh state for each scenario
+
+### Core Features (4 capabilities)
+
+**Multiple API mocking** - Mock any number of external APIs in one scenario
+**Default scenario fallback** - Unmocked endpoints fall back to default scenario
+**Test ID isolation** - Run 100+ tests concurrently without conflicts
+**Runtime scenario switching** - Change backend state with one API call
+
+### Additional Features
+
+**Path parameters** (`/users/:id`), **Wildcard URLs** (`*/api/*`), **Response delays**, **Custom headers**, **Strict mode** (fail on unmocked requests)
+
+**Want to learn more?** See [Core Functionality Documentation](../../docs/core-functionality.md) for detailed explanations and examples.
+
 ## Common Use Cases
 
 ### Testing Error Scenarios

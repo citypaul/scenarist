@@ -2,24 +2,102 @@
 
 Framework-agnostic MSW integration for Scenarist.
 
-This package converts serializable `MockDefinition` data into MSW `HttpHandler` instances at runtime, enabling Scenarist to work with any Node.js framework.
+## What is Scenarist?
 
-**Status:** ✅ Stable
+**Scenarist** enables concurrent E2E tests to run with different backend states by switching mock scenarios at runtime via test IDs. This package provides the MSW integration layer that makes it all work.
 
-## What is this?
+**The big picture:**
+
+```
+Your App → Scenarist Adapter (Express/Next.js) → MSW Adapter → MSW → Intercepted HTTP
+```
+
+**What this package does:**
+
+Converts Scenarist's serializable `MockDefinition` data into MSW `HttpHandler` instances at runtime, enabling Scenarist to work with any Node.js framework.
+
+**Status:** ✅ Stable - Used by all Scenarist adapters (Express, Next.js, etc.)
+
+## Why Use This Package?
+
+**Framework-Agnostic**
+- Works with Express, Fastify, Next.js, Remix, any Node.js framework
+- Zero framework dependencies (except MSW types)
+- Build custom adapters for any framework
+
+**Serializable Mocks**
+- Mock definitions are pure JSON (no functions)
+- Store in Redis for distributed testing
+- Version control scenarios as files
+- Share scenarios across teams
+
+**Powerful Matching**
+- URL patterns: exact, wildcards (`*/api/*`), path params (`/users/:id`)
+- Request content matching: body, headers, query params
+- Specificity-based selection
+- Dynamic responses based on request content
+
+**Complete MSW Integration**
+- Single dynamic handler routes to correct scenario
+- Automatic test ID isolation
+- Default scenario fallback
+- Strict mode for unmocked requests
+
+## What is this package?
 
 The MSW adapter is the bridge between Scenarist's serializable mock definitions and MSW's HTTP interception. It provides:
 
 1. **URL Matching** - Converts URL patterns (with wildcards and path params) into MSW-compatible matchers
-2. **Mock Matching** - Finds the right mock definition for incoming requests
+2. **Mock Matching** - Finds the right mock definition for incoming requests (with request content matching)
 3. **Response Building** - Transforms `MockDefinition` into MSW `HttpResponse`
 4. **Dynamic Handler** - Creates a single MSW handler that routes based on active scenarios
+
+## Core Capabilities
+
+This adapter implements all 25 Scenarist capabilities:
+
+### Request Matching (6 capabilities)
+- **Body matching** (partial match) - Match on request body fields
+- **Header matching** (exact, case-insensitive) - Match on header values
+- **Query matching** (exact) - Match on query parameters
+- **Combined matching** - Combine body + headers + query
+- **Specificity-based selection** - Most specific mock wins
+- **Fallback mocks** - Mocks without criteria act as catch-all
+
+### Response Sequences (4 capabilities)
+- **Single responses** - Return same response every time
+- **Response sequences** - Ordered responses for polling scenarios
+- **Repeat modes** - `last`, `cycle`, `none` behaviors
+- **Sequence exhaustion** - Skip exhausted sequences to fallback
+
+### Stateful Mocks (6 capabilities)
+- **State capture** - Extract values from requests
+- **State injection** - Inject state into responses via templates
+- **Array append** - Syntax: `stateKey[]` for arrays
+- **Nested paths** - Dot notation: `user.profile.name`
+- **State isolation** - Per test ID isolation
+- **State reset** - Fresh state on scenario switch
+
+### URL Patterns (3 capabilities)
+- **Exact matches** - `https://api.example.com/users`
+- **Wildcards** - `*/api/*`, `https://*/users`
+- **Path parameters** - `/users/:id`, `/posts/:postId/comments/:commentId`
+
+### MSW Integration (6 capabilities)
+- **Dynamic handler generation** - Single handler routes at runtime
+- **Response building** - Status codes, JSON bodies, headers, delays
+- **Default scenario fallback** - Falls back to "default" scenario
+- **Strict mode** - Fail on unmocked requests
+- **Test ID isolation** - Separate state per test ID
+- **Framework-agnostic** - Works with any Node.js framework
 
 ## Features
 
 - ✅ **URL pattern matching** - Exact matches, glob patterns (`*/api/*`), path parameters (`/users/:id`)
+- ✅ **Request content matching** - Body, headers, query with specificity-based selection
 - ✅ **Dynamic MSW handler generation** - Single handler routes to correct scenario at runtime
-- ✅ **Response building** - Status codes, JSON bodies, headers, delays
+- ✅ **Response building** - Status codes, JSON bodies, headers, delays, state injection
+- ✅ **Sequences and state** - Polling scenarios and stateful mocks fully supported
 - ✅ **Default scenario fallback** - Falls back to "default" scenario when mock not found
 - ✅ **Framework-agnostic** - Works with Express, Fastify, Next.js, Remix, any Node.js framework
 
