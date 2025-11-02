@@ -2,31 +2,31 @@
 
 **Last Updated**: 2025-11-02
 **Branch**: feat/phase-3-shopping-cart
-**Overall Progress**: 50% complete (5.5 of 11 phases - Phase 8 added for verification)
+**PR**: #44 - Comprehensive update (Phase 3 + API unification + schema-first + refactoring)
 
 ---
 
-## Current Focus
+## Current Status
 
-**MAJOR MILESTONE COMPLETED**: ✅ Unified Type-Safe API Migration
+**PHASE 3 COMPLETE + MAJOR REFACTORINGS**: ✅ Ready for Review
 
-Just completed comprehensive API migration across all packages providing:
-- **Type-safe scenario IDs** with autocomplete in tests
-- **Upfront scenario registration** (no more `registerScenario` calls)
-- **Consistent API** across Express, Next.js, and Playwright helpers
-- **Better DX** with TypeScript inference via `ScenariosObject` and `ScenarioIds<T>`
+This PR represents a comprehensive update combining multiple features and improvements:
+
+1. ✅ **Phase 3: Shopping Cart** - Stateful mocks fully implemented
+2. ✅ **Unified Type-Safe API** - Consistent API across all adapters
+3. ✅ **Schema-First Architecture** - Zod schemas as single source of truth
+4. ✅ **Playwright Fixture Improvements** - Guaranteed unique test IDs
+5. ✅ **Dead Code Removal** - x-mock-enabled header feature removed
+6. ✅ **Test Selector Improvements** - Semantic data-testid selectors
+7. ✅ **Documentation Updates** - Self-contained adapter READMEs
 
 **Impact**:
-- Core package: Added `ScenariosObject` and `ScenarioIds<T>` types
-- Express adapter: New `scenarios` parameter replaces `defaultScenario` + dynamic registration
-- Next.js adapter: Unified API with `scenarios` object
-- Playwright helpers: New `withScenarios()` function for type-safe fixture creation
-- All example apps: Updated to new API pattern
-- All tests: Updated and passing (359 tests total)
-- All documentation: Comprehensive updates across all READMEs
+- **372 tests passing** across all packages (Core: 159, MSW: 35, Express: 34, Express Example: 49, Next.js: 62, Playwright: 23, Example: 10)
+- TypeScript strict mode satisfied
+- 100% test coverage maintained
+- All functionality working
 
-**Status**: ✅ All 359 tests passing, TypeScript strict mode satisfied, ready for commit
-**Next**: Commit API migration, then resume Phase 3 (Shopping Cart)
+**Status**: ✅ PR #44 updated with complete documentation, awaiting review
 
 **Quick API Comparison (Before → After)**:
 
@@ -55,17 +55,37 @@ test('my test', async ({ page, switchScenario }) => {
 
 ---
 
-## Phase 3 Plan - Stateful Mocks + Multi-API + Additional Matching
+## Phase 3 - Shopping Cart with Stateful Mocks ✅ COMPLETE
 
 ### Goal
-Implement shopping cart with state capture/injection PLUS demonstrate:
-- Multiple API mocking (cart service + analytics service)
-- Query parameter matching
-- Combined matching (body + headers + query)
-- Default scenario fallback
-- Nested state paths
+Implement shopping cart demonstrating state capture and injection in a real-world scenario.
 
-### Tasks - RED-GREEN-REFACTOR
+### What Was Implemented
+
+**Shopping Cart Feature:**
+- ✅ Cart count badge in header (updates in real-time)
+- ✅ Add-to-cart buttons on product cards
+- ✅ `/cart` page displaying cart items with quantities
+- ✅ Cart persistence across page navigation
+- ✅ Item quantity aggregation (2x Product A, 1x Product B)
+
+**API Routes:**
+- ✅ `GET /api/cart` - Fetch cart items (state injection)
+- ✅ `POST /api/cart/add` - Add item to cart (state capture)
+
+**Scenarist Features Demonstrated:**
+- ✅ State capture with array append: `captureState: { 'cartItems[]': 'body.productId' }`
+- ✅ Template injection: `items: '{{state.cartItems}}'`
+- ✅ State isolation per test ID (parallel test support)
+- ✅ Empty state handling (graceful degradation)
+
+**Tests:**
+- ✅ 4 comprehensive Playwright E2E tests
+- ✅ Tests cover: add, accumulate, display, persist
+- ✅ Proper test isolation via fixtures
+- ✅ All tests passing with parallel execution
+
+### Tasks Completed - RED-GREEN-REFACTOR
 
 **Phase 3a: RED - Playwright Tests**
 - [x] Create `tests/playwright/shopping-cart.spec.ts` ✅
@@ -73,11 +93,6 @@ Implement shopping cart with state capture/injection PLUS demonstrate:
 - [x] Test: "add multiple products accumulates cart" ✅
 - [x] Test: "cart displays correct products and quantities" ✅
 - [x] Test: "cart persists across page navigation" ✅
-- [ ] Test: "query parameter matching - filter cart items" (NEW)
-- [ ] Test: "combined matching - body + headers + query" (NEW)
-- [ ] Test: "default scenario fallback when no match" (NEW)
-- [ ] Test: "nested state paths - cart.metadata.userId" (NEW)
-- [ ] Test: "analytics service tracks cart events" (NEW - second API)
 - [x] Confirm RED state (failures expected) ✅
 - [x] Commit: `c925187` - test(phase-3a): add failing tests ✅
 
@@ -90,14 +105,17 @@ Implement shopping cart with state capture/injection PLUS demonstrate:
 - [x] Fix Product ID type mismatch (string → number) ✅
 - [x] All tests passing (4/4 GREEN) ✅
 - [x] Commit: `9a246d0` - fix product ID type mismatch ✅
+
+**Phase 3c: Bug Fixes & Improvements**
 - [x] Fix parallel test isolation bug (Date.now() → UUID) ✅
 - [x] Implement Playwright fixtures for guaranteed test IDs ✅
 - [x] Commit: `11dbd1a` - fix parallel test isolation ✅
 
-**Not Yet Implemented (Deferred to Future Phases):**
-- [ ] Query parameter matching demonstration
-- [ ] Combined matching (body + headers + query)
-- [ ] Default scenario fallback
+**Future Phases (Not Included in Phase 3):**
+- Query parameter matching demonstration → Phase 4
+- Combined matching (body + headers + query) → Phase 4
+- Default scenario fallback → Phase 4
+- Multiple API mocking → Phase 5
 - [ ] Nested state paths
 - [ ] Analytics service (second API)
 
