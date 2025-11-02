@@ -9,7 +9,8 @@
  */
 
 import type { NextApiRequest, NextApiResponse} from 'next';
-import type { Product, ProductsResponse } from '../../types/product';
+import type { ProductsResponse } from '../../types/product';
+import { buildProducts } from '../../data/products';
 
 export default async function handler(
   req: NextApiRequest,
@@ -23,60 +24,8 @@ export default async function handler(
   // Get user tier from request header (defaults to 'standard')
   const userTier = (req.headers['x-user-tier'] as string) || 'standard';
 
-  // Return tier-based pricing
-  const products: ReadonlyArray<Product> = userTier === 'premium'
-    ? [
-        {
-          id: '1',
-          name: 'Product A',
-          description: 'High-quality product A',
-          price: 99.99,
-          tier: 'premium',
-          image: '/images/product-a.jpg',
-        },
-        {
-          id: '2',
-          name: 'Product B',
-          description: 'Premium product B',
-          price: 149.99,
-          tier: 'premium',
-          image: '/images/product-b.jpg',
-        },
-        {
-          id: '3',
-          name: 'Product C',
-          description: 'Essential product C',
-          price: 79.99,
-          tier: 'premium',
-          image: '/images/product-c.jpg',
-        },
-      ]
-    : [
-        {
-          id: '1',
-          name: 'Product A',
-          description: 'High-quality product A',
-          price: 149.99,
-          tier: 'standard',
-          image: '/images/product-a.jpg',
-        },
-        {
-          id: '2',
-          name: 'Product B',
-          description: 'Premium product B',
-          price: 199.99,
-          tier: 'standard',
-          image: '/images/product-b.jpg',
-        },
-        {
-          id: '3',
-          name: 'Product C',
-          description: 'Essential product C',
-          price: 99.99,
-          tier: 'standard',
-          image: '/images/product-c.jpg',
-        },
-      ];
+  // Build products with tier-specific pricing
+  const products = buildProducts(userTier as 'premium' | 'standard');
 
   return res.status(200).json({ products });
 }

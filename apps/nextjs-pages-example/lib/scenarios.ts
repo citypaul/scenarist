@@ -6,6 +6,7 @@
  */
 
 import type { ScenarioDefinition } from '@scenarist/core';
+import { buildProducts } from '../data/products';
 
 /**
  * Default scenario - baseline behavior
@@ -39,32 +40,7 @@ export const premiumUserScenario: ScenarioDefinition = {
       response: {
         status: 200,
         body: {
-          products: [
-            {
-              id: '1',
-              name: 'Product A',
-              description: 'High-quality product A',
-              price: 99.99,
-              tier: 'premium',
-              image: '/images/product-a.jpg',
-            },
-            {
-              id: '2',
-              name: 'Product B',
-              description: 'Premium product B',
-              price: 149.99,
-              tier: 'premium',
-              image: '/images/product-b.jpg',
-            },
-            {
-              id: '3',
-              name: 'Product C',
-              description: 'Essential product C',
-              price: 79.99,
-              tier: 'premium',
-              image: '/images/product-c.jpg',
-            },
-          ],
+          products: buildProducts('premium'),
         },
       },
     },
@@ -93,32 +69,7 @@ export const standardUserScenario: ScenarioDefinition = {
       response: {
         status: 200,
         body: {
-          products: [
-            {
-              id: '1',
-              name: 'Product A',
-              description: 'High-quality product A',
-              price: 149.99,
-              tier: 'standard',
-              image: '/images/product-a.jpg',
-            },
-            {
-              id: '2',
-              name: 'Product B',
-              description: 'Premium product B',
-              price: 199.99,
-              tier: 'standard',
-              image: '/images/product-b.jpg',
-            },
-            {
-              id: '3',
-              name: 'Product C',
-              description: 'Essential product C',
-              price: 99.99,
-              tier: 'standard',
-              image: '/images/product-c.jpg',
-            },
-          ],
+          products: buildProducts('standard'),
         },
       },
     },
