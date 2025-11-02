@@ -19,9 +19,9 @@ Implementing shopping cart with state capture/injection PLUS:
 
 **This phase addresses 10 capability gaps** (3 Phase 3, 3 Phase 1, 1 Core = 7 new demonstrations)
 
-**Status**: Starting RED phase
-**Tests Passing**: N/A (no tests yet)
-**Last Commit**: N/A (fresh branch)
+**Status**: GREEN phase complete + Fixture improvements (test isolation bug fixed)
+**Tests Passing**: ✅ 4/4 shopping cart tests (7.7s with 4 workers in parallel)
+**Last Commit**: `11dbd1a` - fix(playwright-helpers): guarantee unique test IDs with fixtures
 
 ---
 
@@ -38,30 +38,38 @@ Implement shopping cart with state capture/injection PLUS demonstrate:
 ### Tasks - RED-GREEN-REFACTOR
 
 **Phase 3a: RED - Playwright Tests**
-- [ ] Create `tests/playwright/shopping-cart.spec.ts`
-- [ ] Test: "add product to cart shows item count"
-- [ ] Test: "add multiple products accumulates cart"
-- [ ] Test: "cart displays correct products and quantities"
-- [ ] Test: "cart persists across page navigation"
+- [x] Create `tests/playwright/shopping-cart.spec.ts` ✅
+- [x] Test: "add product to cart shows item count" ✅
+- [x] Test: "add multiple products accumulates cart" ✅
+- [x] Test: "cart displays correct products and quantities" ✅
+- [x] Test: "cart persists across page navigation" ✅
 - [ ] Test: "query parameter matching - filter cart items" (NEW)
 - [ ] Test: "combined matching - body + headers + query" (NEW)
 - [ ] Test: "default scenario fallback when no match" (NEW)
 - [ ] Test: "nested state paths - cart.metadata.userId" (NEW)
 - [ ] Test: "analytics service tracks cart events" (NEW - second API)
-- [ ] Confirm RED state (failures expected)
-- [ ] Commit: `test(phase-3a): add failing tests for shopping cart + multi-API (RED)`
+- [x] Confirm RED state (failures expected) ✅
+- [x] Commit: `c925187` - test(phase-3a): add failing tests ✅
 
 **Phase 3b: GREEN - Shopping Cart Implementation**
-- [ ] Create `pages/cart.tsx` - Cart display page
-- [ ] Create `components/CartSummary.tsx` - Cart header widget
-- [ ] Create `components/CartItem.tsx` - Individual cart item display
-- [ ] Update `pages/index.tsx` - Add "Add to Cart" buttons
-- [ ] Create `pages/api/cart/add.ts` - POST endpoint to add items
-- [ ] Create `pages/api/cart/get.ts` - GET endpoint to fetch cart (with query params)
-- [ ] Create `pages/api/analytics/track.ts` - POST endpoint for analytics (NEW - second API)
-- [ ] Update `lib/scenarios.ts` - Add cart + analytics scenarios
-- [ ] All tests passing (100% GREEN)
-- [ ] Commit: `feat(phase-3b): implement shopping cart + analytics with stateful mocks (GREEN)`
+- [x] Create `pages/cart.tsx` - Cart display page ✅
+- [x] Update `pages/index.tsx` - Add "Add to Cart" buttons + cart count ✅
+- [x] Create `pages/api/cart.ts` - GET endpoint to fetch cart ✅
+- [x] Create `pages/api/cart/add.ts` - POST endpoint to add items ✅
+- [x] Update `lib/scenarios.ts` - Add `cartWithState` scenario ✅
+- [x] Fix Product ID type mismatch (string → number) ✅
+- [x] All tests passing (4/4 GREEN) ✅
+- [x] Commit: `9a246d0` - fix product ID type mismatch ✅
+- [x] Fix parallel test isolation bug (Date.now() → UUID) ✅
+- [x] Implement Playwright fixtures for guaranteed test IDs ✅
+- [x] Commit: `11dbd1a` - fix parallel test isolation ✅
+
+**Not Yet Implemented (Deferred to Future Phases):**
+- [ ] Query parameter matching demonstration
+- [ ] Combined matching (body + headers + query)
+- [ ] Default scenario fallback
+- [ ] Nested state paths
+- [ ] Analytics service (second API)
 
 **Phase 3c: REFACTOR - Code Quality**
 - [ ] Extract Cart types (`CartItem`, `Cart`, `CartMetadata`)

@@ -479,6 +479,48 @@ const getMockScenario = (overrides?: Partial<Scenario>): Scenario => {
 };
 ```
 
+### TDD Evidence in Commit History
+
+**Default Expectation**: Commit history should show clear RED → GREEN → REFACTOR progression.
+
+**Rare Exceptions** where TDD evidence may not be linearly visible in commits:
+
+1. **Multi-Session Work**: Feature spans multiple development sessions
+   - Work done with TDD in each session
+   - Commits organized for PR clarity rather than strict TDD phases
+   - **Evidence**: Tests exist, all passing, implementation matches test requirements
+
+2. **Context Continuation**: Resuming from previous work
+   - Original RED phase done in previous session/commit
+   - Current work continues from that point
+   - **Evidence**: Reference to RED commit in PR description
+
+3. **Refactoring Commits**: Large refactors after GREEN
+   - Multiple small refactors combined into single commit
+   - All tests remained green throughout
+   - **Evidence**: Commit message notes "refactor only, no behavior change"
+
+**When Exception Applies**, document in PR:
+- Reference original failing test commit (RED phase)
+- Show current test status (all passing)
+- Explain why commits don't show linear TDD
+- Provide test output as evidence
+
+**Example Valid Exception**:
+```
+PR Description:
+"Phase 3 Shopping Cart implementation.
+
+RED phase: commit c925187 (added failing tests)
+GREEN phase: commits 5e0055b, 9a246d0 (implementation + bug fixes)
+REFACTOR: commit 11dbd1a (test isolation improvements)
+
+Test Evidence:
+✅ 4/4 tests passing (7.7s with 4 workers)
+```
+
+**Important**: Exception is for EVIDENCE presentation, not TDD practice. TDD process must still be followed - these are cases where commit history doesn't perfectly reflect the process that was actually followed.
+
 ## Key Architecture Decisions
 
 ### Test Isolation via Test IDs
