@@ -36,6 +36,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Total: 281 tests passing across all packages** with TypeScript strict mode and full type safety.
 
+## Recent Changes
+
+**`defaultScenarioId` Removed (Nov 2025):** The `defaultScenarioId` configuration parameter has been removed. The 'default' scenario key is now enforced via Zod schema validation, eliminating the need for configuration. All adapters now hardcode the `'default'` literal for fallback behavior. Historical learning sections below may reference `defaultScenarioId` for accuracy - those references document past decisions and should be preserved.
+
 ## Essential Commands
 
 ```bash
