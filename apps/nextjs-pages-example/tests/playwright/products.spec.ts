@@ -31,6 +31,12 @@ test.describe('Products Page - Request Matching (with Scenarist)', () => {
     // Navigate to products page
     await page.goto('/');
 
+    // Click premium tier button to switch pricing
+    await page.locator('[data-testid="tier-premium"]').click();
+
+    // Wait for products to reload
+    await page.waitForTimeout(500);
+
     // Verify premium pricing is displayed (£99.99 for first product)
     const firstProduct = page.locator('[data-testid="product-card"]').first();
     await expect(firstProduct.locator('[data-testid="product-price"]')).toContainText('£99.99');
