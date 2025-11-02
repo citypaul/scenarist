@@ -9,7 +9,7 @@ import type { Product } from '../types/product';
 
 type ProductCardProps = Product;
 
-export const ProductCard = ({ id, name, description, price, tier }: ProductCardProps) => {
+export const ProductCard = ({ name, description, price, tier }: ProductCardProps) => {
   return (
     <div data-testid="product-card" className="border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
       <div className="mb-4">
