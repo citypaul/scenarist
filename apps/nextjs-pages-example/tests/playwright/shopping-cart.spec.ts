@@ -21,12 +21,22 @@ test.describe('Shopping Cart - Stateful Mocks', () => {
     // Start on products page
     await page.goto('/');
 
+    // Wait for products to load
+    await page.waitForSelector('[data-testid="product-card"]');
+
     // Cart should start empty
     const cartCount = page.locator('[data-testid="cart-count"]');
     await expect(cartCount).toHaveText('0');
 
+    // Wait for add-to-cart button to be visible and clickable
+    const addButton = page.locator('[data-testid="add-to-cart-1"]');
+    await expect(addButton).toBeVisible();
+
     // Add first product to cart
-    await page.click('[data-testid="add-to-cart-1"]');
+    await addButton.click();
+
+    // Wait a bit for state to propagate
+    await page.waitForTimeout(100);
 
     // Cart count should update to 1
     await expect(cartCount).toHaveText('1');

@@ -51,7 +51,9 @@
       "Bash(pnpm dev)",
       "Bash(curl:*)",
       "Bash(pnpm fake-api:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(pkill:*)",
+      "Bash(lsof:*)"
     ],
     "deny": [],
     "ask": []
