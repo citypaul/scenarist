@@ -102,49 +102,53 @@ export default function Cart() {
           )}
 
           {!loading && !error && cartItems.length > 0 && (
-            <div className="space-y-4">
-              {cartItems.map((item, index) => (
-                <div
-                  key={index}
-                  data-testid="cart-item"
-                  className="bg-white border rounded-lg p-6 shadow-sm"
-                >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="text-lg font-semibold mb-1">
-                        Product #{item.productId}
-                      </h3>
-                      {item.product && (
-                        <>
-                          <p className="text-gray-600 text-sm mb-2">{item.product.name}</p>
-                          <p className="text-xl font-bold text-blue-600">
-                            £{item.product.price.toFixed(2)}
-                          </p>
-                        </>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm text-gray-600 mb-1">Quantity</div>
-                      <div
-                        data-testid="cart-item-quantity"
-                        className="text-2xl font-bold text-gray-900"
-                      >
-                        {item.quantity}
+            <>
+              <ul className="space-y-4" aria-label="Shopping cart items">
+                {cartItems.map((item, index) => (
+                  <li
+                    key={index}
+                    className="bg-white border rounded-lg p-6 shadow-sm"
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h3 className="text-lg font-semibold mb-1">
+                          Product #{item.productId}
+                        </h3>
+                        {item.product && (
+                          <>
+                            <p className="text-gray-600 text-sm mb-2">{item.product.name}</p>
+                            <p className="text-xl font-bold text-blue-600">
+                              £{item.product.price.toFixed(2)}
+                            </p>
+                          </>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm text-gray-600 mb-1">Quantity</div>
+                        <output
+                          aria-label="Item quantity"
+                          className="text-2xl font-bold text-gray-900 block"
+                        >
+                          {item.quantity}
+                        </output>
                       </div>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  </li>
+                ))}
+              </ul>
 
               <div className="mt-8 p-6 bg-blue-50 border border-blue-200 rounded-lg">
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">Total Items:</span>
-                  <span className="text-2xl font-bold text-blue-600">
+                  <output
+                    aria-label="Total items in cart"
+                    className="text-2xl font-bold text-blue-600"
+                  >
                     {cartItems.reduce((sum, item) => sum + item.quantity, 0)}
-                  </span>
+                  </output>
                 </div>
               </div>
-            </div>
+            </>
           )}
         </div>
       </main>

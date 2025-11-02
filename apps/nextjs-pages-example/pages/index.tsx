@@ -99,11 +99,11 @@ export default function Home() {
               <h1 className="text-4xl font-bold mb-2 text-gray-900">Scenarist E-commerce Example</h1>
               <p className="text-gray-600">Demonstrating request matching with tier-based pricing</p>
             </div>
-            <div className="flex items-center gap-2 bg-white border rounded-lg px-4 py-2 shadow-sm">
+            <div role="region" aria-label="Shopping cart summary" className="flex items-center gap-2 bg-white border rounded-lg px-4 py-2 shadow-sm">
               <span className="text-gray-700">Cart:</span>
-              <span data-testid="cart-count" className="font-bold text-blue-600">
+              <output aria-label="Cart item count" className="font-bold text-blue-600">
                 {cartCount}
-              </span>
+              </output>
             </div>
           </div>
 

@@ -1,7 +1,31 @@
 /**
  * Playwright fixtures for Scenarist
  *
- * Provides custom fixtures for scenario management with guaranteed test isolation.
+ * **Recommended API**: Use these fixtures for guaranteed test isolation.
+ *
+ * Provides custom fixtures for scenario management with guaranteed unique test IDs
+ * to prevent state collisions during parallel test execution.
+ *
+ * @example
+ * import { test, expect } from '@scenarist/playwright-helpers';
+ *
+ * test('my test', async ({ page, switchScenario }) => {
+ *   // switchScenario automatically uses a guaranteed unique test ID
+ *   await switchScenario(page, 'myScenario', {
+ *     baseURL: 'http://localhost:3000',
+ *     endpoint: '/api/__scenario__',
+ *   });
+ *
+ *   // Your test code here...
+ * });
+ *
+ * @remarks
+ * **When to use fixtures vs standalone `switchScenario`:**
+ * - ✅ **Use fixtures (this API)** - For all test files (recommended)
+ * - ❌ **Use standalone** - Only if you need manual test ID control
+ *
+ * Fixtures guarantee test isolation by generating crypto.randomUUID() test IDs,
+ * preventing collisions even when tests run in parallel with 4+ workers.
  */
 
 import { test as base, expect as baseExpect, type Page } from '@playwright/test';

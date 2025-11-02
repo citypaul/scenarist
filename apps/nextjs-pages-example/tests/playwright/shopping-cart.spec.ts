@@ -8,6 +8,11 @@ import { test, expect } from '@scenarist/playwright-helpers';
  * - State injection (displaying cart contents)
  * - State persistence across requests
  * - Test isolation (independent cart per test ID)
+ *
+ * Uses Playwright best practices:
+ * - Semantic selectors (getByRole, getByLabel)
+ * - Auto-waiting instead of arbitrary timeouts
+ * - Accessible markup testing
  */
 
 test.describe('Shopping Cart - Stateful Mocks', () => {
@@ -21,23 +26,17 @@ test.describe('Shopping Cart - Stateful Mocks', () => {
     await page.goto('/');
 
     // Wait for products to load
-    await page.waitForSelector('[data-testid="product-card"]');
+    await expect(page.getByRole('article').first()).toBeVisible();
 
     // Cart should start empty
-    const cartCount = page.locator('[data-testid="cart-count"]');
+    const cartCount = page.getByLabel('Cart item count');
     await expect(cartCount).toHaveText('0');
 
-    // Wait for add-to-cart button to be visible and clickable
-    const addButton = page.locator('[data-testid="add-to-cart-1"]');
-    await expect(addButton).toBeVisible();
-
     // Add first product to cart
+    const addButton = page.getByRole('button', { name: /Add .* to cart/ }).first();
     await addButton.click();
 
-    // Wait a bit for state to propagate
-    await page.waitForTimeout(100);
-
-    // Cart count should update to 1
+    // Cart count should update to 1 (Playwright auto-waits)
     await expect(cartCount).toHaveText('1');
   });
 
@@ -49,16 +48,16 @@ test.describe('Shopping Cart - Stateful Mocks', () => {
 
     await page.goto('/');
 
-    // Add three different products
-    await page.click('[data-testid="add-to-cart-1"]');
-    await page.waitForTimeout(100); // Wait for state to propagate
-    await page.click('[data-testid="add-to-cart-2"]');
-    await page.waitForTimeout(100); // Wait for state to propagate
-    await page.click('[data-testid="add-to-cart-3"]');
-    await page.waitForTimeout(100); // Wait for state to propagate
+    // Get all add-to-cart buttons
+    const addButtons = page.getByRole('button', { name: /Add .* to cart/ });
 
-    // Cart count should show 3
-    const cartCount = page.locator('[data-testid="cart-count"]');
+    // Add three different products
+    await addButtons.nth(0).click();
+    await addButtons.nth(1).click();
+    await addButtons.nth(2).click();
+
+    // Cart count should show 3 (Playwright auto-waits for update)
+    const cartCount = page.getByLabel('Cart item count');
     await expect(cartCount).toHaveText('3');
   });
 
@@ -70,30 +69,28 @@ test.describe('Shopping Cart - Stateful Mocks', () => {
 
     await page.goto('/');
 
+    // Get all add-to-cart buttons
+    const addButtons = page.getByRole('button', { name: /Add .* to cart/ });
+
     // Add first product twice
-    await page.click('[data-testid="add-to-cart-1"]');
-    await page.waitForTimeout(100); // Wait for state to propagate
-    await page.click('[data-testid="add-to-cart-1"]');
-    await page.waitForTimeout(100); // Wait for state to propagate
+    await addButtons.nth(0).click();
+    await addButtons.nth(0).click();
 
     // Add second product once
-    await page.click('[data-testid="add-to-cart-2"]');
-    await page.waitForTimeout(100); // Wait for state to propagate
+    await addButtons.nth(1).click();
 
     // Navigate to cart page
     await page.goto('/cart');
 
     // Check cart items are displayed
-    const cartItems = page.locator('[data-testid="cart-item"]');
+    const cartList = page.getByRole('list', { name: 'Shopping cart items' });
+    const cartItems = cartList.getByRole('listitem');
     await expect(cartItems).toHaveCount(2); // Two unique products
 
-    // Check first product quantity
-    const firstItem = cartItems.first();
-    await expect(firstItem.locator('[data-testid="cart-item-quantity"]')).toHaveText('2');
-
-    // Check second product quantity
-    const secondItem = cartItems.nth(1);
-    await expect(secondItem.locator('[data-testid="cart-item-quantity"]')).toHaveText('1');
+    // Check quantities using accessible output elements
+    const quantities = page.getByLabel('Item quantity');
+    await expect(quantities.nth(0)).toHaveText('2');
+    await expect(quantities.nth(1)).toHaveText('1');
   });
 
   test('cart persists across page navigation', async ({ page, switchScenario }) => {
@@ -104,28 +101,32 @@ test.describe('Shopping Cart - Stateful Mocks', () => {
 
     await page.goto('/');
 
+    // Get all add-to-cart buttons
+    const addButtons = page.getByRole('button', { name: /Add .* to cart/ });
+
     // Add items to cart
-    await page.click('[data-testid="add-to-cart-1"]');
-    await page.waitForTimeout(100); // Wait for state to propagate
-    await page.click('[data-testid="add-to-cart-2"]');
-    await page.waitForTimeout(100); // Wait for state to propagate
+    await addButtons.nth(0).click();
+    await addButtons.nth(1).click();
 
     // Navigate to cart page
     await page.goto('/cart');
-    const cartItemsOnCartPage = page.locator('[data-testid="cart-item"]');
-    await expect(cartItemsOnCartPage).toHaveCount(2);
+    const cartList = page.getByRole('list', { name: 'Shopping cart items' });
+    const cartItems = cartList.getByRole('listitem');
+    await expect(cartItems).toHaveCount(2);
 
     // Navigate back to products
     await page.goto('/');
 
-    // Cart count should still show 2
-    const cartCount = page.locator('[data-testid="cart-count"]');
+    // Cart count should still show 2 (Playwright auto-waits)
+    const cartCount = page.getByLabel('Cart item count');
     await expect(cartCount).toHaveText('2');
 
     // Navigate to cart again
     await page.goto('/cart');
 
     // Cart items should still be there
-    await expect(cartItemsOnCartPage).toHaveCount(2);
+    const cartListAgain = page.getByRole('list', { name: 'Shopping cart items' });
+    const cartItemsAgain = cartListAgain.getByRole('listitem');
+    await expect(cartItemsAgain).toHaveCount(2);
   });
 });
