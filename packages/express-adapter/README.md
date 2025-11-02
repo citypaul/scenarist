@@ -146,7 +146,6 @@ import { scenarios } from './scenarios';
 export const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
   scenarios,                    // All scenarios registered upfront
-  defaultScenarioId: 'default', // ID of default scenario for fallback
   strictMode: false,
 });
 ```
@@ -218,7 +217,6 @@ Creates a Scenarist instance with everything wired automatically.
 type ExpressAdapterOptions<T extends ScenariosObject> = {
   enabled: boolean;                    // Whether mocking is enabled
   scenarios: T;                        // REQUIRED - scenarios object
-  defaultScenarioId: keyof T;          // REQUIRED - ID of default scenario
   strictMode?: boolean;                // Return 501 for unmocked requests (default: false)
   headers?: {
     testId?: string;                   // Header for test ID (default: 'x-test-id')
@@ -259,7 +257,6 @@ const scenarios = {
 const scenarist = createScenarist({
   enabled: true,
   scenarios,
-  defaultScenarioId: 'default',
   strictMode: false,
 });
 
@@ -533,11 +530,11 @@ You never see MSW code - it's all handled internally.
 
 ### Default Scenario Fallback
 
-If a mock isn't found in the active scenario, Scenarist falls back to the default scenario specified by `defaultScenarioId`:
+If a mock isn't found in the active scenario, Scenarist automatically falls back to the `'default'` scenario (enforced via schema validation):
 
 ```typescript
 const scenarios = {
-  default: {
+  default: {  // REQUIRED - must have 'default' key
     id: 'default',
     name: 'Default Happy Path',
     description: 'Base responses for all APIs',
@@ -558,8 +555,7 @@ const scenarios = {
 
 const scenarist = createScenarist({
   enabled: true,
-  scenarios,
-  defaultScenarioId: 'default',
+  scenarios,  // 'default' key is validated at runtime
 });
 ```
 
@@ -584,8 +580,7 @@ import { scenarios } from './scenarios';
 
 export const scenarist = createScenarist({
   enabled: true,
-  scenarios,
-  defaultScenarioId: 'default', // ✅ Autocomplete + type-checked!
+  scenarios, // ✅ Autocomplete + type-checked!
 });
 
 // test.ts - type-safe scenario switching
@@ -670,7 +665,6 @@ Enable scenario switching during development:
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test',
   scenarios,
-  defaultScenarioId: 'default',
   strictMode: false,
 });
 ```
@@ -696,7 +690,6 @@ curl http://localhost:3000/__scenario__
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
   scenarios,
-  defaultScenarioId: 'default',
   strictMode: true, // Fail if any unmocked request
 });
 
@@ -704,7 +697,6 @@ const scenarist = createScenarist({
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development',
   scenarios,
-  defaultScenarioId: 'default',
   strictMode: false, // Allow passthrough to real APIs
 });
 
@@ -712,7 +704,6 @@ const scenarist = createScenarist({
 const scenarist = createScenarist({
   enabled: process.env.ENABLE_MOCKING === 'true',
   scenarios,
-  defaultScenarioId: 'default',
   strictMode: false,
 });
 ```
@@ -723,7 +714,6 @@ const scenarist = createScenarist({
 const scenarist = createScenarist({
   enabled: true,
   scenarios,
-  defaultScenarioId: 'default',
   headers: {
     testId: 'x-my-test-id',
   },
@@ -780,7 +770,6 @@ const scenarios = {
 const scenarist = createScenarist({
   enabled: true,
   scenarios,
-  defaultScenarioId: 'default',
 });
 
 await setScenario('test-1', 'myScenario');  // ✅ Works

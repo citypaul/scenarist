@@ -283,7 +283,6 @@ import { scenarios } from './scenarios';
 export const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
   scenarios,                    // All scenarios registered upfront
-  defaultScenarioId: 'default', // ID of default scenario for fallback
 });
 ```
 
@@ -417,7 +416,6 @@ import { scenarios } from './scenarios';
 export const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
   scenarios,                    // All scenarios registered upfront
-  defaultScenarioId: 'default', // ID of default scenario for fallback
   strictMode: false,            // Allow unmocked requests to pass through to real APIs
 });
 ```
@@ -484,7 +482,6 @@ import { scenarios } from './scenarios';
 export const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
   scenarios,                    // All scenarios registered upfront
-  defaultScenarioId: 'default', // ID of default scenario for fallback
   strictMode: false,            // Allow unmocked requests to pass through to real APIs
 });
 ```
@@ -529,7 +526,6 @@ import { createScenarist } from '@scenarist/nextjs-adapter/app';
 type AdapterOptions<T extends ScenariosObject> = {
   enabled: boolean;                    // Whether mocking is enabled
   scenarios: T;                        // REQUIRED - scenarios object (all scenarios registered upfront)
-  defaultScenarioId: keyof T;          // REQUIRED - ID of default scenario for fallback
   strictMode?: boolean;                 // Return 501 for unmocked requests (default: false)
   headers?: {
     testId?: string;                    // Header for test ID (default: 'x-test-id')
@@ -791,8 +787,7 @@ import { scenarios } from './scenarios';
 
 export const scenarist = createScenarist({
   enabled: true,
-  scenarios,
-  defaultScenarioId: 'default', // ✅ Autocomplete + type-checked!
+  scenarios, // ✅ Autocomplete + type-checked!
 });
 ```
 
@@ -927,7 +922,6 @@ describe('API Tests', () => {
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test',
   scenarios,
-  defaultScenarioId: 'default',
   strictMode: false,
 });
 
@@ -935,7 +929,6 @@ const scenarist = createScenarist({
 const scenarist = createScenarist({
   enabled: true, // Always on, including production!
   scenarios,
-  defaultScenarioId: 'default',
 });
 ```
 
@@ -965,7 +958,6 @@ curl http://localhost:3000/__scenario__
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
   scenarios,
-  defaultScenarioId: 'default',
   strictMode: true, // Fail if any unmocked request
 });
 
@@ -973,7 +965,6 @@ const scenarist = createScenarist({
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development',
   scenarios,
-  defaultScenarioId: 'default',
   strictMode: false, // Allow passthrough to real APIs
 });
 
@@ -981,7 +972,6 @@ const scenarist = createScenarist({
 const scenarist = createScenarist({
   enabled: process.env.ENABLE_MOCKING === 'true',
   scenarios,
-  defaultScenarioId: 'default',
   strictMode: false,
 });
 ```

@@ -91,7 +91,6 @@ export const createScenarist = <T extends ScenariosObject>(
     getActiveScenario: (testId) => manager.getActiveScenario(testId),
     getScenarioDefinition: (scenarioId) => manager.getScenarioById(scenarioId),
     strictMode: config.strictMode,
-    defaultScenarioId: config.defaultScenarioId,
     responseSelector,
   });
 

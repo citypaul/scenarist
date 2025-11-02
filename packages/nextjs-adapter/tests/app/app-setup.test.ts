@@ -28,7 +28,6 @@ const createTestSetup = () => {
   const scenarist = createScenarist({
     enabled: true,
     scenarios: testScenarios,
-    defaultScenarioId: 'default',
   });
 
   return { scenarist };

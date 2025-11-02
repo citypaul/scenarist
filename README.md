@@ -506,7 +506,6 @@ const scenarios = {
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === "test",
   scenarios,                    // All scenarios registered upfront
-  defaultScenarioId: 'default', // ID of default scenario for fallback
   strictMode: false,
 });
 
@@ -588,7 +587,6 @@ const scenarios = {
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === "test",
   scenarios,
-  defaultScenarioId: 'default',
   strictMode: false,
 
   // Customize header names

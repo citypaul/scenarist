@@ -22,7 +22,6 @@ describe('getScenaristHeaders', () => {
     const scenarist = createScenarist({
       enabled: true,
       scenarios: testScenarios,
-      defaultScenarioId: 'default',
     });
     const req = {
       headers: { 'x-test-id': 'test-123' },
@@ -37,7 +36,6 @@ describe('getScenaristHeaders', () => {
     const scenarist = createScenarist({
       enabled: true,
       scenarios: testScenarios,
-      defaultScenarioId: 'default',
     });
     const req = {
       headers: {},
@@ -101,7 +99,6 @@ describe('getScenaristHeaders', () => {
     const scenarist = createScenarist({
       enabled: true,
       scenarios: testScenarios,
-      defaultScenarioId: 'default',
     });
     const req = {
       headers: { 'x-test-id': ['test-123', 'test-456'] },
