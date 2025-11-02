@@ -29,13 +29,13 @@ export default defineConfig<ScenaristOptions>({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      testIgnore: '**/*.baseline.spec.ts', // Exclude baseline tests from main suite
+      testIgnore: '**/*.comparison.spec.ts', // Exclude comparison tests from main suite
     },
     {
-      name: 'baseline',
+      name: 'comparison',
       use: { ...devices['Desktop Chrome'] },
-      testMatch: '**/*.baseline.spec.ts', // Only run baseline tests
-      // Note: globalSetup will detect baseline project and skip MSW initialization
+      testMatch: '**/*.comparison.spec.ts', // Only run comparison tests
+      // Note: globalSetup will detect comparison project and skip MSW initialization
     },
   ],
 
