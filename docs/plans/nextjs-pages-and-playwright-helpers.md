@@ -33,9 +33,9 @@
 
 ### What We're Working On
 
-**Phase 1: Scenarist Integration + First Helper ✅ COMPLETE**
+**Phase 2: Products Page - Request Matching ⏳ STARTING NOW**
 
-Implemented MSW + Scenarist setup and extracted first Playwright helper.
+Implementing product listing with tier-based pricing (premium vs standard) to demonstrate Scenarist's request matching feature.
 
 ### Progress
 
@@ -49,12 +49,25 @@ Implemented MSW + Scenarist setup and extracted first Playwright helper.
 - [x] Smoke tests passing
 - [x] README documentation
 
-**Phase 1: Scenarist Integration + First Helper** - ✅ COMPLETE (3 commits on feat/phase-1-product-catalog)
+**Phase 1: Scenarist Integration + First Helper** - ✅ COMPLETE (3 commits)
 - [x] Write verbose Playwright test (RED) - Commit ad73eae
 - [x] Implement Scenarist setup in Next.js app (GREEN) - Commit 2c2afe1
 - [x] Extract `switchScenario` helper (GREEN) - Commit c12c039
 - [x] Both tests passing (manual + helper versions)
-- [x] 70% code reduction demonstrated (9 lines → 2 lines)
+- [x] 77% code reduction demonstrated (9 lines → 2 lines)
+
+**Phase 1 Post: Playwright Testing** - ✅ COMPLETE (5 commits)
+- [x] 13 Playwright integration tests (1.7s execution)
+- [x] Two-layer testing strategy documented
+- [x] 100% behavior coverage through public API
+- [x] Framework-agnostic testing proven
+
+**Phase 2: Products Page - Request Matching** - ⏳ STARTING (0 commits)
+- [ ] RED: Write Playwright tests for premium/standard pricing
+- [ ] GREEN: Implement products page and API route
+- [ ] GREEN: Create ProductCard and TierSelector components
+- [ ] GREEN: Update scenarios with match criteria
+- [ ] REFACTOR: Clean up and optimize
 
 ### Blockers
 
@@ -62,9 +75,17 @@ None
 
 ### Next Steps
 
-1. **Phase 2**: Products Page - Request Matching (premium vs standard pricing)
-2. **Continue TDD discipline**: RED → GREEN → REFACTOR for all features
-3. **Ready for next phase**: Foundation solid, helpers working
+1. **Phase 2a (RED)**: Write failing Playwright tests in `tests/playwright/products.spec.ts`
+   - Test premium user sees £99.99 pricing
+   - Test standard user sees £149.99 pricing
+2. **Phase 2b (GREEN)**: Implement products feature
+   - Create `pages/api/products.ts` API route
+   - Create `pages/index.tsx` product listing page
+   - Create `components/ProductCard.tsx` component
+   - Create `components/TierSelector.tsx` component
+   - Update `lib/scenarios.ts` with matching scenarios
+3. **Phase 2c (REFACTOR)**: Clean up and optimize
+4. **Phase 2d**: Create PR and merge to main
 
 ---
 
@@ -76,7 +97,7 @@ None
 | **0: Setup** | ✅ **COMPLETE & MERGED (PR #41)** | **0.5 day** | **0.5 day** | **27** |
 | **1: Integration + First Helper** | ✅ **COMPLETE (3 commits)** | **1 day** | **~0.5 day** | **8** |
 | **1 Post: Playwright Testing** | ✅ **COMPLETE (5 commits)** | **-** | **~2-3 hours** | **6** |
-| 2: Products/Matching | ⏳ Not Started | 1 day | - | 0 |
+| **2: Products/Matching** | **⏳ IN PROGRESS** | **1 day** | **-** | **0** |
 | 3: Cart/Stateful | ⏳ Not Started | 1 day | - | 0 |
 | 4: Checkout/Composition | ⏳ Not Started | 0.5 day | - | 0 |
 | 5: Payment/Sequences | ⏳ Not Started | 1 day | - | 0 |
@@ -84,7 +105,7 @@ None
 | 7: Documentation | ⏳ Not Started | 1 day | - | 0 |
 | **Total** | **35% complete (3.5/10 phases)** | **8-9 days** | **~2.25 days** | **62** |
 
-**Next**: Phase 2 - Products Page (Request Matching)
+**Current**: Phase 2 - Products Page (Request Matching) - RED phase starting
 **Branch**: feat/phase-1-product-catalog (8 commits ahead of main)
 
 ---
