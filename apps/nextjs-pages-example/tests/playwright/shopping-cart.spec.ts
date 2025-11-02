@@ -1,5 +1,4 @@
-import { test, expect } from '@playwright/test';
-import { switchScenario } from '@scenarist/playwright-helpers';
+import { test, expect } from '@scenarist/playwright-helpers';
 
 /**
  * Shopping Cart - Phase 3
@@ -12,7 +11,7 @@ import { switchScenario } from '@scenarist/playwright-helpers';
  */
 
 test.describe('Shopping Cart - Stateful Mocks', () => {
-  test('add product to cart shows item count', async ({ page }) => {
+  test('add product to cart shows item count', async ({ page, switchScenario }) => {
     await switchScenario(page, 'cartWithState', {
       baseURL: 'http://localhost:3000',
       endpoint: '/api/__scenario__',
@@ -42,7 +41,7 @@ test.describe('Shopping Cart - Stateful Mocks', () => {
     await expect(cartCount).toHaveText('1');
   });
 
-  test('add multiple products accumulates cart', async ({ page }) => {
+  test('add multiple products accumulates cart', async ({ page, switchScenario }) => {
     await switchScenario(page, 'cartWithState', {
       baseURL: 'http://localhost:3000',
       endpoint: '/api/__scenario__',
@@ -52,15 +51,18 @@ test.describe('Shopping Cart - Stateful Mocks', () => {
 
     // Add three different products
     await page.click('[data-testid="add-to-cart-1"]');
+    await page.waitForTimeout(100); // Wait for state to propagate
     await page.click('[data-testid="add-to-cart-2"]');
+    await page.waitForTimeout(100); // Wait for state to propagate
     await page.click('[data-testid="add-to-cart-3"]');
+    await page.waitForTimeout(100); // Wait for state to propagate
 
     // Cart count should show 3
     const cartCount = page.locator('[data-testid="cart-count"]');
     await expect(cartCount).toHaveText('3');
   });
 
-  test('cart displays correct products and quantities', async ({ page }) => {
+  test('cart displays correct products and quantities', async ({ page, switchScenario }) => {
     await switchScenario(page, 'cartWithState', {
       baseURL: 'http://localhost:3000',
       endpoint: '/api/__scenario__',
@@ -70,10 +72,13 @@ test.describe('Shopping Cart - Stateful Mocks', () => {
 
     // Add first product twice
     await page.click('[data-testid="add-to-cart-1"]');
+    await page.waitForTimeout(100); // Wait for state to propagate
     await page.click('[data-testid="add-to-cart-1"]');
+    await page.waitForTimeout(100); // Wait for state to propagate
 
     // Add second product once
     await page.click('[data-testid="add-to-cart-2"]');
+    await page.waitForTimeout(100); // Wait for state to propagate
 
     // Navigate to cart page
     await page.goto('/cart');
@@ -91,7 +96,7 @@ test.describe('Shopping Cart - Stateful Mocks', () => {
     await expect(secondItem.locator('[data-testid="cart-item-quantity"]')).toHaveText('1');
   });
 
-  test('cart persists across page navigation', async ({ page }) => {
+  test('cart persists across page navigation', async ({ page, switchScenario }) => {
     await switchScenario(page, 'cartWithState', {
       baseURL: 'http://localhost:3000',
       endpoint: '/api/__scenario__',
@@ -101,7 +106,9 @@ test.describe('Shopping Cart - Stateful Mocks', () => {
 
     // Add items to cart
     await page.click('[data-testid="add-to-cart-1"]');
+    await page.waitForTimeout(100); // Wait for state to propagate
     await page.click('[data-testid="add-to-cart-2"]');
+    await page.waitForTimeout(100); // Wait for state to propagate
 
     // Navigate to cart page
     await page.goto('/cart');
