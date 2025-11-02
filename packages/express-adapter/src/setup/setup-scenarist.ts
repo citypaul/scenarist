@@ -65,7 +65,7 @@ export const createScenarist = (
   const responseSelector = createResponseSelector({ sequenceTracker, stateManager });
 
   const handler = createDynamicHandler({
-    getTestId: () => testIdStorage.getStore() ?? config.defaultTestId,
+    getTestId: (_request) => testIdStorage.getStore() ?? config.defaultTestId,
     getActiveScenario: (testId) => manager.getActiveScenario(testId),
     getScenarioDefinition: (scenarioId) => manager.getScenarioById(scenarioId),
     strictMode: config.strictMode,
