@@ -28,19 +28,6 @@ export class PagesRequestContext implements RequestContext {
     return this.config.defaultTestId;
   }
 
-  isMockEnabled(): boolean {
-    const headerName = this.config.headers.mockEnabled.toLowerCase();
-    const header = this.req.headers[headerName];
-
-    const DEFAULT_MOCK_ENABLED = true;
-
-    if (!header) {
-      return DEFAULT_MOCK_ENABLED;
-    }
-
-    return header === 'true';
-  }
-
   getHeaders(): Record<string, string | string[] | undefined> {
     return this.req.headers;
   }

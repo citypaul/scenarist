@@ -533,7 +533,6 @@ type AdapterOptions<T extends ScenariosObject> = {
   strictMode?: boolean;                 // Return 501 for unmocked requests (default: false)
   headers?: {
     testId?: string;                    // Header for test ID (default: 'x-test-id')
-    mockEnabled?: string;               // Header to enable/disable mocking (default: 'x-mock-enabled')
   };
   defaultTestId?: string;               // Default test ID (default: 'default-test')
   registry?: ScenarioRegistry;          // Custom registry (default: InMemoryScenarioRegistry)
@@ -1050,7 +1049,6 @@ const scenarist = createScenarist({
   defaultScenarioId: 'default',
   headers: {
     testId: 'x-my-test-id',
-    mockEnabled: 'x-my-mock-flag',
   },
 });
 ```

@@ -1,6 +1,6 @@
 /**
  * Secondary port for extracting context from HTTP requests.
- * Framework adapters implement this to provide test ID and mock control.
+ * Framework adapters implement this to provide test ID extraction.
  *
  * **Implementation Pattern:**
  * Implementations should accept ScenaristConfig to determine which headers
@@ -18,11 +18,6 @@
  *     const header = this.req.headers[this.config.headers.testId];
  *     return typeof header === 'string' ? header : this.config.defaultTestId;
  *   }
- *
- *   isMockEnabled(): boolean {
- *     const header = this.req.headers[this.config.headers.mockEnabled];
- *     return header === 'true';
- *   }
  * }
  * ```
  */
@@ -32,12 +27,6 @@ export interface RequestContext {
    * This enables test isolation.
    */
   getTestId(): string;
-
-  /**
-   * Determine if mocks should be enabled for this request.
-   * Allows per-request control of mocking.
-   */
-  isMockEnabled(): boolean;
 
   /**
    * Get all request headers.

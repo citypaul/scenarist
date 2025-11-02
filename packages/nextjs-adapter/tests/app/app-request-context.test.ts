@@ -10,9 +10,14 @@ describe('AppRequestContext', () => {
     mocks: [],
   };
 
+  const scenarios = {
+    default: defaultScenario,
+  } as const;
+
   const config = buildConfig({
     enabled: true,
-    defaultScenario,
+    scenarios,
+    defaultScenarioId: 'default',
   });
 
   describe('getTestId', () => {
@@ -43,37 +48,6 @@ describe('AppRequestContext', () => {
       const context = new AppRequestContext(req, config);
 
       expect(context.getTestId()).toBe('uppercase-id');
-    });
-  });
-
-  describe('isMockEnabled', () => {
-    it('should return true when x-mock-enabled header is "true"', () => {
-      const headers = new Headers({
-        'x-mock-enabled': 'true',
-      });
-
-      const req = new Request('http://localhost:3000/api/test', { headers });
-      const context = new AppRequestContext(req, config);
-
-      expect(context.isMockEnabled()).toBe(true);
-    });
-
-    it('should return false when x-mock-enabled header is not "true"', () => {
-      const headers = new Headers({
-        'x-mock-enabled': 'false',
-      });
-
-      const req = new Request('http://localhost:3000/api/test', { headers });
-      const context = new AppRequestContext(req, config);
-
-      expect(context.isMockEnabled()).toBe(false);
-    });
-
-    it('should return true by default when header is missing', () => {
-      const req = new Request('http://localhost:3000/api/test');
-      const context = new AppRequestContext(req, config);
-
-      expect(context.isMockEnabled()).toBe(true);
     });
   });
 

@@ -26,19 +26,6 @@ export class AppRequestContext implements RequestContext {
     return this.config.defaultTestId;
   }
 
-  isMockEnabled(): boolean {
-    const headerName = this.config.headers.mockEnabled.toLowerCase();
-    const header = this.req.headers.get(headerName);
-
-    const DEFAULT_MOCK_ENABLED = true;
-
-    if (!header) {
-      return DEFAULT_MOCK_ENABLED;
-    }
-
-    return header === 'true';
-  }
-
   getHeaders(): Record<string, string | string[] | undefined> {
     const headers: Record<string, string> = {};
 

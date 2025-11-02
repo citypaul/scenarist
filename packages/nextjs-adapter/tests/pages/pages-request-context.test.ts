@@ -11,9 +11,14 @@ describe('PagesRequestContext', () => {
     mocks: [],
   };
 
+  const scenarios = {
+    default: defaultScenario,
+  } as const;
+
   const config = buildConfig({
     enabled: true,
-    defaultScenario,
+    scenarios,
+    defaultScenarioId: 'default',
   });
 
   describe('getTestId', () => {
@@ -49,42 +54,6 @@ describe('PagesRequestContext', () => {
       const context = new PagesRequestContext(req, config);
 
       expect(context.getTestId()).toBe('first-id');
-    });
-  });
-
-  describe('isMockEnabled', () => {
-    it('should return true when x-mock-enabled header is "true"', () => {
-      const req = {
-        headers: {
-          'x-mock-enabled': 'true',
-        },
-      } as NextApiRequest;
-
-      const context = new PagesRequestContext(req, config);
-
-      expect(context.isMockEnabled()).toBe(true);
-    });
-
-    it('should return false when x-mock-enabled header is not "true"', () => {
-      const req = {
-        headers: {
-          'x-mock-enabled': 'false',
-        },
-      } as NextApiRequest;
-
-      const context = new PagesRequestContext(req, config);
-
-      expect(context.isMockEnabled()).toBe(false);
-    });
-
-    it('should return true by default when header is missing', () => {
-      const req = {
-        headers: {},
-      } as NextApiRequest;
-
-      const context = new PagesRequestContext(req, config);
-
-      expect(context.isMockEnabled()).toBe(true);
     });
   });
 

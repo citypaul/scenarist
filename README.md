@@ -594,7 +594,6 @@ const scenarist = createScenarist({
   // Customize header names
   headers: {
     testId: "x-my-test-id",
-    mockEnabled: "x-my-mock-flag",
   },
 
   // Customize endpoint paths
@@ -1226,7 +1225,7 @@ A: Absolutely! Scenarist is built with Turborepo. Perfect for monorepo testing s
 
 **Q: What if I need to test with real external APIs sometimes?**
 
-A: Use the `x-mock-enabled` header to disable mocking per-request, or configure scenarios to pass through specific endpoints.
+A: Set `enabled: false` to disable mocking globally, or use `strictMode: false` and create scenarios with selective mocks to allow passthrough for specific endpoints.
 
 ---
 

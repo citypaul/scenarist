@@ -298,7 +298,6 @@ describe('createScenarist', () => {
     expect(scenarist.config.endpoints.setScenario).toBe('/__scenario__');
     expect(scenarist.config.endpoints.getScenario).toBe('/__scenario__');
     expect(scenarist.config.headers.testId).toBe('x-test-id');
-    expect(scenarist.config.headers.mockEnabled).toBe('x-mock-enabled');
     expect(scenarist.config.defaultScenarioId).toBe('default');
     expect(scenarist.config.strictMode).toBe(false);
   });
@@ -314,7 +313,6 @@ describe('createScenarist', () => {
       },
       headers: {
         testId: 'x-custom-test',
-        mockEnabled: 'x-custom-mock',
       },
       strictMode: true,
     });
@@ -322,7 +320,6 @@ describe('createScenarist', () => {
     expect(scenarist.config.endpoints.setScenario).toBe('/custom-set');
     expect(scenarist.config.endpoints.getScenario).toBe('/custom-get');
     expect(scenarist.config.headers.testId).toBe('x-custom-test');
-    expect(scenarist.config.headers.mockEnabled).toBe('x-custom-mock');
     expect(scenarist.config.strictMode).toBe(true);
   });
 

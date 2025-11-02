@@ -222,7 +222,6 @@ type ExpressAdapterOptions<T extends ScenariosObject> = {
   strictMode?: boolean;                // Return 501 for unmocked requests (default: false)
   headers?: {
     testId?: string;                   // Header for test ID (default: 'x-test-id')
-    mockEnabled?: string;              // Header to enable/disable mocking (default: 'x-mock-enabled')
   };
   endpoints?: {
     setScenario?: string;              // POST endpoint (default: '/__scenario__')
@@ -727,7 +726,6 @@ const scenarist = createScenarist({
   defaultScenarioId: 'default',
   headers: {
     testId: 'x-my-test-id',
-    mockEnabled: 'x-my-mock-flag',
   },
   endpoints: {
     setScenario: '/api/scenarios/set',

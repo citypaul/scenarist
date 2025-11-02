@@ -26,13 +26,11 @@ export type ScenaristConfig = {
   readonly strictMode: boolean;
 
   /**
-   * HTTP header names for test isolation and control.
+   * HTTP header names for test isolation.
    */
   readonly headers: {
     /** Header name for test ID (default: 'x-test-id') */
     readonly testId: string;
-    /** Header name to enable/disable mocks (default: 'x-mock-enabled') */
-    readonly mockEnabled: string;
   };
 
   /**

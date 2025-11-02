@@ -12,7 +12,6 @@ export const buildConfig = <T extends ScenariosObject>(
     strictMode: input.strictMode ?? false,
     headers: {
       testId: input.headers?.testId ?? 'x-test-id',
-      mockEnabled: input.headers?.mockEnabled ?? 'x-mock-enabled',
     },
     endpoints: {
       setScenario: input.endpoints?.setScenario ?? '/__scenario__',

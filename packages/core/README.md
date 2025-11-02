@@ -282,7 +282,6 @@ const config = buildConfig({
   strictMode: false,  // true = error on unmocked requests, false = passthrough
   headers: {
     testId: 'x-test-id',
-    mockEnabled: 'x-mock-enabled',
   },
 });
 
@@ -328,7 +327,6 @@ type BaseAdapterOptions<T extends ScenariosObject> = {
   readonly strictMode?: boolean;
   readonly headers?: {
     readonly testId?: string;
-    readonly mockEnabled?: string;
   };
   readonly endpoints?: {
     readonly setScenario?: string;

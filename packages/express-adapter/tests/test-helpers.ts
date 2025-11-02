@@ -10,7 +10,6 @@ export const mockConfig = (overrides?: Partial<ScenaristConfig>): ScenaristConfi
   strictMode: false,
   headers: {
     testId: 'x-test-id',
-    mockEnabled: 'x-mock-enabled',
   },
   endpoints: {
     setScenario: '/__scenario__',

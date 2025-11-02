@@ -23,7 +23,6 @@ describe('buildConfig', () => {
 
     expect(config.enabled).toBe(true);
     expect(config.headers.testId).toBe('x-test-id');
-    expect(config.headers.mockEnabled).toBe('x-mock-enabled');
     expect(config.endpoints.setScenario).toBe('/__scenario__');
     expect(config.endpoints.getScenario).toBe('/__scenario__');
     expect(config.defaultScenarioId).toBe('default');
@@ -38,12 +37,10 @@ describe('buildConfig', () => {
       defaultScenarioId: 'default',
       headers: {
         testId: 'x-custom-test-id',
-        mockEnabled: 'x-custom-mock',
       },
     });
 
     expect(config.headers.testId).toBe('x-custom-test-id');
-    expect(config.headers.mockEnabled).toBe('x-custom-mock');
   });
 
   it('should allow overriding endpoint config', () => {
@@ -132,7 +129,6 @@ describe('buildConfig', () => {
     });
 
     expect(config.headers.testId).toBe('x-my-test-id');
-    expect(config.headers.mockEnabled).toBe('x-mock-enabled');
   });
 
   it('should allow partial override of endpoints while keeping defaults for others', () => {
