@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Products Page - Baseline Tests (WITHOUT Scenarist)
+ * Products Page - Comparison Tests (WITHOUT Scenarist)
  *
  * These tests use json-server directly to demonstrate the traditional approach
  * and show what you LOSE without Scenarist.
@@ -22,17 +22,18 @@ import { test, expect } from '@playwright/test';
  * ❌ Can't test error scenarios easily
  *
  * PURPOSE:
- * - Value comparison (benchmark "without Scenarist")
+ * - Compare traditional testing vs Scenarist-based testing
  * - Prove json-server setup works
  * - Document limitations of traditional approach
+ * - Demonstrate Scenarist's value proposition
  *
  * CI STRATEGY:
- * - Run in SEPARATE CI job: pnpm test:e2e:baseline
+ * - Run as step in main CI job: pnpm test:e2e:comparison
  * - Separate Playwright project prevents interference with Scenarist tests
- * - MSW global setup disabled for baseline project
+ * - MSW global setup disabled for comparison project
  */
 
-test.describe('Products Page - Baseline (without Scenarist)', () => {
+test.describe('Products Page - Comparison (without Scenarist)', () => {
   test('products display with json-server (basic functionality only)', async ({ page }) => {
     // REQUIRES: json-server running on port 3001 (pnpm fake-api)
     // This test hits real json-server (NO Scenarist mocking)

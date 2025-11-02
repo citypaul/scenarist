@@ -85,7 +85,7 @@ jobs:
       - name: Bruno API Tests
         run: pnpm test:bruno:ci
 
-      - name: Baseline E2E Tests (without Scenarist)
-        run: pnpm --filter=@scenarist/nextjs-pages-example test:e2e:baseline
+      - name: Comparison E2E Tests (without Scenarist)
+        run: pnpm --filter=@scenarist/nextjs-pages-example test:e2e:comparison
         env:
           SKIP_MSW: 'true'

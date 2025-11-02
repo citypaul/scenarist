@@ -32,7 +32,7 @@ This Next.js Pages example application exists to **demonstrate how Scenarist wor
 - `smoke.spec.ts` - Basic app functionality
 - `scenario-switching.spec.ts` - Scenarist scenario management
 - `products.spec.ts` - **Request matching feature demonstration**
-- `products.baseline.spec.ts` - Comparison without Scenarist
+- `products.comparison.spec.ts` - Comparison without Scenarist
 
 **Why E2E-focused:**
 - Shows developers how their apps will behave with Scenarist
