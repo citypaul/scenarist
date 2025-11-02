@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "pnpm test:e2e && pnpm test:api",
     "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "test:api": "vitest run",
     "fake-api": "json-server fake-api/db.json --port 3001"
   },
