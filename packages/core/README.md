@@ -321,8 +321,10 @@ The core package defines a **universal adapter contract** that all framework ada
 All adapters must accept these base options:
 
 ```typescript
-type BaseAdapterOptions = {
+type BaseAdapterOptions<T extends ScenariosObject> = {
   readonly enabled: boolean;
+  readonly scenarios: T;  // REQUIRED - scenarios object (all scenarios registered upfront)
+  readonly defaultScenarioId: keyof T;  // REQUIRED - ID of default scenario for fallback
   readonly strictMode?: boolean;
   readonly headers?: {
     readonly testId?: string;
@@ -332,10 +334,11 @@ type BaseAdapterOptions = {
     readonly setScenario?: string;
     readonly getScenario?: string;
   };
-  readonly defaultScenario: ScenarioDefinition;  // REQUIRED
   readonly defaultTestId?: string;
   readonly registry?: ScenarioRegistry;
   readonly store?: ScenarioStore;
+  readonly stateManager?: StateManager;
+  readonly sequenceTracker?: SequenceTracker;
 };
 ```
 
@@ -343,27 +346,27 @@ Adapters can extend this with framework-specific options:
 
 ```typescript
 // Express adapter
-type ExpressAdapterOptions = BaseAdapterOptions & {
+type ExpressAdapterOptions<T extends ScenariosObject> = BaseAdapterOptions<T> & {
   // Add Express-specific options if needed
 };
 
-// Fastify adapter
-type FastifyAdapterOptions = BaseAdapterOptions & {
-  // Add Fastify-specific options if needed
+// Next.js adapter
+type NextJSAdapterOptions<T extends ScenariosObject> = BaseAdapterOptions<T> & {
+  // Add Next.js-specific options if needed
 };
 ```
 
-### ScenaristAdapter<TMiddleware>
+### ScenaristAdapter<T, TMiddleware>
 
 All adapters must return an object matching this contract:
 
 ```typescript
-type ScenaristAdapter<TMiddleware = unknown> = {
-  readonly middleware: TMiddleware;  // Framework-specific middleware
-  readonly registerScenario: (definition: ScenarioDefinition) => void;
-  readonly switchScenario: (testId: string, scenarioId: string, variant?: string) => Result<void, Error>;
+type ScenaristAdapter<T extends ScenariosObject, TMiddleware = unknown> = {
+  readonly config: ScenaristConfig;  // Resolved configuration
+  readonly middleware?: TMiddleware;  // Framework-specific middleware (optional - Next.js doesn't have global middleware)
+  readonly switchScenario: (testId: string, scenarioId: ScenarioIds<T>, variant?: string) => Result<void, Error>;
   readonly getActiveScenario: (testId: string) => ActiveScenario | undefined;
-  readonly getScenarioById: (scenarioId: string) => ScenarioDefinition | undefined;
+  readonly getScenarioById: (scenarioId: ScenarioIds<T>) => ScenarioDefinition | undefined;
   readonly listScenarios: () => ReadonlyArray<ScenarioDefinition>;
   readonly clearScenario: (testId: string) => void;
   readonly start: () => void;
@@ -371,27 +374,36 @@ type ScenaristAdapter<TMiddleware = unknown> = {
 };
 ```
 
-The generic `TMiddleware` parameter allows each adapter to specify their framework's middleware type:
-- Express: `ScenaristAdapter<Router>`
-- Fastify: `ScenaristAdapter<FastifyPluginCallback>`
-- Next.js: `ScenaristAdapter<NextMiddleware>`
+The generic parameters:
+- `T extends ScenariosObject`: The scenarios object type for type-safe scenario IDs
+- `TMiddleware`: Framework-specific middleware type
+
+Examples:
+- Express: `ScenaristAdapter<typeof scenarios, Router>`
+- Next.js: `ScenaristAdapter<typeof scenarios, never>` (no global middleware)
 
 ### Implementation Example
 
 ```typescript
 // Express adapter implementation
-export const createScenarist = (
-  options: ExpressAdapterOptions
-): ScenaristAdapter<Router> => {
+export const createScenarist = <T extends ScenariosObject>(
+  options: ExpressAdapterOptions<T>
+): ScenaristAdapter<T, Router> => {
   // Implementation automatically wires:
   // - MSW server with dynamic handler
   // - Test ID middleware
   // - Scenario endpoints
   // - Scenario manager
+  // - Registers all scenarios from scenarios object
+
+  // Register all scenarios upfront
+  Object.values(options.scenarios).forEach((scenario) => {
+    manager.registerScenario(scenario);
+  });
 
   return {
+    config: resolvedConfig,
     middleware: router,  // Express Router
-    registerScenario: (def) => manager.registerScenario(def),
     switchScenario: (id, scenario, variant) => manager.switchScenario(id, scenario, variant),
     // ... all other required methods
     start: () => server.listen(),

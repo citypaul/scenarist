@@ -1,10 +1,12 @@
-import type { ScenaristConfig, ScenaristConfigInput } from '../types/index.js';
+import type { ScenaristConfig, ScenaristConfigInput, ScenariosObject } from '../types/index.js';
 
 /**
  * Build a complete config from partial user input.
  * Applies sensible defaults for missing values.
  */
-export const buildConfig = (input: ScenaristConfigInput): ScenaristConfig => {
+export const buildConfig = <T extends ScenariosObject>(
+  input: ScenaristConfigInput<T>
+): ScenaristConfig => {
   return {
     enabled: input.enabled,
     strictMode: input.strictMode ?? false,
@@ -16,7 +18,7 @@ export const buildConfig = (input: ScenaristConfigInput): ScenaristConfig => {
       setScenario: input.endpoints?.setScenario ?? '/__scenario__',
       getScenario: input.endpoints?.getScenario ?? '/__scenario__',
     },
-    defaultScenarioId: input.defaultScenario.id,
+    defaultScenarioId: input.defaultScenarioId,
     defaultTestId: input.defaultTestId ?? 'default-test',
   };
 };

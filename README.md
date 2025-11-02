@@ -490,20 +490,25 @@ export const errorState: ScenarioDefinition = {
 // server.ts
 import express from "express";
 import { createScenarist } from "@scenarist/express-adapter";
+import type { ScenariosObject } from "@scenarist/core";
 import { defaultScenario, errorState } from "./scenarios";
 
 const app = express();
 app.use(express.json());
 
+// Create scenarios object
+const scenarios = {
+  default: defaultScenario,
+  errorState: errorState,
+} as const satisfies ScenariosObject;
+
 // Create Scenarist instance (wires everything automatically)
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === "test",
-  defaultScenario: defaultScenario, // REQUIRED - fallback scenario
+  scenarios,                    // All scenarios registered upfront
+  defaultScenarioId: 'default', // ID of default scenario for fallback
   strictMode: false,
 });
-
-// Register additional scenarios
-scenarist.registerScenario(errorState);
 
 // Add Scenarist middleware
 if (process.env.NODE_ENV === "test") {
@@ -574,9 +579,16 @@ describe("Payment Flow", () => {
 ### Custom Configuration
 
 ```typescript
+const scenarios = {
+  default: myDefaultScenario,
+  success: mySuccessScenario,
+  error: myErrorScenario,
+} as const satisfies ScenariosObject;
+
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === "test",
-  defaultScenario: myDefaultScenario,
+  scenarios,
+  defaultScenarioId: 'default',
   strictMode: false,
 
   // Customize header names

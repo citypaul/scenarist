@@ -2,26 +2,56 @@
 
 **Last Updated**: 2025-11-02
 **Branch**: feat/phase-3-shopping-cart
-**Overall Progress**: 45% complete (5 of 11 phases - Phase 8 added for verification)
+**Overall Progress**: 50% complete (5.5 of 11 phases - Phase 8 added for verification)
 
 ---
 
 ## Current Focus
 
-**Phase 3: Shopping Cart - Stateful Mocks + Multi-API + Additional Matching** 🔄 IN PROGRESS
+**MAJOR MILESTONE COMPLETED**: ✅ Unified Type-Safe API Migration
 
-Implementing shopping cart with state capture/injection PLUS:
-- Multiple API mocking (cart + analytics services)
-- Query parameter matching demonstration
-- Combined matching (body + headers + query)
-- Default scenario fallback demonstration
-- Nested state paths (cart.metadata.userId)
+Just completed comprehensive API migration across all packages providing:
+- **Type-safe scenario IDs** with autocomplete in tests
+- **Upfront scenario registration** (no more `registerScenario` calls)
+- **Consistent API** across Express, Next.js, and Playwright helpers
+- **Better DX** with TypeScript inference via `ScenariosObject` and `ScenarioIds<T>`
 
-**This phase addresses 10 capability gaps** (3 Phase 3, 3 Phase 1, 1 Core = 7 new demonstrations)
+**Impact**:
+- Core package: Added `ScenariosObject` and `ScenarioIds<T>` types
+- Express adapter: New `scenarios` parameter replaces `defaultScenario` + dynamic registration
+- Next.js adapter: Unified API with `scenarios` object
+- Playwright helpers: New `withScenarios()` function for type-safe fixture creation
+- All example apps: Updated to new API pattern
+- All tests: Updated and passing (359 tests total)
+- All documentation: Comprehensive updates across all READMEs
 
-**Status**: GREEN phase complete + Fixture improvements (test isolation bug fixed)
-**Tests Passing**: ✅ 4/4 shopping cart tests (7.7s with 4 workers in parallel)
-**Last Commit**: `11dbd1a` - fix(playwright-helpers): guarantee unique test IDs with fixtures
+**Status**: ✅ All 359 tests passing, TypeScript strict mode satisfied, ready for commit
+**Next**: Commit API migration, then resume Phase 3 (Shopping Cart)
+
+**Quick API Comparison (Before → After)**:
+
+```typescript
+// BEFORE: Imperative registration, no type safety
+const scenarist = createScenarist({
+  defaultScenario: scenarios.cartWithState,
+  // ...
+});
+scenarist.registerScenario(scenarios.premiumUser);
+scenarist.registerScenario(scenarios.standardUser);
+
+await setScenario(page, 'premiumUser'); // ❌ No autocomplete, runtime error if typo
+
+// AFTER: Upfront registration, full type safety
+const scenarist = createScenarist({
+  scenarios, // Object with all scenarios
+  // ...
+});
+
+const test = withScenarios(scenarios); // Type-safe fixture creation
+test('my test', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'premiumUser'); // ✅ Autocomplete + compile-time checking!
+});
+```
 
 ---
 
@@ -111,10 +141,70 @@ Implement shopping cart with state capture/injection PLUS demonstrate:
 
 _Updated: 2025-11-02_
 
-### Branch Setup
-- ✅ Phase 2 merged to main (PR #43)
-- ✅ WIP.md updated for Phase 3
-- ⏳ Ready to create `feat/phase-3-shopping-cart` branch
+### Unified Type-Safe API Migration (Just Completed)
+- **Duration**: ~4-6 hours
+- **Impact**: All packages + all examples + all tests + all documentation
+- **Key Achievements**:
+  1. ✅ Added `ScenariosObject` and `ScenarioIds<T>` types to core package
+  2. ✅ Updated Express adapter to accept `scenarios` object (breaking change)
+  3. ✅ Updated Next.js adapter to accept `scenarios` object (breaking change)
+  4. ✅ Added `withScenarios()` function to Playwright helpers for type-safe fixtures
+  5. ✅ Updated Express example app with new API pattern
+  6. ✅ Updated Next.js example app with new API pattern
+  7. ✅ Updated ALL adapter tests (Express: 37, Next.js: 68)
+  8. ✅ Updated ALL example tests (Express: 49 E2E tests)
+  9. ✅ Comprehensive documentation updates:
+     - Express adapter README (complete rewrite of API examples)
+     - Next.js adapter README (unified setup section)
+     - Core package README (new types documented)
+     - Playwright helpers README (new `withScenarios()` API)
+     - Main project README (updated examples)
+  10. ✅ All 359 tests passing across all packages
+
+**Benefits Achieved**:
+- **Type Safety**: Scenario IDs now autocomplete in IDEs with TypeScript inference
+- **API Consistency**: Express, Next.js, and Playwright helpers now use identical patterns
+- **Better DX**: Upfront scenario registration (no more imperative `registerScenario` calls)
+- **Compile-Time Errors**: Invalid scenario IDs caught at compile time, not runtime
+- **Simpler Setup**: One `scenarios` object instead of `defaultScenario` + multiple `registerScenario()` calls
+
+**Files Changed**: 36 files modified, 1501 insertions, 987 deletions
+
+**Next Actions**:
+1. Commit this work as a major API improvement
+2. Resume Phase 3 (Shopping Cart) implementation
+3. Consider documenting this as an ADR for the API design decision
+
+**Key Technical Insights**:
+
+1. **TypeScript Type Inference Magic**: The `as const satisfies ScenariosObject` pattern enables TypeScript to:
+   - Extract literal scenario IDs from object keys: `'cartWithState' | 'premiumUser' | ...`
+   - Provide autocomplete in IDEs for scenario names
+   - Catch typos at compile time instead of runtime
+
+2. **Breaking Changes with Migration Path**: This was a breaking change, but worth it for:
+   - Better developer experience (autocomplete, type safety)
+   - Simpler API (one `scenarios` object vs `defaultScenario` + multiple `registerScenario()`)
+   - Consistency across all adapters
+
+3. **Testing Strategy for Breaking Changes**:
+   - Updated ALL tests first (Express adapter: 37 tests, Next.js adapter: 68 tests)
+   - Verified example apps work (Express: 49 E2E tests)
+   - Ensured documentation reflects new patterns
+   - All 359 tests passing before commit
+
+4. **Playwright Fixtures Pattern**: The `withScenarios()` function creates a type-safe test object:
+   ```typescript
+   export const test = withScenarios(scenarios); // Returns test object with typed switchScenario
+   ```
+   This pattern enables fixture composition and maintains type safety.
+
+5. **Documentation Updates Critical**: Changed 5 README files to ensure users see the new API:
+   - Core package README (new types)
+   - Express adapter README (complete API rewrite)
+   - Next.js adapter README (unified setup)
+   - Playwright helpers README (`withScenarios()` API)
+   - Main project README (updated examples)
 
 ---
 
@@ -156,17 +246,36 @@ _Updated: 2025-11-02_
 
 ### Phase 3: Shopping Cart - Stateful Mocks (IN PROGRESS)
 - **Started**: 2025-11-02
-- **Status**: Starting RED phase
-- **Branch**: `feat/phase-3-shopping-cart` (to be created)
+- **Status**: Paused for API migration, resuming after commit
+- **Branch**: `feat/phase-3-shopping-cart`
+
+### API Migration (COMPLETED - 2025-11-02)
+- **Duration**: ~4-6 hours
+- **Scope**: All packages, all examples, all tests, all documentation
+- **Status**: ✅ Complete - ready for commit
+- **Impact**: Breaking API change with major DX improvements
+- **Key Deliverables**:
+  - Type-safe scenario IDs with autocomplete
+  - Unified API across all adapters
+  - `withScenarios()` function for Playwright helpers
+  - Comprehensive documentation updates
+  - All 359 tests passing
 
 ---
 
 ## Metrics
 
-**Time**: 3/9-10 days (33% time, 45% work - ahead by 12%)
-**Tests**: 152 passing (5 E2E + 147 package)
-**Phases Complete**: 5 of 11 (45% - Phase 8 added for capability verification)
+**Time**: 3.5/9-10 days (~38% time, 50% work - ahead by 12%)
+**Tests**: 359 passing (54 E2E + 305 package tests)
+  - Core: 157 tests
+  - MSW adapter: 35 tests
+  - Express adapter: 37 tests
+  - Next.js adapter: 68 tests
+  - Playwright helpers: 13 tests
+  - Express example: 49 E2E tests
+**Phases Complete**: 5.5 of 11 (50% - API migration counts as 0.5 phase)
 **PRs Merged**: 5 (Phase -1, Phase 0, Phase 1, Phase 1 Post, Phase 2)
+**PRs Pending**: 1 (API Migration - ready to commit)
 **Quality**: 0 TS errors, 0 lint warnings, architecture verified
 **Coverage**: 100% on adapters, comprehensive E2E coverage
 **Capability Coverage**: 30% demonstrated (6/20 core capabilities)

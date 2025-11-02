@@ -136,3 +136,41 @@ export type ActiveScenario = {
 export type Result<T, E = Error> =
   | { readonly success: true; readonly data: T }
   | { readonly success: false; readonly error: E };
+
+/**
+ * Scenarios object type enforced across all adapters.
+ * Ensures scenarios are defined as a named object for type inference.
+ *
+ * This enables TypeScript to extract scenario IDs from object keys,
+ * providing autocomplete and type safety in adapter APIs.
+ *
+ * @example
+ * ```typescript
+ * const scenarios = {
+ *   cartWithState: { id: 'cartWithState', name: 'Cart with State', ... },
+ *   premiumUser: { id: 'premiumUser', name: 'Premium User', ... },
+ * } as const satisfies ScenariosObject;
+ * ```
+ */
+export type ScenariosObject = Record<string, ScenarioDefinition>;
+
+/**
+ * Extract scenario IDs from scenarios object for type safety.
+ * Enables TypeScript autocomplete for scenario names in tests and adapters.
+ *
+ * The `& string` ensures the result is always a string type (not `string | number | symbol`).
+ *
+ * @template T - Scenarios object type
+ *
+ * @example
+ * ```typescript
+ * const scenarios = {
+ *   cartWithState: { ... },
+ *   premiumUser: { ... },
+ * } as const;
+ *
+ * type MyScenarioIds = ScenarioIds<typeof scenarios>;
+ * // Result: 'cartWithState' | 'premiumUser'
+ * ```
+ */
+export type ScenarioIds<T extends ScenariosObject> = keyof T & string;

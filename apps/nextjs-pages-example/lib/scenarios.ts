@@ -5,7 +5,7 @@
  * Phase 2: Request matching for tier-based pricing
  */
 
-import type { ScenarioDefinition } from '@scenarist/core';
+import type { ScenarioDefinition, ScenariosObject } from '@scenarist/core';
 import { buildProducts } from '../data/products';
 
 /**
@@ -135,11 +135,11 @@ export const cartWithStateScenario: ScenarioDefinition = {
 };
 
 /**
- * All scenarios for registration
+ * All scenarios for registration and type-safe access
  */
 export const scenarios = {
   default: defaultScenario,
   premiumUser: premiumUserScenario,
   standardUser: standardUserScenario,
   cartWithState: cartWithStateScenario,
-} as const;
+} as const satisfies ScenariosObject;

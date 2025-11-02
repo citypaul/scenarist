@@ -62,8 +62,10 @@ export const createScenaristBase = (
     sequenceTracker,
   });
 
-  // Register default scenario
-  manager.registerScenario(options.defaultScenario);
+  // Register all scenarios upfront from scenarios object
+  Object.values(options.scenarios).forEach((scenario) => {
+    manager.registerScenario(scenario);
+  });
 
   // Create response selector for dynamic responses
   const responseSelector = createResponseSelector({

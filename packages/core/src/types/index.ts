@@ -8,6 +8,8 @@ export type {
   ScenarioDefinition,
   ActiveScenario,
   Result,
+  ScenariosObject,
+  ScenarioIds,
 } from './scenario.js';
 
 export type {

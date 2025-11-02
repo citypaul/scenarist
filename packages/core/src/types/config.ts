@@ -1,4 +1,4 @@
-import type { ScenarioDefinition } from './scenario.js';
+import type { ScenariosObject } from './scenario.js';
 
 /**
  * Configuration for the scenario management system.
@@ -47,7 +47,7 @@ export type ScenaristConfig = {
 
   /**
    * The default scenario ID to use when none is specified.
-   * Derived from defaultScenario.id during config building.
+   * Derived from defaultScenarioId during config building.
    */
   readonly defaultScenarioId: string;
 
@@ -61,17 +61,36 @@ export type ScenaristConfig = {
  * Partial config for user input - missing values will use defaults.
  * All properties must be serializable (no functions).
  */
-export type ScenaristConfigInput = {
+export type ScenaristConfigInput<T extends ScenariosObject = ScenariosObject> = {
   readonly enabled: boolean;
   readonly strictMode?: boolean;
   readonly headers?: Partial<ScenaristConfig['headers']>;
   readonly endpoints?: Partial<ScenaristConfig['endpoints']>;
   /**
-   * The default scenario - used as fallback when no scenario is active
-   * or when the active scenario doesn't define a mock for a request.
+   * All scenarios defined as a named object.
+   * Keys become scenario IDs that enable type-safe autocomplete.
+   *
+   * @example
+   * ```typescript
+   * const scenarios = {
+   *   cartWithState: { id: 'cartWithState', ... },
+   *   premiumUser: { id: 'premiumUser', ... },
+   * } as const satisfies ScenariosObject;
+   *
+   * createScenarist({
+   *   enabled: true,
+   *   scenarios,
+   *   defaultScenarioId: 'cartWithState',
+   * });
+   * ```
+   */
+  readonly scenarios: T;
+  /**
+   * The ID of the default scenario from the scenarios object.
+   * Used as fallback when no scenario is active.
    *
    * REQUIRED - ensures there's always a baseline set of mocks available.
    */
-  readonly defaultScenario: ScenarioDefinition;
+  readonly defaultScenarioId: string;
   readonly defaultTestId?: string;
 };

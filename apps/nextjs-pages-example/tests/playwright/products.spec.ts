@@ -1,4 +1,4 @@
-import { test, expect } from '@scenarist/playwright-helpers';
+import { test, expect } from './fixtures';
 
 /**
  * Products Page - Request Matching with Scenarist

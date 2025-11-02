@@ -11,7 +11,7 @@
  * 4. MSW server initialization
  */
 
-import { test, expect } from '@scenarist/playwright-helpers';
+import { test, expect } from './fixtures';
 
 test('can switch to premium scenario manually', async ({ page }) => {
   // VERBOSE: Manually construct test ID

@@ -1,7 +1,7 @@
 /**
  * Playwright fixtures for Scenarist
  *
- * **Recommended API**: Use these fixtures for guaranteed test isolation.
+ * **Recommended API**: Use `withScenarios()` for type-safe scenario IDs with autocomplete.
  *
  * Provides custom fixtures for scenario management with guaranteed unique test IDs
  * to prevent state collisions during parallel test execution.
@@ -13,8 +13,9 @@
  * @example
  * ```typescript
  * import { defineConfig } from '@playwright/test';
+ * import type { ScenaristOptions } from '@scenarist/playwright-helpers';
  *
- * export default defineConfig({
+ * export default defineConfig<ScenaristOptions>({
  *   use: {
  *     baseURL: 'http://localhost:3000',
  *     scenaristEndpoint: '/api/__scenario__',
@@ -22,40 +23,56 @@
  * });
  * ```
  *
- * Then use in tests without repetition:
+ * Define scenarios and create typed test object:
  *
  * @example
  * ```typescript
- * import { test, expect } from '@scenarist/playwright-helpers';
+ * // tests/fixtures.ts
+ * import { withScenarios, expect } from '@scenarist/playwright-helpers';
+ * import { type ScenariosObject } from '@scenarist/core';
+ *
+ * const scenarios = {
+ *   cartWithState: { id: 'cartWithState', name: 'Cart with State', ... },
+ *   premiumUser: { id: 'premiumUser', name: 'Premium User', ... },
+ * } as const satisfies ScenariosObject;
+ *
+ * export const test = withScenarios(scenarios);
+ * export { expect };
+ * ```
+ *
+ * Then use in tests with type-safe scenario IDs:
+ *
+ * @example
+ * ```typescript
+ * import { test, expect } from './fixtures';
  *
  * test('my test', async ({ page, switchScenario }) => {
- *   // Configuration read from playwright.config.ts
- *   await switchScenario(page, 'myScenario');
- *
- *   // Your test code here...
+ *   await switchScenario(page, 'cartWithState'); // ✅ Autocomplete works!
+ *   await switchScenario(page, 'invalid'); // ❌ TypeScript error
  * });
  * ```
  *
  * ## Composing with Existing Fixtures
  *
- * If your team already has custom fixtures, extend the Scenarist test object:
+ * If your team already has custom fixtures, extend the test object:
  *
  * @example
  * ```typescript
  * // tests/fixtures.ts
- * import { test as scenaristTest } from '@scenarist/playwright-helpers';
+ * import { withScenarios, expect } from '@scenarist/playwright-helpers';
+ * import { scenarios } from '../lib/scenarios';
  *
  * type MyFixtures = {
  *   myCustomFixture: string;
  * };
  *
- * export const test = scenaristTest.extend<MyFixtures>({
+ * export const test = withScenarios(scenarios).extend<MyFixtures>({
  *   myCustomFixture: async ({}, use) => {
  *     await use('my custom value');
  *   },
  * });
  *
- * export { expect } from '@scenarist/playwright-helpers';
+ * export { expect };
  * ```
  *
  * ## Advanced: Per-Test Overrides
@@ -65,20 +82,12 @@
  * @example
  * ```typescript
  * test('staging test', async ({ page, switchScenario }) => {
- *   await switchScenario(page, 'myScenario', {
+ *   await switchScenario(page, 'cartWithState', {
  *     baseURL: 'https://staging.example.com',
  *     endpoint: '/api/custom-endpoint',
  *   });
  * });
  * ```
- *
- * @remarks
- * **When to use fixtures vs standalone `switchScenario`:**
- * - ✅ **Use fixtures (this API)** - For all test files (recommended)
- * - ❌ **Use standalone** - Only if you need manual test ID control
- *
- * Fixtures guarantee test isolation by generating crypto.randomUUID() test IDs,
- * preventing collisions even when tests run in parallel with 4+ workers.
  *
  * For complete documentation, see the README at:
  * https://github.com/citypaul/scenarist/tree/main/packages/playwright-helpers
@@ -86,6 +95,7 @@
 
 import { test as base, expect as baseExpect, type Page } from '@playwright/test';
 import { switchScenario as baseSwitchScenario, type SwitchScenarioOptions } from './switch-scenario.js';
+import type { ScenariosObject, ScenarioIds } from '@scenarist/core';
 
 /**
  * Configuration options for Scenarist.
@@ -112,8 +122,10 @@ export type ScenaristOptions = {
 
 /**
  * Fixtures provided by Scenarist for Playwright tests.
+ *
+ * Generic type parameter S allows constraining scenario IDs for type safety.
  */
-export type ScenaristFixtures = {
+export type ScenaristFixtures<S extends string = string> = {
   /**
    * Guaranteed unique test ID for this test.
    * Uses crypto.randomUUID() to ensure no collisions even with parallel execution.
@@ -131,7 +143,7 @@ export type ScenaristFixtures = {
    * Can be overridden per-test if needed.
    *
    * @param page - Playwright Page object
-   * @param scenarioId - The scenario ID to switch to
+   * @param scenarioId - The scenario ID to switch to (constrained to S if createTest<S> was used)
    * @param options - Optional overrides for endpoint and baseURL
    *
    * @example Basic usage (reads from config)
@@ -153,48 +165,78 @@ export type ScenaristFixtures = {
    */
   switchScenario: (
     page: Page,
-    scenarioId: string,
+    scenarioId: S,
     options?: Partial<Pick<SwitchScenarioOptions, 'endpoint' | 'baseURL'>>
   ) => Promise<void>;
 };
 
 /**
- * Playwright test object extended with Scenarist fixtures.
+ * Create a type-safe Playwright test object with Scenarist fixtures.
  *
- * Import this instead of '@playwright/test' to get Scenarist capabilities.
+ * Accepts a scenarios object and automatically infers scenario IDs for type safety.
+ * This is the ONLY way to create test objects with Scenarist - ensures consistency.
+ *
+ * @template T - Scenarios object type
+ *
+ * @example
+ * ```typescript
+ * // tests/fixtures.ts
+ * import { withScenarios, expect } from '@scenarist/playwright-helpers';
+ * import { type ScenariosObject } from '@scenarist/core';
+ *
+ * const scenarios = {
+ *   cartWithState: { id: 'cartWithState', ... },
+ *   premiumUser: { id: 'premiumUser', ... },
+ * } as const satisfies ScenariosObject;
+ *
+ * export const test = withScenarios(scenarios);
+ * export { expect };
+ *
+ * // tests/my-test.spec.ts
+ * import { test, expect } from './fixtures';
+ *
+ * test('my test', async ({ page, switchScenario }) => {
+ *   await switchScenario(page, 'cartWithState'); // ✅ Autocomplete works!
+ *   await switchScenario(page, 'invalid'); // ❌ TypeScript error
+ * });
+ * ```
  */
-export const test = base.extend<ScenaristOptions & ScenaristFixtures>({
-  // Configuration option with default value
-  scenaristEndpoint: ['/api/__scenario__', { option: true }],
+export function withScenarios<T extends ScenariosObject>(_scenarios: T) {
+  type ScenarioId = ScenarioIds<T>;
 
-  // Generate a guaranteed unique test ID for each test
-  scenaristTestId: async ({}, use, testInfo) => {
-    // Use test info + UUID for guaranteed uniqueness
-    const uniqueId = `${testInfo.testId}-${crypto.randomUUID()}`;
-    await use(uniqueId);
-  },
+  return base.extend<ScenaristOptions & ScenaristFixtures<ScenarioId>>({
+    // Configuration option with default value
+    scenaristEndpoint: ['/api/__scenario__', { option: true }],
 
-  // Provide a switchScenario helper that reads config and auto-injects test ID
-  switchScenario: async ({ scenaristTestId, scenaristEndpoint, baseURL }, use) => {
-    const switchFn = async (
-      page: Page,
-      scenarioId: string,
-      options?: Partial<Pick<SwitchScenarioOptions, 'endpoint' | 'baseURL'>>
-    ) => {
-      // Read from config, allow per-test override, fallback to defaults
-      const finalEndpoint = options?.endpoint ?? scenaristEndpoint;
-      const finalBaseURL = options?.baseURL ?? baseURL ?? 'http://localhost:3000';
+    // Generate a guaranteed unique test ID for each test
+    scenaristTestId: async ({}, use, testInfo) => {
+      // Use test info + UUID for guaranteed uniqueness
+      const uniqueId = `${testInfo.testId}-${crypto.randomUUID()}`;
+      await use(uniqueId);
+    },
 
-      // Call the base switchScenario with all config
-      await baseSwitchScenario(page, scenarioId, {
-        endpoint: finalEndpoint,
-        baseURL: finalBaseURL,
-        testId: scenaristTestId,
-      });
-    };
+    // Provide a switchScenario helper that reads config and auto-injects test ID
+    switchScenario: async ({ scenaristTestId, scenaristEndpoint, baseURL }, use) => {
+      const switchFn = async (
+        page: Page,
+        scenarioId: ScenarioId,
+        options?: Partial<Pick<SwitchScenarioOptions, 'endpoint' | 'baseURL'>>
+      ) => {
+        // Read from config, allow per-test override, fallback to defaults
+        const finalEndpoint = options?.endpoint ?? scenaristEndpoint;
+        const finalBaseURL = options?.baseURL ?? baseURL ?? 'http://localhost:3000';
 
-    await use(switchFn);
-  },
-});
+        // Call the base switchScenario with all config
+        await baseSwitchScenario(page, scenarioId, {
+          endpoint: finalEndpoint,
+          baseURL: finalBaseURL,
+          testId: scenaristTestId,
+        });
+      };
+
+      await use(switchFn);
+    },
+  });
+}
 
 export const expect = baseExpect;

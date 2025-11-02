@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildConfig } from '../src/domain/config-builder.js';
-import type { ScenarioDefinition } from '../src/types/index.js';
+import type { ScenarioDefinition, ScenariosObject } from '../src/types/index.js';
 
 const mockDefaultScenario: ScenarioDefinition = {
   id: 'default',
@@ -9,11 +9,16 @@ const mockDefaultScenario: ScenarioDefinition = {
   mocks: [],
 };
 
+const mockScenarios = {
+  default: mockDefaultScenario,
+} as const satisfies ScenariosObject;
+
 describe('buildConfig', () => {
   it('should apply default values for missing config properties', () => {
     const config = buildConfig({
       enabled: true,
-      defaultScenario: mockDefaultScenario,
+      scenarios: mockScenarios,
+      defaultScenarioId: 'default',
     });
 
     expect(config.enabled).toBe(true);
@@ -29,7 +34,8 @@ describe('buildConfig', () => {
   it('should allow overriding header config', () => {
     const config = buildConfig({
       enabled: true,
-      defaultScenario: mockDefaultScenario,
+      scenarios: mockScenarios,
+      defaultScenarioId: 'default',
       headers: {
         testId: 'x-custom-test-id',
         mockEnabled: 'x-custom-mock',
@@ -43,7 +49,8 @@ describe('buildConfig', () => {
   it('should allow overriding endpoint config', () => {
     const config = buildConfig({
       enabled: true,
-      defaultScenario: mockDefaultScenario,
+      scenarios: mockScenarios,
+      defaultScenarioId: 'default',
       endpoints: {
         setScenario: '/api/scenario/set',
         getScenario: '/api/scenario/get',
@@ -54,7 +61,7 @@ describe('buildConfig', () => {
     expect(config.endpoints.getScenario).toBe('/api/scenario/get');
   });
 
-  it('should extract defaultScenarioId from defaultScenario definition', () => {
+  it('should use provided defaultScenarioId', () => {
     const customScenario: ScenarioDefinition = {
       id: 'happy-path',
       name: 'Happy Path',
@@ -62,9 +69,14 @@ describe('buildConfig', () => {
       mocks: [],
     };
 
+    const customScenarios = {
+      'happy-path': customScenario,
+    } as const satisfies ScenariosObject;
+
     const config = buildConfig({
       enabled: true,
-      defaultScenario: customScenario,
+      scenarios: customScenarios,
+      defaultScenarioId: 'happy-path',
     });
 
     expect(config.defaultScenarioId).toBe('happy-path');
@@ -80,7 +92,8 @@ describe('buildConfig', () => {
   ])('should allow overriding $property', ({ property, value, default: defaultValue }) => {
     const config = buildConfig({
       enabled: true,
-      defaultScenario: mockDefaultScenario,
+      scenarios: mockScenarios,
+      defaultScenarioId: 'default',
       [property]: value,
     });
 
@@ -89,7 +102,8 @@ describe('buildConfig', () => {
     // Also verify default when not provided
     const configWithDefaults = buildConfig({
       enabled: true,
-      defaultScenario: mockDefaultScenario,
+      scenarios: mockScenarios,
+      defaultScenarioId: 'default',
     });
     expect(configWithDefaults[property]).toBe(defaultValue);
   });
@@ -99,7 +113,8 @@ describe('buildConfig', () => {
     const isEnabled = process.env.NODE_ENV !== 'production';
     const config = buildConfig({
       enabled: isEnabled,
-      defaultScenario: mockDefaultScenario,
+      scenarios: mockScenarios,
+      defaultScenarioId: 'default',
     });
 
     expect(config.enabled).toBe(isEnabled);
@@ -109,7 +124,8 @@ describe('buildConfig', () => {
   it('should allow partial override of headers while keeping defaults for others', () => {
     const config = buildConfig({
       enabled: true,
-      defaultScenario: mockDefaultScenario,
+      scenarios: mockScenarios,
+      defaultScenarioId: 'default',
       headers: {
         testId: 'x-my-test-id',
       },
@@ -122,7 +138,8 @@ describe('buildConfig', () => {
   it('should allow partial override of endpoints while keeping defaults for others', () => {
     const config = buildConfig({
       enabled: false,
-      defaultScenario: mockDefaultScenario,
+      scenarios: mockScenarios,
+      defaultScenarioId: 'default',
       endpoints: {
         setScenario: '/custom/set',
       },

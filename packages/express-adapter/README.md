@@ -86,10 +86,10 @@ yarn add -D @scenarist/express-adapter @scenarist/core msw
 ### 1. Define Scenarios
 
 ```typescript
-// test/scenarios/default.ts
-import type { ScenarioDefinition } from '@scenarist/core';
+// test/scenarios.ts
+import type { ScenarioDefinition, ScenariosObject } from '@scenarist/core';
 
-export const defaultScenario: ScenarioDefinition = {
+const defaultScenario: ScenarioDefinition = {
   id: 'default',
   name: 'Default Scenario',
   description: 'Baseline responses for all APIs',
@@ -109,8 +109,7 @@ export const defaultScenario: ScenarioDefinition = {
   ],
 };
 
-// test/scenarios/admin-user.ts
-export const adminUserScenario: ScenarioDefinition = {
+const adminUserScenario: ScenarioDefinition = {
   id: 'admin-user',
   name: 'Admin User',
   description: 'User with admin privileges',
@@ -129,6 +128,12 @@ export const adminUserScenario: ScenarioDefinition = {
     },
   ],
 };
+
+// Export as typed scenarios object for type safety
+export const scenarios = {
+  default: defaultScenario,
+  adminUser: adminUserScenario,
+} as const satisfies ScenariosObject;
 ```
 
 ### 2. Create Scenarist Instance
@@ -136,19 +141,14 @@ export const adminUserScenario: ScenarioDefinition = {
 ```typescript
 // test/setup.ts
 import { createScenarist } from '@scenarist/express-adapter';
-import { defaultScenario, adminUserScenario } from './scenarios';
+import { scenarios } from './scenarios';
 
 export const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
-  defaultScenario: defaultScenario, // REQUIRED - fallback for unmocked requests
+  scenarios,                    // All scenarios registered upfront
+  defaultScenarioId: 'default', // ID of default scenario for fallback
   strictMode: false,
 });
-
-// Register additional scenarios (default is auto-registered)
-scenarist.registerScenario(adminUserScenario);
-
-// Or register multiple scenarios at once
-scenarist.registerScenarios([adminUserScenario, /* ... more scenarios */]);
 ```
 
 ### 3. Add to Express App
@@ -215,32 +215,31 @@ Creates a Scenarist instance with everything wired automatically.
 
 **Parameters:**
 ```typescript
-type ExpressAdapterOptions = {
+type ExpressAdapterOptions<T extends ScenariosObject> = {
   enabled: boolean;                    // Whether mocking is enabled
-  strictMode?: boolean;                 // Return 501 for unmocked requests (default: false)
+  scenarios: T;                        // REQUIRED - scenarios object
+  defaultScenarioId: keyof T;          // REQUIRED - ID of default scenario
+  strictMode?: boolean;                // Return 501 for unmocked requests (default: false)
   headers?: {
-    testId?: string;                    // Header for test ID (default: 'x-test-id')
-    mockEnabled?: string;               // Header to enable/disable mocking (default: 'x-mock-enabled')
+    testId?: string;                   // Header for test ID (default: 'x-test-id')
+    mockEnabled?: string;              // Header to enable/disable mocking (default: 'x-mock-enabled')
   };
   endpoints?: {
-    setScenario?: string;               // POST endpoint (default: '/__scenario__')
-    getScenario?: string;               // GET endpoint (default: '/__scenario__')
+    setScenario?: string;              // POST endpoint (default: '/__scenario__')
+    getScenario?: string;              // GET endpoint (default: '/__scenario__')
   };
-  defaultScenario: ScenarioDefinition;  // REQUIRED - fallback scenario (auto-registered)
-  defaultTestId?: string;               // Default test ID (default: 'default-test')
-  registry?: ScenarioRegistry;          // Custom registry (default: InMemoryScenarioRegistry)
-  store?: ScenarioStore;                // Custom store (default: InMemoryScenarioStore)
+  defaultTestId?: string;              // Default test ID (default: 'default-test')
+  registry?: ScenarioRegistry;         // Custom registry (default: InMemoryScenarioRegistry)
+  store?: ScenarioStore;               // Custom store (default: InMemoryScenarioStore)
 };
 ```
 
 **Returns:**
 ```typescript
-type ExpressScenarist = {
+type ExpressScenarist<T extends ScenariosObject> = {
   config: ScenaristConfig;              // Resolved configuration (endpoints, headers, etc.)
   middleware: Router;                   // Express middleware (includes test ID extraction + scenario endpoints)
-  registerScenario: (def: ScenarioDefinition) => void;
-  registerScenarios: (defs: ReadonlyArray<ScenarioDefinition>) => void;
-  switchScenario: (testId: string, scenarioId: string, variant?: string) => Result<void, Error>;
+  switchScenario: (testId: string, scenarioId: keyof T, variant?: string) => Result<void, Error>;
   getActiveScenario: (testId: string) => ActiveScenario | undefined;
   getScenarioById: (scenarioId: string) => ScenarioDefinition | undefined;
   listScenarios: () => ReadonlyArray<ScenarioDefinition>;
@@ -252,13 +251,19 @@ type ExpressScenarist = {
 
 **Example:**
 ```typescript
+const scenarios = {
+  default: defaultScenario,
+  success: successScenario,
+  error: errorScenario,
+} as const satisfies ScenariosObject;
+
 const scenarist = createScenarist({
   enabled: true,
-  defaultScenario: myDefaultScenario, // Required
+  scenarios,
+  defaultScenarioId: 'default',
   strictMode: false,
 });
 
-scenarist.registerScenario(myScenario); // Additional scenarios
 app.use(scenarist.middleware);
 
 beforeAll(() => scenarist.start());
@@ -529,136 +534,73 @@ You never see MSW code - it's all handled internally.
 
 ### Default Scenario Fallback
 
-If a mock isn't found in the active scenario, Scenarist falls back to the "default" scenario:
+If a mock isn't found in the active scenario, Scenarist falls back to the default scenario specified by `defaultScenarioId`:
 
 ```typescript
-// Register default scenario with common responses
-scenarist.registerScenario({
-  id: 'default',
-  name: 'Default Happy Path',
-  description: 'Base responses for all APIs',
-  mocks: [
-    { method: 'GET', url: '*/api/users', response: { status: 200, body: [] } },
-    { method: 'GET', url: '*/api/orders', response: { status: 200, body: [] } },
-  ],
-});
-
-// Test scenario only overrides specific endpoints
-scenarist.registerScenario({
-  id: 'user-error',
-  name: 'User API Error',
-  mocks: [
-    { method: 'GET', url: '*/api/users', response: { status: 500, body: { error: 'Server error' } } },
-    // Orders endpoint falls back to default scenario
-  ],
-});
-```
-
-## Scenario Registration
-
-### Single Registration
-
-Register scenarios one at a time:
-
-```typescript
-scenarist.registerScenario(successScenario);
-scenarist.registerScenario(errorScenario);
-scenarist.registerScenario(timeoutScenario);
-```
-
-### Batch Registration
-
-Register multiple scenarios at once for cleaner code:
-
-```typescript
-scenarist.registerScenarios([
-  successScenario,
-  errorScenario,
-  timeoutScenario,
-  notFoundScenario,
-]);
-```
-
-**Tip:** Use with the scenarios object pattern for maximum type safety:
-
-```typescript
-// scenarios.ts
-export const scenarios = {
-  success: successScenario,
-  error: errorScenario,
-  timeout: timeoutScenario,
-  notFound: notFoundScenario,
-} as const;
-
-// setup.ts
-import { scenarios } from './scenarios';
-
-scenarist.registerScenarios(Object.values(scenarios));
-```
-
-### Duplicate Protection
-
-Scenarist protects against duplicate scenario IDs to prevent accidental overwrites:
-
-```typescript
-const scenario1 = { id: 'test', name: 'First', /* ... */ };
-const scenario2 = { id: 'test', name: 'Second', /* ... */ };
-
-scenarist.registerScenario(scenario1);
-scenarist.registerScenario(scenario2); // ❌ Throws: Scenario 'test' is already registered
-```
-
-**Idempotent Registration**
-
-Re-registering the **exact same scenario object** is safe (no-op):
-
-```typescript
-scenarist.registerScenario(defaultScenario);
-scenarist.registerScenario(defaultScenario); // ✅ Safe - same object
-
-// This is useful when using Object.values(scenarios):
 const scenarios = {
-  default: defaultScenario,
-  success: successScenario,
-  error: errorScenario,
-} as const;
+  default: {
+    id: 'default',
+    name: 'Default Happy Path',
+    description: 'Base responses for all APIs',
+    mocks: [
+      { method: 'GET', url: '*/api/users', response: { status: 200, body: [] } },
+      { method: 'GET', url: '*/api/orders', response: { status: 200, body: [] } },
+    ],
+  },
+  userError: {
+    id: 'user-error',
+    name: 'User API Error',
+    mocks: [
+      { method: 'GET', url: '*/api/users', response: { status: 500, body: { error: 'Server error' } } },
+      // Orders endpoint falls back to default scenario
+    ],
+  },
+} as const satisfies ScenariosObject;
 
-// Even though default is auto-registered by createScenarist(),
-// this won't throw because it's the same object:
-scenarist.registerScenarios(Object.values(scenarios)); // ✅ Works!
+const scenarist = createScenarist({
+  enabled: true,
+  scenarios,
+  defaultScenarioId: 'default',
+});
 ```
 
-**Why idempotent?** The `defaultScenario` is auto-registered by `createScenarist()`, so if you organize all your scenarios (including default) in a const object and use `Object.values(scenarios)`, it would fail without idempotent behavior. By checking object reference equality, we allow the common pattern while still protecting against accidentally registering different scenarios with the same ID.
+## Type-Safe Scenario IDs
 
-### Type-Safe Scenario Access
-
-Combine batch registration with const objects for full type safety:
+The new API provides full type safety with TypeScript autocomplete for scenario IDs:
 
 ```typescript
-// scenarios.ts - define and export scenarios
+// scenarios.ts - define scenarios with type constraint
+import type { ScenariosObject } from '@scenarist/core';
+
 export const scenarios = {
+  default: defaultScenario,
   success: successScenario,
   githubNotFound: githubNotFoundScenario,
   weatherError: weatherErrorScenario,
   stripeFailure: stripeFailureScenario,
-} as const;
+} as const satisfies ScenariosObject;
 
-// setup.ts - register all scenarios at once
+// setup.ts - create scenarist with type parameter
 import { scenarios } from './scenarios';
 
-scenarist.registerScenarios(Object.values(scenarios));
+export const scenarist = createScenarist({
+  enabled: true,
+  scenarios,
+  defaultScenarioId: 'default', // ✅ Autocomplete + type-checked!
+});
 
-// test.ts - type-safe access with autocomplete
-import { scenarios } from './scenarios';
+// test.ts - type-safe scenario switching
+scenarist.switchScenario('test-123', 'success');      // ✅ Autocomplete works!
+scenarist.switchScenario('test-123', 'invalid-name'); // ❌ TypeScript error!
 
 await request(app)
   .post(scenarist.config.endpoints.setScenario)
   .set(scenarist.config.headers.testId, 'test-123')
-  .send({ scenario: scenarios.success.id }); // ✅ Autocomplete works!
+  .send({ scenario: 'success' }); // ✅ Type-safe!
 ```
 
-This pattern provides:
-- ✅ Autocomplete for scenario IDs
+**Benefits:**
+- ✅ Autocomplete for scenario IDs in your editor
 - ✅ Refactor-safe (rename propagates everywhere)
 - ✅ Compile-time errors for typos
 - ✅ Single source of truth
@@ -728,7 +670,8 @@ Enable scenario switching during development:
 ```typescript
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test',
-  defaultScenario: myDefaultScenario, // Required
+  scenarios,
+  defaultScenarioId: 'default',
   strictMode: false,
 });
 ```
@@ -753,21 +696,24 @@ curl http://localhost:3000/__scenario__
 // Test-only
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
-  defaultScenario: myDefaultScenario, // Required
+  scenarios,
+  defaultScenarioId: 'default',
   strictMode: true, // Fail if any unmocked request
 });
 
 // Development and test
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development',
-  defaultScenario: myDefaultScenario, // Required
+  scenarios,
+  defaultScenarioId: 'default',
   strictMode: false, // Allow passthrough to real APIs
 });
 
 // Opt-in with environment variable
 const scenarist = createScenarist({
   enabled: process.env.ENABLE_MOCKING === 'true',
-  defaultScenario: myDefaultScenario, // Required
+  scenarios,
+  defaultScenarioId: 'default',
   strictMode: false,
 });
 ```
@@ -777,7 +723,8 @@ const scenarist = createScenarist({
 ```typescript
 const scenarist = createScenarist({
   enabled: true,
-  defaultScenario: myDefaultScenario, // Required
+  scenarios,
+  defaultScenarioId: 'default',
   headers: {
     testId: 'x-my-test-id',
     mockEnabled: 'x-my-mock-flag',
@@ -824,12 +771,22 @@ const response = await request(app)
 
 **Problem:** `Scenario not found` when setting scenario.
 
-**Solution:** Ensure you've registered the scenario before using it:
+**Solution:** Ensure the scenario ID exists in your scenarios object:
 
 ```typescript
-scenarist.registerScenario(myScenario);  // Register first
+const scenarios = {
+  default: defaultScenario,
+  myScenario: myScenario,  // ✅ Registered
+} as const satisfies ScenariosObject;
 
-await setScenario('test-1', 'my-scenario');  // Then use
+const scenarist = createScenarist({
+  enabled: true,
+  scenarios,
+  defaultScenarioId: 'default',
+});
+
+await setScenario('test-1', 'myScenario');  // ✅ Works
+await setScenario('test-1', 'unknown');     // ❌ Error: Scenario not found
 ```
 
 ## Advanced Usage
@@ -870,6 +827,7 @@ import type {
   ScenarioDefinition,
   MockDefinition,
   ScenaristConfig,
+  ScenariosObject,
 } from '@scenarist/core';
 ```
 

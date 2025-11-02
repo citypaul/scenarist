@@ -97,6 +97,58 @@ test('authenticated premium user flow', async ({ authenticatedPage, switchScenar
 });
 ```
 
+## Type-Safe Scenario IDs (Optional but Recommended)
+
+Get autocomplete and type checking for scenario names:
+
+### 1. Define Scenarios with Type Export
+
+```typescript
+// lib/scenarios.ts
+import type { ScenarioDefinition, ScenariosObject } from '@scenarist/core';
+
+export const scenarios = {
+  cartWithState: { id: 'cartWithState', name: 'Cart with State', ... },
+  premiumUser: { id: 'premiumUser', name: 'Premium User', ... },
+  standardUser: { id: 'standardUser', name: 'Standard User', ... },
+} as const satisfies ScenariosObject;
+
+// Derive type from actual scenarios (or use ScenarioIds<typeof scenarios>)
+export type ScenarioId = keyof typeof scenarios;
+```
+
+### 2. Create Typed Test Object
+
+```typescript
+// tests/fixtures.ts
+import { createTest, expect } from '@scenarist/playwright-helpers';
+import type { ScenarioId } from '../lib/scenarios';
+
+// Create typed test object with your scenario IDs
+export const test = createTest<ScenarioId>();
+export { expect };
+```
+
+### 3. Use with Full Autocomplete
+
+```typescript
+// tests/my-test.spec.ts
+import { test, expect } from './fixtures';
+
+test('my test', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'cart');          // ❌ TypeScript error: not a valid scenario
+  await switchScenario(page, 'cartWithState'); // ✅ Autocomplete works!
+  //                            ^
+  //                            Autocomplete shows all valid scenario IDs
+});
+```
+
+**Benefits:**
+- ✅ Autocomplete shows all valid scenario names
+- ✅ TypeScript errors for typos or invalid scenarios
+- ✅ Type stays in sync with actual scenarios (single source of truth)
+- ✅ Works seamlessly with fixture composition
+
 ## Advanced: Per-Test Configuration Overrides
 
 Most tests use the global config, but you can override for specific tests:

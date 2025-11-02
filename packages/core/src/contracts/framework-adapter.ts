@@ -4,6 +4,8 @@ import type {
   Result,
   ScenaristConfigInput,
   ScenaristConfig,
+  ScenariosObject,
+  ScenarioIds,
 } from '../types/index.js';
 import type { ScenarioRegistry } from '../ports/driven/scenario-registry.js';
 import type { ScenarioStore } from '../ports/driven/scenario-store.js';
@@ -19,15 +21,18 @@ import type { ScenarioStore } from '../ports/driven/scenario-store.js';
  * @example
  * ```typescript
  * // Express adapter - uses base options directly
- * export type ExpressAdapterOptions = BaseAdapterOptions;
+ * export type ExpressAdapterOptions<T extends ScenariosObject = ScenariosObject> =
+ *   BaseAdapterOptions<T>;
  *
  * // Fastify adapter - adds framework-specific options
- * export type FastifyAdapterOptions = BaseAdapterOptions & {
- *   readonly logLevel?: 'debug' | 'info' | 'warn' | 'error';
- * };
+ * export type FastifyAdapterOptions<T extends ScenariosObject = ScenariosObject> =
+ *   BaseAdapterOptions<T> & {
+ *     readonly logLevel?: 'debug' | 'info' | 'warn' | 'error';
+ *   };
  * ```
  */
-export type BaseAdapterOptions = ScenaristConfigInput & {
+export type BaseAdapterOptions<T extends ScenariosObject = ScenariosObject> =
+  ScenaristConfigInput<T> & {
   /**
    * Custom scenario registry implementation.
    *
@@ -52,8 +57,12 @@ export type BaseAdapterOptions = ScenaristConfigInput & {
  *   - Express: Router
  *   - Fastify: FastifyPluginCallback
  *   - Next.js: NextMiddleware
+ * @template TScenarios - Scenarios object for type-safe scenario IDs
  */
-export type ScenaristAdapter<TMiddleware = unknown> = {
+export type ScenaristAdapter<
+  TMiddleware = unknown,
+  TScenarios extends ScenariosObject = ScenariosObject
+> = {
   /**
    * Resolved configuration.
    *
@@ -64,7 +73,7 @@ export type ScenaristAdapter<TMiddleware = unknown> = {
    * await request(app)
    *   .post(scenarist.config.endpoints.setScenario)
    *   .set(scenarist.config.headers.testId, 'test-123')
-   *   .send({ scenario: scenarios.success.id });
+   *   .send({ scenario: 'cartWithState' });
    * ```
    */
   readonly config: ScenaristConfig;
@@ -79,34 +88,19 @@ export type ScenaristAdapter<TMiddleware = unknown> = {
   readonly middleware: TMiddleware;
 
   /**
-   * Register a scenario definition.
-   */
-  readonly registerScenario: (definition: ScenarioDefinition) => void;
-
-  /**
-   * Register multiple scenario definitions at once.
+   * Switch active scenario for a test ID.
    *
-   * This is a convenience method for batch registration.
+   * Scenario IDs are type-safe based on the scenarios object passed during creation.
    *
    * @example
    * ```typescript
-   * scenarist.registerScenarios([
-   *   successScenario,
-   *   errorScenario,
-   *   slowNetworkScenario,
-   * ]);
+   * const result = scenarist.switchScenario('test-123', 'cartWithState');
+   * // TypeScript ensures 'cartWithState' is a valid scenario ID
    * ```
-   */
-  readonly registerScenarios: (
-    definitions: ReadonlyArray<ScenarioDefinition>
-  ) => void;
-
-  /**
-   * Switch active scenario for a test ID.
    */
   readonly switchScenario: (
     testId: string,
-    scenarioId: string,
+    scenarioId: ScenarioIds<TScenarios>,
     variantName?: string
   ) => Result<void, Error>;
 
@@ -117,9 +111,11 @@ export type ScenaristAdapter<TMiddleware = unknown> = {
 
   /**
    * Get a scenario definition by ID.
+   *
+   * Scenario IDs are type-safe based on the scenarios object.
    */
   readonly getScenarioById: (
-    scenarioId: string
+    scenarioId: ScenarioIds<TScenarios>
   ) => ScenarioDefinition | undefined;
 
   /**

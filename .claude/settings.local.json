@@ -57,7 +57,9 @@
       "Bash(pnpm turbo build:*)",
       "Bash(pnpm --filter=@scenarist/playwright-helpers build:*)",
       "Bash(pnpm --filter=@scenarist/playwright-helpers test:*)",
-      "Bash(pnpm --filter=@scenarist/nextjs-pages-example exec playwright test:*)"
+      "Bash(pnpm --filter=@scenarist/nextjs-pages-example exec playwright test:*)",
+      "Bash(pnpm --filter=@scenarist/express-example typecheck:*)",
+      "Bash(pnpm --filter=@scenarist/core test:*)"
     ],
     "deny": [],
     "ask": []

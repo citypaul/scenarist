@@ -8,9 +8,23 @@
  * Value: Tests fixture layer behavior in isolation (config reading, DI, etc.)
  */
 
-import { test as scenaristTest, expect } from '../src/fixtures.js';
+import { withScenarios, expect } from '../src/fixtures.js';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
+import type { ScenariosObject } from '@scenarist/core';
+
+// Define test scenarios for fixture tests
+const testScenarios = {
+  testScenario: {
+    id: 'testScenario',
+    name: 'Test Scenario',
+    description: 'Scenario for fixture tests',
+    mocks: [],
+  },
+} as const satisfies ScenariosObject;
+
+// Create test object with scenarios
+const scenaristTest = withScenarios(testScenarios);
 
 const BASE_URL = 'http://localhost:9877'; // Different port from switch-scenario tests
 

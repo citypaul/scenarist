@@ -241,11 +241,21 @@ yarn add -D @scenarist/nextjs-adapter @scenarist/core msw
 
 **Goal:** Switch between success and error scenarios in your tests.
 
-### 1. Define One Scenario
+### 1. Define Scenarios
 
 ```typescript
 // lib/scenarios.ts
-import type { ScenarioDefinition } from '@scenarist/core';
+import type { ScenarioDefinition, ScenariosObject } from '@scenarist/core';
+
+export const defaultScenario: ScenarioDefinition = {
+  id: 'default',
+  name: 'Default',
+  mocks: [{
+    method: 'GET',
+    url: 'https://api.example.com/user',
+    response: { status: 200, body: { name: 'Default User', role: 'user' } }
+  }]
+};
 
 export const successScenario: ScenarioDefinition = {
   id: 'success',
@@ -256,6 +266,11 @@ export const successScenario: ScenarioDefinition = {
     response: { status: 200, body: { name: 'Alice', role: 'user' } }
   }]
 };
+
+export const scenarios = {
+  default: defaultScenario,
+  success: successScenario,
+} as const satisfies ScenariosObject;
 ```
 
 ### 2. Create Scenarist Instance
@@ -263,11 +278,12 @@ export const successScenario: ScenarioDefinition = {
 ```typescript
 // lib/scenarist.ts
 import { createScenarist } from '@scenarist/nextjs-adapter/pages'; // or /app
-import { successScenario } from './scenarios';
+import { scenarios } from './scenarios';
 
 export const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
-  defaultScenario: successScenario, // Fallback for unmocked requests
+  scenarios,                    // All scenarios registered upfront
+  defaultScenarioId: 'default', // ID of default scenario for fallback
 });
 ```
 
@@ -396,18 +412,14 @@ export const adminUserScenario: ScenarioDefinition = {
 ```typescript
 // lib/scenarist.ts
 import { createScenarist } from '@scenarist/nextjs-adapter/pages';
-import { defaultScenario, adminUserScenario } from './scenarios';
+import { scenarios } from './scenarios';
 
 export const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
-  // REQUIRED: Fallback when no mock matches a request
-  // This scenario is also auto-registered, no need to call registerScenario() for it
-  defaultScenario: defaultScenario,
-  strictMode: false, // Allow unmocked requests to pass through to real APIs
+  scenarios,                    // All scenarios registered upfront
+  defaultScenarioId: 'default', // ID of default scenario for fallback
+  strictMode: false,            // Allow unmocked requests to pass through to real APIs
 });
-
-// Register additional scenarios (default is auto-registered)
-scenarist.registerScenario(adminUserScenario);
 ```
 
 ### 3. Create Scenario Endpoint
@@ -467,18 +479,14 @@ Same as Pages Router - see [Define Scenarios](#1-define-scenarios) above.
 ```typescript
 // lib/scenarist.ts
 import { createScenarist } from '@scenarist/nextjs-adapter/app';
-import { defaultScenario, adminUserScenario } from './scenarios';
+import { scenarios } from './scenarios';
 
 export const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
-  // REQUIRED: Fallback when no mock matches a request
-  // This scenario is also auto-registered, no need to call registerScenario() for it
-  defaultScenario: defaultScenario,
-  strictMode: false, // Allow unmocked requests to pass through to real APIs
+  scenarios,                    // All scenarios registered upfront
+  defaultScenarioId: 'default', // ID of default scenario for fallback
+  strictMode: false,            // Allow unmocked requests to pass through to real APIs
 });
-
-// Register additional scenarios (default is auto-registered)
-scenarist.registerScenario(adminUserScenario);
 ```
 
 ### 3. Create Scenario Route Handlers
@@ -518,30 +526,31 @@ import { createScenarist } from '@scenarist/nextjs-adapter/app';
 
 **Parameters:**
 ```typescript
-type AdapterOptions = {
+type AdapterOptions<T extends ScenariosObject> = {
   enabled: boolean;                    // Whether mocking is enabled
+  scenarios: T;                        // REQUIRED - scenarios object (all scenarios registered upfront)
+  defaultScenarioId: keyof T;          // REQUIRED - ID of default scenario for fallback
   strictMode?: boolean;                 // Return 501 for unmocked requests (default: false)
   headers?: {
     testId?: string;                    // Header for test ID (default: 'x-test-id')
     mockEnabled?: string;               // Header to enable/disable mocking (default: 'x-mock-enabled')
   };
-  defaultScenario: ScenarioDefinition;  // REQUIRED - fallback scenario (auto-registered)
   defaultTestId?: string;               // Default test ID (default: 'default-test')
   registry?: ScenarioRegistry;          // Custom registry (default: InMemoryScenarioRegistry)
   store?: ScenarioStore;                // Custom store (default: InMemoryScenarioStore)
+  stateManager?: StateManager;          // Custom state manager (default: InMemoryStateManager)
+  sequenceTracker?: SequenceTracker;    // Custom sequence tracker (default: InMemorySequenceTracker)
 };
 ```
 
 **Returns:**
 ```typescript
-type Scenarist = {
+type Scenarist<T extends ScenariosObject> = {
   config: ScenaristConfig;              // Resolved configuration (headers, etc.)
   createScenarioEndpoint: () => Handler; // Creates scenario endpoint handler
-  registerScenario: (def: ScenarioDefinition) => void;
-  registerScenarios: (defs: ReadonlyArray<ScenarioDefinition>) => void;
-  switchScenario: (testId: string, scenarioId: string, variant?: string) => Result<void, Error>;
+  switchScenario: (testId: string, scenarioId: ScenarioIds<T>, variant?: string) => Result<void, Error>;
   getActiveScenario: (testId: string) => ActiveScenario | undefined;
-  getScenarioById: (scenarioId: string) => ScenarioDefinition | undefined;
+  getScenarioById: (scenarioId: ScenarioIds<T>) => ScenarioDefinition | undefined;
   listScenarios: () => ReadonlyArray<ScenarioDefinition>;
   clearScenario: (testId: string) => void;
   start: () => void;                    // Start MSW server
@@ -760,76 +769,76 @@ const errorScenario = {
 
 **Learn more:** [Fallback Behavior in Core Docs](../../docs/core-functionality.md#fallback-behavior)
 
-## Scenario Registration
+## Type-Safe Scenario IDs
 
-### Single Registration
+TypeScript automatically infers scenario names from your scenarios object, providing autocomplete and compile-time safety.
 
-Register scenarios one at a time:
-
-```typescript
-scenarist.registerScenario(successScenario);
-scenarist.registerScenario(errorScenario);
-scenarist.registerScenario(timeoutScenario);
-```
-
-### Batch Registration
-
-Register multiple scenarios at once for cleaner code:
+### How It Works
 
 ```typescript
-scenarist.registerScenarios([
-  successScenario,
-  errorScenario,
-  timeoutScenario,
-  notFoundScenario,
-]);
-```
+// lib/scenarios.ts
+import type { ScenarioDefinition, ScenariosObject } from '@scenarist/core';
 
-**Tip:** Use with the scenarios object pattern for maximum type safety:
-
-```typescript
-// scenarios.ts
 export const scenarios = {
-  default: defaultScenario,
-  success: successScenario,
-  error: errorScenario,
-  timeout: timeoutScenario,
-} as const;
+  default: { id: 'default', name: 'Default', mocks: [] },
+  success: { id: 'success', name: 'Success', mocks: [] },
+  error: { id: 'error', name: 'Error', mocks: [] },
+  timeout: { id: 'timeout', name: 'Timeout', mocks: [] },
+} as const satisfies ScenariosObject;
 
-// scenarist.ts
+// lib/scenarist.ts
+import { createScenarist } from '@scenarist/nextjs-adapter/pages';
 import { scenarios } from './scenarios';
 
-scenarist.registerScenarios(Object.values(scenarios));
-```
-
-### Type-Safe Scenario Access
-
-Combine batch registration with const objects for full type safety:
-
-```typescript
-// scenarios.ts - define and export scenarios
-export const scenarios = {
-  success: successScenario,
-  githubNotFound: githubNotFoundScenario,
-  weatherError: weatherErrorScenario,
-  stripeFailure: stripeFailureScenario,
-} as const;
-
-// tests.ts - type-safe access with autocomplete
-import { scenarios } from './scenarios';
-
-await fetch('http://localhost:3000/__scenario__', {
-  method: 'POST',
-  headers: { 'x-test-id': 'test-1', 'content-type': 'application/json' },
-  body: JSON.stringify({ scenario: scenarios.success.id }), // ✅ Autocomplete works!
+export const scenarist = createScenarist({
+  enabled: true,
+  scenarios,
+  defaultScenarioId: 'default', // ✅ Autocomplete + type-checked!
 });
 ```
 
-This pattern provides:
-- ✅ Autocomplete for scenario IDs
-- ✅ Refactor-safe (rename propagates everywhere)
-- ✅ Compile-time errors for typos
-- ✅ Single source of truth
+### Type Safety Benefits
+
+```typescript
+// ✅ Valid - TypeScript knows about these scenario IDs
+scenarist.switchScenario('test-123', 'success');
+scenarist.switchScenario('test-123', 'error');
+scenarist.switchScenario('test-123', 'timeout');
+
+// ❌ TypeScript error - 'invalid-name' is not a valid scenario ID
+scenarist.switchScenario('test-123', 'invalid-name');
+//                                    ^^^^^^^^^^^^^^
+// Argument of type '"invalid-name"' is not assignable to parameter of type
+// '"default" | "success" | "error" | "timeout"'
+```
+
+### In Tests
+
+```typescript
+// tests.ts
+import { scenarios } from './scenarios';
+
+// ✅ Type-safe scenario switching
+await fetch('http://localhost:3000/__scenario__', {
+  method: 'POST',
+  headers: { 'x-test-id': 'test-1', 'content-type': 'application/json' },
+  body: JSON.stringify({ scenario: 'success' }), // ✅ Autocomplete works!
+});
+
+// Or reference by object key for refactor-safety
+await fetch('http://localhost:3000/__scenario__', {
+  method: 'POST',
+  headers: { 'x-test-id': 'test-1', 'content-type': 'application/json' },
+  body: JSON.stringify({ scenario: scenarios.success.id }), // ✅ Even safer!
+});
+```
+
+**What you get:**
+- ✅ IDE autocomplete for all scenario names
+- ✅ Compile-time errors for typos (catch bugs before runtime)
+- ✅ Refactor-safe (rename scenarios and all usages update)
+- ✅ Self-documenting code (see all available scenarios in one place)
+- ✅ Single source of truth (scenarios object defines everything)
 
 ## Common Patterns
 
@@ -918,14 +927,16 @@ describe('API Tests', () => {
 // ✅ CORRECT - Only enabled in safe environments
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test',
-  defaultScenario: myDefaultScenario,
+  scenarios,
+  defaultScenarioId: 'default',
   strictMode: false,
 });
 
 // ❌ WRONG - Dangerous in production
 const scenarist = createScenarist({
   enabled: true, // Always on, including production!
-  defaultScenario: myDefaultScenario,
+  scenarios,
+  defaultScenarioId: 'default',
 });
 ```
 
@@ -954,21 +965,24 @@ curl http://localhost:3000/__scenario__
 // Test-only
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
-  defaultScenario: myDefaultScenario,
+  scenarios,
+  defaultScenarioId: 'default',
   strictMode: true, // Fail if any unmocked request
 });
 
 // Development and test
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development',
-  defaultScenario: myDefaultScenario,
+  scenarios,
+  defaultScenarioId: 'default',
   strictMode: false, // Allow passthrough to real APIs
 });
 
 // Opt-in with environment variable
 const scenarist = createScenarist({
   enabled: process.env.ENABLE_MOCKING === 'true',
-  defaultScenario: myDefaultScenario,
+  scenarios,
+  defaultScenarioId: 'default',
   strictMode: false,
 });
 ```
@@ -993,16 +1007,26 @@ Controls behavior when no mock matches a request.
 
 ```typescript
 // Development: Only mock failing endpoints, let others pass through
+const minimalScenarios = {
+  default: minimalScenario, // Only critical mocks
+} as const satisfies ScenariosObject;
+
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'development',
-  defaultScenario: minimalScenario, // Only critical mocks
+  scenarios: minimalScenarios,
+  defaultScenarioId: 'default',
   strictMode: false, // Let unmocked APIs pass through to real services
 });
 
 // Testing: Ensure complete isolation
+const testScenarios = {
+  default: completeScenario, // Mock all endpoints
+} as const satisfies ScenariosObject;
+
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
-  defaultScenario: completeScenario, // Mock all endpoints
+  scenarios: testScenarios,
+  defaultScenarioId: 'default',
   strictMode: true, // Fail loudly if any endpoint isn't mocked
 });
 ```
@@ -1022,7 +1046,8 @@ const scenarist = createScenarist({
 ```typescript
 const scenarist = createScenarist({
   enabled: true,
-  defaultScenario: myDefaultScenario,
+  scenarios,
+  defaultScenarioId: 'default',
   headers: {
     testId: 'x-my-test-id',
     mockEnabled: 'x-my-mock-flag',
@@ -1065,12 +1090,24 @@ const response = await fetch('http://localhost:3000/api/data', {
 
 **Problem:** `Scenario not found` when setting scenario.
 
-**Solution:** Ensure you've registered the scenario before using it:
+**Solution:** Ensure the scenario is included in your scenarios object:
 
 ```typescript
-scenarist.registerScenario(myScenario);  // Register first
+// lib/scenarios.ts
+export const scenarios = {
+  default: defaultScenario,
+  'my-scenario': myScenario,  // ✅ Include in scenarios object
+} as const satisfies ScenariosObject;
 
-await setScenario('test-1', 'my-scenario');  // Then use
+// lib/scenarist.ts
+const scenarist = createScenarist({
+  enabled: true,
+  scenarios,  // All scenarios registered automatically
+  defaultScenarioId: 'default',
+});
+
+// tests
+await setScenario('test-1', 'my-scenario');  // ✅ Now works
 ```
 
 ### TypeScript errors with Next.js types
