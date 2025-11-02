@@ -449,6 +449,20 @@ All packages use **TypeScript strict mode** with these non-negotiable settings:
 
 **Example**: Validation code in `payment-validator.ts` gets 100% coverage by testing `processPayment()` behavior, not by directly testing validator functions.
 
+**Testing strategy**:
+- **Four-layer approach**: See [ADR-0003: Testing Strategy](docs/adrs/0003-testing-strategy.md)
+- **Layer 2 (Adapter tests)**: **DEFAULT = mock external dependencies**
+  - Most adapters mock framework Request/Response objects (Express, Next.js, etc.)
+  - Fast, focused tests for translation logic only
+  - See ADR-0003 for rationale and detailed examples
+- **Thin adapter exception**: [ADR-0006](docs/adrs/0006-thin-adapters-real-integration-tests.md) documents when to use real dependencies
+  - **Only for adapters ≤50 lines meeting 5 other strict criteria**
+  - **Current rate: 1/4 adapters (25%) - target ≤10%**
+  - **When in doubt, use mocks** (general rule applies to 90%+ of adapters)
+  - Exception is narrow and rare - requires ALL 6 criteria
+
+**When creating new adapters**: Default to mocking. Only check ADR-0006 if adapter is genuinely trivial (≤50 lines, direct API wrapper).
+
 ### Test Data Patterns
 
 Use factory functions with optional overrides:

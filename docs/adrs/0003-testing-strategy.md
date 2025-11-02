@@ -171,6 +171,15 @@ describe('Express Adapter - Request Translation', () => {
 - ❌ State management (core's responsibility)
 - ❌ Business rules (core's responsibility)
 
+**Important Exception:**
+For extremely thin adapters (≤50 lines, minimal logic), real dependencies MAY be used instead of mocks. See [ADR-0006: When Thin Adapters Can Use Real Integration Tests](./0006-thin-adapters-real-integration-tests.md) for decision criteria.
+
+**This exception is rare** (target ≤10% of adapters). Most adapters should follow the mocking guideline above.
+
+**Examples:**
+- **General rule (mocks)**: Express, Next.js adapters - complex translation logic (90%+ of adapters)
+- **Exception (real deps)**: Playwright helpers - thin wrapper, 40 lines, stable API
+
 ---
 
 #### Layer 3: Integration Tests (`apps/express-example/tests/`)

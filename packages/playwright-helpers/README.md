@@ -145,6 +145,21 @@ await switchScenario(page, 'premium', { baseURL });
 - 📋 Comprehensive edge case coverage (13 test scenarios)
 - 🔒 Tests prove helper works with real Playwright API
 
+### Testing Strategy: Real Playwright Integration (Exception to Layer 2 Rule)
+
+This package uses **real Playwright integration** in tests, which is an **exception** to the general adapter testing rule (ADR-0003 Layer 2 prescribes mocking external dependencies).
+
+**⚠️ This is NOT the standard approach.** Most adapters (Express, Next.js, etc.) should mock external dependencies for fast, focused tests.
+
+**Why this package qualifies for exception** (per [ADR-0006](../../docs/adrs/0006-thin-adapters-real-integration-tests.md)):
+- ✅ Extremely thin (~40 lines)
+- ✅ Direct API wrappers only (no transformation)
+- ✅ Stable API (Playwright)
+- ✅ Fast tests (1.7s)
+- ✅ Real integration provides significantly higher confidence
+
+See [ADR-0006](../../docs/adrs/0006-thin-adapters-real-integration-tests.md) for full decision criteria and when to use real dependencies vs. mocks.
+
 This package uses a **two-layer testing approach**:
 
 ### Layer 1: Playwright Integration Tests (This Package)
