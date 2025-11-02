@@ -20,14 +20,17 @@ The **fixtures API** is the recommended way to use Scenarist with Playwright. It
 
 ```typescript
 import { defineConfig } from '@playwright/test';
+import type { ScenaristOptions } from '@scenarist/playwright-helpers';
 
-export default defineConfig({
+export default defineConfig<ScenaristOptions>({
   use: {
     baseURL: 'http://localhost:3000',      // Standard Playwright config
     scenaristEndpoint: '/api/__scenario__', // Scenarist-specific config
   },
 });
 ```
+
+**Note:** The `<ScenaristOptions>` type parameter enables TypeScript to recognize `scenaristEndpoint` as a valid configuration option.
 
 ### 2. Use in Tests
 

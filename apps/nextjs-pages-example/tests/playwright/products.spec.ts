@@ -1,5 +1,4 @@
-import { test, expect } from '@playwright/test';
-import { switchScenario } from '@scenarist/playwright-helpers';
+import { test, expect } from '@scenarist/playwright-helpers';
 
 /**
  * Products Page - Request Matching with Scenarist
@@ -23,15 +22,13 @@ import { switchScenario } from '@scenarist/playwright-helpers';
  * - Semantic selectors (getByRole, getByText)
  * - Auto-waiting instead of arbitrary timeouts
  * - Accessible markup testing
+ * - Fixture API for clean configuration (no repeated baseURL/endpoint)
  */
 
 test.describe('Products Page - Request Matching (with Scenarist)', () => {
-  test('premium user sees premium pricing', async ({ page }) => {
-    // Switch to premium user scenario
-    await switchScenario(page, 'premiumUser', {
-      baseURL: 'http://localhost:3000',
-      endpoint: '/api/__scenario__',
-    });
+  test('premium user sees premium pricing', async ({ page, switchScenario }) => {
+    // Switch to premium user scenario (baseURL and endpoint from config)
+    await switchScenario(page, 'premiumUser');
 
     // Navigate to products page
     await page.goto('/');
@@ -44,12 +41,9 @@ test.describe('Products Page - Request Matching (with Scenarist)', () => {
     await expect(firstProduct.getByText('£99.99')).toBeVisible();
   });
 
-  test('standard user sees standard pricing', async ({ page }) => {
-    // Switch to standard user scenario
-    await switchScenario(page, 'standardUser', {
-      baseURL: 'http://localhost:3000',
-      endpoint: '/api/__scenario__',
-    });
+  test('standard user sees standard pricing', async ({ page, switchScenario }) => {
+    // Switch to standard user scenario (baseURL and endpoint from config)
+    await switchScenario(page, 'standardUser');
 
     // Navigate to products page
     await page.goto('/');

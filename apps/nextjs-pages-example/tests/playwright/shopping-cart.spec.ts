@@ -17,10 +17,7 @@ import { test, expect } from '@scenarist/playwright-helpers';
 
 test.describe('Shopping Cart - Stateful Mocks', () => {
   test('add product to cart shows item count', async ({ page, switchScenario }) => {
-    await switchScenario(page, 'cartWithState', {
-      baseURL: 'http://localhost:3000',
-      endpoint: '/api/__scenario__',
-    });
+    await switchScenario(page, 'cartWithState');
 
     // Start on products page
     await page.goto('/');
@@ -41,10 +38,7 @@ test.describe('Shopping Cart - Stateful Mocks', () => {
   });
 
   test('add multiple products accumulates cart', async ({ page, switchScenario }) => {
-    await switchScenario(page, 'cartWithState', {
-      baseURL: 'http://localhost:3000',
-      endpoint: '/api/__scenario__',
-    });
+    await switchScenario(page, 'cartWithState');
 
     await page.goto('/');
 
@@ -62,10 +56,7 @@ test.describe('Shopping Cart - Stateful Mocks', () => {
   });
 
   test('cart displays correct products and quantities', async ({ page, switchScenario }) => {
-    await switchScenario(page, 'cartWithState', {
-      baseURL: 'http://localhost:3000',
-      endpoint: '/api/__scenario__',
-    });
+    await switchScenario(page, 'cartWithState');
 
     await page.goto('/');
 
@@ -94,10 +85,7 @@ test.describe('Shopping Cart - Stateful Mocks', () => {
   });
 
   test('cart persists across page navigation', async ({ page, switchScenario }) => {
-    await switchScenario(page, 'cartWithState', {
-      baseURL: 'http://localhost:3000',
-      endpoint: '/api/__scenario__',
-    });
+    await switchScenario(page, 'cartWithState');
 
     await page.goto('/');
 
