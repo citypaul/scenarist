@@ -11,7 +11,8 @@
 
 import type { NextApiRequest, NextApiResponse} from 'next';
 import type { ProductsResponse } from '../../types/product';
-import '../../lib/scenarist'; // Initialize Scenarist MSW server
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
+import { scenarist } from '../../lib/scenarist';
 
 export default async function handler(
   req: NextApiRequest,
@@ -23,17 +24,15 @@ export default async function handler(
   }
 
   try {
-    // Extract headers for forwarding to external API
-    // Scenarist needs x-test-id to isolate scenarios per test
-    const testId = (req.headers['x-test-id'] as string) || 'default-test';
+    // Get user tier from request header (app-specific, not Scenarist infrastructure)
     const userTier = (req.headers['x-user-tier'] as string) || 'standard';
 
     // Fetch from json-server (external API)
     // Scenarist MSW will intercept this request and return mocked data based on scenario
     const response = await fetch('http://localhost:3001/products', {
       headers: {
-        'x-test-id': testId,
-        'x-user-tier': userTier,
+        ...getScenaristHeaders(req, scenarist),  // ✅ Scenarist infrastructure headers (x-test-id)
+        'x-user-tier': userTier,                  // ✅ Application-specific header
       },
     });
 
