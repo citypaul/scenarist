@@ -1,10 +1,34 @@
 # Next.js Pages Router + Playwright Helpers - Living Implementation Plan
 
-**Status**: ✅ Phase -1 Complete & Merged, Ready for Phase 0
+**Status**: ⚠️ Feature Parity Gap Identified - Missing Phase 2 Core Feature (Sequences)
 **Started**: 2025-11-01
-**Last Updated**: 2025-11-01
+**Last Updated**: 2025-11-02
 **PR**: [#39](https://github.com/citypaul/scenarist/pull/39) (planning), [#40](https://github.com/citypaul/scenarist/pull/40) (Phase -1 implementation - MERGED)
 **Related**: [next-stages.md](./next-stages.md) (Overall v1.0 roadmap)
+
+---
+
+## 🎯 Feature Parity Requirement (Critical)
+
+**User Requirement:**
+> "I don't consider the library ready for use until every core domain feature has been demonstrated in next.js and express directly. This is the confirmation we need to prove that everything is properly working."
+
+**Purpose:** Feature demonstrations validate that our hexagonal architecture truly works across frameworks. This is validation, not documentation.
+
+### Feature Parity Status
+
+| Core Feature (@scenarist/core) | Express Example | Next.js Example | Status |
+|-------------------------------|-----------------|-----------------|--------|
+| **Phase 1: Request Matching** | ✅ `dynamic-matching.test.ts` | ✅ `products.spec.ts` | ✅ PARITY |
+| **Phase 2: Sequences** | ✅ `dynamic-sequences.test.ts` | ❌ **MISSING** | ❌ **GAP** |
+| **Phase 3: Stateful Mocks** | ✅ `stateful-scenarios.test.ts` | ✅ `shopping-cart.spec.ts` | ✅ PARITY |
+
+**The Gap:**
+- Express demonstrates all 3 core features (matching, sequences, stateful)
+- Next.js demonstrates only 2 core features (matching, stateful)
+- **Missing:** Sequence demonstrations (polling scenarios with repeat modes)
+
+**Next Priority:** Add Phase 2 sequence demonstrations to achieve feature parity
 
 ---
 
@@ -33,13 +57,14 @@
 
 ### What We're Working On
 
-**Phase 2: Products Page - Request Matching ⏳ STARTING NOW**
+**Gap Closure: Adding Phase 2 Core Feature (Sequences) to Next.js**
 
-Implementing product listing with tier-based pricing (premium vs standard) to demonstrate Scenarist's request matching feature.
+Need to add sequence demonstrations (polling scenarios) to achieve feature parity with Express example.
 
-### Progress
+### Actual Implementation Progress
 
 **Phase -1: Next.js Adapter** - ✅ COMPLETE & MERGED (PR #40)
+
 **Phase 0: Infrastructure Setup** - ✅ COMPLETE & MERGED (PR #41)
 - [x] Next.js app scaffolding
 - [x] Playwright configuration
@@ -49,48 +74,62 @@ Implementing product listing with tier-based pricing (premium vs standard) to de
 - [x] Smoke tests passing
 - [x] README documentation
 
-**Phase 1: Scenarist Integration + First Helper** - ✅ COMPLETE (3 commits)
-- [x] Write verbose Playwright test (RED) - Commit ad73eae
-- [x] Implement Scenarist setup in Next.js app (GREEN) - Commit 2c2afe1
-- [x] Extract `switchScenario` helper (GREEN) - Commit c12c039
+**Phase 1: Scenarist Integration + First Helper** - ✅ COMPLETE & MERGED
+- [x] Write verbose Playwright test (RED)
+- [x] Implement Scenarist setup in Next.js app (GREEN)
+- [x] Extract `switchScenario` helper (GREEN)
 - [x] Both tests passing (manual + helper versions)
 - [x] 77% code reduction demonstrated (9 lines → 2 lines)
-
-**Phase 1 Post: Playwright Testing** - ✅ COMPLETE (5 commits)
 - [x] 13 Playwright integration tests (1.7s execution)
 - [x] Two-layer testing strategy documented
 - [x] 100% behavior coverage through public API
-- [x] Framework-agnostic testing proven
 
-**Phase 2: Products Page - Request Matching** - ⏳ STARTING (0 commits)
-- [ ] RED: Write Playwright tests for premium/standard pricing (both main and baseline)
-- [ ] GREEN: Implement products page and API route
-- [ ] GREEN: Create ProductCard and TierSelector components
-- [ ] GREEN: Setup json-server and create db.json
-- [ ] GREEN: Update scenarios with match criteria
-- [ ] REFACTOR: Clean up and optimize
+**Phase 2: Products Page - Request Matching (Phase 1 Core Feature)** - ✅ COMPLETE
+- [x] Products page with tier-based pricing (premium vs standard)
+- [x] Playwright tests: `products.spec.ts` and `products.baseline.spec.ts`
+- [x] Demonstrates request matching with specificity-based selection
+- [x] json-server integration for comparison testing
 
-### Blockers
+**Phase 3: Shopping Cart - Stateful Mocks (Phase 3 Core Feature)** - ✅ COMPLETE
+- [x] Shopping cart with state capture and injection
+- [x] Playwright tests: `shopping-cart.spec.ts`
+- [x] Demonstrates state persistence across requests
+- [x] Template injection with `{{state.items.length}}`
 
-None
+**Phase 2 Core Feature: Sequences** - ❌ MISSING (PRIORITY)
+- [ ] Port sequence scenarios from Express example (githubPolling, weatherCycle, paymentLimited)
+- [ ] Create polling UI pages and API routes
+- [ ] Write Playwright tests demonstrating sequence progression
+- [ ] Verify repeat modes work correctly (last/cycle/none)
+- [ ] Verify idempotency (sequences reset on scenario switch)
 
 ### Next Steps
 
-1. **Phase 2a (RED)**: Write failing Playwright tests
-   - Create `tests/playwright/products.spec.ts` (main tests - Scenarist enabled)
-   - Create `tests/playwright/products.baseline.spec.ts` (baseline tests - Scenarist disabled)
-   - Test premium user sees £99.99 pricing
-   - Test standard user sees £149.99 pricing
-2. **Phase 2b (GREEN)**: Implement products feature
-   - Setup json-server: Create `fake-api/db.json` with product data
-   - Add `fake-api` script to package.json
-   - Create `pages/api/products.ts` API route (calls localhost:3001)
-   - Create `pages/index.tsx` product listing page
-   - Create `components/ProductCard.tsx` component
-   - Create `components/TierSelector.tsx` component
-   - Update `lib/scenarios.ts` with matching scenarios
-3. **Phase 2c (REFACTOR)**: Clean up and optimize
-4. **Phase 2d**: Create PR and merge to main
+1. **Add scenarios** to `src/scenarios.ts`:
+   - Port `githubPollingScenario` (repeat: last)
+   - Port `weatherCycleScenario` (repeat: cycle)
+   - Port `paymentLimitedScenario` (repeat: none)
+
+2. **Create UI pages** in `src/pages/`:
+   - `/polling` - GitHub job status page with "Check Status" button
+   - `/weather` - Weather page with "Refresh Weather" button (optional - can combine)
+   - `/payments` - Payment page with "Submit Payment" button (optional - can combine)
+
+3. **Create API routes** in `src/pages/api/`:
+   - `GET /api/github/user/[username]` - Job status endpoint
+   - `GET /api/weather/current` - Weather endpoint
+   - `POST /api/payments` - Payment endpoint
+
+4. **Write Playwright tests** in `tests/playwright/`:
+   - Create `polling.spec.ts` with all three sequence scenarios
+   - Test sequence progression (pending → processing → complete)
+   - Test repeat modes (last/cycle/none)
+   - Test idempotency (reset on scenario switch)
+
+5. **Verify feature parity achieved**:
+   - All tests passing
+   - Update feature parity table to mark Phase 2 as ✅
+   - Update CLAUDE.md with completion status
 
 ---
 
