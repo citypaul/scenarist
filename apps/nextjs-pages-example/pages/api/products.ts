@@ -11,6 +11,7 @@
 
 import type { NextApiRequest, NextApiResponse} from 'next';
 import type { ProductsResponse } from '../../types/product';
+import '../../lib/scenarist'; // Initialize Scenarist MSW server
 
 export default async function handler(
   req: NextApiRequest,
