@@ -18,6 +18,11 @@ import { switchScenario } from '@scenarist/playwright-helpers';
  * - Flexible (test any scenario via request matching)
  * - Reliable (no external dependency timing issues)
  * - Comprehensive (premium/standard/error scenarios)
+ *
+ * Uses Playwright best practices:
+ * - Semantic selectors (getByRole, getByText)
+ * - Auto-waiting instead of arbitrary timeouts
+ * - Accessible markup testing
  */
 
 test.describe('Products Page - Request Matching (with Scenarist)', () => {
@@ -32,14 +37,11 @@ test.describe('Products Page - Request Matching (with Scenarist)', () => {
     await page.goto('/');
 
     // Click premium tier button to switch pricing
-    await page.locator('[data-testid="tier-premium"]').click();
-
-    // Wait for products to reload
-    await page.waitForTimeout(500);
+    await page.getByRole('button', { name: 'Select premium tier' }).click();
 
     // Verify premium pricing is displayed (£99.99 for first product)
-    const firstProduct = page.locator('[data-testid="product-card"]').first();
-    await expect(firstProduct.locator('[data-testid="product-price"]')).toContainText('£99.99');
+    const firstProduct = page.getByRole('article').first();
+    await expect(firstProduct.getByText('£99.99')).toBeVisible();
   });
 
   test('standard user sees standard pricing', async ({ page }) => {
@@ -53,7 +55,7 @@ test.describe('Products Page - Request Matching (with Scenarist)', () => {
     await page.goto('/');
 
     // Verify standard pricing is displayed (£149.99 for first product)
-    const firstProduct = page.locator('[data-testid="product-card"]').first();
-    await expect(firstProduct.locator('[data-testid="product-price"]')).toContainText('£149.99');
+    const firstProduct = page.getByRole('article').first();
+    await expect(firstProduct.getByText('£149.99')).toBeVisible();
   });
 });

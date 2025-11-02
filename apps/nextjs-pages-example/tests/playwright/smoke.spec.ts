@@ -25,5 +25,5 @@ test('app loads and displays expected content', async ({ page }) => {
   await expect(heading).toHaveText('Scenarist E-commerce Example');
 
   // Verify product catalog is displayed (at least one product card)
-  await expect(page.locator('[data-testid="product-card"]').first()).toBeVisible();
+  await expect(page.getByRole('article').first()).toBeVisible();
 });

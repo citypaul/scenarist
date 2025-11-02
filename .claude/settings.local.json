@@ -53,7 +53,8 @@
       "Bash(pnpm fake-api:*)",
       "Bash(git reset:*)",
       "Bash(pkill:*)",
-      "Bash(lsof:*)"
+      "Bash(lsof:*)",
+      "Bash(pnpm turbo build:*)"
     ],
     "deny": [],
     "ask": []
