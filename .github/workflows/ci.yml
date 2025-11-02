@@ -129,3 +129,5 @@ jobs:
 
       - name: Run Baseline Tests
         run: pnpm --filter=@scenarist/nextjs-pages-example test:e2e:baseline
+        env:
+          SKIP_MSW: 'true'

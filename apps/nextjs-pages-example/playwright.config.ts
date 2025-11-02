@@ -31,9 +31,7 @@ export default defineConfig({
       name: 'baseline',
       use: { ...devices['Desktop Chrome'] },
       testMatch: '**/*.baseline.spec.ts', // Only run baseline tests
-      // Baseline tests don't use Scenarist, so skip MSW setup
-      globalSetup: undefined,
-      globalTeardown: undefined,
+      // Note: globalSetup will detect baseline project and skip MSW initialization
     },
   ],
 
