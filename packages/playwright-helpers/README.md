@@ -1,6 +1,6 @@
 # @scenarist/playwright-helpers
 
-Playwright test helpers for Scenarist scenario management.
+Playwright test helpers for Scenarist scenario management with guaranteed test isolation.
 
 ## Installation
 
@@ -8,11 +8,111 @@ Playwright test helpers for Scenarist scenario management.
 pnpm add -D @scenarist/playwright-helpers
 ```
 
-## Usage
+## Quick Start (Recommended: Fixtures API)
 
-### `switchScenario`
+The **fixtures API** is the recommended way to use Scenarist with Playwright. It provides:
+- ✅ Guaranteed unique test IDs (no collisions, even with parallel execution)
+- ✅ Configuration in one place (no repetition across tests)
+- ✅ Clean composition with your existing fixtures
+- ✅ Type-safe with full TypeScript support
 
-Helper function to switch scenarios in Playwright tests with minimal boilerplate.
+### 1. Configure in `playwright.config.ts`
+
+```typescript
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  use: {
+    baseURL: 'http://localhost:3000',      // Standard Playwright config
+    scenaristEndpoint: '/api/__scenario__', // Scenarist-specific config
+  },
+});
+```
+
+### 2. Use in Tests
+
+```typescript
+import { test, expect } from '@scenarist/playwright-helpers';
+
+test('premium user sees premium pricing', async ({ page, switchScenario }) => {
+  // Configuration read from playwright.config.ts - no repetition!
+  await switchScenario(page, 'premiumUser');
+
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Premium' })).toBeVisible();
+});
+```
+
+That's it! No manual test ID generation, no repeating baseURL/endpoint, guaranteed test isolation.
+
+## Composing with Your Existing Fixtures
+
+If your team already has custom Playwright fixtures, you can easily compose them with Scenarist fixtures:
+
+```typescript
+// tests/fixtures.ts
+import { test as scenaristTest } from '@scenarist/playwright-helpers';
+
+type MyFixtures = {
+  authenticatedPage: Page;
+  database: Database;
+};
+
+export const test = scenaristTest.extend<MyFixtures>({
+  authenticatedPage: async ({ page }, use) => {
+    // Your custom fixture logic
+    await page.goto('/login');
+    await page.fill('[name=email]', 'test@example.com');
+    await page.fill('[name=password]', 'password');
+    await page.click('button[type=submit]');
+    await use(page);
+  },
+
+  database: async ({}, use) => {
+    const db = await connectToTestDatabase();
+    await use(db);
+    await db.close();
+  },
+});
+
+export { expect } from '@scenarist/playwright-helpers';
+```
+
+Now use your extended test object:
+
+```typescript
+// tests/my-test.spec.ts
+import { test, expect } from './fixtures';
+
+test('authenticated premium user flow', async ({ authenticatedPage, switchScenario, database }) => {
+  // All fixtures available: yours + Scenarist's
+  await switchScenario(authenticatedPage, 'premiumUser');
+  await authenticatedPage.goto('/dashboard');
+
+  const user = await database.getUser('test@example.com');
+  expect(user.tier).toBe('premium');
+});
+```
+
+## Advanced: Per-Test Configuration Overrides
+
+Most tests use the global config, but you can override for specific tests:
+
+```typescript
+test('staging environment test', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'myScenario', {
+    baseURL: 'https://staging.example.com',  // Override for this test only
+    endpoint: '/api/custom-endpoint',
+  });
+
+  await page.goto('/');
+  // Test against staging environment
+});
+```
+
+## Advanced: Standalone `switchScenario` Function
+
+For cases where you need manual control over test IDs or can't use fixtures:
 
 ```typescript
 import { test, expect } from '@playwright/test';
@@ -75,62 +175,173 @@ await switchScenario(page, 'premiumUser', {
 
 **Code reduction: 77%**
 
+## API Reference
+
+### Fixtures API (Recommended)
+
+#### `test`
+
+Extended Playwright test object with Scenarist fixtures.
+
+```typescript
+import { test } from '@scenarist/playwright-helpers';
+
+test('my test', async ({ page, switchScenario, scenaristTestId }) => {
+  // Your test code
+});
+```
+
+**Fixtures provided:**
+
+- `switchScenario(page, scenarioId, options?)` - Switch to a scenario (auto-injects test ID)
+- `scenaristTestId` - Unique test ID for this test (usually don't need to access directly)
+
+#### `expect`
+
+Re-exported from `@playwright/test` for convenience:
+
+```typescript
+import { test, expect } from '@scenarist/playwright-helpers';
+```
+
+#### Configuration Options
+
+Set in `playwright.config.ts`:
+
+```typescript
+export default defineConfig({
+  use: {
+    baseURL: 'http://localhost:3000',       // Standard Playwright (used by switchScenario)
+    scenaristEndpoint: '/api/__scenario__', // Scenarist endpoint path (default: '/api/__scenario__')
+  },
+});
+```
+
+**Available options:**
+
+- `scenaristEndpoint?: string` - The endpoint path for scenario switching (default: `'/api/__scenario__'`)
+
+#### `switchScenario` (Fixture)
+
+Switch to a scenario using the automatically generated test ID.
+
+```typescript
+await switchScenario(page, scenarioId, options?)
+```
+
+**Parameters:**
+
+- `page: Page` - Playwright Page object
+- `scenarioId: string` - The scenario to switch to
+- `options?: { baseURL?: string; endpoint?: string }` - Optional overrides (rarely needed)
+
+**What it does:**
+
+1. Reads `baseURL` from Playwright config (or uses override)
+2. Reads `scenaristEndpoint` from Playwright config (or uses override)
+3. Generates unique test ID automatically (via `scenaristTestId` fixture)
+4. POSTs to scenario endpoint with test ID header
+5. Verifies scenario switch succeeded
+6. Sets test ID header for all subsequent requests
+
+### Standalone API (Advanced)
+
+#### `switchScenario` (Function)
+
+For manual test ID control:
+
+```typescript
+import { switchScenario } from '@scenarist/playwright-helpers';
+
+await switchScenario(page, scenarioId, {
+  baseURL: 'http://localhost:3000',
+  endpoint: '/api/__scenario__',
+  testId: 'my-custom-test-id', // Manual test ID
+});
+```
+
+**Use this only when:**
+- You need to share test IDs across multiple tests
+- You're integrating with existing test infrastructure that provides test IDs
+- You can't use Playwright fixtures for some reason
+
+**⚠️ Warning:** Manual test IDs can cause collisions in parallel execution. The fixture API is safer.
+
 ## Common Pitfalls
 
 ### ❌ Don't: Switch scenarios after navigation
 
 ```typescript
-// BAD - Switching after page load
-await page.goto('/');
-await switchScenario(page, 'premium', { baseURL: 'http://localhost:3000' });
+import { test } from '@scenarist/playwright-helpers';
+
+test('bad example', async ({ page, switchScenario }) => {
+  await page.goto('/');  // BAD - Navigating first
+  await switchScenario(page, 'premium');  // Headers set too late!
+});
 ```
 
 **Why it fails**: Headers set AFTER navigation don't affect the already-loaded page.
 
 **Solution**: ✅ Switch scenario BEFORE navigating:
 ```typescript
-await switchScenario(page, 'premium', { baseURL: 'http://localhost:3000' });
-await page.goto('/');  // Now requests use test ID header
-```
-
----
-
-### ❌ Don't: Forget to provide baseURL
-
-```typescript
-// BAD - Missing required baseURL
-await switchScenario(page, 'premium', { endpoint: '/api/__scenario__' });
-```
-
-**Error**: TypeScript will catch this - `baseURL` is required.
-
-**Solution**: ✅ Always provide `baseURL`:
-```typescript
-await switchScenario(page, 'premium', {
-  baseURL: 'http://localhost:3000',
-  endpoint: '/api/__scenario__',
+test('good example', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'premium');  // Set headers first
+  await page.goto('/');  // Now requests use test ID header
 });
 ```
 
 ---
 
-### ❌ Don't: Reuse test IDs manually
+### ❌ Don't: Forget to configure in playwright.config.ts
 
 ```typescript
-// BAD - Manual test ID risks conflicts
-const testId = 'my-test';
-await page.request.post(`${baseURL}/api/__scenario__`, {
-  headers: { 'x-test-id': testId },
-  data: { scenario: 'premium' },
+// playwright.config.ts - Missing configuration!
+export default defineConfig({
+  use: {
+    // Missing: baseURL and scenaristEndpoint
+  },
 });
 ```
 
-**Why it fails**: Multiple tests with the same ID will interfere with each other.
+**Error**: `switchScenario` won't know where to send requests.
 
-**Solution**: ✅ Let `switchScenario` generate unique IDs automatically:
+**Solution**: ✅ Configure in `playwright.config.ts`:
 ```typescript
-await switchScenario(page, 'premium', { baseURL });
-// Generates: test-premium-1730592847123 (unique timestamp)
+export default defineConfig({
+  use: {
+    baseURL: 'http://localhost:3000',
+    scenaristEndpoint: '/api/__scenario__',
+  },
+});
+```
+
+---
+
+### ❌ Don't: Use standalone `switchScenario` with manual test IDs
+
+```typescript
+import { switchScenario } from '@scenarist/playwright-helpers';
+
+test('bad example', async ({ page }) => {
+  // BAD - Manual test ID risks conflicts
+  await switchScenario(page, 'premium', {
+    baseURL: 'http://localhost:3000',
+    endpoint: '/api/__scenario__',
+    testId: 'my-test',  // Same ID across parallel tests = collision!
+  });
+});
+```
+
+**Why it fails**: Multiple tests with the same ID will interfere with each other in parallel execution.
+
+**Solution**: ✅ Use the fixture API (auto-generates unique IDs):
+```typescript
+import { test } from '@scenarist/playwright-helpers';
+
+test('good example', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'premium');
+  // Generates unique ID automatically: test-abc123-{uuid}
+});
 ```
 
 ## Testing Philosophy
