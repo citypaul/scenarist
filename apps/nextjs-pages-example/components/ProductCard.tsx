@@ -11,7 +11,7 @@ type ProductCardProps = Product & {
   readonly onAddToCart?: () => void;
 };
 
-export const ProductCard = ({ id, name, description, price, tier, onAddToCart }: ProductCardProps) => {
+export const ProductCard = ({ name, description, price, tier, onAddToCart }: ProductCardProps) => {
   return (
     <article className="border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
       <div className="mb-4">

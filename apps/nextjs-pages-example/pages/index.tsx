@@ -29,7 +29,7 @@ export default function Home() {
           const items = Array.isArray(data.items) ? data.items : [];
           setCartCount(items.length);
         }
-      } catch (err) {
+      } catch {
         // Silent fail - cart count not critical
       }
     };
@@ -80,7 +80,7 @@ export default function Home() {
       if (response.ok) {
         setCartCount((prev) => prev + 1);
       }
-    } catch (err) {
+    } catch {
       // Silent fail for now
     }
   };
