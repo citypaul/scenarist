@@ -123,8 +123,7 @@ export type ScenarioIds<T extends ScenariosObject> = keyof T & string;
 // types/config.ts
 export type ScenaristConfigInput<T extends ScenariosObject = ScenariosObject> = {
   readonly scenarios: T;
-  readonly defaultScenarioId: string; // Not keyof T (yet - see ADR-0010)
-  // ...
+  // ... (Note: defaultScenarioId was removed per ADR-0010)
 };
 ```
 
@@ -132,8 +131,7 @@ export type ScenaristConfigInput<T extends ScenariosObject = ScenariosObject> = 
 ```typescript
 export type CreateScenaristOptions<T extends ScenariosObject> = {
   scenarios: T;
-  defaultScenarioId: string;
-  // ...
+  // ... (Note: defaultScenarioId was removed per ADR-0010)
 };
 
 export const createScenarist = <T extends ScenariosObject>(
@@ -181,7 +179,7 @@ import { scenarios } from './scenarios';
 const scenarist = createScenarist({
   enabled: true,
   scenarios,                    // TypeScript infers scenario IDs!
-  defaultScenarioId: 'default', // ✅ String for now (see ADR-0010)
+  // (Note: defaultScenarioId was removed per ADR-0010)
 });
 
 // tests/my-test.spec.ts
@@ -310,7 +308,6 @@ const scenarios = {
 ### Positive
 
 ✅ **IDE autocomplete everywhere** - Scenario IDs autocomplete in:
-   - Adapter setup (`defaultScenarioId`)
    - Test helpers (`switchScenario('premiumUser')`)
    - API calls (`setScenario(page, 'cart')`)
 
@@ -370,7 +367,7 @@ const scenarios = {
    const options = { scenarios } as const;
    ```
 
-⚖️ **`defaultScenarioId` still string** - Not yet `keyof T` (see ADR-0010 for future enforcement)
+⚖️ **Note**: `defaultScenarioId` was later removed entirely per ADR-0010 (enforces 'default' key convention)
 
 ## Implementation Notes
 
@@ -405,7 +402,6 @@ const scenarios = {
 const scenarist = createScenarist({
   enabled: true,
   scenarios,
-  defaultScenarioId: 'default',
 });
 
 const test = withScenarios(scenarios);
@@ -460,7 +456,7 @@ All adapter READMEs must include:
 ## Related Decisions
 
 - **ADR-0009**: Upfront Scenario Registration (why we removed `registerScenario()`)
-- **ADR-0010**: Convention Over Configuration: 'default' Key (future: enforce `defaultScenarioId` is `keyof T`)
+- **ADR-0010**: Convention Over Configuration: 'default' Key (implemented: removed `defaultScenarioId`, enforces 'default' key)
 - **ADR-0001**: Serializable Scenario Definitions (why scenarios must be plain objects)
 
 ## Future Enhancements

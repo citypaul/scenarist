@@ -24,7 +24,6 @@ describe('buildConfig', () => {
     expect(config.headers.testId).toBe('x-test-id');
     expect(config.endpoints.setScenario).toBe('/__scenario__');
     expect(config.endpoints.getScenario).toBe('/__scenario__');
-    expect(config.defaultScenarioId).toBe('default');
     expect(config.defaultTestId).toBe('default-test');
     expect(config.strictMode).toBe(false);
   });
@@ -137,12 +136,12 @@ describe('buildConfig', () => {
         premium: { id: 'premium', name: 'Premium', description: 'Test', mocks: [] },
       } as const satisfies ScenariosObject;
 
-      const config = buildConfig({
-        enabled: true,
-        scenarios: scenariosWithDefault,
-      });
-
-      expect(config.defaultScenarioId).toBe('default');
+      expect(() =>
+        buildConfig({
+          enabled: true,
+          scenarios: scenariosWithDefault,
+        })
+      ).not.toThrow();
     });
 
     it('should accept scenarios object with only "default" key', () => {
@@ -150,12 +149,12 @@ describe('buildConfig', () => {
         default: { id: 'default', name: 'Default', description: 'Test', mocks: [] },
       } as const satisfies ScenariosObject;
 
-      const config = buildConfig({
-        enabled: true,
-        scenarios: scenariosOnlyDefault,
-      });
-
-      expect(config.defaultScenarioId).toBe('default');
+      expect(() =>
+        buildConfig({
+          enabled: true,
+          scenarios: scenariosOnlyDefault,
+        })
+      ).not.toThrow();
     });
   });
 });

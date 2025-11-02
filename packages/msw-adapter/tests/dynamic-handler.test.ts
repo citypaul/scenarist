@@ -37,7 +37,6 @@ describe('Dynamic Handler', () => {
         getActiveScenario,
         getScenarioDefinition,
         strictMode: false,
-        defaultScenarioId: 'default',
         responseSelector,
       });
 
@@ -83,7 +82,6 @@ describe('Dynamic Handler', () => {
         getActiveScenario,
         getScenarioDefinition,
         strictMode: false,
-        defaultScenarioId: 'default',
         responseSelector,
       });
 
@@ -124,7 +122,6 @@ describe('Dynamic Handler', () => {
         getActiveScenario,
         getScenarioDefinition,
         strictMode: false,
-        defaultScenarioId: 'default',
         responseSelector,
       });
 
@@ -152,7 +149,6 @@ describe('Dynamic Handler', () => {
         getActiveScenario,
         getScenarioDefinition,
         strictMode: false,
-        defaultScenarioId: 'default',
         responseSelector,
       });
 
@@ -176,7 +172,6 @@ describe('Dynamic Handler', () => {
         getActiveScenario,
         getScenarioDefinition,
         strictMode: true,
-        defaultScenarioId: 'default',
         responseSelector,
       });
 
@@ -222,7 +217,6 @@ describe('Dynamic Handler', () => {
         getActiveScenario,
         getScenarioDefinition,
         strictMode: false,
-        defaultScenarioId: 'default',
         responseSelector,
       });
 
@@ -272,7 +266,6 @@ describe('Dynamic Handler', () => {
         getActiveScenario,
         getScenarioDefinition,
         strictMode: false,
-        defaultScenarioId: 'default',
         responseSelector,
       });
 
@@ -319,7 +312,6 @@ describe('Dynamic Handler', () => {
         getActiveScenario,
         getScenarioDefinition,
         strictMode: false,
-        defaultScenarioId: 'default',
         responseSelector,
       });
 
@@ -366,7 +358,6 @@ describe('Dynamic Handler', () => {
         getActiveScenario,
         getScenarioDefinition,
         strictMode: false,
-        defaultScenarioId: 'default',
         responseSelector,
       });
 

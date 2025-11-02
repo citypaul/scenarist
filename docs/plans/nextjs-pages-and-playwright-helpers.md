@@ -1056,7 +1056,6 @@ import { scenarios } from './scenarios';
 export const scenarist = createScenarioManager({
   config: buildConfig({
     enabled: true,
-    defaultScenarioId: 'default',
   }),
 });
 

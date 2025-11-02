@@ -1,10 +1,31 @@
 # ADR-0010: Convention Over Configuration - 'default' Key Requirement
 
-**Status**: Proposed
+**Status**: Implemented
 **Date**: 2025-11-02
+**Implementation Date**: 2025-11-02
 **Authors**: Claude Code
 
-## Context
+## Implementation Update (Nov 2025)
+
+**Decision**: We implemented the "enforce 'default' key" solution immediately, skipping the intermediate type-safe `defaultScenarioId` phase.
+
+**What was implemented:**
+- Removed `defaultScenarioId` parameter from configuration entirely
+- Enforced 'default' key requirement via Zod schema validation (`ScenariosObjectSchema`)
+- All adapters now hardcode `'default'` literal for fallback behavior
+- Zod validation ensures 'default' key exists at runtime
+
+**Rationale for immediate implementation:**
+- The 'default' key was already conventional in all examples and usage
+- Zod validation made enforcement straightforward and type-safe
+- Simpler to implement once than to migrate through two phases
+- Cleaner API surface (one less parameter to document and explain)
+
+The historical context and decision-making process below documents why this approach was chosen.
+
+---
+
+## Context (Historical)
 
 After implementing type-safe scenario IDs (ADR-0008) and upfront scenario registration (ADR-0009), the current API requires users to specify both:
 

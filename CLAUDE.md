@@ -36,6 +36,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Total: 281 tests passing across all packages** with TypeScript strict mode and full type safety.
 
+## Recent Changes
+
+**`defaultScenarioId` Removed (Nov 2025):** The `defaultScenarioId` configuration parameter has been removed per ADR-0010. The 'default' scenario key is now enforced via Zod schema validation, eliminating the need for configuration. All adapters now hardcode the `'default'` literal for fallback behavior.
+
 ## Essential Commands
 
 ```bash
@@ -1810,7 +1814,6 @@ import { scenarios } from './scenarios.js';
 const scenarist = createScenarist({
   enabled: true,
   scenarios,
-  defaultScenarioId: 'default',
 });
 ```
 
@@ -1932,7 +1935,6 @@ const scenarios = {
 
 const scenarist = createScenarist({
   scenarios,  // ✅ Automatically registered
-  defaultScenarioId: 'default',
 });
 ```
 
@@ -2026,7 +2028,6 @@ const testScenarios = {
 const scenarist = createScenarist({
   enabled: true,
   scenarios: testScenarios,
-  defaultScenarioId: 'default',
 });
 
 // Scenarios automatically registered - no registration tests needed
@@ -2077,7 +2078,6 @@ const scenarios = {
 const scenarist = createScenarist({
   enabled: true,
   scenarios,  // ✅ Crystal clear: these are ALL available scenarios
-  defaultScenarioId: 'default',
 });
 ```
 

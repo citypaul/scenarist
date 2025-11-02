@@ -44,12 +44,6 @@ export type ScenaristConfig = {
   };
 
   /**
-   * The default scenario ID to use when none is specified.
-   * Always 'default' - scenarios must have a 'default' key.
-   */
-  readonly defaultScenarioId: string;
-
-  /**
    * The default test ID to use when no x-test-id header is present.
    */
   readonly defaultTestId: string;

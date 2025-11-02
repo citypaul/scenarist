@@ -17,7 +17,6 @@ export type DynamicHandlerOptions = {
     scenarioId: string
   ) => ScenarioDefinition | undefined;
   readonly strictMode: boolean;
-  readonly defaultScenarioId: string;
   readonly responseSelector: ResponseSelector;
 };
 
@@ -69,7 +68,6 @@ const extractHttpRequestContext = async (
 const getMocksFromScenarios = (
   activeScenario: ActiveScenario | undefined,
   getScenarioDefinition: (scenarioId: string) => ScenarioDefinition | undefined,
-  defaultScenarioId: string,
   method: string,
   url: string
 ): ReadonlyArray<import('@scenarist/core').MockDefinition> => {
@@ -92,7 +90,7 @@ const getMocksFromScenarios = (
 
   // If no mocks found in active scenario, fall back to default
   if (mocks.length === 0) {
-    const defaultScenario = getScenarioDefinition(defaultScenarioId);
+    const defaultScenario = getScenarioDefinition('default');
     if (defaultScenario) {
       defaultScenario.mocks.forEach((mock) => {
         const methodMatches = mock.method.toUpperCase() === method.toUpperCase();
@@ -113,7 +111,7 @@ export const createDynamicHandler = (
   return http.all('*', async ({ request }) => {
     const testId = options.getTestId(request);
     const activeScenario = options.getActiveScenario(testId);
-    const scenarioId = activeScenario?.scenarioId ?? options.defaultScenarioId;
+    const scenarioId = activeScenario?.scenarioId ?? 'default';
 
     // Extract request context for matching
     const context = await extractHttpRequestContext(request);
@@ -122,7 +120,6 @@ export const createDynamicHandler = (
     const mocks = getMocksFromScenarios(
       activeScenario,
       options.getScenarioDefinition,
-      options.defaultScenarioId,
       request.method,
       request.url
     );

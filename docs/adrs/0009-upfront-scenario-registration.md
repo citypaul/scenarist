@@ -4,6 +4,8 @@
 **Date**: 2025-11-02
 **Authors**: Claude Code
 
+**Note**: Historical code examples in this ADR reference `defaultScenarioId`, which was later removed per ADR-0010 (enforces 'default' key convention via Zod validation).
+
 ## Context
 
 Before this decision, Scenarist used imperative scenario registration with a two-step process:
@@ -325,8 +327,7 @@ scenarist.registerScenarios(scenarios); // Single call with object
    const scenarist = createScenarist({
      enabled: true,
      scenarios: testScenarios,
-     defaultScenarioId: 'default',
-   });
+      });
    // All test scenarios available immediately
    ```
 
@@ -444,7 +445,6 @@ After:
 const scenarist = createScenarist({
   enabled: true,
   scenarios,
-  defaultScenarioId: 'default',
 });
 ```
 
@@ -491,7 +491,6 @@ import { scenarios } from './scenarios';
 const scenarist = createScenarist({
   enabled: true,
   scenarios,
-  defaultScenarioId: 'default',
 });
 ```
 

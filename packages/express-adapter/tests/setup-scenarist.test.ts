@@ -296,7 +296,6 @@ describe('createScenarist', () => {
     expect(scenarist.config.endpoints.setScenario).toBe('/__scenario__');
     expect(scenarist.config.endpoints.getScenario).toBe('/__scenario__');
     expect(scenarist.config.headers.testId).toBe('x-test-id');
-    expect(scenarist.config.defaultScenarioId).toBe('default');
     expect(scenarist.config.strictMode).toBe(false);
   });
 

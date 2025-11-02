@@ -15,7 +15,6 @@ export const mockConfig = (overrides?: Partial<ScenaristConfig>): ScenaristConfi
     setScenario: '/__scenario__',
     getScenario: '/__scenario__',
   },
-  defaultScenarioId: 'default',
   defaultTestId: 'default-test',
   ...overrides,
 });

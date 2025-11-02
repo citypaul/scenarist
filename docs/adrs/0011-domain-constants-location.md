@@ -592,7 +592,6 @@ export const buildConfig = <T extends ScenariosObject>(
       setScenario: input.endpoints?.setScenario ?? CONFIG_DEFAULTS.ENDPOINTS.SET_SCENARIO,
       getScenario: input.endpoints?.getScenario ?? CONFIG_DEFAULTS.ENDPOINTS.GET_SCENARIO,
     },
-    defaultScenarioId: input.defaultScenarioId,
     defaultTestId: input.defaultTestId ?? CONFIG_DEFAULTS.TEST_ID, // ← Use default
   };
 };
