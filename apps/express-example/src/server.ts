@@ -22,8 +22,7 @@ export const createApp = (): { app: Express; scenarist: ExpressScenarist<typeof 
   // Initialize Scenarist with all scenarios registered upfront
   const scenarist = createScenarist({
     enabled: true,
-    scenarios, // All scenarios registered at initialization
-    defaultScenarioId: 'default', // ID of the default scenario to use as fallback
+    scenarios, // All scenarios registered at initialization (must include 'default')
     strictMode: false, // Allow passthrough for unmocked requests
   });
 

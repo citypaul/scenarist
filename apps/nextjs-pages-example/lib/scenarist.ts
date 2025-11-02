@@ -19,8 +19,7 @@ import { scenarios } from './scenarios';
  */
 export const scenarist = createScenarist({
   enabled: true, // Always enabled in example app for demonstration
-  scenarios, // All scenarios registered at initialization
-  defaultScenarioId: 'default', // ID of the default scenario to use as fallback
+  scenarios, // All scenarios registered at initialization (must include 'default')
 });
 
 // Auto-start MSW server for server-side API route interception

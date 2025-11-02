@@ -45,7 +45,7 @@ export type ScenaristConfig = {
 
   /**
    * The default scenario ID to use when none is specified.
-   * Derived from defaultScenarioId during config building.
+   * Always 'default' - scenarios must have a 'default' key.
    */
   readonly defaultScenarioId: string;
 
@@ -68,9 +68,12 @@ export type ScenaristConfigInput<T extends ScenariosObject = ScenariosObject> = 
    * All scenarios defined as a named object.
    * Keys become scenario IDs that enable type-safe autocomplete.
    *
+   * **REQUIRED:** Must include a 'default' key to serve as the baseline scenario.
+   *
    * @example
    * ```typescript
    * const scenarios = {
+   *   default: { id: 'default', ... },      // Required!
    *   cartWithState: { id: 'cartWithState', ... },
    *   premiumUser: { id: 'premiumUser', ... },
    * } as const satisfies ScenariosObject;
@@ -78,17 +81,9 @@ export type ScenaristConfigInput<T extends ScenariosObject = ScenariosObject> = 
    * createScenarist({
    *   enabled: true,
    *   scenarios,
-   *   defaultScenarioId: 'cartWithState',
    * });
    * ```
    */
   readonly scenarios: T;
-  /**
-   * The ID of the default scenario from the scenarios object.
-   * Used as fallback when no scenario is active.
-   *
-   * REQUIRED - ensures there's always a baseline set of mocks available.
-   */
-  readonly defaultScenarioId: string;
   readonly defaultTestId?: string;
 };

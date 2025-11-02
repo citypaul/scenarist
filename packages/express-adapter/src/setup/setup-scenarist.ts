@@ -49,6 +49,7 @@ export type ExpressScenarist<T extends ScenariosObject = ScenariosObject> =
  * @example
  * ```typescript
  * const scenarios = {
+ *   default: { id: 'default', ... },        // Required!
  *   cartWithState: { id: 'cartWithState', ... },
  *   premiumUser: { id: 'premiumUser', ... },
  * } as const satisfies ScenariosObject;
@@ -56,7 +57,6 @@ export type ExpressScenarist<T extends ScenariosObject = ScenariosObject> =
  * const scenarist = createScenarist({
  *   enabled: true,
  *   scenarios,
- *   defaultScenarioId: 'cartWithState',
  * });
  *
  * app.use(scenarist.middleware);

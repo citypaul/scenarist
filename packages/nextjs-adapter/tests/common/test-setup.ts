@@ -75,9 +75,14 @@ export const createEndpointTestSetup = <T>(
   const defaultScenario = createDefaultScenario();
   const premiumScenario = createPremiumScenario();
 
+  const scenarios = {
+    default: defaultScenario,
+    premium: premiumScenario,
+  } as const;
+
   const registry = new InMemoryScenarioRegistry();
   const store = new InMemoryScenarioStore();
-  const config = buildConfig({ enabled: true, defaultScenario });
+  const config = buildConfig({ enabled: true, scenarios });
   const manager = createScenarioManager({ registry, store });
 
   manager.registerScenario(defaultScenario);

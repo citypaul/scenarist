@@ -322,8 +322,7 @@ All adapters must accept these base options:
 ```typescript
 type BaseAdapterOptions<T extends ScenariosObject> = {
   readonly enabled: boolean;
-  readonly scenarios: T;  // REQUIRED - scenarios object (all scenarios registered upfront)
-  readonly defaultScenarioId: keyof T;  // REQUIRED - ID of default scenario for fallback
+  readonly scenarios: T;  // REQUIRED - scenarios object (must have 'default' key)
   readonly strictMode?: boolean;
   readonly headers?: {
     readonly testId?: string;
@@ -339,6 +338,8 @@ type BaseAdapterOptions<T extends ScenariosObject> = {
   readonly sequenceTracker?: SequenceTracker;
 };
 ```
+
+**IMPORTANT:** The `scenarios` object must include a `'default'` key. This is enforced at runtime via Zod validation in `buildConfig()`. The 'default' scenario serves as the baseline when no specific scenario is active.
 
 Adapters can extend this with framework-specific options:
 

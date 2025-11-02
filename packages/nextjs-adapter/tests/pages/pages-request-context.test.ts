@@ -18,7 +18,6 @@ describe('PagesRequestContext', () => {
   const config = buildConfig({
     enabled: true,
     scenarios,
-    defaultScenarioId: 'default',
   });
 
   describe('getTestId', () => {

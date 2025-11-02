@@ -273,7 +273,6 @@ describe('createScenarist', () => {
     const scenarist = createScenarist({
       enabled: true,
       scenarios: testScenarios,
-      defaultScenarioId: 'default',
       strictMode: false,
     });
 
@@ -292,7 +291,6 @@ describe('createScenarist', () => {
     const scenarist = createScenarist({
       enabled: true,
       scenarios: testScenarios,
-      defaultScenarioId: 'default',
     });
 
     expect(scenarist.config.endpoints.setScenario).toBe('/__scenario__');
@@ -306,7 +304,6 @@ describe('createScenarist', () => {
     const scenarist = createScenarist({
       enabled: true,
       scenarios: testScenarios,
-      defaultScenarioId: 'default',
       endpoints: {
         setScenario: '/custom-set',
         getScenario: '/custom-get',
@@ -327,7 +324,6 @@ describe('createScenarist', () => {
     const scenarist = createScenarist({
       enabled: true,
       scenarios: testScenarios,
-      defaultScenarioId: 'default',
       strictMode: false,
     });
 
@@ -349,7 +345,6 @@ describe('createScenarist', () => {
     const scenarist = createScenarist({
       enabled: true,
       scenarios: testScenarios,
-      defaultScenarioId: 'default',
       strictMode: false,
     });
 
@@ -384,7 +379,6 @@ describe('createScenarist', () => {
     const scenarist = createScenarist({
       enabled: true,
       scenarios: testScenarios,
-      defaultScenarioId: 'default',
     });
 
     const scenarios = scenarist.listScenarios();
@@ -398,7 +392,6 @@ describe('createScenarist', () => {
     const scenarist = createScenarist({
       enabled: true,
       scenarios: testScenarios,
-      defaultScenarioId: 'default',
     });
 
     const result = scenarist.switchScenario('test-123', 'test-scenario');
@@ -413,7 +406,6 @@ describe('createScenarist', () => {
     const scenarist = createScenarist({
       enabled: true,
       scenarios: testScenarios,
-      defaultScenarioId: 'default',
     });
 
     const scenario = scenarist.getScenarioById('test-scenario');
@@ -426,7 +418,6 @@ describe('createScenarist', () => {
     const scenarist = createScenarist({
       enabled: true,
       scenarios: testScenarios,
-      defaultScenarioId: 'default',
     });
 
     scenarist.switchScenario('test-123', 'test-scenario');
@@ -445,7 +436,6 @@ describe('createScenarist', () => {
       const scenarist = createScenarist({
         enabled: true,
         scenarios: testScenarios,
-        defaultScenarioId: 'default',
       });
 
       scenarist.start();
@@ -495,7 +485,6 @@ describe('createScenarist', () => {
       const scenarist = createScenarist({
         enabled: true,
         scenarios: testScenarios,
-        defaultScenarioId: 'default',
       });
 
       scenarist.start();
@@ -549,7 +538,6 @@ describe('createScenarist', () => {
       const scenarist = createScenarist({
         enabled: true,
         scenarios: testScenarios,
-        defaultScenarioId: 'default',
       });
 
       scenarist.start();
@@ -615,7 +603,6 @@ describe('createScenarist', () => {
       const scenarist = createScenarist({
         enabled: true,
         scenarios: testScenarios,
-        defaultScenarioId: 'default',
       });
 
       scenarist.start();
@@ -674,7 +661,6 @@ describe('createScenarist', () => {
       const scenarist = createScenarist({
         enabled: true,
         scenarios: testScenarios,
-        defaultScenarioId: 'default',
       });
 
       scenarist.start();
@@ -734,7 +720,6 @@ describe('createScenarist', () => {
       const scenarist = createScenarist({
         enabled: true,
         scenarios: testScenarios,
-        defaultScenarioId: 'default',
       });
 
       scenarist.start();
@@ -801,7 +786,6 @@ describe('createScenarist', () => {
       const scenarist = createScenarist({
         enabled: true,
         scenarios: testScenarios,
-        defaultScenarioId: 'default',
       });
 
       scenarist.start();
