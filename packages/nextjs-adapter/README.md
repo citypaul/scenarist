@@ -45,6 +45,7 @@ This package provides complete Next.js integration for Scenarist's scenario mana
 | Set up Pages Router | [Pages Router Setup](#pages-router-setup) |
 | Set up App Router | [App Router Setup](#app-router-setup) |
 | Switch scenarios in tests | [Use in Tests](#4-use-in-tests) |
+| Forward headers to external APIs | [Making External API Calls](#making-external-api-calls) |
 | Understand test isolation | [Test ID Isolation](#test-id-isolation) |
 | Reduce test boilerplate | [Common Patterns](#common-patterns) |
 | Debug issues | [Troubleshooting](#troubleshooting) |
@@ -554,6 +555,71 @@ Each test ID has completely isolated:
 - Captured state (for stateful mocks)
 
 **Learn more:** [Test Isolation in Core Docs](../../docs/core-functionality.md#test-isolation)
+
+### Making External API Calls
+
+**IMPORTANT:** When your API routes call external APIs (or services mocked by Scenarist), you must forward Scenarist headers so MSW can intercept with the correct scenario.
+
+**Why Next.js needs this:** Unlike Express (which uses AsyncLocalStorage middleware), Next.js API routes have no middleware layer to automatically propagate test IDs. You must manually forward the headers.
+
+Use the `getScenaristHeaders()` helper:
+
+```typescript
+// pages/api/products.ts
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
+import { scenarist } from '@/lib/scenarist';
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  // Fetch from external API with Scenarist headers forwarded
+  const response = await fetch('http://external-api.com/products', {
+    headers: {
+      ...getScenaristHeaders(req, scenarist),  // ✅ Scenarist infrastructure headers
+      'content-type': 'application/json',      // ✅ Your application headers
+      'x-user-tier': req.headers['x-user-tier'], // ✅ Other app-specific headers
+    },
+  });
+
+  const data = await response.json();
+  res.json(data);
+}
+```
+
+**What it does:**
+- Extracts test ID from request headers (`x-test-id` by default)
+- Respects your configured `testIdHeaderName` and `defaultTestId`
+- Returns object with Scenarist headers ready to spread
+
+**Key Distinction:**
+- **Scenarist headers** (`x-test-id`) - Infrastructure for test isolation
+- **Application headers** (`x-user-tier`, `content-type`) - Your app's business logic
+
+Only Scenarist headers need forwarding via `getScenaristHeaders()`. Your application headers are independent.
+
+**App Router Note:** The same pattern applies to Server Actions and Route Handlers that make external API calls:
+
+```typescript
+// app/api/products/route.ts
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
+import { scenarist } from '@/lib/scenarist';
+
+export async function GET(request: Request) {
+  const response = await fetch('http://external-api.com/products', {
+    headers: {
+      ...getScenaristHeaders(request, scenarist),
+      'content-type': 'application/json',
+    },
+  });
+
+  const data = await response.json();
+  return Response.json(data);
+}
+```
+
+**For architectural rationale, see:** [ADR-0007: Framework-Specific Header Forwarding](../../docs/adrs/0007-framework-specific-header-helpers.md)
 
 ### Automatic MSW Integration
 

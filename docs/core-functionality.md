@@ -520,11 +520,122 @@ Body: { scenario: 'payment-error' }
 - Test A and Test B can run simultaneously
 - Each sees their own active scenario
 - No interference or conflicts
-- Future: Each has their own sequence positions and captured state
+- Each has their own sequence positions and captured state
 
 ### Default Test ID
 
 If no `x-test-id` header is provided, requests use the default test ID: `'default-test'`.
+
+### Test ID Propagation Patterns
+
+Different frameworks have different architectures for propagating test IDs throughout the request lifecycle. Scenarist adapters implement framework-specific patterns optimized for each framework's capabilities.
+
+#### Pattern 1: AsyncLocalStorage (Express)
+
+**How it works:**
+1. Middleware extracts `x-test-id` header **once** at request start
+2. Test ID stored in AsyncLocalStorage for request duration
+3. MSW dynamic handler reads from AsyncLocalStorage
+4. All external API calls automatically use correct test ID
+
+**Code example:**
+
+```typescript
+// Middleware (runs once per request)
+app.use(testIdMiddleware); // Extracts x-test-id → AsyncLocalStorage
+
+// Route handler (no manual forwarding needed)
+app.get('/api/products', async (req, res) => {
+  const response = await fetch('http://external-api.com/products');
+  // MSW handler automatically receives test ID from AsyncLocalStorage
+  const products = await response.json();
+  res.json(products);
+});
+```
+
+**Advantages:**
+- ✅ Zero boilerplate in route handlers
+- ✅ Automatic propagation across async boundaries
+- ✅ Test ID available anywhere in request lifecycle
+- ✅ No manual header forwarding required
+
+**Frameworks using this pattern:**
+- Express
+- Future: Fastify (with middleware support)
+
+#### Pattern 2: Manual Forwarding (Next.js)
+
+**How it works:**
+1. No global middleware layer for API routes
+2. Each route receives request independently
+3. Routes must manually forward `x-test-id` header when calling external APIs
+4. Use `getScenaristHeaders()` helper to extract and forward
+
+**Code example:**
+
+```typescript
+// pages/api/products.ts
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
+import { scenarist } from '@/lib/scenarist';
+
+export default async function handler(req, res) {
+  // MUST manually forward headers
+  const response = await fetch('http://external-api.com/products', {
+    headers: {
+      ...getScenaristHeaders(req, scenarist), // Extract test ID from req
+      'content-type': 'application/json',
+    },
+  });
+
+  const products = await response.json();
+  res.json(products);
+}
+```
+
+**Why manual forwarding is needed:**
+- Next.js API routes have no middleware layer
+- Each route is isolated entry point
+- Test ID must be explicitly passed to MSW
+- Without forwarding, MSW sees `'default-test'` instead of actual test ID
+
+**Advantages:**
+- ✅ Explicit and clear (visible in code)
+- ✅ Works without middleware support
+- ✅ Type-safe helper function
+
+**Disadvantages:**
+- ❌ Boilerplate in every route that calls external APIs
+- ❌ Easy to forget (but tests will fail)
+
+**Frameworks using this pattern:**
+- Next.js Pages Router
+- Next.js App Router (Server Actions)
+- Any framework without middleware support
+
+#### Comparison Table
+
+| Aspect | AsyncLocalStorage (Express) | Manual Forwarding (Next.js) |
+|--------|----------------------------|----------------------------|
+| **Middleware support** | ✅ Yes | ❌ No |
+| **Manual forwarding** | ❌ Not needed | ✅ Required |
+| **Boilerplate** | None | One line per external call |
+| **Helper function** | N/A | `getScenaristHeaders()` |
+| **Risk of forgetting** | ✅ None (automatic) | ⚠️ Tests will fail if forgotten |
+| **Visibility** | Implicit (AsyncLocalStorage) | Explicit (in every route) |
+
+#### When to Use Which Pattern
+
+**Use AsyncLocalStorage pattern when:**
+- Framework has global middleware support
+- Can intercept all requests before route handlers
+- AsyncLocalStorage available (Node.js 16+)
+
+**Use Manual Forwarding pattern when:**
+- Framework has no middleware layer (Next.js)
+- Routes are isolated entry points
+- Need explicit control over header propagation
+
+**For architectural rationale, see:** [ADR-0007: Framework-Specific Header Forwarding](../docs/adrs/0007-framework-specific-header-helpers.md)
 
 ## Architecture
 

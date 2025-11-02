@@ -301,6 +301,56 @@ await request(app)
   .set('x-test-id', 'test-2'); // Uses scenario B
 ```
 
+### Automatic Test ID Propagation
+
+**Express advantage:** Unlike frameworks without middleware (like Next.js), Express uses **AsyncLocalStorage** to automatically propagate test IDs throughout the request lifecycle.
+
+**What this means:**
+- Middleware extracts test ID from `x-test-id` header **once**
+- Test ID stored in AsyncLocalStorage for the request duration
+- MSW handlers automatically access test ID from AsyncLocalStorage
+- **No manual header forwarding needed** when making external API calls
+
+**Example - No manual forwarding:**
+
+```typescript
+// routes/products.ts
+app.get('/api/products', async (req, res) => {
+  // Test ID automatically available to MSW via AsyncLocalStorage
+  // No need to manually forward headers!
+  const response = await fetch('http://external-api.com/products');
+  const products = await response.json();
+  res.json(products);
+});
+```
+
+**Compare to Next.js** (which requires manual forwarding):
+
+```typescript
+// Next.js - MUST manually forward headers
+const response = await fetch('http://external-api.com/products', {
+  headers: {
+    ...getScenaristHeaders(req, scenarist),  // Required!
+  },
+});
+```
+
+**Express - NO manual forwarding needed** (AsyncLocalStorage handles it):
+
+```typescript
+// Express - AsyncLocalStorage propagates automatically
+const response = await fetch('http://external-api.com/products');
+// MSW handlers receive test ID from AsyncLocalStorage
+```
+
+**Why this works:**
+- Express middleware runs before all routes
+- Middleware extracts `x-test-id` and stores in AsyncLocalStorage
+- MSW dynamic handler reads from AsyncLocalStorage
+- All external API calls intercepted with correct test ID
+
+**For architectural details, see:** [ADR-0007: Framework-Specific Header Forwarding](../../docs/adrs/0007-framework-specific-header-helpers.md)
+
 ### Automatic MSW Integration
 
 The `createScenarist()` function automatically:
