@@ -9,19 +9,7 @@
  */
 
 import type { NextApiRequest, NextApiResponse} from 'next';
-
-type Product = {
-  readonly id: string;
-  readonly name: string;
-  readonly description: string;
-  readonly price: number;
-  readonly tier: string;
-  readonly image: string;
-};
-
-type ProductsResponse = {
-  readonly products: ReadonlyArray<Product>;
-};
+import type { Product, ProductsResponse } from '../../types/product';
 
 export default async function handler(
   req: NextApiRequest,

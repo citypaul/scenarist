@@ -9,15 +9,7 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { ProductCard } from '../components/ProductCard';
 import { TierSelector } from '../components/TierSelector';
-
-type Product = {
-  readonly id: string;
-  readonly name: string;
-  readonly description: string;
-  readonly price: number;
-  readonly tier: string;
-  readonly image: string;
-};
+import type { Product } from '../types/product';
 
 export default function Home() {
   const [userTier, setUserTier] = useState<'premium' | 'standard'>('standard');

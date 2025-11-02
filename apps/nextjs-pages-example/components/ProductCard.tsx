@@ -5,14 +5,9 @@
  * Uses data-testid attributes for Playwright testing.
  */
 
-type ProductCardProps = {
-  readonly id: string;
-  readonly name: string;
-  readonly description: string;
-  readonly price: number;
-  readonly tier: string;
-  readonly image: string;
-};
+import type { Product } from '../types/product';
+
+type ProductCardProps = Product;
 
 export const ProductCard = ({ id, name, description, price, tier }: ProductCardProps) => {
   return (
