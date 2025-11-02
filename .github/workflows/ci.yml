@@ -89,7 +89,7 @@ jobs:
     name: Baseline E2E Tests (without Scenarist)
     timeout-minutes: 10
     runs-on: ubuntu-latest
-    needs: build-and-test # Run after main tests pass
+    # Run in parallel with build-and-test (shares caches for faster execution)
 
     steps:
       - name: Check out code
