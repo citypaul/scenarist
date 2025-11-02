@@ -76,7 +76,12 @@ export const createScenaristBase = (
 
   // Create MSW dynamic handler
   const handler = createDynamicHandler({
-    getTestId: () => currentTestId.value,
+    getTestId: (request) => {
+      // Extract test ID from request headers (MSW Request object)
+      const headerName = config.headers.testId.toLowerCase();
+      const headerValue = request.headers.get(headerName);
+      return headerValue || config.defaultTestId;
+    },
     getActiveScenario: (testId) => manager.getActiveScenario(testId),
     getScenarioDefinition: (scenarioId) => manager.getScenarioById(scenarioId),
     strictMode: config.strictMode,

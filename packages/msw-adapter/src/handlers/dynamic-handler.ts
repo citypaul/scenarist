@@ -11,7 +11,7 @@ import { buildResponse } from '../conversion/response-builder.js';
 import { matchesUrl } from '../matching/url-matcher.js';
 
 export type DynamicHandlerOptions = {
-  readonly getTestId: () => string;
+  readonly getTestId: (request: Request) => string;
   readonly getActiveScenario: (testId: string) => ActiveScenario | undefined;
   readonly getScenarioDefinition: (
     scenarioId: string
@@ -111,7 +111,7 @@ export const createDynamicHandler = (
   options: DynamicHandlerOptions
 ): HttpHandler => {
   return http.all('*', async ({ request }) => {
-    const testId = options.getTestId();
+    const testId = options.getTestId(request);
     const activeScenario = options.getActiveScenario(testId);
     const scenarioId = activeScenario?.scenarioId ?? options.defaultScenarioId;
 

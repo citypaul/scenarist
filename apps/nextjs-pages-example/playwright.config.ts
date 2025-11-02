@@ -25,12 +25,26 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+      testIgnore: '**/*.baseline.spec.ts', // Exclude baseline tests from main suite
+    },
+    {
+      name: 'baseline',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: '**/*.baseline.spec.ts', // Only run baseline tests
+      // Note: globalSetup will detect baseline project and skip MSW initialization
     },
   ],
 
-  webServer: {
-    command: 'pnpm dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      command: 'pnpm dev',
+      url: 'http://localhost:3000',
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: 'pnpm fake-api',
+      url: 'http://localhost:3001/products',
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
 });

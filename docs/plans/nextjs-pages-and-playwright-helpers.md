@@ -33,9 +33,9 @@
 
 ### What We're Working On
 
-**Phase 1: Scenarist Integration + First Helper ✅ COMPLETE**
+**Phase 2: Products Page - Request Matching ⏳ STARTING NOW**
 
-Implemented MSW + Scenarist setup and extracted first Playwright helper.
+Implementing product listing with tier-based pricing (premium vs standard) to demonstrate Scenarist's request matching feature.
 
 ### Progress
 
@@ -49,12 +49,26 @@ Implemented MSW + Scenarist setup and extracted first Playwright helper.
 - [x] Smoke tests passing
 - [x] README documentation
 
-**Phase 1: Scenarist Integration + First Helper** - ✅ COMPLETE (3 commits on feat/phase-1-product-catalog)
+**Phase 1: Scenarist Integration + First Helper** - ✅ COMPLETE (3 commits)
 - [x] Write verbose Playwright test (RED) - Commit ad73eae
 - [x] Implement Scenarist setup in Next.js app (GREEN) - Commit 2c2afe1
 - [x] Extract `switchScenario` helper (GREEN) - Commit c12c039
 - [x] Both tests passing (manual + helper versions)
-- [x] 70% code reduction demonstrated (9 lines → 2 lines)
+- [x] 77% code reduction demonstrated (9 lines → 2 lines)
+
+**Phase 1 Post: Playwright Testing** - ✅ COMPLETE (5 commits)
+- [x] 13 Playwright integration tests (1.7s execution)
+- [x] Two-layer testing strategy documented
+- [x] 100% behavior coverage through public API
+- [x] Framework-agnostic testing proven
+
+**Phase 2: Products Page - Request Matching** - ⏳ STARTING (0 commits)
+- [ ] RED: Write Playwright tests for premium/standard pricing (both main and baseline)
+- [ ] GREEN: Implement products page and API route
+- [ ] GREEN: Create ProductCard and TierSelector components
+- [ ] GREEN: Setup json-server and create db.json
+- [ ] GREEN: Update scenarios with match criteria
+- [ ] REFACTOR: Clean up and optimize
 
 ### Blockers
 
@@ -62,9 +76,21 @@ None
 
 ### Next Steps
 
-1. **Phase 2**: Products Page - Request Matching (premium vs standard pricing)
-2. **Continue TDD discipline**: RED → GREEN → REFACTOR for all features
-3. **Ready for next phase**: Foundation solid, helpers working
+1. **Phase 2a (RED)**: Write failing Playwright tests
+   - Create `tests/playwright/products.spec.ts` (main tests - Scenarist enabled)
+   - Create `tests/playwright/products.baseline.spec.ts` (baseline tests - Scenarist disabled)
+   - Test premium user sees £99.99 pricing
+   - Test standard user sees £149.99 pricing
+2. **Phase 2b (GREEN)**: Implement products feature
+   - Setup json-server: Create `fake-api/db.json` with product data
+   - Add `fake-api` script to package.json
+   - Create `pages/api/products.ts` API route (calls localhost:3001)
+   - Create `pages/index.tsx` product listing page
+   - Create `components/ProductCard.tsx` component
+   - Create `components/TierSelector.tsx` component
+   - Update `lib/scenarios.ts` with matching scenarios
+3. **Phase 2c (REFACTOR)**: Clean up and optimize
+4. **Phase 2d**: Create PR and merge to main
 
 ---
 
@@ -76,7 +102,7 @@ None
 | **0: Setup** | ✅ **COMPLETE & MERGED (PR #41)** | **0.5 day** | **0.5 day** | **27** |
 | **1: Integration + First Helper** | ✅ **COMPLETE (3 commits)** | **1 day** | **~0.5 day** | **8** |
 | **1 Post: Playwright Testing** | ✅ **COMPLETE (5 commits)** | **-** | **~2-3 hours** | **6** |
-| 2: Products/Matching | ⏳ Not Started | 1 day | - | 0 |
+| **2: Products/Matching** | **⏳ IN PROGRESS** | **1 day** | **-** | **0** |
 | 3: Cart/Stateful | ⏳ Not Started | 1 day | - | 0 |
 | 4: Checkout/Composition | ⏳ Not Started | 0.5 day | - | 0 |
 | 5: Payment/Sequences | ⏳ Not Started | 1 day | - | 0 |
@@ -84,7 +110,7 @@ None
 | 7: Documentation | ⏳ Not Started | 1 day | - | 0 |
 | **Total** | **35% complete (3.5/10 phases)** | **8-9 days** | **~2.25 days** | **62** |
 
-**Next**: Phase 2 - Products Page (Request Matching)
+**Current**: Phase 2 - Products Page (Request Matching) - RED phase starting
 **Branch**: feat/phase-1-product-catalog (8 commits ahead of main)
 
 ---
@@ -637,14 +663,22 @@ export const premiumUserScenario: ScenarioDefinition = {
 
 ## Fake API Strategy
 
-### Why We Need This
+### Architecture: json-server as Real Backend
 
-To demonstrate Scenarist's value clearly, we need to show the comparison:
+**CRITICAL DECISION (Phase 2)**: json-server is NOT an alternative approach - it ALWAYS runs as a real backend that Scenarist overrides.
 
-1. **Without Scenarist**: Tests hitting "real" backend (slow, flaky, requires external service running)
-2. **With Scenarist**: Tests using mocked scenarios (fast, reliable, zero external dependencies)
+**Why This Matters:**
+- **Realistic scenario**: Tests a real-world use case where Scenarist overrides existing backends
+- **Proves integration**: Demonstrates Scenarist works alongside real services, not just in isolation
+- **Clear value**: Shows how Scenarist adds control/flexibility to real backend scenarios
 
-This makes the value proposition obvious: Scenarist eliminates the pain of managing test backends.
+**Architecture:**
+```
+1. json-server runs on port 3001 (always, like a real backend)
+2. Next.js app makes requests to http://localhost:3001
+3. Scenarist MSW intercepts those calls and mocks them
+4. This proves Scenarist can override real backends
+```
 
 ### Technology Choice: json-server
 
@@ -688,58 +722,71 @@ apps/nextjs-pages-example/
 └── ...
 ```
 
-### Usage Comparison
+### Two-Test-Suite Approach
 
-**Without Scenarist (using fake API)**:
+**CRITICAL PATTERN (Phase 2)**: We maintain TWO separate test suites to demonstrate the comparison.
+
+**Suite 1: Main Tests (`products.spec.ts`)**
+- **Scenarist ENABLED**: MSW intercepts requests, mocks based on scenarios
+- **Tests all scenarios**: Premium/standard pricing, error cases, sequences, state
+- **Purpose**: Demonstrate Scenarist's full capabilities
+- **Fast**: 2-3 seconds (in-memory mocks)
+
+**Suite 2: Baseline Tests (`products.baseline.spec.ts`)**
+- **Scenarist DISABLED**: Requests hit json-server directly
+- **Limited scenarios**: Only what json-server can do (static responses)
+- **Purpose**: Show limitations without Scenarist
+- **Slower**: 5-10 seconds (real HTTP to json-server)
+- **Cannot test**: Sequences, stateful mocks, error scenarios
+
+**Why Two Suites?**
+- **Clear comparison**: Side-by-side demonstrates value
+- **Proves limitations**: Baseline tests show what's impossible without Scenarist
+- **Realistic**: json-server represents real backend constraints
+
+**Usage:**
 ```bash
-# Terminal 1: Start json-server on port 3001
-npm run fake-api &
+# Terminal 1: Start json-server on port 3001 (always running)
+pnpm run fake-api
 
-# Terminal 2: Start Next.js app
-npm run dev &
+# Terminal 2: Start Next.js app on port 3000
+pnpm run dev
 
-# Terminal 3: Run tests
-npm test
+# Terminal 3: Run main tests (Scenarist-powered)
+pnpm test products.spec.ts
+# ✅ Tests all scenarios (premium/standard/errors/sequences/state)
+# ✅ Fast (2-3 seconds)
+# ✅ Full control via Scenarist
 
-# Limitations:
-# - Requires running json-server (extra process)
-# - Can't test error scenarios easily (json-server returns 404s)
-# - Can't test sequences (payment status polling)
-# - Can't test stateful behavior (cart state)
-# - Slower (real HTTP calls to json-server)
-# - Flaky (timing issues, port conflicts)
-
-# Approximate test run time: 10-15 seconds
+# Terminal 3: Run baseline tests (json-server only)
+pnpm test products.baseline.spec.ts
+# ⚠️ Tests limited scenarios (only static responses)
+# ⚠️ Slower (5-10 seconds)
+# ❌ Cannot test sequences/state/errors
 ```
 
-**With Scenarist**:
-```bash
-# Start Next.js app (Scenarist built-in)
-npm run dev
+**Comparison Table:**
 
-# Run tests
-npm test
-
-# Benefits:
-# ✅ No external dependencies
-# ✅ Test error scenarios (payment declined, out of stock)
-# ✅ Test sequences (payment status: pending → processing → succeeded)
-# ✅ Test stateful behavior (cart accumulates items)
-# ✅ Fast (in-memory mocks, no network calls)
-# ✅ Reliable (no timing issues, no port conflicts)
-# ✅ Parallel tests (isolated via test IDs)
-
-# Approximate test run time: 2-3 seconds
-```
+| Feature | Baseline (json-server) | Main (Scenarist) |
+|---------|------------------------|------------------|
+| **Setup** | 2 processes (json-server + Next.js) | 2 processes (json-server + Next.js) |
+| **Scenarist** | Disabled | Enabled (overrides json-server) |
+| **Test Speed** | 5-10 seconds | 2-3 seconds |
+| **Error Scenarios** | ❌ Static responses only | ✅ Full control (any status code) |
+| **Sequences** | ❌ Not possible | ✅ Payment polling, multi-step flows |
+| **Stateful Mocks** | ❌ Static data | ✅ Cart accumulation, state capture |
+| **Parallel Tests** | ⚠️ Shared state conflicts | ✅ Test ID isolation |
+| **Scenario Switching** | ❌ Restart json-server | ✅ Runtime switching per test |
 
 ### Metrics to Track
 
 After implementation, we'll document:
-- Test execution time: fake API vs Scenarist (target: 5-10x faster)
-- Setup complexity: 2 processes vs 1 process
-- Scenario coverage: limited (fake API) vs comprehensive (Scenarist)
+- Test execution time: Baseline (5-10s) vs Main (2-3s) (target: 2-3x faster)
+- Setup complexity: Same (2 processes), but Scenarist overrides json-server
+- Scenario coverage: limited (baseline) vs comprehensive (main tests)
+- Test suites: 2 separate specs demonstrating comparison
 
-This comparison will be prominently featured in the README to demonstrate value.
+This two-suite comparison will be prominently featured in the README to demonstrate value.
 
 ### Implementation Details for Comparison
 
@@ -1320,50 +1367,103 @@ Implement product listing with tier-based pricing (premium vs standard).
 #### 2a. RED - Write Playwright Tests
 
 **Tasks:**
-- [ ] Create `tests/playwright/products.spec.ts`
-- [ ] Write test for premium pricing
-- [ ] Write test for standard pricing
+- [ ] Create `tests/playwright/products.spec.ts` (main tests)
+- [ ] Create `tests/playwright/products.baseline.spec.ts` (baseline tests)
+- [ ] Write test for premium pricing (both suites)
+- [ ] Write test for standard pricing (both suites)
 
-**Test code:**
+**Main Test (Scenarist-powered):**
 ```typescript
-test('premium user sees premium pricing', async ({ page, scenarist }) => {
-  await scenarist.switchScenario('premiumUser');
-  await page.goto('/');
+// tests/playwright/products.spec.ts
+import { test, expect } from '@scenarist/playwright-helpers';
 
-  const firstProduct = page.locator('[data-testid="product-card"]').first();
-  await expect(firstProduct.locator('[data-testid="product-price"]')).toContainText('£99.99');
-});
+test.describe('Products with Scenarist', () => {
+  test('premium user sees premium pricing', async ({ page, scenarist }) => {
+    await scenarist.switchScenario('premiumUser');
+    await page.goto('/');
 
-test('standard user sees standard pricing', async ({ page, scenarist }) => {
-  await scenarist.switchScenario('standardUser');
-  await page.goto('/');
+    const firstProduct = page.locator('[data-testid="product-card"]').first();
+    await expect(firstProduct.locator('[data-testid="product-price"]')).toContainText('£99.99');
+  });
 
-  const firstProduct = page.locator('[data-testid="product-card"]').first();
-  await expect(firstProduct.locator('[data-testid="product-price"]')).toContainText('£149.99');
+  test('standard user sees standard pricing', async ({ page, scenarist }) => {
+    await scenarist.switchScenario('standardUser');
+    await page.goto('/');
+
+    const firstProduct = page.locator('[data-testid="product-card"]').first();
+    await expect(firstProduct.locator('[data-testid="product-price"]')).toContainText('£149.99');
+  });
 });
 ```
 
-**Expected**: Tests fail (no products page, no API route)
+**Baseline Test (json-server only):**
+```typescript
+// tests/playwright/products.baseline.spec.ts
+import { test, expect } from '@playwright/test';
+
+test.describe('Products without Scenarist (baseline)', () => {
+  test('fetches products from json-server', async ({ page }) => {
+    await page.goto('/');
+
+    // json-server returns static data, can't test scenarios
+    const firstProduct = page.locator('[data-testid="product-card"]').first();
+    await expect(firstProduct).toBeVisible();
+    // Cannot test premium vs standard - json-server is static!
+  });
+});
+```
+
+**Expected**: Both test suites fail (no products page, no API route, no json-server)
 
 #### 2b. GREEN - Implement Products Feature
 
 **Tasks:**
-- [ ] Create `pages/api/products.ts` - Fetch from external catalog API
+- [ ] Setup json-server: Create `fake-api/db.json` with product data (runs on port 3001)
+- [ ] Add `fake-api` script to package.json
+- [ ] Create `pages/api/products.ts` - Fetch from http://localhost:3001/products (json-server)
 - [ ] Create `pages/index.tsx` - Product listing page
 - [ ] Create `components/ProductCard.tsx` - Display individual product
 - [ ] Create `components/TierSelector.tsx` - Toggle premium/standard
 - [ ] Update `lib/scenarios.ts` - Add `premiumUserScenario` and `standardUserScenario` with match criteria
 
-**Scenario example:**
+**json-server setup:**
+```json
+// fake-api/db.json
+{
+  "products": [
+    { "id": "1", "name": "Product A", "price": 149.99 },
+    { "id": "2", "name": "Product B", "price": 199.99 }
+  ]
+}
+```
+
+**API Route (calls json-server):**
+```typescript
+// pages/api/products.ts
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Make request to json-server (Scenarist will intercept this!)
+  const response = await fetch('http://localhost:3001/products', {
+    headers: {
+      'x-test-id': req.headers['x-test-id'] as string || 'default',
+      'x-user-tier': req.headers['x-user-tier'] as string || 'standard',
+    }
+  });
+
+  const products = await response.json();
+  res.status(200).json(products);
+}
+```
+
+**Scenario example (intercepts json-server calls):**
 ```typescript
 export const premiumUserScenario: ScenarioDefinition = {
   id: 'premiumUser',
   name: 'Premium User',
-  description: 'Premium tier pricing',
+  description: 'Premium tier pricing - overrides json-server responses',
   mocks: [
     {
       method: 'GET',
-      url: 'https://api.catalog.com/products',
+      url: 'http://localhost:3001/products',  // Intercepts json-server!
       match: {
         headers: { 'x-user-tier': 'premium' }
       },
@@ -1379,9 +1479,36 @@ export const premiumUserScenario: ScenarioDefinition = {
     }
   ]
 };
+
+export const standardUserScenario: ScenarioDefinition = {
+  id: 'standardUser',
+  name: 'Standard User',
+  description: 'Standard tier pricing - overrides json-server responses',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/products',  // Intercepts json-server!
+      match: {
+        headers: { 'x-user-tier': 'standard' }
+      },
+      response: {
+        status: 200,
+        body: {
+          products: [
+            { id: '1', name: 'Product A', price: 149.99, tier: 'standard' },
+            { id: '2', name: 'Product B', price: 199.99, tier: 'standard' },
+          ]
+        }
+      }
+    }
+  ]
+};
 ```
 
-**Expected**: Tests pass, products display with correct pricing
+**Expected**:
+- Main tests pass (Scenarist intercepts and returns scenario data)
+- Baseline tests pass (json-server returns static data)
+- Products display with correct pricing based on scenario
 
 #### 2c. REFACTOR
 
@@ -1397,11 +1524,13 @@ export const premiumUserScenario: ScenarioDefinition = {
 - Clean component separation
 
 **Files Created**:
+- `fake-api/db.json` (json-server database)
 - `pages/index.tsx`
 - `pages/api/products.ts`
 - `components/ProductCard.tsx`
 - `components/TierSelector.tsx`
-- `tests/playwright/products.spec.ts`
+- `tests/playwright/products.spec.ts` (main tests - Scenarist)
+- `tests/playwright/products.baseline.spec.ts` (baseline tests - json-server only)
 
 **Learnings**: _(to be filled in during implementation)_
 
@@ -2142,7 +2271,23 @@ _(This section will be filled in during implementation with discoveries, gotchas
 
 ### Decisions Made During Implementation
 
-[This section will be filled in as we make decisions during implementation]
+**Decision 1: json-server as Real Backend (Not Alternative)**
+- **Date**: 2025-11-02
+- **Phase**: Phase 2 (Products/Request Matching)
+- **Decision**: json-server ALWAYS runs as a real backend that Scenarist overrides (not an either/or alternative)
+- **Rationale**:
+  - Tests realistic scenario where Scenarist overrides existing backends
+  - Proves integration works alongside real services, not just in isolation
+  - Demonstrates real-world value: adding control/flexibility to real backends
+- **Alternatives Considered**:
+  - json-server as alternative (rejected - doesn't prove integration value)
+  - No json-server at all (rejected - can't demonstrate override capability)
+  - Custom backend (rejected - too much work, json-server sufficient)
+- **Impact**:
+  - Architecture: json-server runs on port 3001, Next.js calls it, Scenarist intercepts
+  - Two test suites: Main (Scenarist-powered) and Baseline (json-server only)
+  - README will prominently feature side-by-side comparison
+  - Files created: `products.spec.ts` (main) and `products.baseline.spec.ts` (baseline)
 
 **Template format:**
 - **Date**: YYYY-MM-DD
@@ -2151,14 +2296,6 @@ _(This section will be filled in during implementation with discoveries, gotchas
 - **Rationale**: Why this decision was made
 - **Alternatives Considered**: What else was considered and why rejected
 - **Impact**: What this affects
-
-**Example:**
-- **Date**: 2025-10-27
-- **Phase**: Phase 0
-- **Decision**: Use json-server for fake API
-- **Rationale**: Simple, zero-code, highlights Scenarist's advantages through limitations
-- **Alternatives Considered**: Prism (too complex), custom Express (too much work), MSW standalone (defeats comparison purpose)
-- **Impact**: Enables clear before/after comparison in README
 
 ### Decisions Deferred
 
@@ -2366,6 +2503,7 @@ Track when this document was updated and why. This helps maintain document histo
 | 2025-11-01 | Phase 1 | Scenarist Integration + First Helper complete (3 commits: ad73eae RED, 2c2afe1 GREEN, c12c039 GREEN). 2 tests passing, 77% code reduction demonstrated, 8 files created. Key learnings: Next.js API route convention, scenario registration requirement, helper value validated. Completed in ~0.5 day (50% faster than estimated) | Claude |
 | 2025-11-02 | Phase 1 Post | Playwright Helpers Testing complete (5 commits: 1096383, 63ec627, 4641179, e4ba017, dd8c948). 13 integration tests (1.7s execution), comprehensive testing strategy documented, two-layer testing approach implemented. 6 files modified. Completed in ~2-3 hours. Key learnings: Two-layer testing essential, real Playwright > mocked, framework-agnostic package testing. | Claude |
 | 2025-11-02 | Progress | Updated Overall Progress table with Phase 1 Post completion, updated totals to 35% (3.5/10 phases), ~2.25 days actual vs 8-9 days estimated | Claude |
+| 2025-11-02 | Phase 2 Architecture | **CRITICAL DECISION**: json-server ALWAYS runs as real backend that Scenarist overrides (not alternative). Updated Fake API Strategy section with new architecture (json-server on port 3001, Scenarist intercepts). Added Two-Test-Suite Approach (products.spec.ts main tests, products.baseline.spec.ts baseline). Updated Phase 2 details to include both test files and json-server setup. Added Decision Log entry documenting architectural decision and rationale. This proves Scenarist works in realistic environments with real backends. | Claude |
 
 **Update Guidelines:**
 - Add entry when making significant changes (not typo fixes)

@@ -40,7 +40,18 @@
       "Bash(pnpm --filter=@scenarist/nextjs-pages-example lint:*)",
       "Bash(pnpm --filter=@scenarist/nextjs-pages-example build)",
       "Bash(pnpm --filter=@scenarist/nextjs-pages-example test:api:*)",
-      "Bash(pnpm --filter=@scenarist/nextjs-pages-example test)"
+      "Bash(pnpm --filter=@scenarist/nextjs-pages-example test)",
+      "Bash(pnpm exec playwright test:*)",
+      "Bash(gh run list:*)",
+      "Bash(pnpm view:*)",
+      "Bash(gh run watch:*)",
+      "Bash(pnpm test:e2e:*)",
+      "Bash(node -e:*)",
+      "Bash(node -p:*)",
+      "Bash(pnpm dev)",
+      "Bash(curl:*)",
+      "Bash(pnpm fake-api:*)",
+      "Bash(git reset:*)"
     ],
     "deny": [],
     "ask": []

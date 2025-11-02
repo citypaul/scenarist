@@ -10,8 +10,12 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "pnpm test:e2e && pnpm test:api",
-    "test:e2e": "playwright test",
-    "test:api": "vitest run"
+    "test:e2e": "playwright test --project=chromium",
+    "test:e2e:ui": "playwright test --project=chromium --ui",
+    "test:e2e:baseline": "SKIP_MSW=true playwright test --project=baseline",
+    "test:e2e:all": "playwright test",
+    "test:api": "vitest run",
+    "fake-api": "json-server fake-api/db.json --port 3001"
   },
   "dependencies": {
     "next": "^15.0.0",
@@ -32,6 +36,7 @@
     "@vitejs/plugin-react": "^4.0.0",
     "autoprefixer": "^10.4.0",
     "eslint": "^9.0.0",
+    "json-server": "^1.0.0-beta.3",
     "jsdom": "^25.0.0",
     "postcss": "^8.4.0",
     "tailwindcss": "^3.4.0",
