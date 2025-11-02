@@ -85,49 +85,7 @@ jobs:
       - name: Bruno API Tests
         run: pnpm test:bruno:ci
 
-  baseline-tests:
-    name: Baseline E2E Tests (without Scenarist)
-    timeout-minutes: 10
-    runs-on: ubuntu-latest
-    # Run in parallel with build-and-test (shares caches for faster execution)
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.0.0
-
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build
-        run: pnpm build
-
-      - name: Get installed Playwright version
-        id: playwright-version
-        run: echo "PLAYWRIGHT_VERSION=$(pnpm --filter=@scenarist/nextjs-pages-example list @playwright/test --depth=0 | grep @playwright/test | awk '{print $2}')" >> $GITHUB_OUTPUT
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.PLAYWRIGHT_VERSION }}
-
-      - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm --filter=@scenarist/nextjs-pages-example exec playwright install --with-deps chromium
-
-      - name: Run Baseline Tests
+      - name: Baseline E2E Tests (without Scenarist)
         run: pnpm --filter=@scenarist/nextjs-pages-example test:e2e:baseline
         env:
           SKIP_MSW: 'true'
