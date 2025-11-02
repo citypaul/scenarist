@@ -31,6 +31,8 @@ test('premium user scenario', async ({ page }) => {
 });
 ```
 
+> **Note on testing**: This package has comprehensive behavior-driven tests at the package level. This is NOT unit testing - we test observable behavior through the public API only. See [Testing Philosophy](#testing-philosophy) below for full rationale.
+
 #### Options
 
 ```typescript
@@ -73,66 +75,191 @@ await switchScenario(page, 'premiumUser', {
 
 **Code reduction: 77%**
 
-## Testing Strategy
+## Common Pitfalls
 
-This package follows behavior-driven testing principles. The helpers are **tested through E2E tests in consuming applications**, not through isolated unit tests.
+### ❌ Don't: Switch scenarios after navigation
 
-### Why No Unit Tests?
+```typescript
+// BAD - Switching after page load
+await page.goto('/');
+await switchScenario(page, 'premium', { baseURL: 'http://localhost:3000' });
+```
 
-1. **Helpers are thin wrappers** around Playwright's Page API
-2. **Real value is integration** - helpers must work with actual Playwright browsers, real HTTP requests, and real scenario endpoints
-3. **Behavior-driven testing** - We test through the public API (how users will actually use the helpers)
-4. **No business logic** - Helpers are pure plumbing with no complex logic requiring isolated testing
+**Why it fails**: Headers set AFTER navigation don't affect the already-loaded page.
 
-### Where Are They Tested?
+**Solution**: ✅ Switch scenario BEFORE navigating:
+```typescript
+await switchScenario(page, 'premium', { baseURL: 'http://localhost:3000' });
+await page.goto('/');  // Now requests use test ID header
+```
 
-The helpers are validated through comprehensive E2E tests in:
+---
 
-**Location**: `apps/nextjs-pages-example/tests/playwright/scenario-switching.spec.ts`
+### ❌ Don't: Forget to provide baseURL
 
-**Test Coverage**:
-- ✅ Scenario switching with helper (successful switch, headers set, navigation works)
-- ✅ Error handling (helper throws on non-200 responses)
-- ✅ Side-by-side comparison (manual verbose approach vs helper approach)
-- ✅ Real browser automation (tests run in actual Chromium/Firefox/WebKit)
-- ✅ Real scenario endpoints (Next.js API routes)
-- ✅ Real test ID isolation (concurrent test execution)
+```typescript
+// BAD - Missing required baseURL
+await switchScenario(page, 'premium', { endpoint: '/api/__scenario__' });
+```
+
+**Error**: TypeScript will catch this - `baseURL` is required.
+
+**Solution**: ✅ Always provide `baseURL`:
+```typescript
+await switchScenario(page, 'premium', {
+  baseURL: 'http://localhost:3000',
+  endpoint: '/api/__scenario__',
+});
+```
+
+---
+
+### ❌ Don't: Reuse test IDs manually
+
+```typescript
+// BAD - Manual test ID risks conflicts
+const testId = 'my-test';
+await page.request.post(`${baseURL}/api/__scenario__`, {
+  headers: { 'x-test-id': testId },
+  data: { scenario: 'premium' },
+});
+```
+
+**Why it fails**: Multiple tests with the same ID will interfere with each other.
+
+**Solution**: ✅ Let `switchScenario` generate unique IDs automatically:
+```typescript
+await switchScenario(page, 'premium', { baseURL });
+// Generates: test-premium-1730592847123 (unique timestamp)
+```
+
+## Testing Philosophy
+
+**You might be thinking**: "Why test the helpers in their own package when they're already tested in Next.js?"
+
+**Answer**: We use a **two-layer approach** that tests different concerns:
+
+**Why this matters**:
+- ⚡ Fast feedback (1.7s vs 2-3s for full E2E)
+- 🎯 Pinpoint issues in Playwright integration vs framework integration
+- 📋 Comprehensive edge case coverage (13 test scenarios)
+- 🔒 Tests prove helper works with real Playwright API
+
+This package uses a **two-layer testing approach**:
+
+### Layer 1: Playwright Integration Tests (This Package)
+
+**Location**: `packages/playwright-helpers/tests/`
+
+These tests validate the helper works correctly with **real Playwright** using MSW Node server. They prove the helper integrates with Playwright's Page API correctly.
+
+**Testing Stack**:
+- ✅ **Real Playwright** - Uses actual `@playwright/test` with real Page objects
+- ✅ **MSW Node Server** - Real HTTP server responding to requests
+- ✅ **No framework dependencies** - Tests helper + Playwright only
+
+**What We Test**:
+- ✅ Scenario switching succeeds with correct inputs
+- ✅ Test ID generation format and uniqueness
+- ✅ Endpoint URL construction (baseURL + endpoint)
+- ✅ Request body structure (scenario, variant)
+- ✅ Custom header support (testIdHeader)
+- ✅ Error handling (404, 400, 500 responses)
+- ✅ Multiple concurrent scenarios work independently
+- ✅ Default values for optional parameters
+
+**Value**: Tests helper's integration with Playwright in isolation. No Next.js, no MSW client, no complex stack - just helper + Playwright + HTTP server.
 
 **Example Test**:
 ```typescript
-test('can switch to premium scenario using helper', async ({ page }) => {
-  await switchScenario(page, 'premiumUser', {
-    baseURL: 'http://localhost:3000',
-    endpoint: '/api/__scenario__',
-  });
-
-  await page.goto('/');
-  await expect(page).toHaveTitle(/Scenarist E-commerce Example/);
-  await expect(page.locator('h1')).toBeVisible();
+test('should throw error when scenario switch fails with 404', async ({ page }) => {
+  await expect(
+    switchScenario(page, 'error-404', {
+      baseURL: 'http://localhost:9876',
+    })
+  ).rejects.toThrow(/Failed to switch scenario: 404/);
 });
+```
+
+**Run Package Tests**:
+```bash
+cd packages/playwright-helpers
+pnpm test          # Run all tests
+pnpm test:watch    # Interactive UI mode
+```
+
+### Layer 2: Integration Tests (Next.js App)
+
+**Location**: `apps/nextjs-pages-example/tests/playwright/scenario-switching.spec.ts`
+
+These tests validate the **complete integration** of helpers with real frameworks, real browsers, and real scenario endpoints.
+
+**What Integration Tests Cover**:
+- ✅ Helper works with real Playwright browsers (Chromium/Firefox/WebKit)
+- ✅ Helper works with real Next.js API routes
+- ✅ Helper works with real Scenarist scenario switching
+- ✅ Full user journey (switch → navigate → verify)
+- ✅ Next.js-specific behavior (Pages Router conventions)
+
+**Why Both Layers Matter**:
+
+| Concern | Package Tests ✅ | Integration Tests ✅ |
+|---------|------------------|----------------------|
+| **Speed** | ⚡ Fast (1.7s) | 🐌 Slower (2-3s) |
+| **Scope** | Helper + Playwright only | Full stack (Next.js + MSW + Scenarist) |
+| **Debugging** | 🎯 Pinpoint Playwright integration issues | 🔍 Find framework integration issues |
+| **Coverage** | Edge cases + error handling | Happy paths + real scenarios |
+| **Dependencies** | Minimal (Playwright, MSW) | Many (Next.js, MSW client, Scenarist) |
+| **What it proves** | Helper works with Playwright API | Helper works with real frameworks |
+
+**Takeaway**: Package tests prove Playwright integration. Integration tests prove framework integration.
+
+**Run Integration Tests**:
+```bash
+# From repository root
+pnpm --filter=@scenarist/nextjs-pages-example test:e2e
 ```
 
 ### TDD Compliance
 
-This testing approach is fully compliant with strict TDD principles:
+**Critical Question**: "If these aren't unit tests, why were they written AFTER the E2E tests?"
 
-1. **RED phase**: E2E test written first, fails with "switchScenario is not a function"
-2. **GREEN phase**: Helper implementation added, test passes
-3. **Refactoring**: Helper API refined based on test usage
-4. **100% behavior coverage**: All helper code paths exercised through E2E tests
-5. **Public API testing**: Tests use helpers exactly as end users will
+**Answer**: This follows strict TDD with **deliberate refactoring**:
 
-### Running Tests
+**Phase 1a (RED)**: E2E test written first
+- ❌ Test fails: "switchScenario is not a function"
+- **This is the failing test that drove development**
 
-From the repository root:
+**Phase 1b (GREEN)**: Minimum implementation
+- ✅ Helper implementation created
+- ✅ E2E test passes
+- **Working code, ready to commit**
 
-```bash
-# Run all E2E tests (includes helper validation)
-pnpm --filter=@scenarist/nextjs-pages-example test:e2e
+**Phase 1c (REFACTOR)**: Edge case coverage added
+- 🔧 17 behavior tests added (error handling, edge cases, defaults)
+- ✅ All tests green, 100% coverage achieved
+- **Refactoring step per RED-GREEN-REFACTOR cycle**
 
-# Run scenario switching tests specifically
-pnpm --filter=@scenarist/nextjs-pages-example test:e2e scenario-switching.spec.ts
-```
+**Key Insight**: Package tests are NOT "test-first" - they're REFACTORING tests added after green to ensure edge case coverage. The E2E test was the failing test that drove implementation.
+
+This is textbook TDD: **RED** (E2E fails) → **GREEN** (implementation) → **REFACTOR** (add package tests for completeness).
+
+### How This Aligns With Testing Guidelines
+
+Our testing guidelines (from `docs/testing-guidelines.md`) require:
+
+| Guideline | How Package Tests Comply |
+|-----------|--------------------------|
+| **"Test through public API exclusively"** | ✅ Tests call `switchScenario()` only - internals invisible |
+| **"No 1:1 mapping between test/implementation files"** | ✅ Single test file, single public function, multiple behaviors |
+| **"Tests must document expected business behaviour"** | ✅ Each test describes observable behavior (error, headers, defaults) |
+| **"Behavior-driven - treat as black box"** | ✅ Tests verify inputs → outputs, implementation is opaque |
+
+**Key Distinction**:
+- ❌ **Unit testing** = Testing internal functions, mocking own code, coupling to implementation
+- ✅ **Behavior testing** = Testing public API, mocking external dependencies, verifying outcomes
+
+We mock Playwright's `Page` (external dependency we don't own), not our own code.
 
 ## Development
 
