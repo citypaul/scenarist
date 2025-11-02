@@ -1061,28 +1061,36 @@ During Phase 2 initial implementation, `reset()` was added speculatively without
 - ✅ MSW adapter package (framework-agnostic)
 - ✅ Express adapter package
 - ✅ Express example application with E2E tests
+- ✅ Next.js adapter package (Pages Router)
+- ✅ Playwright helpers package
 - ✅ **Dynamic Response System - Phase 1: Request Content Matching (PR #24)**
   - Request body matching (partial match)
   - Request headers matching (exact match)
   - Request query parameters matching (exact match)
   - Specificity-based selection algorithm
-  - 183 tests passing, 100% coverage maintained
-- ✅ TypeScript strict mode throughout
-- ✅ Core functionality documentation
-
-**Future Enhancements:**
-- 🔜 **Dynamic Response System - Phase 2: Response Sequences**
+  - Combined matching (body + headers + query)
+  - Fallback mocks (no match criteria)
+- ✅ **Dynamic Response System - Phase 2: Response Sequences (PR #25)**
   - Ordered sequences of responses for polling scenarios
   - Repeat modes (last/cycle/none)
   - Sequence exhaustion and fallback
-- 🔜 **Dynamic Response System - Phase 3: Stateful Mocks**
-  - Capture state from requests
-  - Inject state into responses via templates
+  - Match + Sequence composition
+  - Idempotent sequence reset
+- ✅ **Dynamic Response System - Phase 3: Stateful Mocks (PRs #30-#34)**
+  - Capture state from requests via `captureState`
+  - Inject state into responses via `{{state.key}}` templates
+  - Array append syntax `stateKey[]`
+  - Nested path support `state.user.profile.name`
   - State reset on scenario switch
-- 🔜 Additional framework adapters (Fastify, Koa, Hono, Next.js)
+  - Test ID isolation for parallel tests
+- ✅ TypeScript strict mode throughout
+- ✅ Core functionality documentation
+- ✅ 281 tests passing across all packages (100% coverage in core)
+
+**Future Enhancements:**
+- 🔜 Additional framework adapters (Fastify, Koa, Hapi)
 - 🔜 Additional storage adapters (Redis, PostgreSQL)
 - 🔜 Visual debugger for scenarios
-- 🔜 Playwright helper utilities
 - 🔜 Documentation site
 - 🔜 npm package publication
 

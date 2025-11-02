@@ -7,9 +7,11 @@
 
 import type { Product } from '../types/product';
 
-type ProductCardProps = Product;
+type ProductCardProps = Product & {
+  readonly onAddToCart?: () => void;
+};
 
-export const ProductCard = ({ name, description, price, tier }: ProductCardProps) => {
+export const ProductCard = ({ id, name, description, price, tier, onAddToCart }: ProductCardProps) => {
   return (
     <div data-testid="product-card" className="border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
       <div className="mb-4">
@@ -21,7 +23,7 @@ export const ProductCard = ({ name, description, price, tier }: ProductCardProps
         </p>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-4">
         <span data-testid="product-price" className="text-2xl font-bold text-blue-600">
           £{price.toFixed(2)}
         </span>
@@ -29,6 +31,14 @@ export const ProductCard = ({ name, description, price, tier }: ProductCardProps
           {tier}
         </span>
       </div>
+
+      <button
+        data-testid={`add-to-cart-${id}`}
+        onClick={onAddToCart}
+        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors"
+      >
+        Add to Cart
+      </button>
     </div>
   );
 };

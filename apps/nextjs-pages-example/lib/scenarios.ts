@@ -77,10 +77,69 @@ export const standardUserScenario: ScenarioDefinition = {
 };
 
 /**
+ * Cart with State Scenario - Phase 3: Stateful Mocks
+ *
+ * Demonstrates Scenarist's stateful mock feature:
+ * - POST /cart/add: Captures productId from request body into cartItems[] array
+ * - GET /cart: Injects cartItems array into response with aggregated quantities
+ *
+ * State structure:
+ * - cartItems[]: Array of productIds (appends with [] syntax)
+ *
+ * Response injection:
+ * - Aggregates cartItems into unique items with quantities
+ * - Returns as { items: [{ productId, quantity }, ...] }
+ */
+export const cartWithStateScenario: ScenarioDefinition = {
+  id: 'cartWithState',
+  name: 'Shopping Cart with State',
+  description: 'Stateful shopping cart that captures and injects cart items',
+  mocks: [
+    // GET /products - Return products so add-to-cart buttons exist
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/products',
+      response: {
+        status: 200,
+        body: {
+          products: buildProducts('standard'),  // Standard pricing for cart test
+        },
+      },
+    },
+    // POST /cart/add - Capture productId into cartItems array
+    {
+      method: 'POST',
+      url: 'http://localhost:3001/cart/add',
+      captureState: {
+        'cartItems[]': 'body.productId',  // Append productId to cartItems array
+      },
+      response: {
+        status: 200,
+        body: {
+          success: true,
+        },
+      },
+    },
+    // GET /cart - Inject cart items from state
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/cart',
+      response: {
+        status: 200,
+        body: {
+          items: '{{state.cartItems}}',  // Inject captured cart items
+        },
+      },
+    },
+  ],
+};
+
+/**
  * All scenarios for registration
  */
 export const scenarios = {
   default: defaultScenario,
   premiumUser: premiumUserScenario,
   standardUser: standardUserScenario,
+  cartWithState: cartWithStateScenario,
 } as const;
