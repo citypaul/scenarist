@@ -25,6 +25,15 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+      testIgnore: '**/*.baseline.spec.ts', // Exclude baseline tests from main suite
+    },
+    {
+      name: 'baseline',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: '**/*.baseline.spec.ts', // Only run baseline tests
+      // Baseline tests don't use Scenarist, so skip MSW setup
+      globalSetup: undefined,
+      globalTeardown: undefined,
     },
   ],
 

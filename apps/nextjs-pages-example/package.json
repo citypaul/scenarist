@@ -10,8 +10,10 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "pnpm test:e2e && pnpm test:api",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
+    "test:e2e": "playwright test --project=chromium",
+    "test:e2e:ui": "playwright test --project=chromium --ui",
+    "test:e2e:baseline": "playwright test --project=baseline",
+    "test:e2e:all": "playwright test",
     "test:api": "vitest run",
     "fake-api": "json-server fake-api/db.json --port 3001"
   },
