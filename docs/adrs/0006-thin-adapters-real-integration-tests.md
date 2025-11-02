@@ -71,10 +71,10 @@ We need **clear criteria** for when the general rule applies vs. when real depen
 - ✅ **Aligns with Layer 2** - Per ADR-0003 testing strategy
 
 **When to use mocks (DEFAULT for most adapters):**
-- ✅ Adapter has complex translation logic (>50 lines)
+- ✅ Package has multiple responsibilities (middleware + endpoints + context)
+- ✅ Complex translation logic (header parsing, type conversion, validation)
 - ✅ External API is unstable or experimental
 - ✅ Tests would be slow with real dependencies (>2s)
-- ✅ Multiple code paths need exhaustive testing
 - ✅ Heavy transformation between framework and domain types
 - ✅ Framework requires complex initialization/teardown
 
@@ -89,13 +89,17 @@ We need **clear criteria** for when the general rule applies vs. when real depen
 
 In rare cases (target ≤10% of adapters), real dependencies MAY be used **IF AND ONLY IF ALL** of the following criteria are true:
 
-**Exception Criteria (ALL 6 must be true):**
+**Exception Criteria (ALL 5 must be true):**
 
-1. ✅ **Adapter is thin** - Production code ≤50 lines (HARD LIMIT)
+1. ✅ **Single responsibility** - Package does ONE thing only
+   - **Examples:**
+     - ✅ Scenario switching helper (one function, one purpose)
+     - ❌ Adapter with middleware + endpoints + context (multiple concerns)
+   - **Test**: Can you describe what the package does in one sentence?
 
 2. ✅ **Minimal translation logic** - Direct API wrappers only, no data transformation
    - **What "minimal" means:**
-     - ✅ Direct pass-through to domain API (no transformation)
+     - ✅ Direct pass-through to external API (no transformation)
      - ✅ Simple error wrapping (catch → Result type)
      - ✅ Parameter forwarding (options.x → api(x))
      - ❌ Header parsing/normalization (= complex)
@@ -106,11 +110,13 @@ In rare cases (target ≤10% of adapters), real dependencies MAY be used **IF AN
 
 3. ✅ **External API is stable** - Playwright, Node.js core libraries (not experimental)
 
-4. ✅ **Real tests are fast** - Execution time ≤2 seconds (HARD LIMIT)
+4. ✅ **Real tests provide adequate feedback speed** - Fast enough for rapid development cycles
+   - Tests complete quickly enough to run frequently during development
+   - No significant friction compared to mocked tests
 
-5. ✅ **Framework setup is trivial** - No complex initialization or teardown
-
-6. ✅ **Higher confidence needed** - Real integration catches issues mocks can't
+5. ✅ **Higher confidence needed** - Real integration catches issues mocks can't
+   - Mocking the external API would test "our mock" not real behavior
+   - External API has subtle behaviors that are hard to replicate in mocks
 
 **If ANY criterion is false → use mocked tests (follow default rule)**
 
@@ -219,21 +225,21 @@ expect(mockPage.setExtraHTTPHeaders).toHaveBeenCalled();
 
 **When adding adapter tests, ask these questions in order:**
 
-#### Question 1: How much code is in the adapter?
-- **>50 lines** → ❌ Follow general rule (mock dependencies)
-- **≤50 lines** → Continue to Question 2
+#### Question 1: Does the package have a single responsibility?
+- **Multiple concerns** (middleware + endpoints + context) → ❌ Follow general rule (mock dependencies)
+- **Single responsibility** (one clear purpose) → Continue to Question 2
 
 #### Question 2: How complex is the translation logic?
-- **Complex transformations** → ❌ Follow general rule
-- **Minimal transformation** → Continue to Question 3
+- **Complex transformations** (header parsing, type conversion, validation) → ❌ Follow general rule
+- **Minimal transformation** (direct API wrappers) → Continue to Question 3
 
 #### Question 3: Is the external API stable and well-tested?
 - **Experimental or unstable** → ❌ Follow general rule
-- **Stable (Playwright, Node.js core)** → Continue to Question 4
+- **Stable** (Playwright, Node.js core) → Continue to Question 4
 
-#### Question 4: How fast would tests be with real dependencies?
-- **>2 seconds** → ❌ Follow general rule
-- **≤2 seconds** → Continue to Question 5
+#### Question 4: Would tests provide adequate feedback speed with real dependencies?
+- **Slow enough to cause friction** → ❌ Follow general rule (mock for faster feedback)
+- **Fast enough for rapid iteration** → Continue to Question 5
 
 #### Question 5: Does real integration provide significantly more confidence?
 - **Mocks are sufficient** → ❌ Follow general rule
@@ -251,12 +257,11 @@ expect(mockPage.setExtraHTTPHeaders).toHaveBeenCalled();
 
 | Criterion | Playwright Helpers | Evidence |
 |-----------|-------------------|----------|
-| **Thin adapter** | ✅ ~40 lines | Single file, single responsibility |
-| **Minimal logic** | ✅ API calls only | No transformation, just wrappers |
+| **Single responsibility** | ✅ One purpose | "Provides scenario switching helper for Playwright tests" |
+| **Minimal logic** | ✅ API calls only | Direct wrapper around `Page.request` and `Page.setExtraHTTPHeaders` |
 | **Stable API** | ✅ Playwright | Mature, well-tested framework |
 | **Fast tests** | ✅ 1.7 seconds | MSW + Playwright is fast |
-| **Trivial setup** | ✅ MSW server | 3 lines of setup code |
-| **Higher confidence** | ✅ Real integration | Proves actual Playwright API works |
+| **Higher confidence** | ✅ Real integration | Proves actual Playwright API works, catches API quirks |
 
 **Result:** Use real Playwright in tests ✅
 
@@ -273,12 +278,11 @@ expect(mockPage.setExtraHTTPHeaders).toHaveBeenCalled();
 
 | Criterion | Express Adapter | Evidence |
 |-----------|----------------|----------|
-| **Thin adapter** | ❌ ~400 lines | Multiple files, multiple concerns |
-| **Minimal logic** | ❌ Complex translation | Headers, query, body, context extraction |
+| **Single responsibility** | ❌ Multiple concerns | Middleware + endpoints + context extraction + request translation |
+| **Minimal logic** | ❌ Complex translation | Headers normalization, query parsing, body extraction, type conversion |
 | **Stable API** | ✅ Express | Well-tested framework |
 | **Fast tests** | ⚠️ Could be slow | Full server adds overhead |
-| **Trivial setup** | ❌ Multiple concerns | Middleware, routes, context |
-| **Higher confidence** | ⚠️ Mocks sufficient | Translation logic is testable in isolation |
+| **Higher confidence** | ⚠️ Mocks sufficient | Translation logic is testable in isolation with fast feedback |
 
 **Result:** Mock Express Request/Response objects ✅
 
@@ -291,20 +295,19 @@ expect(mockPage.setExtraHTTPHeaders).toHaveBeenCalled();
 
 ### ❌ General Rule: Hypothetical Database Adapter
 
-**Even if thin, fails "stable API" criterion:**
+**Even if single responsibility, fails other criteria:**
 
 | Criterion | Database Adapter | Evidence |
 |-----------|-----------------|----------|
-| **Thin adapter** | ✅ ~30 lines | Simple CRUD operations |
-| **Minimal logic** | ✅ Direct calls | No transformation |
+| **Single responsibility** | ✅ One purpose | Simple CRUD operations for scenarios |
+| **Minimal logic** | ✅ Direct calls | No transformation, just pass-through |
 | **Stable API** | ❌ **Database-specific** | PostgreSQL vs MySQL vs Redis differ |
-| **Fast tests** | ❌ **Database startup** | Containers slow, state management |
-| **Trivial setup** | ❌ **Database required** | Migrations, seed data |
-| **Higher confidence** | ⚠️ Integration tests better | Real DB tests in app layer |
+| **Fast tests** | ❌ **Database startup** | Containers slow, state management complex |
+| **Higher confidence** | ⚠️ Integration tests better | Real DB tests belong in app layer, not adapter layer |
 
 **Result:** Mock database client ✅
 
-Even though the adapter is thin, database setup is complex and tests would be slow. Mock the database client, test real database integration in app-level tests.
+Even though the adapter has single responsibility and minimal logic, database setup is complex and tests would be slow. Mock the database client, test real database integration in app-level tests.
 
 ## Consequences
 
@@ -343,11 +346,11 @@ Even though the adapter is thin, database setup is complex and tests would be sl
 **Risk 1: Contributors use exception as default**
 - *Mitigation:* Documentation emphasizes general rule is default. Exception is narrow and requires ALL criteria.
 
-**Risk 2: "Thin adapter" threshold creeps upward**
-- *Mitigation:* Hard limit: ≤50 lines. If adapter grows beyond 50 lines, refactor tests to use mocks.
+**Risk 2: "Single responsibility" boundary becomes blurred**
+- *Mitigation:* **One-sentence test.** If you can't describe the package's purpose in a single, clear sentence, it has multiple responsibilities. Use mocks. Evaluate package scope carefully during PR review.
 
-**Risk 3: Tests become slow as adapter grows**
-- *Mitigation:* 2-second threshold enforced. If tests exceed 2s, refactor to use mocks.
+**Risk 3: Tests become slow as package grows**
+- *Mitigation:* **Monitor feedback speed.** If tests become slow enough to cause friction during development, immediately refactor to use mocks. Evaluate regularly during PR reviews.
 
 ## Implementation Guidelines
 
@@ -355,21 +358,36 @@ Even though the adapter is thin, database setup is complex and tests would be sl
 
 **Step 1:** Default to general rule (mock dependencies)
 
-**Step 2:** Check if exception criteria apply:
+**Step 2:** Evaluate if exception criteria apply:
+
+**Ask:** Can you describe what this package does in one sentence?
+- If no → Multiple responsibilities → Use mocks
+- If yes → Continue
+
+**Ask:** Does it transform data or just pass through to external API?
+- If transforms → Complex translation → Use mocks
+- If pass-through → Continue
+
+**Ask:** Is the external API stable?
+- If experimental/unstable → Use mocks
+- If stable → Continue
+
+**Ask:** Run tests - do they provide adequate feedback speed?
 ```bash
-# Count production lines (excluding tests, types)
-find src -name "*.ts" -not -name "*.test.ts" -not -name "*.d.ts" | xargs wc -l
+time pnpm test
 ```
+- If slow enough to cause friction → Use mocks (faster feedback)
+- If fast enough for rapid iteration → Continue
 
-If ≤50 lines total → Consider exception
-If >50 lines → Follow general rule
+**Ask:** Does real integration provide significantly more confidence than mocks?
+- If mocks are sufficient → Use mocks
+- If real integration catches important issues → Exception applies
 
-**Step 3:** Evaluate all 6 exception criteria:
-- [ ] Adapter is thin (≤50 lines)
-- [ ] Minimal translation logic
+**Step 3:** Evaluate all 5 exception criteria:
+- [ ] Single responsibility (one-sentence test passes)
+- [ ] Minimal translation logic (direct API wrappers)
 - [ ] Stable external API
-- [ ] Real tests execute ≤2 seconds
-- [ ] Framework setup is trivial
+- [ ] Adequate feedback speed (fast enough for rapid iteration)
 - [ ] Real integration provides significantly more confidence
 
 **Step 4:** Document decision in package README
@@ -381,7 +399,7 @@ If >50 lines → Follow general rule
 This package uses **real Playwright integration** in tests (exception to ADR-0003 Layer 2).
 
 **Rationale** (per ADR-0006):
-- ✅ Adapter is thin (~40 lines)
+- ✅ Single responsibility (scenario switching helper)
 - ✅ Minimal translation logic (API wrappers only)
 - ✅ Stable API (Playwright)
 - ✅ Fast tests (1.7s execution)
@@ -410,17 +428,15 @@ See [ADR-0006](../../docs/adrs/0006-thin-adapters-real-integration-tests.md)
 
 **When adapter claims exception (uses real dependencies instead of mocks):**
 
-1. **COUNT LINES** - Verify adapter is ≤50 lines:
-   ```bash
-   find packages/[adapter]/src -name "*.ts" -not -name "*.test.ts" | xargs wc -l
-   ```
-   - [ ] Total ≤50 lines
-   - **If >50 lines** → ❌ REJECT - Request mocked tests per default rule
+1. **VERIFY SINGLE RESPONSIBILITY**:
+   - [ ] Can describe package purpose in one clear sentence
+   - [ ] Package does ONE thing only
+   - **If multiple concerns** → ❌ REJECT - Multiple responsibilities require mocked tests
 
 2. **CHECK COMPLEXITY**:
-   - [ ] Single responsibility only
-   - [ ] No data transformation (direct API wrappers only)
+   - [ ] Direct API wrappers only (no transformation)
    - [ ] No header parsing, type conversion, or validation
+   - [ ] No data structure manipulation
    - **If any transformation found** → ❌ REJECT - Translation logic requires mocked tests
 
 3. **VERIFY STABILITY**:
@@ -428,12 +444,13 @@ See [ADR-0006](../../docs/adrs/0006-thin-adapters-real-integration-tests.md)
    - [ ] Not experimental or frequently changing
    - **If unstable API** → ❌ REJECT - Unstable APIs should be mocked
 
-4. **MEASURE SPEED**:
+4. **MEASURE FEEDBACK SPEED**:
    ```bash
    cd packages/[adapter] && time pnpm test
    ```
-   - [ ] Tests complete in ≤2 seconds
-   - **If >2 seconds** → ❌ REJECT - Slow tests must use mocks
+   - [ ] Tests fast enough for rapid iteration
+   - [ ] No significant friction compared to mocked tests
+   - **If slow enough to cause friction** → ❌ REJECT - Slow tests must use mocks
 
 5. **EVALUATE VALUE**:
    - [ ] Real integration catches issues mocks can't
@@ -449,7 +466,7 @@ See [ADR-0006](../../docs/adrs/0006-thin-adapters-real-integration-tests.md)
 **IF ANY CRITERION FAILS → REJECT.** Request mocked tests following ADR-0003 Layer 2.
 
 **After approval:**
-- Update exception count in ADR-0006 (line 117-122)
+- Update exception count in ADR-0006 (line 121-122)
 - Monitor exception rate (target ≤10%)
 
 ## When to Revisit This Decision
@@ -460,9 +477,9 @@ This decision should be reconsidered if:
    - **Current status: 25% (1/4 adapters)** ⚠️
    - **Action if exceeded**: Review all exception cases, consider removing exception entirely or tightening criteria
 
-2. **Thin adapters grow beyond 50 lines** - If adapters claiming exception expand significantly, refactor to use mocks
+2. **Single responsibility boundary becomes blurred** - If packages claiming exception add multiple concerns, refactor to use mocks
 
-3. **Real tests become slow (>2 seconds)** - If execution time increases, refactor to use mocks immediately
+3. **Real tests become slow** - If execution time causes friction during development, refactor to use mocks immediately
 
 4. **Unstable APIs become common** - If "stable" APIs change frequently, strengthen stability criterion
 

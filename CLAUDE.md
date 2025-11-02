@@ -456,12 +456,12 @@ All packages use **TypeScript strict mode** with these non-negotiable settings:
   - Fast, focused tests for translation logic only
   - See ADR-0003 for rationale and detailed examples
 - **Thin adapter exception**: [ADR-0006](docs/adrs/0006-thin-adapters-real-integration-tests.md) documents when to use real dependencies
-  - **Only for adapters ≤50 lines meeting 5 other strict criteria**
+  - **Only for adapters with single responsibility meeting 4 other strict criteria**
   - **Current rate: 1/4 adapters (25%) - target ≤10%**
   - **When in doubt, use mocks** (general rule applies to 90%+ of adapters)
-  - Exception is narrow and rare - requires ALL 6 criteria
+  - Exception is narrow and rare - requires ALL 5 criteria
 
-**When creating new adapters**: Default to mocking. Only check ADR-0006 if adapter is genuinely trivial (≤50 lines, direct API wrapper).
+**When creating new adapters**: Default to mocking. Only check ADR-0006 if adapter has genuinely single responsibility and is direct API wrapper.
 
 ### Test Data Patterns
 
