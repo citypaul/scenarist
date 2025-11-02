@@ -1,5 +1,4 @@
-import { test, expect } from '@playwright/test';
-import { switchScenario } from '@scenarist/playwright-helpers';
+import { test, expect } from './fixtures';
 
 /**
  * Products Page - Request Matching with Scenarist
@@ -18,42 +17,39 @@ import { switchScenario } from '@scenarist/playwright-helpers';
  * - Flexible (test any scenario via request matching)
  * - Reliable (no external dependency timing issues)
  * - Comprehensive (premium/standard/error scenarios)
+ *
+ * Uses Playwright best practices:
+ * - Semantic selectors (getByRole, getByText)
+ * - Auto-waiting instead of arbitrary timeouts
+ * - Accessible markup testing
+ * - Fixture API for clean configuration (no repeated baseURL/endpoint)
  */
 
 test.describe('Products Page - Request Matching (with Scenarist)', () => {
-  test('premium user sees premium pricing', async ({ page }) => {
-    // Switch to premium user scenario
-    await switchScenario(page, 'premiumUser', {
-      baseURL: 'http://localhost:3000',
-      endpoint: '/api/__scenario__',
-    });
+  test('premium user sees premium pricing', async ({ page, switchScenario }) => {
+    // Switch to premium user scenario (baseURL and endpoint from config)
+    await switchScenario(page, 'premiumUser');
 
     // Navigate to products page
     await page.goto('/');
 
     // Click premium tier button to switch pricing
-    await page.locator('[data-testid="tier-premium"]').click();
-
-    // Wait for products to reload
-    await page.waitForTimeout(500);
+    await page.getByRole('button', { name: 'Select premium tier' }).click();
 
     // Verify premium pricing is displayed (£99.99 for first product)
-    const firstProduct = page.locator('[data-testid="product-card"]').first();
-    await expect(firstProduct.locator('[data-testid="product-price"]')).toContainText('£99.99');
+    const firstProduct = page.getByRole('article').first();
+    await expect(firstProduct.getByText('£99.99')).toBeVisible();
   });
 
-  test('standard user sees standard pricing', async ({ page }) => {
-    // Switch to standard user scenario
-    await switchScenario(page, 'standardUser', {
-      baseURL: 'http://localhost:3000',
-      endpoint: '/api/__scenario__',
-    });
+  test('standard user sees standard pricing', async ({ page, switchScenario }) => {
+    // Switch to standard user scenario (baseURL and endpoint from config)
+    await switchScenario(page, 'standardUser');
 
     // Navigate to products page
     await page.goto('/');
 
     // Verify standard pricing is displayed (£149.99 for first product)
-    const firstProduct = page.locator('[data-testid="product-card"]').first();
-    await expect(firstProduct.locator('[data-testid="product-price"]')).toContainText('£149.99');
+    const firstProduct = page.getByRole('article').first();
+    await expect(firstProduct.getByText('£149.99')).toBeVisible();
   });
 });

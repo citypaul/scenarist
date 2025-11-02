@@ -1,11 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
+import type { ScenaristOptions } from '@scenarist/playwright-helpers';
 
 /**
  * Playwright configuration for Scenarist E-commerce Example
  *
+ * Extends Playwright config with Scenarist options (scenaristEndpoint)
+ *
  * @see https://playwright.dev/docs/test-configuration
  */
-export default defineConfig({
+export default defineConfig<ScenaristOptions>({
   testDir: './tests/playwright',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
@@ -14,6 +17,7 @@ export default defineConfig({
   reporter: 'html',
   use: {
     baseURL: 'http://localhost:3000',
+    scenaristEndpoint: '/api/__scenario__',
     trace: 'on-first-retry',
   },
 

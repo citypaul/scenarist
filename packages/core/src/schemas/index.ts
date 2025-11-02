@@ -13,3 +13,25 @@
  */
 
 export { ScenarioRequestSchema, type ScenarioRequest } from './scenario-requests.js';
+export { ScenariosObjectSchema } from './scenarios-object.js';
+export {
+  HttpMethodSchema,
+  MockResponseSchema,
+  MatchCriteriaSchema,
+  RepeatModeSchema,
+  ResponseSequenceSchema,
+  CaptureStateSchema,
+  MockDefinitionSchema,
+  VariantDefinitionSchema,
+  ScenarioDefinitionSchema,
+  // Export schema-inferred types (single source of truth)
+  type HttpMethod,
+  type MockResponse,
+  type MatchCriteria,
+  type RepeatMode,
+  type ResponseSequence,
+  type CaptureState,
+  type MockDefinition,
+  type VariantDefinition,
+  type ScenarioDefinition,
+} from './scenario-definition.js';

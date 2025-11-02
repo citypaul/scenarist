@@ -479,6 +479,48 @@ const getMockScenario = (overrides?: Partial<Scenario>): Scenario => {
 };
 ```
 
+### TDD Evidence in Commit History
+
+**Default Expectation**: Commit history should show clear RED → GREEN → REFACTOR progression.
+
+**Rare Exceptions** where TDD evidence may not be linearly visible in commits:
+
+1. **Multi-Session Work**: Feature spans multiple development sessions
+   - Work done with TDD in each session
+   - Commits organized for PR clarity rather than strict TDD phases
+   - **Evidence**: Tests exist, all passing, implementation matches test requirements
+
+2. **Context Continuation**: Resuming from previous work
+   - Original RED phase done in previous session/commit
+   - Current work continues from that point
+   - **Evidence**: Reference to RED commit in PR description
+
+3. **Refactoring Commits**: Large refactors after GREEN
+   - Multiple small refactors combined into single commit
+   - All tests remained green throughout
+   - **Evidence**: Commit message notes "refactor only, no behavior change"
+
+**When Exception Applies**, document in PR:
+- Reference original failing test commit (RED phase)
+- Show current test status (all passing)
+- Explain why commits don't show linear TDD
+- Provide test output as evidence
+
+**Example Valid Exception**:
+```
+PR Description:
+"Phase 3 Shopping Cart implementation.
+
+RED phase: commit c925187 (added failing tests)
+GREEN phase: commits 5e0055b, 9a246d0 (implementation + bug fixes)
+REFACTOR: commit 11dbd1a (test isolation improvements)
+
+Test Evidence:
+✅ 4/4 tests passing (7.7s with 4 workers)
+```
+
+**Important**: Exception is for EVIDENCE presentation, not TDD practice. TDD process must still be followed - these are cases where commit history doesn't perfectly reflect the process that was actually followed.
+
 ## Key Architecture Decisions
 
 ### Test Isolation via Test IDs
@@ -1061,28 +1103,36 @@ During Phase 2 initial implementation, `reset()` was added speculatively without
 - ✅ MSW adapter package (framework-agnostic)
 - ✅ Express adapter package
 - ✅ Express example application with E2E tests
+- ✅ Next.js adapter package (Pages Router)
+- ✅ Playwright helpers package
 - ✅ **Dynamic Response System - Phase 1: Request Content Matching (PR #24)**
   - Request body matching (partial match)
   - Request headers matching (exact match)
   - Request query parameters matching (exact match)
   - Specificity-based selection algorithm
-  - 183 tests passing, 100% coverage maintained
-- ✅ TypeScript strict mode throughout
-- ✅ Core functionality documentation
-
-**Future Enhancements:**
-- 🔜 **Dynamic Response System - Phase 2: Response Sequences**
+  - Combined matching (body + headers + query)
+  - Fallback mocks (no match criteria)
+- ✅ **Dynamic Response System - Phase 2: Response Sequences (PR #25)**
   - Ordered sequences of responses for polling scenarios
   - Repeat modes (last/cycle/none)
   - Sequence exhaustion and fallback
-- 🔜 **Dynamic Response System - Phase 3: Stateful Mocks**
-  - Capture state from requests
-  - Inject state into responses via templates
+  - Match + Sequence composition
+  - Idempotent sequence reset
+- ✅ **Dynamic Response System - Phase 3: Stateful Mocks (PRs #30-#34)**
+  - Capture state from requests via `captureState`
+  - Inject state into responses via `{{state.key}}` templates
+  - Array append syntax `stateKey[]`
+  - Nested path support `state.user.profile.name`
   - State reset on scenario switch
-- 🔜 Additional framework adapters (Fastify, Koa, Hono, Next.js)
+  - Test ID isolation for parallel tests
+- ✅ TypeScript strict mode throughout
+- ✅ Core functionality documentation
+- ✅ 281 tests passing across all packages (100% coverage in core)
+
+**Future Enhancements:**
+- 🔜 Additional framework adapters (Fastify, Koa, Hapi)
 - 🔜 Additional storage adapters (Redis, PostgreSQL)
 - 🔜 Visual debugger for scenarios
-- 🔜 Playwright helper utilities
 - 🔜 Documentation site
 - 🔜 npm package publication
 
@@ -1672,3 +1722,447 @@ All other "compositions" are just phases executing in sequence with no new edge 
 **This is a critical architectural insight:** When designing systems with independent pipeline stages, test each stage thoroughly. Don't test all combinations - the architecture guarantees composition.
 
 _For the formal decision rationale and conditions under which this decision should be revisited, see [ADR-0004: Why Composition Tests Are Unnecessary](docs/adrs/0004-why-composition-tests-unnecessary.md)._
+
+## API Migration: registerScenario → scenarios Object
+
+**Date:** 2025-11-02
+**Status:** Migration Complete - All packages updated
+
+### Migration Summary
+
+The Scenarist API evolved from a register-on-demand pattern to an upfront declaration pattern:
+
+**OLD API (register-on-demand):**
+```typescript
+const scenarist = createScenarist({
+  enabled: true,
+  defaultScenario: scenarioObject,  // REQUIRED - passed directly
+});
+
+scenarist.registerScenario(otherScenario);  // Add scenarios after creation
+scenarist.registerScenarios([more, scenarios]);
+```
+
+**NEW API (upfront declaration):**
+```typescript
+const scenarios = {
+  default: defaultScenario,
+  other: otherScenario,
+} as const satisfies ScenariosObject;
+
+const scenarist = createScenarist({
+  enabled: true,
+  scenarios,  // All scenarios declared upfront
+  defaultScenarioId: 'default',  // ID reference, not object
+});
+```
+
+### Why the Migration (Design Rationale)
+
+**Problem with Old API:**
+- `defaultScenario` mixed concerns: both required parameter AND first scenario
+- Runtime registration meant scenarios could be incomplete at test time
+- No type-safe scenario ID autocomplete (IDs came from anywhere)
+- Scenarios scattered across setup code
+
+**Benefits of New API:**
+- ✅ All scenarios declared in one place (single source of truth)
+- ✅ Type-safe scenario IDs: `scenarist.switchScenario('test-123', 'premiumUser')` with autocomplete
+- ✅ Upfront validation: all scenarios exist at creation time (impossible state prevented)
+- ✅ Clearer intent: scenarios object makes it obvious what's available
+- ✅ Better error messages: can validate scenario IDs at compile time (no typos)
+- ✅ Easier testing: test setup is declarative, not procedural
+
+### Common Migration Patterns
+
+#### Pattern 1: Single-File Scenario Definition (Recommended)
+
+Create a centralized scenarios file:
+
+```typescript
+// src/scenarios.ts
+import type { ScenarioDefinition, ScenariosObject } from '@scenarist/core';
+
+export const defaultScenario: ScenarioDefinition = {
+  id: 'default',
+  name: 'Default Scenario',
+  // ...
+};
+
+export const premiumScenario: ScenarioDefinition = {
+  id: 'premium',
+  name: 'Premium User',
+  // ...
+};
+
+export const scenarios = {
+  default: defaultScenario,
+  premium: premiumScenario,
+} as const satisfies ScenariosObject;
+```
+
+Then use in server setup:
+
+```typescript
+// src/server.ts
+import { scenarios } from './scenarios.js';
+
+const scenarist = createScenarist({
+  enabled: true,
+  scenarios,
+  defaultScenarioId: 'default',
+});
+```
+
+**Benefits:**
+- Single definition location
+- Easy to find all available scenarios
+- Type-safe imports throughout codebase
+- Clear dependency: scenarios → server setup
+
+#### Pattern 2: Multi-File with Barrel Export
+
+For large projects, organize by domain:
+
+```typescript
+// src/scenarios/payment.ts
+export const stripeCreditCard: ScenarioDefinition = { /* ... */ };
+export const stripeDeclined: ScenarioDefinition = { /* ... */ };
+
+// src/scenarios/github.ts
+export const githubSuccess: ScenarioDefinition = { /* ... */ };
+export const githubNotFound: ScenarioDefinition = { /* ... */ };
+
+// src/scenarios/index.ts - Barrel file
+import type { ScenariosObject } from '@scenarist/core';
+import { stripeCreditCard, stripeDeclined } from './payment.js';
+import { githubSuccess, githubNotFound } from './github.js';
+
+const defaultScenario: ScenarioDefinition = { /* ... */ };
+
+export const scenarios = {
+  default: defaultScenario,
+  stripeCreditCard,
+  stripeDeclined,
+  githubSuccess,
+  githubNotFound,
+} as const satisfies ScenariosObject;
+```
+
+**Benefits:**
+- Organized by domain
+- Scales to many scenarios
+- Still single import point
+
+### Critical Gotcha: Scenario ID Mismatches
+
+#### Problem: Scenario definition ID vs object key mismatch
+
+The most common migration error:
+
+```typescript
+// ❌ WRONG - ID doesn't match key
+export const scenarios = {
+  auth: {  // KEY is 'auth'
+    id: 'authentication',  // ID is 'authentication'
+    name: 'Auth Scenario',
+    // ...
+  },
+} as const satisfies ScenariosObject;
+
+// Later in tests:
+scenarist.switchScenario('test-123', 'auth');  // Which one? Uses key!
+// But ScenarioManager looks up scenarioId='auth' in registry
+// Registry registered with ID='authentication'
+// Result: Scenario not found!
+```
+
+**Root Cause:** Two different ID systems:
+- **Object key** (property name): used in TypeScript types and API calls
+- **Scenario ID** (definition.id field): used in registration and lookup
+
+**The Rule:** Keys and IDs MUST match:
+
+```typescript
+// ✅ CORRECT - Key and ID are identical
+export const scenarios = {
+  authentication: {  // KEY is 'authentication'
+    id: 'authentication',  // ID is 'authentication' (matches!)
+    name: 'Auth Scenario',
+    // ...
+  },
+} as const satisfies ScenariosObject;
+
+scenarist.switchScenario('test-123', 'authentication');  // Works!
+```
+
+**Why This Requirement Exists:**
+1. `ScenarioIds<typeof scenarios>` extracts keys from object
+2. TypeScript ensures you pass a valid key
+3. But that key must match the scenario's internal ID for registry lookup
+4. Otherwise the scenario is registered but unreferenceable
+
+**Detection:** This only fails at runtime, when `switchScenario` returns `{ success: false }`. Add a validation test:
+
+```typescript
+it('should have matching keys and IDs', () => {
+  Object.entries(scenarios).forEach(([key, scenario]) => {
+    expect(scenario.id).toBe(key);
+  });
+});
+```
+
+### Edge Cases Discovered During Migration
+
+#### Edge Case 1: TypeScript Type Safety at Boundaries
+
+**Scenario:** Adding new scenarios to object but forgetting to update registration
+
+**OLD API issue:** Compile time didn't catch this
+- New scenario defined in object
+- Forgot to call `registerScenario()`
+- At test time: scenario ID recognized but definition not found
+
+**NEW API advantage:** Automatic validation
+```typescript
+const scenarios = {
+  default: { id: 'default', /* ... */ },
+  premium: { id: 'premium', /* ... */ },  // Added this
+} as const satisfies ScenariosObject;
+
+const scenarist = createScenarist({
+  scenarios,  // ✅ Automatically registered
+  defaultScenarioId: 'default',
+});
+```
+
+No additional registration needed - all scenarios in object are automatically registered.
+
+#### Edge Case 2: Empty Scenarios Object
+
+**Scenario:** What if scenarios object is empty?
+
+```typescript
+const scenarios = {} as const satisfies ScenariosObject;
+
+const scenarist = createScenarist({
+  scenarios,
+  defaultScenarioId: 'default',  // ❌ Doesn't exist!
+});
+```
+
+**Gotcha:** TypeScript doesn't validate `defaultScenarioId` exists in scenarios object
+
+**The Fix:** Either add validation or rely on explicit test:
+
+```typescript
+it('should have defaultScenarioId in scenarios', () => {
+  const scenarioIds = Object.keys(scenarios);
+  expect(scenarioIds).toContain(scenarist.config.defaultScenarioId);
+});
+```
+
+#### Edge Case 3: Dynamic Scenario ID Strings
+
+**Scenario:** Temptation to parameterize scenario IDs
+
+```typescript
+// ❌ WRONG - Breaks type safety
+const SCENARIO_IDS = {
+  DEFAULT: 'default',
+  PREMIUM: 'premium',
+};
+
+const scenarios = {
+  [SCENARIO_IDS.DEFAULT]: { id: SCENARIO_IDS.DEFAULT, /* ... */ },
+  [SCENARIO_IDS.PREMIUM]: { id: SCENARIO_IDS.PREMIUM, /* ... */ },
+};
+
+scenarist.switchScenario('test-123', SCENARIO_IDS.DEFAULT);  // Accepted but not type-safe
+```
+
+**Why This Fails:**
+- TypeScript doesn't track computed keys in type inference
+- `as const satisfies ScenariosObject` can't extract types from computed keys
+- No autocomplete, no compile-time validation
+
+**The Pattern:** Use literal keys instead:
+
+```typescript
+// ✅ CORRECT - Literal keys enable type inference
+const scenarios = {
+  default: { id: 'default', /* ... */ },
+  premium: { id: 'premium', /* ... */ },
+} as const satisfies ScenariosObject;
+
+// If you need constants, derive them from scenarios:
+const SCENARIO_IDS = {
+  DEFAULT: 'default' as const,
+  PREMIUM: 'premium' as const,
+};
+```
+
+### Testing Strategy After Migration
+
+**Old API Testing Pattern:**
+```typescript
+const scenarist = createScenarist({
+  enabled: true,
+  defaultScenario: mockDefaultScenario,
+});
+scenarist.registerScenario(mockOtherScenario);
+
+// Test scenario registration
+expect(() => scenarist.getScenarioById('other')).toBeDefined();
+```
+
+**New API Testing Pattern:**
+```typescript
+const testScenarios = {
+  default: mockDefaultScenario,
+  other: mockOtherScenario,
+} as const satisfies ScenariosObject;
+
+const scenarist = createScenarist({
+  enabled: true,
+  scenarios: testScenarios,
+  defaultScenarioId: 'default',
+});
+
+// Scenarios automatically registered - no registration tests needed
+expect(scenarist.listScenarios()).toHaveLength(2);
+```
+
+**Key Difference:**
+- ❌ No need to test registration (automatic)
+- ✅ Test that scenarios object matches test data
+- ✅ Test that defaultScenarioId exists in scenarios
+
+### Benefits Realized Post-Migration
+
+#### Benefit 1: Type-Safe Scenario Switching
+
+```typescript
+// TypeScript autocomplete works!
+scenarist.switchScenario('test-123', 'default');      // ✅ Autocomplete shows 'default'
+scenarist.switchScenario('test-123', 'typohere');     // ❌ Compile error
+
+// In test setups:
+await request(app)
+  .post(scenarist.config.endpoints.setScenario)
+  .set(scenarist.config.headers.testId, 'test-123')
+  .send({ scenario: 'premium' });  // ✅ String literal, type-checked
+```
+
+#### Benefit 2: Clearer Intent
+
+Old code:
+```typescript
+const scenarist = createScenarist({
+  enabled: true,
+  defaultScenario: SomeScenarioObject,
+});
+// Later... where's the default scenario stored? In defaultScenario property.
+// What other scenarios are available? Unknown without reading all registration calls.
+```
+
+New code:
+```typescript
+const scenarios = {
+  default: defaultScenario,
+  premium: premiumScenario,
+  error: errorScenario,
+} as const satisfies ScenariosObject;
+
+const scenarist = createScenarist({
+  enabled: true,
+  scenarios,  // ✅ Crystal clear: these are ALL available scenarios
+  defaultScenarioId: 'default',
+});
+```
+
+#### Benefit 3: Single Source of Truth
+
+All scenarios centralized in one file = easier maintenance:
+```typescript
+// Want to find all scenarios? One file.
+// Want to add a new scenario? One file.
+// Want to see what scenarios are available? One file.
+
+Object.keys(scenarios)  // Automatically has all scenario IDs
+```
+
+#### Benefit 4: Prevention of Impossible States
+
+Old API allowed:
+```typescript
+const scenarist = createScenarist({
+  enabled: true,
+  defaultScenario: scenarioA,
+});
+// Later, test tries to use scenario B that was never registered
+scenarist.switchScenario('test-123', 'scenarioB');  // Runtime error
+```
+
+New API prevents this:
+```typescript
+const scenarios = {
+  a: scenarioA,
+  b: scenarioB,
+} as const satisfies ScenariosObject;
+
+scenarist.switchScenario('test-123', 'scenarioC');  // ✅ Compile error! 'scenarioC' not in scenarios
+```
+
+### Migration Checklist
+
+When migrating existing code:
+
+- [ ] Create centralized scenarios file (or use barrel export pattern)
+- [ ] Group all scenario definitions
+- [ ] Create scenarios object with `as const satisfies ScenariosObject`
+- [ ] Ensure all scenario definition IDs match object keys
+- [ ] Replace `defaultScenario` parameter with `scenarios` object
+- [ ] Replace `defaultScenario` property with `defaultScenarioId` reference
+- [ ] Remove all `registerScenario()` and `registerScenarios()` calls
+- [ ] Update tests: remove registration test assertions
+- [ ] Add test validating defaultScenarioId exists in scenarios
+- [ ] Test that `listScenarios()` returns all scenarios from object
+- [ ] Verify TypeScript autocomplete in IDE
+- [ ] Update any dynamic scenario ID generation (use literal keys)
+
+### Documentation Impact
+
+**For New Users:**
+- Example apps show scenarios object pattern
+- API docs emphasize upfront declaration
+- TypeScript types guide toward correct usage
+
+**For Existing Users:**
+- Migration guide with before/after examples
+- Common gotchas section (key/ID mismatch)
+- Testing strategy changes documented
+- Deprecation note on old API (if ever supported)
+
+### Architectural Insight: Upfront vs On-Demand
+
+This migration reflects a shift in thinking:
+
+**On-Demand Model** (Old):
+- Flexible: add scenarios anytime
+- Risky: incomplete scenario sets at test time
+- Procedural: registration scattered across code
+- Runtime errors: scenario not found
+
+**Upfront Declaration Model** (New):
+- Type-safe: all scenarios known at compile time
+- Predictable: impossible states prevented
+- Declarative: single source of truth
+- Compile errors: bad scenario IDs caught immediately
+
+**Pattern Recognition:** This same pattern appears in many TypeScript patterns:
+- Component props → registered before component mounts
+- Routes → declared before server starts
+- Permissions → enumerated upfront, not granted on-demand
+
+The new Scenarist API follows the same principle: declare contracts upfront, validate at compile time, execute at runtime with confidence.

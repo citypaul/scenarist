@@ -19,11 +19,8 @@ import { scenarios } from './scenarios';
  */
 export const scenarist = createScenarist({
   enabled: true, // Always enabled in example app for demonstration
-  defaultScenario: scenarios.default,
+  scenarios, // All scenarios registered at initialization (must include 'default')
 });
-
-// Register all scenarios
-scenarist.registerScenarios(Object.values(scenarios));
 
 // Auto-start MSW server for server-side API route interception
 // This ensures fetch() calls from API routes are intercepted by MSW

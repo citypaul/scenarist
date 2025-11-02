@@ -21,7 +21,8 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@playwright/test": "^1.48.2"
+    "@playwright/test": "^1.48.2",
+    "@scenarist/core": "workspace:*"
   },
   "devDependencies": {
     "@scenarist/eslint-config": "workspace:*",

@@ -26,6 +26,13 @@ export type SwitchScenarioOptions = {
    * Optional variant within the scenario
    */
   readonly variant?: string;
+
+  /**
+   * Optional test ID to use instead of auto-generating one.
+   * When using the fixture-based API, this is automatically provided.
+   * @internal
+   */
+  readonly testId?: string;
 };
 
 /**
@@ -65,10 +72,13 @@ export const switchScenario = async (
     endpoint = '/__scenario__',
     testIdHeader = 'x-test-id',
     variant,
+    testId: providedTestId,
   } = options;
 
-  // Generate unique test ID
-  const testId = `test-${scenarioId}-${Date.now()}`;
+  // Use provided test ID (from fixture) or generate unique one
+  // When using fixtures, test ID is guaranteed unique by Playwright's test context
+  // Date.now() can collide when tests run in parallel within the same millisecond
+  const testId = providedTestId ?? `test-${scenarioId}-${crypto.randomUUID()}`;
 
   // Call scenario endpoint
   const url = `${baseURL}${endpoint}`;

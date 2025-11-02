@@ -490,20 +490,25 @@ export const errorState: ScenarioDefinition = {
 // server.ts
 import express from "express";
 import { createScenarist } from "@scenarist/express-adapter";
+import type { ScenariosObject } from "@scenarist/core";
 import { defaultScenario, errorState } from "./scenarios";
 
 const app = express();
 app.use(express.json());
 
+// Create scenarios object
+const scenarios = {
+  default: defaultScenario,
+  errorState: errorState,
+} as const satisfies ScenariosObject;
+
 // Create Scenarist instance (wires everything automatically)
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === "test",
-  defaultScenario: defaultScenario, // REQUIRED - fallback scenario
+  scenarios,                    // All scenarios registered upfront
+  defaultScenarioId: 'default', // ID of default scenario for fallback
   strictMode: false,
 });
-
-// Register additional scenarios
-scenarist.registerScenario(errorState);
 
 // Add Scenarist middleware
 if (process.env.NODE_ENV === "test") {
@@ -574,15 +579,21 @@ describe("Payment Flow", () => {
 ### Custom Configuration
 
 ```typescript
+const scenarios = {
+  default: myDefaultScenario,
+  success: mySuccessScenario,
+  error: myErrorScenario,
+} as const satisfies ScenariosObject;
+
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === "test",
-  defaultScenario: myDefaultScenario,
+  scenarios,
+  defaultScenarioId: 'default',
   strictMode: false,
 
   // Customize header names
   headers: {
     testId: "x-my-test-id",
-    mockEnabled: "x-my-mock-flag",
   },
 
   // Customize endpoint paths
@@ -1214,7 +1225,7 @@ A: Absolutely! Scenarist is built with Turborepo. Perfect for monorepo testing s
 
 **Q: What if I need to test with real external APIs sometimes?**
 
-A: Use the `x-mock-enabled` header to disable mocking per-request, or configure scenarios to pass through specific endpoints.
+A: Set `enabled: false` to disable mocking globally, or use `strictMode: false` and create scenarios with selective mocks to allow passthrough for specific endpoints.
 
 ---
 

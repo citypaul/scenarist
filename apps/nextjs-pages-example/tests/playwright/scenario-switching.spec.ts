@@ -11,8 +11,7 @@
  * 4. MSW server initialization
  */
 
-import { test, expect } from '@playwright/test';
-import { switchScenario } from '@scenarist/playwright-helpers';
+import { test, expect } from './fixtures';
 
 test('can switch to premium scenario manually', async ({ page }) => {
   // VERBOSE: Manually construct test ID
@@ -41,12 +40,9 @@ test('can switch to premium scenario manually', async ({ page }) => {
   await expect(heading).toBeVisible();
 });
 
-test('can switch to premium scenario using helper (Phase 1b)', async ({ page }) => {
-  // RED Phase: Helper doesn't exist yet - this will fail
-  await switchScenario(page, 'premiumUser', {
-    baseURL: 'http://localhost:3000',
-    endpoint: '/api/__scenario__',
-  });
+test('can switch to premium scenario using helper (Phase 1b)', async ({ page, switchScenario }) => {
+  // Clean fixture API - baseURL and endpoint from config
+  await switchScenario(page, 'premiumUser');
 
   // Navigate to home page
   await page.goto('/');

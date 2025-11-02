@@ -143,28 +143,7 @@ describe('Dynamic Response Sequences E2E (Phase 2)', () => {
 
   describe('Test ID Isolation', () => {
     it('should maintain independent sequence positions for different test IDs', async () => {
-      // Register shared scenario
-      scenarist.registerScenario({
-        id: 'shared-polling',
-        name: 'Shared Polling Sequence',
-        description: 'Multiple tests can use same scenario with independent state',
-        mocks: [
-          {
-            method: 'GET',
-            url: 'https://api.github.com/users/:username',
-            sequence: {
-              responses: [
-                { status: 200, body: { step: 1 } },
-                { status: 200, body: { step: 2 } },
-                { status: 200, body: { step: 3 } },
-              ],
-              repeat: 'last',
-            },
-          },
-        ],
-      });
-
-      // Test ID A: Switch to scenario
+      // Test ID A: Switch to scenario (already registered in scenarios.ts)
       await request(app)
         .post(scenarist.config.endpoints.setScenario)
         .set(scenarist.config.headers.testId, 'test-a')

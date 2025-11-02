@@ -49,41 +49,6 @@ describe('ExpressRequestContext', () => {
     });
   });
 
-  describe('isMockEnabled', () => {
-    it('should return true when header is "true"', () => {
-      const config = mockConfig();
-      const req = mockRequest({
-        headers: { 'x-mock-enabled': 'true' },
-      });
-
-      const context = new ExpressRequestContext(req, config);
-
-      expect(context.isMockEnabled()).toBe(true);
-    });
-
-    it('should return false when header is not "true"', () => {
-      const config = mockConfig();
-      const req = mockRequest({
-        headers: { 'x-mock-enabled': 'false' },
-      });
-
-      const context = new ExpressRequestContext(req, config);
-
-      expect(context.isMockEnabled()).toBe(false);
-    });
-
-    it('should default to true when header is missing', () => {
-      const config = mockConfig();
-      const req = mockRequest({
-        headers: {},
-      });
-
-      const context = new ExpressRequestContext(req, config);
-
-      expect(context.isMockEnabled()).toBe(true);
-    });
-  });
-
   describe('getHeaders', () => {
     it('should return all request headers', () => {
       const config = mockConfig();

@@ -44,13 +44,13 @@ test.describe('Products Page - Baseline (without Scenarist)', () => {
     await page.waitForLoadState('networkidle');
 
     // Verify products are displayed
-    const productCards = page.locator('[data-testid="product-card"]');
+    const productCards = page.getByRole('article');
     await expect(productCards.first()).toBeVisible();
 
-    // Verify product fields
+    // Verify product fields (using semantic selectors)
     const firstProduct = productCards.first();
-    await expect(firstProduct.locator('[data-testid="product-name"]')).toBeVisible();
-    await expect(firstProduct.locator('[data-testid="product-price"]')).toBeVisible();
+    await expect(firstProduct.getByRole('heading', { level: 3 })).toBeVisible();
+    await expect(firstProduct.getByText(/£\d+\.\d{2}/)).toBeVisible();
 
     // Note: json-server data doesn't include category field
     // Only Scenarist mocks add category - this demonstrates another difference!
@@ -75,10 +75,10 @@ test.describe('Products Page - Baseline (without Scenarist)', () => {
     await page.waitForLoadState('networkidle');
 
     // Verify we have products
-    await expect(page.locator('[data-testid="product-card"]').first()).toBeVisible();
+    await expect(page.getByRole('article').first()).toBeVisible();
 
-    // Get the first product price
-    const firstPrice = await page.locator('[data-testid="product-price"]').first().textContent();
+    // Get the first product price (using semantic selector)
+    const firstPrice = await page.getByRole('article').first().getByText(/£\d+\.\d{2}/).textContent();
 
     // We can't assert a specific price because json-server returns static data
     // Tier switching has NO EFFECT without Scenarist request matching
@@ -97,10 +97,10 @@ test.describe('Products Page - Baseline (without Scenarist)', () => {
     await page.waitForLoadState('networkidle');
 
     // Verify we have products
-    await expect(page.locator('[data-testid="product-card"]').first()).toBeVisible();
+    await expect(page.getByRole('article').first()).toBeVisible();
 
-    // Get the first product price
-    const firstPrice = await page.locator('[data-testid="product-price"]').first().textContent();
+    // Get the first product price (using semantic selector)
+    const firstPrice = await page.getByRole('article').first().getByText(/£\d+\.\d{2}/).textContent();
 
     // Same limitation: json-server ignores tier headers
     // Static data for all requests - no control over scenarios

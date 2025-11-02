@@ -11,35 +11,35 @@ type ProductBase = Omit<Product, 'price' | 'tier'>;
 
 const baseProducts: ReadonlyArray<ProductBase> = [
   {
-    id: '1',
+    id: 1,
     name: 'Product A',
     description: 'High-quality product A',
     image: '/images/product-a.jpg',
   },
   {
-    id: '2',
+    id: 2,
     name: 'Product B',
     description: 'Premium product B',
     image: '/images/product-b.jpg',
   },
   {
-    id: '3',
+    id: 3,
     name: 'Product C',
     description: 'Essential product C',
     image: '/images/product-c.jpg',
   },
 ] as const;
 
-export const PREMIUM_PRICES: Record<string, number> = {
-  '1': 99.99,
-  '2': 149.99,
-  '3': 79.99,
+export const PREMIUM_PRICES: Record<number, number> = {
+  1: 99.99,
+  2: 149.99,
+  3: 79.99,
 } as const;
 
-export const STANDARD_PRICES: Record<string, number> = {
-  '1': 149.99,
-  '2': 199.99,
-  '3': 99.99,
+export const STANDARD_PRICES: Record<number, number> = {
+  1: 149.99,
+  2: 199.99,
+  3: 99.99,
 } as const;
 
 /**

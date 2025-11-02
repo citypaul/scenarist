@@ -122,34 +122,7 @@ describe('Stateful Scenarios E2E (Phase 3)', () => {
     });
 
     it('should NOT reset state when scenario switch fails', async () => {
-      scenarist.registerScenario({
-        id: 'temp-capture-scenario',
-        name: 'Temp Capture Scenario',
-        description: 'Temporary scenario for testing failed switch',
-        mocks: [
-          {
-            method: 'POST',
-            url: 'https://api.example.com/temp-data',
-            captureState: {
-              tempValue: 'body.value',
-            },
-            response: {
-              status: 200,
-              body: { success: true },
-            },
-          },
-          {
-            method: 'GET',
-            url: 'https://api.example.com/temp-data',
-            response: {
-              status: 200,
-              body: {
-                value: '{{state.tempValue}}',
-              },
-            },
-          },
-        ],
-      });
+      // Scenario already registered in scenarios.ts
 
       const router = app._router as { stack: Array<{ route?: { path?: string } }> };
       if (!router.stack.some(layer => layer.route?.path === '/api/temp-data')) {

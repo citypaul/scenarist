@@ -4,20 +4,26 @@
 
 import { describe, it, expect } from 'vitest';
 import type { NextApiRequest } from 'next';
-import type { ScenarioDefinition } from '@scenarist/core';
+import type { ScenariosObject } from '@scenarist/core';
 import { createScenarist } from '../../src/pages/setup';
 import { getScenaristHeaders } from '../../src/pages/helpers';
 
-const defaultScenario: ScenarioDefinition = {
-  id: 'default',
-  name: 'Default Scenario',
-  description: 'Default test scenario',
-  mocks: [],
-};
+const testScenarios = {
+  default: {
+    id: 'default',
+    name: 'Default Scenario',
+    description: 'Default test scenario',
+    mocks: [],
+  },
+} as const satisfies ScenariosObject;
 
 describe('getScenaristHeaders', () => {
   it('should extract test ID from request using default configured header name', () => {
-    const scenarist = createScenarist({ enabled: true, defaultScenario });
+    const scenarist = createScenarist({
+      enabled: true,
+      scenarios: testScenarios,
+      defaultScenarioId: 'default',
+    });
     const req = {
       headers: { 'x-test-id': 'test-123' },
     } as NextApiRequest;
@@ -28,7 +34,11 @@ describe('getScenaristHeaders', () => {
   });
 
   it('should use default test ID when header is missing', () => {
-    const scenarist = createScenarist({ enabled: true, defaultScenario });
+    const scenarist = createScenarist({
+      enabled: true,
+      scenarios: testScenarios,
+      defaultScenarioId: 'default',
+    });
     const req = {
       headers: {},
     } as NextApiRequest;
@@ -41,7 +51,8 @@ describe('getScenaristHeaders', () => {
   it('should respect custom header name from config', () => {
     const scenarist = createScenarist({
       enabled: true,
-      defaultScenario,
+      scenarios: testScenarios,
+      defaultScenarioId: 'default',
       headers: { testId: 'x-custom-test-id' },
     });
     const req = {
@@ -56,7 +67,8 @@ describe('getScenaristHeaders', () => {
   it('should respect custom default test ID from config', () => {
     const scenarist = createScenarist({
       enabled: true,
-      defaultScenario,
+      scenarios: testScenarios,
+      defaultScenarioId: 'default',
       defaultTestId: 'my-default',
     });
     const req = {
@@ -71,7 +83,8 @@ describe('getScenaristHeaders', () => {
   it('should handle both custom header name and custom default test ID', () => {
     const scenarist = createScenarist({
       enabled: true,
-      defaultScenario,
+      scenarios: testScenarios,
+      defaultScenarioId: 'default',
       headers: { testId: 'x-my-header' },
       defaultTestId: 'my-default',
     });
@@ -85,7 +98,11 @@ describe('getScenaristHeaders', () => {
   });
 
   it('should handle header value as array (take first element)', () => {
-    const scenarist = createScenarist({ enabled: true, defaultScenario });
+    const scenarist = createScenarist({
+      enabled: true,
+      scenarios: testScenarios,
+      defaultScenarioId: 'default',
+    });
     const req = {
       headers: { 'x-test-id': ['test-123', 'test-456'] },
     } as NextApiRequest;

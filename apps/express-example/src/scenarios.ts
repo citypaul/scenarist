@@ -1,4 +1,4 @@
-import type { ScenarioDefinition } from '@scenarist/core';
+import type { ScenarioDefinition, ScenariosObject } from '@scenarist/core';
 
 /**
  * Default scenario - always available as fallback
@@ -633,15 +633,72 @@ export const multiStepFormScenario: ScenarioDefinition = {
 };
 
 /**
+ * TEST SCENARIO: Shared polling sequence
+ * Used in tests to verify test ID isolation with sequences
+ */
+export const sharedPollingScenario: ScenarioDefinition = {
+  id: 'shared-polling',
+  name: 'Shared Polling Sequence',
+  description: 'Multiple tests can use same scenario with independent state',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.github.com/users/:username',
+      sequence: {
+        responses: [
+          { status: 200, body: { step: 1 } },
+          { status: 200, body: { step: 2 } },
+          { status: 200, body: { step: 3 } },
+        ],
+        repeat: 'last',
+      },
+    },
+  ],
+};
+
+/**
+ * TEST SCENARIO: Temporary capture scenario
+ * Used in tests to verify state is not reset when scenario switch fails
+ */
+export const tempCaptureScenario: ScenarioDefinition = {
+  id: 'temp-capture-scenario',
+  name: 'Temp Capture Scenario',
+  description: 'Temporary scenario for testing failed switch',
+  mocks: [
+    {
+      method: 'POST',
+      url: 'https://api.example.com/temp-data',
+      captureState: {
+        tempValue: 'body.value',
+      },
+      response: {
+        status: 200,
+        body: { success: true },
+      },
+    },
+    {
+      method: 'GET',
+      url: 'https://api.example.com/temp-data',
+      response: {
+        status: 200,
+        body: {
+          value: '{{state.tempValue}}',
+        },
+      },
+    },
+  ],
+};
+
+/**
  * Scenarios organized as typed object for easy access in tests.
  *
- * Use this to get type-safe access to scenario IDs:
+ * Use this to get type-safe access to scenario IDs with autocomplete:
  *
  * @example
  * ```typescript
  * await request(app)
  *   .post(scenarist.config.endpoints.setScenario)
- *   .send({ scenario: scenarios.success.id });
+ *   .send({ scenario: 'success' }); // TypeScript autocomplete works!
  * ```
  */
 export const scenarios = {
@@ -658,5 +715,7 @@ export const scenarios = {
   paymentLimited: paymentLimitedScenario,
   shoppingCart: shoppingCartScenario,
   multiStepForm: multiStepFormScenario,
-} as const;
+  sharedPolling: sharedPollingScenario,
+  tempCapture: tempCaptureScenario,
+} as const satisfies ScenariosObject;
 

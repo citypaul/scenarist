@@ -69,10 +69,6 @@ export const createScenarist = (
 
   return {
     config,
-    registerScenario: (definition) => manager.registerScenario(definition),
-    registerScenarios: (definitions) => {
-      definitions.forEach((definition) => manager.registerScenario(definition));
-    },
     switchScenario: (testId, scenarioId, variantName) => {
       currentTestId.value = testId; // Update for MSW handler
       return manager.switchScenario(testId, scenarioId, variantName);
