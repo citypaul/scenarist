@@ -1003,7 +1003,6 @@ const minimalScenarios = {
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'development',
   scenarios: minimalScenarios,
-  defaultScenarioId: 'default',
   strictMode: false, // Let unmocked APIs pass through to real services
 });
 
@@ -1015,7 +1014,6 @@ const testScenarios = {
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
   scenarios: testScenarios,
-  defaultScenarioId: 'default',
   strictMode: true, // Fail loudly if any endpoint isn't mocked
 });
 ```
@@ -1036,7 +1034,6 @@ const scenarist = createScenarist({
 const scenarist = createScenarist({
   enabled: true,
   scenarios,
-  defaultScenarioId: 'default',
   headers: {
     testId: 'x-my-test-id',
   },
@@ -1091,7 +1088,6 @@ export const scenarios = {
 const scenarist = createScenarist({
   enabled: true,
   scenarios,  // All scenarios registered automatically
-  defaultScenarioId: 'default',
 });
 
 // tests

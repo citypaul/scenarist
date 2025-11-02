@@ -60,8 +60,7 @@ import { scenarios } from './scenarios';
 export const scenarist = createScenarist({
   scenarios,
   config: {
-    enabled: process.env.NODE_ENV === 'development',
-    defaultScenarioId: 'default'
+    enabled: process.env.NODE_ENV === 'development'
   }
 });
 
