@@ -31,7 +31,9 @@ This Next.js Pages example application exists to **demonstrate how Scenarist wor
 **Coverage:**
 - `smoke.spec.ts` - Basic app functionality
 - `scenario-switching.spec.ts` - Scenarist scenario management
-- `products.spec.ts` - **Request matching feature demonstration**
+- `products.spec.ts` - **Request matching feature demonstration (Phase 1)**
+- `sequences.spec.ts` - **Response sequences feature demonstration (Phase 2)**
+- `shopping-cart.spec.ts` - **Stateful mocks feature demonstration (Phase 3)**
 - `products.comparison.spec.ts` - Comparison without Scenarist
 
 **Why E2E-focused:**
@@ -161,7 +163,9 @@ const userTier = (req.headers['x-user-tier'] as string) || 'standard';
 **This example demonstrates:**
 - ✅ How to integrate Scenarist with Next.js Pages Router
 - ✅ How to use `getScenaristHeaders()` helper
-- ✅ How request matching works with tier-based pricing
+- ✅ How request matching works with tier-based pricing (Phase 1)
+- ✅ How response sequences work with polling scenarios (Phase 2)
+- ✅ How stateful mocks work with cart state management (Phase 3)
 - ✅ How to write Playwright tests with Scenarist
 
 **This example is NOT:**
