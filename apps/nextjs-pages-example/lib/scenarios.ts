@@ -5,16 +5,16 @@
  * Phase 2: Request matching for tier-based pricing
  */
 
-import type { ScenarioDefinition, ScenariosObject } from '@scenarist/core';
-import { buildProducts } from '../data/products';
+import type { ScenarioDefinition, ScenariosObject } from "@scenarist/core";
+import { buildProducts } from "../data/products";
 
 /**
  * Default scenario - baseline behavior
  */
 export const defaultScenario: ScenarioDefinition = {
-  id: 'default',
-  name: 'Default Scenario',
-  description: 'Default baseline behavior',
+  id: "default",
+  name: "Default Scenario",
+  description: "Default baseline behavior",
   mocks: [],
 };
 
@@ -27,20 +27,20 @@ export const defaultScenario: ScenarioDefinition = {
  * - Returns premium pricing (£99.99)
  */
 export const premiumUserScenario: ScenarioDefinition = {
-  id: 'premiumUser',
-  name: 'Premium User',
-  description: 'Premium tier pricing (£99.99)',
+  id: "premiumUser",
+  name: "Premium User",
+  description: "Premium tier pricing (£99.99)",
   mocks: [
     {
-      method: 'GET',
-      url: 'http://localhost:3001/products',
+      method: "GET",
+      url: "http://localhost:3001/products",
       match: {
-        headers: { 'x-user-tier': 'premium' },
+        headers: { "x-user-tier": "premium" },
       },
       response: {
         status: 200,
         body: {
-          products: buildProducts('premium'),
+          products: buildProducts("premium"),
         },
       },
     },
@@ -56,20 +56,20 @@ export const premiumUserScenario: ScenarioDefinition = {
  * - Returns standard pricing (£149.99)
  */
 export const standardUserScenario: ScenarioDefinition = {
-  id: 'standardUser',
-  name: 'Standard User',
-  description: 'Standard tier pricing (£149.99)',
+  id: "standardUser",
+  name: "Standard User",
+  description: "Standard tier pricing (£149.99)",
   mocks: [
     {
-      method: 'GET',
-      url: 'http://localhost:3001/products',
+      method: "GET",
+      url: "http://localhost:3001/products",
       match: {
-        headers: { 'x-user-tier': 'standard' },
+        headers: { "x-user-tier": "standard" },
       },
       response: {
         status: 200,
         body: {
-          products: buildProducts('standard'),
+          products: buildProducts("standard"),
         },
       },
     },
@@ -91,27 +91,27 @@ export const standardUserScenario: ScenarioDefinition = {
  * - Returns as { items: [{ productId, quantity }, ...] }
  */
 export const cartWithStateScenario: ScenarioDefinition = {
-  id: 'cartWithState',
-  name: 'Shopping Cart with State',
-  description: 'Stateful shopping cart that captures and injects cart items',
+  id: "cartWithState",
+  name: "Shopping Cart with State",
+  description: "Stateful shopping cart that captures and injects cart items",
   mocks: [
     // GET /products - Return products so add-to-cart buttons exist
     {
-      method: 'GET',
-      url: 'http://localhost:3001/products',
+      method: "GET",
+      url: "http://localhost:3001/products",
       response: {
         status: 200,
         body: {
-          products: buildProducts('standard'),  // Standard pricing for cart test
+          products: buildProducts("standard"), // Standard pricing for cart test
         },
       },
     },
     // POST /cart/add - Capture productId into cartItems array
     {
-      method: 'POST',
-      url: 'http://localhost:3001/cart/add',
+      method: "POST",
+      url: "http://localhost:3001/cart/add",
       captureState: {
-        'cartItems[]': 'body.productId',  // Append productId to cartItems array
+        "cartItems[]": "body.productId", // Append productId to cartItems array
       },
       response: {
         status: 200,
@@ -122,13 +122,123 @@ export const cartWithStateScenario: ScenarioDefinition = {
     },
     // GET /cart - Inject cart items from state
     {
-      method: 'GET',
-      url: 'http://localhost:3001/cart',
+      method: "GET",
+      url: "http://localhost:3001/cart",
       response: {
         status: 200,
         body: {
-          items: '{{state.cartItems}}',  // Inject captured cart items
+          items: "{{state.cartItems}}", // Inject captured cart items
         },
+      },
+    },
+  ],
+};
+
+/**
+ * GitHub Polling Scenario - Phase 2: Response Sequences
+ *
+ * Demonstrates sequence progression with repeat: 'last':
+ * - Simulates async job polling (pending → processing → complete)
+ * - After exhaustion, repeats the last response infinitely
+ * - Use case: Polling operations where final state should persist
+ */
+export const githubPollingScenario: ScenarioDefinition = {
+  id: "githubPolling",
+  name: "GitHub Job Polling",
+  description: "Async job polling sequence (repeat: 'last')",
+  mocks: [
+    {
+      method: "GET",
+      url: "http://localhost:3001/github/jobs/:id",
+      sequence: {
+        responses: [
+          {
+            status: 200,
+            body: { jobId: "123", status: "pending", progress: 0 },
+          },
+          {
+            status: 200,
+            body: { jobId: "123", status: "processing", progress: 50 },
+          },
+          {
+            status: 200,
+            body: { jobId: "123", status: "complete", progress: 100 },
+          },
+        ],
+        repeat: "last",
+      },
+    },
+  ],
+};
+
+/**
+ * Weather Cycle Scenario - Phase 2: Response Sequences
+ *
+ * Demonstrates sequence cycling with repeat: 'cycle':
+ * - Cycles through weather conditions infinitely
+ * - After reaching the end, loops back to the first response
+ * - Use case: Simulating cyclical patterns
+ */
+export const weatherCycleScenario: ScenarioDefinition = {
+  id: "weatherCycle",
+  name: "Weather Cycle",
+  description: "Cycles through weather states (repeat: 'cycle')",
+  mocks: [
+    {
+      method: "GET",
+      url: "http://localhost:3001/weather/:city",
+      sequence: {
+        responses: [
+          {
+            status: 200,
+            body: { city: "London", conditions: "Sunny", temp: 20 },
+          },
+          {
+            status: 200,
+            body: { city: "London", conditions: "Cloudy", temp: 18 },
+          },
+          {
+            status: 200,
+            body: { city: "London", conditions: "Rainy", temp: 15 },
+          },
+        ],
+        repeat: "cycle",
+      },
+    },
+  ],
+};
+
+/**
+ * Payment Limited Scenario - Phase 2: Response Sequences
+ *
+ * Demonstrates sequence exhaustion with repeat: 'none':
+ * - Allows 3 payment attempts then falls back to error
+ * - After exhaustion, falls through to the next mock (rate limit error)
+ * - Use case: Rate limiting, quota enforcement
+ */
+export const paymentLimitedScenario: ScenarioDefinition = {
+  id: "paymentLimited",
+  name: "Limited Payment Attempts",
+  description: "Allows 3 attempts then rate limits (repeat: 'none')",
+  mocks: [
+    {
+      method: "POST",
+      url: "http://localhost:3001/payments",
+      sequence: {
+        responses: [
+          { status: 200, body: { id: "ch_1", status: "pending" } },
+          { status: 200, body: { id: "ch_2", status: "pending" } },
+          { status: 200, body: { id: "ch_3", status: "succeeded" } },
+        ],
+        repeat: "none",
+      },
+    },
+    {
+      method: "POST",
+      url: "http://localhost:3001/payments",
+      response: {
+        status: 429,
+        body: { error: { message: "Rate limit exceeded" } },
       },
     },
   ],
@@ -142,4 +252,7 @@ export const scenarios = {
   premiumUser: premiumUserScenario,
   standardUser: standardUserScenario,
   cartWithState: cartWithStateScenario,
+  githubPolling: githubPollingScenario,
+  weatherCycle: weatherCycleScenario,
+  paymentLimited: paymentLimitedScenario,
 } as const satisfies ScenariosObject;

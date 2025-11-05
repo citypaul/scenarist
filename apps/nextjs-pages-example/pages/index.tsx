@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
+import Link from 'next/link';
 import { ProductCard } from '../components/ProductCard';
 import { TierSelector } from '../components/TierSelector';
 import type { Product } from '../types/product';
@@ -94,7 +95,7 @@ export default function Home() {
       </Head>
       <main className="min-h-screen bg-gray-50 p-8">
         <div className="max-w-6xl mx-auto">
-          <div className="flex justify-between items-start mb-8">
+          <div className="flex justify-between items-start mb-4">
             <div>
               <h1 className="text-4xl font-bold mb-2 text-gray-900">Scenarist E-commerce Example</h1>
               <p className="text-gray-600">Demonstrating request matching with tier-based pricing</p>
@@ -106,6 +107,24 @@ export default function Home() {
               </output>
             </div>
           </div>
+
+          <nav aria-label="Main navigation" className="mb-8">
+            <ul className="flex gap-4">
+              <li>
+                <span className="text-blue-600 font-semibold">Products</span>
+              </li>
+              <li>
+                <Link href="/cart" className="text-blue-600 hover:text-blue-700 underline">
+                  Shopping Cart
+                </Link>
+              </li>
+              <li>
+                <Link href="/sequences" className="text-blue-600 hover:text-blue-700 underline">
+                  Sequences Demo
+                </Link>
+              </li>
+            </ul>
+          </nav>
 
           <TierSelector currentTier={userTier} onTierChange={setUserTier} />
 
