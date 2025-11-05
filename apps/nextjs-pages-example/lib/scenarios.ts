@@ -245,6 +245,109 @@ export const paymentLimitedScenario: ScenarioDefinition = {
 };
 
 /**
+ * Checkout Scenario - Phase 4: Feature Composition
+ *
+ * Demonstrates BOTH request matching AND stateful mocks working TOGETHER:
+ * - REQUEST MATCHING: Different shipping costs based on country
+ *   - UK: £0.00 (free shipping)
+ *   - US: £10.00
+ *   - FR/EU: £5.00
+ * - STATEFUL MOCKS: Capture shipping address and inject into order
+ *
+ * This scenario proves features compose correctly in the same workflow.
+ */
+export const checkoutScenario: ScenarioDefinition = {
+  id: "checkout",
+  name: "Checkout with Shipping",
+  description: "Demonstrates matching + stateful composition",
+  mocks: [
+    // Calculate shipping - UK (free shipping)
+    {
+      method: "POST",
+      url: "http://localhost:3001/checkout/shipping",
+      match: {
+        body: { country: "UK" },
+      },
+      captureState: {
+        country: "body.country",
+        address: "body.address",
+        city: "body.city",
+        postcode: "body.postcode",
+      },
+      response: {
+        status: 200,
+        body: {
+          country: "UK",
+          shippingCost: 0,
+        },
+      },
+    },
+    // Calculate shipping - US ($10 shipping)
+    {
+      method: "POST",
+      url: "http://localhost:3001/checkout/shipping",
+      match: {
+        body: { country: "US" },
+      },
+      captureState: {
+        country: "body.country",
+        address: "body.address",
+        city: "body.city",
+        postcode: "body.postcode",
+      },
+      response: {
+        status: 200,
+        body: {
+          country: "US",
+          shippingCost: 10,
+        },
+      },
+    },
+    // Calculate shipping - EU/France (£5 shipping)
+    {
+      method: "POST",
+      url: "http://localhost:3001/checkout/shipping",
+      match: {
+        body: { country: "FR" },
+      },
+      captureState: {
+        country: "body.country",
+        address: "body.address",
+        city: "body.city",
+        postcode: "body.postcode",
+      },
+      response: {
+        status: 200,
+        body: {
+          country: "FR",
+          shippingCost: 5,
+        },
+      },
+    },
+    // Place order - Capture order data and inject address
+    {
+      method: "POST",
+      url: "http://localhost:3001/checkout/order",
+      captureState: {
+        orderId: "body.orderId",
+      },
+      response: {
+        status: 200,
+        body: {
+          orderId: "{{state.orderId}}",
+          shippingAddress: {
+            country: "{{state.country}}",
+            address: "{{state.address}}",
+            city: "{{state.city}}",
+            postcode: "{{state.postcode}}",
+          },
+        },
+      },
+    },
+  ],
+};
+
+/**
  * All scenarios for registration and type-safe access
  */
 export const scenarios = {
@@ -255,4 +358,5 @@ export const scenarios = {
   githubPolling: githubPollingScenario,
   weatherCycle: weatherCycleScenario,
   paymentLimited: paymentLimitedScenario,
+  checkout: checkoutScenario,
 } as const satisfies ScenariosObject;
