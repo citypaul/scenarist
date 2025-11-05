@@ -3,7 +3,7 @@
 **Status**: ✅ Feature Parity Achieved - All 3 Core Features Demonstrated
 **Started**: 2025-11-01
 **Last Updated**: 2025-11-05
-**PR**: [#39](https://github.com/citypaul/scenarist/pull/39) (planning), [#40](https://github.com/citypaul/scenarist/pull/40) (Phase -1 implementation - MERGED)
+**PRs**: [#39](https://github.com/citypaul/scenarist/pull/39) (planning), [#40](https://github.com/citypaul/scenarist/pull/40) (Phase -1 - MERGED), [#41](https://github.com/citypaul/scenarist/pull/41) (Phase 0 - MERGED), [#42-44](https://github.com/citypaul/scenarist/pull/42) (Phase 2 - MERGED), [#45-46](https://github.com/citypaul/scenarist/pull/45) (Phase 3 - MERGED), [#48](https://github.com/citypaul/scenarist/pull/48) (Phase 5 Sequences - MERGED)
 **Related**: [next-stages.md](./next-stages.md) (Overall v1.0 roadmap)
 
 ---
@@ -125,16 +125,16 @@ Next priorities:
 | **0: Setup** | ✅ **COMPLETE & MERGED (PR #41)** | **0.5 day** | **0.5 day** | **27** |
 | **1: Integration + First Helper** | ✅ **COMPLETE (3 commits)** | **1 day** | **~0.5 day** | **8** |
 | **1 Post: Playwright Testing** | ✅ **COMPLETE (5 commits)** | **-** | **~2-3 hours** | **6** |
-| **2: Products/Matching** | **⏳ IN PROGRESS** | **1 day** | **-** | **0** |
-| 3: Cart/Stateful | ⏳ Not Started | 1 day | - | 0 |
+| **2: Products/Matching** | ✅ **COMPLETE & MERGED (PR #42, #43, #44)** | **1 day** | **~1 day** | **~15** |
+| **3: Cart/Stateful** | ✅ **COMPLETE & MERGED (PR #45, #46)** | **1 day** | **~1 day** | **~12** |
 | 4: Checkout/Composition | ⏳ Not Started | 0.5 day | - | 0 |
-| 5: Payment/Sequences | ⏳ Not Started | 1 day | - | 0 |
+| **5: Payment/Sequences** | ✅ **COMPLETE & MERGED (PR #48)** | **1 day** | **~0.75 day** | **~10** |
 | 6: Parallel Isolation | ⏳ Not Started | 0.5 day | - | 0 |
 | 7: Documentation | ⏳ Not Started | 1 day | - | 0 |
-| **Total** | **35% complete (3.5/10 phases)** | **8-9 days** | **~2.25 days** | **62** |
+| **Total** | **70% complete (7/10 phases)** | **8-9 days** | **~5.5 days** | **~99** |
 
-**Current**: Phase 2 - Products Page (Request Matching) - RED phase starting
-**Branch**: feat/phase-1-product-catalog (8 commits ahead of main)
+**Current**: ✅ Feature Parity Achieved - All 3 core features demonstrated
+**Next**: Phase 4 (Checkout/Composition) or Phase 6 (Parallel Isolation) or Phase 7 (Documentation)
 
 ---
 
@@ -1380,9 +1380,11 @@ Coverage: 100% behavior coverage through public API
 
 ---
 
-### Phase 2: Products Page - Request Matching (⏳ Not Started)
+### Phase 2: Products Page - Request Matching (✅ COMPLETE & MERGED)
 
 **Estimated**: 1 day
+**Actual**: ~1 day
+**PRs**: #42, #43, #44
 
 Implement product listing with tier-based pricing (premium vs standard).
 
@@ -1558,9 +1560,11 @@ export const standardUserScenario: ScenarioDefinition = {
 
 ---
 
-### Phase 3: Shopping Cart - Stateful Mocks (⏳ Not Started)
+### Phase 3: Shopping Cart - Stateful Mocks (✅ COMPLETE & MERGED)
 
 **Estimated**: 1 day
+**Actual**: ~1 day
+**PRs**: #45, #46
 
 Implement shopping cart with state capture (add items) and state injection (display cart).
 
@@ -1726,9 +1730,11 @@ test('UK address gets free shipping', async ({ page, scenarist }) => {
 
 ---
 
-### Phase 5: Payment Polling - Sequences (⏳ Not Started)
+### Phase 5: Payment Polling - Sequences (✅ COMPLETE & MERGED)
 
 **Estimated**: 1 day
+**Actual**: ~0.75 day
+**PR**: #48
 
 Implement payment with status polling (sequence: pending → processing → succeeded).
 
