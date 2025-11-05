@@ -3,11 +3,17 @@
  *
  * Purpose: Demonstrate Phase 2 (Response Sequences) works in Next.js context
  *
+ * DEMONSTRATES: Best practices for accessible Playwright tests
+ * - Uses semantic selectors (getByRole, getByText)
+ * - Tests visible UI behavior, not raw API responses
+ * - Validates screen reader announcements (role="status", aria-live)
+ * - Shows real-world user interaction patterns
+ *
  * Feature Parity Goal:
  * - Express: ✅ All 3 phases (matching, sequences, stateful)
- * - Next.js: ⚠️  2/3 phases (matching ✅, stateful ✅, sequences ❌)
+ * - Next.js: ✅ All 3 phases (matching ✅, sequences ✅, stateful ✅)
  *
- * These tests close the gap by demonstrating:
+ * These tests demonstrate:
  * - Polling sequences with repeat: 'last'
  * - Cycle sequences with repeat: 'cycle'
  * - Exhaustion sequences with repeat: 'none'
@@ -16,182 +22,144 @@
 import { test, expect } from "./fixtures";
 
 test.describe("Response Sequences - Phase 2 Feature Parity", () => {
-  test("should demonstrate GitHub polling sequence (repeat: 'last')", async ({
+  test("should demonstrate GitHub polling sequence with visual progression (repeat: 'last')", async ({
     page,
     switchScenario,
   }) => {
     // Switch to GitHub polling scenario
     await switchScenario(page, "githubPolling");
+    await page.goto("/sequences");
 
-    // Navigate to a page to establish browser context
-    await page.goto("/");
+    // Verify page loaded with correct heading
+    await expect(
+      page.getByRole("heading", { name: "GitHub Job Polling" })
+    ).toBeVisible();
 
-    // First call - should return "pending" status
-    const data1 = await page.evaluate(async () => {
-      const response = await fetch("/api/github/jobs/123");
-      return { status: response.status, body: await response.json() };
-    });
-    expect(data1.status).toBe(200);
-    expect(data1.body).toEqual({
-      jobId: "123",
-      status: "pending",
-      progress: 0,
-    });
+    // First click - User sees "pending" status
+    await page.getByRole("button", { name: "Check Job Status" }).click();
 
-    // Second call - should return "processing" status
-    const data2 = await page.evaluate(async () => {
-      const response = await fetch("/api/github/jobs/123");
-      return { status: response.status, body: await response.json() };
-    });
-    expect(data2.status).toBe(200);
-    expect(data2.body).toEqual({
-      jobId: "123",
-      status: "processing",
-      progress: 50,
-    });
+    // Wait for status region to update (aria-live="polite" announces to screen readers)
+    const jobStatus = page.getByRole("status").first();
+    await expect(jobStatus).toContainText("Job ID: 123");
+    await expect(jobStatus).toContainText("Status: pending");
+    await expect(jobStatus).toContainText("Progress: 0%");
+    await expect(jobStatus).toContainText("Calls made: 1");
 
-    // Third call - should return "complete" status
-    const data3 = await page.evaluate(async () => {
-      const response = await fetch("/api/github/jobs/123");
-      return { status: response.status, body: await response.json() };
-    });
-    expect(data3.status).toBe(200);
-    expect(data3.body).toEqual({
-      jobId: "123",
-      status: "complete",
-      progress: 100,
-    });
+    // Verify progress bar reflects 0% (validates ARIA progressbar)
+    const progressBar = page.getByRole("progressbar");
+    await expect(progressBar).toHaveAttribute("aria-valuenow", "0");
 
-    // Fourth call - should repeat last response (repeat: 'last')
-    const data4 = await page.evaluate(async () => {
-      const response = await fetch("/api/github/jobs/123");
-      return { status: response.status, body: await response.json() };
-    });
-    expect(data4.status).toBe(200);
-    expect(data4.body).toEqual({
-      jobId: "123",
-      status: "complete",
-      progress: 100,
-    });
+    // Second click - User sees "processing" status
+    await page.getByRole("button", { name: "Check Job Status" }).click();
+    await expect(jobStatus).toContainText("Status: processing");
+    await expect(jobStatus).toContainText("Progress: 50%");
+    await expect(jobStatus).toContainText("Calls made: 2");
+    await expect(progressBar).toHaveAttribute("aria-valuenow", "50");
+
+    // Third click - User sees "complete" status
+    await page.getByRole("button", { name: "Check Job Status" }).click();
+    await expect(jobStatus).toContainText("Status: complete");
+    await expect(jobStatus).toContainText("Progress: 100%");
+    await expect(jobStatus).toContainText("Calls made: 3");
+    await expect(progressBar).toHaveAttribute("aria-valuenow", "100");
+
+    // Fourth click - Demonstrates repeat: 'last' (stays at complete)
+    await page.getByRole("button", { name: "Check Job Status" }).click();
+    await expect(jobStatus).toContainText("Status: complete");
+    await expect(jobStatus).toContainText("Progress: 100%");
+    await expect(jobStatus).toContainText("Calls made: 4");
   });
 
-  test("should demonstrate weather cycle sequence (repeat: 'cycle')", async ({
+  test("should demonstrate weather cycle sequence with visual updates (repeat: 'cycle')", async ({
     page,
     switchScenario,
   }) => {
     // Switch to weather cycle scenario
     await switchScenario(page, "weatherCycle");
+    await page.goto("/sequences");
 
-    // Navigate to a page to establish browser context
-    await page.goto("/");
+    // Verify page loaded with correct heading
+    await expect(
+      page.getByRole("heading", { name: "Weather Cycle" })
+    ).toBeVisible();
 
-    // First call - Sunny
-    const data1 = await page.evaluate(async () => {
-      const response = await fetch("/api/weather/london");
-      return { status: response.status, body: await response.json() };
-    });
-    expect(data1.status).toBe(200);
-    expect(data1.body).toEqual({
-      city: "London",
-      conditions: "Sunny",
-      temp: 20,
-    });
+    const weatherButton = page.getByRole("button", { name: "Get Weather" });
 
-    // Second call - Cloudy
-    const data2 = await page.evaluate(async () => {
-      const response = await fetch("/api/weather/london");
-      return { status: response.status, body: await response.json() };
-    });
-    expect(data2.status).toBe(200);
-    expect(data2.body).toEqual({
-      city: "London",
-      conditions: "Cloudy",
-      temp: 18,
-    });
+    // First click - Sunny
+    await weatherButton.click();
 
-    // Third call - Rainy
-    const data3 = await page.evaluate(async () => {
-      const response = await fetch("/api/weather/london");
-      return { status: response.status, body: await response.json() };
-    });
-    expect(data3.status).toBe(200);
-    expect(data3.body).toEqual({
-      city: "London",
-      conditions: "Rainy",
-      temp: 15,
-    });
+    // Find status region within Weather Cycle section (only section that's been clicked)
+    const weatherStatus = page.getByRole("status").first();
+    await expect(weatherStatus).toContainText("City: London");
+    await expect(weatherStatus).toContainText("Conditions: Sunny");
+    await expect(weatherStatus).toContainText("Temperature: 20°C");
+    await expect(weatherStatus).toContainText("Calls made: 1");
 
-    // Fourth call - should cycle back to Sunny (repeat: 'cycle')
-    const data4 = await page.evaluate(async () => {
-      const response = await fetch("/api/weather/london");
-      return { status: response.status, body: await response.json() };
-    });
-    expect(data4.status).toBe(200);
-    expect(data4.body).toEqual({
-      city: "London",
-      conditions: "Sunny",
-      temp: 20,
-    });
+    // Second click - Cloudy
+    await weatherButton.click();
+    await expect(weatherStatus).toContainText("Conditions: Cloudy");
+    await expect(weatherStatus).toContainText("Temperature: 18°C");
+    await expect(weatherStatus).toContainText("Calls made: 2");
+
+    // Third click - Rainy
+    await weatherButton.click();
+    await expect(weatherStatus).toContainText("Conditions: Rainy");
+    await expect(weatherStatus).toContainText("Temperature: 15°C");
+    await expect(weatherStatus).toContainText("Calls made: 3");
+
+    // Fourth click - Demonstrates repeat: 'cycle' (back to Sunny)
+    await weatherButton.click();
+    await expect(weatherStatus).toContainText("Conditions: Sunny");
+    await expect(weatherStatus).toContainText("Temperature: 20°C");
+    await expect(weatherStatus).toContainText("Calls made: 4");
   });
 
-  test("should demonstrate payment limited sequence (repeat: 'none')", async ({
+  test("should demonstrate payment sequence with exhaustion and error (repeat: 'none')", async ({
     page,
     switchScenario,
   }) => {
     // Switch to payment limited scenario
     await switchScenario(page, "paymentLimited");
+    await page.goto("/sequences");
 
-    // Navigate to a page to establish browser context
-    await page.goto("/");
+    // Verify page loaded with correct heading
+    await expect(
+      page.getByRole("heading", { name: "Payment Rate Limiting" })
+    ).toBeVisible();
 
-    // First call - First pending
-    const data1 = await page.evaluate(async () => {
-      const response = await fetch("/api/payments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: 100 }),
-      });
-      return { status: response.status, body: await response.json() };
-    });
-    expect(data1.status).toBe(200);
-    expect(data1.body).toEqual({ id: "ch_1", status: "pending" });
+    const paymentButton = page.getByRole("button", { name: "Submit Payment" });
 
-    // Second call - Second pending
-    const data2 = await page.evaluate(async () => {
-      const response = await fetch("/api/payments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: 100 }),
-      });
-      return { status: response.status, body: await response.json() };
-    });
-    expect(data2.status).toBe(200);
-    expect(data2.body).toEqual({ id: "ch_2", status: "pending" });
+    // First payment - Pending
+    await paymentButton.click();
 
-    // Third call - Succeeded
-    const data3 = await page.evaluate(async () => {
-      const response = await fetch("/api/payments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: 100 }),
-      });
-      return { status: response.status, body: await response.json() };
-    });
-    expect(data3.status).toBe(200);
-    expect(data3.body).toEqual({ id: "ch_3", status: "succeeded" });
+    // Find status region within Payment section (only section that's been clicked)
+    // Note: After first payment, only payment status exists (not error alert yet)
+    const paymentStatus = page.getByRole("status").first();
+    await expect(paymentStatus).toContainText("Payment ID: ch_1");
+    await expect(paymentStatus).toContainText("Status: pending");
+    await expect(paymentStatus).toContainText("Attempts made: 1");
 
-    // Fourth call - should fall back to rate limit error (repeat: 'none')
-    const data4 = await page.evaluate(async () => {
-      const response = await fetch("/api/payments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: 100 }),
-      });
-      return { status: response.status, body: await response.json() };
-    });
-    expect(data4.status).toBe(429);
-    expect(data4.body).toEqual({
-      error: { message: "Rate limit exceeded" },
-    });
+    // Second payment - Pending
+    await paymentButton.click();
+    await expect(paymentStatus).toContainText("Payment ID: ch_2");
+    await expect(paymentStatus).toContainText("Status: pending");
+    await expect(paymentStatus).toContainText("Attempts made: 2");
+
+    // Third payment - Succeeded
+    await paymentButton.click();
+    await expect(paymentStatus).toContainText("Payment ID: ch_3");
+    await expect(paymentStatus).toContainText("Status: succeeded");
+    await expect(paymentStatus).toContainText("Attempts made: 3");
+
+    // Fourth payment - Demonstrates repeat: 'none' (rate limit error)
+    await paymentButton.click();
+
+    // Error shown in alert region (role="alert" for immediate screen reader announcement)
+    // Filter to get our payment alert (Next.js has a route announcer with role="alert")
+    const errorAlert = page.getByRole("alert").filter({ hasText: "Payment Failed" });
+    await expect(errorAlert).toBeVisible();
+    await expect(errorAlert).toContainText("Payment Failed");
+    await expect(errorAlert).toContainText("Rate limit exceeded");
+    await expect(errorAlert).toContainText("Attempts made: 4");
   });
 });

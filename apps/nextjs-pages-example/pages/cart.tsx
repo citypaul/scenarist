@@ -75,12 +75,25 @@ export default function Cart() {
       </Head>
       <main className="min-h-screen bg-gray-50 p-8">
         <div className="max-w-4xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-900">Shopping Cart</h1>
-            <Link href="/" className="text-blue-600 hover:text-blue-700 underline">
-              Back to Products
-            </Link>
-          </div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">Shopping Cart</h1>
+
+          <nav aria-label="Main navigation" className="mb-8">
+            <ul className="flex gap-4">
+              <li>
+                <Link href="/" className="text-blue-600 hover:text-blue-700 underline">
+                  Products
+                </Link>
+              </li>
+              <li>
+                <span className="text-blue-600 font-semibold">Shopping Cart</span>
+              </li>
+              <li>
+                <Link href="/sequences" className="text-blue-600 hover:text-blue-700 underline">
+                  Sequences Demo
+                </Link>
+              </li>
+            </ul>
+          </nav>
 
           {loading && (
             <div className="text-center text-gray-600">Loading cart...</div>
