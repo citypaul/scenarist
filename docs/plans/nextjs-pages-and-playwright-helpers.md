@@ -3,7 +3,7 @@
 **Status**: ✅ Feature Parity Achieved - All 3 Core Features Demonstrated
 **Started**: 2025-11-01
 **Last Updated**: 2025-11-05
-**PRs**: [#39](https://github.com/citypaul/scenarist/pull/39) (planning), [#40](https://github.com/citypaul/scenarist/pull/40) (Phase -1 - MERGED), [#41](https://github.com/citypaul/scenarist/pull/41) (Phase 0 - MERGED), [#42-44](https://github.com/citypaul/scenarist/pull/42) (Phase 2 - MERGED), [#45-46](https://github.com/citypaul/scenarist/pull/45) (Phase 3 - MERGED), [#48](https://github.com/citypaul/scenarist/pull/48) (Phase 5 Sequences - MERGED)
+**PRs**: [#39](https://github.com/citypaul/scenarist/pull/39) (planning), [#40](https://github.com/citypaul/scenarist/pull/40) (Phase -1 - MERGED), [#41](https://github.com/citypaul/scenarist/pull/41) (Phase 0 - MERGED), [#42-44](https://github.com/citypaul/scenarist/pull/42) (Phase 2 - MERGED), [#45-46](https://github.com/citypaul/scenarist/pull/45) (Phase 3 - MERGED), [#48](https://github.com/citypaul/scenarist/pull/48) (Phase 5 Sequences - MERGED), [#50](https://github.com/citypaul/scenarist/pull/50) (Phase 4 Composition - MERGED)
 **Related**: [next-stages.md](./next-stages.md) (Overall v1.0 roadmap)
 
 ---
@@ -103,17 +103,27 @@ All 3 core features (Request Matching, Sequences, Stateful Mocks) now demonstrat
 - [x] Verify repeat modes work correctly (last/cycle/none)
 - [x] All 3 sequence tests passing (sequences.spec.ts)
 
+**Phase 4: Checkout - Feature Composition** - ✅ COMPLETE & MERGED (PR #50)
+- [x] Checkout workflow demonstrating matching + stateful working TOGETHER
+- [x] Playwright tests: `checkout.spec.ts` (3 tests, all passing)
+- [x] Country-based shipping costs (UK free, US £10, FR £5) via request matching
+- [x] Address capture during shipping calculation via captureState
+- [x] Address injection into order confirmation via template injection
+- [x] Proves features compose correctly in single scenario
+
 ### Next Steps
 
-**Feature parity achieved!** All 3 core features demonstrated in Next.js:
+**✅ Feature Parity + Composition Achieved!**
+
+All 3 core features demonstrated individually AND working together:
 - ✅ Phase 1: Request Matching (`products.spec.ts`)
 - ✅ Phase 2: Sequences (`sequences.spec.ts`)
 - ✅ Phase 3: Stateful Mocks (`shopping-cart.spec.ts`)
+- ✅ **Phase 4: Composition** (`checkout.spec.ts`) - Features working TOGETHER
 
-Next priorities:
-- Document learnings from Phase 2 Core Feature implementation
-- Continue with remaining implementation phases (if any)
-- Consider additional Playwright helpers or examples
+**80% Complete (8/10 phases)** - Remaining phases:
+- Phase 6: Parallel test isolation demo (0.5 day)
+- Phase 7: Documentation and README updates (1 day)
 
 ---
 
@@ -127,14 +137,14 @@ Next priorities:
 | **1 Post: Playwright Testing** | ✅ **COMPLETE (5 commits)** | **-** | **~2-3 hours** | **6** |
 | **2: Products/Matching** | ✅ **COMPLETE & MERGED (PR #42, #43, #44)** | **1 day** | **~1 day** | **~15** |
 | **3: Cart/Stateful** | ✅ **COMPLETE & MERGED (PR #45, #46)** | **1 day** | **~1 day** | **~12** |
-| 4: Checkout/Composition | ⏳ Not Started | 0.5 day | - | 0 |
+| **4: Checkout/Composition** | ✅ **COMPLETE & MERGED (PR #50)** | **0.5 day** | **~0.5 day** | **5** |
 | **5: Payment/Sequences** | ✅ **COMPLETE & MERGED (PR #48)** | **1 day** | **~0.75 day** | **~10** |
 | 6: Parallel Isolation | ⏳ Not Started | 0.5 day | - | 0 |
 | 7: Documentation | ⏳ Not Started | 1 day | - | 0 |
-| **Total** | **70% complete (7/10 phases)** | **8-9 days** | **~5.5 days** | **~99** |
+| **Total** | **80% complete (8/10 phases)** | **8-9 days** | **~6 days** | **~104** |
 
-**Current**: ✅ Feature Parity Achieved - All 3 core features demonstrated
-**Next**: Phase 4 (Checkout/Composition) or Phase 6 (Parallel Isolation) or Phase 7 (Documentation)
+**Current**: ✅ Feature Parity + Composition - All features demonstrated working together
+**Next**: Phase 6 (Parallel Isolation) or Phase 7 (Documentation)
 
 ---
 
@@ -1664,69 +1674,64 @@ export const cartAccumulationScenario: ScenarioDefinition = {
 
 ---
 
-### Phase 4: Checkout - Matching + Stateful (⏳ Not Started)
+### Phase 4: Checkout - Matching + Stateful (✅ COMPLETE & MERGED)
 
 **Estimated**: 0.5 day
+**Actual**: ~0.5 day
+**PR**: #50
 
-Implement checkout with shipping calculation (match on country, capture address).
+Implement checkout with shipping calculation (match on country, capture address). Demonstrates feature composition - request matching + stateful mocks working TOGETHER in the same scenario.
 
-#### 4a. RED - Write Playwright Test
-
-**Tasks:**
-- [ ] Create `tests/playwright/checkout.spec.ts`
-- [ ] Write test for UK free shipping
-- [ ] Write test for US paid shipping
-
-**Test code:**
-```typescript
-test('UK address gets free shipping', async ({ page, scenarist }) => {
-  await scenarist.switchScenario('freeShippingUK');
-
-  // Add item to cart
-  await page.goto('/');
-  await page.click('[data-testid="add-to-cart-1"]');
-
-  // Go to checkout
-  await page.goto('/checkout');
-
-  // Fill shipping form
-  await page.fill('[name="country"]', 'UK');
-  await page.fill('[name="address"]', '123 Test St');
-  await page.click('[data-testid="calculate-shipping"]');
-
-  // Verify free shipping
-  await expect(page.locator('[data-testid="shipping-cost"]')).toHaveText('£0.00');
-});
-```
-
-**Expected**: Test fails (no checkout page)
-
-#### 4b. GREEN - Implement Checkout
+#### 4a. RED - Write Playwright Test ✅
 
 **Tasks:**
-- [ ] Create `pages/api/checkout/shipping.ts` - Calculate shipping
-- [ ] Create `pages/checkout.tsx` - Checkout form
-- [ ] Create `components/CheckoutForm.tsx` - Form component
-- [ ] Update `lib/scenarios.ts` - Add `freeShippingUK` scenario
+- [x] Create `tests/playwright/checkout.spec.ts`
+- [x] Write test for UK free shipping + address capture
+- [x] Write test for US paid shipping + address capture
+- [x] Write test for EU paid shipping + address capture
 
-**Expected**: Test passes
+**Actual Implementation:**
+- Created 3 comprehensive tests using accessible selectors (getByRole, getByLabel)
+- All tests verify BOTH matching (shipping cost based on country) AND stateful (address capture and injection)
+- Tests demonstrate features working together, not just coexisting
 
-#### 4c. REFACTOR
+**Expected**: Test fails (no checkout page) ✅ Confirmed
+
+#### 4b. GREEN - Implement Checkout ✅
 
 **Tasks:**
-- [ ] Extract shipping logic
-- [ ] Add form validation
-- [ ] Clean up form state
+- [x] Create `pages/api/checkout/shipping.ts` - Shipping calculation proxy
+- [x] Create `pages/api/checkout/order.ts` - Order placement proxy
+- [x] Create `pages/checkout.tsx` - Checkout form with order confirmation
+- [x] Update `lib/scenarios.ts` - Add `checkoutScenario` with matching + stateful
 
-**Validation**: Demonstrates composition of matching + stateful
+**Actual Implementation:**
+- Checkout scenario uses 3 shipping mocks (UK/US/FR) with request matching on country field
+- Same mocks use `captureState` to capture address during shipping calculation
+- Order mock uses template injection `{{state.country}}` to inject captured address
+- Proves features compose correctly in single workflow
+
+**Expected**: Tests pass ✅ All 3 tests passing (6.2s)
+
+#### 4c. REFACTOR ✅
+
+**Assessment:**
+- ✅ Code already clean and follows established patterns
+- ✅ No duplication of knowledge
+- ✅ Clear naming throughout
+- ✅ Standard React patterns for UI
+- **Decision:** No refactoring needed
+
+**Validation**: ✅ Demonstrates composition of matching + stateful working TOGETHER
 
 **Files Created**:
-- `pages/checkout.tsx`
-- `pages/api/checkout/shipping.ts`
-- `components/CheckoutForm.tsx`
-- `tests/playwright/checkout.spec.ts`
+- `tests/playwright/checkout.spec.ts` - 3 passing tests
+- `pages/checkout.tsx` - Checkout form and order confirmation
+- `pages/api/checkout/shipping.ts` - Shipping calculation proxy
+- `pages/api/checkout/order.ts` - Order placement proxy
+- `lib/scenarios.ts` - Modified to add checkoutScenario
 
-**Learnings**: _(to be filled in during implementation)_
+**Key Achievement:** Proves that request matching and stateful mocks don't just coexist - they compose correctly within a single scenario. Address captured during matched shipping calculation request, then injected into order confirmation response.
 
 ---
 
@@ -1993,21 +1998,21 @@ Comprehensive documentation for both packages.
 
 ## Progress Tracking
 
-**Overall Progress**: 0/7 phases complete (0%)
+**Overall Progress**: 8/10 phases complete (80%)
 
 | Phase | Status | Estimated | Actual | Files Changed |
 |-------|--------|-----------|--------|---------------|
-| 0: Setup | ⏳ Not Started | 0.5 day | - | 0 |
-| 1: Integration + First Helper | ⏳ Not Started | 1 day | - | 0 |
-| 2: Products/Matching | ⏳ Not Started | 1 day | - | 0 |
-| 3: Cart/Stateful | ⏳ Not Started | 1 day | - | 0 |
-| 4: Checkout/Composition | ⏳ Not Started | 0.5 day | - | 0 |
-| 5: Payment/Sequences | ⏳ Not Started | 1 day | - | 0 |
+| 0: Setup | ✅ **COMPLETE & MERGED** | 0.5 day | 0.5 day | 27 |
+| 1: Integration + First Helper | ✅ **COMPLETE** | 1 day | ~0.5 day | 8 |
+| 2: Products/Matching | ✅ **COMPLETE & MERGED** | 1 day | ~1 day | ~15 |
+| 3: Cart/Stateful | ✅ **COMPLETE & MERGED** | 1 day | ~1 day | ~12 |
+| 4: Checkout/Composition | ✅ **COMPLETE & MERGED (PR #50)** | 0.5 day | ~0.5 day | 5 |
+| 5: Payment/Sequences | ✅ **COMPLETE & MERGED** | 1 day | ~0.75 day | ~10 |
 | 6: Parallel Isolation | ⏳ Not Started | 0.5 day | - | 0 |
 | 7: Documentation | ⏳ Not Started | 1 day | - | 0 |
-| **Total** | **0%** | **6 days** | **-** | **0** |
+| **Total** | **80%** | **6 days** | **~4.25 days** | **~77** |
 
-**Next Steps**: Begin Phase 0 - Setup both packages
+**Next Steps**: Phase 6 (Parallel Isolation) or Phase 7 (Documentation)
 
 ---
 
@@ -2209,7 +2214,32 @@ _(This section will be filled in during implementation with discoveries, gotchas
 - _(to be added)_
 
 ### Phase 4 Learnings
-- _(to be added)_
+
+**Feature Composition - The Critical Test:**
+- Phase 4 proved that features don't just coexist - they COMPOSE correctly
+- Single scenario can use both `match` AND `captureState` on the same mock
+- Captured state persists across multiple API calls (shipping → order)
+- Template injection works with state captured during matched requests
+
+**Implementation Insight:**
+- No new infrastructure needed - composition "just works" by design
+- Three-phase model (Match → Select → Transform) ensures orthogonal features
+- Each phase has single responsibility, so they compose naturally
+
+**Test Pattern:**
+- Tests must verify BOTH features working together, not just one at a time
+- Accessible selectors (getByRole, getByLabel) make tests more maintainable
+- Single test can demonstrate entire workflow (calculate shipping → place order)
+
+**Refactoring Assessment:**
+- Not all GREEN phases need refactoring
+- When code already follows patterns and has no duplication, skip refactoring
+- Document the assessment ("no refactoring needed") to show it was considered
+
+**What This Validates:**
+- Hexagonal architecture enables feature composition without special cases
+- Scenarist scenarios can model complex real-world workflows
+- Next.js adapter correctly passes state through multi-step processes
 
 ### Phase 5 Learnings
 - _(to be added)_
