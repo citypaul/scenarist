@@ -3,7 +3,7 @@
 **Status**: ✅ Pages Router Complete - App Router In Progress
 **Started**: 2025-11-01
 **Last Updated**: 2025-11-07
-**PRs**: [#39](https://github.com/citypaul/scenarist/pull/39) (planning), [#40](https://github.com/citypaul/scenarist/pull/40) (Phase -1 - MERGED), [#41](https://github.com/citypaul/scenarist/pull/41) (Phase 0 - MERGED), [#42-44](https://github.com/citypaul/scenarist/pull/42) (Phase 2 - MERGED), [#45-46](https://github.com/citypaul/scenarist/pull/45) (Phase 3 - MERGED), [#48](https://github.com/citypaul/scenarist/pull/48) (Phase 5 Sequences - MERGED), [#50](https://github.com/citypaul/scenarist/pull/50) (Phase 4 Composition - MERGED), [#51](https://github.com/citypaul/scenarist/pull/51) (Phase 6 Isolation - MERGED)
+**PRs**: [#39](https://github.com/citypaul/scenarist/pull/39) (planning), [#40](https://github.com/citypaul/scenarist/pull/40) (Phase -1 - MERGED), [#41](https://github.com/citypaul/scenarist/pull/41) (Phase 0 - MERGED), [#42-44](https://github.com/citypaul/scenarist/pull/42) (Phase 2 - MERGED), [#45-46](https://github.com/citypaul/scenarist/pull/45) (Phase 3 - MERGED), [#48](https://github.com/citypaul/scenarist/pull/48) (Phase 5 Sequences - MERGED), [#50](https://github.com/citypaul/scenarist/pull/50) (Phase 4 Composition - MERGED), [#51](https://github.com/citypaul/scenarist/pull/51) (Phase 6 Isolation - MERGED), [#52](https://github.com/citypaul/scenarist/pull/52) (Phase 8.0 Setup - MERGED), [#53](https://github.com/citypaul/scenarist/pull/53) (API Simplification - MERGED)
 **Related**: [next-stages.md](./next-stages.md) (Overall v1.0 roadmap)
 
 ---
@@ -175,14 +175,14 @@ All 3 core features demonstrated individually, composed, AND isolated:
 
 | Phase | Status | Estimated | Actual | Files Changed |
 |-------|--------|-----------|--------|---------------|
-| **8.0: Setup** | ⏳ Not Started | 0.5 day | - | ~25 |
+| **8.0: Setup** | ✅ **COMPLETE & MERGED (PR #52)** | **0.5 day** | **~0.5 day** | **15** |
 | **8.1: Integration + Scenario Switching** | ⏳ Not Started | 1 day | - | ~8 |
 | **8.2: Products/Matching** | ⏳ Not Started | 1 day | - | ~15 |
 | **8.3: Cart/Stateful** | ⏳ Not Started | 1 day | - | ~12 |
 | **8.4: Checkout/Composition** | ⏳ Not Started | 0.5 day | - | ~5 |
 | **8.5: Payment/Sequences** | ⏳ Not Started | 1 day | - | ~10 |
 | **8.6: Parallel Isolation** | ⏳ Not Started | 0.5 day | - | ~1 |
-| **App Total** | **⏳ 0% complete** | **5-6 days** | **-** | **~76** |
+| **App Total** | **🔄 14% complete** | **5-6 days** | **~0.5 day** | **15/~76** |
 
 ### Documentation
 
@@ -192,13 +192,13 @@ All 3 core features demonstrated individually, composed, AND isolated:
 
 ### Grand Total
 
-**Progress**: 9/17 phases complete (~53%)
+**Progress**: 10/17 phases complete (~59%)
 **Estimated Total**: 14-16 days
-**Actual So Far**: ~6.5 days
+**Actual So Far**: ~7 days
 **Remaining**: ~7-9 days (App Router + Documentation)
 
-**Current**: ✅ Pages Router Complete
-**Next**: Phase 8.0 (App Router Setup)
+**Current**: ✅ Phase 8.0 Complete
+**Next**: Phase 8.1 (Integration + Scenario Switching)
 
 ---
 
@@ -2050,32 +2050,42 @@ Mirror the Pages Router implementation using Next.js App Router to prove the ada
 - Provides examples for both routing approaches
 - Demonstrates key differences between Pages vs App Router
 
-#### Phase 8.0: Setup Infrastructure (⏳ Not Started)
+#### Phase 8.0: Setup Infrastructure (✅ COMPLETE & MERGED - PR #52)
 
 **Estimated**: 0.5 day
+**Actual**: ~0.5 day
+**Files Changed**: 15
 
 Create the new Next.js App Router application structure.
 
 **Tasks:**
-- [ ] Create `apps/nextjs-app-example` with Next.js 14+ (App Router)
-- [ ] Configure TypeScript strict mode
-- [ ] Install dependencies (@scenarist/nextjs-adapter, MSW, etc.)
-- [ ] Set up Playwright configuration (mirror Pages Router setup)
-- [ ] Set up Vitest configuration (mirror Pages Router setup)
-- [ ] Create basic app structure (`app/` directory)
-- [ ] Verify build and dev server work
-- [ ] Create smoke test (basic page renders)
+- [x] Create `apps/nextjs-app-example` with Next.js 14+ (App Router)
+- [x] Configure TypeScript strict mode
+- [x] Install dependencies (@scenarist/nextjs-adapter, MSW, etc.)
+- [x] Set up Playwright configuration (mirror Pages Router setup)
+- [x] Set up Vitest configuration (mirror Pages Router setup)
+- [x] Create basic app structure (`app/` directory)
+- [x] Verify build and dev server work
+- [x] Create smoke test (basic page renders)
 
 **Files Created**:
 - `apps/nextjs-app-example/package.json`
 - `apps/nextjs-app-example/tsconfig.json`
-- `apps/nextjs-app-example/next.config.js`
+- `apps/nextjs-app-example/next.config.mjs`
+- `apps/nextjs-app-example/eslint.config.js`
 - `apps/nextjs-app-example/playwright.config.ts`
 - `apps/nextjs-app-example/vitest.config.ts`
 - `apps/nextjs-app-example/app/layout.tsx`
 - `apps/nextjs-app-example/app/page.tsx`
+- `apps/nextjs-app-example/tests/playwright/smoke.spec.ts`
+- `apps/nextjs-app-example/tests/playwright/globalSetup.ts`
+- `apps/nextjs-app-example/tests/playwright/globalTeardown.ts`
+- `apps/nextjs-app-example/tests/api/setup.ts`
+- `apps/nextjs-app-example/tests/api/placeholder.test.ts`
+- `apps/nextjs-app-example/.gitignore`
+- Plus `pnpm-lock.yaml` update
 
-**Validation**: App builds, runs, and basic smoke test passes
+**Validation**: ✅ App builds, runs, and basic smoke test passes
 
 #### Phase 8.1: Integration + Scenario Switching (⏳ Not Started)
 
