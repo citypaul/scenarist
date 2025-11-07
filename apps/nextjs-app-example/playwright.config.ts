@@ -1,0 +1,40 @@
+import { defineConfig, devices } from '@playwright/test';
+import type { ScenaristOptions } from '@scenarist/playwright-helpers';
+
+/**
+ * Playwright configuration for Scenarist App Router Example
+ *
+ * Extends Playwright config with Scenarist options (scenaristEndpoint)
+ *
+ * @see https://playwright.dev/docs/test-configuration
+ */
+export default defineConfig<ScenaristOptions>({
+  testDir: './tests/playwright',
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
+  reporter: 'html',
+  use: {
+    baseURL: 'http://localhost:3002',
+    scenaristEndpoint: '/api/__scenario__',
+    trace: 'on-first-retry',
+  },
+
+  // Global setup/teardown for MSW server
+  globalSetup: './tests/playwright/globalSetup.ts',
+  globalTeardown: './tests/playwright/globalTeardown.ts',
+
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+  ],
+
+  webServer: {
+    command: 'pnpm dev',
+    url: 'http://localhost:3002',
+    reuseExistingServer: !process.env.CI,
+  },
+});
