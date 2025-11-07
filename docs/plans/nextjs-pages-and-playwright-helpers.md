@@ -1,8 +1,8 @@
-# Next.js Pages Router + Playwright Helpers - Living Implementation Plan
+# Next.js (Pages + App Router) + Playwright Helpers - Living Implementation Plan
 
-**Status**: ✅ Feature Parity Achieved - All 3 Core Features Demonstrated + Parallel Isolation Validated
+**Status**: ✅ Pages Router Complete - App Router In Progress
 **Started**: 2025-11-01
-**Last Updated**: 2025-11-05
+**Last Updated**: 2025-11-07
 **PRs**: [#39](https://github.com/citypaul/scenarist/pull/39) (planning), [#40](https://github.com/citypaul/scenarist/pull/40) (Phase -1 - MERGED), [#41](https://github.com/citypaul/scenarist/pull/41) (Phase 0 - MERGED), [#42-44](https://github.com/citypaul/scenarist/pull/42) (Phase 2 - MERGED), [#45-46](https://github.com/citypaul/scenarist/pull/45) (Phase 3 - MERGED), [#48](https://github.com/citypaul/scenarist/pull/48) (Phase 5 Sequences - MERGED), [#50](https://github.com/citypaul/scenarist/pull/50) (Phase 4 Composition - MERGED), [#51](https://github.com/citypaul/scenarist/pull/51) (Phase 6 Isolation - MERGED)
 **Related**: [next-stages.md](./next-stages.md) (Overall v1.0 roadmap)
 
@@ -13,22 +13,31 @@
 **User Requirement:**
 > "I don't consider the library ready for use until every core domain feature has been demonstrated in next.js and express directly. This is the confirmation we need to prove that everything is properly working."
 
-**Purpose:** Feature demonstrations validate that our hexagonal architecture truly works across frameworks. This is validation, not documentation.
+**Extended Requirement:**
+> "We need to prove the adapter works with BOTH Next.js routing paradigms (Pages Router and App Router). Create identical example apps for both to validate the hexagonal architecture across all three framework implementations."
+
+**Purpose:** Feature demonstrations validate that our hexagonal architecture truly works across frameworks AND routing paradigms. This is validation, not documentation.
 
 ### Feature Parity Status
 
-| Core Feature (@scenarist/core) | Express Example | Next.js Example | Status |
-|-------------------------------|-----------------|-----------------|--------|
-| **Phase 1: Request Matching** | ✅ `dynamic-matching.test.ts` | ✅ `products.spec.ts` | ✅ PARITY |
-| **Phase 2: Sequences** | ✅ `dynamic-sequences.test.ts` | ✅ `sequences.spec.ts` | ✅ PARITY |
-| **Phase 3: Stateful Mocks** | ✅ `stateful-scenarios.test.ts` | ✅ `shopping-cart.spec.ts` | ✅ PARITY |
+| Core Feature (@scenarist/core) | Express Example | Next.js Pages Router | Next.js App Router | Status |
+|-------------------------------|-----------------|---------------------|-------------------|--------|
+| **Phase 1: Request Matching** | ✅ `dynamic-matching.test.ts` | ✅ `products.spec.ts` | ⏳ Not Started | 🔄 IN PROGRESS |
+| **Phase 2: Sequences** | ✅ `dynamic-sequences.test.ts` | ✅ `sequences.spec.ts` | ⏳ Not Started | 🔄 IN PROGRESS |
+| **Phase 3: Stateful Mocks** | ✅ `stateful-scenarios.test.ts` | ✅ `shopping-cart.spec.ts` | ⏳ Not Started | 🔄 IN PROGRESS |
+| **Parallel Isolation** | ✅ Complete | ✅ `isolation.spec.ts` | ⏳ Not Started | 🔄 IN PROGRESS |
 
-**✅ Feature Parity Achieved:**
-- Both Express and Next.js demonstrate all 3 core features
-- Phase 1 (Request Matching): ✅ Complete
-- Phase 2 (Sequences): ✅ Complete
-- Phase 3 (Stateful Mocks): ✅ Complete
-- Hexagonal architecture validated across both frameworks
+**Pages Router: ✅ Complete**
+- All 3 core features demonstrated
+- Parallel isolation validated
+- Hexagonal architecture proven for Pages Router
+
+**App Router: ⏳ Not Started**
+- Will mirror Pages Router implementation
+- Validates adapter works with App Router paradigm
+- Proves framework-agnostic architecture
+
+**Overall Parity: 🔄 In Progress** (Express ✅, Pages Router ✅, App Router ⏳)
 
 ---
 
@@ -130,12 +139,24 @@ All 3 core features demonstrated individually, composed, AND isolated:
 - ✅ Phase 4: Composition (`checkout.spec.ts`) - Features working TOGETHER
 - ✅ **Phase 6: Isolation** (`isolation.spec.ts`) - Parallel tests don't interfere
 
-**90% Complete (9/10 phases)** - Final phase:
-- Phase 7: Documentation and README updates (1 day)
+**Pages Router Implementation: ✅ Complete (9 phases)**
+
+**Next Up: App Router Implementation**
+- Phase 8: App Router Example (mirror Pages Router, 5-6 days)
+  - Phase 8.0: Setup infrastructure
+  - Phase 8.1: Integration + scenario switching
+  - Phase 8.2: Products/Matching
+  - Phase 8.3: Cart/Stateful
+  - Phase 8.4: Checkout/Composition
+  - Phase 8.5: Payment/Sequences
+  - Phase 8.6: Parallel Isolation
+- Phase 9: Documentation and README updates (1 day)
 
 ---
 
 ## Overall Progress
+
+### Pages Router Implementation
 
 | Phase | Status | Estimated | Actual | Files Changed |
 |-------|--------|-----------|--------|---------------|
@@ -148,11 +169,36 @@ All 3 core features demonstrated individually, composed, AND isolated:
 | **4: Checkout/Composition** | ✅ **COMPLETE & MERGED (PR #50)** | **0.5 day** | **~0.5 day** | **5** |
 | **5: Payment/Sequences** | ✅ **COMPLETE & MERGED (PR #48)** | **1 day** | **~0.75 day** | **~10** |
 | **6: Parallel Isolation** | ✅ **COMPLETE & MERGED (PR #51)** | **0.5 day** | **~0.5 day** | **1** |
-| 7: Documentation | ⏳ Not Started | 1 day | - | 0 |
-| **Total** | **90% complete (9/10 phases)** | **8-9 days** | **~6.5 days** | **~105** |
+| **Pages Total** | **✅ 100% complete** | **8-9 days** | **~6.5 days** | **~105** |
 
-**Current**: ✅ All Technical Features Complete - Parallel isolation validated
-**Next**: Phase 7 (Documentation) - Final phase!
+### App Router Implementation
+
+| Phase | Status | Estimated | Actual | Files Changed |
+|-------|--------|-----------|--------|---------------|
+| **8.0: Setup** | ⏳ Not Started | 0.5 day | - | ~25 |
+| **8.1: Integration + Scenario Switching** | ⏳ Not Started | 1 day | - | ~8 |
+| **8.2: Products/Matching** | ⏳ Not Started | 1 day | - | ~15 |
+| **8.3: Cart/Stateful** | ⏳ Not Started | 1 day | - | ~12 |
+| **8.4: Checkout/Composition** | ⏳ Not Started | 0.5 day | - | ~5 |
+| **8.5: Payment/Sequences** | ⏳ Not Started | 1 day | - | ~10 |
+| **8.6: Parallel Isolation** | ⏳ Not Started | 0.5 day | - | ~1 |
+| **App Total** | **⏳ 0% complete** | **5-6 days** | **-** | **~76** |
+
+### Documentation
+
+| Phase | Status | Estimated | Actual | Files Changed |
+|-------|--------|-----------|--------|---------------|
+| **9: Documentation** | ⏳ Not Started | 1 day | - | ~10 |
+
+### Grand Total
+
+**Progress**: 9/17 phases complete (~53%)
+**Estimated Total**: 14-16 days
+**Actual So Far**: ~6.5 days
+**Remaining**: ~7-9 days (App Router + Documentation)
+
+**Current**: ✅ Pages Router Complete
+**Next**: Phase 8.0 (App Router Setup)
 
 ---
 
@@ -1990,9 +2036,225 @@ Comprehensive documentation for both packages.
 
 ---
 
-## Progress Tracking
+### Phase 8: App Router Example (⏳ Not Started)
 
-**Overall Progress**: 9/10 phases complete (90%)
+**Estimated**: 5-6 days
+
+Mirror the Pages Router implementation using Next.js App Router to prove the adapter works with both routing paradigms.
+
+**Goal**: Create `apps/nextjs-app-example` that is identical to `apps/nextjs-pages-example` but uses App Router instead of Pages Router.
+
+**Why This Matters:**
+- Validates adapter works with both Next.js routing paradigms
+- Proves hexagonal architecture across 3 framework implementations (Express, Pages Router, App Router)
+- Provides examples for both routing approaches
+- Demonstrates key differences between Pages vs App Router
+
+#### Phase 8.0: Setup Infrastructure (⏳ Not Started)
+
+**Estimated**: 0.5 day
+
+Create the new Next.js App Router application structure.
+
+**Tasks:**
+- [ ] Create `apps/nextjs-app-example` with Next.js 14+ (App Router)
+- [ ] Configure TypeScript strict mode
+- [ ] Install dependencies (@scenarist/nextjs-adapter, MSW, etc.)
+- [ ] Set up Playwright configuration (mirror Pages Router setup)
+- [ ] Set up Vitest configuration (mirror Pages Router setup)
+- [ ] Create basic app structure (`app/` directory)
+- [ ] Verify build and dev server work
+- [ ] Create smoke test (basic page renders)
+
+**Files Created**:
+- `apps/nextjs-app-example/package.json`
+- `apps/nextjs-app-example/tsconfig.json`
+- `apps/nextjs-app-example/next.config.js`
+- `apps/nextjs-app-example/playwright.config.ts`
+- `apps/nextjs-app-example/vitest.config.ts`
+- `apps/nextjs-app-example/app/layout.tsx`
+- `apps/nextjs-app-example/app/page.tsx`
+
+**Validation**: App builds, runs, and basic smoke test passes
+
+#### Phase 8.1: Integration + Scenario Switching (⏳ Not Started)
+
+**Estimated**: 1 day
+
+Set up Scenarist with App Router and create first Playwright helper.
+
+**Tasks:**
+- [ ] Create MSW setup in `app/providers.tsx` (client-side MSW worker)
+- [ ] Set up scenario definitions (mirror Pages Router scenarios)
+- [ ] Create scenario endpoint: `app/api/__scenario__/route.ts` (App Router Route Handler)
+- [ ] Write verbose Playwright test for scenario switching (RED)
+- [ ] Make test pass with manual scenario switching (GREEN)
+- [ ] Extract `switchScenario` helper from Playwright helpers package (GREEN)
+- [ ] Refactor test to use helper (REFACTOR)
+- [ ] Measure LOC reduction (should match ~77% from Pages Router)
+
+**Key Differences from Pages Router:**
+- Route Handlers instead of API Routes (`app/api/*/route.ts`)
+- Web `Request`/`Response` objects instead of Next.js `req`/`res`
+- Client-side MSW worker setup in `app/providers.tsx`
+- `use client` directive for client components
+
+**Files Created**:
+- `apps/nextjs-app-example/app/providers.tsx` (MSW provider)
+- `apps/nextjs-app-example/lib/scenarist.ts` (scenarist setup)
+- `apps/nextjs-app-example/lib/scenarios.ts` (scenario definitions)
+- `apps/nextjs-app-example/app/api/__scenario__/route.ts` (scenario endpoint)
+- `apps/nextjs-app-example/tests/playwright/fixtures.ts` (Playwright fixtures)
+- `apps/nextjs-app-example/tests/playwright/basic.spec.ts` (integration test)
+
+**Validation**: Scenario switching works, helper reduces boilerplate by ~77%
+
+#### Phase 8.2: Products/Matching (⏳ Not Started)
+
+**Estimated**: 1 day
+
+Create products page demonstrating request matching (Phase 1 core feature).
+
+**Tasks:**
+- [ ] Create products page: `app/page.tsx` (or `app/products/page.tsx`)
+- [ ] Create tier selection UI (premium/standard buttons)
+- [ ] Create products API: `app/api/products/route.ts` (Route Handler with matching)
+- [ ] Define premiumUser and standardUser scenarios (with match criteria)
+- [ ] Write Playwright test: `tests/playwright/products.spec.ts` (RED)
+- [ ] Implement products endpoint with Scenarist integration (GREEN)
+- [ ] Test passes, demonstrates specificity-based selection (GREEN)
+- [ ] Assess refactoring opportunities (REFACTOR if valuable)
+
+**Demonstrates**: Request matching with body/header/query matching, specificity-based selection
+
+**Files Created**:
+- `apps/nextjs-app-example/app/page.tsx` (products page)
+- `apps/nextjs-app-example/app/api/products/route.ts` (products API)
+- `apps/nextjs-app-example/tests/playwright/products.spec.ts` (tests)
+
+**Validation**: ✅ Phase 1 (Request Matching) parity achieved for App Router
+
+#### Phase 8.3: Cart/Stateful (⏳ Not Started)
+
+**Estimated**: 1 day
+
+Create shopping cart demonstrating stateful mocks (Phase 3 core feature).
+
+**Tasks:**
+- [ ] Create cart page: `app/cart/page.tsx`
+- [ ] Create cart context/state management
+- [ ] Create cart API: `app/api/cart/route.ts` (with state capture/injection)
+- [ ] Define cartWithState scenario (captures items, injects count)
+- [ ] Write Playwright test: `tests/playwright/shopping-cart.spec.ts` (RED)
+- [ ] Implement cart endpoint with state capture and template injection (GREEN)
+- [ ] Test passes, demonstrates state persistence (GREEN)
+- [ ] Assess refactoring opportunities (REFACTOR if valuable)
+
+**Demonstrates**: State capture from requests, template injection (`{{state.items.length}}`), state persistence across requests
+
+**Files Created**:
+- `apps/nextjs-app-example/app/cart/page.tsx` (cart page)
+- `apps/nextjs-app-example/app/api/cart/route.ts` (cart API)
+- `apps/nextjs-app-example/tests/playwright/shopping-cart.spec.ts` (tests)
+
+**Validation**: ✅ Phase 3 (Stateful Mocks) parity achieved for App Router
+
+#### Phase 8.4: Checkout/Composition (⏳ Not Started)
+
+**Estimated**: 0.5 day
+
+Create checkout flow demonstrating feature composition.
+
+**Tasks:**
+- [ ] Create checkout page: `app/checkout/page.tsx`
+- [ ] Create shipping API: `app/api/checkout/shipping/route.ts` (matching + state)
+- [ ] Create order API: `app/api/checkout/order/route.ts` (state injection)
+- [ ] Define checkout scenario (combines matching and state)
+- [ ] Write Playwright test: `tests/playwright/checkout.spec.ts` (RED)
+- [ ] Implement checkout endpoints (GREEN)
+- [ ] Test passes, demonstrates composition (GREEN)
+- [ ] Assess refactoring opportunities (REFACTOR if valuable)
+
+**Demonstrates**: Request matching + stateful mocks working together, multi-step workflows
+
+**Files Created**:
+- `apps/nextjs-app-example/app/checkout/page.tsx` (checkout page)
+- `apps/nextjs-app-example/app/api/checkout/shipping/route.ts` (shipping API)
+- `apps/nextjs-app-example/app/api/checkout/order/route.ts` (order API)
+- `apps/nextjs-app-example/tests/playwright/checkout.spec.ts` (tests)
+
+**Validation**: Features compose correctly without interference
+
+#### Phase 8.5: Payment/Sequences (⏳ Not Started)
+
+**Estimated**: 1 day
+
+Create payment flow demonstrating sequences (Phase 2 core feature).
+
+**Tasks:**
+- [ ] Create payment page: `app/payment/page.tsx`
+- [ ] Create payment API: `app/api/payment/route.ts` (with sequences)
+- [ ] Port sequence scenarios from Pages Router (githubPolling, weatherCycle, paymentLimited)
+- [ ] Write Playwright test: `tests/playwright/sequences.spec.ts` (RED)
+- [ ] Implement payment endpoint with sequence support (GREEN)
+- [ ] Test passes, demonstrates all repeat modes (GREEN)
+- [ ] Assess refactoring opportunities (REFACTOR if valuable)
+
+**Demonstrates**: Response sequences, repeat modes (last/cycle/none), sequence exhaustion, polling patterns
+
+**Files Created**:
+- `apps/nextjs-app-example/app/payment/page.tsx` (payment page)
+- `apps/nextjs-app-example/app/api/payment/route.ts` (payment API)
+- `apps/nextjs-app-example/tests/playwright/sequences.spec.ts` (tests)
+
+**Validation**: ✅ Phase 2 (Sequences) parity achieved for App Router
+
+#### Phase 8.6: Parallel Isolation (⏳ Not Started)
+
+**Estimated**: 0.5 day
+
+Prove concurrent tests don't interfere.
+
+**Tasks:**
+- [ ] Write Playwright test: `tests/playwright/isolation.spec.ts` (RED)
+- [ ] Configure parallel execution: `test.describe.configure({ mode: "parallel" })`
+- [ ] Create 5 concurrent tests using different scenarios (same as Pages Router)
+- [ ] Run tests in parallel (GREEN)
+- [ ] All tests pass with no interference (GREEN)
+- [ ] Assess refactoring opportunities (REFACTOR if valuable)
+
+**Demonstrates**: Test ID isolation, concurrent scenario execution, no cross-contamination
+
+**Files Created**:
+- `apps/nextjs-app-example/tests/playwright/isolation.spec.ts` (parallel isolation tests)
+
+**Validation**: ✅ Parallel isolation proven for App Router, all feature parity achieved
+
+---
+
+### Phase 9: Documentation & Polish (⏳ Not Started)
+
+**Estimated**: 1 day
+
+Update Phase 7 to Phase 9 and expand to cover both routing paradigms.
+
+**Tasks:**
+- [ ] All Phase 7 tasks (Playwright helpers, Pages Router example docs)
+- [ ] Write comprehensive README for App Router example
+- [ ] Create Bruno collection for App Router example
+- [ ] Add comparison section explaining Pages vs App Router differences
+- [ ] Update root README with both examples
+- [ ] Proofread all documentation
+
+**Validation**: New developer can understand and use both routing paradigms
+
+---
+
+## Progress Tracking (Detailed)
+
+This section provides the detailed breakdown of the original Pages Router phases. For the overall progress including App Router, see the "Overall Progress" section above.
+
+### Pages Router - Original Phases
 
 | Phase | Status | Estimated | Actual | Files Changed |
 |-------|--------|-----------|--------|---------------|
@@ -2003,10 +2265,10 @@ Comprehensive documentation for both packages.
 | 4: Checkout/Composition | ✅ **COMPLETE & MERGED (PR #50)** | 0.5 day | ~0.5 day | 5 |
 | 5: Payment/Sequences | ✅ **COMPLETE & MERGED** | 1 day | ~0.75 day | ~10 |
 | 6: Parallel Isolation | ✅ **COMPLETE & MERGED (PR #51)** | 0.5 day | ~0.5 day | 1 |
-| 7: Documentation | ⏳ Not Started | 1 day | - | 0 |
-| **Total** | **90%** | **6 days** | **~4.75 days** | **~78** |
+| **Total** | **✅ 100% complete** | **6 days** | **~4.75 days** | **~78** |
 
-**Next Steps**: Phase 7 (Documentation & Polish) - Final phase!
+**Status**: Pages Router implementation complete!
+**Next**: App Router implementation (Phase 8), then Documentation (Phase 9)
 
 ---
 
