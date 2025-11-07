@@ -5,13 +5,13 @@
  * Phase 2: Request matching for tier-based pricing
  */
 
-import type { ScenarioDefinition, ScenariosObject } from "@scenarist/nextjs-adapter/pages";
+import type { ScenaristScenario, ScenaristScenarios } from "@scenarist/nextjs-adapter/pages";
 import { buildProducts } from "../data/products";
 
 /**
  * Default scenario - baseline behavior
  */
-export const defaultScenario: ScenarioDefinition = {
+export const defaultScenario: ScenaristScenario = {
   id: "default",
   name: "Default Scenario",
   description: "Default baseline behavior",
@@ -26,7 +26,7 @@ export const defaultScenario: ScenarioDefinition = {
  * - Matches on x-user-tier: premium header
  * - Returns premium pricing (£99.99)
  */
-export const premiumUserScenario: ScenarioDefinition = {
+export const premiumUserScenario: ScenaristScenario = {
   id: "premiumUser",
   name: "Premium User",
   description: "Premium tier pricing (£99.99)",
@@ -55,7 +55,7 @@ export const premiumUserScenario: ScenarioDefinition = {
  * - Matches on x-user-tier: standard header
  * - Returns standard pricing (£149.99)
  */
-export const standardUserScenario: ScenarioDefinition = {
+export const standardUserScenario: ScenaristScenario = {
   id: "standardUser",
   name: "Standard User",
   description: "Standard tier pricing (£149.99)",
@@ -90,7 +90,7 @@ export const standardUserScenario: ScenarioDefinition = {
  * - Aggregates cartItems into unique items with quantities
  * - Returns as { items: [{ productId, quantity }, ...] }
  */
-export const cartWithStateScenario: ScenarioDefinition = {
+export const cartWithStateScenario: ScenaristScenario = {
   id: "cartWithState",
   name: "Shopping Cart with State",
   description: "Stateful shopping cart that captures and injects cart items",
@@ -142,7 +142,7 @@ export const cartWithStateScenario: ScenarioDefinition = {
  * - After exhaustion, repeats the last response infinitely
  * - Use case: Polling operations where final state should persist
  */
-export const githubPollingScenario: ScenarioDefinition = {
+export const githubPollingScenario: ScenaristScenario = {
   id: "githubPolling",
   name: "GitHub Job Polling",
   description: "Async job polling sequence (repeat: 'last')",
@@ -179,7 +179,7 @@ export const githubPollingScenario: ScenarioDefinition = {
  * - After reaching the end, loops back to the first response
  * - Use case: Simulating cyclical patterns
  */
-export const weatherCycleScenario: ScenarioDefinition = {
+export const weatherCycleScenario: ScenaristScenario = {
   id: "weatherCycle",
   name: "Weather Cycle",
   description: "Cycles through weather states (repeat: 'cycle')",
@@ -216,7 +216,7 @@ export const weatherCycleScenario: ScenarioDefinition = {
  * - After exhaustion, falls through to the next mock (rate limit error)
  * - Use case: Rate limiting, quota enforcement
  */
-export const paymentLimitedScenario: ScenarioDefinition = {
+export const paymentLimitedScenario: ScenaristScenario = {
   id: "paymentLimited",
   name: "Limited Payment Attempts",
   description: "Allows 3 attempts then rate limits (repeat: 'none')",
@@ -256,7 +256,7 @@ export const paymentLimitedScenario: ScenarioDefinition = {
  *
  * This scenario proves features compose correctly in the same workflow.
  */
-export const checkoutScenario: ScenarioDefinition = {
+export const checkoutScenario: ScenaristScenario = {
   id: "checkout",
   name: "Checkout with Shipping",
   description: "Demonstrates matching + stateful composition",
@@ -359,4 +359,4 @@ export const scenarios = {
   weatherCycle: weatherCycleScenario,
   paymentLimited: paymentLimitedScenario,
   checkout: checkoutScenario,
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;

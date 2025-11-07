@@ -10,22 +10,22 @@ Per ADR-0001, scenarios must be **pure JSON** - no functions, closures, regex, o
 
 ## What to Check
 
-1. **ScenarioDefinition type:**
-   - Must use `MockDefinition[]` NOT `HttpHandler[]`
+1. **ScenaristScenario type:**
+   - Must use `ScenaristMock[]` NOT `HttpHandler[]`
    - All fields must be JSON-serializable primitives or objects
    - No function types, no `() => T`, no methods
 
-2. **MockDefinition type:**
+2. **ScenaristMock type:**
    - Uses plain strings for URLs (not regex)
    - Uses union types for HTTP methods (not enums with methods)
    - Response body is `unknown` (must be JSON-serializable at runtime)
 
 3. **ActiveScenario type:**
    - Stores only references: `scenarioId` and `variantName`
-   - Does NOT store full `ScenarioDefinition` object
+   - Does NOT store full `ScenaristScenario` object
    - Does NOT store `HttpHandler` instances
 
-4. **VariantDefinition type:**
+4. **ScenaristVariant type:**
    - Uses `data: unknown` NOT `value: () => T`
    - No functions for providing variant data
 
@@ -38,8 +38,8 @@ grep -r "() =>" packages/core/src/types/ && echo "❌ Found function types in ty
 grep -r "Function" packages/core/src/types/ && echo "❌ Found Function type"
 grep -r "RegExp" packages/core/src/types/ && echo "❌ Found RegExp in types"
 
-# Verify MockDefinition exists and is used
-grep -r "MockDefinition" packages/core/src/types/scenario.ts || echo "❌ MockDefinition not found"
+# Verify ScenaristMock exists and is used
+grep -r "ScenaristMock" packages/core/src/types/scenario.ts || echo "❌ ScenaristMock not found"
 
 # Verify ActiveScenario is reference-based
 grep "scenario:" packages/core/src/types/scenario.ts && echo "❌ ActiveScenario stores full scenario (should be reference only)"

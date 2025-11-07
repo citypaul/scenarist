@@ -105,13 +105,13 @@ Get autocomplete and type checking for scenario names:
 
 ```typescript
 // lib/scenarios.ts
-import type { ScenarioDefinition, ScenariosObject } from '@scenarist/core';
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/core';
 
 export const scenarios = {
   cartWithState: { id: 'cartWithState', name: 'Cart with State', ... },
   premiumUser: { id: 'premiumUser', name: 'Premium User', ... },
   standardUser: { id: 'standardUser', name: 'Standard User', ... },
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 // Derive type from actual scenarios (or use ScenarioIds<typeof scenarios>)
 export type ScenarioId = keyof typeof scenarios;

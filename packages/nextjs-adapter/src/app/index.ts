@@ -36,13 +36,13 @@ export type { AppAdapterOptions, AppScenarist } from './setup.js';
 
 // Re-export core types for user convenience (users should only install this adapter)
 export type {
-  ScenarioDefinition,
-  MockDefinition,
-  MockResponse,
-  ResponseSequence,
-  MatchCriteria,
-  CaptureState,
-  ScenariosObject,
+  ScenaristScenario,
+  ScenaristMock,
+  ScenaristResponse,
+  ScenaristSequence,
+  ScenaristMatch,
+  ScenaristCaptureConfig,
+  ScenaristScenarios,
   ScenaristConfig,
-  Result,
+  ScenaristResult,
 } from '@scenarist/core';

@@ -421,9 +421,9 @@ Scenarios are defined as serializable JSON objects (not MSW handlers):
 
 ```typescript
 // scenarios/default.ts
-import type { ScenarioDefinition } from "@scenarist/core";
+import type { ScenaristScenario } from "@scenarist/core";
 
-export const defaultScenario: ScenarioDefinition = {
+export const defaultScenario: ScenaristScenario = {
   id: "default",
   name: "Default Scenario",
   description: "Baseline responses for all APIs",
@@ -457,9 +457,9 @@ export const defaultScenario: ScenarioDefinition = {
 
 ```typescript
 // scenarios/error-state.ts
-import type { ScenarioDefinition } from "@scenarist/core";
+import type { ScenaristScenario } from "@scenarist/core";
 
-export const errorState: ScenarioDefinition = {
+export const errorState: ScenaristScenario = {
   id: "error-state",
   name: "Error State",
   description: "API calls fail with errors",
@@ -490,7 +490,7 @@ export const errorState: ScenarioDefinition = {
 // server.ts
 import express from "express";
 import { createScenarist } from "@scenarist/express-adapter";
-import type { ScenariosObject } from "@scenarist/core";
+import type { ScenaristScenarios } from "@scenarist/core";
 import { defaultScenario, errorState } from "./scenarios";
 
 const app = express();
@@ -500,7 +500,7 @@ app.use(express.json());
 const scenarios = {
   default: defaultScenario,
   errorState: errorState,
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 // Create Scenarist instance (wires everything automatically)
 const scenarist = createScenarist({
@@ -582,7 +582,7 @@ const scenarios = {
   default: myDefaultScenario,
   success: mySuccessScenario,
   error: myErrorScenario,
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === "test",
@@ -638,7 +638,7 @@ Capture state from requests and inject it into responses for multi-step flows:
 
 ```typescript
 // Define a scenario with state capture and injection
-const shoppingCartScenario: ScenarioDefinition = {
+const shoppingCartScenario: ScenaristScenario = {
   id: "shopping-cart",
   name: "Shopping Cart",
   mocks: [

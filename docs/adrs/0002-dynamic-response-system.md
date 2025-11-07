@@ -7,7 +7,7 @@
 
 ## Context
 
-Scenarist currently provides a single static response per `MockDefinition`. Each mock maps one URL pattern to one response:
+Scenarist currently provides a single static response per `ScenaristMock`. Each mock maps one URL pattern to one response:
 
 ```typescript
 {
@@ -51,7 +51,7 @@ We will implement a **Dynamic Response System** with three new capabilities that
 Enable different responses based on request content using optional `match` criteria:
 
 ```typescript
-type MatchCriteria = {
+type ScenaristMatch = {
   readonly body?: Record<string, unknown>;      // Partial match
   readonly headers?: Record<string, string>;    // Exact match
   readonly query?: Record<string, string>;      // Exact match
@@ -65,10 +65,10 @@ type MatchCriteria = {
 Enable ordered sequences of responses for polling scenarios using `sequence` field:
 
 ```typescript
-type MockDefinition = {
-  readonly response?: MockResponse;     // Single response (existing)
+type ScenaristMock = {
+  readonly response?: ScenaristResponse;     // Single response (existing)
   readonly sequence?: {                 // OR sequence (new)
-    readonly responses: ReadonlyArray<MockResponse>;
+    readonly responses: ReadonlyArray<ScenaristResponse>;
     readonly repeat?: 'last' | 'cycle' | 'none';
   };
 };
@@ -84,7 +84,7 @@ type MockDefinition = {
 Enable capturing data from requests and injecting it into responses:
 
 ```typescript
-type MockDefinition = {
+type ScenaristMock = {
   readonly captureState?: Record<string, string>;  // { stateKey: requestPath }
 };
 ```
@@ -259,7 +259,7 @@ See [ADR-0004](./0004-why-composition-tests-unnecessary.md) for detailed analysi
 
 ❌ **Increased complexity** - More concepts to learn (match, sequence, state)
 
-❌ **Larger type surface** - More fields on `MockDefinition`, more documentation needed
+❌ **Larger type surface** - More fields on `ScenaristMock`, more documentation needed
 
 ❌ **Runtime state tracking** - Adapter must maintain sequence positions and application state
 

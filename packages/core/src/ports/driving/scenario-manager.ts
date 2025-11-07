@@ -1,4 +1,4 @@
-import type { ScenarioDefinition, ActiveScenario, Result } from '../../types/index.js';
+import type { ScenaristScenario, ActiveScenario, ScenaristResult } from '../../types/index.js';
 
 /**
  * Primary port for scenario management.
@@ -41,7 +41,7 @@ export interface ScenarioManager {
    * @param definition The scenario definition to register
    * @throws Error if scenario ID is already registered
    */
-  registerScenario(definition: ScenarioDefinition): void;
+  registerScenario(definition: ScenaristScenario): void;
 
   /**
    * Switch to a different scenario for a specific test ID.
@@ -60,7 +60,7 @@ export interface ScenarioManager {
     testId: string,
     scenarioId: string,
     variantName?: string
-  ): Result<void, Error>;
+  ): ScenaristResult<void, Error>;
 
   /**
    * Get the currently active scenario reference for a test ID.
@@ -84,7 +84,7 @@ export interface ScenarioManager {
    *
    * @returns Array of all registered scenario definitions
    */
-  listScenarios(): ReadonlyArray<ScenarioDefinition>;
+  listScenarios(): ReadonlyArray<ScenaristScenario>;
 
   /**
    * Clear the active scenario for a specific test ID.
@@ -105,5 +105,5 @@ export interface ScenarioManager {
    * @param id Scenario definition ID
    * @returns Scenario definition or undefined if not found
    */
-  getScenarioById(id: string): ScenarioDefinition | undefined;
+  getScenarioById(id: string): ScenaristScenario | undefined;
 }

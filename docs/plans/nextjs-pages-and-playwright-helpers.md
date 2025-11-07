@@ -721,7 +721,7 @@ Example scenario definition:
 
 ```typescript
 // lib/scenarios.ts
-export const premiumUserScenario: ScenarioDefinition = {
+export const premiumUserScenario: ScenaristScenario = {
   id: 'premiumUser',
   name: 'Premium User',
   description: 'Premium tier pricing and features',
@@ -1544,7 +1544,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 **Scenario example (intercepts json-server calls):**
 ```typescript
-export const premiumUserScenario: ScenarioDefinition = {
+export const premiumUserScenario: ScenaristScenario = {
   id: 'premiumUser',
   name: 'Premium User',
   description: 'Premium tier pricing - overrides json-server responses',
@@ -1568,7 +1568,7 @@ export const premiumUserScenario: ScenarioDefinition = {
   ]
 };
 
-export const standardUserScenario: ScenarioDefinition = {
+export const standardUserScenario: ScenaristScenario = {
   id: 'standardUser',
   name: 'Standard User',
   description: 'Standard tier pricing - overrides json-server responses',
@@ -1671,7 +1671,7 @@ test('items accumulate in cart across requests', async ({ page, scenarist }) => 
 
 **Scenario example:**
 ```typescript
-export const cartAccumulationScenario: ScenarioDefinition = {
+export const cartAccumulationScenario: ScenaristScenario = {
   id: 'cartAccumulation',
   name: 'Shopping Cart',
   description: 'Stateful cart with item accumulation',
@@ -1842,7 +1842,7 @@ test('payment status polls and progresses', async ({ page, scenarist }) => {
 
 **Scenario example:**
 ```typescript
-export const paymentPollingScenario: ScenarioDefinition = {
+export const paymentPollingScenario: ScenaristScenario = {
   id: 'paymentPolling',
   name: 'Payment Polling',
   description: 'Payment status sequence',

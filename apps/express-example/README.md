@@ -143,7 +143,7 @@ pnpm add @scenarist/express-adapter
 yarn add @scenarist/express-adapter
 ```
 
-**Note:** You only need to install the Express adapter package. It re-exports all necessary types including `ScenarioDefinition`, `MockDefinition`, etc.
+**Note:** You only need to install the Express adapter package. It re-exports all necessary types including `ScenaristScenario`, `ScenaristMock`, etc.
 
 ### 2. Setup Scenarist
 
@@ -172,9 +172,9 @@ scenarist.start();
 Import types from the Express adapter (not from core):
 
 ```typescript
-import type { ScenarioDefinition } from '@scenarist/express-adapter';
+import type { ScenaristScenario } from '@scenarist/express-adapter';
 
-export const successScenario: ScenarioDefinition = {
+export const successScenario: ScenaristScenario = {
   id: 'success',
   name: 'Success Scenario',
   description: 'All external API calls succeed',

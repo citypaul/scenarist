@@ -77,7 +77,7 @@ pnpm add -D @scenarist/express-adapter msw
 yarn add -D @scenarist/express-adapter msw
 ```
 
-**Note:** All Scenarist types (`ScenarioDefinition`, `MockDefinition`, etc.) are re-exported from `@scenarist/express-adapter` for convenience. You don't need to install `@scenarist/core` or `@scenarist/msw-adapter` separately - they're already included as dependencies.
+**Note:** All Scenarist types (`ScenaristScenario`, `ScenaristMock`, etc.) are re-exported from `@scenarist/express-adapter` for convenience. You don't need to install `@scenarist/core` or `@scenarist/msw-adapter` separately - they're already included as dependencies.
 
 **Peer Dependencies:**
 - `express` ^4.18.0 || ^5.0.0
@@ -89,9 +89,9 @@ yarn add -D @scenarist/express-adapter msw
 
 ```typescript
 // test/scenarios.ts
-import type { ScenarioDefinition, ScenariosObject } from '@scenarist/express-adapter';
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/express-adapter';
 
-const defaultScenario: ScenarioDefinition = {
+const defaultScenario: ScenaristScenario = {
   id: 'default',
   name: 'Default Scenario',
   description: 'Baseline responses for all APIs',
@@ -111,7 +111,7 @@ const defaultScenario: ScenarioDefinition = {
   ],
 };
 
-const adminUserScenario: ScenarioDefinition = {
+const adminUserScenario: ScenaristScenario = {
   id: 'admin-user',
   name: 'Admin User',
   description: 'User with admin privileges',
@@ -135,7 +135,7 @@ const adminUserScenario: ScenarioDefinition = {
 export const scenarios = {
   default: defaultScenario,
   adminUser: adminUserScenario,
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 ```
 
 ### 2. Create Scenarist Instance
@@ -216,7 +216,7 @@ Creates a Scenarist instance with everything wired automatically.
 
 **Parameters:**
 ```typescript
-type ExpressAdapterOptions<T extends ScenariosObject> = {
+type ExpressAdapterOptions<T extends ScenaristScenarios> = {
   enabled: boolean;                    // Whether mocking is enabled
   scenarios: T;                        // REQUIRED - scenarios object
   strictMode?: boolean;                // Return 501 for unmocked requests (default: false)
@@ -235,13 +235,13 @@ type ExpressAdapterOptions<T extends ScenariosObject> = {
 
 **Returns:**
 ```typescript
-type ExpressScenarist<T extends ScenariosObject> = {
+type ExpressScenarist<T extends ScenaristScenarios> = {
   config: ScenaristConfig;              // Resolved configuration (endpoints, headers, etc.)
   middleware: Router;                   // Express middleware (includes test ID extraction + scenario endpoints)
-  switchScenario: (testId: string, scenarioId: keyof T, variant?: string) => Result<void, Error>;
+  switchScenario: (testId: string, scenarioId: keyof T, variant?: string) => ScenaristResult<void, Error>;
   getActiveScenario: (testId: string) => ActiveScenario | undefined;
-  getScenarioById: (scenarioId: string) => ScenarioDefinition | undefined;
-  listScenarios: () => ReadonlyArray<ScenarioDefinition>;
+  getScenarioById: (scenarioId: string) => ScenaristScenario | undefined;
+  listScenarios: () => ReadonlyArray<ScenaristScenario>;
   clearScenario: (testId: string) => void;
   start: () => void;                    // Start MSW server
   stop: () => Promise<void>;            // Stop MSW server
@@ -254,7 +254,7 @@ const scenarios = {
   default: defaultScenario,
   success: successScenario,
   error: errorScenario,
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
   enabled: true,
@@ -553,7 +553,7 @@ const scenarios = {
       // Orders endpoint falls back to default scenario
     ],
   },
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
   enabled: true,
@@ -567,7 +567,7 @@ The new API provides full type safety with TypeScript autocomplete for scenario 
 
 ```typescript
 // scenarios.ts - define scenarios with type constraint
-import type { ScenariosObject } from '@scenarist/express-adapter';
+import type { ScenaristScenarios } from '@scenarist/express-adapter';
 
 export const scenarios = {
   default: defaultScenario,
@@ -575,7 +575,7 @@ export const scenarios = {
   githubNotFound: githubNotFoundScenario,
   weatherError: weatherErrorScenario,
   stripeFailure: stripeFailureScenario,
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 // setup.ts - create scenarist with type parameter
 import { scenarios } from './scenarios';
@@ -767,7 +767,7 @@ const response = await request(app)
 const scenarios = {
   default: defaultScenario,
   myScenario: myScenario,  // ✅ Registered
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
   enabled: true,
@@ -815,15 +815,15 @@ import type {
 
 // Core types (re-exported for convenience)
 import type {
-  ScenarioDefinition,
-  MockDefinition,
-  MockResponse,
-  ResponseSequence,
-  MatchCriteria,
-  CaptureState,
-  ScenariosObject,
+  ScenaristScenario,
+  ScenaristMock,
+  ScenaristResponse,
+  ScenaristSequence,
+  ScenaristMatch,
+  ScenaristCaptureConfig,
+  ScenaristScenarios,
   ScenaristConfig,
-  Result,
+  ScenaristResult,
 } from '@scenarist/express-adapter';
 ```
 

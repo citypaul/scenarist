@@ -1,4 +1,4 @@
-import type { HttpMethod, ScenarioDefinition } from '../schemas/index.js';
+import type { HttpMethod, ScenaristScenario } from '../schemas/index.js';
 
 /**
  * HTTP request data for response selection.
@@ -34,7 +34,7 @@ export type HttpRequestContext = {
  * }
  * ```
  *
- * NOTE: CaptureState type is now schema-inferred from CaptureStateSchema.
+ * NOTE: CaptureState type is now schema-inferred from ScenaristCaptureConfigSchema.
  */
 
 /**
@@ -43,14 +43,14 @@ export type HttpRequestContext = {
  *
  * A mock must have EITHER `response` (single response) OR `sequence` (ordered responses).
  *
- * NOTE: MockDefinition type is now schema-inferred from MockDefinitionSchema.
+ * NOTE: MockDefinition type is now schema-inferred from ScenaristMockSchema.
  */
 
 /**
  * Serializable variant definition.
  * Variants allow parameterization of scenarios with different data.
  *
- * NOTE: VariantDefinition type is now schema-inferred from VariantDefinitionSchema.
+ * NOTE: VariantDefinition type is now schema-inferred from ScenaristVariantSchema.
  */
 
 /**
@@ -61,9 +61,9 @@ export type HttpRequestContext = {
  * - Fetched from remote APIs
  * - Stored in databases
  *
- * At runtime, MockDefinitions are converted to MSW HttpHandlers.
+ * At runtime, ScenaristMocks are converted to MSW HttpHandlers.
  *
- * NOTE: ScenarioDefinition type is now schema-inferred from ScenarioDefinitionSchema.
+ * NOTE: ScenarioDefinition type is now schema-inferred from ScenaristScenarioSchema.
  */
 
 /**
@@ -81,7 +81,7 @@ export type ActiveScenario = {
  * Result type for operations that can fail.
  * Prefer this over throwing exceptions for expected error cases.
  */
-export type Result<T, E = Error> =
+export type ScenaristResult<T, E = Error> =
   | { readonly success: true; readonly data: T }
   | { readonly success: false; readonly error: E };
 
@@ -97,10 +97,10 @@ export type Result<T, E = Error> =
  * const scenarios = {
  *   cartWithState: { id: 'cartWithState', name: 'Cart with State', ... },
  *   premiumUser: { id: 'premiumUser', name: 'Premium User', ... },
- * } as const satisfies ScenariosObject;
+ * } as const satisfies ScenaristScenarios;
  * ```
  */
-export type ScenariosObject = Record<string, ScenarioDefinition>;
+export type ScenaristScenarios = Record<string, ScenaristScenario>;
 
 /**
  * Extract scenario IDs from scenarios object for type safety.
@@ -121,4 +121,4 @@ export type ScenariosObject = Record<string, ScenarioDefinition>;
  * // Result: 'cartWithState' | 'premiumUser'
  * ```
  */
-export type ScenarioIds<T extends ScenariosObject> = keyof T & string;
+export type ScenarioIds<T extends ScenaristScenarios> = keyof T & string;

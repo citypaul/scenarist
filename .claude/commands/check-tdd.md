@@ -61,8 +61,8 @@ Check for factory functions with optional overrides:
 // ✅ CORRECT
 const createTestScenarioDefinition = (
   id: string,
-  overrides?: Partial<ScenarioDefinition>
-): ScenarioDefinition => ({
+  overrides?: Partial<ScenaristScenario>
+): ScenaristScenario => ({
   id,
   name: 'Test Scenario',
   description: 'Test description',

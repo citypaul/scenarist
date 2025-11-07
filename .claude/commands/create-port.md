@@ -70,7 +70,7 @@ After creating the port:
    - Explain side effects or business rules
 5. **Use `interface`** (not `type`)
 6. **Immutable parameters:** Use `readonly` where applicable
-7. **Return types:** Use `Result<T, E>` for operations that can fail
+7. **Return types:** Use `ScenaristResult<T, E>` for operations that can fail
 
 ## Rules
 

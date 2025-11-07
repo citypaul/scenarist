@@ -96,7 +96,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 ### Example: `lib/scenarios.ts`
 
 ```typescript
-export const premiumUserScenario: ScenarioDefinition = {
+export const premiumUserScenario: ScenaristScenario = {
   mocks: [{
     response: {
       body: {

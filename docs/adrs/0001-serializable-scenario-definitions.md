@@ -59,32 +59,32 @@ We will **separate serializable scenario definitions from runtime MSW handlers**
 ```typescript
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'HEAD';
 
-export type MockResponse = {
+export type ScenaristResponse = {
   readonly status: number;
   readonly body?: unknown; // Must be JSON-serializable
   readonly headers?: Readonly<Record<string, string>>;
   readonly delay?: number;
 };
 
-export type MockDefinition = {
+export type ScenaristMock = {
   readonly method: HttpMethod;
   readonly url: string; // String pattern, not regex
-  readonly response: MockResponse;
+  readonly response: ScenaristResponse;
 };
 
-export type VariantDefinition = {
+export type ScenaristVariant = {
   readonly name: string;
   readonly description: string;
   readonly data: unknown; // JSON-serializable data, not functions
 };
 
-export type ScenarioDefinition = {
+export type ScenaristScenario = {
   readonly id: string;
   readonly name: string;
   readonly description: string;
-  readonly mocks: ReadonlyArray<MockDefinition>;
+  readonly mocks: ReadonlyArray<ScenaristMock>;
   readonly devToolEnabled: boolean;
-  readonly variants?: ReadonlyArray<VariantDefinition>;
+  readonly variants?: ReadonlyArray<ScenaristVariant>;
 };
 ```
 
@@ -99,12 +99,12 @@ export type ActiveScenario = {
 
 ### Runtime Conversion
 
-At runtime, `MockDefinition` instances are converted to MSW `HttpHandler` instances:
+At runtime, `ScenaristMock` instances are converted to MSW `HttpHandler` instances:
 
 ```typescript
 import { http, HttpResponse, delay } from 'msw';
 
-const toMSWHandler = (definition: MockDefinition): HttpHandler => {
+const toMSWHandler = (definition: ScenaristMock): HttpHandler => {
   const method = definition.method.toLowerCase() as 'get' | 'post' | 'put' | 'delete' | 'patch';
 
   return http[method](definition.url, async () => {
@@ -124,10 +124,10 @@ const toMSWHandler = (definition: MockDefinition): HttpHandler => {
 
 ```typescript
 interface ScenarioRegistry {
-  register(definition: ScenarioDefinition): void;
-  get(id: string): ScenarioDefinition | undefined;
+  register(definition: ScenaristScenario): void;
+  get(id: string): ScenaristScenario | undefined;
   has(id: string): boolean;
-  list(): ReadonlyArray<ScenarioDefinition>;
+  list(): ReadonlyArray<ScenaristScenario>;
   unregister(id: string): void;
 }
 
@@ -163,11 +163,11 @@ interface ScenarioStore {
 
 ### Negative
 
-❌ **Runtime conversion required** - Must convert `MockDefinition` → `HttpHandler` at runtime
+❌ **Runtime conversion required** - Must convert `ScenaristMock` → `HttpHandler` at runtime
 
 ❌ **Limited expressiveness initially** - JSON-based mocks are less flexible than function-based ones (can be addressed with future enhancements like JavaScript-based response templates)
 
-❌ **Breaking change** - Existing code using `Scenario` type must migrate to `ScenarioDefinition`
+❌ **Breaking change** - Existing code using `Scenario` type must migrate to `ScenaristScenario`
 
 ### Neutral
 
@@ -197,9 +197,9 @@ interface ScenarioStore {
 
 ## Implementation Notes
 
-1. All existing mock definitions using `HttpHandler` must be converted to `MockDefinition`
+1. All existing mock definitions using `HttpHandler` must be converted to `ScenaristMock`
 2. The `ScenarioManager` implementation will convert definitions to handlers at registration time or on-demand
-3. Implementations must ensure `MockDefinition.response.body` is JSON-serializable (primitives, objects, arrays only)
+3. Implementations must ensure `ScenaristMock.response.body` is JSON-serializable (primitives, objects, arrays only)
 4. Future enhancements can add template support (e.g., Handlebars, JavaScript expressions) while maintaining serializability
 
 ## Related Decisions

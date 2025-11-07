@@ -54,7 +54,7 @@ export type NewFeature = {
 ```typescript
 // packages/core/src/ports/new-port.ts
 export interface NewPort {
-  doSomething(data: NewFeature): Result<void, Error>;
+  doSomething(data: NewFeature): ScenaristResult<void, Error>;
 }
 ```
 
@@ -142,7 +142,7 @@ export const createNewFeature = ({
 export class InMemoryNewPort implements NewPort {
   private readonly data = new Map();
 
-  doSomething(data: NewFeature): Result<void, Error> {
+  doSomething(data: NewFeature): ScenaristResult<void, Error> {
     // Implementation
   }
 }
@@ -200,7 +200,7 @@ Before committing:
 
 ## Example: Adding a New Scenario Variant Feature
 
-1. **Types:** Create `VariantDefinition` type
+1. **Types:** Create `ScenaristVariant` type
 2. **Port:** Extend `ScenarioRegistry` with variant methods
 3. **Tests:** Write tests for variant behavior
 4. **Implementation:** Update `createScenarioManager` to handle variants

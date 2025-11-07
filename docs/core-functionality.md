@@ -85,12 +85,12 @@ A **Mock Definition** is a serializable description of how to respond to HTTP re
 
 ## Scenario Definitions
 
-Scenarios are defined using `ScenarioDefinition`:
+Scenarios are defined using `ScenaristScenario`:
 
 ```typescript
-import type { ScenarioDefinition } from '@scenarist/core';
+import type { ScenaristScenario } from '@scenarist/core';
 
-const paymentSuccess: ScenarioDefinition = {
+const paymentSuccess: ScenaristScenario = {
   id: 'payment-success',
   name: 'Payment Success',
   description: 'All payment operations succeed',
@@ -664,9 +664,9 @@ Scenarist uses hexagonal architecture to remain framework-agnostic:
 │                                          │
 │  ┌────────────────────────────────────┐ │
 │  │  Types (data structures)           │ │
-│  │  • ScenarioDefinition              │ │
-│  │  • MockDefinition                  │ │
-│  │  • MockResponse                    │ │
+│  │  • ScenaristScenario               │ │
+│  │  • ScenaristMock                   │ │
+│  │  • ScenaristResponse               │ │
 │  └────────────────────────────────────┘ │
 └──────────────────────────────────────────┘
                     ▲
@@ -696,7 +696,7 @@ Adapters provide:
 
 1. **Framework Integration** - Middleware, plugins, hooks for specific frameworks
 2. **Request Context Extraction** - Convert framework request to core `RequestContext`
-3. **Response Application** - Convert core `MockResponse` to framework response
+3. **Response Application** - Convert core `ScenaristResponse` to framework response
 4. **Port Implementations** - Framework-specific implementations (optional)
 
 **Critical:** Adapters are **thin translation layers**. All domain logic lives in core, not in adapters.

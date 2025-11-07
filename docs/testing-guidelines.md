@@ -205,7 +205,7 @@ describe('ResponseSelector - State Capture and Injection', () => {
       stateManager: createInMemoryStateManager()
     });
 
-    const mocks: MockDefinition[] = [{
+    const mocks: ScenaristMock[] = [{
       method: 'POST',
       url: '/api/cart/add',
       captureState: { 'cartItems[]': 'body.item' },
@@ -543,8 +543,8 @@ Use factory functions with optional overrides for consistent test data:
 ```typescript
 // packages/core/tests/helpers/factories.ts
 export const getMockScenario = (
-  overrides?: Partial<ScenarioDefinition>
-): ScenarioDefinition => {
+  overrides?: Partial<ScenaristScenario>
+): ScenaristScenario => {
   return {
     id: 'test-scenario',
     name: 'Test Scenario',
@@ -813,8 +813,8 @@ All test code must follow strict TypeScript rules:
 ```typescript
 // ✅ Good - Fully typed
 const getMockScenario = (
-  overrides?: Partial<ScenarioDefinition>
-): ScenarioDefinition => {
+  overrides?: Partial<ScenaristScenario>
+): ScenaristScenario => {
   return {
     id: 'test',
     name: 'Test',

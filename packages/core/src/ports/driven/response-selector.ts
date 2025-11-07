@@ -1,8 +1,8 @@
 import type {
-  MockDefinition,
-  MockResponse,
+  ScenaristMock,
+  ScenaristResponse,
   HttpRequestContext,
-  Result,
+  ScenaristResult,
 } from "../../types/index.js";
 
 /**
@@ -37,12 +37,12 @@ export interface ResponseSelector {
    * @param scenarioId - Scenario ID for sequence/state tracking
    * @param context - Request context (method, url, body, headers, query)
    * @param mocks - Candidate mocks from active scenario (already filtered by URL/method)
-   * @returns Result with selected MockResponse or error if no match found
+   * @returns ScenaristResult with selected ScenaristResponse or error if no match found
    */
   selectResponse(
     testId: string,
     scenarioId: string,
     context: HttpRequestContext,
-    mocks: ReadonlyArray<MockDefinition>
-  ): Result<MockResponse, ResponseSelectionError>;
+    mocks: ReadonlyArray<ScenaristMock>
+  ): ScenaristResult<ScenaristResponse, ResponseSelectionError>;
 }

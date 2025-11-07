@@ -76,7 +76,7 @@ src/
 - Defined with `type` keyword
 - All properties are `readonly` for immutability
 - Must be serializable (no functions, closures, or class instances)
-- Examples: `ScenarioDefinition`, `ScenaristConfig`, `ActiveScenario`, `MockDefinition`
+- Examples: `ScenaristScenario`, `ScenaristConfig`, `ActiveScenario`, `ScenaristMock`
 
 **Ports (Behavior Contracts):**
 - Defined with `interface` keyword (domain ports) or `type` keyword (adapter contracts)
@@ -238,11 +238,11 @@ import {
   InMemoryScenarioRegistry,
   InMemoryScenarioStore,
   buildConfig,
-  type ScenarioDefinition,
+  type ScenaristScenario,
 } from '@scenarist/core';
 
 // 1. Define scenarios (serializable definitions)
-const defaultScenario: ScenarioDefinition = {
+const defaultScenario: ScenaristScenario = {
   id: 'default',
   name: 'Default Scenario',
   description: 'Baseline mocks for all APIs',
@@ -258,7 +258,7 @@ const defaultScenario: ScenarioDefinition = {
   ],
 };
 
-const happyPathScenario: ScenarioDefinition = {
+const happyPathScenario: ScenaristScenario = {
   id: 'happy-path',
   name: 'Happy Path',
   description: 'All API calls succeed',
@@ -320,7 +320,7 @@ The core package defines a **universal adapter contract** that all framework ada
 All adapters must accept these base options:
 
 ```typescript
-type BaseAdapterOptions<T extends ScenariosObject> = {
+type BaseAdapterOptions<T extends ScenaristScenarios> = {
   readonly enabled: boolean;
   readonly scenarios: T;  // REQUIRED - scenarios object (must have 'default' key)
   readonly strictMode?: boolean;
@@ -345,12 +345,12 @@ Adapters can extend this with framework-specific options:
 
 ```typescript
 // Express adapter
-type ExpressAdapterOptions<T extends ScenariosObject> = BaseAdapterOptions<T> & {
+type ExpressAdapterOptions<T extends ScenaristScenarios> = BaseAdapterOptions<T> & {
   // Add Express-specific options if needed
 };
 
 // Next.js adapter
-type NextJSAdapterOptions<T extends ScenariosObject> = BaseAdapterOptions<T> & {
+type NextJSAdapterOptions<T extends ScenaristScenarios> = BaseAdapterOptions<T> & {
   // Add Next.js-specific options if needed
 };
 ```
@@ -360,13 +360,13 @@ type NextJSAdapterOptions<T extends ScenariosObject> = BaseAdapterOptions<T> & {
 All adapters must return an object matching this contract:
 
 ```typescript
-type ScenaristAdapter<T extends ScenariosObject, TMiddleware = unknown> = {
+type ScenaristAdapter<T extends ScenaristScenarios, TMiddleware = unknown> = {
   readonly config: ScenaristConfig;  // Resolved configuration
   readonly middleware?: TMiddleware;  // Framework-specific middleware (optional - Next.js doesn't have global middleware)
-  readonly switchScenario: (testId: string, scenarioId: ScenarioIds<T>, variant?: string) => Result<void, Error>;
+  readonly switchScenario: (testId: string, scenarioId: ScenarioIds<T>, variant?: string) => ScenaristResult<void, Error>;
   readonly getActiveScenario: (testId: string) => ActiveScenario | undefined;
-  readonly getScenarioById: (scenarioId: ScenarioIds<T>) => ScenarioDefinition | undefined;
-  readonly listScenarios: () => ReadonlyArray<ScenarioDefinition>;
+  readonly getScenarioById: (scenarioId: ScenarioIds<T>) => ScenaristScenario | undefined;
+  readonly listScenarios: () => ReadonlyArray<ScenaristScenario>;
   readonly clearScenario: (testId: string) => void;
   readonly start: () => void;
   readonly stop: () => Promise<void>;
@@ -374,7 +374,7 @@ type ScenaristAdapter<T extends ScenariosObject, TMiddleware = unknown> = {
 ```
 
 The generic parameters:
-- `T extends ScenariosObject`: The scenarios object type for type-safe scenario IDs
+- `T extends ScenaristScenarios`: The scenarios object type for type-safe scenario IDs
 - `TMiddleware`: Framework-specific middleware type
 
 Examples:
@@ -385,7 +385,7 @@ Examples:
 
 ```typescript
 // Express adapter implementation
-export const createScenarist = <T extends ScenariosObject>(
+export const createScenarist = <T extends ScenaristScenarios>(
   options: ExpressAdapterOptions<T>
 ): ScenaristAdapter<T, Router> => {
   // Implementation automatically wires:

@@ -2,7 +2,7 @@ import { http, passthrough } from 'msw';
 import type { HttpHandler } from 'msw';
 import type {
   ActiveScenario,
-  ScenarioDefinition,
+  ScenaristScenario,
   HttpRequestContext,
   HttpMethod,
   ResponseSelector,
@@ -15,7 +15,7 @@ export type DynamicHandlerOptions = {
   readonly getActiveScenario: (testId: string) => ActiveScenario | undefined;
   readonly getScenarioDefinition: (
     scenarioId: string
-  ) => ScenarioDefinition | undefined;
+  ) => ScenaristScenario | undefined;
   readonly strictMode: boolean;
   readonly responseSelector: ResponseSelector;
 };
@@ -67,11 +67,11 @@ const extractHttpRequestContext = async (
  */
 const getMocksFromScenarios = (
   activeScenario: ActiveScenario | undefined,
-  getScenarioDefinition: (scenarioId: string) => ScenarioDefinition | undefined,
+  getScenarioDefinition: (scenarioId: string) => ScenaristScenario | undefined,
   method: string,
   url: string
-): ReadonlyArray<import('@scenarist/core').MockDefinition> => {
-  const mocks: Array<import('@scenarist/core').MockDefinition> = [];
+): ReadonlyArray<import('@scenarist/core').ScenaristMock> => {
+  const mocks: Array<import('@scenarist/core').ScenaristMock> = [];
 
   // First, try active scenario
   if (activeScenario) {

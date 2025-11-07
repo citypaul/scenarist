@@ -10,7 +10,7 @@ import {
   createInMemoryStateManager,
   type BaseAdapterOptions,
   type ScenaristAdapter,
-  type ScenariosObject,
+  type ScenaristScenarios,
 } from '@scenarist/core';
 import { createDynamicHandler } from '@scenarist/msw-adapter';
 import { testIdStorage } from '../middleware/test-id-middleware.js';
@@ -24,7 +24,7 @@ import { createScenarioEndpoints } from '../endpoints/scenario-endpoints.js';
  *
  * @template T - Scenarios object for type-safe scenario IDs
  */
-export type ExpressAdapterOptions<T extends ScenariosObject = ScenariosObject> =
+export type ExpressAdapterOptions<T extends ScenaristScenarios = ScenaristScenarios> =
   BaseAdapterOptions<T>;
 
 /**
@@ -34,7 +34,7 @@ export type ExpressAdapterOptions<T extends ScenariosObject = ScenariosObject> =
  *
  * @template T - Scenarios object for type-safe scenario IDs
  */
-export type ExpressScenarist<T extends ScenariosObject = ScenariosObject> =
+export type ExpressScenarist<T extends ScenaristScenarios = ScenaristScenarios> =
   ScenaristAdapter<Router, T>;
 
 /**
@@ -52,7 +52,7 @@ export type ExpressScenarist<T extends ScenariosObject = ScenariosObject> =
  *   default: { id: 'default', ... },        // Required!
  *   cartWithState: { id: 'cartWithState', ... },
  *   premiumUser: { id: 'premiumUser', ... },
- * } as const satisfies ScenariosObject;
+ * } as const satisfies ScenaristScenarios;
  *
  * const scenarist = createScenarist({
  *   enabled: true,
@@ -67,7 +67,7 @@ export type ExpressScenarist<T extends ScenariosObject = ScenariosObject> =
  * scenarist.switchScenario('test-123', 'premiumUser');
  * ```
  */
-export const createScenarist = <T extends ScenariosObject>(
+export const createScenarist = <T extends ScenaristScenarios>(
   options: ExpressAdapterOptions<T>
 ): ExpressScenarist<T> => {
   const config = buildConfig(options);

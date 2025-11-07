@@ -1,5 +1,5 @@
 import type { ScenarioRegistry } from '../ports/index.js';
-import type { ScenarioDefinition } from '../types/index.js';
+import type { ScenaristScenario } from '../types/index.js';
 
 /**
  * In-memory implementation of ScenarioRegistry using a Map.
@@ -9,13 +9,13 @@ import type { ScenarioDefinition } from '../types/index.js';
  * consider implementing a Redis-based or database-backed registry.
  */
 export class InMemoryScenarioRegistry implements ScenarioRegistry {
-  private readonly registry = new Map<string, ScenarioDefinition>();
+  private readonly registry = new Map<string, ScenaristScenario>();
 
-  register(definition: ScenarioDefinition): void {
+  register(definition: ScenaristScenario): void {
     this.registry.set(definition.id, definition);
   }
 
-  get(id: string): ScenarioDefinition | undefined {
+  get(id: string): ScenaristScenario | undefined {
     return this.registry.get(id);
   }
 
@@ -23,7 +23,7 @@ export class InMemoryScenarioRegistry implements ScenarioRegistry {
     return this.registry.has(id);
   }
 
-  list(): ReadonlyArray<ScenarioDefinition> {
+  list(): ReadonlyArray<ScenaristScenario> {
     return Array.from(this.registry.values());
   }
 

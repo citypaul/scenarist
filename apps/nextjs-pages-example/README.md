@@ -28,12 +28,12 @@ pnpm add @scenarist/nextjs-adapter
 yarn add @scenarist/nextjs-adapter
 ```
 
-**Note:** You only need to install the Next.js adapter package. It re-exports all necessary types including `ScenarioDefinition`, `MockDefinition`, etc.
+**Note:** You only need to install the Next.js adapter package. It re-exports all necessary types including `ScenaristScenario`, `ScenaristMock`, etc.
 
 **Important:** When using the Pages Router, import from the `/pages` subpath:
 
 ```typescript
-import type { ScenarioDefinition } from '@scenarist/nextjs-adapter/pages';
+import type { ScenaristScenario } from '@scenarist/nextjs-adapter/pages';
 import { createScenarist } from '@scenarist/nextjs-adapter/pages';
 ```
 

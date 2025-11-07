@@ -260,8 +260,8 @@ docs-site/
 │   │   ├── core.mdx                     # @scenarist/core types
 │   │   ├── express-adapter.mdx          # Express API
 │   │   ├── nextjs-adapter.mdx           # Next.js API
-│   │   ├── scenario-definitions.mdx     # ScenarioDefinition type
-│   │   └── mock-definitions.mdx         # MockDefinition type
+│   │   ├── scenario-definitions.mdx     # ScenaristScenario type
+│   │   └── mock-definitions.mdx         # ScenaristMock type
 │   ├── cookbook/
 │   │   ├── stripe-integration.mdx       # Testing Stripe payments
 │   │   ├── auth-flows.mdx               # Login, logout, sessions

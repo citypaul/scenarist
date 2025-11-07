@@ -14,7 +14,7 @@ Your App → Scenarist Adapter (Express/Next.js) → MSW Adapter → MSW → Int
 
 **What this package does:**
 
-Converts Scenarist's serializable `MockDefinition` data into MSW `HttpHandler` instances at runtime, enabling Scenarist to work with any Node.js framework.
+Converts Scenarist's serializable `ScenaristMock` data into MSW `HttpHandler` instances at runtime, enabling Scenarist to work with any Node.js framework.
 
 **Status:** ✅ Stable - Used by all Scenarist adapters (Express, Next.js, etc.)
 
@@ -49,7 +49,7 @@ The MSW adapter is the bridge between Scenarist's serializable mock definitions 
 
 1. **URL Matching** - Converts URL patterns (with wildcards and path params) into MSW-compatible matchers
 2. **Mock Matching** - Finds the right mock definition for incoming requests (with request content matching)
-3. **Response Building** - Transforms `MockDefinition` into MSW `HttpResponse`
+3. **Response Building** - Transforms `ScenaristMock` into MSW `HttpResponse`
 4. **Dynamic Handler** - Creates a single MSW handler that routes based on active scenarios
 
 ## Core Capabilities
@@ -139,7 +139,7 @@ Finds the right mock for a request:
 ```typescript
 import { findMatchingMock } from '@scenarist/msw-adapter';
 
-const mocks: MockDefinition[] = [
+const mocks: ScenaristMock[] = [
   { method: 'GET', url: '/users/:id', response: { status: 200, body: {...} } },
   { method: 'POST', url: '/users', response: { status: 201, body: {...} } },
 ];
@@ -150,12 +150,12 @@ const mock = findMatchingMock(mocks, 'GET', 'https://api.example.com/users/123')
 
 ### 3. Response Building
 
-Converts `MockDefinition` to MSW `HttpResponse`:
+Converts `ScenaristMock` to MSW `HttpResponse`:
 
 ```typescript
 import { buildResponse } from '@scenarist/msw-adapter';
 
-const mockDef: MockDefinition = {
+const mockDef: ScenaristMock = {
   method: 'GET',
   url: '/api/user',
   response: {
@@ -227,17 +227,17 @@ export const matchesUrl = (
 
 ```typescript
 export const findMatchingMock = (
-  mocks: ReadonlyArray<MockDefinition>,
+  mocks: ReadonlyArray<ScenaristMock>,
   method: string,
   url: string
-): MockDefinition | undefined;
+): ScenaristMock | undefined;
 ```
 
 ### Response Building
 
 ```typescript
 export const buildResponse = (
-  mockDef: MockDefinition
+  mockDef: ScenaristMock
 ): Promise<HttpResponse>;
 ```
 
@@ -247,7 +247,7 @@ export const buildResponse = (
 export type DynamicHandlerOptions = {
   readonly getTestId: () => string;
   readonly getActiveScenario: (testId: string) => ActiveScenario | undefined;
-  readonly getScenarioDefinition: (scenarioId: string) => ScenarioDefinition | undefined;
+  readonly getScenarioDefinition: (scenarioId: string) => ScenaristScenario | undefined;
   readonly strictMode: boolean;
 };
 

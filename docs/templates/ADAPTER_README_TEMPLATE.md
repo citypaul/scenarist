@@ -86,9 +86,9 @@ yarn add -D @scenarist/[framework]-adapter @scenarist/core msw
 
 ```typescript
 // [appropriate file location]
-import type { ScenarioDefinition } from '@scenarist/core';
+import type { ScenaristScenario } from '@scenarist/core';
 
-export const successScenario: ScenarioDefinition = {
+export const successScenario: ScenaristScenario = {
   id: 'success',
   name: 'API Success',
   mocks: [{
