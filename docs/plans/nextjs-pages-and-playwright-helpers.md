@@ -2087,35 +2087,114 @@ Create the new Next.js App Router application structure.
 
 **Validation**: ✅ App builds, runs, and basic smoke test passes
 
-#### Phase 8.1: Integration + Scenario Switching (⏳ Not Started)
+#### Phase 8.1: Integration + Scenario Switching (⏳ In Progress)
 
 **Estimated**: 1 day
 
 Set up Scenarist with App Router and create first Playwright helper.
 
 **Tasks:**
-- [ ] Create MSW setup in `app/providers.tsx` (client-side MSW worker)
-- [ ] Set up scenario definitions (mirror Pages Router scenarios)
-- [ ] Create scenario endpoint: `app/api/__scenario__/route.ts` (App Router Route Handler)
-- [ ] Write verbose Playwright test for scenario switching (RED)
+- [x] Create types/product.ts (same as Pages Router)
+- [x] Create data/products.ts (same as Pages Router)
+- [x] Create lib/scenarios.ts (same structure, imports from `/app`)
+- [x] Create lib/scenarist.ts (with server-side auto-start)
+- [x] Create app/api/__scenario__/route.ts (Route Handler)
+- [x] Create tests/playwright/fixtures.ts
+- [x] Write verbose Playwright test for scenario switching (RED)
 - [ ] Make test pass with manual scenario switching (GREEN)
 - [ ] Extract `switchScenario` helper from Playwright helpers package (GREEN)
 - [ ] Refactor test to use helper (REFACTOR)
 - [ ] Measure LOC reduction (should match ~77% from Pages Router)
 
-**Key Differences from Pages Router:**
-- Route Handlers instead of API Routes (`app/api/*/route.ts`)
-- Web `Request`/`Response` objects instead of Next.js `req`/`res`
-- Client-side MSW worker setup in `app/providers.tsx`
-- `use client` directive for client components
+**CRITICAL ARCHITECTURAL INSIGHT: App Router = Server-Side MSW (Same as Pages Router)**
+
+**Initially Wrong Assumption:**
+- ❌ App Router needs client-side MSW worker in browser (`app/providers.tsx`)
+- ❌ Different MSW setup pattern from Pages Router
+
+**Correct Understanding:**
+- ✅ App Router uses **server-side MSW** (same as Pages Router)
+- ✅ Server Components fetch data in **Node.js**, not browser
+- ✅ Route Handlers run in **Node.js**, not browser
+- ✅ MSW intercepts **server-side** fetch calls (same as Pages Router)
+
+**Why This Matters:**
+
+**Data Fetching in Next.js App Router:**
+```typescript
+// Server Component (default) - runs in Node.js
+async function ProductsPage() {
+  const res = await fetch('http://localhost:3001/products'); // ← Server-side fetch
+  const products = await res.json();
+  return <ProductList products={products} />;
+}
+
+// Route Handler - runs in Node.js
+export async function GET(request: Request) {
+  const res = await fetch('http://localhost:3001/products'); // ← Server-side fetch
+  return Response.json(await res.json());
+}
+```
+
+Both of these fetches happen in **Node.js** (server-side), therefore MSW must intercept server-side.
+
+**Correct Implementation Pattern:**
+
+```typescript
+// lib/scenarist.ts (SAME as Pages Router)
+import { createScenarist } from '@scenarist/nextjs-adapter/app';
+import { scenarios } from './scenarios';
+
+export const scenarist = createScenarist({
+  enabled: true,
+  scenarios,
+});
+
+// Auto-start MSW server for server-side interception
+if (typeof window === 'undefined') {
+  scenarist.start(); // ← Server-side MSW, same as Pages Router
+}
+```
+
+**No MSW Provider needed** - Server Components don't run client-side JavaScript.
+
+**Key Similarities with Pages Router:**
+
+| Aspect | Pages Router | App Router | Same? |
+|--------|-------------|------------|-------|
+| **MSW Location** | Server-side (Node.js) | Server-side (Node.js) | ✅ YES |
+| **Scenarist Setup** | `lib/scenarist.ts` | `lib/scenarist.ts` | ✅ YES |
+| **Auto-Start Pattern** | `if (typeof window === 'undefined')` | `if (typeof window === 'undefined')` | ✅ YES |
+| **Scenario Definitions** | `lib/scenarios.ts` | `lib/scenarios.ts` | ✅ YES |
+| **Supporting Files** | `data/*.ts`, `types/*.ts` | `data/*.ts`, `types/*.ts` | ✅ YES |
+| **Endpoint URL** | `/api/__scenario__` | `/api/__scenario__` | ✅ YES |
+| **Test Helpers** | `@scenarist/playwright-helpers` | `@scenarist/playwright-helpers` | ✅ YES |
+
+**Only Differences (Minimal):**
+
+| Aspect | Pages Router | App Router | Different? |
+|--------|-------------|------------|------------|
+| **Endpoint File** | `pages/api/__scenario__.ts` | `app/api/__scenario__/route.ts` | ✅ YES (location only) |
+| **Endpoint Pattern** | `export default handler` | `export { GET, POST }` | ✅ YES (export pattern) |
+| **Adapter Import** | `@scenarist/nextjs-adapter/pages` | `@scenarist/nextjs-adapter/app` | ✅ YES (entry point) |
+| **Request/Response** | Next.js `req`/`res` | Web `Request`/`Response` | ✅ YES (API shape) |
+
+**Bottom Line:**
+App Router and Pages Router implementations are **95% identical**. The only differences are:
+1. Import path (`/pages` vs `/app`)
+2. Endpoint file location and export pattern
+3. Request/Response object types (handled by adapter)
+
+**Everything else is the same** - same MSW approach (server-side), same setup pattern, same scenario definitions, same data files, same test helpers.
 
 **Files Created**:
-- `apps/nextjs-app-example/app/providers.tsx` (MSW provider)
-- `apps/nextjs-app-example/lib/scenarist.ts` (scenarist setup)
-- `apps/nextjs-app-example/lib/scenarios.ts` (scenario definitions)
-- `apps/nextjs-app-example/app/api/__scenario__/route.ts` (scenario endpoint)
-- `apps/nextjs-app-example/tests/playwright/fixtures.ts` (Playwright fixtures)
-- `apps/nextjs-app-example/tests/playwright/basic.spec.ts` (integration test)
+- `apps/nextjs-app-example/types/product.ts` (Product type definitions - same as Pages Router)
+- `apps/nextjs-app-example/data/products.ts` (Product data builder - same as Pages Router)
+- `apps/nextjs-app-example/lib/scenarist.ts` (Scenarist setup with server-side MSW auto-start)
+- `apps/nextjs-app-example/lib/scenarios.ts` (Scenario definitions - imports from `/app`)
+- `apps/nextjs-app-example/app/api/__scenario__/route.ts` (Route Handler for scenario switching)
+- `apps/nextjs-app-example/tests/playwright/fixtures.ts` (Playwright fixtures with type-safe scenario IDs)
+- `apps/nextjs-app-example/tests/playwright/scenario-switching.spec.ts` (Integration test - verbose + helper versions)
 
 **Validation**: Scenario switching works, helper reduces boilerplate by ~77%
 
