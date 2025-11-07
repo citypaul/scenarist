@@ -68,14 +68,16 @@ This package provides a complete Express integration for Scenarist's scenario ma
 
 ```bash
 # npm
-npm install --save-dev @scenarist/express-adapter @scenarist/core msw
+npm install --save-dev @scenarist/express-adapter msw
 
 # pnpm
-pnpm add -D @scenarist/express-adapter @scenarist/core msw
+pnpm add -D @scenarist/express-adapter msw
 
 # yarn
-yarn add -D @scenarist/express-adapter @scenarist/core msw
+yarn add -D @scenarist/express-adapter msw
 ```
+
+**Note:** All Scenarist types (`ScenarioDefinition`, `MockDefinition`, etc.) are re-exported from `@scenarist/express-adapter` for convenience. You don't need to install `@scenarist/core` or `@scenarist/msw-adapter` separately - they're already included as dependencies.
 
 **Peer Dependencies:**
 - `express` ^4.18.0 || ^5.0.0
@@ -87,7 +89,7 @@ yarn add -D @scenarist/express-adapter @scenarist/core msw
 
 ```typescript
 // test/scenarios.ts
-import type { ScenarioDefinition, ScenariosObject } from '@scenarist/core';
+import type { ScenarioDefinition, ScenariosObject } from '@scenarist/express-adapter';
 
 const defaultScenario: ScenarioDefinition = {
   id: 'default',
@@ -565,7 +567,7 @@ The new API provides full type safety with TypeScript autocomplete for scenario 
 
 ```typescript
 // scenarios.ts - define scenarios with type constraint
-import type { ScenariosObject } from '@scenarist/core';
+import type { ScenariosObject } from '@scenarist/express-adapter';
 
 export const scenarios = {
   default: defaultScenario,
@@ -805,18 +807,27 @@ This package is written in TypeScript and includes full type definitions.
 
 **Exported Types:**
 ```typescript
+// Adapter-specific types
 import type {
   ExpressAdapterOptions,
   ExpressScenarist,
 } from '@scenarist/express-adapter';
 
+// Core types (re-exported for convenience)
 import type {
   ScenarioDefinition,
   MockDefinition,
-  ScenaristConfig,
+  MockResponse,
+  ResponseSequence,
+  MatchCriteria,
+  CaptureState,
   ScenariosObject,
-} from '@scenarist/core';
+  ScenaristConfig,
+  Result,
+} from '@scenarist/express-adapter';
 ```
+
+**Note:** All core types are re-exported from `@scenarist/express-adapter`, so you only need one import path for all Scenarist types.
 
 ## Examples
 

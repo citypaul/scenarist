@@ -1,4 +1,4 @@
-import type { ScenarioDefinition, ScenariosObject } from '@scenarist/core';
+import type { ScenarioDefinition, ScenariosObject } from '@scenarist/express-adapter';
 
 /**
  * Default scenario - always available as fallback

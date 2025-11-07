@@ -5,7 +5,7 @@
  * Phase 2: Request matching for tier-based pricing
  */
 
-import type { ScenarioDefinition, ScenariosObject } from "@scenarist/core";
+import type { ScenarioDefinition, ScenariosObject } from "@scenarist/nextjs-adapter/pages";
 import { buildProducts } from "../data/products";
 
 /**

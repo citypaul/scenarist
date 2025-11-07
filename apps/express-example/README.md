@@ -133,7 +133,19 @@ tests/
 
 ## How It Works
 
-### 1. Setup Scenarist
+### 1. Install Scenarist
+
+```bash
+npm install @scenarist/express-adapter
+# or
+pnpm add @scenarist/express-adapter
+# or
+yarn add @scenarist/express-adapter
+```
+
+**Note:** You only need to install the Express adapter package. It re-exports all necessary types including `ScenarioDefinition`, `MockDefinition`, etc.
+
+### 2. Setup Scenarist
 
 ```typescript
 import { createScenarist } from '@scenarist/express-adapter';
@@ -155,11 +167,13 @@ app.use(scenarist.middleware);
 scenarist.start();
 ```
 
-### 2. Define Scenarios
+### 3. Define Scenarios
 
-Scenarios are serializable data (no functions!) that define how external APIs should respond:
+Import types from the Express adapter (not from core):
 
 ```typescript
+import type { ScenarioDefinition } from '@scenarist/express-adapter';
+
 export const successScenario: ScenarioDefinition = {
   id: 'success',
   name: 'Success Scenario',
@@ -183,7 +197,9 @@ export const successScenario: ScenarioDefinition = {
 };
 ```
 
-### 3. Write Your Express Routes
+Scenarios are serializable data (no functions!) that define how external APIs should respond.
+
+### 4. Write Your Express Routes
 
 Your routes call real external APIs - Scenarist intercepts them:
 
@@ -199,7 +215,7 @@ router.get('/api/github/user/:username', async (req, res) => {
 });
 ```
 
-### 4. Write E2E Tests
+### 5. Write E2E Tests
 
 Tests can switch scenarios dynamically and are isolated by test ID:
 

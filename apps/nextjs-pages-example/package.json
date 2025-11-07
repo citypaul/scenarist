@@ -21,9 +21,7 @@
     "next": "^15.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "@scenarist/core": "workspace:*",
     "@scenarist/nextjs-adapter": "workspace:*",
-    "@scenarist/msw-adapter": "workspace:*",
     "msw": "^2.7.0"
   },
   "devDependencies": {

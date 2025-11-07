@@ -224,14 +224,16 @@ Run 100 tests concurrently with different backend states - no conflicts:
 
 ```bash
 # npm
-npm install --save-dev @scenarist/nextjs-adapter @scenarist/core msw
+npm install --save-dev @scenarist/nextjs-adapter msw
 
 # pnpm
-pnpm add -D @scenarist/nextjs-adapter @scenarist/core msw
+pnpm add -D @scenarist/nextjs-adapter msw
 
 # yarn
-yarn add -D @scenarist/nextjs-adapter @scenarist/core msw
+yarn add -D @scenarist/nextjs-adapter msw
 ```
+
+**Note:** All Scenarist types (`ScenarioDefinition`, `MockDefinition`, etc.) are re-exported from `@scenarist/nextjs-adapter` for convenience. You don't need to install `@scenarist/core` or `@scenarist/msw-adapter` separately - they're already included as dependencies.
 
 **Peer Dependencies:**
 - `next` ^14.0.0 || ^15.0.0
@@ -245,7 +247,7 @@ yarn add -D @scenarist/nextjs-adapter @scenarist/core msw
 
 ```typescript
 // lib/scenarios.ts
-import type { ScenarioDefinition, ScenariosObject } from '@scenarist/core';
+import type { ScenarioDefinition, ScenariosObject } from '@scenarist/nextjs-adapter';
 
 export const defaultScenario: ScenarioDefinition = {
   id: 'default',
@@ -362,7 +364,7 @@ it('fetches user successfully', async () => {
 
 ```typescript
 // lib/scenarios/default.ts
-import type { ScenarioDefinition } from '@scenarist/core';
+import type { ScenarioDefinition } from '@scenarist/nextjs-adapter/pages';
 
 export const defaultScenario: ScenarioDefinition = {
   id: 'default',
@@ -772,7 +774,7 @@ TypeScript automatically infers scenario names from your scenarios object, provi
 
 ```typescript
 // lib/scenarios.ts
-import type { ScenarioDefinition, ScenariosObject } from '@scenarist/core';
+import type { ScenarioDefinition, ScenariosObject } from '@scenarist/nextjs-adapter/pages';
 
 export const scenarios = {
   default: { id: 'default', name: 'Default', mocks: [] },
@@ -1106,27 +1108,48 @@ This package is written in TypeScript and includes full type definitions.
 
 **Exported Types:**
 ```typescript
-// Pages Router
+// Pages Router - adapter-specific types
 import type {
   PagesAdapterOptions,
   PagesScenarist,
   PagesRequestContext,
 } from '@scenarist/nextjs-adapter/pages';
 
-// App Router
+// Pages Router - core types (re-exported for convenience)
+import type {
+  ScenarioDefinition,
+  MockDefinition,
+  MockResponse,
+  ResponseSequence,
+  MatchCriteria,
+  CaptureState,
+  ScenariosObject,
+  ScenaristConfig,
+  Result,
+} from '@scenarist/nextjs-adapter/pages';
+
+// App Router - adapter-specific types
 import type {
   AppAdapterOptions,
   AppScenarist,
   AppRequestContext,
 } from '@scenarist/nextjs-adapter/app';
 
-// Core types (same for both)
+// App Router - core types (re-exported for convenience)
 import type {
   ScenarioDefinition,
   MockDefinition,
+  MockResponse,
+  ResponseSequence,
+  MatchCriteria,
+  CaptureState,
+  ScenariosObject,
   ScenaristConfig,
-} from '@scenarist/core';
+  Result,
+} from '@scenarist/nextjs-adapter/app';
 ```
+
+**Note:** All core types are re-exported from both `/pages` and `/app` subpaths for convenience. You only need one import path for all Scenarist types - just import from the subpath that matches your Next.js router.
 
 ## Advanced Usage
 
