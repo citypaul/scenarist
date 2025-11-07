@@ -78,7 +78,7 @@ const handleGet = (manager: ScenarioManager, config: ScenaristConfig) => {
  *
  * @example
  * ```typescript
- * // app/api/__scenario__/route.ts
+ * // app/api/%5F%5Fscenario%5F%5F/route.ts
  * import { createScenarioEndpoint } from '@scenarist/nextjs-adapter/app';
  * import { scenarist } from '@/lib/scenarist';
  *

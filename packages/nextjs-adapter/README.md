@@ -296,7 +296,10 @@ import { scenarist } from '@/lib/scenarist';
 export default scenarist.createScenarioEndpoint();
 ```
 
-**App Router:** Create `app/api/__scenario__/route.ts`:
+**App Router:** Create `app/api/%5F%5Fscenario%5F%5F/route.ts`:
+
+> **Why the URL encoding?** Next.js App Router treats folders starting with `_` (underscore) as private folders that are excluded from routing. To create a URL route `/api/__scenario__`, we use `%5F` (URL-encoded underscore). This creates the actual endpoint at `http://localhost:3000/api/__scenario__`.
+
 ```typescript
 import { scenarist } from '@/lib/scenarist';
 const handler = scenarist.createScenarioEndpoint();
@@ -346,9 +349,11 @@ it('fetches user successfully', async () => {
 | Aspect | Pages Router | App Router |
 |--------|-------------|------------|
 | **Import Path** | `@scenarist/nextjs-adapter/pages` | `@scenarist/nextjs-adapter/app` |
-| **Setup File** | `pages/api/__scenario__.ts` | `app/api/__scenario__/route.ts` |
+| **Setup File** | `pages/api/__scenario__.ts` | `app/api/%5F%5Fscenario%5F%5F/route.ts` * |
 | **Scenario Endpoint** | `export default scenarist.createScenarioEndpoint()` | `const handler = scenarist.createScenarioEndpoint();`<br>`export const POST = handler;`<br>`export const GET = handler;` |
 | **Core Functionality** | ✅ Same scenarios, same behavior | ✅ Same scenarios, same behavior |
+
+\* App Router uses `%5F%5Fscenario%5F%5F` (URL-encoded) because folders starting with `_` are treated as private folders in Next.js App Router. See [App Router Setup](#app-router-setup) for details.
 
 **Key Insight:** Choose based on your Next.js version - all Scenarist features work identically in both routers.
 

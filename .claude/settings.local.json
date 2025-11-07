@@ -61,7 +61,9 @@
       "Bash(pnpm --filter=@scenarist/express-example typecheck:*)",
       "Bash(pnpm --filter=@scenarist/core test:*)",
       "Bash(git log:*)",
-      "Bash(git grep:*)"
+      "Bash(git grep:*)",
+      "Bash(PORT=3002 pnpm dev:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []

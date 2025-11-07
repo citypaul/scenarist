@@ -17,11 +17,11 @@ export type AppAdapterOptions = BaseAdapterOptions;
  */
 export type AppScenarist = Omit<ScenaristAdapter<never>, 'middleware'> & {
   /**
-   * Create scenario endpoint handler for use in app/api/__scenario__/route.ts
+   * Create scenario endpoint handler for use in app/api/%5F%5Fscenario%5F%5F/route.ts
    *
    * @example
    * ```typescript
-   * // app/api/__scenario__/route.ts
+   * // app/api/%5F%5Fscenario%5F%5F/route.ts
    * import { scenarist } from '@/lib/scenarist';
    *
    * export const POST = scenarist.createScenarioEndpoint();
@@ -41,7 +41,7 @@ export type AppScenarist = Omit<ScenaristAdapter<never>, 'middleware'> & {
  * - Response selector
  *
  * Unlike Express adapter, this doesn't return middleware. Instead, use `createScenarioEndpoint()`
- * to create the handler for your app/api/__scenario__/route.ts file.
+ * to create the handler for your app/api/%5F%5Fscenario%5F%5F/route.ts file.
  *
  * @example
  * ```typescript
@@ -54,7 +54,7 @@ export type AppScenarist = Omit<ScenaristAdapter<never>, 'middleware'> & {
  *   defaultScenario,
  * });
  *
- * // app/api/__scenario__/route.ts
+ * // app/api/%5F%5Fscenario%5F%5F/route.ts
  * export const POST = scenarist.createScenarioEndpoint();
  * export const GET = scenarist.createScenarioEndpoint();
  *

@@ -15,7 +15,9 @@
  *   defaultScenario: myDefaultScenario,
  * });
  *
- * // app/api/__scenario__/route.ts
+ * // app/api/%5F%5Fscenario%5F%5F/route.ts
+ * // Note: Use %5F (URL-encoded underscore) because Next.js treats
+ * // folders starting with _ as private folders excluded from routing
  * import { scenarist } from '@/lib/scenarist';
  *
  * export const POST = scenarist.createScenarioEndpoint();
