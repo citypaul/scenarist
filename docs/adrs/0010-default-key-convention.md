@@ -37,7 +37,7 @@ const scenarios = {
   default: { id: 'default', name: 'Default Scenario', ... },
   premium: { id: 'premium', name: 'Premium User', ... },
   standard: { id: 'standard', name: 'Standard User', ... },
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
   enabled: true,
@@ -85,7 +85,7 @@ The current `defaultScenarioId: string` has a subtle gotcha:
 const scenarios = {
   baseline: { id: 'baseline', ... },
   premium: { id: 'premium', ... },
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
   scenarios,
@@ -111,14 +111,14 @@ Instead, we will:
 
 ```typescript
 // Before:
-export type ScenaristConfigInput<T extends ScenariosObject = ScenariosObject> = {
+export type ScenaristConfigInput<T extends ScenaristScenarios = ScenaristScenarios> = {
   readonly scenarios: T;
   readonly defaultScenarioId: string; // ❌ Not type-safe
   // ...
 };
 
 // After:
-export type ScenaristConfigInput<T extends ScenariosObject = ScenariosObject> = {
+export type ScenaristConfigInput<T extends ScenaristScenarios = ScenaristScenarios> = {
   readonly scenarios: T;
   readonly defaultScenarioId: ScenarioIds<T>; // ✅ Type-safe! (keyof T & string)
   // ...
@@ -130,7 +130,7 @@ export type ScenaristConfigInput<T extends ScenariosObject = ScenariosObject> = 
 const scenarios = {
   baseline: { id: 'baseline', ... },
   premium: { id: 'premium', ... },
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
   scenarios,
@@ -152,7 +152,7 @@ const scenarios = {
   default: { id: 'default', name: 'Default Scenario', ... }, // ← Recommended
   premium: { id: 'premium', name: 'Premium User', ... },
   standard: { id: 'standard', name: 'Standard User', ... },
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
   enabled: true,
@@ -167,8 +167,8 @@ If we decide to enforce 'default' in v3.0, the API would become:
 
 ```typescript
 // v3.0 hypothetical:
-export type ScenaristConfigInput<T extends ScenariosObject> = {
-  readonly scenarios: T extends { default: ScenarioDefinition }
+export type ScenaristConfigInput<T extends ScenaristScenarios> = {
+  readonly scenarios: T extends { default: ScenaristScenario }
     ? T
     : never; // ← Require 'default' key at type level
   // No defaultScenarioId parameter (always uses 'default')
@@ -177,7 +177,7 @@ export type ScenaristConfigInput<T extends ScenariosObject> = {
 const scenarios = {
   default: { id: 'default', ... },  // ← Required
   premium: { id: 'premium', ... },
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
   enabled: true,
@@ -231,8 +231,8 @@ We would reconsider 'default' key enforcement if:
 ```typescript
 // Type enforces 'default' key exists
 export type ScenariosWithDefault = {
-  default: ScenarioDefinition;
-  [key: string]: ScenarioDefinition;
+  default: ScenaristScenario;
+  [key: string]: ScenaristScenario;
 };
 
 export type ScenaristConfigInput<T extends ScenariosWithDefault> = {
@@ -258,7 +258,7 @@ export type ScenaristConfigInput<T extends ScenariosWithDefault> = {
 
 **Pattern:**
 ```typescript
-export type ScenaristConfigInput<T extends ScenariosObject> = {
+export type ScenaristConfigInput<T extends ScenaristScenarios> = {
   readonly scenarios: T;
   readonly defaultScenarioId?: ScenarioIds<T>; // Optional
 };
@@ -381,7 +381,7 @@ const scenarios = {
 
 ```typescript
 // packages/core/src/types/config.ts
-export type ScenaristConfigInput<T extends ScenariosObject = ScenariosObject> = {
+export type ScenaristConfigInput<T extends ScenaristScenarios = ScenaristScenarios> = {
   readonly scenarios: T;
   readonly defaultScenarioId: ScenarioIds<T>; // Changed from string
   // ...
@@ -392,7 +392,7 @@ export type ScenaristConfigInput<T extends ScenariosObject = ScenariosObject> = 
 
 ```typescript
 // packages/express-adapter/src/setup/setup-scenarist.ts
-export type CreateScenaristOptions<T extends ScenariosObject> = {
+export type CreateScenaristOptions<T extends ScenaristScenarios> = {
   scenarios: T;
   defaultScenarioId: ScenarioIds<T>; // Changed from string
   // ...
@@ -424,7 +424,7 @@ The `defaultScenarioId` parameter specifies which scenario to use as the fallbac
 const scenarios = {
   default: { id: 'default', name: 'Default Scenario', ... }, // ← Recommended
   premium: { id: 'premium', name: 'Premium User', ... },
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
   scenarios,
@@ -465,7 +465,7 @@ describe('createScenarist', () => {
     const scenarios = {
       baseline: { id: 'baseline', ... },
       premium: { id: 'premium', ... },
-    } as const satisfies ScenariosObject;
+    } as const satisfies ScenaristScenarios;
 
     const scenarist = createScenarist({
       enabled: true,
@@ -482,7 +482,7 @@ describe('createScenarist', () => {
     const scenarios = {
       default: { id: 'default', ... },
       premium: { id: 'premium', ... },
-    } as const satisfies ScenariosObject;
+    } as const satisfies ScenaristScenarios;
 
     const scenarist = createScenarist({
       enabled: true,
@@ -494,7 +494,7 @@ describe('createScenarist', () => {
   it('should error at compile time for invalid defaultScenarioId', () => {
     const scenarios = {
       baseline: { id: 'baseline', ... },
-    } as const satisfies ScenariosObject;
+    } as const satisfies ScenaristScenarios;
 
     // @ts-expect-error - 'nonexistent' is not a key in scenarios
     const scenarist = createScenarist({
@@ -514,7 +514,7 @@ describe('createScenarist', () => {
     const scenariosWithDefault = {
       default: { id: 'default', ... },
       premium: { id: 'premium', ... },
-    } as const satisfies ScenariosObject;
+    } as const satisfies ScenaristScenarios;
 
     // ✅ Should compile
     const scenarist = createScenarist({ scenarios: scenariosWithDefault });
@@ -524,7 +524,7 @@ describe('createScenarist', () => {
     const scenariosWithoutDefault = {
       baseline: { id: 'baseline', ... },
       premium: { id: 'premium', ... },
-    } as const satisfies ScenariosObject;
+    } as const satisfies ScenaristScenarios;
 
     // @ts-expect-error - 'default' key required
     const scenarist = createScenarist({ scenarios: scenariosWithoutDefault });

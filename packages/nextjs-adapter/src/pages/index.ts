@@ -33,3 +33,16 @@ export { PagesRequestContext } from './context.js';
 export { createScenarioEndpoint } from './endpoints.js';
 export { getScenaristHeaders } from './helpers.js';
 export type { PagesAdapterOptions, PagesScenarist } from './setup.js';
+
+// Re-export core types for user convenience (users should only install this adapter)
+export type {
+  ScenaristScenario,
+  ScenaristMock,
+  ScenaristResponse,
+  ScenaristSequence,
+  ScenaristMatch,
+  ScenaristCaptureConfig,
+  ScenaristScenarios,
+  ScenaristConfig,
+  ScenaristResult,
+} from '@scenarist/core';

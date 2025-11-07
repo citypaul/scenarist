@@ -1,4 +1,4 @@
-import type { ScenarioDefinition } from '../../types/index.js';
+import type { ScenaristScenario } from '../../types/index.js';
 
 /**
  * Secondary port for scenario registry.
@@ -15,7 +15,7 @@ import type { ScenarioDefinition } from '../../types/index.js';
  * - RemoteScenarioRegistry: Fetch scenarios from REST API
  * - DatabaseScenarioRegistry: Store scenarios in PostgreSQL/MongoDB
  *
- * At runtime, MockDefinitions are converted to MSW HttpHandlers.
+ * At runtime, ScenaristMocks are converted to MSW HttpHandlers.
  */
 export interface ScenarioRegistry {
   /**
@@ -23,13 +23,13 @@ export interface ScenarioRegistry {
    * The definition.id is used as the unique identifier.
    * Makes the scenario available for use.
    */
-  register(definition: ScenarioDefinition): void;
+  register(definition: ScenaristScenario): void;
 
   /**
    * Retrieve a registered scenario definition by ID.
    * Returns undefined if scenario not found.
    */
-  get(id: string): ScenarioDefinition | undefined;
+  get(id: string): ScenaristScenario | undefined;
 
   /**
    * Check if a scenario ID is registered.
@@ -40,7 +40,7 @@ export interface ScenarioRegistry {
    * List all registered scenario definitions.
    * Useful for debugging, dev tools, and scenario discovery.
    */
-  list(): ReadonlyArray<ScenarioDefinition>;
+  list(): ReadonlyArray<ScenaristScenario>;
 
   /**
    * Remove a scenario from the registry.

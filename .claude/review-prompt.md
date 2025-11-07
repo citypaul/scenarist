@@ -38,11 +38,11 @@ type Scenario = {
 };
 
 // ✅ CORRECT - Serializable (pure JSON)
-type ScenarioDefinition = {
-  readonly mocks: ReadonlyArray<MockDefinition>;  // Plain data
+type ScenaristScenario = {
+  readonly mocks: ReadonlyArray<ScenaristMock>;  // Plain data
 };
 
-type MockDefinition = {
+type ScenaristMock = {
   readonly method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   readonly url: string;
   readonly response: {
@@ -66,7 +66,7 @@ type MockDefinition = {
 ```typescript
 // ❌ WRONG - Creating implementation internally
 export const createScenarioManager = (config: ScenaristConfig) => {
-  const registry = new Map<string, ScenarioDefinition>();  // ❌ Hardcoded!
+  const registry = new Map<string, ScenaristScenario>();  // ❌ Hardcoded!
   // ...
 };
 
@@ -98,13 +98,13 @@ export const createScenarioManager = ({
 ```typescript
 // ❌ WRONG - Implicit (structural) typing
 export class InMemoryScenarioRegistry {
-  register(definition: ScenarioDefinition): void { ... }
+  register(definition: ScenaristScenario): void { ... }
   // Missing methods won't cause compile errors!
 }
 
 // ✅ CORRECT - Explicit implementation
 export class InMemoryScenarioRegistry implements ScenarioRegistry {
-  register(definition: ScenarioDefinition): void { ... }
+  register(definition: ScenaristScenario): void { ... }
   // TypeScript will error if methods are missing
 }
 ```
@@ -140,14 +140,14 @@ export class InMemoryScenarioRegistry implements ScenarioRegistry {
 ```typescript
 // ✅ Ports (behavior contracts) - use `interface`
 export interface ScenarioRegistry {
-  register(definition: ScenarioDefinition): void;
+  register(definition: ScenaristScenario): void;
 }
 
 // ✅ Types (data structures) - use `type` with `readonly`
-export type ScenarioDefinition = {
+export type ScenaristScenario = {
   readonly id: string;
   readonly name: string;
-  readonly mocks: ReadonlyArray<MockDefinition>;
+  readonly mocks: ReadonlyArray<ScenaristMock>;
 };
 ```
 
@@ -397,7 +397,7 @@ This doesn't look right.
 ✅ **Reference documentation:**
 ```
 Per ADR-0001, scenarios must be serializable. This `mocks` field contains
-HttpHandler which includes functions. Use MockDefinition instead.
+HttpHandler which includes functions. Use ScenaristMock instead.
 ```
 
 ✅ **Provide examples:**

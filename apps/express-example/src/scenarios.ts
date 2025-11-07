@@ -1,10 +1,10 @@
-import type { ScenarioDefinition, ScenariosObject } from '@scenarist/core';
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/express-adapter';
 
 /**
  * Default scenario - always available as fallback
  * Contains basic successful responses for all external APIs
  */
-export const defaultScenario: ScenarioDefinition = {
+export const defaultScenario: ScenaristScenario = {
   id: 'default',
   name: 'Default Scenario',
   description: 'Default successful responses for all external APIs',
@@ -59,7 +59,7 @@ export const defaultScenario: ScenarioDefinition = {
 /**
  * Scenario: All APIs return successful responses
  */
-export const successScenario: ScenarioDefinition = {
+export const successScenario: ScenaristScenario = {
   id: 'success',
   name: 'Success Scenario',
   description: 'All external API calls succeed with valid data',
@@ -111,7 +111,7 @@ export const successScenario: ScenarioDefinition = {
 /**
  * Scenario: GitHub API returns 404 (user not found)
  */
-export const githubNotFoundScenario: ScenarioDefinition = {
+export const githubNotFoundScenario: ScenaristScenario = {
   id: 'github-not-found',
   name: 'GitHub User Not Found',
   description: 'GitHub API returns 404 for user lookup',
@@ -133,7 +133,7 @@ export const githubNotFoundScenario: ScenarioDefinition = {
 /**
  * Scenario: Weather API returns server error
  */
-export const weatherErrorScenario: ScenarioDefinition = {
+export const weatherErrorScenario: ScenaristScenario = {
   id: 'weather-error',
   name: 'Weather API Error',
   description: 'Weather API returns 500 server error',
@@ -155,7 +155,7 @@ export const weatherErrorScenario: ScenarioDefinition = {
 /**
  * Scenario: Stripe payment fails (insufficient funds)
  */
-export const stripeFailureScenario: ScenarioDefinition = {
+export const stripeFailureScenario: ScenaristScenario = {
   id: 'stripe-failure',
   name: 'Stripe Payment Failure',
   description: 'Stripe payment fails due to insufficient funds',
@@ -180,7 +180,7 @@ export const stripeFailureScenario: ScenarioDefinition = {
 /**
  * Scenario: APIs return with delays (slow network)
  */
-export const slowNetworkScenario: ScenarioDefinition = {
+export const slowNetworkScenario: ScenaristScenario = {
   id: 'slow-network',
   name: 'Slow Network',
   description: 'All APIs respond slowly (1-2 second delays)',
@@ -235,7 +235,7 @@ export const slowNetworkScenario: ScenarioDefinition = {
 /**
  * Scenario: Mixed results (some succeed, some fail)
  */
-export const mixedResultsScenario: ScenarioDefinition = {
+export const mixedResultsScenario: ScenaristScenario = {
   id: 'mixed-results',
   name: 'Mixed Results',
   description: 'Some APIs succeed, others fail',
@@ -286,7 +286,7 @@ export const mixedResultsScenario: ScenarioDefinition = {
  * Scenario: Request content matching (Phase 1 - Dynamic Responses)
  * Demonstrates matching on request body, headers, and query parameters
  */
-export const contentMatchingScenario: ScenarioDefinition = {
+export const contentMatchingScenario: ScenaristScenario = {
   id: 'content-matching',
   name: 'Content Matching',
   description: 'Different responses based on request content (body, headers, query)',
@@ -442,7 +442,7 @@ export const contentMatchingScenario: ScenarioDefinition = {
  * Scenario: GitHub job polling (Phase 2 - Response Sequences)
  * Demonstrates sequence progression with repeat: 'last'
  */
-export const githubPollingScenario: ScenarioDefinition = {
+export const githubPollingScenario: ScenaristScenario = {
   id: 'github-polling',
   name: 'GitHub Job Polling Sequence',
   description: 'Simulates async GitHub job polling with state progression',
@@ -466,7 +466,7 @@ export const githubPollingScenario: ScenarioDefinition = {
  * Scenario: Weather cycling (Phase 2 - Response Sequences)
  * Demonstrates sequence cycling with repeat: 'cycle'
  */
-export const weatherCycleScenario: ScenarioDefinition = {
+export const weatherCycleScenario: ScenaristScenario = {
   id: 'weather-cycle',
   name: 'Weather Cycle Sequence',
   description: 'Cycles through weather states infinitely',
@@ -490,7 +490,7 @@ export const weatherCycleScenario: ScenarioDefinition = {
  * Scenario: Payment attempts with limits (Phase 2 - Response Sequences)
  * Demonstrates sequence exhaustion with repeat: 'none' and fallback mock
  */
-export const paymentLimitedScenario: ScenarioDefinition = {
+export const paymentLimitedScenario: ScenaristScenario = {
   id: 'payment-limited',
   name: 'Limited Payment Attempts',
   description: 'Allows 3 attempts then falls back to error',
@@ -526,7 +526,7 @@ export const paymentLimitedScenario: ScenarioDefinition = {
  * 1. POST /cart/add - Captures item and appends to cartItems[] array
  * 2. GET /cart - Injects cartItems into response with count
  */
-export const shoppingCartScenario: ScenarioDefinition = {
+export const shoppingCartScenario: ScenaristScenario = {
   id: 'shoppingCart',
   name: 'Shopping Cart (Stateful)',
   description: 'Stateful shopping cart with capture and injection',
@@ -571,7 +571,7 @@ export const shoppingCartScenario: ScenarioDefinition = {
  * 2. POST /form/step2 - Captures address, injects user info in response
  * 3. POST /form/submit - Injects all captured state in confirmation
  */
-export const multiStepFormScenario: ScenarioDefinition = {
+export const multiStepFormScenario: ScenaristScenario = {
   id: 'multiStepForm',
   name: 'Multi-Step Form (Stateful)',
   description: 'Multi-step form with state persistence',
@@ -636,7 +636,7 @@ export const multiStepFormScenario: ScenarioDefinition = {
  * TEST SCENARIO: Shared polling sequence
  * Used in tests to verify test ID isolation with sequences
  */
-export const sharedPollingScenario: ScenarioDefinition = {
+export const sharedPollingScenario: ScenaristScenario = {
   id: 'shared-polling',
   name: 'Shared Polling Sequence',
   description: 'Multiple tests can use same scenario with independent state',
@@ -660,7 +660,7 @@ export const sharedPollingScenario: ScenarioDefinition = {
  * TEST SCENARIO: Temporary capture scenario
  * Used in tests to verify state is not reset when scenario switch fails
  */
-export const tempCaptureScenario: ScenarioDefinition = {
+export const tempCaptureScenario: ScenaristScenario = {
   id: 'temp-capture-scenario',
   name: 'Temp Capture Scenario',
   description: 'Temporary scenario for testing failed switch',
@@ -717,5 +717,5 @@ export const scenarios = {
   multiStepForm: multiStepFormScenario,
   sharedPolling: sharedPollingScenario,
   tempCapture: tempCaptureScenario,
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 

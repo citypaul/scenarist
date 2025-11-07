@@ -33,3 +33,16 @@ export { createScenarist } from './setup.js';
 export { AppRequestContext } from './context.js';
 export { createScenarioEndpoint } from './endpoints.js';
 export type { AppAdapterOptions, AppScenarist } from './setup.js';
+
+// Re-export core types for user convenience (users should only install this adapter)
+export type {
+  ScenaristScenario,
+  ScenaristMock,
+  ScenaristResponse,
+  ScenaristSequence,
+  ScenaristMatch,
+  ScenaristCaptureConfig,
+  ScenaristScenarios,
+  ScenaristConfig,
+  ScenaristResult,
+} from '@scenarist/core';

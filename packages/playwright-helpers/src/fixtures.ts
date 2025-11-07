@@ -29,12 +29,12 @@
  * ```typescript
  * // tests/fixtures.ts
  * import { withScenarios, expect } from '@scenarist/playwright-helpers';
- * import { type ScenariosObject } from '@scenarist/core';
+ * import { type ScenaristScenarios } from '@scenarist/core';
  *
  * const scenarios = {
  *   cartWithState: { id: 'cartWithState', name: 'Cart with State', ... },
  *   premiumUser: { id: 'premiumUser', name: 'Premium User', ... },
- * } as const satisfies ScenariosObject;
+ * } as const satisfies ScenaristScenarios;
  *
  * export const test = withScenarios(scenarios);
  * export { expect };
@@ -95,7 +95,7 @@
 
 import { test as base, expect as baseExpect, type Page } from '@playwright/test';
 import { switchScenario as baseSwitchScenario, type SwitchScenarioOptions } from './switch-scenario.js';
-import type { ScenariosObject, ScenarioIds } from '@scenarist/core';
+import type { ScenaristScenarios, ScenarioIds } from '@scenarist/core';
 
 /**
  * Configuration options for Scenarist.
@@ -182,12 +182,12 @@ export type ScenaristFixtures<S extends string = string> = {
  * ```typescript
  * // tests/fixtures.ts
  * import { withScenarios, expect } from '@scenarist/playwright-helpers';
- * import { type ScenariosObject } from '@scenarist/core';
+ * import { type ScenaristScenarios } from '@scenarist/core';
  *
  * const scenarios = {
  *   cartWithState: { id: 'cartWithState', ... },
  *   premiumUser: { id: 'premiumUser', ... },
- * } as const satisfies ScenariosObject;
+ * } as const satisfies ScenaristScenarios;
  *
  * export const test = withScenarios(scenarios);
  * export { expect };
@@ -201,7 +201,7 @@ export type ScenaristFixtures<S extends string = string> = {
  * });
  * ```
  */
-export function withScenarios<T extends ScenariosObject>(_scenarios: T) {
+export function withScenarios<T extends ScenaristScenarios>(_scenarios: T) {
   type ScenarioId = ScenarioIds<T>;
 
   return base.extend<ScenaristOptions & ScenaristFixtures<ScenarioId>>({

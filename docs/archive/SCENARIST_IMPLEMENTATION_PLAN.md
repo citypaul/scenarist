@@ -78,7 +78,7 @@ scenarist/
 - Changesets configured for versioning
 
 **Phase 2: Core Package** ✅ (51 tests passing)
-- Types: ScenarioDefinition, MockDefinition, ScenaristConfig, ActiveScenario, Result
+- Types: ScenaristScenario, ScenaristMock, ScenaristConfig, ActiveScenario, Result
 - Ports (organized by driving/driven):
   - Driving: ScenarioManager
   - Driven: ScenarioRegistry, ScenarioStore, RequestContext
@@ -332,7 +332,7 @@ export type ActiveScenario = {
  * Result type for operations that can fail.
  * Prefer this over throwing exceptions for expected error cases.
  */
-export type Result<T, E = Error> =
+export type ScenaristResult<T, E = Error> =
   | { readonly success: true; readonly data: T }
   | { readonly success: false; readonly error: E };
 ```
@@ -435,7 +435,7 @@ export interface ScenarioManager {
     testId: string,
     scenarioId: string,
     variant?: { name: string; meta?: unknown }
-  ): Result<void, Error>;
+  ): ScenaristResult<void, Error>;
 
   /**
    * Get the currently active scenario for a test ID.
@@ -553,7 +553,7 @@ import type {
   ScenarioStore,
 } from '../ports';
 import type {
-  ScenarioDefinition,
+  ScenaristScenario,
   ActiveScenario,
   Result,
   ScenaristConfig,
@@ -588,7 +588,7 @@ export const createScenarioManager = ({
   config: ScenaristConfig;
 }): ScenarioManager => {
   return {
-    registerScenario(definition: ScenarioDefinition): void {
+    registerScenario(definition: ScenaristScenario): void {
       // Delegate to injected registry
       registry.register(definition);
     },
@@ -597,7 +597,7 @@ export const createScenarioManager = ({
       testId: string,
       scenarioId: string,
       variantName?: string,
-    ): Result<void, Error> {
+    ): ScenaristResult<void, Error> {
       // Business rule: Validate scenario exists in registry
       const definition = registry.get(scenarioId);
 
@@ -624,7 +624,7 @@ export const createScenarioManager = ({
       return store.get(testId);
     },
 
-    listScenarios(): ReadonlyArray<ScenarioDefinition> {
+    listScenarios(): ReadonlyArray<ScenaristScenario> {
       // Delegate to injected registry
       return registry.list();
     },
@@ -634,7 +634,7 @@ export const createScenarioManager = ({
       store.delete(testId);
     },
 
-    getScenarioById(id: string): ScenarioDefinition | undefined {
+    getScenarioById(id: string): ScenaristScenario | undefined {
       // Delegate to injected registry
       return registry.get(id);
     },
@@ -742,11 +742,11 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { createScenarioManager } from '../src/domain/scenario-manager';
 import { buildConfig } from '../src/domain/config-builder';
 import type { ScenarioRegistry, ScenarioStore } from '../src/ports';
-import type { ActiveScenario, ScenarioDefinition } from '../src/types';
+import type { ActiveScenario, ScenaristScenario } from '../src/types';
 
 // In-memory registry for testing (simple Map-based implementation)
 const createTestRegistry = (): ScenarioRegistry => {
-  const registry = new Map<string, ScenarioDefinition>();
+  const registry = new Map<string, ScenaristScenario>();
 
   return {
     register: (definition) => registry.set(definition.id, definition),
@@ -774,7 +774,7 @@ const createTestStore = (): ScenarioStore => {
 const createTestScenarioDefinition = (
   id: string,
   name: string = 'Test Scenario'
-): ScenarioDefinition => ({
+): ScenaristScenario => ({
   id,
   name,
   description: `Description for ${name}`,
@@ -1972,13 +1972,13 @@ Separate serializable **definitions** from runtime **handlers**:
 
 ```typescript
 // ✅ SERIALIZABLE - Can be stored anywhere
-type ScenarioDefinition = {
+type ScenaristScenario = {
   readonly id: string;
   readonly name: string;
-  readonly mocks: ReadonlyArray<MockDefinition>; // Plain data
+  readonly mocks: ReadonlyArray<ScenaristMock>; // Plain data
 };
 
-type MockDefinition = {
+type ScenaristMock = {
   readonly method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   readonly url: string; // String pattern, not regex
   readonly response: {
@@ -1990,7 +1990,7 @@ type MockDefinition = {
 };
 
 // At runtime: MockDefinitions → MSW HttpHandlers
-const createHandler = (mock: MockDefinition): HttpHandler => {
+const createHandler = (mock: ScenaristMock): HttpHandler => {
   return http[mock.method.toLowerCase()](mock.url, async () => {
     if (mock.response.delay) await delay(mock.response.delay);
     return HttpResponse.json(mock.response.body, {

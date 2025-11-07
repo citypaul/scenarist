@@ -1,8 +1,8 @@
 import type {
-  MockDefinition,
-  MockResponse,
+  ScenaristMock,
+  ScenaristResponse,
   HttpRequestContext,
-  Result,
+  ScenaristResult,
 } from "../types/index.js";
 import type { ResponseSelector, SequenceTracker, StateManager } from "../ports/index.js";
 import { ResponseSelectionError } from "../ports/driven/response-selector.js";
@@ -38,10 +38,10 @@ export const createResponseSelector = (
       testId: string,
       scenarioId: string,
       context: HttpRequestContext,
-      mocks: ReadonlyArray<MockDefinition>
-    ): Result<MockResponse, ResponseSelectionError> {
+      mocks: ReadonlyArray<ScenaristMock>
+    ): ScenaristResult<ScenaristResponse, ResponseSelectionError> {
       let bestMatch: {
-        mock: MockDefinition;
+        mock: ScenaristMock;
         mockIndex: number;
         specificity: number;
       } | null = null;
@@ -119,7 +119,7 @@ export const createResponseSelector = (
         let finalResponse = response;
         if (stateManager) {
           const currentState = stateManager.getAll(testId);
-          finalResponse = applyTemplates(response, currentState) as MockResponse;
+          finalResponse = applyTemplates(response, currentState) as ScenaristResponse;
         }
 
         return { success: true, data: finalResponse };
@@ -144,15 +144,15 @@ export const createResponseSelector = (
  * @param mockIndex - Index of the mock in the mocks array
  * @param mock - The mock definition
  * @param sequenceTracker - Optional sequence tracker for Phase 2
- * @returns MockResponse or null if mock has neither response nor sequence
+ * @returns ScenaristResponse or null if mock has neither response nor sequence
  */
 const selectResponseFromMock = (
   testId: string,
   scenarioId: string,
   mockIndex: number,
-  mock: MockDefinition,
+  mock: ScenaristMock,
   sequenceTracker?: SequenceTracker
-): MockResponse | null => {
+): ScenaristResponse | null => {
   // Phase 2: If mock has a sequence, use sequence tracker
   if (mock.sequence) {
     if (!sequenceTracker) {
@@ -208,7 +208,7 @@ const selectResponseFromMock = (
  * { body: { itemType: 'premium', quantity: 5 }, headers: { 'x-tier': 'gold' } } = 3 points
  */
 const calculateSpecificity = (
-  criteria: NonNullable<MockDefinition["match"]>
+  criteria: NonNullable<ScenaristMock["match"]>
 ): number => {
   let score = 0;
 
@@ -233,7 +233,7 @@ const calculateSpecificity = (
  */
 const matchesCriteria = (
   context: HttpRequestContext,
-  criteria: NonNullable<MockDefinition["match"]>
+  criteria: NonNullable<ScenaristMock["match"]>
 ): boolean => {
   // Check body match (partial match)
   if (criteria.body) {

@@ -16,6 +16,27 @@ Once implementation phases are complete, this app will demonstrate:
 - ✅ **Test ID Isolation** - Run multiple tests concurrently with independent scenarios
 - ✅ **Runtime Scenario Switching** - Change backend behavior without app restart
 
+## Installation
+
+This example app is part of the Scenarist monorepo. For external projects, install only the Next.js adapter:
+
+```bash
+npm install @scenarist/nextjs-adapter
+# or
+pnpm add @scenarist/nextjs-adapter
+# or
+yarn add @scenarist/nextjs-adapter
+```
+
+**Note:** You only need to install the Next.js adapter package. It re-exports all necessary types including `ScenaristScenario`, `ScenaristMock`, etc.
+
+**Important:** When using the Pages Router, import from the `/pages` subpath:
+
+```typescript
+import type { ScenaristScenario } from '@scenarist/nextjs-adapter/pages';
+import { createScenarist } from '@scenarist/nextjs-adapter/pages';
+```
+
 ## Getting Started
 
 ```bash

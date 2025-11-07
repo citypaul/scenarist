@@ -1,4 +1,4 @@
-import type { ScenariosObject } from './scenario.js';
+import type { ScenaristScenarios } from './scenario.js';
 
 /**
  * Configuration for the scenario management system.
@@ -53,7 +53,7 @@ export type ScenaristConfig = {
  * Partial config for user input - missing values will use defaults.
  * All properties must be serializable (no functions).
  */
-export type ScenaristConfigInput<T extends ScenariosObject = ScenariosObject> = {
+export type ScenaristConfigInput<T extends ScenaristScenarios = ScenaristScenarios> = {
   readonly enabled: boolean;
   readonly strictMode?: boolean;
   readonly headers?: Partial<ScenaristConfig['headers']>;
@@ -70,7 +70,7 @@ export type ScenaristConfigInput<T extends ScenariosObject = ScenariosObject> = 
    *   default: { id: 'default', ... },      // Required!
    *   cartWithState: { id: 'cartWithState', ... },
    *   premiumUser: { id: 'premiumUser', ... },
-   * } as const satisfies ScenariosObject;
+   * } as const satisfies ScenaristScenarios;
    *
    * createScenarist({
    *   enabled: true,

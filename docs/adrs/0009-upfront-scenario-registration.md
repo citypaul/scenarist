@@ -66,7 +66,7 @@ const scenarios = {
   premium: { id: 'premium', name: 'Premium User', ... },
   standard: { id: 'standard', name: 'Standard User', ... },
   admin: { id: 'admin', name: 'Admin User', ... },
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 // Single initialization step - all scenarios known upfront
 const scenarist = createScenarist({
@@ -90,7 +90,7 @@ const scenarist = createScenarist({
 
 **Express Adapter Implementation:**
 ```typescript
-export const createScenarist = <T extends ScenariosObject>(
+export const createScenarist = <T extends ScenaristScenarios>(
   options: CreateScenaristOptions<T>
 ): Scenarist<T> => {
   const manager = createScenarioManager({ registry, store });
@@ -117,7 +117,7 @@ export const createScenarist = <T extends ScenariosObject>(
 
 **Next.js Adapter Implementation:**
 ```typescript
-const createScenaristBase = <T extends ScenariosObject>(
+const createScenaristBase = <T extends ScenaristScenarios>(
   options: CreateScenaristOptions<T>
 ): ScenaristBase<T> => {
   const manager = createScenarioManager({ registry, store });
@@ -144,27 +144,27 @@ const createScenaristBase = <T extends ScenariosObject>(
 type Scenarist = {
   middleware: RequestHandler;
   scenarioEndpoints: Router;
-  registerScenario(definition: ScenarioDefinition): void; // ← Removed
+  registerScenario(definition: ScenaristScenario): void; // ← Removed
   unregisterScenario(id: string): void;                   // ← Removed
 };
 
 type CreateScenaristOptions = {
   enabled: boolean;
-  defaultScenario: ScenarioDefinition; // ← Removed
+  defaultScenario: ScenaristScenario; // ← Removed
   // ...
 };
 ```
 
 **After (v2.x):**
 ```typescript
-type Scenarist<T extends ScenariosObject> = {
+type Scenarist<T extends ScenaristScenarios> = {
   middleware: RequestHandler;
   scenarioEndpoints: Router;
   // registerScenario removed - use scenarios object instead
   // unregisterScenario removed - modify scenarios object and recreate
 };
 
-type CreateScenaristOptions<T extends ScenariosObject> = {
+type CreateScenaristOptions<T extends ScenaristScenarios> = {
   enabled: boolean;
   scenarios: T;                      // ← New: All scenarios upfront
   defaultScenarioId: string;         // ← Changed: Reference instead of object
@@ -180,7 +180,7 @@ This decision enables ADR-0008's type-safe scenario IDs:
 const scenarios = {
   premium: { id: 'premium', ... },
   standard: { id: 'standard', ... },
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 //  ^^^^^^^ Required for literal types
 
 const scenarist = createScenarist({ scenarios });
@@ -313,7 +313,7 @@ scenarist.registerScenarios(scenarios); // Single call with object
      premium: { ... },
      standard: { ... },
      admin: { ... },
-   } as const satisfies ScenariosObject;
+   } as const satisfies ScenaristScenarios;
    ```
 
 ✅ **Easy to audit** - Can see all scenarios in scenarios object
@@ -375,7 +375,7 @@ scenarist.registerScenarios(scenarios); // Single call with object
    **Mitigation**: Extract scenario definitions to separate files, import and combine:
    ```typescript
    // scenarios/default.ts
-   export const defaultScenario: ScenarioDefinition = { ... };
+   export const defaultScenario: ScenaristScenario = { ... };
 
    // scenarios/index.ts
    import { defaultScenario } from './default';
@@ -384,7 +384,7 @@ scenarist.registerScenarios(scenarios); // Single call with object
    export const scenarios = {
      default: defaultScenario,
      premium: premiumScenario,
-   } as const satisfies ScenariosObject;
+   } as const satisfies ScenaristScenarios;
    ```
 
 ❌ **Scenario removal** - Can't dynamically unregister scenarios:
@@ -413,9 +413,9 @@ scenarist.registerScenarios(scenarios); // Single call with object
 
 Before:
 ```typescript
-const defaultScenario: ScenarioDefinition = { ... };
-const premiumScenario: ScenarioDefinition = { ... };
-const standardScenario: ScenarioDefinition = { ... };
+const defaultScenario: ScenaristScenario = { ... };
+const premiumScenario: ScenaristScenario = { ... };
+const standardScenario: ScenaristScenario = { ... };
 ```
 
 After:
@@ -424,7 +424,7 @@ const scenarios = {
   default: { id: 'default', ... },
   premium: { id: 'premium', ... },
   standard: { id: 'standard', ... },
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 ```
 
 **Step 2: Update adapter initialization**
@@ -481,7 +481,7 @@ export const scenarios = {
   premiumUser: premiumUserScenario,
   standardUser: standardUserScenario,
   adminUser: adminUserScenario,
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 ```
 
 **server.ts:**
@@ -506,7 +506,7 @@ All adapters must:
 
 **Example (Express adapter):**
 ```typescript
-export const createScenarist = <T extends ScenariosObject>(
+export const createScenarist = <T extends ScenaristScenarios>(
   options: CreateScenaristOptions<T>
 ): Scenarist<T> => {
   // Register all scenarios upfront

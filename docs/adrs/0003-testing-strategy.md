@@ -429,7 +429,7 @@ it('should return error when scenario not found', () => {
 **2. GREEN - Minimum Implementation**
 ```typescript
 // Write MINIMUM code to pass test
-switchScenario(testId: string, scenarioId: string): Result<void> {
+switchScenario(testId: string, scenarioId: string): ScenaristResult<void> {
   if (!this.registry.has(scenarioId)) {
     return { success: false, error: new Error('Scenario not found') };
   }
@@ -440,14 +440,14 @@ switchScenario(testId: string, scenarioId: string): Result<void> {
 **3. REFACTOR - Improve Structure**
 ```typescript
 // Extract, clean up, keep tests green
-const validateScenario = (registry: Map, scenarioId: string): Result<void> => {
+const validateScenario = (registry: Map, scenarioId: string): ScenaristResult<void> => {
   if (!registry.has(scenarioId)) {
     return { success: false, error: new Error('Scenario not found') };
   }
   return { success: true, data: undefined };
 };
 
-switchScenario(testId: string, scenarioId: string): Result<void> {
+switchScenario(testId: string, scenarioId: string): ScenaristResult<void> {
   const validation = validateScenario(this.registry, scenarioId);
   if (!validation.success) return validation;
   // ... rest

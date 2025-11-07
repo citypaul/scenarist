@@ -27,9 +27,9 @@ Let's build a simple shopping cart scenario that captures items and returns them
 ### 1. Define the Scenario
 
 ```typescript
-import { ScenarioDefinition } from '@scenarist/core';
+import { ScenaristScenario } from '@scenarist/core';
 
-export const shoppingCartScenario: ScenarioDefinition = {
+export const shoppingCartScenario: ScenaristScenario = {
   id: 'shopping-cart',
   name: 'Shopping Cart with State',
   description: 'Add items to cart, then retrieve them',
@@ -313,7 +313,7 @@ This is useful for optional fields or debugging.
 A common pattern is capturing data across multiple form steps and injecting it into a final confirmation.
 
 ```typescript
-export const multiStepFormScenario: ScenarioDefinition = {
+export const multiStepFormScenario: ScenaristScenario = {
   id: 'multi-step-form',
   name: 'Multi-Step Form',
   description: 'Capture data across form steps',
@@ -542,7 +542,7 @@ expect(cart.items).toBeUndefined();  // State was reset
 ### User Session Flow
 
 ```typescript
-export const userSessionScenario: ScenarioDefinition = {
+export const userSessionScenario: ScenaristScenario = {
   id: 'user-session',
   name: 'User Session',
   description: 'Login creates session, subsequent requests use it',
@@ -595,7 +595,7 @@ export const userSessionScenario: ScenarioDefinition = {
 ### Incremental PATCH Updates
 
 ```typescript
-export const profileUpdateScenario: ScenarioDefinition = {
+export const profileUpdateScenario: ScenaristScenario = {
   id: 'profile-updates',
   name: 'Incremental Profile Updates',
   description: 'PATCH requests accumulate changes',
@@ -661,7 +661,7 @@ export const profileUpdateScenario: ScenarioDefinition = {
 Combine sequences (Phase 2) with state (Phase 3):
 
 ```typescript
-export const jobProcessingScenario: ScenarioDefinition = {
+export const jobProcessingScenario: ScenaristScenario = {
   id: 'job-processing',
   name: 'Job Processing with State',
   description: 'Start job, poll status, job remembers parameters',

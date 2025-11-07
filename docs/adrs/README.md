@@ -54,7 +54,7 @@ ADRs capture the **context**, **decision**, **alternatives considered**, and **c
 ### Type-Safe API (v2.0 Migration)
 
 - **[ADR-0008: Type-Safe Scenario IDs via TypeScript Generics](0008-type-safe-scenario-ids.md)** ✨ NEW (2025-11-02)
-  - **Decision**: Use `as const satisfies ScenariosObject` pattern with generics
+  - **Decision**: Use `as const satisfies ScenaristScenarios` pattern with generics
   - **Why**: Enable autocomplete, compile-time errors, and refactoring safety
   - **Impact**: Breaking API change with major DX improvements (autocomplete everywhere)
 

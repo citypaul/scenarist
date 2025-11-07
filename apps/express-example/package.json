@@ -15,7 +15,6 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@scenarist/core": "workspace:*",
     "@scenarist/express-adapter": "workspace:*",
     "express": "^4.18.2"
   },

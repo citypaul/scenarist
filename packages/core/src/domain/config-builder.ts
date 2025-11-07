@@ -1,4 +1,4 @@
-import type { ScenaristConfig, ScenaristConfigInput, ScenariosObject } from '../types/index.js';
+import type { ScenaristConfig, ScenaristConfigInput, ScenaristScenarios } from '../types/index.js';
 import { ScenariosObjectSchema } from '../schemas/index.js';
 
 /**
@@ -7,7 +7,7 @@ import { ScenariosObjectSchema } from '../schemas/index.js';
  *
  * **Validation:** Ensures scenarios object has a 'default' key.
  */
-export const buildConfig = <T extends ScenariosObject>(
+export const buildConfig = <T extends ScenaristScenarios>(
   input: ScenaristConfigInput<T>
 ): ScenaristConfig => {
   // Validate scenarios object has 'default' key (trust boundary)

@@ -224,14 +224,16 @@ Run 100 tests concurrently with different backend states - no conflicts:
 
 ```bash
 # npm
-npm install --save-dev @scenarist/nextjs-adapter @scenarist/core msw
+npm install --save-dev @scenarist/nextjs-adapter msw
 
 # pnpm
-pnpm add -D @scenarist/nextjs-adapter @scenarist/core msw
+pnpm add -D @scenarist/nextjs-adapter msw
 
 # yarn
-yarn add -D @scenarist/nextjs-adapter @scenarist/core msw
+yarn add -D @scenarist/nextjs-adapter msw
 ```
+
+**Note:** All Scenarist types (`ScenaristScenario`, `ScenaristMock`, etc.) are re-exported from `@scenarist/nextjs-adapter` for convenience. You don't need to install `@scenarist/core` or `@scenarist/msw-adapter` separately - they're already included as dependencies.
 
 **Peer Dependencies:**
 - `next` ^14.0.0 || ^15.0.0
@@ -245,9 +247,9 @@ yarn add -D @scenarist/nextjs-adapter @scenarist/core msw
 
 ```typescript
 // lib/scenarios.ts
-import type { ScenarioDefinition, ScenariosObject } from '@scenarist/core';
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/nextjs-adapter';
 
-export const defaultScenario: ScenarioDefinition = {
+export const defaultScenario: ScenaristScenario = {
   id: 'default',
   name: 'Default',
   mocks: [{
@@ -257,7 +259,7 @@ export const defaultScenario: ScenarioDefinition = {
   }]
 };
 
-export const successScenario: ScenarioDefinition = {
+export const successScenario: ScenaristScenario = {
   id: 'success',
   name: 'API Success',
   mocks: [{
@@ -270,7 +272,7 @@ export const successScenario: ScenarioDefinition = {
 export const scenarios = {
   default: defaultScenario,
   success: successScenario,
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 ```
 
 ### 2. Create Scenarist Instance
@@ -362,9 +364,9 @@ it('fetches user successfully', async () => {
 
 ```typescript
 // lib/scenarios/default.ts
-import type { ScenarioDefinition } from '@scenarist/core';
+import type { ScenaristScenario } from '@scenarist/nextjs-adapter/pages';
 
-export const defaultScenario: ScenarioDefinition = {
+export const defaultScenario: ScenaristScenario = {
   id: 'default',
   name: 'Default Scenario',
   description: 'Baseline responses for all APIs',
@@ -385,7 +387,7 @@ export const defaultScenario: ScenarioDefinition = {
 };
 
 // lib/scenarios/admin-user.ts
-export const adminUserScenario: ScenarioDefinition = {
+export const adminUserScenario: ScenaristScenario = {
   id: 'admin-user',
   name: 'Admin User',
   description: 'User with admin privileges',
@@ -523,7 +525,7 @@ import { createScenarist } from '@scenarist/nextjs-adapter/app';
 
 **Parameters:**
 ```typescript
-type AdapterOptions<T extends ScenariosObject> = {
+type AdapterOptions<T extends ScenaristScenarios> = {
   enabled: boolean;                    // Whether mocking is enabled
   scenarios: T;                        // REQUIRED - scenarios object (all scenarios registered upfront)
   strictMode?: boolean;                 // Return 501 for unmocked requests (default: false)
@@ -540,13 +542,13 @@ type AdapterOptions<T extends ScenariosObject> = {
 
 **Returns:**
 ```typescript
-type Scenarist<T extends ScenariosObject> = {
+type Scenarist<T extends ScenaristScenarios> = {
   config: ScenaristConfig;              // Resolved configuration (headers, etc.)
   createScenarioEndpoint: () => Handler; // Creates scenario endpoint handler
-  switchScenario: (testId: string, scenarioId: ScenarioIds<T>, variant?: string) => Result<void, Error>;
+  switchScenario: (testId: string, scenarioId: ScenarioIds<T>, variant?: string) => ScenaristResult<void, Error>;
   getActiveScenario: (testId: string) => ActiveScenario | undefined;
-  getScenarioById: (scenarioId: ScenarioIds<T>) => ScenarioDefinition | undefined;
-  listScenarios: () => ReadonlyArray<ScenarioDefinition>;
+  getScenarioById: (scenarioId: ScenarioIds<T>) => ScenaristScenario | undefined;
+  listScenarios: () => ReadonlyArray<ScenaristScenario>;
   clearScenario: (testId: string) => void;
   start: () => void;                    // Start MSW server
   stop: () => Promise<void>;            // Stop MSW server
@@ -772,14 +774,14 @@ TypeScript automatically infers scenario names from your scenarios object, provi
 
 ```typescript
 // lib/scenarios.ts
-import type { ScenarioDefinition, ScenariosObject } from '@scenarist/core';
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/nextjs-adapter/pages';
 
 export const scenarios = {
   default: { id: 'default', name: 'Default', mocks: [] },
   success: { id: 'success', name: 'Success', mocks: [] },
   error: { id: 'error', name: 'Error', mocks: [] },
   timeout: { id: 'timeout', name: 'Timeout', mocks: [] },
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 // lib/scenarist.ts
 import { createScenarist } from '@scenarist/nextjs-adapter/pages';
@@ -998,7 +1000,7 @@ Controls behavior when no mock matches a request.
 // Development: Only mock failing endpoints, let others pass through
 const minimalScenarios = {
   default: minimalScenario, // Only critical mocks
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'development',
@@ -1009,7 +1011,7 @@ const scenarist = createScenarist({
 // Testing: Ensure complete isolation
 const testScenarios = {
   default: completeScenario, // Mock all endpoints
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
@@ -1082,7 +1084,7 @@ const response = await fetch('http://localhost:3000/api/data', {
 export const scenarios = {
   default: defaultScenario,
   'my-scenario': myScenario,  // ✅ Include in scenarios object
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 // lib/scenarist.ts
 const scenarist = createScenarist({
@@ -1106,27 +1108,48 @@ This package is written in TypeScript and includes full type definitions.
 
 **Exported Types:**
 ```typescript
-// Pages Router
+// Pages Router - adapter-specific types
 import type {
   PagesAdapterOptions,
   PagesScenarist,
   PagesRequestContext,
 } from '@scenarist/nextjs-adapter/pages';
 
-// App Router
+// Pages Router - core types (re-exported for convenience)
+import type {
+  ScenaristScenario,
+  ScenaristMock,
+  ScenaristResponse,
+  ScenaristSequence,
+  ScenaristMatch,
+  ScenaristCaptureConfig,
+  ScenaristScenarios,
+  ScenaristConfig,
+  ScenaristResult,
+} from '@scenarist/nextjs-adapter/pages';
+
+// App Router - adapter-specific types
 import type {
   AppAdapterOptions,
   AppScenarist,
   AppRequestContext,
 } from '@scenarist/nextjs-adapter/app';
 
-// Core types (same for both)
+// App Router - core types (re-exported for convenience)
 import type {
-  ScenarioDefinition,
-  MockDefinition,
+  ScenaristScenario,
+  ScenaristMock,
+  ScenaristResponse,
+  ScenaristSequence,
+  ScenaristMatch,
+  ScenaristCaptureConfig,
+  ScenaristScenarios,
   ScenaristConfig,
-} from '@scenarist/core';
+  ScenaristResult,
+} from '@scenarist/nextjs-adapter/app';
 ```
+
+**Note:** All core types are re-exported from both `/pages` and `/app` subpaths for convenience. You only need one import path for all Scenarist types - just import from the subpath that matches your Next.js router.
 
 ## Advanced Usage
 

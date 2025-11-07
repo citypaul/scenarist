@@ -50,23 +50,23 @@ We will use **TypeScript generics with `as const satisfies` pattern** to extract
 ### The Pattern
 
 ```typescript
-// Step 1: Define ScenariosObject type (core package)
-export type ScenariosObject = Record<string, ScenarioDefinition>;
+// Step 1: Define ScenaristScenarios type (core package)
+export type ScenaristScenarios = Record<string, ScenaristScenario>;
 
 // Step 2: Extract scenario IDs from object keys
-export type ScenarioIds<T extends ScenariosObject> = keyof T & string;
+export type ScenarioIds<T extends ScenaristScenarios> = keyof T & string;
 
 // Step 3: User defines scenarios with `as const satisfies`
 const scenarios = {
   cartWithState: { id: 'cartWithState', name: 'Cart with State', ... },
   premiumUser: { id: 'premiumUser', name: 'Premium User', ... },
   standardUser: { id: 'standardUser', name: 'Standard User', ... },
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 //  ^^^^^^^ Preserves literal types ('cartWithState' | 'premiumUser' | 'standardUser')
-//          ^^^^^^^^^ Ensures object matches ScenariosObject structure
+//          ^^^^^^^^^ Ensures object matches ScenaristScenarios structure
 
 // Step 4: Adapters become generic over scenarios type
-export const createScenarist = <T extends ScenariosObject>(
+export const createScenarist = <T extends ScenaristScenarios>(
   options: CreateScenaristOptions<T>
 ): Scenarist<T> => { ... };
 
@@ -90,13 +90,13 @@ type MyScenarioIds = ScenarioIds<typeof scenarios>;
    type Keys = keyof typeof obj; // 'foo'
    ```
 
-2. `satisfies ScenariosObject` validates structure without widening types
+2. `satisfies ScenaristScenarios` validates structure without widening types
    ```typescript
    // Ensures object has correct shape while preserving literal types
    const scenarios = {
      cart: { id: 'cart', name: 'Cart', ... },
      user: { id: 'wrong-id', ... } // ❌ Compile error: id doesn't match key
-   } as const satisfies ScenariosObject;
+   } as const satisfies ScenaristScenarios;
    ```
 
 3. `keyof T & string` extracts only string keys (excludes `number | symbol`)
@@ -117,11 +117,11 @@ type MyScenarioIds = ScenarioIds<typeof scenarios>;
 **Core Package (`@scenarist/core`):**
 ```typescript
 // types/scenario.ts
-export type ScenariosObject = Record<string, ScenarioDefinition>;
-export type ScenarioIds<T extends ScenariosObject> = keyof T & string;
+export type ScenaristScenarios = Record<string, ScenaristScenario>;
+export type ScenarioIds<T extends ScenaristScenarios> = keyof T & string;
 
 // types/config.ts
-export type ScenaristConfigInput<T extends ScenariosObject = ScenariosObject> = {
+export type ScenaristConfigInput<T extends ScenaristScenarios = ScenaristScenarios> = {
   readonly scenarios: T;
   // ... (Note: defaultScenarioId was removed per ADR-0010)
 };
@@ -129,12 +129,12 @@ export type ScenaristConfigInput<T extends ScenariosObject = ScenariosObject> = 
 
 **Adapter Packages (Express, Next.js):**
 ```typescript
-export type CreateScenaristOptions<T extends ScenariosObject> = {
+export type CreateScenaristOptions<T extends ScenaristScenarios> = {
   scenarios: T;
   // ... (Note: defaultScenarioId was removed per ADR-0010)
 };
 
-export const createScenarist = <T extends ScenariosObject>(
+export const createScenarist = <T extends ScenaristScenarios>(
   options: CreateScenaristOptions<T>
 ): Scenarist<T> => {
   // TypeScript infers T from options.scenarios
@@ -144,7 +144,7 @@ export const createScenarist = <T extends ScenariosObject>(
 
 **Playwright Helpers:**
 ```typescript
-export const withScenarios = <T extends ScenariosObject>(scenarios: T) => {
+export const withScenarios = <T extends ScenaristScenarios>(scenarios: T) => {
   return base.extend<ScenaristFixtures<T>>({
     switchScenario: async ({ page }, use) => {
       const switchFn = async (scenarioId: ScenarioIds<T>) => {
@@ -171,7 +171,7 @@ export const scenarios = {
   default: { id: 'default', name: 'Default', ... },
   premium: { id: 'premium', name: 'Premium User', ... },
   admin: { id: 'admin', name: 'Admin User', ... },
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 // apps/my-app/server.ts
 import { scenarios } from './scenarios';
@@ -200,7 +200,7 @@ test('premium user flow', async ({ page, switchScenario }) => {
 ```typescript
 type ScenarioId = 'cartWithState' | 'premiumUser' | 'standardUser';
 
-const scenarios: Record<ScenarioId, ScenarioDefinition> = {
+const scenarios: Record<ScenarioId, ScenaristScenario> = {
   cartWithState: { ... },
   premiumUser: { ... },
   standardUser: { ... },
@@ -230,7 +230,7 @@ enum ScenarioId {
   StandardUser = 'standardUser',
 }
 
-const scenarios: Record<ScenarioId, ScenarioDefinition> = {
+const scenarios: Record<ScenarioId, ScenaristScenario> = {
   [ScenarioId.CartWithState]: { ... },
   [ScenarioId.PremiumUser]: { ... },
   [ScenarioId.StandardUser]: { ... },
@@ -282,7 +282,7 @@ type ScenarioId = 'cartWithState' | 'premiumUser';
 **Pattern:**
 ```typescript
 // Validate that scenario ID matches object key
-type ValidScenarios<T extends Record<string, ScenarioDefinition>> = {
+type ValidScenarios<T extends Record<string, ScenaristScenario>> = {
   [K in keyof T]: T[K] extends { id: K } ? T[K] : never;
 };
 
@@ -349,7 +349,7 @@ const scenarios = {
 
 ❌ **Migration required** - Breaking change for existing users:
    - Must change from imperative `registerScenario()` to declarative `scenarios` object
-   - Must add `as const satisfies ScenariosObject` to scenarios
+   - Must add `as const satisfies ScenaristScenarios` to scenarios
    - All adapter setup code must change
 
 ### Neutral
@@ -359,7 +359,7 @@ const scenarios = {
    // Works:
    const scenarist = createScenarist({ scenarios });
 
-   // Doesn't work (T = ScenariosObject, loses literal types):
+   // Doesn't work (T = ScenaristScenarios, loses literal types):
    const options = { scenarios };
    const scenarist = createScenarist(options); // No autocomplete
 
@@ -397,7 +397,7 @@ const scenarios = {
   default: { id: 'default', ... },
   premium: { id: 'premium', ... },
   standard: { id: 'standard', ... },
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
   enabled: true,
@@ -415,9 +415,9 @@ test('my test', async ({ switchScenario }) => {
 
 **For autocomplete to work, users must:**
 
-1. Use `as const satisfies ScenariosObject` pattern:
+1. Use `as const satisfies ScenaristScenarios` pattern:
    ```typescript
-   const scenarios = { ... } as const satisfies ScenariosObject;
+   const scenarios = { ... } as const satisfies ScenaristScenarios;
    ```
 
 2. Pass scenarios directly to adapter (no intermediate variables without `as const`):
@@ -447,7 +447,7 @@ test('my test', async ({ switchScenario }) => {
 
 All adapter READMEs must include:
 
-1. **Setup example** showing `as const satisfies ScenariosObject` pattern
+1. **Setup example** showing `as const satisfies ScenaristScenarios` pattern
 2. **Explanation** of why `as const` is needed (literal types)
 3. **Migration guide** from v1.x to v2.x API
 4. **Common pitfalls** (intermediate variables, missing `as const`)
@@ -465,7 +465,7 @@ All adapter READMEs must include:
 
 ```typescript
 // Future: Ensure scenario.id === object key
-type ValidScenarios<T extends Record<string, ScenarioDefinition>> = {
+type ValidScenarios<T extends Record<string, ScenaristScenario>> = {
   [K in keyof T]: T[K] extends { id: K } ? T[K] : never;
 };
 

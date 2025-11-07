@@ -1,10 +1,10 @@
 import type {
-  ScenarioDefinition,
+  ScenaristScenario,
   ActiveScenario,
-  Result,
+  ScenaristResult,
   ScenaristConfigInput,
   ScenaristConfig,
-  ScenariosObject,
+  ScenaristScenarios,
   ScenarioIds,
 } from '../types/index.js';
 import type { ScenarioRegistry } from '../ports/driven/scenario-registry.js';
@@ -21,17 +21,17 @@ import type { ScenarioStore } from '../ports/driven/scenario-store.js';
  * @example
  * ```typescript
  * // Express adapter - uses base options directly
- * export type ExpressAdapterOptions<T extends ScenariosObject = ScenariosObject> =
+ * export type ExpressAdapterOptions<T extends ScenaristScenarios = ScenaristScenarios> =
  *   BaseAdapterOptions<T>;
  *
  * // Fastify adapter - adds framework-specific options
- * export type FastifyAdapterOptions<T extends ScenariosObject = ScenariosObject> =
+ * export type FastifyAdapterOptions<T extends ScenaristScenarios = ScenaristScenarios> =
  *   BaseAdapterOptions<T> & {
  *     readonly logLevel?: 'debug' | 'info' | 'warn' | 'error';
  *   };
  * ```
  */
-export type BaseAdapterOptions<T extends ScenariosObject = ScenariosObject> =
+export type BaseAdapterOptions<T extends ScenaristScenarios = ScenaristScenarios> =
   ScenaristConfigInput<T> & {
   /**
    * Custom scenario registry implementation.
@@ -61,7 +61,7 @@ export type BaseAdapterOptions<T extends ScenariosObject = ScenariosObject> =
  */
 export type ScenaristAdapter<
   TMiddleware = unknown,
-  TScenarios extends ScenariosObject = ScenariosObject
+  TScenarios extends ScenaristScenarios = ScenaristScenarios
 > = {
   /**
    * Resolved configuration.
@@ -102,7 +102,7 @@ export type ScenaristAdapter<
     testId: string,
     scenarioId: ScenarioIds<TScenarios>,
     variantName?: string
-  ) => Result<void, Error>;
+  ) => ScenaristResult<void, Error>;
 
   /**
    * Get the active scenario for a test ID.
@@ -116,12 +116,12 @@ export type ScenaristAdapter<
    */
   readonly getScenarioById: (
     scenarioId: ScenarioIds<TScenarios>
-  ) => ScenarioDefinition | undefined;
+  ) => ScenaristScenario | undefined;
 
   /**
    * List all registered scenarios.
    */
-  readonly listScenarios: () => ReadonlyArray<ScenarioDefinition>;
+  readonly listScenarios: () => ReadonlyArray<ScenaristScenario>;
 
   /**
    * Clear the active scenario for a test ID.

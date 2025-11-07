@@ -216,7 +216,7 @@ import { CONFIG_DEFAULTS } from '@scenarist/core';
 **Alternative considered:** Use config values from `buildConfig()`:
 
 ```typescript
-export const buildConfig = <T extends ScenariosObject>(
+export const buildConfig = <T extends ScenaristScenarios>(
   input: ScenaristConfigInput<T>
 ): ScenaristConfig => {
   return {
@@ -578,7 +578,7 @@ export class AppRequestContext implements RequestContext {
 // packages/core/src/domain/config-builder.ts
 import { CONFIG_DEFAULTS } from '../types/config.js';
 
-export const buildConfig = <T extends ScenariosObject>(
+export const buildConfig = <T extends ScenaristScenarios>(
   input: ScenaristConfigInput<T>
 ): ScenaristConfig => {
   return {
@@ -666,7 +666,7 @@ They are used internally by all adapters to ensure consistent behavior.
 If users need to override defaults globally (rare), could expose in config:
 
 ```typescript
-export type ScenaristConfigInput<T extends ScenariosObject> = {
+export type ScenaristConfigInput<T extends ScenaristScenarios> = {
   // ...existing fields
   defaults?: {
     mockEnabled?: boolean;

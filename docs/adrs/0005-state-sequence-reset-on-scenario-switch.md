@@ -174,7 +174,7 @@ Each scenario should be **self-contained** and **predictable**:
 **File:** `packages/core/src/domain/scenario-manager.ts`
 
 ```typescript
-switchScenario(testId, scenarioId, variantName): Result<void, Error> {
+switchScenario(testId, scenarioId, variantName): ScenaristResult<void, Error> {
   const definition = registry.get(scenarioId);
   if (!definition) {
     return { success: false, error: new ScenarioNotFoundError(scenarioId) };
@@ -201,7 +201,7 @@ switchScenario(testId, scenarioId, variantName): Result<void, Error> {
 **File:** `packages/core/src/domain/scenario-manager.ts`
 
 ```typescript
-switchScenario(testId, scenarioId, variantName): Result<void, Error> {
+switchScenario(testId, scenarioId, variantName): ScenaristResult<void, Error> {
   const definition = registry.get(scenarioId);
   if (!definition) {
     return { success: false, error: new ScenarioNotFoundError(scenarioId) };

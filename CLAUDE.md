@@ -209,15 +209,15 @@ export const ScenarioRequestSchema = z.object({
 });
 
 // ✅ CORE - Domain validation (scenario definition structure)
-export const ScenarioDefinitionSchema = z.object({
+export const ScenaristScenarioSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   description: z.string().optional(),
-  mocks: z.array(MockDefinitionSchema),
+  mocks: z.array(ScenaristMockSchema),
 });
 
 // ✅ CORE - Domain validation (mock structure)
-export const MockDefinitionSchema = z.object({
+export const ScenaristMockSchema = z.object({
   method: z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH']),
   url: z.string().min(1),
   response: ResponseSchema.optional(),
@@ -318,7 +318,7 @@ export const createScenarioManager = ({
 }: {
   store: ScenarioStore;
 }): ScenarioManager => {
-  const scenarioRegistry = new Map<string, ScenarioDefinition>();  // ❌ Hardcoded!
+  const scenarioRegistry = new Map<string, ScenaristScenario>();  // ❌ Hardcoded!
   // This breaks hexagonal architecture - only one registry implementation possible!
 };
 
@@ -376,7 +376,7 @@ packages/
 ├── msw-adapter/             # MSW integration (✅ COMPLETE)
 │   ├── src/
 │   │   ├── matching/        # URL and mock matching logic
-│   │   ├── conversion/      # MockDefinition → HttpResponse conversion
+│   │   ├── conversion/      # ScenaristMock → HttpResponse conversion
 │   │   └── handlers/        # Dynamic MSW handler factory
 │   ├── tests/               # Behavior-driven tests (31 tests, all passing)
 │   └── dist/                # Built output
@@ -534,10 +534,10 @@ Test Evidence:
 - Default test ID: `'default-test'` (when header absent)
 
 ### Result Type Pattern
-Prefer `Result<T, E>` types over exceptions for expected errors:
+Prefer `ScenaristResult<T, E>` types over exceptions for expected errors:
 
 ```typescript
-type Result<T, E = Error> =
+type ScenaristResult<T, E = Error> =
   | { readonly success: true; readonly data: T }
   | { readonly success: false; readonly error: E };
 ```
@@ -727,7 +727,7 @@ const createPayment = (amount: number, currency: string, cardId: string): Paymen
 Scenarist is built on **MSW (Mock Service Worker) v2.x**:
 
 - Scenarios are serializable definitions (not MSW handlers directly)
-- `MockDefinition` types are converted to MSW `HttpHandler` at runtime
+- `ScenaristMock` types are converted to MSW `HttpHandler` at runtime
 - Handlers are applied dynamically based on active scenario
 - Test ID isolation allows different handlers per test
 - Mocks can be enabled/disabled per request via `x-mock-enabled` header
@@ -912,13 +912,13 @@ Separate **serializable definitions** (data) from **runtime handlers** (behavior
 
 ```typescript
 // ✅ SERIALIZABLE - Pure JSON data
-type ScenarioDefinition = {
+type ScenaristScenario = {
   readonly id: string;
   readonly name: string;
-  readonly mocks: ReadonlyArray<MockDefinition>; // Plain data
+  readonly mocks: ReadonlyArray<ScenaristMock>; // Plain data
 };
 
-type MockDefinition = {
+type ScenaristMock = {
   readonly method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   readonly url: string; // String, not regex
   readonly response: {
@@ -933,7 +933,7 @@ type MockDefinition = {
 **At runtime**, convert definitions to MSW handlers:
 
 ```typescript
-const toMSWHandler = (def: MockDefinition): HttpHandler => {
+const toMSWHandler = (def: ScenaristMock): HttpHandler => {
   return http[def.method.toLowerCase()](def.url, async () => {
     if (def.response.delay) await delay(def.response.delay);
     return HttpResponse.json(def.response.body, {
@@ -1476,9 +1476,9 @@ bruno/Dynamic Responses/Sequences/
 **Solution:** Leverage existing pattern
 ```typescript
 // In scenarios.ts
-export const githubPollingScenario: ScenarioDefinition = { ... };
-export const weatherCycleScenario: ScenarioDefinition = { ... };
-export const paymentLimitedScenario: ScenarioDefinition = { ... };
+export const githubPollingScenario: ScenaristScenario = { ... };
+export const weatherCycleScenario: ScenaristScenario = { ... };
+export const paymentLimitedScenario: ScenaristScenario = { ... };
 
 export const scenarios = {
   default: defaultScenario,
@@ -1752,7 +1752,7 @@ scenarist.registerScenarios([more, scenarios]);
 const scenarios = {
   default: defaultScenario,
   other: otherScenario,
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
   enabled: true,
@@ -1785,15 +1785,15 @@ Create a centralized scenarios file:
 
 ```typescript
 // src/scenarios.ts
-import type { ScenarioDefinition, ScenariosObject } from '@scenarist/core';
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/core';
 
-export const defaultScenario: ScenarioDefinition = {
+export const defaultScenario: ScenaristScenario = {
   id: 'default',
   name: 'Default Scenario',
   // ...
 };
 
-export const premiumScenario: ScenarioDefinition = {
+export const premiumScenario: ScenaristScenario = {
   id: 'premium',
   name: 'Premium User',
   // ...
@@ -1802,7 +1802,7 @@ export const premiumScenario: ScenarioDefinition = {
 export const scenarios = {
   default: defaultScenario,
   premium: premiumScenario,
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 ```
 
 Then use in server setup:
@@ -1829,19 +1829,19 @@ For large projects, organize by domain:
 
 ```typescript
 // src/scenarios/payment.ts
-export const stripeCreditCard: ScenarioDefinition = { /* ... */ };
-export const stripeDeclined: ScenarioDefinition = { /* ... */ };
+export const stripeCreditCard: ScenaristScenario = { /* ... */ };
+export const stripeDeclined: ScenaristScenario = { /* ... */ };
 
 // src/scenarios/github.ts
-export const githubSuccess: ScenarioDefinition = { /* ... */ };
-export const githubNotFound: ScenarioDefinition = { /* ... */ };
+export const githubSuccess: ScenaristScenario = { /* ... */ };
+export const githubNotFound: ScenaristScenario = { /* ... */ };
 
 // src/scenarios/index.ts - Barrel file
-import type { ScenariosObject } from '@scenarist/core';
+import type { ScenaristScenarios } from '@scenarist/core';
 import { stripeCreditCard, stripeDeclined } from './payment.js';
 import { githubSuccess, githubNotFound } from './github.js';
 
-const defaultScenario: ScenarioDefinition = { /* ... */ };
+const defaultScenario: ScenaristScenario = { /* ... */ };
 
 export const scenarios = {
   default: defaultScenario,
@@ -1849,7 +1849,7 @@ export const scenarios = {
   stripeDeclined,
   githubSuccess,
   githubNotFound,
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 ```
 
 **Benefits:**
@@ -1871,7 +1871,7 @@ export const scenarios = {
     name: 'Auth Scenario',
     // ...
   },
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 // Later in tests:
 scenarist.switchScenario('test-123', 'auth');  // Which one? Uses key!
@@ -1894,7 +1894,7 @@ export const scenarios = {
     name: 'Auth Scenario',
     // ...
   },
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 scenarist.switchScenario('test-123', 'authentication');  // Works!
 ```
@@ -1931,7 +1931,7 @@ it('should have matching keys and IDs', () => {
 const scenarios = {
   default: { id: 'default', /* ... */ },
   premium: { id: 'premium', /* ... */ },  // Added this
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
   scenarios,  // ✅ Automatically registered
@@ -1945,7 +1945,7 @@ No additional registration needed - all scenarios in object are automatically re
 **Scenario:** What if scenarios object is empty?
 
 ```typescript
-const scenarios = {} as const satisfies ScenariosObject;
+const scenarios = {} as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
   scenarios,
@@ -1985,7 +1985,7 @@ scenarist.switchScenario('test-123', SCENARIO_IDS.DEFAULT);  // Accepted but not
 
 **Why This Fails:**
 - TypeScript doesn't track computed keys in type inference
-- `as const satisfies ScenariosObject` can't extract types from computed keys
+- `as const satisfies ScenaristScenarios` can't extract types from computed keys
 - No autocomplete, no compile-time validation
 
 **The Pattern:** Use literal keys instead:
@@ -1995,7 +1995,7 @@ scenarist.switchScenario('test-123', SCENARIO_IDS.DEFAULT);  // Accepted but not
 const scenarios = {
   default: { id: 'default', /* ... */ },
   premium: { id: 'premium', /* ... */ },
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 // If you need constants, derive them from scenarios:
 const SCENARIO_IDS = {
@@ -2023,7 +2023,7 @@ expect(() => scenarist.getScenarioById('other')).toBeDefined();
 const testScenarios = {
   default: mockDefaultScenario,
   other: mockOtherScenario,
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
   enabled: true,
@@ -2073,7 +2073,7 @@ const scenarios = {
   default: defaultScenario,
   premium: premiumScenario,
   error: errorScenario,
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
   enabled: true,
@@ -2109,7 +2109,7 @@ New API prevents this:
 const scenarios = {
   a: scenarioA,
   b: scenarioB,
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 scenarist.switchScenario('test-123', 'scenarioC');  // ✅ Compile error! 'scenarioC' not in scenarios
 ```
@@ -2120,7 +2120,7 @@ When migrating existing code:
 
 - [ ] Create centralized scenarios file (or use barrel export pattern)
 - [ ] Group all scenario definitions
-- [ ] Create scenarios object with `as const satisfies ScenariosObject`
+- [ ] Create scenarios object with `as const satisfies ScenaristScenarios`
 - [ ] Ensure all scenario definition IDs match object keys
 - [ ] Replace `defaultScenario` parameter with `scenarios` object
 - [ ] Replace `defaultScenario` property with `defaultScenarioId` reference

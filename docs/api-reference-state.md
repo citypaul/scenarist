@@ -2,10 +2,10 @@
 
 Quick reference for stateful mock features.
 
-## MockDefinition with State
+## ScenaristMock with State
 
 ```typescript
-type MockDefinition = {
+type ScenaristMock = {
   method: HttpMethod;
   url: string;
 

@@ -7,8 +7,8 @@ import type {
 } from "../ports/index.js";
 import type {
   ActiveScenario,
-  Result,
-  ScenarioDefinition,
+  ScenaristResult,
+  ScenaristScenario,
 } from "../types/index.js";
 
 class ScenarioNotFoundError extends Error {
@@ -49,7 +49,7 @@ export const createScenarioManager = ({
   sequenceTracker?: SequenceTracker;
 }): ScenarioManager => {
   return {
-    registerScenario(definition: ScenarioDefinition): void {
+    registerScenario(definition: ScenaristScenario): void {
       const existing = registry.get(definition.id);
 
       // Allow re-registering the exact same scenario object (idempotent)
@@ -69,7 +69,7 @@ export const createScenarioManager = ({
       testId: string,
       scenarioId: string,
       variantName?: string
-    ): Result<void, Error> {
+    ): ScenaristResult<void, Error> {
       const definition = registry.get(scenarioId);
 
       if (!definition) {
@@ -103,7 +103,7 @@ export const createScenarioManager = ({
       return store.get(testId);
     },
 
-    listScenarios(): ReadonlyArray<ScenarioDefinition> {
+    listScenarios(): ReadonlyArray<ScenaristScenario> {
       return registry.list();
     },
 
@@ -111,7 +111,7 @@ export const createScenarioManager = ({
       store.delete(testId);
     },
 
-    getScenarioById(id: string): ScenarioDefinition | undefined {
+    getScenarioById(id: string): ScenaristScenario | undefined {
       return registry.get(id);
     },
   };

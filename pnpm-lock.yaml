@@ -20,9 +20,6 @@ importers:
 
   apps/express-example:
     dependencies:
-      '@scenarist/core':
-        specifier: workspace:*
-        version: link:../../packages/core
       '@scenarist/express-adapter':
         specifier: workspace:*
         version: link:../../packages/express-adapter
@@ -78,12 +75,6 @@ importers:
 
   apps/nextjs-app-example:
     dependencies:
-      '@scenarist/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@scenarist/msw-adapter':
-        specifier: workspace:*
-        version: link:../../packages/msw-adapter
       '@scenarist/nextjs-adapter':
         specifier: workspace:*
         version: link:../../packages/nextjs-adapter
@@ -145,12 +136,6 @@ importers:
 
   apps/nextjs-pages-example:
     dependencies:
-      '@scenarist/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@scenarist/msw-adapter':
-        specifier: workspace:*
-        version: link:../../packages/msw-adapter
       '@scenarist/nextjs-adapter':
         specifier: workspace:*
         version: link:../../packages/nextjs-adapter

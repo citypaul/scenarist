@@ -11,55 +11,55 @@ import { z } from 'zod';
 export const HttpMethodSchema = z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD']);
 export type HttpMethod = z.infer<typeof HttpMethodSchema>;
 
-export const MockResponseSchema = z.object({
+export const ScenaristResponseSchema = z.object({
   status: z.number().int().min(100).max(599),
   body: z.unknown().optional(),
   headers: z.record(z.string(), z.string()).optional(),
   delay: z.number().nonnegative().optional(),
 });
-export type MockResponse = z.infer<typeof MockResponseSchema>;
+export type ScenaristResponse = z.infer<typeof ScenaristResponseSchema>;
 
-export const MatchCriteriaSchema = z.object({
+export const ScenaristMatchSchema = z.object({
   body: z.record(z.string(), z.unknown()).optional(),
   headers: z.record(z.string(), z.string()).optional(),
   query: z.record(z.string(), z.string()).optional(),
 });
-export type MatchCriteria = z.infer<typeof MatchCriteriaSchema>;
+export type ScenaristMatch = z.infer<typeof ScenaristMatchSchema>;
 
 export const RepeatModeSchema = z.enum(['last', 'cycle', 'none']);
 export type RepeatMode = z.infer<typeof RepeatModeSchema>;
 
-export const ResponseSequenceSchema = z.object({
-  responses: z.array(MockResponseSchema).min(1),
+export const ScenaristSequenceSchema = z.object({
+  responses: z.array(ScenaristResponseSchema).min(1),
   repeat: RepeatModeSchema.optional(),
 });
-export type ResponseSequence = z.infer<typeof ResponseSequenceSchema>;
+export type ScenaristSequence = z.infer<typeof ScenaristSequenceSchema>;
 
-export const CaptureStateSchema = z.record(z.string(), z.string());
-export type CaptureState = z.infer<typeof CaptureStateSchema>;
+export const ScenaristCaptureConfigSchema = z.record(z.string(), z.string());
+export type ScenaristCaptureConfig = z.infer<typeof ScenaristCaptureConfigSchema>;
 
-export const MockDefinitionSchema = z.object({
+export const ScenaristMockSchema = z.object({
   method: HttpMethodSchema,
   url: z.string().min(1),
-  match: MatchCriteriaSchema.optional(),
-  response: MockResponseSchema.optional(),
-  sequence: ResponseSequenceSchema.optional(),
-  captureState: CaptureStateSchema.optional(),
+  match: ScenaristMatchSchema.optional(),
+  response: ScenaristResponseSchema.optional(),
+  sequence: ScenaristSequenceSchema.optional(),
+  captureState: ScenaristCaptureConfigSchema.optional(),
 });
-export type MockDefinition = z.infer<typeof MockDefinitionSchema>;
+export type ScenaristMock = z.infer<typeof ScenaristMockSchema>;
 
-export const VariantDefinitionSchema = z.object({
+export const ScenaristVariantSchema = z.object({
   name: z.string().min(1),
   description: z.string(),
   data: z.unknown(),
 });
-export type VariantDefinition = z.infer<typeof VariantDefinitionSchema>;
+export type ScenaristVariant = z.infer<typeof ScenaristVariantSchema>;
 
-export const ScenarioDefinitionSchema = z.object({
+export const ScenaristScenarioSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   description: z.string(),
-  mocks: z.array(MockDefinitionSchema),
-  variants: z.array(VariantDefinitionSchema).optional(),
+  mocks: z.array(ScenaristMockSchema),
+  variants: z.array(ScenaristVariantSchema).optional(),
 });
-export type ScenarioDefinition = z.infer<typeof ScenarioDefinitionSchema>;
+export type ScenaristScenario = z.infer<typeof ScenaristScenarioSchema>;

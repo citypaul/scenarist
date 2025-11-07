@@ -1,22 +1,22 @@
 // Re-export schema-inferred types (single source of truth from Zod schemas)
 export type {
   HttpMethod,
-  MockResponse,
-  MockDefinition,
-  MatchCriteria,
+  ScenaristResponse,
+  ScenaristMock,
+  ScenaristMatch,
   RepeatMode,
-  ResponseSequence,
-  CaptureState,
-  VariantDefinition,
-  ScenarioDefinition,
+  ScenaristSequence,
+  ScenaristCaptureConfig,
+  ScenaristVariant,
+  ScenaristScenario,
 } from '../schemas/scenario-definition.js';
 
 // Export types that remain in scenario.ts (not validated by schemas)
 export type {
   HttpRequestContext,
   ActiveScenario,
-  Result,
-  ScenariosObject,
+  ScenaristResult,
+  ScenaristScenarios,
   ScenarioIds,
 } from './scenario.js';
 
