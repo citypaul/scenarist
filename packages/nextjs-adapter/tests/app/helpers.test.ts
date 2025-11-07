@@ -23,7 +23,14 @@ describe('getScenaristHeaders', () => {
   const createTestScenarist = (config?: { testIdHeader?: string; defaultTestId?: string }) => {
     return createScenarist({
       enabled: true,
-      scenarios: {},
+      scenarios: {
+        default: {
+          id: 'default',
+          name: 'Default Test Scenario',
+          description: 'Minimal scenario for testing',
+          mocks: [],
+        },
+      },
       ...(config?.testIdHeader && {
         headers: { testId: config.testIdHeader },
       }),
