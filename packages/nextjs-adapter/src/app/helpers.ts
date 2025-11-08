@@ -1,5 +1,9 @@
 /**
  * Helper functions for Next.js App Router
+ *
+ * Note: These helpers are App Router-specific due to Web standard Request API.
+ * Pages Router uses NextApiRequest which has a different headers API and doesn't
+ * need these helpers - headers can be accessed directly via req.headers object.
  */
 
 import type { createScenarist } from './setup.js';
