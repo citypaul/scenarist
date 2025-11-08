@@ -1,5 +1,5 @@
 {
-  "name": "@scenarist/nextjs-pages-example",
+  "name": "@scenarist/nextjs-pages-router-example",
   "version": "0.1.0",
   "private": true,
   "type": "module",

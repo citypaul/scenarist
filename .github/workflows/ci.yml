@@ -55,7 +55,7 @@ jobs:
 
       - name: Get installed Playwright version
         id: playwright-version
-        run: echo "PLAYWRIGHT_VERSION=$(pnpm --filter=@scenarist/nextjs-pages-example list @playwright/test --depth=0 | grep @playwright/test | awk '{print $2}')" >> $GITHUB_OUTPUT
+        run: echo "PLAYWRIGHT_VERSION=$(pnpm --filter=@scenarist/nextjs-pages-router-example list @playwright/test --depth=0 | grep @playwright/test | awk '{print $2}')" >> $GITHUB_OUTPUT
 
       - name: Cache Playwright browsers
         uses: actions/cache@v4
@@ -66,7 +66,7 @@ jobs:
 
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm --filter=@scenarist/nextjs-pages-example exec playwright install --with-deps chromium
+        run: pnpm --filter=@scenarist/nextjs-pages-router-example exec playwright install --with-deps chromium
 
       - name: Test
         run: pnpm test
@@ -86,6 +86,6 @@ jobs:
         run: pnpm test:bruno:ci
 
       - name: Comparison E2E Tests (without Scenarist)
-        run: pnpm --filter=@scenarist/nextjs-pages-example test:e2e:comparison
+        run: pnpm --filter=@scenarist/nextjs-pages-router-example test:e2e:comparison
         env:
           SKIP_MSW: 'true'

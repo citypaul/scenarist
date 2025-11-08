@@ -240,4 +240,4 @@ When reviewing example apps in `apps/*/`:
 - [CLAUDE.md](../../CLAUDE.md) - Production code standards (applies to `packages/*`)
 - [Next.js Adapter Tests](../../packages/nextjs-adapter/tests/) - Layer 2 coverage
 - [Core Tests](../../packages/core/tests/) - Layer 1 coverage
-- [Pages Router TESTING.md](../nextjs-pages-example/TESTING.md) - Same standards, different router
+- [Pages Router TESTING.md](../nextjs-pages-router-example/TESTING.md) - Same standards, different router
