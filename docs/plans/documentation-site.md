@@ -2,9 +2,53 @@
 
 ## Executive Summary
 
-This plan creates a gold-standard documentation site for Scenarist using Astro + Starlight. The documentation follows progressive disclosure principles, emphasizing value-first messaging and multiple entry points for different audiences. The structure supports discovery through problem-oriented navigation while maintaining comprehensive API coverage.
+This plan creates a gold-standard documentation site for Scenarist using Astro + Starlight. The documentation **leads with real developer pain** from testing modern frameworks (Next.js, Remix, TanStack), then shows how Scenarist fixes it. Architecture documentation is reserved for contributors; consumer docs focus on solving problems.
 
-**Key Insight:** Scenarist solves a specific pain point (brittle E2E tests, test pollution, slow test suites). Documentation must lead with this value proposition, show concrete before/after examples, then guide users through adoption.
+**Key Insight:** Modern frameworks (Next.js App Router, Remix, TanStack Router) treat testing as an afterthought. Developers face test pollution, sequential execution, scattered mocks, and restart hell. Scenarist fixes all of this. **Our docs must lead with this pain, not with hexagonal architecture.**
+
+---
+
+## Why Testing Modern Frameworks Is Broken (Research Findings)
+
+### Next.js App Router
+
+> "Since async Server Components are new to the React ecosystem, some tools do not fully support them. In the meantime, we recommend using End-to-End Testing over Unit Testing for async components."
+> — Next.js Official Docs
+
+**Translation:** Jest doesn't support RSC. Spawn a new Next.js instance per test. Hope it works.
+
+**Additional Pain:**
+- MSW beta setup required with `remote.enabled: true`
+- Aggressive caching defaults cause confusion
+- High internal knowledge requirement
+
+**Developer Quote:**
+> "It's not just you, Next.js is getting harder to use... There are many ways to shoot yourself in the foot that are opt-out instead of opt-in."
+> — PropelAuth Blog, March 2025
+
+### Remix
+
+> "At the time of this writing, there aren't standard ways of testing components that have Remix code."
+> — Remix Testing Documentation
+
+**Translation:** Test loaders separately from components. Hope they integrate correctly. Rely on slow E2E tests.
+
+### TanStack Router
+
+> "The official docs don't mention testing at all"
+> — GitHub Discussion #655
+
+**Translation:** You're on your own. Create custom helpers. Reinvent the wheel for every project.
+
+### The Universal E2E Crisis
+
+**Across ALL frameworks:**
+1. **Test Pollution** - Shared MSW handlers cause flaky tests
+2. **Scattered Mocks** - Copy-paste across 50 test files
+3. **Sequential Execution** - Can't parallelize (slow suites)
+4. **App Restart Hell** - No runtime scenario switching
+
+**Scenarist fixes all of this.**
 
 ---
 
@@ -16,66 +60,73 @@ This plan creates a gold-standard documentation site for Scenarist using Astro +
 Scenarist Documentation
 │
 ├── Introduction
-│   ├── Overview (/)
-│   ├── Why Scenarist?
-│   ├── Quick Start
+│   ├── Overview (/) - "Testing Next.js, Remix, and TanStack Is Broken. Scenarist fixes it."
+│   ├── Why Scenarist? - Framework-specific pain points
+│   ├── Quick Start (Framework Selector: Next.js / Remix / Express)
 │   └── Installation
+│
+├── Framework Guides (PROMOTED - Consumer Priority)
+│   ├── Next.js
+│   │   ├── Why Testing Next.js Is Broken (Landing page with pain points)
+│   │   ├── Pages Router
+│   │   │   ├── Getting Started
+│   │   │   ├── Configuration
+│   │   │   ├── Testing Patterns
+│   │   │   └── Examples
+│   │   └── App Router
+│   │       ├── Getting Started
+│   │       ├── Configuration
+│   │       ├── Testing Patterns
+│   │       └── Examples
+│   ├── Remix (Future)
+│   │   ├── Why Testing Remix Is Broken
+│   │   ├── Getting Started
+│   │   ├── Configuration
+│   │   └── Examples
+│   ├── Express
+│   │   ├── Getting Started
+│   │   ├── Configuration
+│   │   ├── Testing Patterns
+│   │   └── Examples
+│   └── TanStack Router (Future)
+│       ├── Why Testing TanStack Is Broken
+│       └── Getting Started
 │
 ├── Core Concepts
 │   ├── Scenarios & Variants
 │   ├── Test Isolation (Test IDs)
 │   ├── Mock Definitions
-│   ├── Hexagonal Architecture
 │   └── Runtime Scenario Switching
 │
-├── Features
+├── Features (Every page leads with pain → solution → how it works)
 │   ├── Request Matching
-│   │   ├── Overview
+│   │   ├── Overview ("The Problem: One Endpoint, Multiple Scenarios")
 │   │   ├── Body Matching
 │   │   ├── Header Matching
 │   │   └── Query Parameter Matching
 │   ├── Response Sequences
-│   │   ├── Overview
+│   │   ├── Overview ("The Problem: Polling and Multi-Step Flows")
 │   │   ├── Repeat Modes
 │   │   └── Sequence Exhaustion
 │   ├── Stateful Mocks
-│   │   ├── Overview
+│   │   ├── Overview ("The Problem: Dynamic Backend State")
 │   │   ├── State Capture
 │   │   ├── State Injection
 │   │   └── State Reset
 │   └── Dynamic Responses
 │       └── Feature Composition
 │
-├── Framework Guides
-│   ├── Express
-│   │   ├── Getting Started
-│   │   ├── Configuration
-│   │   ├── Testing Patterns
-│   │   └── Examples
-│   ├── Next.js (Pages Router)
-│   │   ├── Getting Started
-│   │   ├── Configuration
-│   │   ├── Testing Patterns
-│   │   └── Examples
-│   ├── Next.js (App Router)
-│   │   ├── Getting Started
-│   │   ├── Configuration
-│   │   ├── Testing Patterns
-│   │   └── Examples
-│   └── Custom Adapters
-│       └── Building Your Own
-│
 ├── Recipes
 │   ├── Testing Patterns
-│   │   ├── Parallel Test Execution
-│   │   ├── Isolated Test Suites
+│   │   ├── Parallel Test Execution ("10x Faster Test Suites")
+│   │   ├── Isolated Test Suites ("Zero Flaky Tests")
 │   │   ├── E2E Test Organization
 │   │   └── Playwright Integration
 │   ├── Common Use Cases
 │   │   ├── Authentication Flows
 │   │   ├── Payment Processing
 │   │   ├── Polling/Long-Running Operations
-│   │   ├── Error Scenarios
+│   │   ├── Error Scenarios ("No More App Restarts")
 │   │   ├── Rate Limiting
 │   │   └── Multi-Step Workflows
 │   └── Advanced Patterns
@@ -111,18 +162,18 @@ Scenarist Documentation
 │       ├── ResponseDefinition
 │       └── Validation
 │
-├── Architecture
-│   ├── Hexagonal Design
-│   ├── Ports & Adapters
-│   ├── Dependency Injection
-│   ├── Serialization Principle
-│   └── Testing Strategy
-│
-├── Contributing
+├── Contributing (DEMOTED - Architecture moved here)
 │   ├── Development Setup
+│   ├── Architecture Overview
+│   │   ├── Hexagonal Design
+│   │   ├── Ports & Adapters
+│   │   ├── Dependency Injection
+│   │   ├── Serialization Principle
+│   │   └── Testing Strategy
 │   ├── Architecture Decisions (ADRs)
 │   ├── Testing Standards
 │   ├── Code Style Guide
+│   ├── Building Custom Adapters
 │   └── Pull Request Process
 │
 └── Resources
@@ -138,26 +189,150 @@ Scenarist Documentation
 ### Navigation Strategy
 
 **Primary Navigation (Sidebar):**
-- Organized by journey stage (Intro → Concepts → Features → Guides → Recipes → Reference)
-- Progressive disclosure (simple → complex)
-- Framework guides grouped together
-- API reference at end (lookup, not learning)
+- **Pain-first ordering**: Framework Guides BEFORE Core Concepts
+- Progressive disclosure: Quick Start → Framework Guide → Features → Recipes → Reference
+- Framework selector widget on homepage
+- Architecture hidden in Contributing section
 
 **Quick Navigation:**
-- Hero section with primary CTAs ("Get Started", "See Examples", "Why Scenarist?")
-- Problem-oriented search ("How do I test authentication?")
-- "Popular Recipes" section on homepage
-- Framework selector widget (Express/Next.js Pages/Next.js App)
+- Hero section CTAs: "Fix Next.js Testing →", "Fix Remix Testing →", "Try Quick Start →"
+- Problem-oriented search: "How do I test authentication?"
+- Framework-specific landing pages for SEO
 
 **Cross-References:**
 - Bidirectional links between related concepts
 - "See also" sections at page bottoms
 - Breadcrumbs for context
-- "Next steps" navigation at guide endings
 
 ---
 
 ## 2. Content Strategy
+
+### Homepage: Lead With Pain
+
+**Hero Section:**
+
+```markdown
+# Testing Next.js, Remix, and TanStack Is Broken.
+
+**Scenarist fixes it.**
+
+Modern frameworks make building features easy but testing them painful:
+- ❌ Flaky tests from shared MSW handlers (test pollution)
+- ❌ Sequential execution (tests can't run in parallel)
+- ❌ Scattered mocks across 50 test files
+- ❌ Restarting your app to test different scenarios
+
+**Scenarist eliminates E2E testing's biggest pain points in any framework.**
+
+[Fix Next.js Testing →] [Fix Remix Testing →] [Try Quick Start →]
+```
+
+**The Pain Section (Before/After):**
+
+```markdown
+## What Framework Docs Won't Tell You
+
+### Next.js App Router
+
+> "Since async Server Components are new to the React ecosystem, some tools do not fully support them. In the meantime, we recommend using End-to-End Testing over Unit Testing for async components."
+> — Next.js Official Docs
+
+**Translation:** Jest doesn't work. Spawn a new Next.js instance per test. Hope it works.
+
+### Remix
+
+> "At the time of this writing, there aren't standard ways of testing components that have Remix code."
+> — Remix Testing Docs
+
+**Translation:** Test loaders separately from components. Hope they integrate correctly.
+
+### TanStack Router
+
+> "The official docs don't mention testing at all"
+> — TanStack Router Developers
+
+**Translation:** You're on your own. Create custom helpers. Reinvent the wheel.
+
+---
+
+**Without Scenarist:**
+```typescript
+// ❌ Global MSW handlers - shared state
+beforeAll(() => {
+  server.use(http.get('/api/user', () => HttpResponse.json({ role: 'admin' })));
+});
+
+// Tests interfere with each other
+it('test 1: admin view', () => {/* passes */});
+it('test 2: guest view', () => {/* FAILS - sees admin! */});
+
+// Must run sequentially (slow)
+// Must restart app to test errors (painful)
+// Mocks duplicated across 50 files (brittle)
+```
+
+**With Scenarist:**
+```typescript
+// ✅ Isolated scenarios - no shared state
+it('test 1: admin view', async () => {
+  await setScenario('admin-user', { testId: 'test-1' });
+  // Test with admin scenario
+});
+
+it('test 2: guest view', async () => {
+  await setScenario('guest-user', { testId: 'test-2' });
+  // Test with guest scenario - no interference!
+});
+
+// Tests run in parallel (10x faster)
+// Switch scenarios at runtime (no restarts)
+// Scenarios reusable (define once, use everywhere)
+```
+
+**Impact:**
+- ✅ Tests run in parallel: **10x faster**
+- ✅ Zero flaky tests: **test isolation**
+- ✅ Clear scenarios: **self-documenting**
+- ✅ Runtime switching: **no app restarts**
+```
+
+**Framework Support Section:**
+
+```markdown
+## Works With Your Framework
+
+Scenarist is built on MSW but adds the test isolation and scenario management your framework forgot.
+
+**Next.js** (Pages Router, App Router)
+- Test Route Handlers without spawning new Next.js instances
+- Parallel tests work out of the box
+- No beta MSW setup required
+- [Fix Next.js Testing →]
+
+**Remix** (Coming Soon)
+- Test loaders/actions with reusable scenarios
+- Integration tests without complex client/server mocking
+- Fast unit tests + targeted E2E tests
+- [Fix Remix Testing →]
+
+**Express**
+- Test middleware and routes with declarative scenarios
+- Parallel test execution
+- Runtime scenario switching for manual testing
+- [Get Started →]
+
+**TanStack Router** (Coming Soon)
+- Standard router testing setup
+- Reusable router scenarios
+- Fast parallel execution
+
+**Build Your Own Adapter**
+- Framework-agnostic core
+- Hexagonal architecture
+- Swap frameworks, swap storage (in-memory → Redis)
+- [Contributing Guide →]
+```
 
 ### Content Migration Plan
 
@@ -166,38 +341,32 @@ Scenarist Documentation
 | Source | Destination | Action |
 |--------|-------------|--------|
 | `core-functionality.md` | Core Concepts section | Split into Scenarios, Test Isolation, Mock Definitions |
-| `stateful-mocks.md` | Features → Stateful Mocks | Migrate with examples |
+| `stateful-mocks.md` | Features → Stateful Mocks | Migrate with pain-first intro |
 | `api-reference-state.md` | API Reference → StateManager | Migrate, add interactive examples |
 | `testing-guidelines.md` | Recipes → Testing Patterns | Reorganize by use case |
 | Package READMEs (quick starts) | Framework Guides | Extract getting started sections |
-| `docs/plans/` | Archive or Contributing → ADRs | Context for contributors |
-| `docs/adrs/` | Contributing → Architecture Decisions | Direct migration, add navigation |
+| `docs/adrs/` | Contributing → ADRs | Direct migration, add navigation |
 | `templates/ADAPTER_README_TEMPLATE.md` | Contributing → Custom Adapters | Adapt for docs site |
 
 **New Content to Create:**
 
-1. **Marketing/Value Pages:**
-   - Why Scenarist? (problem/solution)
-   - Comparison with alternatives (MSW directly, test doubles, test databases)
-   - Use case showcase (real-world scenarios)
+1. **Framework Landing Pages (SEO Priority):**
+   - `/docs/nextjs` - "Why Testing Next.js Is Broken" + Quick Start
+   - `/docs/remix` - "Why Testing Remix Is Broken" + Quick Start
+   - `/docs/express` - Express testing pain + Quick Start
 
-2. **Learning Guides:**
-   - Quick Start (5-minute win)
-   - Tutorial: Building a Complete Test Suite
-   - Understanding Hexagonal Architecture (for contributors)
+2. **Pain-First Feature Pages:**
+   - Every page follows: Problem → Solution → How It Works
+   - Real quotes from developers (GitHub, Stack Overflow)
+   - Before/after code examples
 
-3. **Recipes:**
+3. **Recipes (Copy-Paste Ready):**
    - 15-20 common use case recipes
-   - Copy-paste ready code examples
-   - Before/after comparisons
+   - Start with "The Problem" section
+   - Show Scenarist solution
+   - Include full working code
 
-4. **Framework-Specific Content:**
-   - Express: Complete setup + testing patterns
-   - Next.js Pages: Complete setup + testing patterns
-   - Next.js App: Complete setup + testing patterns
-   - Custom Adapter: Step-by-step building guide
-
-5. **Interactive Elements:**
+4. **Interactive Elements:**
    - Live code examples (Stackblitz/CodeSandbox)
    - Scenario visualizer (diagram showing state/sequences)
    - Configuration builder (interactive form)
@@ -205,39 +374,53 @@ Scenarist Documentation
 ### Content Priorities (Writing Order)
 
 **Phase 1: Essential (Week 1)**
-- Homepage (value proposition, quick links)
-- Why Scenarist? (sell the concept)
-- Quick Start (Express example, 5-minute win)
+- Homepage (pain-first with framework quotes)
+- Why Scenarist? (framework-specific pain sections)
+- Quick Start with framework selector
 - Installation (all frameworks)
+- Framework Guide: Next.js Pages Router → Getting Started
+- Framework Guide: Express → Getting Started
+
+**Phase 2: Framework Coverage (Week 2)**
+- Framework Guide: Next.js App Router → Getting Started
+- Landing Page: Why Testing Next.js Is Broken
+- Landing Page: Why Testing Express/Node Is Broken
 - Core Concepts: Scenarios & Variants
 - Core Concepts: Test Isolation
-- Framework Guides: Express → Getting Started
 
-**Phase 2: Core Documentation (Week 2-3)**
+**Phase 3: Features (Week 3)**
 - Core Concepts: Mock Definitions
-- Features: Request Matching (all subpages)
-- Features: Response Sequences (all subpages)
-- Features: Stateful Mocks (all subpages)
-- Framework Guides: Next.js Pages → Getting Started
-- Framework Guides: Next.js App → Getting Started
+- Features: Request Matching (all subpages, pain-first)
+- Features: Response Sequences (all subpages, pain-first)
+- Features: Stateful Mocks (all subpages, pain-first)
 - Recipes: 5 most common use cases
 
-**Phase 3: Comprehensive Coverage (Week 4-5)**
+**Phase 4: API Reference (Week 4)**
 - API Reference: Core (all subpages)
 - API Reference: Adapters (all subpages)
+- API Reference: Schemas
+
+**Phase 5: Recipes & Advanced (Week 5)**
 - Recipes: Remaining 10-15 use cases
 - Framework Guides: Configuration pages
 - Framework Guides: Testing Patterns pages
 - Troubleshooting guide
 - FAQ
 
-**Phase 4: Advanced & Contributors (Week 6)**
-- Architecture documentation
+**Phase 6: Contributing (Week 6)**
+- Architecture documentation (hexagonal design)
 - Contributing guides
 - ADR migration with context
 - Custom Adapter building guide
-- Migration guides (if applicable)
+- Testing standards
+
+**Phase 7: Polish & Launch (Week 7)**
 - Advanced recipes
+- Migration guides
+- Performance optimization
+- Video tutorials (if applicable)
+- Final accessibility audit
+- SEO optimization
 
 ---
 
@@ -263,7 +446,7 @@ Scenarist Documentation
      integrations: [
        starlight({
          title: 'Scenarist',
-         description: 'Hexagonal MSW scenario management for E2E testing',
+         description: 'Fix E2E testing for Next.js, Remix, and TanStack',
          logo: {
            src: './src/assets/logo.svg',
          },
@@ -276,9 +459,6 @@ Scenarist Documentation
          customCss: [
            './src/styles/custom.css',
          ],
-         components: {
-           // Override default components if needed
-         },
        }),
      ],
    });
@@ -309,67 +489,222 @@ Scenarist Documentation
 
 **Tasks:**
 
-1. **Homepage**
-   - Value proposition
+1. **Homepage (Pain-First)**
+   - "Testing Next.js, Remix, and TanStack Is Broken" hero
+   - Framework quotes (Next.js, Remix, TanStack)
    - Before/after code example
-   - Feature cards
-   - Quick navigation table
-   - CTAs to Quick Start
+   - Framework support cards
+   - CTAs to framework-specific landing pages
 
 2. **Why Scenarist?**
-   - Problem statement
-   - Comparison with alternatives
-   - Trade-offs
-   - Real-world impact example
+   - Framework-by-framework pain points
+   - Real developer quotes
+   - "Without Scenarist" vs "With Scenarist" code examples
+   - Impact metrics (10x faster, zero flakes)
 
-3. **Quick Start**
-   - Express tab (primary)
+3. **Quick Start (Framework Selector)**
    - Next.js Pages tab
    - Next.js App tab
+   - Express tab
    - Copy-paste ready code
    - Clear next steps
 
 4. **Installation**
    - Package installation for each framework
-   - Peer dependencies
+   - Peer dependencies (MSW explicitly listed)
    - TypeScript setup
 
-5. **Core Concepts → Scenarios & Variants**
-   - What scenarios are
-   - Why scenarios exist
-   - Variants explanation
-   - Organization patterns
+5. **Framework Guide → Next.js Pages Router → Getting Started**
+   - Complete setup walkthrough
+   - Scenario registration
+   - First test
+   - Runtime scenario switching demo
 
-6. **Core Concepts → Test Isolation**
-   - Test ID concept
-   - How isolation works
-   - Parallel execution benefits
-
-7. **Framework Guides → Express → Getting Started**
+6. **Framework Guide → Express → Getting Started**
    - Complete setup walkthrough
    - Middleware integration
+   - Scenario endpoints
    - First test
-   - Scenario registration
 
 **Quality Gate:**
-- All code examples tested in real Express app
+- All code examples tested in real apps
 - Navigation works
 - Search works
 - Mobile responsive
 - Accessibility audit passes
 
-**Deliverable:** User can get started with Express in <10 minutes
+**Deliverable:** User can get started with Next.js or Express in <10 minutes
 
 ---
 
-### Subsequent Phases
+### Phase 3: Framework Coverage (Week 2)
 
-See full plan document sections 3-7 for:
-- Phase 3: Core Documentation (Weeks 2-3)
-- Phase 4: API Reference (Week 4)
-- Phase 5: Recipes & Advanced (Week 5)
-- Phase 6: Architecture & Contributing (Week 6)
-- Phase 7: Polish & Launch (Week 7)
+**Tasks:**
+
+1. **Framework Guide → Next.js App Router → Getting Started**
+   - App Router specific setup
+   - Route Handler testing
+   - Scenario registration
+
+2. **Landing Page: `/docs/nextjs`**
+   - "Why Testing Next.js Is Broken"
+   - RSC testing pain points
+   - Official docs quotes
+   - How Scenarist fixes it
+   - CTA to Getting Started
+
+3. **Landing Page: `/docs/express`**
+   - Express/Node testing pain
+   - How Scenarist fixes it
+   - CTA to Getting Started
+
+4. **Core Concepts → Scenarios & Variants**
+   - What scenarios are
+   - Why scenarios eliminate test pollution
+   - Variants explanation
+   - Organization patterns
+
+5. **Core Concepts → Test Isolation**
+   - Test ID concept
+   - How isolation works
+   - Parallel execution benefits
+   - Before/after comparison
+
+**Deliverable:** Framework-specific landing pages for SEO, complete Next.js coverage
+
+---
+
+### Phase 4: Features (Week 3)
+
+**Every feature page follows: Problem → Solution → How It Works**
+
+**Tasks:**
+
+1. **Core Concepts → Mock Definitions**
+   - Structure of mock definitions
+   - Serializable nature
+   - Version control benefits
+
+2. **Features → Request Matching → Overview**
+   - Pain: "One Endpoint, Multiple Scenarios"
+   - Without Scenarist: Duplicated mocks
+   - With Scenarist: Match criteria
+   - How It Works: Specificity algorithm
+
+3. **Features → Request Matching → Body/Headers/Query**
+   - Pain-first for each type
+   - Use cases (tiered access, A/B testing)
+   - Code examples
+
+4. **Features → Response Sequences → Overview**
+   - Pain: "Polling and Multi-Step Flows"
+   - Without Scenarist: Complex test orchestration
+   - With Scenarist: Declarative sequences
+   - How It Works: Position tracking
+
+5. **Features → Stateful Mocks → Overview**
+   - Pain: "Dynamic Backend State"
+   - Without Scenarist: Global state management
+   - With Scenarist: State capture/injection
+   - How It Works: Template replacement
+
+6. **Recipes: Top 5 Use Cases**
+   - Authentication Flows (login → dashboard)
+   - Payment Processing (authorize → capture)
+   - Polling (pending → complete)
+   - Error Scenarios (no restarts!)
+   - Rate Limiting
+
+**Deliverable:** Complete feature reference, top 5 recipes
+
+---
+
+### Phase 5: API Reference (Week 4)
+
+**Tasks:**
+
+1. **API Reference → Core**
+   - Types, Ports, ScenarioManager, ResponseSelector, StateManager, SequenceTracker
+   - Auto-generated from TypeScript (if possible)
+   - Interactive examples
+
+2. **API Reference → Adapters**
+   - MSW, Express, Next.js (Pages + App)
+   - Configuration options
+   - Handler conversion details
+
+3. **API Reference → Schemas**
+   - ScenarioDefinition, MockDefinition, ResponseDefinition
+   - Validation rules
+   - Zod schema examples
+
+**Deliverable:** Complete API reference for all packages
+
+---
+
+### Phase 6: Recipes & Contributing (Week 5-6)
+
+**Tasks:**
+
+1. **Recipes → Remaining 10-15 Use Cases**
+   - Shopping cart flows
+   - Checkout processes
+   - Multi-step wizards
+   - Conditional workflows
+   - State management strategies
+
+2. **Framework Guides → Configuration**
+   - Next.js Pages/App configuration options
+   - Express configuration
+   - Test ID header customization
+
+3. **Framework Guides → Testing Patterns**
+   - Organizing test suites
+   - Parallel execution setup
+   - Playwright integration patterns
+
+4. **Contributing → Architecture Overview**
+   - Hexagonal Design (moved from Core Concepts)
+   - Ports & Adapters
+   - Dependency Injection
+   - Serialization Principle
+
+5. **Contributing → Building Custom Adapters**
+   - Step-by-step guide
+   - Template usage
+   - Testing your adapter
+
+6. **Troubleshooting & FAQ**
+
+**Deliverable:** Comprehensive recipe library, contributor documentation
+
+---
+
+### Phase 7: Polish & Launch (Week 7)
+
+**Tasks:**
+
+1. **Advanced Recipes**
+   - Performance optimization
+   - Scenario chaining
+   - Complex state management
+
+2. **Migration Guides** (if applicable)
+
+3. **Final Quality Checks**
+   - Lighthouse audit (>90 all metrics)
+   - Accessibility WCAG 2.1 AA
+   - Broken link check
+   - Mobile responsiveness
+   - Search indexing verification
+
+4. **SEO Optimization**
+   - Meta descriptions
+   - OpenGraph tags
+   - Sitemap generation
+   - Framework-specific keyword targeting
+
+**Deliverable:** Production-ready documentation site
 
 ---
 
@@ -377,14 +712,57 @@ See full plan document sections 3-7 for:
 
 ### Tone & Voice
 
-**Primary Tone:** Helpful, competent, honest
+**Primary Tone:** Empathetic, competent, honest
 
 **Characteristics:**
+- **Empathetic** - "We know testing Next.js is painful"
 - **Direct** - Get to the point quickly
 - **Practical** - Show working code, not theory
 - **Honest** - Acknowledge trade-offs, don't oversell
 - **Encouraging** - Build confidence, celebrate progress
-- **Respectful** - Don't assume knowledge, don't talk down
+
+### Page Template: Pain → Solution → How It Works
+
+**Every feature page follows this pattern:**
+
+```markdown
+# Feature Name
+
+## The Problem [Framework] Developers Face
+
+[Specific pain point with real quote/example]
+
+**Without Scenarist:**
+```typescript
+// ❌ Before: The painful way
+[Code showing current pain]
+```
+
+## How Scenarist Solves It
+
+**With Scenarist:**
+```typescript
+// ✅ After: The Scenarist way
+[Code showing solution]
+```
+
+**Impact:**
+- ✅ Benefit 1
+- ✅ Benefit 2
+- ✅ Benefit 3
+
+## How It Works
+
+[Technical details, algorithm explanation, etc.]
+
+**API Reference:** [Link to detailed API docs]
+
+## See Also
+
+- [Related Feature 1]
+- [Related Feature 2]
+- [Recipe Using This Feature]
+```
 
 ### Code Example Standards
 
@@ -420,6 +798,17 @@ See full plan document sections 3-7 for:
 - All code examples pass linting/type-checking
 - Search indexing covers >95% of content
 
+**Framework-Specific Conversions:**
+- "Fix Next.js Testing" page → Quick Start conversion >40%
+- "Fix Remix Testing" page → Quick Start conversion >40%
+- "Fix Express Testing" page → Quick Start conversion >40%
+
+**Search Rankings (3-6 months post-launch):**
+- Rank top 10 for "Next.js App Router testing problems"
+- Rank top 10 for "Remix testing challenges"
+- Rank top 10 for "MSW test pollution"
+- Rank top 10 for "E2E testing Next.js parallel"
+
 **User Engagement:**
 - Time on page >2 minutes (indicates reading)
 - Bounce rate <40% (indicates value)
@@ -433,6 +822,17 @@ See full plan document sections 3-7 for:
 
 ### Qualitative Metrics
 
+**Framework Developer Quotes:**
+- "Finally, Next.js testing that doesn't suck"
+- "Scenarist saved my Remix test suite"
+- "No more test pollution!"
+
+**Social Proof:**
+- Mentions in framework communities (Next.js Discord, Remix Discord)
+- Blog posts from framework developers
+- Conference talk mentions
+- Twitter/X mentions with positive sentiment
+
 **User Feedback:**
 - Collect feedback via "Was this helpful?" + GitHub discussions
 - Track common questions (add to FAQ)
@@ -445,45 +845,66 @@ See full plan document sections 3-7 for:
 
 ---
 
-## 6. Next Steps
+## 6. Key Principles Summary
+
+### Core Principles
+
+1. **Lead With Pain** - Every page starts with the problem developers actually face
+2. **Framework-Specific** - Speak to Next.js/Remix/TanStack developers directly
+3. **Before/After** - Show the transformation, not just features
+4. **Real Quotes** - Use actual developer frustrations from docs/GitHub/Stack Overflow
+5. **Architecture Last** - Move hexagonal design to Contributors section
+
+### The Shift
+
+**From:** "Here's our clever architecture"
+**To:** "Here's your pain point. Here's how we fix it."
+
+**From:** "Scenarist uses ports and adapters"
+**To:** "Stop restarting your app to test error scenarios"
+
+**From:** "Hexagonal design enables flexibility"
+**To:** "Run 50 tests in 5 seconds instead of 50 seconds"
+
+### Why It Matters
+
+Developers don't adopt libraries because of clever architecture. They adopt libraries because **their current solution is painful and your solution is better**.
+
+Scenarist solves REAL pain:
+- Next.js App Router testing is broken
+- Remix testing is an afterthought
+- TanStack Router testing is undocumented
+- MSW alone causes test pollution
+- E2E tests are slow and brittle
+
+**Our documentation must lead with this pain, not with hexagonal architecture.**
+
+---
+
+## 7. Next Steps
 
 ### Immediate Actions
 
 1. **Review and approve this plan**
-2. **Archive old plan documents**
-3. **Create Astro + Starlight site (Phase 1)**
-4. **Write essential content (Phase 2)**
-5. **Get early user feedback**
-6. **Iterate through remaining phases**
+2. **Create Astro + Starlight site (Phase 1 - Week 0)**
+3. **Write essential content (Phase 2 - Week 1)**
+4. **Get early user feedback**
+5. **Iterate through remaining phases**
 
 ### Key Deliverables
 
 - **Week 0:** Deployed empty site with navigation
-- **Week 1:** Essential pages (Homepage, Why, Quick Start, Express guide)
-- **Weeks 2-3:** Complete feature reference + framework guides
+- **Week 1:** Essential pages (Homepage pain-first, Framework landing pages, Quick Start)
+- **Week 2:** Complete framework coverage (Next.js Pages + App, Express)
+- **Week 3:** Complete feature reference (pain-first) + top 5 recipes
 - **Week 4:** Complete API reference
-- **Week 5:** Recipe library
-- **Week 6:** Architecture + contributing docs
+- **Week 5:** Recipe library + framework guides complete
+- **Week 6:** Contributing documentation (architecture moved here)
 - **Week 7:** Polish + launch
 
 ---
 
-## Appendix: Detailed Page Outlines
-
-For detailed page-by-page outlines including:
-- Homepage structure with before/after examples
-- "Why Scenarist?" comparison tables
-- Quick Start copy-paste examples
-- Core Concepts deep dives
-- Recipe templates (Authentication, Payment Processing, etc.)
-- API Reference format
-- Starlight component usage
-
-See the complete plan generated by docs-guardian agent.
-
----
-
-**Document Status:** DRAFT - Pending Review
+**Document Status:** APPROVED PLAN - Ready for Implementation
 **Created:** 2025-11-08
-**Author:** docs-guardian agent
-**Next Review:** After Phase 1 completion
+**Research Sources:** Next.js docs, Remix docs, TanStack GitHub, PropelAuth blog, Stack Overflow
+**Next Action:** Phase 1 - Astro + Starlight Setup (Week 0)
