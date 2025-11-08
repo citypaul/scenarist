@@ -3,7 +3,7 @@
 **Status**: ✅ Pages Router Complete - App Router In Progress
 **Started**: 2025-11-01
 **Last Updated**: 2025-11-07
-**PRs**: [#39](https://github.com/citypaul/scenarist/pull/39) (planning), [#40](https://github.com/citypaul/scenarist/pull/40) (Phase -1 - MERGED), [#41](https://github.com/citypaul/scenarist/pull/41) (Phase 0 - MERGED), [#42-44](https://github.com/citypaul/scenarist/pull/42) (Phase 2 - MERGED), [#45-46](https://github.com/citypaul/scenarist/pull/45) (Phase 3 - MERGED), [#48](https://github.com/citypaul/scenarist/pull/48) (Phase 5 Sequences - MERGED), [#50](https://github.com/citypaul/scenarist/pull/50) (Phase 4 Composition - MERGED), [#51](https://github.com/citypaul/scenarist/pull/51) (Phase 6 Isolation - MERGED), [#52](https://github.com/citypaul/scenarist/pull/52) (Phase 8.0 Setup - MERGED), [#53](https://github.com/citypaul/scenarist/pull/53) (API Simplification - MERGED)
+**PRs**: [#39](https://github.com/citypaul/scenarist/pull/39) (planning), [#40](https://github.com/citypaul/scenarist/pull/40) (Phase -1 - MERGED), [#41](https://github.com/citypaul/scenarist/pull/41) (Phase 0 - MERGED), [#42-44](https://github.com/citypaul/scenarist/pull/42) (Phase 2 - MERGED), [#45-46](https://github.com/citypaul/scenarist/pull/45) (Phase 3 - MERGED), [#48](https://github.com/citypaul/scenarist/pull/48) (Phase 5 Sequences - MERGED), [#50](https://github.com/citypaul/scenarist/pull/50) (Phase 4 Composition - MERGED), [#51](https://github.com/citypaul/scenarist/pull/51) (Phase 6 Isolation - MERGED), [#52](https://github.com/citypaul/scenarist/pull/52) (Phase 8.0 Setup - MERGED), [#53](https://github.com/citypaul/scenarist/pull/53) (API Simplification - MERGED), [#54](https://github.com/citypaul/scenarist/pull/54) (Phase 8.1 Integration - MERGED)
 **Related**: [next-stages.md](./next-stages.md) (Overall v1.0 roadmap)
 
 ---
@@ -177,12 +177,12 @@ All 3 core features demonstrated individually, composed, AND isolated:
 |-------|--------|-----------|--------|---------------|
 | **8.0: Setup** | ✅ **COMPLETE & MERGED (PR #52)** | **0.5 day** | **~0.5 day** | **15** |
 | **8.1: Integration + Scenario Switching** | ⏳ Not Started | 1 day | - | ~8 |
-| **8.2: Products/Matching** | ⏳ Not Started | 1 day | - | ~15 |
+| **8.2: Products/Matching** | ✅ **COMPLETE** | **1 day** | **~1 day** | **10** |
 | **8.3: Cart/Stateful** | ⏳ Not Started | 1 day | - | ~12 |
 | **8.4: Checkout/Composition** | ⏳ Not Started | 0.5 day | - | ~5 |
 | **8.5: Payment/Sequences** | ⏳ Not Started | 1 day | - | ~10 |
 | **8.6: Parallel Isolation** | ⏳ Not Started | 0.5 day | - | ~1 |
-| **App Total** | **🔄 14% complete** | **5-6 days** | **~0.5 day** | **15/~76** |
+| **App Total** | **🔄 29% complete** | **5-6 days** | **~1.5 days** | **25/~76** |
 
 ### Documentation
 
@@ -197,8 +197,8 @@ All 3 core features demonstrated individually, composed, AND isolated:
 **Actual So Far**: ~7 days
 **Remaining**: ~7-9 days (App Router + Documentation)
 
-**Current**: ✅ Phase 8.0 Complete
-**Next**: Phase 8.1 (Integration + Scenario Switching)
+**Current**: ✅ Phase 8.2 Complete (Products/Matching)
+**Next**: Phase 8.3 (Cart/Stateful)
 
 ---
 
@@ -2087,24 +2087,26 @@ Create the new Next.js App Router application structure.
 
 **Validation**: ✅ App builds, runs, and basic smoke test passes
 
-#### Phase 8.1: Integration + Scenario Switching (⏳ In Progress)
+#### Phase 8.1: Integration + Scenario Switching (✅ COMPLETE & MERGED - PR #54)
 
 **Estimated**: 1 day
+**Actual**: 1 day
 
-Set up Scenarist with App Router and create first Playwright helper.
+Set up Scenarist with App Router and create first Playwright helper. **Includes critical bug fix for adapter documentation (URL-encoded folder names).**
 
 **Tasks:**
 - [x] Create types/product.ts (same as Pages Router)
 - [x] Create data/products.ts (same as Pages Router)
 - [x] Create lib/scenarios.ts (same structure, imports from `/app`)
 - [x] Create lib/scenarist.ts (with server-side auto-start)
-- [x] Create app/api/__scenario__/route.ts (Route Handler)
+- [x] Create app/api/%5F%5Fscenario%5F%5F/route.ts (Route Handler with URL-encoded folder name)
 - [x] Create tests/playwright/fixtures.ts
 - [x] Write verbose Playwright test for scenario switching (RED)
-- [ ] Make test pass with manual scenario switching (GREEN)
-- [ ] Extract `switchScenario` helper from Playwright helpers package (GREEN)
-- [ ] Refactor test to use helper (REFACTOR)
-- [ ] Measure LOC reduction (should match ~77% from Pages Router)
+- [x] Make test pass with manual scenario switching (GREEN)
+- [x] Fix adapter documentation for URL-encoded folder naming
+- [x] Update all adapter source code comments
+
+**Note**: Helper extraction and refactoring deferred to future work (not critical for feature parity validation).
 
 **CRITICAL ARCHITECTURAL INSIGHT: App Router = Server-Side MSW (Same as Pages Router)**
 
@@ -2198,30 +2200,52 @@ App Router and Pages Router implementations are **95% identical**. The only diff
 
 **Validation**: Scenario switching works, helper reduces boilerplate by ~77%
 
-#### Phase 8.2: Products/Matching (⏳ Not Started)
+#### Phase 8.2: Products/Matching (✅ Complete)
 
 **Estimated**: 1 day
+**Actual**: 1 day
 
 Create products page demonstrating request matching (Phase 1 core feature).
 
 **Tasks:**
-- [ ] Create products page: `app/page.tsx` (or `app/products/page.tsx`)
-- [ ] Create tier selection UI (premium/standard buttons)
-- [ ] Create products API: `app/api/products/route.ts` (Route Handler with matching)
-- [ ] Define premiumUser and standardUser scenarios (with match criteria)
-- [ ] Write Playwright test: `tests/playwright/products.spec.ts` (RED)
-- [ ] Implement products endpoint with Scenarist integration (GREEN)
-- [ ] Test passes, demonstrates specificity-based selection (GREEN)
-- [ ] Assess refactoring opportunities (REFACTOR if valuable)
+- [x] Create products page: `app/page.tsx` (client component with state/effects)
+- [x] Create tier selection UI (TierSelector component with accessible markup)
+- [x] Create products API: `app/api/products/route.ts` (Route Handler with matching)
+- [x] Define premiumUser and standardUser scenarios (with match criteria)
+- [x] Write Playwright test: `tests/playwright/products.spec.ts` (RED)
+- [x] Implement products endpoint with Scenarist integration (GREEN)
+- [x] Test passes, demonstrates specificity-based selection (GREEN)
+- [x] Assess refactoring opportunities (REFACTOR if valuable)
+- [x] **BONUS**: Create `getScenaristHeaders` helper for App Router
+- [x] **BONUS**: Add unit tests for `getScenaristHeaders` (retroactive TDD fix)
+- [x] **BONUS**: Audit and fix documentation inaccuracies (removed incorrect Advanced Usage section)
 
 **Demonstrates**: Request matching with body/header/query matching, specificity-based selection
 
 **Files Created**:
 - `apps/nextjs-app-example/app/page.tsx` (products page)
+- `apps/nextjs-app-example/components/ProductCard.tsx` (product display component)
+- `apps/nextjs-app-example/components/TierSelector.tsx` (tier selection UI)
 - `apps/nextjs-app-example/app/api/products/route.ts` (products API)
-- `apps/nextjs-app-example/tests/playwright/products.spec.ts` (tests)
+- `apps/nextjs-app-example/tests/playwright/products.spec.ts` (E2E tests)
+- `packages/nextjs-adapter/src/app/helpers.ts` (getScenaristHeaders helper)
+- `packages/nextjs-adapter/tests/app/helpers.test.ts` (helper unit tests - 6 tests)
+
+**Files Modified**:
+- `packages/nextjs-adapter/src/app/index.ts` (exported getScenaristHeaders)
+- `packages/express-adapter/README.md` (removed incorrect Advanced Usage section)
+- `CLAUDE.md` (added Phase 8 TDD violation learning)
+
+**Commits**:
+- 666a954: feat(nextjs-app): implement App Router products page with tier-based pricing (TDD VIOLATION - all in one commit)
+- c35bd5a: test(nextjs-adapter/app): add unit tests for getScenaristHeaders helper (RED - retroactive fix)
+- f018a73: feat(nextjs-adapter/app): implement getScenaristHeaders helper (GREEN - retroactive fix)
+- 51c07f1: docs(express-adapter): remove incorrect Advanced Usage section
+- dfdc1c2: docs(claude): add Phase 8 TDD violation learning
 
 **Validation**: ✅ Phase 1 (Request Matching) parity achieved for App Router
+
+**Learnings**: TDD violation detected and fixed retroactively - see CLAUDE.md Phase 8 section for full details
 
 #### Phase 8.3: Cart/Stateful (⏳ Not Started)
 

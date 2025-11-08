@@ -778,29 +778,6 @@ await setScenario('test-1', 'myScenario');  // ✅ Works
 await setScenario('test-1', 'unknown');     // ❌ Error: Scenario not found
 ```
 
-## Advanced Usage
-
-For advanced users who need custom wiring, the low-level APIs are available:
-
-```typescript
-import {
-  ExpressRequestContext,
-  createTestIdMiddleware,
-  createScenarioEndpoints,
-  testIdStorage,
-} from '@scenarist/express-adapter';
-
-import { createDynamicHandler } from '@scenarist/msw-adapter';
-
-// Manual wiring (not recommended for most users)
-const handler = createDynamicHandler({
-  getTestId: () => testIdStorage.getStore() ?? 'default-test',
-  getActiveScenario: (testId) => manager.getActiveScenario(testId),
-  getScenarioDefinition: (scenarioId) => manager.getScenarioById(scenarioId),
-  strictMode: false,
-});
-```
-
 ## TypeScript
 
 This package is written in TypeScript and includes full type definitions.

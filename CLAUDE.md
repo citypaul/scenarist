@@ -2166,3 +2166,90 @@ This migration reflects a shift in thinking:
 - Permissions → enumerated upfront, not granted on-demand
 
 The new Scenarist API follows the same principle: declare contracts upfront, validate at compile time, execute at runtime with confidence.
+
+## Phase 8: Next.js App Router - Learnings (App Example)
+
+### TDD Violation: All Code in Single Commit
+
+**Date:** 2025-11-07
+**Context:** Implementing App Router products page and `getScenaristHeaders` helper
+
+**Problem:** Committed all tests and implementation together in single commit (666a954)
+- E2E tests for products page
+- Component implementations (TierSelector, ProductCard, page.tsx)
+- API route handler (app/api/products/route.ts)
+- Helper function (packages/nextjs-adapter/src/app/helpers.ts)
+- No unit tests for helper function
+- No evidence of RED → GREEN → REFACTOR cycle in git history
+
+**Root Cause:** Implementation pressure led to skipping fundamental TDD process
+- Focused on "getting it done" rather than proving TDD adherence
+- Helper function seemed "simple enough" to not need tests
+- E2E tests passing gave false confidence
+- Forgot that git history must demonstrate TDD, not just final working state
+
+**Detection:** TDD Guardian agent flagged CRITICAL violation
+- No failing test before implementation
+- Helper function with 0% test coverage
+- Claim of TDD in commit message without evidence
+- All work batched into single commit
+
+**Fix Applied (Commits c35bd5a, f018a73):**
+
+1. **RED Phase (c35bd5a):**
+   - Created `packages/nextjs-adapter/tests/app/helpers.test.ts`
+   - Temporarily moved implementation to `.backup` to verify RED
+   - Ran tests - confirmed FAILED (file not found)
+   - Committed with note: "test(nextjs-adapter/app): add unit tests for getScenaristHeaders helper (RED - retroactive fix)"
+
+2. **GREEN Phase (f018a73):**
+   - Restored implementation file
+   - Fixed test setup (added required default scenario)
+   - Ran tests - confirmed PASSED (6/6 tests)
+   - Committed with note: "feat(nextjs-adapter/app): implement getScenaristHeaders helper (GREEN - retroactive fix)"
+
+**Test Coverage Added:**
+- Extract test ID from request header
+- Use default test ID when header missing
+- Respect custom header name from config
+- Handle lowercase header names
+- Return object with single header entry
+- Use default when header value is empty string
+
+**Key Lessons:**
+
+1. **No Exceptions for "Simple" Code**
+   - Even trivial helpers need tests first
+   - Simplicity is not an excuse to skip TDD
+   - Tests document behavior regardless of complexity
+
+2. **Git History is Proof**
+   - Working code ≠ TDD compliance
+   - Must demonstrate RED → GREEN in commits
+   - Single commit with tests + impl = NOT TDD
+
+3. **E2E Tests Don't Replace Unit Tests**
+   - E2E tests passed but helper had 0% unit coverage
+   - Unit tests verify helper behavior in isolation
+   - E2E tests verify integration, not implementation details
+
+4. **Retroactive Fixes Are Possible But Costly**
+   - Had to fabricate RED state by removing implementation
+   - Lost development flow and context
+   - More work than doing it right the first time
+   - Should have been caught before commit
+
+**Prevention:**
+- ✅ Run TDD Guardian before requesting review
+- ✅ Check coverage before committing (not after)
+- ✅ Never commit without failing test first
+- ✅ Separate commits for RED, GREEN, REFACTOR
+- ✅ Challenge yourself: "Can I prove TDD from git log?"
+
+**Pattern Recognition:**
+This is the SAME violation documented in Phase 2 (PR #26):
+- Writing speculative code without tests
+- Claiming TDD without evidence
+- Having to retrofit tests after implementation
+
+**The lesson keeps repeating: TDD is non-negotiable. No shortcuts, no exceptions.**
