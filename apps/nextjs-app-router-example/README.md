@@ -22,17 +22,17 @@ This app showcases Scenarist's complete feature set with Next.js App Router:
 
 ## Installation
 
-This example app is part of the Scenarist monorepo. For external projects, install only the Next.js adapter:
+This example app is part of the Scenarist monorepo. For external projects, install the Next.js adapter and MSW:
 
 ```bash
-npm install @scenarist/nextjs-adapter
+npm install @scenarist/nextjs-adapter msw
 # or
-pnpm add @scenarist/nextjs-adapter
+pnpm add @scenarist/nextjs-adapter msw
 # or
-yarn add @scenarist/nextjs-adapter
+yarn add @scenarist/nextjs-adapter msw
 ```
 
-**Note:** You only need to install the Next.js adapter package. It re-exports all necessary types including `ScenaristScenario`, `ScenaristMock`, etc.
+**Note:** MSW is a required peer dependency. The Next.js adapter re-exports all necessary types including `ScenaristScenario`, `ScenaristMock`, etc.
 
 **Important:** When using the App Router, import from the `/app` subpath:
 
