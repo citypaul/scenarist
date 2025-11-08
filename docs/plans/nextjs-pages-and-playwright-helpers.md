@@ -2,8 +2,8 @@
 
 **Status**: ✅ Pages Router Complete - App Router In Progress
 **Started**: 2025-11-01
-**Last Updated**: 2025-11-07
-**PRs**: [#39](https://github.com/citypaul/scenarist/pull/39) (planning), [#40](https://github.com/citypaul/scenarist/pull/40) (Phase -1 - MERGED), [#41](https://github.com/citypaul/scenarist/pull/41) (Phase 0 - MERGED), [#42-44](https://github.com/citypaul/scenarist/pull/42) (Phase 2 - MERGED), [#45-46](https://github.com/citypaul/scenarist/pull/45) (Phase 3 - MERGED), [#48](https://github.com/citypaul/scenarist/pull/48) (Phase 5 Sequences - MERGED), [#50](https://github.com/citypaul/scenarist/pull/50) (Phase 4 Composition - MERGED), [#51](https://github.com/citypaul/scenarist/pull/51) (Phase 6 Isolation - MERGED), [#52](https://github.com/citypaul/scenarist/pull/52) (Phase 8.0 Setup - MERGED), [#53](https://github.com/citypaul/scenarist/pull/53) (API Simplification - MERGED), [#54](https://github.com/citypaul/scenarist/pull/54) (Phase 8.1 Integration - MERGED)
+**Last Updated**: 2025-11-08
+**PRs**: [#39](https://github.com/citypaul/scenarist/pull/39) (planning), [#40](https://github.com/citypaul/scenarist/pull/40) (Phase -1 - MERGED), [#41](https://github.com/citypaul/scenarist/pull/41) (Phase 0 - MERGED), [#42-44](https://github.com/citypaul/scenarist/pull/42) (Phase 2 - MERGED), [#45-46](https://github.com/citypaul/scenarist/pull/45) (Phase 3 - MERGED), [#48](https://github.com/citypaul/scenarist/pull/48) (Phase 5 Sequences - MERGED), [#50](https://github.com/citypaul/scenarist/pull/50) (Phase 4 Composition - MERGED), [#51](https://github.com/citypaul/scenarist/pull/51) (Phase 6 Isolation - MERGED), [#52](https://github.com/citypaul/scenarist/pull/52) (Phase 8.0 Setup - MERGED), [#53](https://github.com/citypaul/scenarist/pull/53) (API Simplification - MERGED), [#54](https://github.com/citypaul/scenarist/pull/54) (Phase 8.1 Integration - MERGED), [#55](https://github.com/citypaul/scenarist/pull/55) (Phase 8.2 Products/Matching - MERGED)
 **Related**: [next-stages.md](./next-stages.md) (Overall v1.0 roadmap)
 
 ---
@@ -22,9 +22,9 @@
 
 | Core Feature (@scenarist/core) | Express Example | Next.js Pages Router | Next.js App Router | Status |
 |-------------------------------|-----------------|---------------------|-------------------|--------|
-| **Phase 1: Request Matching** | ✅ `dynamic-matching.test.ts` | ✅ `products.spec.ts` | ⏳ Not Started | 🔄 IN PROGRESS |
+| **Phase 1: Request Matching** | ✅ `dynamic-matching.test.ts` | ✅ `products.spec.ts` | ✅ `products.spec.ts` | 🔄 IN PROGRESS |
 | **Phase 2: Sequences** | ✅ `dynamic-sequences.test.ts` | ✅ `sequences.spec.ts` | ⏳ Not Started | 🔄 IN PROGRESS |
-| **Phase 3: Stateful Mocks** | ✅ `stateful-scenarios.test.ts` | ✅ `shopping-cart.spec.ts` | ⏳ Not Started | 🔄 IN PROGRESS |
+| **Phase 3: Stateful Mocks** | ✅ `stateful-scenarios.test.ts` | ✅ `shopping-cart.spec.ts` | ✅ `shopping-cart.spec.ts` | 🔄 IN PROGRESS |
 | **Parallel Isolation** | ✅ Complete | ✅ `isolation.spec.ts` | ⏳ Not Started | 🔄 IN PROGRESS |
 
 **Pages Router: ✅ Complete**
@@ -176,13 +176,13 @@ All 3 core features demonstrated individually, composed, AND isolated:
 | Phase | Status | Estimated | Actual | Files Changed |
 |-------|--------|-----------|--------|---------------|
 | **8.0: Setup** | ✅ **COMPLETE & MERGED (PR #52)** | **0.5 day** | **~0.5 day** | **15** |
-| **8.1: Integration + Scenario Switching** | ⏳ Not Started | 1 day | - | ~8 |
-| **8.2: Products/Matching** | ✅ **COMPLETE** | **1 day** | **~1 day** | **10** |
-| **8.3: Cart/Stateful** | ⏳ Not Started | 1 day | - | ~12 |
+| **8.1: Integration + Scenario Switching** | ✅ **COMPLETE & MERGED (PR #54)** | **1 day** | **~1 day** | **8** |
+| **8.2: Products/Matching** | ✅ **COMPLETE & MERGED (PR #55)** | **1 day** | **~1 day** | **10** |
+| **8.3: Cart/Stateful** | ✅ **COMPLETE** | **1 day** | **~0.5 day** | **6** |
 | **8.4: Checkout/Composition** | ⏳ Not Started | 0.5 day | - | ~5 |
 | **8.5: Payment/Sequences** | ⏳ Not Started | 1 day | - | ~10 |
 | **8.6: Parallel Isolation** | ⏳ Not Started | 0.5 day | - | ~1 |
-| **App Total** | **🔄 29% complete** | **5-6 days** | **~1.5 days** | **25/~76** |
+| **App Total** | **🔄 57% complete** | **5-6 days** | **~3 days** | **39/~76** |
 
 ### Documentation
 
@@ -192,13 +192,13 @@ All 3 core features demonstrated individually, composed, AND isolated:
 
 ### Grand Total
 
-**Progress**: 10/17 phases complete (~59%)
+**Progress**: 11/17 phases complete (~65%)
 **Estimated Total**: 14-16 days
-**Actual So Far**: ~7 days
-**Remaining**: ~7-9 days (App Router + Documentation)
+**Actual So Far**: ~7.5 days
+**Remaining**: ~6.5-8.5 days (App Router + Documentation)
 
-**Current**: ✅ Phase 8.2 Complete (Products/Matching)
-**Next**: Phase 8.3 (Cart/Stateful)
+**Current**: ✅ Phase 8.3 Complete (Cart/Stateful)
+**Next**: Phase 8.4 (Checkout/Composition)
 
 ---
 
@@ -2247,28 +2247,39 @@ Create products page demonstrating request matching (Phase 1 core feature).
 
 **Learnings**: TDD violation detected and fixed retroactively - see CLAUDE.md Phase 8 section for full details
 
-#### Phase 8.3: Cart/Stateful (⏳ Not Started)
+#### Phase 8.3: Cart/Stateful (✅ COMPLETE)
 
 **Estimated**: 1 day
+**Actual**: 0.5 day
+**Files Changed**: 6
 
 Create shopping cart demonstrating stateful mocks (Phase 3 core feature).
 
 **Tasks:**
-- [ ] Create cart page: `app/cart/page.tsx`
-- [ ] Create cart context/state management
-- [ ] Create cart API: `app/api/cart/route.ts` (with state capture/injection)
-- [ ] Define cartWithState scenario (captures items, injects count)
-- [ ] Write Playwright test: `tests/playwright/shopping-cart.spec.ts` (RED)
-- [ ] Implement cart endpoint with state capture and template injection (GREEN)
-- [ ] Test passes, demonstrates state persistence (GREEN)
-- [ ] Assess refactoring opportunities (REFACTOR if valuable)
+- [x] Create cart page: `app/cart/page.tsx`
+- [x] Create cart context/state management (aggregation logic in page component)
+- [x] Create cart API: `app/api/cart/route.ts` and `app/api/cart/add/route.ts` (with state capture/injection)
+- [x] Define cartWithState scenario (captures items, injects count) - **Already existed in lib/scenarios.ts**
+- [x] Write Playwright test: `tests/playwright/shopping-cart.spec.ts` (RED)
+- [x] Implement cart endpoints with state capture and template injection (GREEN)
+- [x] Test passes, demonstrates state persistence (GREEN)
+- [x] Assess refactoring opportunities (REFACTOR if valuable) - **No refactoring needed, code clean**
+- [x] Update ProductCard with add-to-cart functionality
+- [x] Update products page with cart count tracking
 
-**Demonstrates**: State capture from requests, template injection (`{{state.items.length}}`), state persistence across requests
+**Demonstrates**: State capture from requests (`captureState: { "cartItems[]": "body.productId" }`), template injection (`{{state.cartItems}}`), state persistence across requests, cart item aggregation
 
 **Files Created**:
-- `apps/nextjs-app-example/app/cart/page.tsx` (cart page)
-- `apps/nextjs-app-example/app/api/cart/route.ts` (cart API)
-- `apps/nextjs-app-example/tests/playwright/shopping-cart.spec.ts` (tests)
+- `apps/nextjs-app-example/app/cart/page.tsx` (cart page with item aggregation)
+- `apps/nextjs-app-example/app/api/cart/route.ts` (GET cart with state injection)
+- `apps/nextjs-app-example/app/api/cart/add/route.ts` (POST add to cart with state capture)
+- `apps/nextjs-app-example/tests/playwright/shopping-cart.spec.ts` (4 Playwright tests)
+
+**Files Modified**:
+- `apps/nextjs-app-example/app/page.tsx` (cart count tracking, add-to-cart handler)
+- `apps/nextjs-app-example/components/ProductCard.tsx` (functional add-to-cart button)
+
+**Tests**: 9 passing (4 new cart tests, 5 existing tests still passing)
 
 **Validation**: ✅ Phase 3 (Stateful Mocks) parity achieved for App Router
 
