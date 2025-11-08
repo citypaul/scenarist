@@ -1,15 +1,16 @@
 /**
- * Products Page - Phase 8.2
+ * Products Page - Phase 8.3
  *
- * Displays product catalog with tier-based pricing.
- * Demonstrates Scenarist's request matching feature.
+ * Displays product catalog with tier-based pricing and shopping cart.
+ * Demonstrates Scenarist's request matching and stateful mocks features.
  *
- * Client Component - Requires state and effects for data fetching.
+ * Client Component - Requires state and effects for data fetching and cart management.
  */
 
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { ProductCard } from '../components/ProductCard';
 import { TierSelector } from '../components/TierSelector';
 import type { Product } from '../types/product';
@@ -17,6 +18,7 @@ import type { Product } from '../types/product';
 export default function HomePage() {
   const [userTier, setUserTier] = useState<'premium' | 'standard'>('standard');
   const [products, setProducts] = useState<ReadonlyArray<Product>>([]);
+  const [cartCount, setCartCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,6 +52,46 @@ export default function HomePage() {
     fetchProducts();
   }, [userTier]);
 
+  // Fetch cart count on mount
+  useEffect(() => {
+    const fetchCartCount = async () => {
+      try {
+        const response = await fetch('/api/cart');
+        if (response.ok) {
+          const data = await response.json();
+          const items = data.items ?? [];
+          setCartCount(Array.isArray(items) ? items.length : 0);
+        }
+      } catch {
+        // Silently fail - cart count is not critical
+      }
+    };
+
+    fetchCartCount();
+  }, []);
+
+  // Handle adding product to cart
+  const handleAddToCart = async (productId: number) => {
+    try {
+      const response = await fetch('/api/cart/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ productId }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to add to cart: ${response.status}`);
+      }
+
+      // Increment cart count
+      setCartCount((prev) => prev + 1);
+    } catch (err) {
+      console.error('Failed to add to cart:', err);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-6xl mx-auto">
@@ -58,7 +100,23 @@ export default function HomePage() {
           <p className="text-gray-600">E-commerce demo showcasing all Scenarist features with tier-based pricing</p>
         </div>
 
-        <TierSelector currentTier={userTier} onTierChange={setUserTier} />
+        <div className="flex items-center justify-between mb-6">
+          <TierSelector currentTier={userTier} onTierChange={setUserTier} />
+
+          <Link
+            href="/cart"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <span>🛒</span>
+            <span>Cart</span>
+            <span
+              aria-label="Cart item count"
+              className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-white bg-red-500 rounded-full"
+            >
+              {cartCount}
+            </span>
+          </Link>
+        </div>
 
         {loading && (
           <div className="mt-8 text-center text-gray-600">Loading products...</div>
@@ -80,6 +138,7 @@ export default function HomePage() {
               <ProductCard
                 key={product.id}
                 {...product}
+                onAddToCart={() => handleAddToCart(product.id)}
               />
             ))}
           </div>
