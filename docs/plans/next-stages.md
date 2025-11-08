@@ -142,7 +142,7 @@ test('my test', async ({ page, scenarist }) => {
 
 ---
 
-#### 1c. Pages Router Example (`apps/nextjs-pages-example`)
+#### 1c. Pages Router Example (`apps/nextjs-pages-router-example`)
 
 **Status:** ⏳ Not Started - Depends on Next.js adapter + Playwright helpers
 
@@ -185,7 +185,7 @@ test('my test', async ({ page, scenarist }) => {
 
 ---
 
-#### 1d. App Router Example (`apps/nextjs-app-example`)
+#### 1d. App Router Example (`apps/nextjs-app-router-example`)
 
 **Status:** ⏳ Not Started (after Pages Router complete)
 

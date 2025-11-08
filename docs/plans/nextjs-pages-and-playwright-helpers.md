@@ -204,7 +204,7 @@ All 3 core features demonstrated individually, composed, AND isolated:
 
 ## Overview
 
-**Triple implementation**: Create `packages/nextjs-adapter` (framework adapter) + `apps/nextjs-pages-example` (e-commerce demo) + `packages/playwright-helpers` (reusable test utilities).
+**Triple implementation**: Create `packages/nextjs-adapter` (framework adapter) + `apps/nextjs-pages-router-example` (e-commerce demo) + `packages/playwright-helpers` (reusable test utilities).
 
 **Critical Dependency**: Next.js adapter MUST be built FIRST - it's required for the example app to work.
 
@@ -220,13 +220,13 @@ These decisions were made during the ultrathinking/planning phase:
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| **App Architecture** | Separate applications | Pages Router and App Router as distinct apps (nextjs-pages-example, nextjs-app-example). Clearer separation, easier to understand each approach. |
+| **App Architecture** | Separate applications | Pages Router and App Router as distinct apps (nextjs-pages-router-example, nextjs-app-router-example). Clearer separation, easier to understand each approach. |
 | **App Domain** | E-commerce checkout | Product catalog → cart → checkout → payment. Natural fit for all three Scenarist features. |
 | **Initial Scope** | Full MVP (4-5 pages) | Products, cart, checkout, payment confirmation, plus all API routes and full Playwright suite (~3-4 days). |
 | **Scenarios** | Create new Next.js-specific | Tailored to e-commerce flow, shows best practices for real Next.js apps. |
 | **Helper Implementation** | In parallel (TDD-driven) | Write Next.js example tests that NEED helpers, let those needs drive helper design. Co-evolve both together. |
 | **Helpers Scope** | Scenario switching + Test ID + Fixtures | Auto test ID generation, switchScenario helper, Playwright fixtures. Debug helpers when Phase 5 implemented. |
-| **Test Location** | Co-located in each app | `apps/nextjs-pages-example/tests/playwright/` - Tests live with the app they're testing. Traditional, easy to understand. |
+| **Test Location** | Co-located in each app | `apps/nextjs-pages-router-example/tests/playwright/` - Tests live with the app they're testing. Traditional, easy to understand. |
 | **Demo Priority** | Ease of use (DX) | Show how helpers make tests dramatically simpler/cleaner. 70% less boilerplate. Before/after comparison in README. |
 
 ---
@@ -636,7 +636,7 @@ export const test = base.extend<ScenaristFixtures>({
 ### File Structure
 
 ```
-apps/nextjs-pages-example/
+apps/nextjs-pages-router-example/
 ├── src/
 │   ├── pages/
 │   │   ├── _app.tsx                      # App wrapper
@@ -800,7 +800,7 @@ All external API calls that our Next.js app makes:
 ### File Structure
 
 ```
-apps/nextjs-pages-example/
+apps/nextjs-pages-router-example/
 ├── fake-api/
 │   ├── db.json              # json-server database
 │   ├── routes.json          # Custom route mappings (optional)
@@ -892,7 +892,7 @@ This two-suite comparison will be prominently featured in the README to demonstr
 
 **Bruno Collection Structure:**
 ```
-apps/nextjs-pages-example/bruno/
+apps/nextjs-pages-router-example/bruno/
 ├── Fake API/
 │   ├── Products - Get All.bru
 │   ├── Cart - Add Item.bru
@@ -1032,7 +1032,7 @@ This ensures Phase 0 ships as a complete, working foundation for Phase 1.
 #### Part A: Next.js App Scaffold
 
 **Tasks:**
-- [ ] Create `apps/nextjs-pages-example/` directory
+- [ ] Create `apps/nextjs-pages-router-example/` directory
 - [ ] Run `pnpm create next-app` with Pages Router + TypeScript
 - [ ] Install dependencies:
   - [ ] Tailwind CSS (`tailwindcss`, `postcss`, `autoprefixer`)
@@ -1068,7 +1068,7 @@ This ensures Phase 0 ships as a complete, working foundation for Phase 1.
 **Validation**: `pnpm build --filter=@scenarist/playwright-helpers` passes
 
 **Files Created**:
-- `apps/nextjs-pages-example/` (entire app structure)
+- `apps/nextjs-pages-router-example/` (entire app structure)
 - `packages/playwright-helpers/` (package structure)
 
 **Learnings**: _(to be filled in during implementation)_
@@ -1092,7 +1092,7 @@ This phase establishes the foundation: MSW + Scenarist setup in Next.js app, the
 
 **Implemented code:**
 ```typescript
-// apps/nextjs-pages-example/tests/playwright/scenario-switching.spec.ts
+// apps/nextjs-pages-router-example/tests/playwright/scenario-switching.spec.ts
 import { test, expect } from '@playwright/test';
 
 test('can switch to premium scenario manually', async ({ page }) => {
@@ -1269,7 +1269,7 @@ export type { ScenaristFixtures } from './types';
 
 **Refactored test:**
 ```typescript
-// apps/nextjs-pages-example/tests/playwright/scenario-switching.spec.ts
+// apps/nextjs-pages-router-example/tests/playwright/scenario-switching.spec.ts
 test('can switch to premium scenario using helper (Phase 1b)', async ({ page }) => {
   await switchScenario(page, 'premiumUser', {
     baseURL: 'http://localhost:3000',
@@ -2027,8 +2027,8 @@ Comprehensive documentation for both packages.
 **Files Created**:
 - `packages/playwright-helpers/README.md`
 - `packages/playwright-helpers/CHANGELOG.md`
-- `apps/nextjs-pages-example/README.md`
-- `apps/nextjs-pages-example/bruno/` (collection)
+- `apps/nextjs-pages-router-example/README.md`
+- `apps/nextjs-pages-router-example/bruno/` (collection)
 - Updated: `docs/plans/next-stages.md`
 - Updated: Root `README.md`
 
@@ -2042,7 +2042,7 @@ Comprehensive documentation for both packages.
 
 Mirror the Pages Router implementation using Next.js App Router to prove the adapter works with both routing paradigms.
 
-**Goal**: Create `apps/nextjs-app-example` that is identical to `apps/nextjs-pages-example` but uses App Router instead of Pages Router.
+**Goal**: Create `apps/nextjs-app-router-example` that is identical to `apps/nextjs-pages-router-example` but uses App Router instead of Pages Router.
 
 **Why This Matters:**
 - Validates adapter works with both Next.js routing paradigms
@@ -2059,7 +2059,7 @@ Mirror the Pages Router implementation using Next.js App Router to prove the ada
 Create the new Next.js App Router application structure.
 
 **Tasks:**
-- [x] Create `apps/nextjs-app-example` with Next.js 14+ (App Router)
+- [x] Create `apps/nextjs-app-router-example` with Next.js 14+ (App Router)
 - [x] Configure TypeScript strict mode
 - [x] Install dependencies (@scenarist/nextjs-adapter, MSW, etc.)
 - [x] Set up Playwright configuration (mirror Pages Router setup)
@@ -2069,20 +2069,20 @@ Create the new Next.js App Router application structure.
 - [x] Create smoke test (basic page renders)
 
 **Files Created**:
-- `apps/nextjs-app-example/package.json`
-- `apps/nextjs-app-example/tsconfig.json`
-- `apps/nextjs-app-example/next.config.mjs`
-- `apps/nextjs-app-example/eslint.config.js`
-- `apps/nextjs-app-example/playwright.config.ts`
-- `apps/nextjs-app-example/vitest.config.ts`
-- `apps/nextjs-app-example/app/layout.tsx`
-- `apps/nextjs-app-example/app/page.tsx`
-- `apps/nextjs-app-example/tests/playwright/smoke.spec.ts`
-- `apps/nextjs-app-example/tests/playwright/globalSetup.ts`
-- `apps/nextjs-app-example/tests/playwright/globalTeardown.ts`
-- `apps/nextjs-app-example/tests/api/setup.ts`
-- `apps/nextjs-app-example/tests/api/placeholder.test.ts`
-- `apps/nextjs-app-example/.gitignore`
+- `apps/nextjs-app-router-example/package.json`
+- `apps/nextjs-app-router-example/tsconfig.json`
+- `apps/nextjs-app-router-example/next.config.mjs`
+- `apps/nextjs-app-router-example/eslint.config.js`
+- `apps/nextjs-app-router-example/playwright.config.ts`
+- `apps/nextjs-app-router-example/vitest.config.ts`
+- `apps/nextjs-app-router-example/app/layout.tsx`
+- `apps/nextjs-app-router-example/app/page.tsx`
+- `apps/nextjs-app-router-example/tests/playwright/smoke.spec.ts`
+- `apps/nextjs-app-router-example/tests/playwright/globalSetup.ts`
+- `apps/nextjs-app-router-example/tests/playwright/globalTeardown.ts`
+- `apps/nextjs-app-router-example/tests/api/setup.ts`
+- `apps/nextjs-app-router-example/tests/api/placeholder.test.ts`
+- `apps/nextjs-app-router-example/.gitignore`
 - Plus `pnpm-lock.yaml` update
 
 **Validation**: ✅ App builds, runs, and basic smoke test passes
@@ -2190,13 +2190,13 @@ App Router and Pages Router implementations are **95% identical**. The only diff
 **Everything else is the same** - same MSW approach (server-side), same setup pattern, same scenario definitions, same data files, same test helpers.
 
 **Files Created**:
-- `apps/nextjs-app-example/types/product.ts` (Product type definitions - same as Pages Router)
-- `apps/nextjs-app-example/data/products.ts` (Product data builder - same as Pages Router)
-- `apps/nextjs-app-example/lib/scenarist.ts` (Scenarist setup with server-side MSW auto-start)
-- `apps/nextjs-app-example/lib/scenarios.ts` (Scenario definitions - imports from `/app`)
-- `apps/nextjs-app-example/app/api/__scenario__/route.ts` (Route Handler for scenario switching)
-- `apps/nextjs-app-example/tests/playwright/fixtures.ts` (Playwright fixtures with type-safe scenario IDs)
-- `apps/nextjs-app-example/tests/playwright/scenario-switching.spec.ts` (Integration test - verbose + helper versions)
+- `apps/nextjs-app-router-example/types/product.ts` (Product type definitions - same as Pages Router)
+- `apps/nextjs-app-router-example/data/products.ts` (Product data builder - same as Pages Router)
+- `apps/nextjs-app-router-example/lib/scenarist.ts` (Scenarist setup with server-side MSW auto-start)
+- `apps/nextjs-app-router-example/lib/scenarios.ts` (Scenario definitions - imports from `/app`)
+- `apps/nextjs-app-router-example/app/api/__scenario__/route.ts` (Route Handler for scenario switching)
+- `apps/nextjs-app-router-example/tests/playwright/fixtures.ts` (Playwright fixtures with type-safe scenario IDs)
+- `apps/nextjs-app-router-example/tests/playwright/scenario-switching.spec.ts` (Integration test - verbose + helper versions)
 
 **Validation**: Scenario switching works, helper reduces boilerplate by ~77%
 
@@ -2223,11 +2223,11 @@ Create products page demonstrating request matching (Phase 1 core feature).
 **Demonstrates**: Request matching with body/header/query matching, specificity-based selection
 
 **Files Created**:
-- `apps/nextjs-app-example/app/page.tsx` (products page)
-- `apps/nextjs-app-example/components/ProductCard.tsx` (product display component)
-- `apps/nextjs-app-example/components/TierSelector.tsx` (tier selection UI)
-- `apps/nextjs-app-example/app/api/products/route.ts` (products API)
-- `apps/nextjs-app-example/tests/playwright/products.spec.ts` (E2E tests)
+- `apps/nextjs-app-router-example/app/page.tsx` (products page)
+- `apps/nextjs-app-router-example/components/ProductCard.tsx` (product display component)
+- `apps/nextjs-app-router-example/components/TierSelector.tsx` (tier selection UI)
+- `apps/nextjs-app-router-example/app/api/products/route.ts` (products API)
+- `apps/nextjs-app-router-example/tests/playwright/products.spec.ts` (E2E tests)
 - `packages/nextjs-adapter/src/app/helpers.ts` (getScenaristHeaders helper)
 - `packages/nextjs-adapter/tests/app/helpers.test.ts` (helper unit tests - 6 tests)
 
@@ -2270,14 +2270,14 @@ Create shopping cart demonstrating stateful mocks (Phase 3 core feature).
 **Demonstrates**: State capture from requests (`captureState: { "cartItems[]": "body.productId" }`), template injection (`{{state.cartItems}}`), state persistence across requests, cart item aggregation
 
 **Files Created**:
-- `apps/nextjs-app-example/app/cart/page.tsx` (cart page with item aggregation)
-- `apps/nextjs-app-example/app/api/cart/route.ts` (GET cart with state injection)
-- `apps/nextjs-app-example/app/api/cart/add/route.ts` (POST add to cart with state capture)
-- `apps/nextjs-app-example/tests/playwright/shopping-cart.spec.ts` (4 Playwright tests)
+- `apps/nextjs-app-router-example/app/cart/page.tsx` (cart page with item aggregation)
+- `apps/nextjs-app-router-example/app/api/cart/route.ts` (GET cart with state injection)
+- `apps/nextjs-app-router-example/app/api/cart/add/route.ts` (POST add to cart with state capture)
+- `apps/nextjs-app-router-example/tests/playwright/shopping-cart.spec.ts` (4 Playwright tests)
 
 **Files Modified**:
-- `apps/nextjs-app-example/app/page.tsx` (cart count tracking, add-to-cart handler)
-- `apps/nextjs-app-example/components/ProductCard.tsx` (functional add-to-cart button)
+- `apps/nextjs-app-router-example/app/page.tsx` (cart count tracking, add-to-cart handler)
+- `apps/nextjs-app-router-example/components/ProductCard.tsx` (functional add-to-cart button)
 
 **Tests**: 9 passing (4 new cart tests, 5 existing tests still passing)
 
@@ -2302,10 +2302,10 @@ Create checkout flow demonstrating feature composition.
 **Demonstrates**: Request matching + stateful mocks working together, multi-step workflows
 
 **Files Created**:
-- `apps/nextjs-app-example/app/checkout/page.tsx` (checkout page)
-- `apps/nextjs-app-example/app/api/checkout/shipping/route.ts` (shipping API)
-- `apps/nextjs-app-example/app/api/checkout/order/route.ts` (order API)
-- `apps/nextjs-app-example/tests/playwright/checkout.spec.ts` (tests)
+- `apps/nextjs-app-router-example/app/checkout/page.tsx` (checkout page)
+- `apps/nextjs-app-router-example/app/api/checkout/shipping/route.ts` (shipping API)
+- `apps/nextjs-app-router-example/app/api/checkout/order/route.ts` (order API)
+- `apps/nextjs-app-router-example/tests/playwright/checkout.spec.ts` (tests)
 
 **Validation**: Features compose correctly without interference
 
@@ -2327,9 +2327,9 @@ Create payment flow demonstrating sequences (Phase 2 core feature).
 **Demonstrates**: Response sequences, repeat modes (last/cycle/none), sequence exhaustion, polling patterns
 
 **Files Created**:
-- `apps/nextjs-app-example/app/payment/page.tsx` (payment page)
-- `apps/nextjs-app-example/app/api/payment/route.ts` (payment API)
-- `apps/nextjs-app-example/tests/playwright/sequences.spec.ts` (tests)
+- `apps/nextjs-app-router-example/app/payment/page.tsx` (payment page)
+- `apps/nextjs-app-router-example/app/api/payment/route.ts` (payment API)
+- `apps/nextjs-app-router-example/tests/playwright/sequences.spec.ts` (tests)
 
 **Validation**: ✅ Phase 2 (Sequences) parity achieved for App Router
 
@@ -2350,7 +2350,7 @@ Prove concurrent tests don't interfere.
 **Demonstrates**: Test ID isolation, concurrent scenario execution, no cross-contamination
 
 **Files Created**:
-- `apps/nextjs-app-example/tests/playwright/isolation.spec.ts` (parallel isolation tests)
+- `apps/nextjs-app-router-example/tests/playwright/isolation.spec.ts` (parallel isolation tests)
 
 **Validation**: ✅ Parallel isolation proven for App Router, all feature parity achieved
 
@@ -2896,7 +2896,7 @@ Quick reference of all files to be created/modified:
 - [ ] `src/index.ts`
 - [ ] `tests/fixtures.test.ts`
 
-### Next.js Pages Example (`apps/nextjs-pages-example/`)
+### Next.js Pages Example (`apps/nextjs-pages-router-example/`)
 
 **Config files:**
 - [ ] `package.json`

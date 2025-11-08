@@ -471,7 +471,7 @@ pnpm test:watch    # Interactive UI mode
 
 ### Layer 2: Integration Tests (Next.js App)
 
-**Location**: `apps/nextjs-pages-example/tests/playwright/scenario-switching.spec.ts`
+**Location**: `apps/nextjs-pages-router-example/tests/playwright/scenario-switching.spec.ts`
 
 These tests validate the **complete integration** of helpers with real frameworks, real browsers, and real scenario endpoints.
 
@@ -498,7 +498,7 @@ These tests validate the **complete integration** of helpers with real framework
 **Run Integration Tests**:
 ```bash
 # From repository root
-pnpm --filter=@scenarist/nextjs-pages-example test:e2e
+pnpm --filter=@scenarist/nextjs-pages-router-example test:e2e
 ```
 
 ### TDD Compliance

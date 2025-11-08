@@ -44,31 +44,31 @@ import { createScenarist } from '@scenarist/nextjs-adapter/pages';
 pnpm install
 
 # Run development server
-pnpm --filter=@scenarist/nextjs-pages-example dev
+pnpm --filter=@scenarist/nextjs-pages-router-example dev
 
 # Run all tests (E2E + API)
-pnpm --filter=@scenarist/nextjs-pages-example test
+pnpm --filter=@scenarist/nextjs-pages-router-example test
 
 # Run E2E tests only
-pnpm --filter=@scenarist/nextjs-pages-example test:e2e
+pnpm --filter=@scenarist/nextjs-pages-router-example test:e2e
 
 # Run API tests only
-pnpm --filter=@scenarist/nextjs-pages-example test:api
+pnpm --filter=@scenarist/nextjs-pages-router-example test:api
 
 # Type checking
-pnpm --filter=@scenarist/nextjs-pages-example typecheck
+pnpm --filter=@scenarist/nextjs-pages-router-example typecheck
 
 # Linting
-pnpm --filter=@scenarist/nextjs-pages-example lint
+pnpm --filter=@scenarist/nextjs-pages-router-example lint
 
 # Build for production
-pnpm --filter=@scenarist/nextjs-pages-example build
+pnpm --filter=@scenarist/nextjs-pages-router-example build
 ```
 
 ## Project Structure
 
 ```
-apps/nextjs-pages-example/
+apps/nextjs-pages-router-example/
 ├── pages/              # Next.js pages (file-based routing)
 │   ├── index.tsx      # Home page / product catalog
 │   └── api/           # Next.js API routes
