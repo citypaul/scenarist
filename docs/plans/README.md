@@ -189,7 +189,16 @@ for detailed implementation phases and progress tracking.
 
 | Plan | Status | Related ADR |
 |------|--------|-------------|
-| [Dynamic Responses](./dynamic-responses.md) | ⏳ Not Started | [ADR-0002](../adrs/0002-dynamic-response-system.md) |
+| [Documentation Site](./documentation-site.md) | 🚧 In Progress | N/A |
+| [Next Stages](./next-stages.md) | ⏳ Future Roadmap | N/A |
+
+## Completed & Archived Plans
+
+| Plan | Status | Completion Date | Location |
+|------|--------|-----------------|----------|
+| Next.js Pages Router + Playwright Helpers | ✅ Complete | 2025-11-08 | [archive/](../archive/nextjs-pages-and-playwright-helpers.md) |
+| Dynamic Response System | ✅ Complete | 2025-10-27 | Implemented in core |
+| Scenarist Core Implementation | ✅ Complete | 2025-10-15 | [archive/](../archive/SCENARIST_IMPLEMENTATION_PLAN.md) |
 
 ## Creating a New Plan
 
