@@ -4,18 +4,13 @@
  * Displays a single product with pricing information.
  * Uses semantic HTML and accessible labels for Playwright testing best practices.
  *
- * Client Component - For future interactivity (add to cart).
+ * Note: No 'use client' directive needed - inherits client behavior from parent page.tsx
+ * Button is disabled as placeholder for Phase 8.3 cart functionality.
  */
-
-'use client';
 
 import type { Product } from '../types/product';
 
-type ProductCardProps = Product & {
-  readonly onAddToCart?: () => void;
-};
-
-export const ProductCard = ({ name, description, price, tier, onAddToCart }: ProductCardProps) => {
+export const ProductCard = ({ name, description, price, tier }: Product) => {
   return (
     <article className="border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
       <div className="mb-4">
@@ -37,11 +32,11 @@ export const ProductCard = ({ name, description, price, tier, onAddToCart }: Pro
       </div>
 
       <button
-        onClick={onAddToCart}
+        disabled
         aria-label={`Add ${name} to cart`}
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors"
+        className="w-full bg-gray-400 cursor-not-allowed text-white font-medium py-2 px-4 rounded"
       >
-        Add to Cart
+        Add to Cart (Coming in Phase 8.3)
       </button>
     </article>
   );

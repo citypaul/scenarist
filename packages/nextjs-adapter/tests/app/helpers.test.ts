@@ -2,11 +2,20 @@
  * Unit tests for App Router helper functions
  *
  * NOTE: This test file is being added RETROACTIVELY to fix a TDD violation.
- * The implementation (src/app/helpers.ts) was created without tests first.
+ *
+ * ORIGINAL VIOLATION (commit 666a954):
+ * - Implementation created without tests first
+ * - Helper had 0% test coverage
+ * - All code committed in single commit (no RED-GREEN cycle)
+ *
+ * RETROACTIVE FIX:
+ * - RED: commit c35bd5a (tests added, implementation temporarily removed)
+ * - GREEN: commit f018a73 (implementation restored, tests passing)
  *
  * LESSON LEARNED: Always write tests BEFORE implementation.
- * These tests should have been written FIRST, committed as RED, then
- * the implementation committed as GREEN.
+ * Even "simple" helper functions need tests first. Git history must prove TDD compliance.
+ *
+ * See CLAUDE.md Phase 8 for full analysis.
  */
 
 import { describe, it, expect } from 'vitest';

@@ -4,10 +4,8 @@
  * Allows switching between premium and standard user tiers.
  * Updates the x-user-tier header for API requests.
  *
- * Client Component - Requires interactivity for button clicks.
+ * Note: No 'use client' directive needed - inherits client behavior from parent page.tsx
  */
-
-'use client';
 
 type TierSelectorProps = {
   readonly currentTier: 'premium' | 'standard';

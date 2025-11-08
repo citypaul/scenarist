@@ -54,8 +54,8 @@ export default function HomePage() {
     <main className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-6xl mx-auto">
         <div className="mb-4">
-          <h1 className="text-4xl font-bold mb-2 text-gray-900">Scenarist E-commerce Example</h1>
-          <p className="text-gray-600">Demonstrating request matching with tier-based pricing (App Router)</p>
+          <h1 className="text-4xl font-bold mb-2 text-gray-900">Scenarist - Next.js App Router Example</h1>
+          <p className="text-gray-600">E-commerce demo showcasing all Scenarist features with tier-based pricing</p>
         </div>
 
         <TierSelector currentTier={userTier} onTierChange={setUserTier} />
