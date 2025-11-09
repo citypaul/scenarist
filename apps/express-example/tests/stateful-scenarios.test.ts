@@ -117,8 +117,9 @@ describe('Stateful Scenarios E2E (Phase 3)', () => {
         .set(scenarist.config.headers.testId, 'reset-test-1');
 
       expect(response.status).toBe(200);
-      expect(response.body.items).toBe('{{state.cartItems}}');
-      expect(response.body.count).toBe('{{state.cartItems.length}}');
+      // Pure templates with missing state return undefined (not the template string)
+      expect(response.body.items).toBeUndefined();
+      expect(response.body.count).toBeUndefined();
     });
 
     it('should NOT reset state when scenario switch fails', async () => {
