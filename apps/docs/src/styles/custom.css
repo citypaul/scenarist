@@ -119,19 +119,24 @@
 
 /* Hero image sizing - make it larger and more prominent */
 .hero img {
+	width: 600px !important;
+	height: auto !important;
 	max-width: 100%;
-	width: 100%;
-	height: auto;
 }
 
-/* On larger screens, increase gap between text and image */
+/* On larger screens, make image even larger */
 @media (min-width: 768px) {
 	.hero > .sl-flex {
 		gap: 3rem;
 	}
 
 	.hero img {
-		max-width: 120%;
-		margin-left: -10%;
+		width: 750px !important;
+	}
+}
+
+@media (min-width: 1024px) {
+	.hero img {
+		width: 900px !important;
 	}
 }
