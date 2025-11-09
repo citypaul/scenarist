@@ -11,7 +11,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
 import { scenarist } from '../../../lib/scenarist';
 
 export async function GET(request: NextRequest) {
@@ -20,7 +19,7 @@ export async function GET(request: NextRequest) {
     // Scenarist MSW will intercept and inject state into response
     const response = await fetch('http://localhost:3001/cart', {
       headers: {
-        ...getScenaristHeaders(request, scenarist),
+        ...scenarist.getHeaders(request),
       },
     });
 

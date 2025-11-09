@@ -34,7 +34,6 @@
 export { createScenarist } from './setup.js';
 export { AppRequestContext } from './context.js';
 export { createScenarioEndpoint } from './endpoints.js';
-export { getScenaristHeaders } from './helpers.js';
 export type { AppAdapterOptions, AppScenarist } from './setup.js';
 
 // Re-export core types for user convenience (users should only install this adapter)

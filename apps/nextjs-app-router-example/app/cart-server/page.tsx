@@ -13,7 +13,6 @@
  * Scenarist approach: ✅ Playwright + stateful mocks + RSC = works perfectly
  */
 
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
 import { scenarist } from '@/lib/scenarist';
 import { headers } from 'next/headers';
 
@@ -52,7 +51,7 @@ const aggregateCartItems = (productIds?: ReadonlyArray<string>): ReadonlyArray<C
 
 async function fetchCart(): Promise<CartResponse> {
   // Create a mock Request object from the incoming headers
-  // This allows us to use getScenaristHeaders helper
+  // This allows us to use scenarist.getHeaders() method
   const headersList = await headers();
   const mockRequest = new Request('http://localhost:3002', {
     headers: headersList,
@@ -60,7 +59,7 @@ async function fetchCart(): Promise<CartResponse> {
 
   const response = await fetch('http://localhost:3002/api/cart', {
     headers: {
-      ...getScenaristHeaders(mockRequest, scenarist),
+      ...scenarist.getHeaders(mockRequest),
     },
     cache: 'no-store', // Disable Next.js caching for demo
   });

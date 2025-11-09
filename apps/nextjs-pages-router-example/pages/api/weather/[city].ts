@@ -6,7 +6,6 @@
  */
 
 import type { NextApiRequest, NextApiResponse } from "next";
-import { getScenaristHeaders } from "@scenarist/nextjs-adapter/pages";
 import { scenarist } from "../../../lib/scenarist";
 
 export default async function handler(
@@ -18,7 +17,7 @@ export default async function handler(
   // Proxy to json-server (MSW will intercept on server-side)
   const response = await fetch(`http://localhost:3001/weather/${city}`, {
     headers: {
-      ...getScenaristHeaders(req, scenarist), // ✅ Pass test ID to MSW
+      ...scenarist.getHeaders(req), // ✅ Pass test ID to MSW
     },
   });
 

@@ -11,7 +11,6 @@ import type { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import type { Product } from '../types/product';
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
 import { scenarist } from '../lib/scenarist';
 
 type CartItem = {
@@ -182,7 +181,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     // Fetch cart data server-side
     // This demonstrates Scenarist stateful mocks working during getServerSideProps
     const response = await fetch('http://localhost:3001/api/cart', {
-      headers: getScenaristHeaders(context.req, scenarist),
+      headers: scenarist.getHeaders(context.req),
     });
 
     if (!response.ok) {

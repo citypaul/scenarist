@@ -17,7 +17,6 @@
  */
 
 import { headers } from 'next/headers';
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
 import type { ProductsResponse } from '@/types/product';
 import { scenarist } from '@/lib/scenarist';
 
@@ -27,7 +26,7 @@ type ProductsPageProps = {
 
 async function fetchProducts(tier: string = 'standard'): Promise<ProductsResponse> {
   // Create a mock Request object from the incoming headers
-  // This allows us to use getScenaristHeaders helper
+  // This allows us to use scenarist.getHeaders() method
   const headersList = await headers();
   const mockRequest = new Request('http://localhost:3002', {
     headers: headersList,
@@ -35,7 +34,7 @@ async function fetchProducts(tier: string = 'standard'): Promise<ProductsRespons
 
   const response = await fetch('http://localhost:3002/api/products', {
     headers: {
-      ...getScenaristHeaders(mockRequest, scenarist),
+      ...scenarist.getHeaders(mockRequest),
       'x-user-tier': tier, // Application-specific header for tier matching
     },
     cache: 'no-store', // Disable Next.js caching for demo
