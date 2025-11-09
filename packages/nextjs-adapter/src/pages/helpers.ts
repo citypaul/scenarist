@@ -2,8 +2,16 @@
  * Helper functions for Next.js Pages Router
  */
 
-import type { NextApiRequest } from 'next';
+import type { IncomingMessage } from 'http';
 import type { createScenarist } from './setup.js';
+
+/**
+ * Type for request objects that have headers.
+ * Compatible with both NextApiRequest and GetServerSidePropsContext.req
+ */
+type RequestWithHeaders = {
+  headers: IncomingMessage['headers'];
+};
 
 /**
  * Extracts Scenarist infrastructure headers from the request.
@@ -12,8 +20,13 @@ import type { createScenarist } from './setup.js';
  * from the Scenarist instance, ensuring headers are forwarded correctly when
  * making external API calls.
  *
+ * Works with both:
+ * - NextApiRequest (API routes)
+ * - GetServerSidePropsContext.req (SSR)
+ *
  * @example
  * ```typescript
+ * // API Route
  * import { scenarist } from '../../lib/scenarist';
  * import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
  *
@@ -25,14 +38,21 @@ import type { createScenarist } from './setup.js';
  *     },
  *   });
  * }
+ * 
+ * // getServerSideProps
+ * export const getServerSideProps: GetServerSideProps = async (context) => {
+ *   const response = await fetch('http://localhost:3001/products', {
+ *     headers: getScenaristHeaders(context.req, scenarist),
+ *   });
+ * };
  * ```
  *
- * @param req - The Next.js API request object
+ * @param req - Request object with headers (NextApiRequest or GetServerSidePropsContext.req)
  * @param scenarist - The Scenarist instance (contains config with header name and default)
  * @returns Object with single entry: configured test ID header name → value from request or default
  */
 export const getScenaristHeaders = (
-  req: NextApiRequest,
+  req: RequestWithHeaders,
   scenarist: ReturnType<typeof createScenarist>
 ): Record<string, string> => {
   const headerName = scenarist.config.headers.testId;
