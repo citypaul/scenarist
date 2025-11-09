@@ -1,18 +1,18 @@
 import { test, expect } from './fixtures';
 
 /**
- * Cart Server RSC Page - Stateful Mocks with React Server Components
+ * Cart Server Components Page - Stateful Mocks with React Server Components
  *
- * This test file demonstrates STATEFUL MOCKS working with RSC:
+ * This test file demonstrates STATEFUL MOCKS working with React Server Components:
  * Testing state capture and injection WITHOUT Jest!
  *
  * THE PROBLEM:
  * - Jest CANNOT test async server components
  * - Stateful mocks require state to persist across requests
- * - Must test the ACTUAL rendered output from RSC
+ * - Must test the ACTUAL rendered output from React Server Components
  *
  * THE SCENARIST SOLUTION:
- * - ✅ Playwright + Scenarist stateful mocks work with RSC
+ * - ✅ Playwright + Scenarist stateful mocks work with React Server Components
  * - ✅ POST /cart/add captures productId into cartItems[] array
  * - ✅ GET /cart injects cartItems from state into response
  * - ✅ State persists across requests (per test ID)
@@ -22,10 +22,10 @@ import { test, expect } from './fixtures';
  * - Fetches from localhost:3002/api/cart
  * - API route fetches from localhost:3001/cart
  * - Scenarist intercepts and injects state into responses
- * - Tests verify RSC renders correctly with stateful data
+ * - Tests verify React Server Component renders correctly with stateful data
  */
 
-test.describe('Cart Server Page - Stateful Mocks with RSC', () => {
+test.describe('Cart Server Page - Stateful Mocks with Server Components', () => {
   test('should show empty cart initially', async ({
     page,
     switchScenario,
@@ -65,7 +65,7 @@ test.describe('Cart Server Page - Stateful Mocks with RSC', () => {
 
     expect(response.ok()).toBe(true);
 
-    // Navigate to cart page - RSC will fetch cart with same test ID
+    // Navigate to cart page - server component will fetch cart with same test ID
     await page.goto('/cart-server');
 
     // Should show empty cart message is gone
@@ -154,7 +154,7 @@ test.describe('Cart Server Page - Stateful Mocks with RSC', () => {
     await expect(productCRow.getByText('Quantity: 3')).toBeVisible();
   });
 
-  test('should demonstrate that RSC stateful mocks work without Jest', async ({
+  test('should demonstrate that server component stateful mocks work without Jest', async ({
     page,
     switchScenario,
   }) => {
@@ -191,12 +191,12 @@ test.describe('Cart Server Page - Stateful Mocks with RSC', () => {
  * TEST RESULTS PROVE:
  *
  * ✅ React Server Components work with Scenarist stateful mocks
- * ✅ No Jest issues (Jest cannot test RSC)
+ * ✅ No Jest issues (Jest cannot test React Server Components)
  * ✅ State capture works (POST /cart/add)
  * ✅ State injection works (GET /cart)
  * ✅ State persists across requests
  * ✅ Aggregation logic works correctly
  * ✅ Fast feedback loop for testing stateful behavior
  *
- * This proves Scenarist stateful mocks are fully compatible with RSC!
+ * This proves Scenarist stateful mocks are fully compatible with React Server Components!
  */

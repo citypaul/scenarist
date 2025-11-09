@@ -1,18 +1,18 @@
 import { test, expect } from './fixtures';
 
 /**
- * Polling RSC Page - Sequences with React Server Components
+ * Polling Server Components Page - Sequences with React Server Components
  *
- * This test file demonstrates SEQUENCES working with RSC:
+ * This test file demonstrates SEQUENCES working with React Server Components:
  * Testing response sequences WITHOUT Jest!
  *
  * THE PROBLEM:
  * - Jest CANNOT test async server components
  * - Sequences require multiple requests to advance
- * - Must test the ACTUAL rendered output from RSC
+ * - Must test the ACTUAL rendered output from React Server Components
  *
  * THE SCENARIST SOLUTION:
- * - ✅ Playwright + Scenarist sequences work with RSC
+ * - ✅ Playwright + Scenarist sequences work with React Server Components
  * - ✅ Each page navigation/reload advances the sequence
  * - ✅ Sequence progression: pending → processing → complete
  * - ✅ Repeat mode 'last' keeps final state
@@ -21,10 +21,10 @@ import { test, expect } from './fixtures';
  * - /polling page is a React Server Component (async, runs server-side)
  * - Fetches from localhost:3001/github/jobs/:id
  * - Scenarist intercepts and returns sequenced responses
- * - Tests verify RSC renders correctly at each sequence position
+ * - Tests verify React Server Component renders correctly at each sequence position
  */
 
-test.describe('Polling Page - Sequences with RSC', () => {
+test.describe('Polling Page - Sequences with Server Components', () => {
   test('should show pending status on first request', async ({
     page,
     switchScenario,
@@ -109,7 +109,7 @@ test.describe('Polling Page - Sequences with RSC', () => {
     await expect(page.getByText('Job completed successfully!')).toBeVisible();
   });
 
-  test('should demonstrate sequence advancement with RSC', async ({
+  test('should demonstrate sequence advancement with server components', async ({
     page,
     switchScenario,
   }) => {
@@ -131,11 +131,11 @@ test.describe('Polling Page - Sequences with RSC', () => {
  * TEST RESULTS PROVE:
  *
  * ✅ React Server Components work with Scenarist sequences
- * ✅ No Jest issues (Jest cannot test RSC)
+ * ✅ No Jest issues (Jest cannot test React Server Components)
  * ✅ Sequence advancement works with server-side rendering
  * ✅ Repeat mode 'last' works correctly
  * ✅ Each page reload/navigation advances the sequence
  * ✅ Fast feedback loop for testing sequences
  *
- * This proves Scenarist sequences are fully compatible with RSC!
+ * This proves Scenarist sequences are fully compatible with React Server Components!
  */

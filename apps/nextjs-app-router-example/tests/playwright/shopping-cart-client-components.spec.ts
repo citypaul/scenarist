@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures';
 
 /**
- * Shopping Cart - Phase 8.3
+ * Shopping Cart - Client Components
  *
  * Tests stateful mock functionality:
  * - State capture (adding items to cart)

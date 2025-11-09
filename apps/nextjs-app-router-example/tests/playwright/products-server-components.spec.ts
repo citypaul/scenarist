@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures';
 
 /**
- * Products RSC Page - React Server Components with Scenarist
+ * Products Server Components Page - React Server Components with Scenarist
  *
  * This test file demonstrates THE KEY VALUE PROPOSITION:
  * Testing React Server Components WITHOUT Jest!
@@ -13,7 +13,7 @@ import { test, expect } from './fixtures';
  *
  * THE PROBLEM:
  * - Jest CANNOT test async server components
- * - Attempting to render RSC in Jest throws:
+ * - Attempting to render React Server Components in Jest throws:
  *   "Objects are not valid as a React child (found: [object Promise])"
  * - Must spawn new Next.js instance per test (slow, complex, fragile)
  *
@@ -22,13 +22,13 @@ import { test, expect } from './fixtures';
  * - ✅ setScenario() switches backend behavior at runtime
  * - ✅ Fast parallel execution with test isolation
  * - ✅ No spawning Next.js instances
- * - ✅ Test the ACTUAL rendered output from RSC
+ * - ✅ Test the ACTUAL rendered output from React Server Components
  *
  * ARCHITECTURE:
  * - /products page is a React Server Component (async, runs server-side)
  * - Fetches from localhost:3001/products with x-user-tier header
  * - Scenarist intercepts and mocks based on scenario
- * - Tests verify RSC renders correctly with mocked data
+ * - Tests verify React Server Component renders correctly with mocked data
  */
 
 test.describe('Products Page - React Server Components', () => {
@@ -39,7 +39,7 @@ test.describe('Products Page - React Server Components', () => {
     // Switch to premium user scenario
     await switchScenario(page, 'premiumUser');
 
-    // Navigate to RSC page with tier query param
+    // Navigate to server component page with tier query param
     await page.goto('/products?tier=premium');
 
     // Verify server component rendered
@@ -66,7 +66,7 @@ test.describe('Products Page - React Server Components', () => {
     // Switch to standard user scenario
     await switchScenario(page, 'standardUser');
 
-    // Navigate to RSC page with tier query param
+    // Navigate to server component page with tier query param
     await page.goto('/products?tier=standard');
 
     // Verify server component rendered
@@ -127,7 +127,7 @@ test.describe('Products Page - React Server Components', () => {
     await expect(page.getByText('£149.99')).toBeVisible();
   });
 
-  test('should demonstrate that RSC testing works without Jest', async ({
+  test('should demonstrate that server component testing works without Jest', async ({
     page,
     switchScenario,
   }) => {
@@ -148,12 +148,12 @@ test.describe('Products Page - React Server Components', () => {
  * TEST RESULTS PROVE:
  *
  * ✅ React Server Components ARE testable with Scenarist + Playwright
- * ✅ No Jest issues (Jest cannot test RSC)
+ * ✅ No Jest issues (Jest cannot test React Server Components)
  * ✅ No spawning new Next.js instances per test
  * ✅ Runtime scenario switching works
  * ✅ Parallel execution with test isolation
  * ✅ Fast feedback loop
  *
  * This is the example we reference in documentation to prove Scenarist
- * solves the RSC testing pain point.
+ * solves the React Server Component testing pain point.
  */
