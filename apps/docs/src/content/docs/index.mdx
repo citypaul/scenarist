@@ -1,10 +1,10 @@
 ---
 title: Scenarist
-description: E2E testing where your backend actually runs. Test complete user journeys with real Server Components, API routes, and validation.
+description: Browser-based testing where your backend actually runs. Test Server Components, API routes, and validation logic with real execution.
 template: splash
 hero:
-  title: E2E Testing That Actually Runs Your Backend
-  tagline: Traditional mocking stops your backend from executing. Scenarist mocks only external APIs—your Server Components render, your API routes run, your validation executes. Test complete user journeys in the browser with real application logic.
+  title: Browser Testing That Actually Runs Your Backend
+  tagline: Server Components can't be unit tested—you need browser-based tests. But traditional approaches either mock everything (your code never runs) or require slow app restarts per scenario. Scenarist mocks only external APIs while your Server Components render, API routes execute, and validation logic runs. Instant scenario switching in Playwright with type-safe helpers.
   image:
     file: ../../assets/hero-illustration.svg
     alt: Illustration showing backend server with API routes, Server Components, and validation connected to a browser running tests
@@ -19,7 +19,7 @@ hero:
       variant: secondary
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
 
 ---
 
@@ -28,101 +28,257 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 **Unlike pure mocking solutions, Scenarist tests your real application logic.** Your Server Components execute and render. Your API routes process requests. Your business logic validates data. Only external API calls (Stripe, SendGrid, etc.) are mocked. This means you're testing the actual code that runs in production, not just mock responses.
 
 :::tip[The Critical Difference]
-**Traditional approach:** Mock everything → Backend never runs → Testing mock responses
+**Traditional browser tests:** Mock everything → Backend never runs → Testing mock responses
 
 **Scenarist approach:** Mock only external APIs → Backend runs normally → Testing real application behavior
 
-**Why this matters for Server Components:** Next.js Server Components can't be unit tested—they require E2E testing. But MSW alone means they never execute. Scenarist lets you test complete user journeys **while your Server Components actually render.**
+**Why this matters for Server Components:** Next.js Server Components can't be unit tested—they require browser-based testing. But traditional mocking means they never execute. Scenarist lets you test complete user journeys **while your Server Components actually render.**
 :::
 
 Works with **Express**, **Next.js** (Pages + App Router), **Fastify**, **Hono**, **Remix**, and **SvelteKit**.
 
 ---
 
+## Playwright Integration with Type Safety
+
+Scenarist includes **first-class Playwright support** with helpers that eliminate boilerplate and guarantee test isolation:
+
+**Code Reduction: 77%** - From 9 lines of boilerplate to 2 lines:
+
+```typescript
+// ❌ Without helpers (9 lines per test)
+const testId = `test-premium-${Date.now()}`;
+const response = await page.request.post('http://localhost:3000/api/__scenario__', {
+  headers: { 'x-test-id': testId },
+  data: { scenario: 'premiumUser' },
+});
+expect(response.status()).toBe(200);
+await page.setExtraHTTPHeaders({ 'x-test-id': testId });
+
+// ✅ With helpers (2 lines - configured once)
+import { test, expect } from '@scenarist/playwright-helpers';
+await switchScenario(page, 'premiumUser');
+```
+
+**Type-Safe Scenario IDs** - Get autocomplete and compile-time validation:
+
+```typescript
+// Define scenarios once
+const scenarios = {
+  cartWithState: { id: 'cartWithState', name: 'Cart with State', ... },
+  premiumUser: { id: 'premiumUser', name: 'Premium User', ... },
+} as const satisfies ScenaristScenarios;
+
+// Create typed test object
+export const test = withScenarios(scenarios);
+
+// TypeScript autocomplete in tests
+test('my test', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'cartWithState'); // ✅ Autocomplete works!
+  await switchScenario(page, 'typo');          // ❌ TypeScript error
+});
+```
+
+**Guaranteed Test Isolation** - Unique test IDs prevent collisions in parallel execution (uses `crypto.randomUUID()` per test).
+
+**Easy Composition** - Extend with your existing Playwright fixtures:
+
+```typescript
+export const test = withScenarios(scenarios).extend<MyFixtures>({
+  authenticatedPage: async ({ page }, use) => { /* your fixture */ },
+  database: async ({}, use) => { /* your fixture */ },
+});
+```
+
+[Learn more about Playwright helpers →](https://github.com/citypaul/scenarist/tree/main/packages/playwright-helpers)
+
+---
+
 ## Why Scenarist?
 
-| Feature | Jest/Vitest | Playwright Alone | MSW Alone | Cypress | **Scenarist + Playwright** |
-|---------|-------------|------------------|-----------|---------|----------------------------|
-| **Test Type** | Unit tests | E2E tests | HTTP mocking | E2E tests | **Full-stack integration** |
-| **Your Backend Runs** | N/A (no server) | ⚠️ Optional¹ | ❌ Never runs | ❌ Stubs only | ✅ **Always executes** |
-| **Server Components** | ❌ Can't test | ⚠️ If backend runs¹ | ❌ Never execute | ❌ Not supported | ✅ **Real execution** |
-| **Full User Journeys** | ❌ No browser | ✅ Yes | ❌ No browser | ✅ Yes | ✅ **Yes** |
-| **Change Scenarios** | N/A | Restart app² | Restart app | Restart tests | ✅ **Instant switching** |
-| **Parallel Tests** | ✅ Fast | ✅ Yes | ❌ Shared state³ | ⚠️ Limited | ✅ **Perfect isolation** |
-| **Test Speed** | ✅ Instant | ⚠️ Slow²⁴ | Slow (restarts) | Slow | ✅ **Fast** |
+| Feature | Jest/Vitest | Playwright (Mocked) | Playwright (True E2E) | Cypress | **Scenarist + Playwright** |
+|---------|-------------|---------------------|----------------------|---------|----------------------------|
+| **Test Type** | Unit tests | Browser (mocked) | Browser (real backend) | Browser (mocked) | **Browser (real backend)** |
+| **Your Backend Runs** | N/A (no server) | ❌ Never runs | ✅ Yes | ❌ Stubs only | ✅ **Always executes** |
+| **Server Components** | ❌ Can't test | ❌ Never execute | ✅ Yes | ❌ Not supported | ✅ **Real execution** |
+| **External API Handling** | N/A | Manual mocks | ⚠️ Real calls (flaky) | Manual mocks | ✅ **MSW integration** |
+| **Change Scenarios** | N/A | Restart app | Restart app¹ | Restart tests | ✅ **Instant switching** |
+| **Parallel Tests** | ✅ Fast | ❌ Shared state² | ⚠️ Limited³ | ⚠️ Limited | ✅ **Perfect isolation** |
+| **Test Speed** | ✅ Instant | ⚠️ Slow (restarts) | ⚠️ Very slow (restarts + real APIs) | ⚠️ Slow | ✅ **Fast** |
 | **State Management** | N/A | Manual setup | Manual setup | Manual setup | ✅ **Built-in capture** |
 
 :::tip[Why This Matters]
 **Jest/Vitest**: Can't test Server Components or browser flows
-**Playwright alone**: Either slow (real backend with restarts) or your backend never runs (mocked)
-**MSW alone**: Backend never executes—you're testing mock responses, not your code
+
+**Playwright (Mocked)**: Backend never runs—you're testing mock responses, not your code
+
+**Playwright (True E2E)**: Backend runs but requires app restarts per scenario + real external API calls (slow and flaky)
+
 **Cypress**: Stubs everything—Server Components never render, validation never runs
 
-**Scenarist + Playwright**: Real backend execution + instant scenario switching + built-in state = fast integration tests
+**Scenarist + Playwright**: Real backend execution + mocked external APIs + instant scenario switching + built-in state = fast full-stack tests
 :::
 
-<small>¹Playwright *can* run with real backend, but requires app restart per scenario (slow)
-²Changing scenarios = restart app = slow feedback loop
-³Shared MSW handlers cause test pollution and flaky tests
-⁴Fast if mocking backend (but then backend doesn't run)</small>
+<small>¹True E2E requires restarting app to change backend state/config per scenario
+²Shared MSW handlers cause test pollution and flaky tests in parallel execution
+³Port conflicts and shared state make parallel execution difficult</small>
 
 ---
 
 ## Quick Example
 
+<Tabs>
+<TabItem label="Express" icon="seti:nodejs">
+
 ```typescript
-// Define scenarios once - test different backend states
-export const scenarios = {
-  success: {
-    id: 'success',
-    name: 'Payment Success',
-    mocks: [
-      {
-        method: 'POST',
-        url: 'https://api.stripe.com/v1/charges',
-        response: { status: 200, body: { id: 'ch_123', status: 'succeeded' } },
-      },
-    ],
-  },
-  cardDeclined: {
-    id: 'cardDeclined',
-    name: 'Card Declined',
-    mocks: [
-      {
-        method: 'POST',
-        url: 'https://api.stripe.com/v1/charges',
-        response: {
-          status: 402,
-          body: { error: { code: 'card_declined', message: 'Card declined' } },
-        },
-      },
-    ],
-  },
+// src/scenarios.ts
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/express-adapter';
+
+const successScenario: ScenaristScenario = {
+  id: 'success',
+  name: 'Payment Success',
+  mocks: [{
+    method: 'POST',
+    url: 'https://api.stripe.com/v1/charges',
+    response: { status: 200, body: { id: 'ch_123', status: 'succeeded' } },
+  }],
 };
 
-// Test complete user journeys - your backend executes
-test('successful checkout flow', async ({ page, switchScenario }) => {
+export const scenarios = {
+  default: successScenario,
+  success: successScenario,
+} as const satisfies ScenaristScenarios;
+
+// src/setup.ts
+import { createScenarist } from '@scenarist/express-adapter';
+import { scenarios } from './scenarios';
+
+export const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  scenarios,
+});
+
+// src/app.ts
+import { scenarist } from './setup';
+const app = express();
+app.use(scenarist.middleware);  // Everything wired automatically
+
+// tests/checkout.spec.ts
+import { test, expect } from '@scenarist/playwright-helpers';
+
+test('successful checkout', async ({ page, switchScenario }) => {
   await switchScenario(page, 'success');
   await page.goto('/checkout');
-
-  // Fill form, submit - YOUR validation runs, YOUR Server Components render
   await page.fill('[name="amount"]', '100');
   await page.click('button[type="submit"]');
 
   await expect(page.locator('.success')).toBeVisible();
 });
+```
 
-test('handles card declined', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'cardDeclined');  // Instant switch, no restart
+</TabItem>
+
+<TabItem label="Next.js (Pages)" icon="seti:next">
+
+```typescript
+// lib/scenarios.ts
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/nextjs-adapter/pages';
+
+const successScenario: ScenaristScenario = {
+  id: 'success',
+  name: 'Payment Success',
+  mocks: [{
+    method: 'POST',
+    url: 'https://api.stripe.com/v1/charges',
+    response: { status: 200, body: { id: 'ch_123', status: 'succeeded' } },
+  }],
+};
+
+export const scenarios = {
+  default: successScenario,
+  success: successScenario,
+} as const satisfies ScenaristScenarios;
+
+// lib/scenarist.ts
+import { createScenarist } from '@scenarist/nextjs-adapter/pages';
+import { scenarios } from './scenarios';
+
+export const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  scenarios,
+});
+
+// pages/api/__scenario__.ts
+import { scenarist } from '@/lib/scenarist';
+export default scenarist.createScenarioEndpoint();
+
+// tests/checkout.spec.ts
+import { test, expect } from '@scenarist/playwright-helpers';
+
+test('successful checkout', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'success');
   await page.goto('/checkout');
-
   await page.fill('[name="amount"]', '100');
   await page.click('button[type="submit"]');
 
-  // YOUR error handling executes
-  await expect(page.locator('.error')).toContainText('Card declined');
+  await expect(page.locator('.success')).toBeVisible();
 });
 ```
+
+</TabItem>
+
+<TabItem label="Next.js (App Router)" icon="seti:next">
+
+```typescript
+// lib/scenarios.ts
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/nextjs-adapter/app';
+
+const successScenario: ScenaristScenario = {
+  id: 'success',
+  name: 'Payment Success',
+  mocks: [{
+    method: 'POST',
+    url: 'https://api.stripe.com/v1/charges',
+    response: { status: 200, body: { id: 'ch_123', status: 'succeeded' } },
+  }],
+};
+
+export const scenarios = {
+  default: successScenario,
+  success: successScenario,
+} as const satisfies ScenaristScenarios;
+
+// lib/scenarist.ts
+import { createScenarist } from '@scenarist/nextjs-adapter/app';
+import { scenarios } from './scenarios';
+
+export const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  scenarios,
+});
+
+// app/api/__scenario__/route.ts
+import { scenarist } from '@/lib/scenarist';
+
+const handler = scenarist.createScenarioEndpoint();
+export const POST = handler;
+export const GET = handler;
+
+// tests/checkout.spec.ts
+import { test, expect } from '@scenarist/playwright-helpers';
+
+test('successful checkout', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'success');
+  await page.goto('/checkout');
+  await page.fill('[name="amount"]', '100');
+  await page.click('button[type="submit"]');
+
+  await expect(page.locator('.success')).toBeVisible();
+});
+```
+
+</TabItem>
+</Tabs>
 
 ---
 
@@ -133,6 +289,11 @@ test('handles card declined', async ({ page, switchScenario }) => {
     Framework-agnostic 5-minute guide. Works with Express, Next.js, Fastify, Hono, Remix, and any Node.js framework.
 
     [Get Started →](/introduction/quick-start)
+  </Card>
+  <Card title="Playwright Helpers" icon="approve-check">
+    Type-safe scenario switching with 77% less boilerplate. Guaranteed test isolation for parallel execution.
+
+    [Playwright Guide →](https://github.com/citypaul/scenarist/tree/main/packages/playwright-helpers)
   </Card>
   <Card title="Express Setup" icon="seti:nodejs">
     REST APIs, GraphQL servers, microservices. Zero boilerplate with AsyncLocalStorage.
