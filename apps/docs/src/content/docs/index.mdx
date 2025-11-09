@@ -1,9 +1,9 @@
 ---
-title: Testing Next.js, Remix, and TanStack Is Broken.
-description: Scenarist fixes E2E testing for modern frameworks
+title: Test Complete User Journeys in the Browser
+description: Full-stack integration testing with runtime scenario management
 template: splash
 hero:
-  tagline: Modern frameworks make building features easy but testing them painful. Scenarist fixes it.
+  tagline: Test shopping carts, checkout flows, and multi-step journeys with different backend states. Switch scenarios instantly without restarting your app. Works with Next.js, Express, Remix, and any Node.js framework.
   image:
     file: ../../assets/houston.webp
   actions:
@@ -20,146 +20,182 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 
 ## The Problem
 
-Modern frameworks make testing an afterthought:
+Testing complete user journeys with different backend states is painful:
 
 <CardGrid>
+  <Card title="❌ App Restart Hell" icon="refresh">
+    Want to test checkout with payment errors? Restart your entire app. 60 seconds wasted per scenario.
+  </Card>
   <Card title="❌ Test Pollution" icon="error">
-    Shared MSW handlers cause flaky tests. Tests interfere with each other.
+    Shared MSW handlers cause flaky tests. Shopping cart from test A appears in test B.
   </Card>
   <Card title="❌ Sequential Execution" icon="warning">
-    Can't run tests in parallel. Test suites take forever.
+    Can't run parallel tests with different backend states. Test suites take hours.
   </Card>
   <Card title="❌ Scattered Mocks" icon="puzzle">
-    Copy-paste mocks across 50 test files. Nightmare to maintain.
-  </Card>
-  <Card title="❌ Restart Hell" icon="refresh">
-    Want to test a different scenario? Restart your entire app.
+    Copy-paste cart setup across 50 test files. Change one field, update 50 files.
   </Card>
 </CardGrid>
 
 ## The Solution
 
-Scenarist brings **scenario-based testing** to E2E tests:
+Scenarist enables **full-stack integration testing** with complete user journey support:
 
 <CardGrid>
-  <Card title="✅ Test Isolation" icon="approve-check">
-    Every test gets its own scenario via test IDs. No more pollution.
+  <Card title="✅ Complete Journeys" icon="rocket">
+    Test multi-step flows end-to-end. Shopping cart → Checkout → Payment → Confirmation. One test.
   </Card>
-  <Card title="✅ Parallel Execution" icon="rocket">
-    Run hundreds of tests concurrently. Fast feedback loops.
+  <Card title="✅ Instant Switching" icon="setting">
+    Change backend states in less than 100ms. No app restarts. 10x faster test suites.
   </Card>
-  <Card title="✅ Centralized Mocks" icon="star">
-    Define scenarios once. Reuse across all tests. DRY principles.
+  <Card title="✅ Perfect Isolation" icon="approve-check">
+    Every test gets isolated scenario and state. Run 100+ tests concurrently without conflicts.
   </Card>
-  <Card title="✅ Runtime Switching" icon="setting">
-    Change scenarios without restarting. Test any flow instantly.
+  <Card title="✅ Centralized Scenarios" icon="star">
+    Define shopping cart flow once. Reuse across all tests. Single source of truth.
   </Card>
 </CardGrid>
 
-## Framework-Specific Pain
+## Why Full-Stack Frameworks Need This
 
-### Next.js App Router
+Modern full-stack frameworks (Next.js, Remix, SvelteKit) make testing complete flows harder than traditional backend APIs:
+
+### The Full-Stack Testing Problem
+
+**Traditional Backend API (Express, Fastify):**
+- Test routes in isolation
+- Mock external APIs easily
+- Fast feedback loops
+- ✅ **Already works great with Scenarist**
+
+**Full-Stack Frameworks (Next.js App Router, Remix):**
+- Server + client code intermixed
+- Server Components fetch during render
+- Loader data flows to components
+- **Testing requires browser + backend together**
 
 > "Since async Server Components are new to the React ecosystem, some tools do not fully support them. In the meantime, we recommend using End-to-End Testing over Unit Testing for async components."
->
 > — Next.js Official Docs
 
-**Translation:** Jest doesn't support RSC. Spawn a new Next.js instance per test. Hope it works.
+**Translation:** You need E2E tests. But E2E tests with MSW alone = slow, polluted, sequential hell.
 
-**Scenarist Solution:** [Test React Server Components with Playwright →](/frameworks/nextjs/app/getting-started)
+**Scenarist Solution:** Fast E2E tests with runtime scenario switching, perfect isolation, and complete journey support. Test your full-stack app like a backend API.
 
-### Remix
+### Works With Any Node.js Framework
 
-> "At the time of this writing, there aren't standard ways of testing components that have Remix code."
->
-> — Remix Testing Documentation
+- ✅ **Express** - Full support (AsyncLocalStorage)
+- ✅ **Next.js** - Pages Router + App Router (Server Components)
+- 🔜 **Fastify** - High-performance async framework
+- 🔜 **Hono** - Edge runtime compatible
+- 🔜 **Remix** - Full-stack React framework
+- 🔜 **SvelteKit** - Svelte full-stack framework
 
-**Translation:** Test loaders separately from components. Hope they integrate correctly. Rely on slow E2E tests.
+## Complete Journey Example
 
-**Scenarist Solution:** Coming soon
-
-### TanStack Router
-
-> "The official docs don't mention testing at all"
->
-> — GitHub Discussion #655
-
-**Translation:** You're on your own. Create custom helpers. Reinvent the wheel for every project.
-
-**Scenarist Solution:** Coming soon
-
-## Quick Example
+Test a full shopping cart → checkout → payment flow in one test:
 
 ```typescript
-// Define scenarios once (in scenarios.ts)
+// Define scenario once (in scenarios.ts)
 import type { ScenarioDefinition } from '@scenarist/core';
 
-const premiumProducts = [{ id: 1, name: 'Premium Product', tier: 'premium' }];
-const standardProducts = [{ id: 2, name: 'Standard Product', tier: 'standard' }];
-
-export const scenarios: Record<string, ScenarioDefinition> = {
-  premiumUser: {
-    id: 'premium-user',
-    name: 'Premium User Scenario',
-    mocks: [
-      {
-        method: 'GET',
-        url: '/api/products',
-        match: { headers: { 'x-tier': 'premium' } },
-        response: { status: 200, body: { products: premiumProducts } },
+export const checkoutSuccessScenario: ScenarioDefinition = {
+  id: 'checkout-success',
+  name: 'Successful Checkout Journey',
+  mocks: [
+    // Step 1: Browse products
+    {
+      method: 'GET',
+      url: '/api/products',
+      response: { status: 200, body: { products: [...] } },
+    },
+    // Step 2: Add to cart (capture item)
+    {
+      method: 'POST',
+      url: '/api/cart/add',
+      captureState: { 'cartItems[]': 'body.item' },  // Append to cart
+      response: { status: 200, body: { success: true } },
+    },
+    // Step 3: View cart (inject captured items)
+    {
+      method: 'GET',
+      url: '/api/cart',
+      response: {
+        status: 200,
+        body: { items: '{{state.cartItems}}', count: '{{state.cartItems.length}}' }
       },
-    ],
-  },
-  standardUser: {
-    id: 'standard-user',
-    name: 'Standard User Scenario',
-    mocks: [
-      {
-        method: 'GET',
-        url: '/api/products',
-        response: { status: 200, body: { products: standardProducts } },
-      },
-    ],
-  },
+    },
+    // Step 4: Checkout (capture order ID)
+    {
+      method: 'POST',
+      url: '/api/checkout',
+      captureState: { 'orderId': 'body.id' },
+      response: { status: 200, body: { orderId: '12345' } },
+    },
+    // Step 5: Payment (uses captured order)
+    {
+      method: 'POST',
+      url: '/api/payment',
+      response: { status: 200, body: { success: true, order: '{{state.orderId}}' } },
+    },
+  ],
 };
 
-// Use in tests - switch scenarios at runtime
-test('premium users see premium products', async ({ page }) => {
-  await switchScenario(page, 'premiumUser');
+// Test complete journey in one test
+test('successful checkout flow', async ({ page }) => {
+  await switchScenario(page, 'checkout-success');
+
+  // Complete user journey - all steps work together
   await page.goto('/products');
-  await expect(page.getByText('Premium Product')).toBeVisible();
+  await page.click('[data-product="1"]');      // Adds to cart (captured)
+  await page.goto('/cart');                     // Shows captured items
+  await expect(page.locator('.cart-item')).toBeVisible();
+
+  await page.click('Proceed to Checkout');
+  await page.fill('#card-number', '4242...');
+  await page.click('Pay Now');                  // Uses captured cart + order
+
+  await expect(page.locator('.success')).toContainText('Order confirmed');
 });
 
-test('standard users see standard products', async ({ page }) => {
-  await switchScenario(page, 'standardUser');
+// Test error scenario with different backend state
+test('payment failure handling', async ({ page }) => {
+  await switchScenario(page, 'payment-error');  // Less than 100ms switch, no restart
+
+  // Same journey, different backend state
   await page.goto('/products');
-  await expect(page.getByText('Standard Product')).toBeVisible();
+  await page.click('[data-product="1"]');
+  await page.goto('/cart');
+  await page.click('Proceed to Checkout');
+  await page.fill('#card-number', '4242...');
+  await page.click('Pay Now');
+
+  await expect(page.locator('.error')).toContainText('Payment declined');
 });
 
-// Both tests run in parallel, no interference
+// Both tests run in parallel with isolated state
 ```
 
 ## Get Started
 
 <CardGrid>
-  <Card title="Next.js Pages Router" icon="seti:next">
-    Test getServerSideProps and API routes with scenario-based mocks.
-
-    [Get Started →](/frameworks/nextjs/pages/getting-started)
-  </Card>
-  <Card title="Next.js App Router" icon="seti:next">
-    Test React Server Components and Route Handlers with Playwright.
-
-    [Get Started →](/frameworks/nextjs/app/getting-started)
-  </Card>
-  <Card title="Express" icon="seti:nodejs">
-    Test Express APIs with centralized scenario management.
+  <Card title="Express APIs" icon="seti:nodejs">
+    REST APIs, GraphQL servers, microservices. Zero boilerplate with AsyncLocalStorage.
 
     [Get Started →](/frameworks/express/getting-started)
   </Card>
-  <Card title="Core Concepts" icon="open-book">
-    Learn about scenarios, test isolation, and runtime switching.
+  <Card title="Next.js (Pages + App Router)" icon="seti:next">
+    Full-stack testing with Server Components, Server Actions, and API routes.
+
+    [Get Started →](/frameworks/nextjs/pages/getting-started)
+  </Card>
+  <Card title="Any Node.js Framework" icon="rocket">
+    Fastify, Hono, Remix, SvelteKit, tRPC. Hexagonal architecture means framework-agnostic core.
 
     [Learn More →](/concepts/scenarios)
+  </Card>
+  <Card title="Core Capabilities" icon="star">
+    Dynamic matching, response sequences, stateful mocks, test isolation.
+
+    [View Features →](/concepts/scenarios)
   </Card>
 </CardGrid>
