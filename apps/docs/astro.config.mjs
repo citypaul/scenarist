@@ -1,9 +1,17 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import rehypeMermaid from 'rehype-mermaid';
 
 // https://astro.build/config
 export default defineConfig({
+	markdown: {
+		syntaxHighlight: {
+			type: 'shiki',
+			excludeLangs: ['mermaid'],
+		},
+		rehypePlugins: [rehypeMermaid],
+	},
 	integrations: [
 		starlight({
 			title: 'Scenarist',

@@ -104,49 +104,24 @@ Modern full-stack frameworks (Next.js, Remix, SvelteKit) make testing complete f
 
 ### Architecture: Test Environment Only
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  🧪 TEST ENVIRONMENT (Not in Production)                        │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌──────────────────┐                                           │
-│  │   🌐 Browser     │  ← Real UI, real user interactions        │
-│  │   (Playwright)   │                                           │
-│  └────────┬─────────┘                                           │
-│           │                                                      │
-│           │ HTTP Request: POST /api/checkout                    │
-│           ↓                                                      │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │   ⚙️  YOUR BACKEND LOGIC (Runs Normally)                  │  │
-│  │                                                            │  │
-│  │   • Next.js Server Components                             │  │
-│  │   • Express route handlers                                │  │
-│  │   • Business logic, validation, formatting                │  │
-│  │   • Database queries (real or test DB)                    │  │
-│  │                                                            │  │
-│  │   ✅ Your code executes exactly as it would in production │  │
-│  └────────┬───────────────────────────────────────────────────┘  │
-│           │                                                      │
-│           │ Needs external data: POST https://api.stripe.com/... │
-│           ↓                                                      │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │   🎭 SCENARIST MOCK LAYER (MSW)                           │  │
-│  │                                                            │  │
-│  │   • Intercepts external API calls                         │  │
-│  │   • Returns test data from scenarios                      │  │
-│  │   • Stripe ✓  Payment gateways ✓  Third-party APIs ✓     │  │
-│  │                                                            │  │
-│  │   ⚠️  Ephemeral endpoints - only exist during tests       │  │
-│  └──────────────────────────────────────────────────────────┘  │
-│           │                                                      │
-│           │ ❌ Real Stripe API never called                      │
-│           ↓                                                      │
-│  ┌──────────────────┐                                           │
-│  │ 🚫 External APIs │  ← Never reached in tests                 │
-│  │ (Stripe, etc.)   │                                           │
-│  └──────────────────┘                                           │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph test["🧪 TEST ENVIRONMENT (Not in Production)"]
+        browser["🌐 Browser<br/>(Playwright)<br/><br/>Real UI, real user interactions"]
+        backend["⚙️ YOUR BACKEND LOGIC<br/>(Runs Normally)<br/><br/>• Next.js Server Components<br/>• Express route handlers<br/>• Business logic, validation<br/>• Database queries<br/><br/>✅ Your code executes exactly<br/>as it would in production"]
+        mock["🎭 SCENARIST MOCK LAYER<br/>(MSW)<br/><br/>• Intercepts external API calls<br/>• Returns test data from scenarios<br/>• Stripe ✓ Payment gateways ✓<br/><br/>⚠️ Ephemeral endpoints<br/>only exist during tests"]
+        external["🚫 External APIs<br/>(Stripe, etc.)<br/><br/>Never reached in tests"]
+
+        browser -->|"HTTP Request:<br/>POST /api/checkout"| backend
+        backend -->|"Needs external data:<br/>POST https://api.stripe.com/..."| mock
+        mock -.->|"❌ Real API<br/>never called"| external
+    end
+
+    style test fill:#f0f0f0,stroke:#333,stroke-width:2px
+    style browser fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style backend fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    style mock fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style external fill:#ffebee,stroke:#d32f2f,stroke-width:2px,stroke-dasharray: 5 5
 ```
 
 ### What This Means for Testing
