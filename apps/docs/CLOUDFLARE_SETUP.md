@@ -47,6 +47,8 @@ On the "Set up builds and deployments" page, configure:
 
 **Framework preset:** `Astro`
 
+⚠️ **IMPORTANT:** Make sure you're creating a **Pages** project, NOT a Worker. The setup flow should say "Pages" at the top. If it says "Workers", go back and select the Pages tab.
+
 **CRITICAL MONOREPO SETTINGS:**
 
 - **Root directory (path):** `apps/docs`
