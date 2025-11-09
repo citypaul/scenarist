@@ -72,7 +72,11 @@
       "Bash(done)",
       "Bash(for:*)",
       "Bash(do)",
-      "Bash(pnpm create:*)"
+      "Bash(pnpm create:*)",
+      "WebFetch(domain:docs.astro.build)",
+      "WebFetch(domain:starlight.astro.build)",
+      "WebFetch(domain:astro.build)",
+      "Bash(pnpm remove:*)"
     ],
     "deny": [],
     "ask": []
