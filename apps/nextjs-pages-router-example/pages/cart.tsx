@@ -11,6 +11,8 @@ import type { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import type { Product } from '../types/product';
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
+import { scenarist } from '../lib/scenarist';
 
 type CartItem = {
   readonly productId: number;
@@ -180,10 +182,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     // Fetch cart data server-side
     // This demonstrates Scenarist stateful mocks working during getServerSideProps
     const response = await fetch('http://localhost:3001/api/cart', {
-      headers: {
-        // Forward test ID header from incoming request (for Scenarist test isolation)
-        'x-test-id': (context.req.headers['x-test-id'] as string) || 'default-test',
-      },
+      headers: getScenaristHeaders(context.req as any, scenarist),
     });
 
     if (!response.ok) {

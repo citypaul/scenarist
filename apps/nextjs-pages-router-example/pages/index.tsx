@@ -12,6 +12,8 @@ import Link from 'next/link';
 import { ProductCard } from '../components/ProductCard';
 import { TierSelector } from '../components/TierSelector';
 import type { Product } from '../types/product';
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
+import { scenarist } from '../lib/scenarist';
 
 type HomeProps = {
   readonly initialProducts?: ReadonlyArray<Product>;
@@ -177,9 +179,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     // This demonstrates Scenarist working during getServerSideProps
     const response = await fetch('http://localhost:3001/api/products', {
       headers: {
+        ...getScenaristHeaders(context.req as any, scenarist),
         'x-user-tier': tier,
-        // Forward test ID header from incoming request (for Scenarist test isolation)
-        'x-test-id': (context.req.headers['x-test-id'] as string) || 'default-test',
       },
     });
 
