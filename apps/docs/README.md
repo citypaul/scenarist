@@ -123,16 +123,24 @@ See [documentation writing principles](../../docs/plans/documentation-site.md#7-
 
 ## Cloudflare Pages Configuration
 
-**Build settings:**
-- **Build command:** `pnpm install --frozen-lockfile && pnpm --filter=@scenarist/docs build`
-- **Build output:** `apps/docs/dist`
-- **Node version:** `20`
-- **Environment variables:**
-  - `ENABLE_PNPM=true`
-  - `PNPM_VERSION=9`
-  - `NODE_VERSION=20`
+**Recommended build settings (monorepo):**
+- **Root directory:** `apps/docs`
+- **Build command:** `npm run build`
+- **Build output directory:** `dist` (relative to Root directory)
+- **Node version:** `20` (environment variable: `NODE_VERSION=20`)
+- **Build watch paths:** `apps/docs/**` (only build when docs change)
 
-See [CLOUDFLARE_SETUP.md](./CLOUDFLARE_SETUP.md) for complete configuration.
+**How it works:**
+- Cloudflare navigates to `apps/docs` (Root directory)
+- Automatically runs `npm install`
+- Runs `npm run build`
+- Deploys contents of `dist/` to production
+
+See [CLOUDFLARE_SETUP.md](./CLOUDFLARE_SETUP.md) for complete setup guide including:
+- Step-by-step GitHub integration
+- Custom domain configuration (scenarist.io)
+- Alternative pnpm approaches for workspace dependencies
+- Troubleshooting common issues
 
 ## Features
 
@@ -202,5 +210,5 @@ pnpm dev
 
 ---
 
-**Last Updated:** 2024-11-09
+**Last Updated:** 2025-11-09
 **Maintainer:** @citypaul
