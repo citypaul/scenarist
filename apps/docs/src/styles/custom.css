@@ -58,10 +58,96 @@
 	border-radius: 0.5rem;
 }
 
-/* Homepage hero customization */
-.hero h1 {
+/* Hero Section - World-class landing page */
+.hero-section {
+	text-align: center;
+	padding: 4rem 1.5rem 3rem;
+	margin: -1rem -1.5rem 3rem;
+	background: linear-gradient(
+		135deg,
+		rgb(var(--sl-color-accent-low)) 0%,
+		rgb(var(--sl-color-bg)) 50%
+	);
+	border-radius: 1rem;
+}
+
+.hero-title {
 	font-size: clamp(2rem, 5vw, 3.5rem);
+	font-weight: 800;
 	line-height: 1.1;
+	letter-spacing: -0.03em;
+	margin: 0 0 1.5rem;
+	color: rgb(var(--sl-color-white));
+}
+
+.hero-tagline {
+	font-size: clamp(1.125rem, 2vw, 1.375rem);
+	line-height: 1.6;
+	margin: 0 auto 2rem;
+	max-width: 48rem;
+	color: rgb(var(--sl-color-gray-2));
+}
+
+.hero-tagline strong {
+	color: rgb(var(--sl-color-white));
+	font-weight: 600;
+}
+
+.hero-buttons {
+	display: flex;
+	gap: 1rem;
+	justify-content: center;
+	flex-wrap: wrap;
+	margin-top: 2rem;
+}
+
+.button {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.75rem 1.75rem;
+	font-size: 1.0625rem;
+	font-weight: 600;
+	border-radius: 0.5rem;
+	text-decoration: none;
+	transition: all 0.2s ease;
+}
+
+.button-primary {
+	background: rgb(var(--sl-color-accent));
+	color: rgb(var(--sl-color-white));
+	border: 2px solid transparent;
+}
+
+.button-primary:hover {
+	background: rgb(var(--sl-color-accent-high));
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(var(--sl-color-accent), 0.3);
+}
+
+.button-secondary {
+	background: transparent;
+	color: rgb(var(--sl-color-white));
+	border: 2px solid rgb(var(--sl-color-gray-5));
+}
+
+.button-secondary:hover {
+	border-color: rgb(var(--sl-color-accent));
+	background: rgba(var(--sl-color-accent), 0.1);
+	transform: translateY(-2px);
+}
+
+/* Dark mode hero adjustments */
+:root[data-theme='dark'] .hero-section {
+	background: linear-gradient(
+		135deg,
+		rgb(var(--sl-color-accent-low)) 0%,
+		rgb(var(--sl-color-bg)) 50%
+	);
+}
+
+:root[data-theme='dark'] .hero-tagline {
+	color: rgb(var(--sl-color-gray-3));
 }
 
 /* Navigation hover states */
