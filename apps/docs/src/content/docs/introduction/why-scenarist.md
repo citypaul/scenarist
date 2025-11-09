@@ -5,17 +5,22 @@ description: The pain points Scenarist solves and how Scenarist's framework-agno
 
 # Why Scenarist?
 
-## The Problem: Modern Frameworks Made Testing an Afterthought
+## The Problem: You Can't Test Your Backend Logic with Browser Tests
 
-Modern frameworks like **Next.js** are incredibly powerful. Server Components let you fetch data and render on the server. API routes handle validation and business logic. Server Actions streamline mutations. But **testing these features is an afterthought**.
+Whether you're building with **Express**, **Hono**, **Fastify**, **Next.js**, or **Remix**, you need to test your backend logic in the browser. Maybe you have:
 
-**Server Components can't be unit tested**—they require a full runtime environment. Jest and Vitest can't help you. You're forced into browser-based testing with tools like Playwright or Cypress.
+- **API routes** with complex validation logic
+- **Server-side rendering** that fetches and transforms data
+- **Server Components** (Next.js) that can't be unit tested
+- **Middleware chains** that process authentication and authorization
+- **Business logic** that calculates pricing, applies discounts, or validates rules
 
-But here's the problem: **traditional browser-based testing gives you two bad choices:**
+These features require browser-based testing to verify the full user experience. But **traditional browser-based testing gives you two bad choices:**
 
 1. **Mock everything** (Cypress, MSW-only approaches)
-   - Your Server Components never render
-   - Your API route validation never runs
+   - Your API routes never execute
+   - Your validation logic never runs
+   - Your server-side rendering never happens
    - Your business logic is completely bypassed
    - You're testing mock responses, not your actual application
 
@@ -23,14 +28,14 @@ But here's the problem: **traditional browser-based testing gives you two bad ch
    - Must restart your application for every test scenario
    - Want to test both premium and standard user flows? Restart the app twice.
    - Need to test 10 different payment scenarios? Restart 10 times.
-   - External API calls make tests slow and flaky
+   - External API calls (Stripe, Auth0, SendGrid) make tests slow and flaky
    - Takes minutes or hours, not seconds
 
-**What developers actually need:** Test complete user journeys in the browser while your backend (Server Components, API routes, validation logic) executes normally, with the ability to instantly switch between scenarios without external API dependencies.
+**What developers actually need:** Test complete user journeys in the browser while your backend (API routes, validation, business logic, SSR, Server Components) executes normally, with the ability to instantly switch between scenarios without external API dependencies.
 
 ## How Scenarist Solves This
 
-Scenarist mocks **only external APIs you don't control** (Stripe, SendGrid, Auth0, etc.) while letting **your entire backend run normally**. Your Server Components render. Your API routes execute. Your validation logic runs. Your database queries happen. Everything in your codebase executes just like production.
+Scenarist mocks **only external APIs you don't control** (Stripe, SendGrid, Auth0, etc.) while letting **your entire backend run normally**. Your API routes execute. Your validation logic runs. Your middleware chains process requests. Your business logic calculates results. Your SSR fetches and renders data. Your Server Components render (Next.js). Everything in your codebase executes just like production.
 
 ### The Architecture
 
@@ -48,28 +53,32 @@ This means:
 
 **The key insight:** Your application runs one instance. MSW intercepts external API calls. Scenarist routes each test to its own mock scenario based on test ID headers. No restarts. No shared state. Your backend always executes.
 
-## Real-World Example: Premium Checkout Flow
+## Real-World Example: Premium Checkout API
 
-Let's see this with a complex feature that's nearly impossible to test with traditional approaches.
+Let's see this with a complex feature that's nearly impossible to test with traditional approaches. This example uses **Express**, but the same principles apply to Next.js, Hono, Fastify, or any Node.js framework.
 
 ### The Feature Requirements
 
+**A checkout API with tier-based pricing and validation:**
+
 - User authenticates via OAuth (external auth provider API)
-- Premium/Standard tier retrieved from session cookie
-- Shopping cart is a **Next.js Server Component** that:
-  - Fetches user tier from external session API
+- Premium/Standard tier retrieved from session
+- `/api/cart` endpoint:
+  - Fetches user tier from external auth API
   - Calculates dynamic pricing (premium users get 20% discount)
-  - Renders cart server-side with personalized prices
-- Checkout API route validates payment:
-  - Checks tier-based limits (premium: $10,000, standard: $1,000)
+  - Returns cart with personalized prices
+- `/api/checkout` endpoint validates payment:
+  - Middleware checks authentication
+  - Validates tier-based limits (premium: $10,000, standard: $1,000)
   - Processes payment via Stripe API (external)
   - Sends confirmation email via SendGrid API (external)
-- Confirmation page displays order details (another Server Component)
+  - Returns success/error response
+- Frontend displays cart and checkout UI (tested in browser)
 
 ### Test Coverage Needed
 
-✅ Premium users see 20% discount (Server Component pricing logic)
-✅ Standard users see full price (Server Component pricing logic)
+✅ Premium users see 20% discount (API pricing logic)
+✅ Standard users see full price (API pricing logic)
 ✅ Premium checkout succeeds at $5,000 (validation allows it)
 ✅ Standard checkout blocked at $1,500 (validation rejects it)
 ✅ Failed Stripe payment shows error (error handling)
@@ -79,18 +88,20 @@ Let's see this with a complex feature that's nearly impossible to test with trad
 ### With Traditional Approaches: 4 Bad Options
 
 <details>
-<summary><strong>❌ Option 1: Jest/Vitest (Can't test at all)</strong></summary>
+<summary><strong>❌ Option 1: Jest/Vitest (Can't test browser flows)</strong></summary>
 
 ```typescript
-// Impossible - Server Components require runtime environment
-test('premium user sees discount', () => {
-  // Error: Can't render Server Components
-  // Error: No browser environment
-  // Your pricing logic NEVER runs
+// Can test individual functions, but not the full flow
+test('calculateDiscount returns 20% for premium', () => {
+  expect(calculateDiscount(100, 'premium')).toBe(80);
+  // ✅ Tests function in isolation
+  // ❌ Doesn't test API endpoint behavior
+  // ❌ Doesn't test middleware execution
+  // ❌ Doesn't test full user journey in browser
 });
 ```
 
-**Why it fails:** No browser, no server runtime, no way to test full-stack flows.
+**Why it fails:** No browser, can't test how your API routes respond to actual HTTP requests, can't test full user journey.
 
 </details>
 
@@ -251,10 +262,11 @@ test('premium user sees 20% discount in cart', async ({ page, switchScenario }) 
 
   await page.goto('/cart');
 
-  // Server Component:
+  // Your API route /api/cart:
   // 1. Fetches session from mocked auth API → gets tier: 'premium'
   // 2. YOUR pricing logic executes: price * 0.8
-  // 3. YOUR Server Component renders with calculated discount
+  // 3. YOUR API returns calculated discount
+  // 4. Browser renders the response
 
   await expect(page.getByText('$4,000.00')).toBeVisible(); // Was $5000, 20% off
   await expect(page.getByText('Premium Member Discount')).toBeVisible();
@@ -265,10 +277,11 @@ test('standard user sees full price in cart', async ({ page, switchScenario }) =
 
   await page.goto('/cart');
 
-  // Same Server Component code path:
+  // Your API route /api/cart:
   // 1. Fetches session from mocked auth API → gets tier: 'standard'
   // 2. YOUR pricing logic executes: price * 1.0 (no discount)
-  // 3. YOUR Server Component renders with full price
+  // 3. YOUR API returns full price
+  // 4. Browser renders the response
 
   await expect(page.getByText('$5,000.00')).toBeVisible(); // Full price
   await expect(page.queryByText('Premium Member Discount')).not.toBeVisible();
@@ -334,9 +347,10 @@ test('stripe payment failure shows error', async ({ page, switchScenario }) => {
 
 For each test, **your entire backend executed**:
 
-✅ **Server Components rendered** with real tier data from mocked auth API
-✅ **Pricing calculations ran** in your Server Component code
-✅ **API route validation executed** with real tier-based limits
+✅ **API routes processed requests** with real HTTP flow
+✅ **Middleware chains executed** (authentication, logging, etc.)
+✅ **Pricing calculations ran** in your backend code
+✅ **Validation logic executed** with real tier-based limits
 ✅ **Error handling logic ran** when Stripe returned failures
 ✅ **Response formatting logic executed** for success/error messages
 
@@ -344,6 +358,8 @@ The **only things mocked** were external services you don't control:
 - Auth provider API (returns tier data)
 - Stripe API (processes payments)
 - SendGrid API (sends emails)
+
+**This works identically across frameworks:** Express, Hono, Fastify, Next.js, Remix, SvelteKit—your backend code always executes.
 
 ## Framework Adapters: Same Scenarios, Any Framework
 

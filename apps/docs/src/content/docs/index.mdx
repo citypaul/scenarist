@@ -1,10 +1,10 @@
 ---
 title: Scenarist
-description: Browser-based testing where your backend actually runs. Test Server Components, API routes, and validation logic with real execution.
+description: Browser-based testing where your backend actually runs. Test API routes, validation logic, SSR, and Server Components with real execution across any Node.js framework.
 template: splash
 hero:
   title: Browser Testing That Actually Runs Your Backend
-  tagline: Server Components can't be unit tested—you need browser-based tests. But traditional approaches either mock everything (your code never runs) or require slow app restarts per scenario. Scenarist mocks only external APIs while your Server Components render, API routes execute, and validation logic runs. Instant scenario switching in Playwright with type-safe helpers.
+  tagline: Test your backend logic in the browser without compromises. Traditional approaches either mock everything (your code never runs) or require slow app restarts per scenario. Scenarist mocks only external APIs while your API routes, validation logic, middleware, SSR, and Server Components execute normally. Works with Express, Next.js, Hono, Fastify, and any Node.js framework. Instant scenario switching in Playwright with type-safe helpers.
   image:
     file: ../../assets/hero-illustration.svg
     alt: Illustration showing backend server with API routes, Server Components, and validation connected to a browser running tests
@@ -25,17 +25,17 @@ import { Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
 
 ## Your Backend Code Actually Runs
 
-**Unlike pure mocking solutions, Scenarist tests your real application logic.** Your Server Components execute and render. Your API routes process requests. Your business logic validates data. Only external API calls (Stripe, SendGrid, etc.) are mocked. This means you're testing the actual code that runs in production, not just mock responses.
+**Unlike pure mocking solutions, Scenarist tests your real application logic.** Your API routes process requests. Your validation logic checks business rules. Your middleware chains execute. Your SSR fetches and transforms data. Your Server Components render (Next.js). Only external API calls (Stripe, SendGrid, Auth0, etc.) are mocked. This means you're testing the actual code that runs in production, not just mock responses.
 
 :::tip[The Critical Difference]
 **Traditional browser tests:** Mock everything → Backend never runs → Testing mock responses
 
 **Scenarist approach:** Mock only external APIs → Backend runs normally → Testing real application behavior
 
-**Why this matters for Server Components:** Next.js Server Components can't be unit tested—they require browser-based testing. But traditional mocking means they never execute. Scenarist lets you test complete user journeys **while your Server Components actually render.**
+**Works across all Node.js frameworks:** Express REST APIs, Hono edge functions, Fastify microservices, Next.js Server Components, Remix loaders—any backend logic that needs browser-based testing.
 :::
 
-Works with **Express**, **Next.js** (Pages + App Router), **Fastify**, **Hono**, **Remix**, and **SvelteKit**.
+**Framework-agnostic with thin adapters:** Express, Next.js (Pages + App Router), Fastify, Hono, Remix, and SvelteKit.
 
 ---
 
@@ -108,15 +108,15 @@ export const test = withScenarios(scenarios).extend<MyFixtures>({
 | **State Management** | N/A | Manual setup | Manual setup | Manual setup | ✅ **Built-in capture** |
 
 :::tip[Why This Matters]
-**Jest/Vitest**: Can't test Server Components or browser flows
+**Jest/Vitest**: Can't test full-stack flows or browser interactions
 
-**Playwright (Mocked)**: Backend never runs—you're testing mock responses, not your code
+**Playwright (Mocked)**: Backend never runs—you're testing mock responses, not your actual API routes, validation, or business logic
 
 **Playwright (True E2E)**: Backend runs but requires app restarts per scenario + real external API calls (slow and flaky)
 
-**Cypress**: Stubs everything—Server Components never render, validation never runs
+**Cypress**: Stubs everything—API routes never execute, validation never runs, middleware never processes
 
-**Scenarist + Playwright**: Real backend execution + mocked external APIs + instant scenario switching + built-in state = fast full-stack tests
+**Scenarist + Playwright**: Real backend execution (API routes, validation, middleware, SSR) + mocked external APIs + instant scenario switching + built-in state = fast full-stack tests
 :::
 
 <small>¹True E2E requires restarting app to change backend state/config per scenario
