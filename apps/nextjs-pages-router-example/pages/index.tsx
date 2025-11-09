@@ -172,7 +172,9 @@ export default function Home({ initialProducts = [], initialTier = 'standard' }:
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   // Extract tier from query param or default to 'standard'
-  const tier = (context.query.tier as string) || 'standard';
+  // Query params can be string | string[] | undefined
+  const tierParam = context.query.tier;
+  const tier = Array.isArray(tierParam) ? tierParam[0] : tierParam || 'standard';
 
   try {
     // Fetch products server-side with tier header
