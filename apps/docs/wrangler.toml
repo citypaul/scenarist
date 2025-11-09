@@ -1,0 +1,13 @@
+# Cloudflare Pages Configuration
+# This file is optional but provides better control over deployment settings
+
+name = "scenarist-docs"
+compatibility_date = "2024-01-01"
+
+# Pages configuration
+[env.production]
+pages_build_output_dir = "dist"
+
+# Note: Cloudflare Pages integration via GitHub is recommended
+# This file documents the configuration but GitHub integration
+# handles the actual deployment process automatically

@@ -1,49 +1,206 @@
-# Starlight Starter Kit: Basics
+# Scenarist Documentation Site
 
-[![Built with Starlight](https://astro.badg.es/v2/built-with-starlight/tiny.svg)](https://starlight.astro.build)
+Official documentation site for Scenarist, built with [Astro](https://astro.build) + [Starlight](https://starlight.astro.build).
+
+**Live Site:** https://scenarist.io
+
+## Local Development
+
+```bash
+# Install dependencies (from monorepo root)
+pnpm install
+
+# Start dev server
+cd apps/docs
+pnpm dev
+
+# Visit http://localhost:4321
+```
+
+## Building
+
+```bash
+# Build for production
+pnpm build
+
+# Preview production build
+pnpm preview
+```
+
+## Deployment
+
+**Automatic deployments via Cloudflare Pages:**
+
+- **Production:** Every merge to `main` deploys to https://scenarist.io
+- **Preview:** Every pull request gets a unique preview URL
+
+See [CLOUDFLARE_SETUP.md](./CLOUDFLARE_SETUP.md) for complete setup instructions.
+
+## Project Structure
 
 ```
-pnpm create astro@latest -- --template starlight
-```
-
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
-
-## 🚀 Project Structure
-
-Inside of your Astro + Starlight project, you'll see the following folders and files:
-
-```
-.
-├── public/
+apps/docs/
 ├── src/
-│   ├── assets/
+│   ├── assets/         # Images, logos, illustrations
 │   ├── content/
-│   │   └── docs/
-│   └── content.config.ts
-├── astro.config.mjs
-├── package.json
-└── tsconfig.json
+│   │   └── docs/       # Documentation pages (MDX)
+│   └── styles/         # Custom CSS
+├── public/             # Static assets (favicon, etc.)
+├── astro.config.mjs    # Astro configuration
+├── package.json        # Dependencies and scripts
+├── wrangler.toml       # Cloudflare Pages config (optional)
+└── CLOUDFLARE_SETUP.md # Deployment setup guide
 ```
 
-Starlight looks for `.md` or `.mdx` files in the `src/content/docs/` directory. Each file is exposed as a route based on its file name.
+## Documentation Content
 
-Images can be added to `src/assets/` and embedded in Markdown with a relative link.
+All documentation is written in MDX (Markdown with JSX support) in `src/content/docs/`.
 
-Static assets, like favicons, can be placed in the `public/` directory.
+### Navigation Structure
 
-## 🧞 Commands
+Navigation is defined in `astro.config.mjs` under `sidebar`:
 
-All commands are run from the root of the project, from a terminal:
+```javascript
+sidebar: [
+  {
+    label: 'Introduction',
+    items: [
+      { label: 'Quick Start', slug: 'introduction/quick-start' },
+      { label: 'Why Scenarist?', slug: 'introduction/why-scenarist' },
+      // ...
+    ],
+  },
+  // ...
+]
+```
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `pnpm install`             | Installs dependencies                            |
-| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
-| `pnpm build`           | Build your production site to `./dist/`          |
-| `pnpm preview`         | Preview your build locally, before deploying     |
-| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help` | Get help using the Astro CLI                     |
+### Adding New Pages
 
-## 👀 Want to learn more?
+1. Create MDX file in `src/content/docs/`:
+   ```bash
+   # Example: Add new framework guide
+   mkdir -p src/content/docs/frameworks/remix
+   touch src/content/docs/frameworks/remix/getting-started.mdx
+   ```
 
-Check out [Starlight’s docs](https://starlight.astro.build/), read [the Astro documentation](https://docs.astro.build), or jump into the [Astro Discord server](https://astro.build/chat).
+2. Add frontmatter to new page:
+   ```mdx
+   ---
+   title: Remix - Getting Started
+   description: Set up Scenarist with Remix
+   ---
+
+   # Content here...
+   ```
+
+3. Add to navigation in `astro.config.mjs`:
+   ```javascript
+   {
+     label: 'Remix',
+     slug: 'frameworks/remix/getting-started'
+   }
+   ```
+
+## Content Guidelines
+
+See [documentation writing principles](../../docs/plans/documentation-site.md#7-documentation-writing-principles-session-learnings) for:
+
+- Accuracy over absolutism (no "CAN'T" statements)
+- No marketing fluff (let code speak)
+- Landing page vs. docs separation
+- Framework-agnostic positioning
+- Complete writing checklist
+
+## Build Configuration
+
+**Node.js version:** 20 (defined in `.nvmrc`)
+
+**Key dependencies:**
+- `astro` - Static site generator
+- `@astrojs/starlight` - Documentation theme
+- `rehype-mermaid` - Mermaid diagram support
+- `sharp` - Image optimization
+
+## Cloudflare Pages Configuration
+
+**Build settings:**
+- **Build command:** `pnpm install --frozen-lockfile && pnpm --filter=@scenarist/docs build`
+- **Build output:** `apps/docs/dist`
+- **Node version:** `20`
+- **Environment variables:**
+  - `ENABLE_PNPM=true`
+  - `PNPM_VERSION=9`
+  - `NODE_VERSION=20`
+
+See [CLOUDFLARE_SETUP.md](./CLOUDFLARE_SETUP.md) for complete configuration.
+
+## Features
+
+- ✅ **Automatic deployments** - Push to `main` = live deployment
+- ✅ **Preview deployments** - Every PR gets preview URL
+- ✅ **Full-text search** - Powered by Pagefind
+- ✅ **Dark mode** - Built-in theme switching
+- ✅ **Mobile responsive** - Works on all devices
+- ✅ **Fast performance** - Static site generation
+- ✅ **Mermaid diagrams** - Render diagrams from code
+- ✅ **Syntax highlighting** - Shiki-powered code blocks
+- ✅ **Custom domain** - https://scenarist.io
+- ✅ **SSL/TLS** - Automatic certificate management
+
+## Troubleshooting
+
+### Build fails locally
+
+```bash
+# Clean and rebuild
+rm -rf dist .astro
+pnpm build
+```
+
+### Search not working
+
+Pagefind runs during build. Rebuild to regenerate search index:
+
+```bash
+pnpm build
+```
+
+### Styling issues
+
+Clear Astro cache:
+
+```bash
+rm -rf .astro
+pnpm dev
+```
+
+### Deployment fails on Cloudflare Pages
+
+1. Check build logs in Cloudflare Pages dashboard
+2. Verify environment variables are set (see CLOUDFLARE_SETUP.md)
+3. Test build locally: `pnpm build`
+4. Check Node.js version matches (`.nvmrc` = `20`)
+
+## Resources
+
+- [Astro Documentation](https://docs.astro.build)
+- [Starlight Documentation](https://starlight.astro.build)
+- [Cloudflare Pages](https://developers.cloudflare.com/pages/)
+- [Scenarist Repository](https://github.com/citypaul/scenarist)
+
+## Maintenance
+
+**Automatic:**
+- Dependencies: Dependabot creates PRs
+- SSL certificates: Cloudflare auto-renews
+- Build cache: Managed by Cloudflare Pages
+
+**Manual:**
+- Review Dependabot PRs monthly
+- Update Node.js version as needed
+- Monitor build times and optimization opportunities
+
+---
+
+**Last Updated:** 2024-11-09
+**Maintainer:** @citypaul
