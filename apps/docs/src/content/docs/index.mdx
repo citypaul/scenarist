@@ -116,7 +116,6 @@ test('standard flow', async ({ page, switchScenario }) => {
 **Playwright helpers provide:**
 - Automatic test ID generation and header management
 - Type-safe scenario IDs with autocomplete
-- 77% boilerplate reduction (9 lines → 2 lines)
 - Easy composition with existing fixtures
 
 ---
@@ -125,10 +124,8 @@ test('standard flow', async ({ page, switchScenario }) => {
 
 Scenarist includes **first-class Playwright support** with helpers that eliminate boilerplate and guarantee test isolation:
 
-**Code Reduction: 77%** - From 9 lines of boilerplate to 2 lines:
-
+**Without helpers:**
 ```typescript
-// ❌ Without helpers (9 lines per test)
 const testId = `test-premium-${Date.now()}`;
 const response = await page.request.post('http://localhost:3000/api/__scenario__', {
   headers: { 'x-test-id': testId },
@@ -136,8 +133,10 @@ const response = await page.request.post('http://localhost:3000/api/__scenario__
 });
 expect(response.status()).toBe(200);
 await page.setExtraHTTPHeaders({ 'x-test-id': testId });
+```
 
-// ✅ With helpers (2 lines - configured once)
+**With helpers:**
+```typescript
 import { test, expect } from '@scenarist/playwright-helpers';
 await switchScenario(page, 'premiumUser');
 ```
@@ -374,7 +373,7 @@ test('successful checkout', async ({ page, switchScenario }) => {
     [Get Started →](/introduction/quick-start)
   </Card>
   <Card title="Playwright Helpers" icon="approve-check">
-    Type-safe scenario switching with 77% less boilerplate. Guaranteed test isolation for parallel execution.
+    Type-safe scenario switching with automatic test ID management. Guaranteed test isolation for parallel execution.
 
     [Playwright Guide →](https://github.com/citypaul/scenarist/tree/main/packages/playwright-helpers)
   </Card>
