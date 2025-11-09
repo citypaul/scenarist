@@ -203,7 +203,10 @@ export type ScenaristFixtures<S extends string = string> = {
  * ```
  */
 export function withScenarios<T extends ScenaristScenarios>(scenarios: T) {
-  void scenarios; // Parameter needed for type inference only
+  // Parameter required for TypeScript type inference (extracting ScenarioId type)
+  // but not used at runtime. Void statement satisfies noUnusedParameters.
+  void scenarios;
+
   type ScenarioId = ScenarioIds<T>;
 
   return base.extend<ScenaristOptions & ScenaristFixtures<ScenarioId>>({
