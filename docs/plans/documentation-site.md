@@ -606,7 +606,7 @@ When reviewing documentation PRs, AI agents should:
 5. **Set Up Deployment**
    - Netlify or Vercel
    - Auto-deploy from `main` branch
-   - Custom domain (docs.scenarist.dev)
+   - Custom domain (scenarist.io)
 
 **Deliverable:** Empty Starlight site deployed with navigation structure
 
