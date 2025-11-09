@@ -117,26 +117,27 @@
 	border-color: rgba(255, 255, 255, 0.4);
 }
 
-/* Hero image sizing - make it larger and more prominent */
+/* Hero image sizing - make it significantly larger */
+.hero {
+	--__hero-image-width: min(100%, 700px);
+}
+
 .hero img {
-	width: 600px !important;
+	width: var(--__hero-image-width) !important;
 	height: auto !important;
-	max-width: 100%;
+	max-width: none !important;
 }
 
-/* On larger screens, make image even larger */
+/* On tablet screens, make image even larger */
 @media (min-width: 768px) {
-	.hero > .sl-flex {
-		gap: 3rem;
-	}
-
-	.hero img {
-		width: 750px !important;
+	.hero {
+		--__hero-image-width: min(100%, 850px);
 	}
 }
 
+/* On desktop screens, make image huge */
 @media (min-width: 1024px) {
-	.hero img {
-		width: 900px !important;
+	.hero {
+		--__hero-image-width: min(100%, 1000px);
 	}
 }
