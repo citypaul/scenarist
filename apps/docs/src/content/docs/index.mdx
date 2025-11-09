@@ -91,9 +91,16 @@ Scenarist brings **scenario-based testing** to E2E tests:
 ## Quick Example
 
 ```typescript
-// Define scenarios once
-const scenarios = {
+// Define scenarios once (in scenarios.ts)
+import type { ScenarioDefinition } from '@scenarist/core';
+
+const premiumProducts = [{ id: 1, name: 'Premium Product', tier: 'premium' }];
+const standardProducts = [{ id: 2, name: 'Standard Product', tier: 'standard' }];
+
+export const scenarios: Record<string, ScenarioDefinition> = {
   premiumUser: {
+    id: 'premium-user',
+    name: 'Premium User Scenario',
     mocks: [
       {
         method: 'GET',
@@ -104,6 +111,8 @@ const scenarios = {
     ],
   },
   standardUser: {
+    id: 'standard-user',
+    name: 'Standard User Scenario',
     mocks: [
       {
         method: 'GET',

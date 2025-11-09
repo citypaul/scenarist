@@ -16,25 +16,8 @@ export default defineConfig({
 				}
 			],
 			sidebar: [
-				{
-					label: 'Introduction',
-					items: [
-						{ label: 'Overview', slug: 'introduction/overview' },
-						{ label: 'Why Scenarist?', slug: 'introduction/why-scenarist' },
-						{ label: 'Quick Start', slug: 'introduction/quick-start' },
-						{ label: 'Installation', slug: 'introduction/installation' },
-					],
-				},
-				{
-					label: 'Guides',
-					items: [
-						{ label: 'Example Guide', slug: 'guides/example' },
-					],
-				},
-				{
-					label: 'Reference',
-					autogenerate: { directory: 'reference' },
-				},
+				// Phase 1: Minimal navigation - content pages will be added in Phase 2
+				// Introduction pages exist but are placeholders, so not shown in navigation yet
 			],
 			customCss: [
 				'./src/styles/custom.css',

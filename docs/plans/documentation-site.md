@@ -424,7 +424,136 @@ Scenarist is built on MSW but adds the test isolation and scenario management yo
 
 ---
 
-## 3. Implementation Plan
+## 3. Documentation Testing & Quality Standards
+
+### TDD for Documentation Sites: A Different Standard
+
+**IMPORTANT:** Documentation sites have different testing requirements than library code. While library code follows strict "every line has a test" TDD, documentation sites require a more pragmatic approach.
+
+#### What Makes Documentation Different
+
+Documentation sites generate static HTML at build time. Their "behavior" is fundamentally different from application code:
+
+| Library Code | Documentation Site |
+|--------------|-------------------|
+| Has complex runtime behavior | Generates static HTML |
+| User tests depend on correctness | User reads content |
+| Bugs cascade to user codebases | Bugs cause confusion, not failures |
+| 100% coverage required | Build validation required |
+
+#### Testing Requirements for Documentation
+
+Documentation sites **require** the following quality gates:
+
+**✅ REQUIRED: Build Validation**
+- Build must succeed on every commit
+- CI enforces build success
+- Manual verification of build output
+- Catches syntax errors, broken imports, invalid frontmatter
+
+**✅ REQUIRED: Link Integrity**
+- No broken internal links (404s)
+- External links should be monitored (but can break over time)
+- Can use simple link checker script (doesn't require Vitest)
+
+**✅ REQUIRED: Content Quality**
+- Code examples must be accurate and copy-paste ready
+- Examples must include all required fields
+- Examples should match real type signatures
+- Manual review of examples before merge
+
+**❌ NOT REQUIRED: Comprehensive Test Suites**
+- No need to test "page contains text"
+- No need to test navigation structure
+- No need to test Astro/Starlight internals
+- No need for Vitest setup unless adding dynamic features
+
+#### What This Means for PRs
+
+**PR must demonstrate:**
+1. ✅ Build succeeds (`pnpm build` passes)
+2. ✅ Pages render correctly (manual QA or screenshots)
+3. ✅ Code examples are complete and accurate
+4. ✅ No broken internal links (manual check or link checker script)
+
+**PR does NOT need:**
+1. ❌ Vitest test suite for static content
+2. ❌ Tests for "page contains expected text"
+3. ❌ Tests for sidebar navigation structure
+4. ❌ Tests for Astro configuration
+
+#### When Documentation DOES Need Tests
+
+Add automated tests (Vitest/Playwright) when documentation includes:
+
+- **Interactive components** (live code editors, interactive examples)
+- **Search functionality** (if custom, not Starlight default)
+- **Dynamic content** (API-driven content, user preferences)
+- **Complex client-side logic** (calculators, configurators)
+
+For static content (MDX files, navigation, examples), build validation and manual QA are sufficient.
+
+#### Code Example Quality
+
+All code examples in documentation must be:
+
+1. **Complete** - Include all required fields from types
+2. **Accurate** - Match actual type signatures from library
+3. **Copy-paste ready** - Should work if user copies directly
+4. **Commented** - Explain what's happening when not obvious
+
+**❌ Bad Example:**
+```typescript
+const scenarios = {
+  premium: {
+    mocks: [...]  // Missing required fields, undefined variables
+  }
+};
+```
+
+**✅ Good Example:**
+```typescript
+import type { ScenarioDefinition } from '@scenarist/core';
+
+const products = [{ id: 1, name: 'Premium Product' }];
+
+export const scenarios: Record<string, ScenarioDefinition> = {
+  premium: {
+    id: 'premium',           // Required field
+    name: 'Premium Scenario', // Required field
+    mocks: [
+      {
+        method: 'GET',
+        url: '/api/products',
+        response: { status: 200, body: { products } }
+      }
+    ]
+  }
+};
+```
+
+#### AI PR Review Guidance
+
+When reviewing documentation PRs, AI agents should:
+
+**✅ DO check:**
+- Build succeeds
+- Code examples are complete
+- Code examples match real types
+- No obvious broken links in new content
+- Content addresses stated goals
+
+**❌ DON'T require:**
+- Comprehensive test suites for static content
+- Tests that verify text presence
+- Tests that verify navigation structure
+- Vitest setup for static MDX files
+
+**Remember:** Documentation is about communicating effectively with humans. The quality bar is "does this help developers solve their problems?" not "does every line have a test?"
+
+---
+
+## 4. Implementation Plan
 
 ### Phase 1: Astro + Starlight Setup (Week 0)
 
