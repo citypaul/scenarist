@@ -46,15 +46,20 @@ export type SwitchScenarioOptions = {
  * @param page - Playwright Page object
  * @param scenarioId - Scenario ID to switch to
  * @param options - Configuration options
- * @returns Promise that resolves when scenario is switched
+ * @returns Promise that resolves with the test ID used for this scenario
  *
  * @example
  * ```typescript
  * import { switchScenario } from '@scenarist/playwright-helpers';
  *
  * test('premium user flow', async ({ page }) => {
- *   await switchScenario(page, 'premiumUser', {
+ *   const testId = await switchScenario(page, 'premiumUser', {
  *     baseURL: 'http://localhost:3000',
+ *   });
+ *
+ *   // Use testId for explicit API requests
+ *   await page.request.post('/api/action', {
+ *     headers: { 'x-test-id': testId },
  *   });
  *
  *   await page.goto('/');
@@ -66,7 +71,7 @@ export const switchScenario = async (
   page: Page,
   scenarioId: string,
   options: SwitchScenarioOptions,
-): Promise<void> => {
+): Promise<string> => {
   const {
     baseURL,
     endpoint = '/__scenario__',
@@ -100,4 +105,7 @@ export const switchScenario = async (
 
   // Set test ID header for all subsequent requests
   await page.setExtraHTTPHeaders({ [testIdHeader]: testId });
+
+  // Return test ID for explicit use in page.request calls
+  return testId;
 };

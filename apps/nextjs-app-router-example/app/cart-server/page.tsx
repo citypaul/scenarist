@@ -24,7 +24,7 @@ type CartItem = {
 };
 
 type CartResponse = {
-  readonly items: ReadonlyArray<string>; // Array of product IDs from state
+  readonly items: ReadonlyArray<string> | string; // Array of product IDs from state, or unreplaced template string
 };
 
 const PRODUCT_NAMES: Record<string, string> = {
@@ -33,7 +33,12 @@ const PRODUCT_NAMES: Record<string, string> = {
   'prod-3': 'Product C',
 };
 
-const aggregateCartItems = (productIds: ReadonlyArray<string>): ReadonlyArray<CartItem> => {
+const aggregateCartItems = (productIds: ReadonlyArray<string> | string): ReadonlyArray<CartItem> => {
+  // Handle unreplaced template (when state doesn't exist yet)
+  if (typeof productIds === 'string') {
+    return [];
+  }
+
   if (!productIds || productIds.length === 0) {
     return [];
   }

@@ -93,6 +93,11 @@ export const createScenaristBase = (
   // Initialize MSW server
   const server = setupServer(handler);
 
+  // Add request:start listener for debugging
+  server.events.on('request:start', ({ request }) => {
+    console.log('[MSW] Intercepted:', request.method, request.url);
+  });
+
   return {
     config,
     manager,

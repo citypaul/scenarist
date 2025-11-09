@@ -15,6 +15,8 @@ export const scenarist = createScenarist({
 
 // Auto-start MSW server for server-side API route interception
 // Server Components and Route Handlers run in Node.js, not the browser
+// Note: This starts MSW in the Next.js server process
+// Playwright globalSetup also starts MSW in its own process (both needed!)
 if (typeof window === 'undefined') {
   scenarist.start();
 }

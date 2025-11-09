@@ -145,19 +145,20 @@ export type ScenaristFixtures<S extends string = string> = {
    * @param page - Playwright Page object
    * @param scenarioId - The scenario ID to switch to (constrained to S if createTest<S> was used)
    * @param options - Optional overrides for endpoint and baseURL
+   * @returns The test ID used for this scenario (for explicit page.request calls)
    *
    * @example Basic usage (reads from config)
    * ```typescript
    * test('my test', async ({ page, switchScenario }) => {
-   *   await switchScenario(page, 'myScenario');
-   *   // ...
+   *   const testId = await switchScenario(page, 'myScenario');
+   *   // Use testId for explicit API requests if needed
    * });
    * ```
    *
    * @example Override for specific test
    * ```typescript
    * test('staging test', async ({ page, switchScenario }) => {
-   *   await switchScenario(page, 'myScenario', {
+   *   const testId = await switchScenario(page, 'myScenario', {
    *     baseURL: 'https://staging.example.com'
    *   });
    * });
@@ -167,7 +168,7 @@ export type ScenaristFixtures<S extends string = string> = {
     page: Page,
     scenarioId: S,
     options?: Partial<Pick<SwitchScenarioOptions, 'endpoint' | 'baseURL'>>
-  ) => Promise<void>;
+  ) => Promise<string>;
 };
 
 /**
@@ -221,13 +222,13 @@ export function withScenarios<T extends ScenaristScenarios>(_scenarios: T) {
         page: Page,
         scenarioId: ScenarioId,
         options?: Partial<Pick<SwitchScenarioOptions, 'endpoint' | 'baseURL'>>
-      ) => {
+      ): Promise<string> => {
         // Read from config, allow per-test override, fallback to defaults
         const finalEndpoint = options?.endpoint ?? scenaristEndpoint;
         const finalBaseURL = options?.baseURL ?? baseURL ?? 'http://localhost:3000';
 
-        // Call the base switchScenario with all config
-        await baseSwitchScenario(page, scenarioId, {
+        // Call the base switchScenario with all config and return test ID
+        return await baseSwitchScenario(page, scenarioId, {
           endpoint: finalEndpoint,
           baseURL: finalBaseURL,
           testId: scenaristTestId,

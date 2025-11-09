@@ -1,12 +1,15 @@
 /**
  * Playwright Global Setup
  *
- * Phase 8.0 (PLACEHOLDER): Will initialize MSW server in Phase 8.1
+ * Initializes MSW server to intercept API calls for all tests.
  *
  * This runs once before all Playwright tests begin.
- * It will start the MSW server which intercepts API calls based on active scenarios.
+ * It starts the MSW server which intercepts API calls based on active scenarios.
  */
 
+import { scenarist } from '../../lib/scenarist.js';
+
 export default async function globalSetup(): Promise<void> {
-  console.log('✅ Global setup (MSW will be added in Phase 8.1)');
+  console.log('✅ Starting MSW server for Playwright tests');
+  await scenarist.start();
 }
