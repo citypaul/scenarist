@@ -18,6 +18,14 @@ hero:
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
+## Fast E2E Testing for Full-Stack Frameworks
+
+**Next.js, Remix, and SvelteKit require E2E testing for Server Components and loaders.** The Next.js team explicitly recommends "End-to-End Testing over Unit Testing for async [Server] components." But traditional E2E testing is painfully slow—restarting your app for every scenario wastes 60+ seconds, shared MSW handlers cause flaky tests, and you can't run tests in parallel with different backend states.
+
+**Scenarist makes E2E testing as fast as unit tests.** Switch backend scenarios in less than 100ms without restarting your app. Run 100+ tests concurrently with perfect isolation. Test shopping cart flows, checkout journeys, and payment processing end-to-end—all in the browser with real Server Components.
+
+Works with **Express**, **Next.js** (Pages + App Router), **Fastify**, **Hono**, **Remix**, and **SvelteKit**.
+
 ## The Problem
 
 Testing complete user journeys with different backend states is painful:
