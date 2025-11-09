@@ -98,6 +98,73 @@ Modern full-stack frameworks (Next.js, Remix, SvelteKit) make testing complete f
 - 🔜 **Remix** - Full-stack React framework
 - 🔜 **SvelteKit** - Svelte full-stack framework
 
+## How It Works: Your Backend Logic Runs
+
+**Critical insight:** Scenarist doesn't mock your backend—it mocks external APIs. Your business logic executes normally during tests.
+
+### Architecture: Test Environment Only
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  🧪 TEST ENVIRONMENT (Not in Production)                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────────┐                                           │
+│  │   🌐 Browser     │  ← Real UI, real user interactions        │
+│  │   (Playwright)   │                                           │
+│  └────────┬─────────┘                                           │
+│           │                                                      │
+│           │ HTTP Request: POST /api/checkout                    │
+│           ↓                                                      │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │   ⚙️  YOUR BACKEND LOGIC (Runs Normally)                  │  │
+│  │                                                            │  │
+│  │   • Next.js Server Components                             │  │
+│  │   • Express route handlers                                │  │
+│  │   • Business logic, validation, formatting                │  │
+│  │   • Database queries (real or test DB)                    │  │
+│  │                                                            │  │
+│  │   ✅ Your code executes exactly as it would in production │  │
+│  └────────┬───────────────────────────────────────────────────┘  │
+│           │                                                      │
+│           │ Needs external data: POST https://api.stripe.com/... │
+│           ↓                                                      │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │   🎭 SCENARIST MOCK LAYER (MSW)                           │  │
+│  │                                                            │  │
+│  │   • Intercepts external API calls                         │  │
+│  │   • Returns test data from scenarios                      │  │
+│  │   • Stripe ✓  Payment gateways ✓  Third-party APIs ✓     │  │
+│  │                                                            │  │
+│  │   ⚠️  Ephemeral endpoints - only exist during tests       │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│           │                                                      │
+│           │ ❌ Real Stripe API never called                      │
+│           ↓                                                      │
+│  ┌──────────────────┐                                           │
+│  │ 🚫 External APIs │  ← Never reached in tests                 │
+│  │ (Stripe, etc.)   │                                           │
+│  └──────────────────┘                                           │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### What This Means for Testing
+
+**Your backend logic runs:**
+- ✅ Server Components execute and render
+- ✅ API route handlers process requests
+- ✅ Business logic validates data
+- ✅ Error handling gets tested
+- ✅ Database queries execute (against test DB)
+
+**External APIs are mocked:**
+- ⚠️ Stripe payment processing → mocked response
+- ⚠️ Email services → mocked confirmation
+- ⚠️ Third-party APIs → mocked data
+
+**Result:** You're testing your actual application code, not mocks. The complete frontend + backend journey executes in the browser, with only external dependencies replaced by test data.
+
 ## Complete Journey Example
 
 Test a full shopping cart → checkout → payment flow in one test:
