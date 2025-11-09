@@ -179,7 +179,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     // This demonstrates Scenarist working during getServerSideProps
     const response = await fetch('http://localhost:3001/api/products', {
       headers: {
-        ...getScenaristHeaders(context.req as any, scenarist),
+        ...getScenaristHeaders(context.req, scenarist),
         'x-user-tier': tier,
       },
     });

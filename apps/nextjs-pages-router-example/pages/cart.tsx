@@ -182,7 +182,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     // Fetch cart data server-side
     // This demonstrates Scenarist stateful mocks working during getServerSideProps
     const response = await fetch('http://localhost:3001/api/cart', {
-      headers: getScenaristHeaders(context.req as any, scenarist),
+      headers: getScenaristHeaders(context.req, scenarist),
     });
 
     if (!response.ok) {
