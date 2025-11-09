@@ -22,8 +22,14 @@ export default function RootLayout({
             <a href="/products" className="hover:text-blue-300">
               Products (RSC)
             </a>
+            <a href="/polling" className="hover:text-blue-300">
+              Polling (RSC)
+            </a>
+            <a href="/cart-server" className="hover:text-blue-300">
+              Cart Server (RSC)
+            </a>
             <a href="/cart" className="hover:text-blue-300">
-              Cart
+              Cart (Client)
             </a>
           </div>
         </nav>

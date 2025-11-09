@@ -1,47 +1,30 @@
 /**
- * Add to Cart API Route - Phase 8.3
+ * Cart Add API Route Handler - POST
  *
- * Adds an item to the cart via external API (json-server).
- * Demonstrates Scenarist's state capture - the productId from the request
- * is captured and added to the cart state, which is then injected into
- * subsequent GET /cart responses.
+ * Adds item to cart via external API (json-server).
+ * Demonstrates Scenarist state capture - productId is captured into cartItems[] array.
  *
- * With Scenarist enabled: Captures productId and updates cart state
- * With Scenarist disabled: Sends actual POST to json-server
+ * State flow:
+ * 1. POST /cart/add captures productId from request body
+ * 2. State is stored in StateManager (per test ID)
+ * 3. Subsequent GET /cart requests inject this state
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
 import { scenarist } from '../../../../lib/scenarist';
 
-type AddToCartRequest = {
-  readonly productId: number;
-};
-
-type AddToCartResponse = {
-  readonly success: boolean;
-};
-
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const body: AddToCartRequest = await request.json();
+    const body = await request.json();
 
-    // Validate request body
-    if (!body.productId || typeof body.productId !== 'number') {
-      return NextResponse.json(
-        { error: 'Invalid productId' },
-        { status: 400 }
-      );
-    }
-
-    // POST to json-server (external API)
-    // Scenarist MSW will intercept this request, capture the productId,
-    // and update the cart state
+    // Fetch from json-server (external API)
+    // Scenarist MSW will intercept and capture productId from body into state
     const response = await fetch('http://localhost:3001/cart/add', {
       method: 'POST',
       headers: {
-        ...getScenaristHeaders(request, scenarist),  // ✅ Scenarist infrastructure headers (x-test-id)
         'Content-Type': 'application/json',
+        ...getScenaristHeaders(request, scenarist),
       },
       body: JSON.stringify(body),
     });
@@ -50,7 +33,7 @@ export async function POST(request: Request) {
       throw new Error(`External API error: ${response.status}`);
     }
 
-    const data: AddToCartResponse = await response.json();
+    const data = await response.json();
 
     return NextResponse.json(data);
   } catch (error) {
