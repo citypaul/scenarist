@@ -83,3 +83,36 @@
 :root[data-theme='dark'] .sl-markdown-content pre {
 	background-color: rgb(17, 24, 39);
 }
+
+/* Hero button visibility improvements */
+.hero .action.primary {
+	background: rgb(var(--sl-color-accent));
+	color: white;
+	border: 2px solid rgb(var(--sl-color-accent));
+}
+
+.hero .action.primary:hover {
+	background: rgb(var(--sl-color-accent-high));
+	border-color: rgb(var(--sl-color-accent-high));
+}
+
+.hero .action.secondary {
+	background: transparent;
+	color: rgb(var(--sl-color-white));
+	border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.hero .action.secondary:hover {
+	border-color: rgb(var(--sl-color-accent));
+	background: rgba(var(--sl-color-accent), 0.1);
+}
+
+/* Dark mode hero button adjustments */
+:root[data-theme='dark'] .hero .action.primary {
+	background: rgb(var(--sl-color-accent));
+	border-color: rgb(var(--sl-color-accent));
+}
+
+:root[data-theme='dark'] .hero .action.secondary {
+	border-color: rgba(255, 255, 255, 0.4);
+}
