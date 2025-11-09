@@ -7,6 +7,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import type { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import type { Product } from '../types/product';
@@ -29,9 +30,14 @@ const aggregateCartItems = (productIds: ReadonlyArray<number>): ReadonlyArray<Ca
   }));
 };
 
-export default function Cart() {
-  const [cartItems, setCartItems] = useState<ReadonlyArray<CartItem>>([]);
-  const [loading, setLoading] = useState(true);
+type CartProps = {
+  readonly initialCartItems?: ReadonlyArray<CartItem>;
+};
+
+export default function Cart({ initialCartItems = [] }: CartProps) {
+  const [cartItems, setCartItems] = useState<ReadonlyArray<CartItem>>(initialCartItems);
+  // Start loading as false if we have initial cart items (SSR)
+  const [loading, setLoading] = useState(initialCartItems.length === 0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -168,3 +174,41 @@ export default function Cart() {
     </>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  try {
+    // Fetch cart data server-side
+    // This demonstrates Scenarist stateful mocks working during getServerSideProps
+    const response = await fetch('http://localhost:3001/api/cart', {
+      headers: {
+        // Forward test ID header from incoming request (for Scenarist test isolation)
+        'x-test-id': (context.req.headers['x-test-id'] as string) || 'default-test',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch cart: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Aggregate cart items from raw productIds array
+    const rawItems = data.items ?? [];
+    const cartItems = Array.isArray(rawItems) && rawItems.length > 0
+      ? aggregateCartItems(rawItems)
+      : [];
+
+    return {
+      props: {
+        initialCartItems: cartItems,
+      },
+    };
+  } catch (error) {
+    console.error('SSR cart fetch error:', error);
+    return {
+      props: {
+        initialCartItems: [],
+      },
+    };
+  }
+};

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { GetServerSideProps } from "next";
 import Head from "next/head";
 import Link from "next/link";
 
@@ -269,3 +270,9 @@ export default function SequencesDemo() {
     </>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  // Sequences page is a demo UI - no data fetching needed
+  // This demonstrates that getServerSideProps works on all pages
+  return { props: {} };
+};
