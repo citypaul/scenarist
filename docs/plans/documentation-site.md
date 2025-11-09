@@ -1010,7 +1010,250 @@ Scenarist solves REAL pain:
 
 ---
 
-## 7. Next Steps
+## 7. Documentation Writing Principles (Session Learnings)
+
+### Critical Principle: Accuracy Over Absolutism
+
+**The Problem with "CAN'T" statements:**
+During landing page iterations, we discovered that saying "unit tests CAN'T test server-side logic" is inaccurate and undermines credibility.
+
+**The Reality:**
+Unit tests CAN test server-side logic, but it's painful and risky:
+- Requires extensive code-level mocking (sessions, auth, request objects, middleware)
+- Mocks create a gap between how you test vs. how code actually runs in production
+- Bugs can hide in mocks and only surface when users go through real journeys
+- Testing integrated flows requires complex test setup
+
+**The Correct Framing:**
+```markdown
+❌ BAD: "Unit tests can't test server-side context"
+✅ GOOD: "Unit tests CAN test server-side logic, but it's painful and risky"
+
+❌ BAD: "Unit tests don't cover HTTP integration"
+✅ GOOD: "Unit tests require extensive mocking at the code level, creating distance from production reality"
+```
+
+**Key Insight:**
+Your code runs as part of user journeys with real sessions, auth context, and middleware in production—but you're testing it either in isolation (unit tests) or only for happy path (browser tests). Browser-based testing with real server execution is closer to how code actually runs.
+
+### No Marketing Fluff
+
+**Remove percentage claims:**
+- Don't use "77% boilerplate reduction" or similar statistics
+- Don't use "10x faster" without context
+- Don't use hyperbolic language
+
+**Let code speak for itself:**
+```markdown
+❌ BAD:
+**Code Reduction: 77%** - From 9 lines to 2 lines
+
+✅ GOOD:
+**Without helpers:**
+[9 lines of code]
+
+**With helpers:**
+[2 lines of code]
+```
+
+**Why this matters:**
+Marketing percentages don't add substance. Developers can see the difference in code examples without needing numbers attached. Credibility comes from showing, not telling.
+
+### Landing Page vs. Docs Separation
+
+**Landing Page = High-Level Bullet Points:**
+```markdown
+**Key features:**
+- **Ephemeral endpoints:** Scenario switching only active when `enabled: true`
+- **Test isolation:** Unique test IDs enable parallel execution
+- **Type-safe helpers:** Playwright integration with autocomplete
+- **Framework-agnostic:** Express, Next.js, Fastify, Hono, Remix, SvelteKit
+```
+
+**Docs Pages = Detailed Explanations:**
+```markdown
+## How It Works: Ephemeral Endpoints & Test Isolation
+
+### Ephemeral Scenario Endpoints
+
+Scenarist creates **ephemeral endpoints** that only exist when testing is enabled...
+
+[Full code examples]
+[Technical details]
+[Under the hood explanations]
+```
+
+**Why this matters:**
+- Landing page readers want quick overview to decide if tool is relevant
+- Docs readers are already committed and want deep technical understanding
+- Long explanations on landing page → high bounce rate
+- Bullet points on docs pages → readers feel shortchanged
+
+**Rule:** If explanation requires more than 3-4 lines, it belongs in docs, not landing page.
+
+### The Realistic Testing Gap Framing
+
+**Most teams actually do:**
+- Unit tests (Jest/Vitest) → Test functions in isolation
+- Browser tests (Playwright/Cypress) → Test happy path only
+
+**The critical gap:**
+
+Unit tests CAN test server-side logic, but:
+- Requires extensive code-level mocking (sessions, auth, request objects)
+- Mocks create distance from production reality
+- Easy to introduce bugs that only surface in real user journeys
+
+Browser tests capture real execution, but:
+- Limited to 1-2 scenarios (happy path)
+- Testing multiple scenarios requires complex setup OR server restarts
+
+**The reality developers face:**
+Server-side code executes as part of user journeys with real sessions, auth context, and middleware in production. You're testing it either in isolation (unit tests with mocks) or only for the happy path (browser tests).
+
+**How Scenarist fills the gap:**
+Test all scenarios (error cases, edge cases, different user states) through real HTTP requests with real server-side execution (sessions, middleware, Server Components), while mocking only external APIs.
+
+**Why this framing works:**
+- Acknowledges unit tests ARE valuable
+- Explains the REAL problem: mocking creates testing/reality gap
+- Shows browser testing is closer to production
+- Positions Scenarist as removing the mocking gap
+
+### Framework-Agnostic Positioning
+
+**The Mistake:**
+Early documentation positioned Scenarist as primarily for Next.js/Server Components.
+
+**The Reality:**
+Scenarist works with ANY Node.js framework:
+- Express, Hono, Fastify (pure backend APIs)
+- Next.js (Pages Router + App Router)
+- Remix, SvelteKit (future)
+
+**Server Components is ONE use case among many:**
+- API routes (all frameworks)
+- Middleware chains (all frameworks)
+- Validation logic (all frameworks)
+- SSR (Next.js, Remix, SvelteKit)
+- Server Components (Next.js App Router)
+- Business logic (all frameworks)
+
+**Correct opening:**
+```markdown
+Whether you're building with **Express**, **Hono**, **Fastify**, **Next.js**, or **Remix**...
+```
+
+**Not:**
+```markdown
+Test Next.js Server Components without Jest...
+```
+
+**Why this matters:**
+Narrowing to Next.js alienates Express/Hono/Fastify developers who are majority of Node.js ecosystem.
+
+### Ephemeral Endpoints Explanation (Docs, Not Landing)
+
+**Belongs in docs pages (why-scenarist.md, not landing page):**
+
+Three key concepts to explain:
+1. **Ephemeral endpoints** - `enabled` flag controls activation
+2. **Test isolation** - Unique test IDs via `crypto.randomUUID()`
+3. **Playwright helpers** - Automatic test ID management
+
+**Landing page (bullet points):**
+```markdown
+- **Ephemeral endpoints:** Scenario switching only active when `enabled: true` (zero production overhead)
+- **Test isolation:** Unique test IDs enable parallel execution without interference
+```
+
+**Docs page (full explanation):**
+```markdown
+## How It Works: Ephemeral Endpoints & Test Isolation
+
+### Ephemeral Scenario Endpoints
+
+Scenarist creates **ephemeral endpoints** that only exist when testing is enabled...
+
+**What the `enabled` flag controls:**
+- When `enabled: true` (test mode): Endpoints active, middleware extracts IDs, MSW registered
+- When `enabled: false` (production): Endpoints return 404, middleware no-ops, zero overhead
+
+[Code examples]
+[Technical details]
+```
+
+**Why this matters:**
+Technical details like "how enabled flag works" are valuable but too detailed for landing page. Landing page shows WHAT (ephemeral endpoints exist), docs show HOW (enabled flag mechanism).
+
+### Content Hierarchy Decision Framework
+
+**When writing documentation, ask:**
+
+1. **Is this information essential for decision-making?**
+   - YES → Landing page (bullet point)
+   - NO → Docs page (detailed explanation)
+
+2. **Can this be explained in 1-2 lines?**
+   - YES → Landing page
+   - NO → Docs page
+
+3. **Does this explain HOW it works technically?**
+   - YES → Docs page
+   - NO → Could be landing page
+
+4. **Would a developer skip this if they're just evaluating?**
+   - YES → Docs page
+   - NO → Landing page
+
+**Examples:**
+
+| Content | Landing Page? | Docs Page? | Rationale |
+|---------|---------------|------------|-----------|
+| "Ephemeral endpoints (zero production overhead)" | ✅ YES | ✅ YES (detailed) | Essential decision factor + needs technical explanation |
+| "Test isolation via unique IDs" | ✅ YES | ✅ YES (detailed) | Essential benefit + needs mechanism explanation |
+| "How `enabled` flag controls endpoints" | ❌ NO | ✅ YES | Technical detail, not decision factor |
+| "Under the hood: test ID routing" | ❌ NO | ✅ YES | Implementation detail |
+| "Type-safe scenario IDs" | ✅ YES | ✅ YES (detailed) | Developer experience win + needs examples |
+| "Code reduction: 77%" | ❌ NO | ❌ NO | Marketing fluff, remove entirely |
+
+### Writing Checklist for Every Page
+
+**Before publishing any documentation page, verify:**
+
+✅ **Accuracy:**
+- [ ] No "CAN'T" statements that should be "CAN, but painful"
+- [ ] Claims about unit tests acknowledge they work but are painful
+- [ ] Testing gap accurately described (mocking creates distance, not impossibility)
+
+✅ **No Marketing Fluff:**
+- [ ] No percentage claims without context
+- [ ] No "X times faster" without explanation
+- [ ] Code comparisons speak for themselves
+
+✅ **Correct Content Level:**
+- [ ] Landing page has only bullet points and high-level overview
+- [ ] Technical details and long explanations are in docs pages
+- [ ] Each piece of content is in appropriate location
+
+✅ **Framework-Agnostic:**
+- [ ] Express, Hono, Fastify mentioned alongside Next.js
+- [ ] Server Components presented as one use case, not THE use case
+- [ ] Examples show multiple frameworks when relevant
+
+✅ **Code Examples:**
+- [ ] All code examples are complete and copy-paste ready
+- [ ] No placeholders or undefined variables
+- [ ] Examples match real type signatures
+- [ ] Comments explain non-obvious parts
+
+✅ **Realistic Testing Gap:**
+- [ ] Acknowledges unit tests are valuable
+- [ ] Explains mocking creates testing/reality gap
+- [ ] Shows browser testing closer to production
+- [ ] Positions Scenarist as removing mocking gap, not replacing unit tests
+
+## 8. Next Steps
 
 ### Immediate Actions
 
