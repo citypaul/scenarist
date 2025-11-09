@@ -20,9 +20,9 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 
 ## Fast E2E Testing for Full-Stack Frameworks
 
-**Next.js, Remix, and SvelteKit require E2E testing for Server Components and loaders.** The Next.js team explicitly recommends "End-to-End Testing over Unit Testing for async [Server] components." But traditional E2E testing is painfully slow—restarting your app for every scenario wastes 60+ seconds, shared MSW handlers cause flaky tests, and you can't run tests in parallel with different backend states.
+**Next.js, Remix, and SvelteKit require E2E testing for Server Components and loaders.** The Next.js team explicitly recommends "End-to-End Testing over Unit Testing for async [Server] components." But traditional E2E testing is painfully slow—restarting your app for every scenario wastes valuable development time, shared MSW handlers cause flaky tests, and you can't run tests in parallel with different backend states.
 
-**Scenarist makes E2E testing as fast as unit tests.** Switch backend scenarios in less than 100ms without restarting your app. Run 100+ tests concurrently with perfect isolation. Test shopping cart flows, checkout journeys, and payment processing end-to-end—all in the browser with real Server Components.
+**Scenarist makes E2E testing as fast as unit tests.** Switch backend scenarios instantly without restarting your app. Run large test suites concurrently with perfect isolation. Test shopping cart flows, checkout journeys, and payment processing end-to-end—all in the browser with real Server Components.
 
 Works with **Express**, **Next.js** (Pages + App Router), **Fastify**, **Hono**, **Remix**, and **SvelteKit**.
 
@@ -32,7 +32,7 @@ Testing complete user journeys with different backend states is painful:
 
 <CardGrid>
   <Card title="❌ App Restart Hell" icon="refresh">
-    Want to test checkout with payment errors? Restart your entire app. 60 seconds wasted per scenario.
+    Want to test checkout with payment errors? Restart your entire app. Precious development time wasted per scenario.
   </Card>
   <Card title="❌ Test Pollution" icon="error">
     Shared MSW handlers cause flaky tests. Shopping cart from test A appears in test B.
@@ -41,7 +41,7 @@ Testing complete user journeys with different backend states is painful:
     Can't run parallel tests with different backend states. Test suites take hours.
   </Card>
   <Card title="❌ Scattered Mocks" icon="puzzle">
-    Copy-paste cart setup across 50 test files. Change one field, update 50 files.
+    Copy-paste cart setup across dozens of test files. Change one field, update every file.
   </Card>
 </CardGrid>
 
@@ -54,10 +54,10 @@ Scenarist enables **full-stack integration testing** with complete user journey 
     Test multi-step flows end-to-end. Shopping cart → Checkout → Payment → Confirmation. One test.
   </Card>
   <Card title="✅ Instant Switching" icon="setting">
-    Change backend states in less than 100ms. No app restarts. 10x faster test suites.
+    Change backend states instantly. No app restarts. Dramatically faster test suites.
   </Card>
   <Card title="✅ Perfect Isolation" icon="approve-check">
-    Every test gets isolated scenario and state. Run 100+ tests concurrently without conflicts.
+    Every test gets isolated scenario and state. Run large test suites concurrently without conflicts.
   </Card>
   <Card title="✅ Centralized Scenarios" icon="star">
     Define shopping cart flow once. Reuse across all tests. Single source of truth.
@@ -167,7 +167,7 @@ test('successful checkout flow', async ({ page }) => {
 
 // Test error scenario with different backend state
 test('payment failure handling', async ({ page }) => {
-  await switchScenario(page, 'payment-error');  // Less than 100ms switch, no restart
+  await switchScenario(page, 'payment-error');  // Instant switch, no restart
 
   // Same journey, different backend state
   await page.goto('/products');
