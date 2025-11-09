@@ -44,6 +44,11 @@ ADRs capture the **context**, **decision**, **alternatives considered**, and **c
   - **Why**: Idempotent tests, predictable scenario behavior
   - **Impact**: Tests can run multiple times with same results
 
+- **[ADR-0012: Return undefined for Missing State in Pure Templates](0012-template-missing-state-undefined.md)** ✨ NEW (2025-11-09)
+  - **Decision**: Pure templates with missing state return `undefined` instead of unreplaced template string
+  - **Why**: Type safety, no leaked implementation details, consistent with JavaScript semantics
+  - **Impact**: Partially supersedes ADR-0002, removes need for application workarounds
+
 ### Framework Integration
 
 - **[ADR-0007: Framework-Specific Header Helpers](0007-framework-specific-header-helpers.md)** (2025-11-02)
@@ -98,6 +103,7 @@ ADRs capture the **context**, **decision**, **alternatives considered**, and **c
 - **Nov 02**: ADR-0009 (Upfront Registration) - Simplified initialization
 - **Nov 02**: ADR-0010 (Default Key) - Future convention consideration
 - **Nov 02**: ADR-0011 (Domain Constants) - DRY refactoring
+- **Nov 09**: ADR-0012 (Template Undefined) - Type-safe missing state handling
 
 ## Key Decisions by Category
 
@@ -109,6 +115,7 @@ ADRs capture the **context**, **decision**, **alternatives considered**, and **c
 - [ADR-0008](0008-type-safe-scenario-ids.md): TypeScript generics provide compile-time scenario ID validation
 - [ADR-0009](0009-upfront-scenario-registration.md): Upfront registration enables type inference
 - [ADR-0010](0010-default-key-convention.md): Type-safe `defaultScenarioId` prevents typos
+- [ADR-0012](0012-template-missing-state-undefined.md): Pure templates return `undefined` for type safety
 
 ### Testing
 - [ADR-0003](0003-testing-strategy.md): Four-layer strategy with clear boundaries

@@ -289,7 +289,8 @@ See [ADR-0004](./0004-why-composition-tests-unnecessary.md) for detailed analysi
 ✅ **Performance characteristics** - No significant overhead detected. Match checking, sequence lookup, and template replacement are all fast enough for testing workloads. No optimization needed for v1.
 
 ✅ **Template edge cases** - Handled through graceful degradation:
-- Undefined keys remain as templates (e.g., `{{state.missing}}`)
+- **Pure templates** with missing keys return `undefined` (see [ADR-0012](./0012-template-missing-state-undefined.md))
+- **Mixed templates** with missing keys keep unreplaced template in string (e.g., `"Count: {{state.missing}}"`)
 - Nested path traversal handles null/undefined safely
 - Array length works via `{{state.items.length}}`
 - No circular reference issues (state is JSON-serializable)
