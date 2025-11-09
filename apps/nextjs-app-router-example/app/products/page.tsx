@@ -16,6 +16,7 @@
  * Scenarist approach: ✅ Playwright + scenario switching
  */
 
+import { headers } from 'next/headers';
 import type { ProductsResponse } from '@/types/product';
 
 type ProductsPageProps = {
@@ -23,11 +24,23 @@ type ProductsPageProps = {
 };
 
 async function fetchProducts(tier: string = 'standard'): Promise<ProductsResponse> {
-  const response = await fetch('http://localhost:3001/products', {
-    headers: {
-      'x-user-tier': tier, // Scenarist matches on this header
-      'x-test-id': 'default-test', // Test isolation
-    },
+  // Get test ID from incoming page request headers
+  // Playwright sets this header when navigating to the page
+  const headersList = await headers();
+  const testId = headersList.get('x-test-id');
+
+  // Fetch from local API route, passing through test ID for Scenarist
+  const fetchHeaders: HeadersInit = {
+    'x-user-tier': tier, // Application header for tier-based matching
+  };
+
+  // Include test ID if present (from Playwright test)
+  if (testId) {
+    fetchHeaders['x-test-id'] = testId;
+  }
+
+  const response = await fetch('http://localhost:3002/api/products', {
+    headers: fetchHeaders,
     cache: 'no-store', // Disable Next.js caching for demo
   });
 

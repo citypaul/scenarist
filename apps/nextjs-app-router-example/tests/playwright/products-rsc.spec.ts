@@ -51,7 +51,7 @@ test.describe('Products Page - React Server Components', () => {
     await expect(page.getByText('Current tier: premium')).toBeVisible();
 
     // Verify products rendered with premium pricing
-    await expect(page.getByText('Product A')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Product A' })).toBeVisible();
     await expect(page.getByText('£99.99')).toBeVisible(); // Premium price for Product A
 
     // Verify tier badge on product card
@@ -78,7 +78,7 @@ test.describe('Products Page - React Server Components', () => {
     await expect(page.getByText('Current tier: standard')).toBeVisible();
 
     // Verify products rendered with standard pricing
-    await expect(page.getByText('Product A')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Product A' })).toBeVisible();
     await expect(page.getByText('£149.99')).toBeVisible(); // Standard price for Product A
 
     // Verify tier badge on product card
@@ -94,9 +94,9 @@ test.describe('Products Page - React Server Components', () => {
     await page.goto('/products?tier=standard');
 
     // Verify all 3 products are rendered
-    await expect(page.getByText('Product A')).toBeVisible();
-    await expect(page.getByText('Product B')).toBeVisible();
-    await expect(page.getByText('Product C')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Product A' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Product B' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Product C' })).toBeVisible();
 
     // Verify the grid layout (should have 3 product cards)
     const productCards = page.locator('div.border');
