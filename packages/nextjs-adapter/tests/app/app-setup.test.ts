@@ -120,4 +120,76 @@ describe('App Router createScenarist', () => {
     scenarist.start();
     await expect(scenarist.stop()).resolves.not.toThrow();
   });
+
+  describe('getHeaders method', () => {
+    it('should extract test ID from request using default configured header name', () => {
+      const { scenarist } = createTestSetup();
+      const headers = new Headers({ 'x-test-id': 'test-123' });
+      const req = new Request('http://localhost:3000', { headers });
+
+      const result = scenarist.getHeaders(req);
+
+      expect(result).toEqual({ 'x-test-id': 'test-123' });
+    });
+
+    it('should use default test ID when header is missing', () => {
+      const { scenarist } = createTestSetup();
+      const req = new Request('http://localhost:3000');
+
+      const result = scenarist.getHeaders(req);
+
+      expect(result).toEqual({ 'x-test-id': 'default-test' });
+    });
+
+    it('should respect custom header name from config', () => {
+      const scenarist = createScenarist({
+        enabled: true,
+        scenarios: testScenarios,
+        headers: { testId: 'x-custom-test-id' },
+      });
+      const headers = new Headers({ 'x-custom-test-id': 'custom-123' });
+      const req = new Request('http://localhost:3000', { headers });
+
+      const result = scenarist.getHeaders(req);
+
+      expect(result).toEqual({ 'x-custom-test-id': 'custom-123' });
+    });
+
+    it('should respect custom default test ID from config', () => {
+      const scenarist = createScenarist({
+        enabled: true,
+        scenarios: testScenarios,
+        defaultTestId: 'my-default',
+      });
+      const req = new Request('http://localhost:3000');
+
+      const result = scenarist.getHeaders(req);
+
+      expect(result).toEqual({ 'x-test-id': 'my-default' });
+    });
+
+    it('should handle both custom header name and custom default test ID', () => {
+      const scenarist = createScenarist({
+        enabled: true,
+        scenarios: testScenarios,
+        headers: { testId: 'x-my-header' },
+        defaultTestId: 'my-default',
+      });
+      const req = new Request('http://localhost:3000');
+
+      const result = scenarist.getHeaders(req);
+
+      expect(result).toEqual({ 'x-my-header': 'my-default' });
+    });
+
+    it('should handle case-insensitive header lookup', () => {
+      const { scenarist } = createTestSetup();
+      const headers = new Headers({ 'X-TEST-ID': 'test-123' }); // uppercase
+      const req = new Request('http://localhost:3000', { headers });
+
+      const result = scenarist.getHeaders(req);
+
+      expect(result).toEqual({ 'x-test-id': 'test-123' });
+    });
+  });
 });

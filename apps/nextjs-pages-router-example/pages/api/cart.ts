@@ -10,7 +10,6 @@
  */
 
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
 import { scenarist } from '../../lib/scenarist';
 
 type CartItem = {
@@ -36,7 +35,7 @@ export default async function handler(
     // Scenarist MSW will intercept this request and return mocked cart data
     const response = await fetch('http://localhost:3001/cart', {
       headers: {
-        ...getScenaristHeaders(req, scenarist),  // ✅ Scenarist infrastructure headers (x-test-id)
+        ...scenarist.getHeaders(req),  // ✅ Scenarist infrastructure headers (x-test-id)
       },
     });
 

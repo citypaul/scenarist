@@ -8,7 +8,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
 import { scenarist } from '../../../../../lib/scenarist';
 
 type RouteContext = {
@@ -23,7 +22,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     // Scenarist MSW will intercept this request and return sequenced responses
     const response = await fetch(`http://localhost:3001/github/jobs/${id}`, {
       headers: {
-        ...getScenaristHeaders(request, scenarist),
+        ...scenarist.getHeaders(request),
       },
     });
 

@@ -13,7 +13,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import type { ProductsResponse } from '../../../types/product';
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
 import { scenarist } from '../../../lib/scenarist';
 
 export async function GET(request: NextRequest) {
@@ -25,7 +24,7 @@ export async function GET(request: NextRequest) {
     // Scenarist MSW will intercept this request and return mocked data based on scenario
     const response = await fetch('http://localhost:3001/products', {
       headers: {
-        ...getScenaristHeaders(request, scenarist),  // ✅ Scenarist infrastructure headers (x-test-id)
+        ...scenarist.getHeaders(request),  // ✅ Scenarist infrastructure headers (x-test-id)
         'x-user-tier': userTier,                      // ✅ Application-specific header
       },
     });
