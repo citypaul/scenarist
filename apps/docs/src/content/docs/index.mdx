@@ -31,17 +31,17 @@ import { Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
 
 **The critical gap:**
 
-Unit tests work great, but they test code in isolation—not how it actually runs in production:
-- ❌ No real server-side context (sessions, auth state, request lifecycle)
-- ❌ Server Components are especially hard to unit test properly
-- ❌ Functions tested individually, not as integrated user journeys
-- ❌ Missing the entry points and middleware that shape real execution
+Unit tests CAN test server-side logic, but it's painful and risky:
+- ⚠️ Requires extensive mocking at the code level (sessions, auth, request objects)
+- ⚠️ Mocks create a gap between how you test vs. how code actually runs
+- ⚠️ Easy to introduce bugs that only surface in real user journeys
+- ⚠️ Testing integrated flows requires complex test setup (mocking middleware chains, context, etc.)
 
 Browser tests capture real user journeys, but only for 1-2 scenarios:
 - ❌ Can't test error cases, edge cases, different user states
 - ❌ Testing multiple scenarios requires complex per-test mocking OR impractical server restarts
 
-**The reality:** Your server-side code executes as part of user journeys with real sessions, auth context, and middleware—but you're testing it either in isolation (unit tests) or only for the happy path (browser tests).
+**The reality:** You can test server-side logic in unit tests with enough mocking, but those mocks create distance from production reality. Browser tests are closer to reality but limited to happy paths.
 
 **Scenarist fills the gap:**
 Test your backend logic through real HTTP requests in the browser with **unlimited scenarios**. Your code executes with real server-side context, sessions, and middleware chains—just like production—but with external APIs mocked per scenario.
@@ -124,27 +124,27 @@ export const test = withScenarios(scenarios).extend<MyFixtures>({
 | What You Test | Jest/Vitest | Playwright/Cypress | **Scenarist + Playwright** |
 |---------------|-------------|-------------------|----------------------------|
 | **Business Logic** | ✅ Functions in isolation | ❌ Can't test multiple scenarios | ✅ **All scenarios through HTTP** |
-| **Server-Side Context** | ❌ Mock sessions/auth | ❌ Backend mocked away | ✅ **Real sessions, real context** |
-| **Middleware Chains** | ⚠️ Can test, but isolated | ❌ Never execute | ✅ **Real execution as integrated flow** |
+| **Server-Side Context** | ⚠️ Can mock, but painful | ❌ Backend mocked away | ✅ **Real sessions, real context** |
+| **Middleware Chains** | ⚠️ Can mock, but complex | ❌ Never execute | ✅ **Real execution as integrated flow** |
 | **Validation Logic** | ✅ Individual validators | ❌ Not tested with HTTP layer | ✅ **Through full request flow** |
-| **Server Components** | ⚠️ Hard to test properly | ❌ Not tested | ✅ **Real rendering with server context** |
-| **Error Scenarios** | ✅ Unit level only | ❌ Only happy path | ✅ **All scenarios in browser** |
-| **User Journey** | ❌ No browser | ✅ Happy path only | ✅ **All scenarios as real journeys** |
-| **External APIs** | N/A | Manual per-test setup | ✅ **Scenario-based (MSW)** |
-| **Multiple Scenarios** | ✅ Unlimited | ❌ Just 1-2 (happy paths) | ✅ **Unlimited in browser** |
+| **Server Components** | ⚠️ Can test, but very painful | ❌ Not tested | ✅ **Real rendering with server context** |
+| **Error Scenarios** | ✅ Unlimited (with mocking) | ❌ Only happy path | ✅ **All scenarios in browser** |
+| **User Journey** | ⚠️ Can mock, but fragile | ✅ Happy path only | ✅ **All scenarios as real journeys** |
+| **External APIs** | ⚠️ Mock at code level | Manual per-test setup | ✅ **Scenario-based (MSW)** |
+| **Multiple Scenarios** | ✅ Unlimited (with mocks) | ❌ Just 1-2 (happy paths) | ✅ **Unlimited in browser** |
 | **Test Speed** | ✅ Very fast | ⚠️ Moderate | ✅ **Fast** |
 
 :::tip[The Gap Scenarist Fills]
 
 **What teams do today:**
-- Unit tests → Test functions in isolation (works well, but no real server context or user journeys)
-- Browser tests → Test happy path only (real execution, but limited scenarios)
+- Unit tests → CAN test everything, but requires extensive mocking at code level (creates gap between tests and reality)
+- Browser tests → Real execution without mocks, but limited to happy path only
 
-**The gap:** Can't test your backend logic through real HTTP requests with multiple scenarios in the browser. Your code runs differently in unit tests (isolated, no server context) than in production (integrated, with sessions/auth/middleware).
+**The gap:** Mocking sessions, auth, request objects, middleware in unit tests is painful and creates distance from production. Those mocks can hide bugs that only surface in real user journeys.
 
 **Why the gap exists:** Testing multiple scenarios in browser-based tests requires complex per-test mocking setup OR impractical server restarts OR hitting real external APIs (slow/flaky).
 
-**How Scenarist fills it:** Test all scenarios (error cases, edge cases, different user states) through real HTTP requests with real server-side execution (sessions, middleware, Server Components) while mocking only external APIs.
+**How Scenarist fills it:** Test all scenarios through real HTTP requests with real server execution (no code-level mocking), while mocking only external APIs. Your code runs exactly like production, but with controllable external dependencies.
 :::
 
 ---

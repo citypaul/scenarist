@@ -76,7 +76,9 @@
       "WebFetch(domain:docs.astro.build)",
       "WebFetch(domain:starlight.astro.build)",
       "WebFetch(domain:astro.build)",
-      "Bash(pnpm remove:*)"
+      "Bash(pnpm remove:*)",
+      "Bash(things, but it's painful to do it and often requires a lot of mocking\nat the code level, which can easily lead to bugs that aren't spotted)",
+      "Bash(when the user goes through real journies\"\n\n**Key Changes:**\n\nLanding page (index.mdx):\n- Changed from \"Unit tests CAN'T\"\" to \"\"Unit tests CAN, but it's painful and risky\"\n- Listed specific pain points: extensive code-level mocking required\n- Emphasized: mocks create gap between how you test vs. how code runs\n- Updated table with ⚠️ symbols: \"Can mock, but painful/complex/fragile\"\n- Rewritten tip: \"CAN test everything, but requires extensive mocking\"\n\nWhy Scenarist page (why-scenarist.md):\n- New section: \"What's painful with unit tests\"\"\n- Explicitly states: \"\"You CAN test server-side logic in unit tests\"\"\n- Lists what you must mock: request/response, sessions, auth, middleware\n- Key insight: \"\"Those mocks create distance from production\"\"\n- Focuses on risk: bugs hidden by mocks, only surface in real journeys\n\n**The Accurate Framing:**\n\nBEFORE: \"\"Unit tests can't test server-side context\" ❌ (too absolute)\nAFTER: \"Unit tests can test it, but require extensive mocking that creates distance from production reality\" ✅\n\n**User Insight Captured:**\n\nUnit tests aren''t incapable—they''re painful and create a testing/reality\ngap through code-level mocking. Scenarist removes that gap by running\nreal server execution with only external APIs mocked.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []

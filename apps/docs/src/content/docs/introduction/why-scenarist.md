@@ -36,12 +36,16 @@ test('user completes checkout', async ({ page }) => {
 
 ### The Critical Gap
 
-**What unit tests CAN'T do (even though they test individual pieces well):**
-- ❌ Test with real server-side context (sessions, auth state, request lifecycle)
-- ❌ Test Server Components properly (especially hard to unit test)
-- ❌ Test code as integrated user journeys (functions run individually, not as part of flows)
-- ❌ Test with the entry points and middleware that shape real execution
-- ❌ Verify that pieces work together correctly in production-like conditions
+**What's painful with unit tests:**
+
+You CAN test server-side logic in unit tests, but it requires extensive code-level mocking:
+- ⚠️ Mock request/response objects manually
+- ⚠️ Mock session state and auth context
+- ⚠️ Mock middleware chains and execution order
+- ⚠️ Mock database connections, external service clients
+- ⚠️ Server Components require especially complex test setup
+
+**The risk:** Those mocks create distance from production. Code tested with mocked sessions/auth/middleware can hide bugs that only surface when users hit real journeys with real server-side context.
 
 **What browser tests DON'T cover:**
 - ❌ Error scenarios (payment failures, validation errors, API timeouts)
@@ -54,7 +58,7 @@ test('user completes checkout', async ({ page }) => {
 - OR restarting your server per scenario (impractical in CI)
 - OR hitting real external APIs (slow, flaky, expensive)
 
-**The result:** Your server-side code runs as part of user journeys with real sessions, auth context, and middleware in production—but you're testing it either in isolation (unit tests) or only for the happy path (browser tests).
+**The result:** You can test everything in unit tests with enough mocking, but those mocks create a gap between how you test and how code actually runs in production. Browser tests give you production-like execution, but only for the happy path.
 
 ### What Developers Actually Need
 
