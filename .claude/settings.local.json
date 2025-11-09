@@ -71,7 +71,8 @@
       "Bash(do sed -i.bak \"/import.*getScenaristHeaders.*from.*@scenarist\\/nextjs-adapter\\/pages/d\" \"$file\")",
       "Bash(done)",
       "Bash(for:*)",
-      "Bash(do)"
+      "Bash(do)",
+      "Bash(pnpm create:*)"
     ],
     "deny": [],
     "ask": []

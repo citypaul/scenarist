@@ -1,0 +1,156 @@
+---
+title: Testing Next.js, Remix, and TanStack Is Broken.
+description: Scenarist fixes E2E testing for modern frameworks
+template: splash
+hero:
+  tagline: Modern frameworks make building features easy but testing them painful. Scenarist fixes it.
+  image:
+    file: ../../assets/houston.webp
+  actions:
+    - text: Get Started
+      link: /introduction/quick-start
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/citypaul/scenarist
+      icon: external
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## The Problem
+
+Modern frameworks make testing an afterthought:
+
+<CardGrid>
+  <Card title="❌ Test Pollution" icon="error">
+    Shared MSW handlers cause flaky tests. Tests interfere with each other.
+  </Card>
+  <Card title="❌ Sequential Execution" icon="warning">
+    Can't run tests in parallel. Test suites take forever.
+  </Card>
+  <Card title="❌ Scattered Mocks" icon="puzzle">
+    Copy-paste mocks across 50 test files. Nightmare to maintain.
+  </Card>
+  <Card title="❌ Restart Hell" icon="refresh">
+    Want to test a different scenario? Restart your entire app.
+  </Card>
+</CardGrid>
+
+## The Solution
+
+Scenarist brings **scenario-based testing** to E2E tests:
+
+<CardGrid>
+  <Card title="✅ Test Isolation" icon="approve-check">
+    Every test gets its own scenario via test IDs. No more pollution.
+  </Card>
+  <Card title="✅ Parallel Execution" icon="rocket">
+    Run hundreds of tests concurrently. Fast feedback loops.
+  </Card>
+  <Card title="✅ Centralized Mocks" icon="star">
+    Define scenarios once. Reuse across all tests. DRY principles.
+  </Card>
+  <Card title="✅ Runtime Switching" icon="setting">
+    Change scenarios without restarting. Test any flow instantly.
+  </Card>
+</CardGrid>
+
+## Framework-Specific Pain
+
+### Next.js App Router
+
+> "Since async Server Components are new to the React ecosystem, some tools do not fully support them. In the meantime, we recommend using End-to-End Testing over Unit Testing for async components."
+>
+> — Next.js Official Docs
+
+**Translation:** Jest doesn't support RSC. Spawn a new Next.js instance per test. Hope it works.
+
+**Scenarist Solution:** [Test React Server Components with Playwright →](/frameworks/nextjs/app/getting-started)
+
+### Remix
+
+> "At the time of this writing, there aren't standard ways of testing components that have Remix code."
+>
+> — Remix Testing Documentation
+
+**Translation:** Test loaders separately from components. Hope they integrate correctly. Rely on slow E2E tests.
+
+**Scenarist Solution:** Coming soon
+
+### TanStack Router
+
+> "The official docs don't mention testing at all"
+>
+> — GitHub Discussion #655
+
+**Translation:** You're on your own. Create custom helpers. Reinvent the wheel for every project.
+
+**Scenarist Solution:** Coming soon
+
+## Quick Example
+
+```typescript
+// Define scenarios once
+const scenarios = {
+  premiumUser: {
+    mocks: [
+      {
+        method: 'GET',
+        url: '/api/products',
+        match: { headers: { 'x-tier': 'premium' } },
+        response: { status: 200, body: { products: premiumProducts } },
+      },
+    ],
+  },
+  standardUser: {
+    mocks: [
+      {
+        method: 'GET',
+        url: '/api/products',
+        response: { status: 200, body: { products: standardProducts } },
+      },
+    ],
+  },
+};
+
+// Use in tests - switch scenarios at runtime
+test('premium users see premium products', async ({ page }) => {
+  await switchScenario(page, 'premiumUser');
+  await page.goto('/products');
+  await expect(page.getByText('Premium Product')).toBeVisible();
+});
+
+test('standard users see standard products', async ({ page }) => {
+  await switchScenario(page, 'standardUser');
+  await page.goto('/products');
+  await expect(page.getByText('Standard Product')).toBeVisible();
+});
+
+// Both tests run in parallel, no interference
+```
+
+## Get Started
+
+<CardGrid>
+  <Card title="Next.js Pages Router" icon="seti:next">
+    Test getServerSideProps and API routes with scenario-based mocks.
+
+    [Get Started →](/frameworks/nextjs/pages/getting-started)
+  </Card>
+  <Card title="Next.js App Router" icon="seti:next">
+    Test React Server Components and Route Handlers with Playwright.
+
+    [Get Started →](/frameworks/nextjs/app/getting-started)
+  </Card>
+  <Card title="Express" icon="seti:nodejs">
+    Test Express APIs with centralized scenario management.
+
+    [Get Started →](/frameworks/express/getting-started)
+  </Card>
+  <Card title="Core Concepts" icon="open-book">
+    Learn about scenarios, test isolation, and runtime switching.
+
+    [Learn More →](/concepts/scenarios)
+  </Card>
+</CardGrid>
