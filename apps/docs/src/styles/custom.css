@@ -85,34 +85,34 @@
 }
 
 /* Hero button visibility improvements */
-.hero .action.primary {
+.hero .sl-link-button.primary {
 	background: rgb(var(--sl-color-accent));
 	color: white;
 	border: 2px solid rgb(var(--sl-color-accent));
 }
 
-.hero .action.primary:hover {
+.hero .sl-link-button.primary:hover {
 	background: rgb(var(--sl-color-accent-high));
 	border-color: rgb(var(--sl-color-accent-high));
 }
 
-.hero .action.secondary {
+.hero .sl-link-button.secondary {
 	background: transparent;
 	color: rgb(var(--sl-color-white));
 	border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
-.hero .action.secondary:hover {
+.hero .sl-link-button.secondary:hover {
 	border-color: rgb(var(--sl-color-accent));
 	background: rgba(var(--sl-color-accent), 0.1);
 }
 
 /* Dark mode hero button adjustments */
-:root[data-theme='dark'] .hero .action.primary {
+:root[data-theme='dark'] .hero .sl-link-button.primary {
 	background: rgb(var(--sl-color-accent));
 	border-color: rgb(var(--sl-color-accent));
 }
 
-:root[data-theme='dark'] .hero .action.secondary {
+:root[data-theme='dark'] .hero .sl-link-button.secondary {
 	border-color: rgba(255, 255, 255, 0.4);
 }
