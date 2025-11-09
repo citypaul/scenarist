@@ -17,8 +17,8 @@ export const applyTemplates = (value: unknown, state: Record<string, unknown>): 
       const path = pureTemplateMatch[1]!; // Guaranteed to exist by regex capture group
       const stateValue = resolveStatePath(state, path);
 
-      // Return raw value if found, otherwise keep template string unchanged
-      return stateValue !== undefined ? stateValue : value;
+      // Return raw value if found, otherwise return undefined
+      return stateValue !== undefined ? stateValue : undefined;
     }
 
     // Mixed template (has surrounding text): use string replacement
