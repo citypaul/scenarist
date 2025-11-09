@@ -17,30 +17,27 @@
  */
 
 import { headers } from 'next/headers';
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
 import type { ProductsResponse } from '@/types/product';
+import { scenarist } from '@/lib/scenarist';
 
 type ProductsPageProps = {
   searchParams: Promise<{ tier?: string }>;
 };
 
 async function fetchProducts(tier: string = 'standard'): Promise<ProductsResponse> {
-  // Get test ID from incoming page request headers
-  // Playwright sets this header when navigating to the page
+  // Create a mock Request object from the incoming headers
+  // This allows us to use getScenaristHeaders helper
   const headersList = await headers();
-  const testId = headersList.get('x-test-id');
-
-  // Fetch from local API route, passing through test ID for Scenarist
-  const fetchHeaders: HeadersInit = {
-    'x-user-tier': tier, // Application header for tier-based matching
-  };
-
-  // Include test ID if present (from Playwright test)
-  if (testId) {
-    fetchHeaders['x-test-id'] = testId;
-  }
+  const mockRequest = new Request('http://localhost:3002', {
+    headers: headersList,
+  });
 
   const response = await fetch('http://localhost:3002/api/products', {
-    headers: fetchHeaders,
+    headers: {
+      ...getScenaristHeaders(mockRequest, scenarist),
+      'x-user-tier': tier, // Application-specific header for tier matching
+    },
     cache: 'no-store', // Disable Next.js caching for demo
   });
 
