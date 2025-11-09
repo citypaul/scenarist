@@ -172,13 +172,13 @@ describe('Template Replacement', () => {
       expect(typeof result).toBe('boolean');
     });
 
-    it('should leave pure template unchanged when state key missing', () => {
+    it('should return undefined when pure template state key is missing', () => {
       const value = '{{state.nonexistent}}';
       const state = {};
 
       const result = applyTemplates(value, state);
 
-      expect(result).toBe('{{state.nonexistent}}');
+      expect(result).toBeUndefined();
     });
 
     it('should convert to string when template is embedded (not pure)', () => {

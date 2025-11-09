@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures';
 
 /**
- * Shopping Cart - Phase 8.3
+ * Cart - Client Components
  *
  * Tests stateful mock functionality:
  * - State capture (adding items to cart)
@@ -15,7 +15,7 @@ import { test, expect } from './fixtures';
  * - Accessible markup testing
  */
 
-test.describe('Shopping Cart - Stateful Mocks', () => {
+test.describe('Cart - Client Components', () => {
   test('add product to cart shows item count', async ({ page, switchScenario }) => {
     await switchScenario(page, 'cartWithState');
 

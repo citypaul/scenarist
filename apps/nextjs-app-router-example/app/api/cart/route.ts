@@ -1,34 +1,26 @@
 /**
- * Cart API Route - Phase 8.3
+ * Cart API Route Handler - GET
  *
- * Fetches cart items from external API (json-server).
- * Demonstrates Scenarist's stateful mocks - cart state is captured from
- * POST /cart/add requests and injected into GET /cart responses.
+ * Fetches current cart state from external API (json-server).
+ * Demonstrates Scenarist stateful mocks - cart items are injected from captured state.
  *
- * With Scenarist enabled: Returns mocked cart with captured state
- * With Scenarist disabled: Returns actual json-server data
+ * State flow:
+ * 1. POST /cart/add captures productId into cartItems[] array
+ * 2. GET /cart injects cartItems from state into response
+ * 3. State persists across requests (per test ID)
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
 import { scenarist } from '../../../lib/scenarist';
 
-type CartItem = {
-  readonly productId: number;
-  readonly quantity: number;
-};
-
-type CartResponse = {
-  readonly items: ReadonlyArray<CartItem>;
-};
-
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     // Fetch from json-server (external API)
-    // Scenarist MSW will intercept this request and return mocked cart data
+    // Scenarist MSW will intercept and inject state into response
     const response = await fetch('http://localhost:3001/cart', {
       headers: {
-        ...getScenaristHeaders(request, scenarist),  // ✅ Scenarist infrastructure headers (x-test-id)
+        ...getScenaristHeaders(request, scenarist),
       },
     });
 
@@ -36,7 +28,7 @@ export async function GET(request: Request) {
       throw new Error(`External API error: ${response.status}`);
     }
 
-    const data: CartResponse = await response.json();
+    const data = await response.json();
 
     return NextResponse.json(data);
   } catch (error) {

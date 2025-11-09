@@ -13,7 +13,28 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <nav className="bg-gray-800 text-white p-4">
+          <div className="container mx-auto flex gap-6">
+            <a href="/" className="hover:text-blue-300">
+              Home
+            </a>
+            <a href="/products" className="hover:text-blue-300">
+              Products (RSC)
+            </a>
+            <a href="/polling" className="hover:text-blue-300">
+              Polling (RSC)
+            </a>
+            <a href="/cart-server" className="hover:text-blue-300">
+              Cart Server (RSC)
+            </a>
+            <a href="/cart" className="hover:text-blue-300">
+              Cart (Client)
+            </a>
+          </div>
+        </nav>
+        <main>{children}</main>
+      </body>
     </html>
   );
 }

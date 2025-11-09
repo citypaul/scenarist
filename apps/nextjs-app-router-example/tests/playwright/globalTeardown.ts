@@ -1,12 +1,15 @@
 /**
  * Playwright Global Teardown
  *
- * Phase 8.0 (PLACEHOLDER): Will clean up MSW server in Phase 8.1
+ * Stops MSW server and cleans up resources.
  *
  * This runs once after all Playwright tests complete.
- * It will stop the MSW server and clean up resources.
+ * It stops the MSW server and cleans up resources.
  */
 
+import { scenarist } from '../../lib/scenarist.js';
+
 export default async function globalTeardown(): Promise<void> {
-  console.log('✅ Global teardown (MSW cleanup will be added in Phase 8.1)');
+  console.log('✅ Stopping MSW server');
+  await scenarist.stop();
 }

@@ -1610,6 +1610,290 @@ if (bestMatch) {
 - What happens when neither feature applies?
 - What happens when features should NOT interact?
 
+## Phase 3: Stateful Mocks with RSC - Critical Bugs Discovered (PR #62)
+
+**Completed:** 2025-11-09 (commits 4a08ad1, 6272b3e)
+
+### Context: RSC Examples for Documentation
+
+While implementing React Server Component examples to validate Scenarist's value proposition ("Test Next.js App Router without Jest"), we discovered **two critical bugs** that were blocking stateful mocks with RSC.
+
+**Goal:** Prove that Scenarist can test RSC with stateful mocks (shopping cart state capture/injection).
+
+**Test Suite:**
+- Products RSC: 5 tests (request matching with tier-based pricing)
+- Polling RSC: 5 tests (sequences with polling progression)
+- Cart Server RSC: 5 tests (stateful mocks with state capture/injection)
+
+**Initial Status:** 10/15 passing (Products + Polling working, Cart 0/5 failing)
+
+### Bug #1: Playwright page.request Header Propagation
+
+**Problem:** POST requests to `/api/cart/add` returned intermittent 500 errors, while GET requests worked fine.
+
+**Symptoms:**
+```
+POST /api/cart/add 200 in 511ms   ← SUCCESS (sometimes)
+POST /api/cart/add 500 in 563ms   ← FAILURE (sometimes)
+```
+
+**How We Discovered It:**
+
+1. **Observed inconsistent behavior** - Same test, different results per run
+2. **Added MSW debug logging:**
+   ```typescript
+   server.events.on('request:start', ({ request }) => {
+     console.log('[MSW] Intercepted:', request.method, request.url);
+   });
+   ```
+3. **Saw POST requests intercepted** but not matching scenarios (500 fallback)
+4. **Consulted MSW official documentation** (user requested: "/mcp" + "read the official docs")
+5. **Root cause discovered:** `page.request.post()` uses **Playwright's separate API request context**
+   - Doesn't inherit headers from `page.setExtraHTTPHeaders()`
+   - x-test-id header missing from API requests
+   - MSW couldn't match requests to scenarios → 500 fallback
+
+**Impact Beyond Scenarist:**
+
+This is a **Playwright-specific limitation** that affects ANY test using the `page.request` API for POST/PUT/PATCH operations that need headers propagated from page context. Not specific to Scenarist - would break ANY scenario-based testing with `page.request`.
+
+**The Fix (commit 4a08ad1):**
+
+Modified `switchScenario` to **return testId** so tests can explicitly include it:
+
+```typescript
+// packages/playwright-helpers/src/switch-scenario.ts
+export const switchScenario = async (
+  page: Page,
+  scenarioId: string,
+  options: SwitchScenarioOptions,
+): Promise<string> => {  // Changed from Promise<void>
+  // ... existing setup code ...
+
+  await page.setExtraHTTPHeaders({ [testIdHeader]: testId });
+
+  // Return test ID for explicit use in page.request calls
+  return testId;  // ✅ Now consumers can use it
+};
+```
+
+Updated all cart tests to explicitly include header:
+
+```typescript
+// apps/nextjs-app-router-example/tests/playwright/cart-server-rsc.spec.ts
+test('should display cart item after adding product', async ({ page, switchScenario }) => {
+  const testId = await switchScenario(page, 'cartWithState');  // ✅ Capture testId
+
+  // page.request uses separate context - must explicitly include x-test-id
+  const response = await page.request.post('http://localhost:3002/api/cart/add', {
+    headers: {
+      'Content-Type': 'application/json',
+      'x-test-id': testId,  // ✅ Explicit header propagation
+    },
+    data: { productId: 'prod-1' },
+  });
+
+  expect(response.ok()).toBe(true);
+
+  await page.goto('/cart-server');
+  await expect(page.getByText('Product A')).toBeVisible();
+});
+```
+
+**Result:** Cart POST requests now work consistently. Test status: 10/15 → 15/15 ✅ (but see Bug #2)
+
+**Lesson:** When using `page.request` API in Playwright:
+- **Never assume headers propagate** from `page.setExtraHTTPHeaders()`
+- **Always explicitly include** headers needed for routing/matching
+- **Document this limitation** for adapter consumers
+- **MSW debug logging** (`request:start` event) is invaluable for diagnosing request interception issues
+
+### Bug #2: Template Replacement Returning Unreplaced Strings
+
+**Problem:** After fixing Bug #1, cart tests passed but showed bizarre output: "Unknown Product ({)", "Unknown Product (s)", "Unknown Product (t)", etc.
+
+**How We Discovered It:**
+
+1. **POST requests now working** (Bug #1 fixed) but cart showing wrong data
+2. **Inspected rendered output** - individual characters displayed as separate products
+3. **Traced through `aggregateCartItems()`** - discovered it was iterating over a STRING:
+   ```typescript
+   const aggregateCartItems = (productIds: ReadonlyArray<string>) => {
+     for (const id of productIds) {  // ❌ productIds is STRING, not ARRAY
+       // Iterates: '{', '{', 's', 't', 'a', 't', 'e', '.', 'c', 'a', 'r', 't', 'I', 't', 'e', 'm', 's', '}', '}'
+     }
+   }
+   ```
+4. **Checked state capture** - State WAS being captured correctly (`cartItems: ['prod-1']`)
+5. **Checked template injection** - Template `"{{state.cartItems}}"` wasn't being replaced
+6. **Investigated core** - `/packages/core/src/domain/template-replacement.ts:21`
+7. **Root cause:** Pure templates (entire value is a template) returned **unreplaced template string** instead of `undefined` when state key didn't exist:
+   ```typescript
+   // Line 21 (BEFORE FIX)
+   return stateValue !== undefined ? stateValue : value;  // ❌ Returns "{{state.cartItems}}" string
+   ```
+
+**Impact:** Applications using pure templates (`"{{state.items}}"` not `"Items: {{state.items}}"`) had to add **defensive type checking**:
+
+```typescript
+// ❌ APPLICATION WORKAROUND (should not be needed)
+const aggregateCartItems = (productIds: ReadonlyArray<string> | string) => {
+  // Handle unreplaced template (when state doesn't exist yet)
+  if (typeof productIds === 'string') {
+    return [];  // Defensive check for template string
+  }
+
+  // ... rest of logic
+};
+```
+
+This **breaks the abstraction** - applications shouldn't need to know about template implementation details.
+
+**The Fix (commit 6272b3e - TDD RED-GREEN-REFACTOR):**
+
+User feedback: *"If you need to fix something fundamental, let's prove it here, but if that's the case, it should be fixed properly in core, with the correct tests. Let's commit in a working state, but then let's fix in core with all the tests, and then remove the code that fixed it here and prove it works properly."*
+
+**TDD Process:**
+
+**RED Phase** - Updated test to expect undefined behavior:
+```typescript
+// packages/core/tests/template-replacement.test.ts
+it('should return undefined when pure template state key is missing', () => {
+  const value = '{{state.nonexistent}}';
+  const state = {};
+
+  const result = applyTemplates(value, state);
+
+  expect(result).toBeUndefined();  // ✅ Desired behavior
+  // Was: expect(result).toBe('{{state.nonexistent}}')  // ❌ Old (wrong) behavior
+});
+```
+
+Test failed as expected: `AssertionError: expected '{{state.nonexistent}}' to be undefined`
+
+**GREEN Phase** - Fixed implementation:
+```typescript
+// packages/core/src/domain/template-replacement.ts line 21
+// BEFORE:
+return stateValue !== undefined ? stateValue : value;
+
+// AFTER:
+return stateValue !== undefined ? stateValue : undefined;  // ✅ Return undefined for missing state
+```
+
+**REFACTOR Phase** - Removed application workaround:
+```typescript
+// apps/nextjs-app-router-example/app/cart-server/page.tsx
+
+// BEFORE (with workaround):
+type CartResponse = {
+  readonly items: ReadonlyArray<string> | string; // Array or unreplaced template string
+};
+
+const aggregateCartItems = (productIds: ReadonlyArray<string> | string) => {
+  if (typeof productIds === 'string') {
+    return [];  // Defensive workaround
+  }
+  // ...
+};
+
+// AFTER (clean abstraction):
+type CartResponse = {
+  readonly items?: ReadonlyArray<string>; // Optional array (undefined when state missing)
+};
+
+const aggregateCartItems = (productIds?: ReadonlyArray<string>) => {
+  if (!productIds || productIds.length === 0) {
+    return [];  // ✅ Normal optional handling
+  }
+  // ...
+};
+```
+
+**Verification:**
+- ✅ All 159 core tests passing (19 template tests, up from 18)
+- ✅ Workaround removed from application code
+- ✅ All 15 RSC tests passing with clean abstractions
+
+**Result:** Products 5/5 ✅ | Polling 5/5 ✅ | Cart 5/5 ✅
+
+**Lesson:** When template replacement encounters missing state in pure templates:
+- **Return undefined** (not unreplaced template string)
+- **Pure templates** (`"{{state.items}}"`) should return raw value OR undefined
+- **Mixed templates** (`"Items: {{state.items}}"`) keep template string (graceful degradation in text)
+- **Fix in core, not in application** - don't leak implementation details to consumers
+- **TDD discipline** - RED (failing test) → GREEN (fix) → REFACTOR (remove workarounds)
+
+### Why These Bugs Matter
+
+**Both bugs were discovered through real-world usage:**
+
+1. **Bug #1 (Playwright headers):** Would break ANY test using `page.request` API with scenario-based routing - not Scenarist-specific
+2. **Bug #2 (Template undefined):** Would break ANY application using pure templates with optional state - fundamental flaw
+
+**Investigation demonstrates:**
+- ✅ TDD methodology (RED-GREEN-REFACTOR cycle)
+- ✅ "Fix in core, not in application" principle
+- ✅ Deep debugging (MSW event listeners, type tracing)
+- ✅ Consulting official documentation
+- ✅ Type-safe error handling (undefined vs string union)
+- ✅ Removing workarounds to prove fix
+
+**User's Request Fulfilled:**
+
+> "Let's commit in a working state, but then let's fix in core with all the tests, and then remove the code that fixed it here and prove it works properly."
+
+1. ✅ Committed working state with workaround (4a08ad1)
+2. ✅ Fixed in core with proper tests (6272b3e)
+3. ✅ Removed workaround from application
+4. ✅ Proved it works: 15/15 RSC tests passing
+
+### Files Changed
+
+**Core Package:**
+- `packages/core/src/domain/template-replacement.ts` - Return undefined for missing state (line 21)
+- `packages/core/tests/template-replacement.test.ts` - Test updated (TDD RED phase)
+
+**Playwright Helpers:**
+- `packages/playwright-helpers/src/switch-scenario.ts` - Return testId (Bug #1 fix)
+- `packages/playwright-helpers/src/fixtures.ts` - Propagate testId return
+
+**Next.js App Router Example:**
+- `app/products-server/page.tsx` - Products RSC example
+- `app/polling/page.tsx` - Polling RSC example
+- `app/cart-server/page.tsx` - Cart RSC example (workaround removed)
+- `lib/scenarios.ts` - RSC scenarios with stateful mocks
+- `tests/playwright/products-rsc.spec.ts` - 5 tests ✅
+- `tests/playwright/polling-rsc.spec.ts` - 5 tests ✅
+- `tests/playwright/cart-server-rsc.spec.ts` - 5 tests ✅ (explicit headers)
+- `tests/playwright/globalSetup.ts` - MSW server startup
+- `tests/playwright/globalTeardown.ts` - MSW server cleanup
+
+**Documentation:**
+- Added PR comment documenting both bugs and fixes
+- Added this section to CLAUDE.md
+
+### Value Proposition Validated
+
+**All RSC Success Criteria Met:**
+
+**Code:**
+- ✅ 3 working server components (Products, Polling, Cart)
+- ✅ 15 Playwright tests passing in parallel
+- ✅ No Jest, no spawning Next.js instances
+- ✅ Runtime scenario switching works
+- ✅ All examples copy-paste ready
+- ✅ Stateful mocks working with RSC
+
+**Claims Proven:**
+- ✅ "Test Next.js App Router without spawning new instances"
+- ✅ "No Jest issues with RSC"
+- ✅ "Runtime scenario switching"
+- ✅ "Parallel test execution with test ID isolation"
+- ✅ "Stateful mocks work with Server Components"
+
+**Ready for documentation site integration.**
+
 ## Phase 4: Why Dedicated Composition Tests Aren't Needed
 
 **Date:** 2025-10-27

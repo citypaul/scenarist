@@ -106,28 +106,29 @@ export const cartWithStateScenario: ScenaristScenario = {
         },
       },
     },
-    // POST /cart/add - Capture productId into cartItems array
+    // POST /cart/add - Capture productId into state
     {
       method: "POST",
       url: "http://localhost:3001/cart/add",
       captureState: {
-        "cartItems[]": "body.productId", // Append productId to cartItems array
+        "cartItems[]": "body.productId",
       },
       response: {
         status: 200,
         body: {
           success: true,
+          message: "Item added to cart",
         },
       },
     },
-    // GET /cart - Inject cart items from state
+    // GET /cart - Inject cartItems from state
     {
       method: "GET",
       url: "http://localhost:3001/cart",
       response: {
         status: 200,
         body: {
-          items: "{{state.cartItems}}", // Inject captured cart items
+          items: "{{state.cartItems}}",
         },
       },
     },

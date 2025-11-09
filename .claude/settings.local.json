@@ -63,7 +63,10 @@
       "Bash(git log:*)",
       "Bash(git grep:*)",
       "Bash(PORT=3002 pnpm dev:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(perl -i -pe:*)",
+      "Bash(git mv:*)",
+      "WebFetch(domain:www.propelauth.com)"
     ],
     "deny": [],
     "ask": []

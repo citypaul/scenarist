@@ -763,18 +763,27 @@ State is reset when switching scenarios. If you need to preserve data across sce
 
 ### 4. Missing State Keys
 
-Templates with missing keys remain as templates (`'{{state.missing}}'`). This is useful for debugging but can be confusing if you expect an error.
+**Pure templates** (entire value is a template like `"{{state.key}}"`) return `undefined` when the state key is missing. This provides type safety and prevents leaking template syntax to responses.
+
+**Mixed templates** (template embedded in a string like `"User: {{state.name}}"`) keep the unreplaced template string. This is useful for debugging but can be confusing if you expect an error.
 
 To check if state was captured:
 ```typescript
 const response = await request.get('/api/data');
 const data = await response.json();
 
-// If state wasn't captured, template remains
-if (typeof data.value === 'string' && data.value.startsWith('{{')) {
+// Pure template with missing state returns undefined
+if (data.value === undefined) {
   console.log('State not captured yet');
 }
+
+// Mixed template with missing state keeps template string
+if (typeof data.message === 'string' && data.message.includes('{{')) {
+  console.log('Some state keys not captured yet');
+}
 ```
+
+**See:** [ADR-0012](/docs/adrs/0012-template-missing-state-undefined.md) for the rationale behind pure template behavior.
 
 ---
 
