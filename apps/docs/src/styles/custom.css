@@ -69,6 +69,22 @@
 	text-decoration: underline;
 }
 
+/* Fix selected/active menu item visibility - ensure text remains visible */
+.sidebar-content a[aria-current='page'],
+.sidebar-content a[aria-current='page']:hover,
+.sidebar-content a[aria-current='page']:focus {
+	color: var(--sl-color-white) !important;
+	background-color: rgb(var(--sl-color-accent)) !important;
+}
+
+/* Dark mode: ensure selected items remain visible */
+:root[data-theme='dark'] .sidebar-content a[aria-current='page'],
+:root[data-theme='dark'] .sidebar-content a[aria-current='page']:hover,
+:root[data-theme='dark'] .sidebar-content a[aria-current='page']:focus {
+	color: var(--sl-color-white) !important;
+	background-color: rgb(var(--sl-color-accent)) !important;
+}
+
 /* Improve code block contrast in dark mode */
 :root[data-theme='dark'] .sl-markdown-content pre {
 	background-color: rgb(17, 24, 39);
