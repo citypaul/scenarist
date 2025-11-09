@@ -118,3 +118,30 @@ test('handles card declined', async ({ page, switchScenario }) => {
   await expect(page.locator('.error')).toContainText('Card declined');
 });
 ```
+
+---
+
+## Get Started
+
+<CardGrid>
+  <Card title="Quick Start" icon="rocket">
+    Framework-agnostic 5-minute guide. Works with Express, Next.js, Fastify, Hono, Remix, and any Node.js framework.
+
+    [Get Started →](/introduction/quick-start)
+  </Card>
+  <Card title="Express Setup" icon="seti:nodejs">
+    REST APIs, GraphQL servers, microservices. Zero boilerplate with AsyncLocalStorage.
+
+    [Express Guide →](/frameworks/express/getting-started)
+  </Card>
+  <Card title="Next.js Setup" icon="seti:next">
+    Test Server Components, Server Actions, and API routes. Supports Pages and App Router.
+
+    [Next.js Guide →](/frameworks/nextjs/getting-started)
+  </Card>
+  <Card title="Example Apps" icon="open-book">
+    Explore complete working examples with comprehensive test suites.
+
+    [View Examples →](https://github.com/citypaul/scenarist/tree/main/apps)
+  </Card>
+</CardGrid>
