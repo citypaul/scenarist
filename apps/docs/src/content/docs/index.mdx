@@ -32,11 +32,20 @@ Works with **Express**, **Next.js** (Pages + App Router), **Fastify**, **Hono**,
 
 ---
 
-## Fast E2E Testing for Full-Stack Frameworks
+## Why Scenarist?
 
-**Next.js, Remix, and SvelteKit require E2E testing for Server Components and loaders.** The Next.js team explicitly recommends "End-to-End Testing over Unit Testing for async [Server] components." But traditional E2E testing is painfully slow—restarting your app for every scenario wastes valuable development time, shared MSW handlers cause flaky tests, and you can't run tests in parallel with different backend states.
+| Feature | MSW Alone | Cypress | **Scenarist** |
+|---------|-----------|---------|---------------|
+| **Your Backend Runs** | ❌ Mocks everything | ❌ Stubs responses | ✅ **Real backend execution** |
+| **Scenario Switching** | ⚠️ Restart app | ⚠️ Restart tests | ✅ **Instant (no restart)** |
+| **Parallel Tests** | ❌ Shared handlers | ⚠️ Limited | ✅ **Perfect isolation** |
+| **Server Components** | ❌ Never execute | ❌ Not supported | ✅ **Real execution** |
+| **Test Speed** | Slow (restarts) | Slow (browser overhead) | ✅ **Fast (instant switching)** |
+| **State Management** | Manual setup | Manual setup | ✅ **Built-in state capture** |
 
-**Scenarist makes E2E testing as fast as unit tests.** Switch backend scenarios instantly without restarting your app. Run large test suites concurrently with perfect isolation. Test shopping cart flows, checkout journeys, and payment processing end-to-end—all in the browser with real Server Components executing real backend logic.
+:::tip[The Key Difference]
+MSW and Cypress mock or stub your entire backend—your Server Components never run, your validation never executes. **Scenarist only mocks external APIs** (Stripe, SendGrid, etc.). Your actual application code runs during tests.
+:::
 
 ## The E2E Testing Problem
 
@@ -74,41 +83,7 @@ Works with **Express**, **Next.js** (Pages + App Router), **Fastify**, **Hono**,
   </Card>
 </CardGrid>
 
-## Why Full-Stack Frameworks Need This
-
-Modern full-stack frameworks (Next.js, Remix, SvelteKit) make testing complete flows harder than traditional backend APIs:
-
-### The Full-Stack Testing Problem
-
-**Traditional Backend API (Express, Fastify):**
-- Test routes in isolation
-- Mock external APIs easily
-- Fast feedback loops
-- ✅ **Already works great with Scenarist**
-
-**Full-Stack Frameworks (Next.js App Router, Remix):**
-- Server + client code intermixed
-- Server Components fetch during render
-- Loader data flows to components
-- **Testing requires browser + backend together**
-
-> "Since async Server Components are new to the React ecosystem, some tools do not fully support them. In the meantime, we recommend using End-to-End Testing over Unit Testing for async components."
-> — Next.js Official Docs
-
-**Translation:** You need E2E tests. But E2E tests with MSW alone = slow, polluted, sequential hell.
-
-**Scenarist Solution:** Fast E2E tests with runtime scenario switching, perfect isolation, and complete journey support. Test your full-stack app like a backend API.
-
-### Works With Any Node.js Framework
-
-- ✅ **Express** - Full support (AsyncLocalStorage)
-- ✅ **Next.js** - Pages Router + App Router (Server Components)
-- 🔜 **Fastify** - High-performance async framework
-- 🔜 **Hono** - Edge runtime compatible
-- 🔜 **Remix** - Full-stack React framework
-- 🔜 **SvelteKit** - Svelte full-stack framework
-
-## How It Works: Real Backend + Mocked External APIs
+## How It Works
 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': { 'fontSize':'18px'}}}%%
@@ -159,90 +134,39 @@ Traditional E2E testing with pure MSW means your backend never runs—you're tes
 This gives you **true integration testing** with the speed and reliability of unit tests.
 :::
 
-## Complete Journey Example
-
-Test a full shopping cart → checkout → payment flow in one test:
+## Quick Example
 
 ```typescript
-// Define scenario once (in scenarios.ts)
-import type { ScenarioDefinition } from '@scenarist/core';
-
-export const checkoutSuccessScenario: ScenarioDefinition = {
-  id: 'checkout-success',
-  name: 'Successful Checkout Journey',
+// Define scenario once
+export const checkoutScenario = {
   mocks: [
-    // Step 1: Browse products
-    {
-      method: 'GET',
-      url: '/api/products',
-      response: { status: 200, body: { products: [...] } },
-    },
-    // Step 2: Add to cart (capture item)
-    {
-      method: 'POST',
-      url: '/api/cart/add',
-      captureState: { 'cartItems[]': 'body.item' },  // Append to cart
-      response: { status: 200, body: { success: true } },
-    },
-    // Step 3: View cart (inject captured items)
-    {
-      method: 'GET',
-      url: '/api/cart',
-      response: {
-        status: 200,
-        body: { items: '{{state.cartItems}}', count: '{{state.cartItems.length}}' }
-      },
-    },
-    // Step 4: Checkout (capture order ID)
-    {
-      method: 'POST',
-      url: '/api/checkout',
-      captureState: { 'orderId': 'body.id' },
-      response: { status: 200, body: { orderId: '12345' } },
-    },
-    // Step 5: Payment (uses captured order)
-    {
-      method: 'POST',
-      url: '/api/payment',
-      response: { status: 200, body: { success: true, order: '{{state.orderId}}' } },
-    },
-  ],
+    { method: 'GET', url: '/api/products', response: { products: [...] } },
+    { method: 'POST', url: '/api/cart/add', captureState: { 'cart[]': 'body.item' } },
+    { method: 'GET', url: '/api/cart', response: { items: '{{state.cart}}' } },
+    { method: 'POST', url: '/api/checkout', response: { success: true } },
+  ]
 };
 
-// Test complete journey in one test
-test('successful checkout flow', async ({ page }) => {
+// Test complete journey
+test('checkout flow', async ({ page }) => {
   await switchScenario(page, 'checkout-success');
 
-  // Complete user journey - all steps work together
   await page.goto('/products');
-  await page.click('[data-product="1"]');      // Adds to cart (captured)
-  await page.goto('/cart');                     // Shows captured items
-  await expect(page.locator('.cart-item')).toBeVisible();
+  await page.click('[data-product="1"]');  // Your backend runs
+  await page.goto('/cart');                 // State captured & injected
+  await page.click('Checkout');             // Validation executes
 
-  await page.click('Proceed to Checkout');
-  await page.fill('#card-number', '4242...');
-  await page.click('Pay Now');                  // Uses captured cart + order
-
-  await expect(page.locator('.success')).toContainText('Order confirmed');
+  await expect(page.locator('.success')).toBeVisible();
 });
 
-// Test error scenario with different backend state
-test('payment failure handling', async ({ page }) => {
-  await switchScenario(page, 'payment-error');  // Instant switch, no restart
-
-  // Same journey, different backend state
-  await page.goto('/products');
-  await page.click('[data-product="1"]');
-  await page.goto('/cart');
-  await page.click('Proceed to Checkout');
-  await page.fill('#card-number', '4242...');
-  await page.click('Pay Now');
-
-  await expect(page.locator('.error')).toContainText('Payment declined');
+// Switch scenarios instantly
+test('payment error', async ({ page }) => {
+  await switchScenario(page, 'payment-error');  // No restart needed
+  // ... same test, different backend behavior
 });
-
-// Both tests run in parallel with isolated state
 ```
+
+**What's happening:** Your Next.js Server Components render, your API routes validate data, your error handling executes. Only external API calls (Stripe, etc.) are mocked.
 
 ## Get Started
 
