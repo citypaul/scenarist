@@ -441,3 +441,191 @@ The core handles:
 ✅ Your backend always executes
 ✅ Only external APIs are mocked
 ✅ Fast feedback loop (seconds, not minutes)
+
+## How It Works: Ephemeral Endpoints & Test Isolation
+
+### Ephemeral Scenario Endpoints
+
+Scenarist creates **ephemeral endpoints** that only exist when testing is enabled. This is controlled via the `enabled` flag:
+
+```typescript
+// Express
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',  // ← Only active in test mode
+  scenarios,
+});
+app.use(scenarist.middleware);
+
+// Next.js App Router
+export const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  scenarios,
+});
+// app/api/__scenario__/route.ts
+const handler = scenarist.createScenarioEndpoint();
+export const POST = handler;
+export const GET = handler;
+```
+
+**What the `enabled` flag controls:**
+
+When `enabled: true` (test mode):
+- Scenario switching endpoint is active (e.g., `POST /api/__scenario__`)
+- Middleware extracts test IDs from request headers
+- MSW handlers are registered for mocking external APIs
+- All scenario management features are available
+
+When `enabled: false` (production):
+- Scenario endpoints return 404
+- Middleware passes requests through unchanged (zero overhead)
+- No MSW handlers registered
+- Zero attack surface (no test endpoints in production)
+
+**Why this matters:**
+
+You can safely include Scenarist in your production code because when disabled, it has:
+- **Zero runtime overhead** - Middleware becomes a no-op
+- **Zero security risk** - No endpoints exposed
+- **Zero bundle impact** - MSW and test infrastructure not loaded
+
+### Test Isolation via Unique Test IDs
+
+Each Playwright test gets a **unique test ID** (via `crypto.randomUUID()`), enabling parallel execution without interference:
+
+```typescript
+import { test } from '@scenarist/playwright-helpers';
+
+// Test 1 runs with unique ID: uuid-abc-123
+test('premium user flow', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'premiumUser');
+  // All requests from this test include header: x-test-id: uuid-abc-123
+
+  await page.goto('/checkout');
+  await page.fill('[name="amount"]', '5000');
+  await page.click('button[type="submit"]');
+
+  await expect(page.getByText('Order confirmed')).toBeVisible();
+});
+
+// Test 2 runs in parallel with different ID: uuid-xyz-789
+test('standard user blocked at limit', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'standardUser');
+  // All requests from this test include header: x-test-id: uuid-xyz-789
+
+  await page.goto('/checkout');
+  await page.fill('[name="amount"]', '1500');
+  await page.click('button[type="submit"]');
+
+  await expect(page.getByText('Amount exceeds limit')).toBeVisible();
+});
+
+// These tests run simultaneously without interfering with each other
+```
+
+**How isolation works:**
+
+1. **Unique ID generation**: Each test gets `crypto.randomUUID()` (e.g., `uuid-abc-123`)
+2. **Header propagation**: The ID is sent in the `x-test-id` header with every request
+3. **Scenario routing**: Scenarist uses the test ID to route requests to the correct scenario
+4. **Parallel execution**: Multiple tests run simultaneously with zero interference
+
+**Under the hood:**
+
+```typescript
+// Test 1 requests → x-test-id: uuid-abc-123 → premiumUser scenario
+GET /api/cart
+Headers: { 'x-test-id': 'uuid-abc-123' }
+→ Scenarist routes to premiumUser scenario
+→ External auth API returns: { tier: 'premium' }
+→ Your pricing logic executes: price * 0.8
+→ Returns: $4,000 (20% discount applied)
+
+// Test 2 requests → x-test-id: uuid-xyz-789 → standardUser scenario (runs in parallel!)
+GET /api/cart
+Headers: { 'x-test-id': 'uuid-xyz-789' }
+→ Scenarist routes to standardUser scenario
+→ External auth API returns: { tier: 'standard' }
+→ Your pricing logic executes: price * 1.0
+→ Returns: $5,000 (no discount)
+```
+
+**Why unique test IDs matter:**
+
+- **Parallel execution**: Run hundreds of tests simultaneously in CI
+- **No shared state**: Each test has isolated scenario configuration
+- **No flakiness**: Tests can't interfere with each other
+- **Scalable**: Works with Playwright's parallel workers
+
+### Playwright Helpers
+
+The `@scenarist/playwright-helpers` package provides:
+
+**1. Automatic test ID generation and management:**
+```typescript
+import { test } from '@scenarist/playwright-helpers';
+
+// Helpers automatically generate unique ID and set x-test-id header
+test('my test', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'myScenario');
+  // No manual test ID management needed
+});
+```
+
+**2. Type-safe scenario IDs with autocomplete:**
+```typescript
+const scenarios = {
+  premiumUser: { id: 'premiumUser', name: 'Premium User', /* ... */ },
+  standardUser: { id: 'standardUser', name: 'Standard User', /* ... */ },
+} as const satisfies ScenaristScenarios;
+
+export const test = withScenarios(scenarios);
+
+// TypeScript provides autocomplete for scenario IDs
+test('my test', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'premiumUser');  // ✅ Autocomplete works
+  await switchScenario(page, 'typoUser');     // ❌ TypeScript error
+});
+```
+
+**3. Easy composition with existing fixtures:**
+```typescript
+export const test = withScenarios(scenarios).extend<MyFixtures>({
+  authenticatedPage: async ({ page }, use) => {
+    // Your custom fixture
+    await page.goto('/login');
+    await page.fill('[name="email"]', 'test@example.com');
+    await page.click('button[type="submit"]');
+    await use(page);
+  },
+  database: async ({}, use) => {
+    const db = await connectDatabase();
+    await use(db);
+    await db.disconnect();
+  },
+});
+
+// Use both Scenarist helpers and your custom fixtures
+test('authenticated premium flow', async ({ page, switchScenario, authenticatedPage, database }) => {
+  await switchScenario(page, 'premiumUser');
+  // authenticatedPage fixture runs automatically
+  // Your test code here
+});
+```
+
+**Without helpers (manual setup):**
+```typescript
+const testId = `test-${Date.now()}-${Math.random()}`;
+const response = await page.request.post('http://localhost:3000/api/__scenario__', {
+  headers: { 'x-test-id': testId },
+  data: { scenario: 'premiumUser' },
+});
+expect(response.status()).toBe(200);
+await page.setExtraHTTPHeaders({ 'x-test-id': testId });
+```
+
+**With helpers (automatic):**
+```typescript
+await switchScenario(page, 'premiumUser');
+```
+
+The helpers handle all the boilerplate: test ID generation, scenario switching API call, header management, and error handling.

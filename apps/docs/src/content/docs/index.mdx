@@ -58,65 +58,11 @@ Test your backend logic through real HTTP requests in the browser with **unlimit
 **The difference:** Your code runs as part of actual user journeys in the browser, not in isolation, giving you confidence that server-side logic works correctly in the real execution environment.
 :::
 
-**Framework-agnostic:** Express, Next.js (Pages + App Router), Fastify, Hono, Remix, and SvelteKit.
-
----
-
-## How It Works: Ephemeral Endpoints & Test Isolation
-
-Scenarist creates **ephemeral scenario endpoints** that only exist when testing is enabled:
-
-```typescript
-// Express
-const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',  // ← Only creates endpoints in test mode
-  scenarios,
-});
-app.use(scenarist.middleware);  // Middleware no-ops when disabled
-
-// Next.js App Router
-export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
-  scenarios,
-});
-// app/api/__scenario__/route.ts exists but returns 404 when disabled
-```
-
-**Per-environment control:** The `enabled` flag determines whether:
-- Scenario switching endpoints are active (e.g., `POST /api/__scenario__`)
-- Middleware intercepts requests to extract test IDs
-- MSW handlers are registered for mocking
-
-When `enabled: false` (production), these endpoints return 404 and middleware passes through unchanged—zero runtime overhead, zero attack surface.
-
-**Test isolation via unique test IDs:** Each Playwright test gets a unique ID (via `crypto.randomUUID()`), enabling parallel execution:
-
-```typescript
-import { test } from '@scenarist/playwright-helpers';
-
-// Test 1: uuid-abc-123 → scenario: 'premiumUser'
-test('premium flow', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'premiumUser');  // Sets x-test-id: uuid-abc-123
-  // All requests from this test use uuid-abc-123
-});
-
-// Test 2: uuid-xyz-789 → scenario: 'standardUser' (runs in parallel!)
-test('standard flow', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'standardUser');  // Sets x-test-id: uuid-xyz-789
-  // Completely isolated from Test 1
-});
-```
-
-**How isolation works:**
-1. Each test gets unique ID from `crypto.randomUUID()`
-2. ID sent in `x-test-id` header with every request
-3. Scenarist routes requests to correct scenario based on test ID
-4. Multiple tests run in parallel with zero interference
-
-**Playwright helpers provide:**
-- Automatic test ID generation and header management
-- Type-safe scenario IDs with autocomplete
-- Easy composition with existing fixtures
+**Key features:**
+- **Ephemeral endpoints:** Scenario switching only active when `enabled: true` (zero production overhead)
+- **Test isolation:** Unique test IDs enable parallel execution without interference
+- **Type-safe helpers:** Playwright integration with autocomplete and automatic test ID management
+- **Framework-agnostic:** Express, Next.js (Pages + App Router), Fastify, Hono, Remix, and SvelteKit
 
 ---
 
