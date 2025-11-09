@@ -23,19 +23,42 @@ import { Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
 
 ---
 
-## Your Backend Code Actually Runs
+## The Testing Gap (And How Scenarist Fills It)
 
-**Unlike pure mocking solutions, Scenarist tests your real application logic.** Your API routes process requests. Your validation logic checks business rules. Your middleware chains execute. Your SSR fetches and transforms data. Your Server Components render (Next.js). Only external API calls (Stripe, SendGrid, Auth0, etc.) are mocked. This means you're testing the actual code that runs in production, not just mock responses.
+**Most teams split testing:**
+- **Unit tests (Jest/Vitest)** → Test functions in isolation
+- **Browser tests (Playwright/Cypress)** → Test happy path only
 
-:::tip[The Critical Difference]
-**Traditional browser tests:** Mock everything → Backend never runs → Testing mock responses
+**The critical gap:**
 
-**Scenarist approach:** Mock only external APIs → Backend runs normally → Testing real application behavior
+Unit tests work great, but they test code in isolation—not how it actually runs in production:
+- ❌ No real server-side context (sessions, auth state, request lifecycle)
+- ❌ Server Components are especially hard to unit test properly
+- ❌ Functions tested individually, not as integrated user journeys
+- ❌ Missing the entry points and middleware that shape real execution
 
-**Works across all Node.js frameworks:** Express REST APIs, Hono edge functions, Fastify microservices, Next.js Server Components, Remix loaders—any backend logic that needs browser-based testing.
+Browser tests capture real user journeys, but only for 1-2 scenarios:
+- ❌ Can't test error cases, edge cases, different user states
+- ❌ Testing multiple scenarios requires complex per-test mocking OR impractical server restarts
+
+**The reality:** Your server-side code executes as part of user journeys with real sessions, auth context, and middleware—but you're testing it either in isolation (unit tests) or only for the happy path (browser tests).
+
+**Scenarist fills the gap:**
+Test your backend logic through real HTTP requests in the browser with **unlimited scenarios**. Your code executes with real server-side context, sessions, and middleware chains—just like production—but with external APIs mocked per scenario.
+
+:::tip[How It Works]
+**Traditional approach:** Unit tests (isolated functions) + Browser tests (happy path only)
+
+**Scenarist approach:** Unit tests (isolated functions) + Browser tests with Scenarist (all scenarios through real server execution)
+
+**What executes:** Your API routes, validation logic, middleware chains, SSR, Server Components (Next.js)—everything runs with real server-side context, sessions, and request lifecycle
+
+**What's mocked:** Only external APIs you don't control (Stripe, SendGrid, Auth0, etc.)
+
+**The difference:** Your code runs as part of actual user journeys in the browser, not in isolation, giving you confidence that server-side logic works correctly in the real execution environment.
 :::
 
-**Framework-agnostic with thin adapters:** Express, Next.js (Pages + App Router), Fastify, Hono, Remix, and SvelteKit.
+**Framework-agnostic:** Express, Next.js (Pages + App Router), Fastify, Hono, Remix, and SvelteKit.
 
 ---
 
@@ -96,32 +119,33 @@ export const test = withScenarios(scenarios).extend<MyFixtures>({
 
 ## Why Scenarist?
 
-| Feature | Jest/Vitest | Playwright (Mocked) | Playwright (True E2E) | Cypress | **Scenarist + Playwright** |
-|---------|-------------|---------------------|----------------------|---------|----------------------------|
-| **Test Type** | Unit tests | Browser (mocked) | Browser (real backend) | Browser (mocked) | **Browser (real backend)** |
-| **Your Backend Runs** | N/A (no server) | ❌ Never runs | ✅ Yes | ❌ Stubs only | ✅ **Always executes** |
-| **Server Components** | ❌ Can't test | ❌ Never execute | ✅ Yes | ❌ Not supported | ✅ **Real execution** |
-| **External API Handling** | N/A | Manual mocks | ⚠️ Real calls (flaky) | Manual mocks | ✅ **MSW integration** |
-| **Change Scenarios** | N/A | Restart app | Restart app¹ | Restart tests | ✅ **Instant switching** |
-| **Parallel Tests** | ✅ Fast | ❌ Shared state² | ⚠️ Limited³ | ⚠️ Limited | ✅ **Perfect isolation** |
-| **Test Speed** | ✅ Instant | ⚠️ Slow (restarts) | ⚠️ Very slow (restarts + real APIs) | ⚠️ Slow | ✅ **Fast** |
-| **State Management** | N/A | Manual setup | Manual setup | Manual setup | ✅ **Built-in capture** |
+### The Standard Approach (and Where It Falls Short)
 
-:::tip[Why This Matters]
-**Jest/Vitest**: Can't test full-stack flows or browser interactions
+| What You Test | Jest/Vitest | Playwright/Cypress | **Scenarist + Playwright** |
+|---------------|-------------|-------------------|----------------------------|
+| **Business Logic** | ✅ Functions in isolation | ❌ Can't test multiple scenarios | ✅ **All scenarios through HTTP** |
+| **Server-Side Context** | ❌ Mock sessions/auth | ❌ Backend mocked away | ✅ **Real sessions, real context** |
+| **Middleware Chains** | ⚠️ Can test, but isolated | ❌ Never execute | ✅ **Real execution as integrated flow** |
+| **Validation Logic** | ✅ Individual validators | ❌ Not tested with HTTP layer | ✅ **Through full request flow** |
+| **Server Components** | ⚠️ Hard to test properly | ❌ Not tested | ✅ **Real rendering with server context** |
+| **Error Scenarios** | ✅ Unit level only | ❌ Only happy path | ✅ **All scenarios in browser** |
+| **User Journey** | ❌ No browser | ✅ Happy path only | ✅ **All scenarios as real journeys** |
+| **External APIs** | N/A | Manual per-test setup | ✅ **Scenario-based (MSW)** |
+| **Multiple Scenarios** | ✅ Unlimited | ❌ Just 1-2 (happy paths) | ✅ **Unlimited in browser** |
+| **Test Speed** | ✅ Very fast | ⚠️ Moderate | ✅ **Fast** |
 
-**Playwright (Mocked)**: Backend never runs—you're testing mock responses, not your actual API routes, validation, or business logic
+:::tip[The Gap Scenarist Fills]
 
-**Playwright (True E2E)**: Backend runs but requires app restarts per scenario + real external API calls (slow and flaky)
+**What teams do today:**
+- Unit tests → Test functions in isolation (works well, but no real server context or user journeys)
+- Browser tests → Test happy path only (real execution, but limited scenarios)
 
-**Cypress**: Stubs everything—API routes never execute, validation never runs, middleware never processes
+**The gap:** Can't test your backend logic through real HTTP requests with multiple scenarios in the browser. Your code runs differently in unit tests (isolated, no server context) than in production (integrated, with sessions/auth/middleware).
 
-**Scenarist + Playwright**: Real backend execution (API routes, validation, middleware, SSR) + mocked external APIs + instant scenario switching + built-in state = fast full-stack tests
+**Why the gap exists:** Testing multiple scenarios in browser-based tests requires complex per-test mocking setup OR impractical server restarts OR hitting real external APIs (slow/flaky).
+
+**How Scenarist fills it:** Test all scenarios (error cases, edge cases, different user states) through real HTTP requests with real server-side execution (sessions, middleware, Server Components) while mocking only external APIs.
 :::
-
-<small>¹True E2E requires restarting app to change backend state/config per scenario
-²Shared MSW handlers cause test pollution and flaky tests in parallel execution
-³Port conflicts and shared state make parallel execution difficult</small>
 
 ---
 

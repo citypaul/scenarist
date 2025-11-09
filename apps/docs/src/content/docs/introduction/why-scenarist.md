@@ -5,33 +5,60 @@ description: The pain points Scenarist solves and how Scenarist's framework-agno
 
 # Why Scenarist?
 
-## The Problem: You Can't Test Your Backend Logic with Browser Tests
+## The Problem: The Testing Gap
 
-Whether you're building with **Express**, **Hono**, **Fastify**, **Next.js**, or **Remix**, you need to test your backend logic in the browser. Maybe you have:
+Whether you're building with **Express**, **Hono**, **Fastify**, **Next.js**, or **Remix**, you probably test your backend using this standard approach:
 
-- **API routes** with complex validation logic
-- **Server-side rendering** that fetches and transforms data
-- **Server Components** (Next.js) that can't be unit tested
-- **Middleware chains** that process authentication and authorization
-- **Business logic** that calculates pricing, applies discounts, or validates rules
+### What Teams Actually Do Today
 
-These features require browser-based testing to verify the full user experience. But **traditional browser-based testing gives you two bad choices:**
+**1. Unit Tests (Jest/Vitest)** - Test business logic in isolation
+```typescript
+// Test individual functions
+test('calculateDiscount returns 20% for premium', () => {
+  expect(calculateDiscount(100, 'premium')).toBe(80);
+});
 
-1. **Mock everything** (Cypress, MSW-only approaches)
-   - Your API routes never execute
-   - Your validation logic never runs
-   - Your server-side rendering never happens
-   - Your business logic is completely bypassed
-   - You're testing mock responses, not your actual application
+test('validatePaymentAmount rejects negative amounts', () => {
+  expect(validatePaymentAmount(-100)).toBe(false);
+});
+```
 
-2. **Run a real backend** (true E2E with no mocks)
-   - Must restart your application for every test scenario
-   - Want to test both premium and standard user flows? Restart the app twice.
-   - Need to test 10 different payment scenarios? Restart 10 times.
-   - External API calls (Stripe, Auth0, SendGrid) make tests slow and flaky
-   - Takes minutes or hours, not seconds
+**2. Browser Tests (Playwright/Cypress)** - Test happy path only
+```typescript
+// Test one scenario: successful checkout
+test('user completes checkout', async ({ page }) => {
+  await page.goto('/checkout');
+  await page.fill('[name="amount"]', '100');
+  await page.click('button[type="submit"]');
+  await expect(page.getByText('Success')).toBeVisible();
+});
+```
 
-**What developers actually need:** Test complete user journeys in the browser while your backend (API routes, validation, business logic, SSR, Server Components) executes normally, with the ability to instantly switch between scenarios without external API dependencies.
+### The Critical Gap
+
+**What unit tests CAN'T do (even though they test individual pieces well):**
+- ❌ Test with real server-side context (sessions, auth state, request lifecycle)
+- ❌ Test Server Components properly (especially hard to unit test)
+- ❌ Test code as integrated user journeys (functions run individually, not as part of flows)
+- ❌ Test with the entry points and middleware that shape real execution
+- ❌ Verify that pieces work together correctly in production-like conditions
+
+**What browser tests DON'T cover:**
+- ❌ Error scenarios (payment failures, validation errors, API timeouts)
+- ❌ Edge cases (negative amounts, invalid formats, missing fields)
+- ❌ Different user states (premium vs standard, authenticated vs guest)
+- ❌ Various API response scenarios (rate limits, partial failures)
+
+**Why? Because testing multiple scenarios in the browser requires:**
+- Mocking external APIs per scenario (complex setup)
+- OR restarting your server per scenario (impractical in CI)
+- OR hitting real external APIs (slow, flaky, expensive)
+
+**The result:** Your server-side code runs as part of user journeys with real sessions, auth context, and middleware in production—but you're testing it either in isolation (unit tests) or only for the happy path (browser tests).
+
+### What Developers Actually Need
+
+Test your backend logic (API routes, validation, middleware, business rules) through real HTTP requests in the browser with multiple scenarios—without external API dependencies and without server restarts.
 
 ## How Scenarist Solves This
 
