@@ -1,0 +1,89 @@
+<svg viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.1" />
+      <stop offset="100%" style="stop-color:#1e40af;stop-opacity:0.05" />
+    </linearGradient>
+
+    <linearGradient id="screen-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e293b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0f172a;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="600" fill="url(#bg-gradient)" />
+
+  <!-- Backend server representation (left side) -->
+  <g id="backend">
+    <!-- Server icon -->
+    <rect x="80" y="200" width="200" height="200" rx="12" fill="#3b82f6" opacity="0.1" stroke="#3b82f6" stroke-width="2"/>
+
+    <!-- Server layers -->
+    <rect x="100" y="220" width="160" height="40" rx="4" fill="#3b82f6" opacity="0.3"/>
+    <circle cx="120" cy="240" r="4" fill="#22c55e"/>
+    <text x="135" y="245" font-family="system-ui" font-size="14" fill="#3b82f6" font-weight="600">API Routes</text>
+
+    <rect x="100" y="275" width="160" height="40" rx="4" fill="#3b82f6" opacity="0.3"/>
+    <circle cx="120" cy="295" r="4" fill="#22c55e"/>
+    <text x="135" y="300" font-family="system-ui" font-size="14" fill="#3b82f6" font-weight="600">Server Components</text>
+
+    <rect x="100" y="330" width="160" height="40" rx="4" fill="#3b82f6" opacity="0.3"/>
+    <circle cx="120" cy="350" r="4" fill="#22c55e"/>
+    <text x="135" y="355" font-family="system-ui" font-size="14" fill="#3b82f6" font-weight="600">Validation</text>
+
+    <!-- Label -->
+    <text x="180" y="430" font-family="system-ui" font-size="18" fill="#3b82f6" font-weight="700" text-anchor="middle">Backend Running</text>
+  </g>
+
+  <!-- Browser window (right side) -->
+  <g id="browser">
+    <!-- Browser chrome -->
+    <rect x="400" y="150" width="320" height="300" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+
+    <!-- Browser top bar -->
+    <rect x="400" y="150" width="320" height="35" rx="8" fill="#e2e8f0"/>
+    <rect x="400" y="168" width="320" height="35" fill="#e2e8f0"/>
+
+    <!-- Traffic lights -->
+    <circle cx="420" cy="167" r="5" fill="#ef4444"/>
+    <circle cx="438" cy="167" r="5" fill="#f59e0b"/>
+    <circle cx="456" cy="167" r="5" fill="#22c55e"/>
+
+    <!-- URL bar -->
+    <rect x="480" y="160" width="220" height="20" rx="10" fill="white" stroke="#cbd5e1"/>
+    <text x="490" y="174" font-family="system-ui" font-size="11" fill="#94a3b8">localhost:3000</text>
+
+    <!-- Browser content - test code -->
+    <rect x="400" y="185" width="320" height="265" fill="url(#screen-gradient)"/>
+
+    <!-- Code lines -->
+    <text x="420" y="215" font-family="Monaco, monospace" font-size="13" fill="#22c55e">test('checkout', async () => {</text>
+    <text x="440" y="240" font-family="Monaco, monospace" font-size="13" fill="#94a3b8">await page.goto('/cart')</text>
+    <text x="440" y="265" font-family="Monaco, monospace" font-size="13" fill="#94a3b8">await page.click('checkout')</text>
+    <text x="440" y="290" font-family="Monaco, monospace" font-size="13" fill="#60a5fa">// Backend executes ✓</text>
+    <text x="440" y="315" font-family="Monaco, monospace" font-size="13" fill="#60a5fa">// Components render ✓</text>
+    <text x="440" y="340" font-family="Monaco, monospace" font-size="13" fill="#60a5fa">// Validation runs ✓</text>
+    <text x="420" y="365" font-family="Monaco, monospace" font-size="13" fill="#22c55e">})</text>
+
+    <!-- Checkmark -->
+    <circle cx="680" cy="410" r="20" fill="#22c55e" opacity="0.2"/>
+    <path d="M 672 410 L 678 416 L 688 404" stroke="#22c55e" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Connection arrows -->
+  <g id="connection">
+    <!-- Arrow from backend to browser -->
+    <path d="M 290 300 Q 350 300 390 250" stroke="#3b82f6" stroke-width="3" fill="none" stroke-dasharray="8,4" opacity="0.5"/>
+    <polygon points="390,250 385,255 395,255" fill="#3b82f6" opacity="0.5"/>
+
+    <!-- Flow indicator dots (animated feel) -->
+    <circle cx="310" cy="298" r="4" fill="#3b82f6" opacity="0.7"/>
+    <circle cx="340" cy="290" r="4" fill="#3b82f6" opacity="0.5"/>
+    <circle cx="370" cy="270" r="4" fill="#3b82f6" opacity="0.3"/>
+  </g>
+
+  <!-- Bottom label -->
+  <text x="400" y="520" font-family="system-ui" font-size="16" fill="#64748b" text-anchor="middle">Test complete user journeys with real backend execution</text>
+</svg>
