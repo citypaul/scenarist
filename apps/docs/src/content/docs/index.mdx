@@ -34,18 +34,30 @@ Works with **Express**, **Next.js** (Pages + App Router), **Fastify**, **Hono**,
 
 ## Why Scenarist?
 
-| Feature | MSW Alone | Cypress | **Scenarist** |
-|---------|-----------|---------|---------------|
-| **Your Backend Runs** | ❌ Mocks everything | ❌ Stubs responses | ✅ **Real backend execution** |
-| **Scenario Switching** | ⚠️ Restart app | ⚠️ Restart tests | ✅ **Instant (no restart)** |
-| **Parallel Tests** | ❌ Shared handlers | ⚠️ Limited | ✅ **Perfect isolation** |
-| **Server Components** | ❌ Never execute | ❌ Not supported | ✅ **Real execution** |
-| **Test Speed** | Slow (restarts) | Slow (browser overhead) | ✅ **Fast (instant switching)** |
-| **State Management** | Manual setup | Manual setup | ✅ **Built-in state capture** |
+| Feature | Jest/Vitest | Playwright Alone | MSW Alone | Cypress | **Scenarist + Playwright** |
+|---------|-------------|------------------|-----------|---------|----------------------------|
+| **Test Type** | Unit tests | E2E tests | HTTP mocking | E2E tests | **Full-stack integration** |
+| **Your Backend Runs** | N/A (no server) | ⚠️ Optional¹ | ❌ Never runs | ❌ Stubs only | ✅ **Always executes** |
+| **Server Components** | ❌ Can't test | ⚠️ If backend runs¹ | ❌ Never execute | ❌ Not supported | ✅ **Real execution** |
+| **Full User Journeys** | ❌ No browser | ✅ Yes | ❌ No browser | ✅ Yes | ✅ **Yes** |
+| **Change Scenarios** | N/A | Restart app² | Restart app | Restart tests | ✅ **Instant switching** |
+| **Parallel Tests** | ✅ Fast | ✅ Yes | ❌ Shared state³ | ⚠️ Limited | ✅ **Perfect isolation** |
+| **Test Speed** | ✅ Instant | ⚠️ Slow²⁴ | Slow (restarts) | Slow | ✅ **Fast** |
+| **State Management** | N/A | Manual setup | Manual setup | Manual setup | ✅ **Built-in capture** |
 
-:::tip[The Key Difference]
-MSW and Cypress mock or stub your entire backend—your Server Components never run, your validation never executes. **Scenarist only mocks external APIs** (Stripe, SendGrid, etc.). Your actual application code runs during tests.
+:::tip[Why This Matters]
+**Jest/Vitest**: Can't test Server Components or browser flows
+**Playwright alone**: Either slow (real backend with restarts) or your backend never runs (mocked)
+**MSW alone**: Backend never executes—you're testing mock responses, not your code
+**Cypress**: Stubs everything—Server Components never render, validation never runs
+
+**Scenarist + Playwright**: Real backend execution + instant scenario switching + built-in state = fast integration tests
 :::
+
+<small>¹Playwright *can* run with real backend, but requires app restart per scenario (slow)
+²Changing scenarios = restart app = slow feedback loop
+³Shared MSW handlers cause test pollution and flaky tests
+⁴Fast if mocking backend (but then backend doesn't run)</small>
 
 ## The E2E Testing Problem
 
