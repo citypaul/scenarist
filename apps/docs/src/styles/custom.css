@@ -116,3 +116,22 @@
 :root[data-theme='dark'] .hero .sl-link-button.secondary {
 	border-color: rgba(255, 255, 255, 0.4);
 }
+
+/* Hero image sizing - make it larger and more prominent */
+.hero img {
+	max-width: 100%;
+	width: 100%;
+	height: auto;
+}
+
+/* On larger screens, increase gap between text and image */
+@media (min-width: 768px) {
+	.hero > .sl-flex {
+		gap: 3rem;
+	}
+
+	.hero img {
+		max-width: 120%;
+		margin-left: -10%;
+	}
+}
