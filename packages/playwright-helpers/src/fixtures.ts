@@ -202,7 +202,8 @@ export type ScenaristFixtures<S extends string = string> = {
  * });
  * ```
  */
-export function withScenarios<T extends ScenaristScenarios>(_scenarios: T) {
+export function withScenarios<T extends ScenaristScenarios>(scenarios: T) {
+  void scenarios; // Parameter needed for type inference only
   type ScenarioId = ScenarioIds<T>;
 
   return base.extend<ScenaristOptions & ScenaristFixtures<ScenarioId>>({
