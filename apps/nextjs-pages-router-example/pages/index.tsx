@@ -6,16 +6,27 @@
  */
 
 import { useState, useEffect } from 'react';
+import type { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import { ProductCard } from '../components/ProductCard';
 import { TierSelector } from '../components/TierSelector';
 import type { Product } from '../types/product';
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
+import { scenarist } from '../lib/scenarist';
 
-export default function Home() {
-  const [userTier, setUserTier] = useState<'premium' | 'standard'>('standard');
-  const [products, setProducts] = useState<ReadonlyArray<Product>>([]);
-  const [loading, setLoading] = useState(true);
+type HomeProps = {
+  readonly initialProducts?: ReadonlyArray<Product>;
+  readonly initialTier?: string;
+};
+
+export default function Home({ initialProducts = [], initialTier = 'standard' }: HomeProps) {
+  const [userTier, setUserTier] = useState<'premium' | 'standard'>(
+    initialTier as 'premium' | 'standard'
+  );
+  const [products, setProducts] = useState<ReadonlyArray<Product>>(initialProducts);
+  // Start loading as false if we have initial products (SSR)
+  const [loading, setLoading] = useState(initialProducts.length === 0);
   const [error, setError] = useState<string | null>(null);
   const [cartCount, setCartCount] = useState(0);
 
@@ -158,3 +169,42 @@ export default function Home() {
     </>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  // Extract tier from query param or default to 'standard'
+  // Query params can be string | string[] | undefined
+  const tierParam = context.query.tier;
+  const tier = Array.isArray(tierParam) ? tierParam[0] : tierParam || 'standard';
+
+  try {
+    // Fetch products server-side with tier header
+    // This demonstrates Scenarist working during getServerSideProps
+    const response = await fetch('http://localhost:3001/api/products', {
+      headers: {
+        ...getScenaristHeaders(context.req, scenarist),
+        'x-user-tier': tier,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch products: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    return {
+      props: {
+        initialProducts: data.products,
+        initialTier: tier,
+      },
+    };
+  } catch (error) {
+    console.error('SSR fetch error:', error);
+    return {
+      props: {
+        initialProducts: [],
+        initialTier: tier,
+      },
+    };
+  }
+};
