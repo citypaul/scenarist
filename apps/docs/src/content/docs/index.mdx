@@ -18,9 +18,11 @@ hero:
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
-## Your Backend Code Actually Runs
+## Test Real Server Components, Not Mocks
 
-**Unlike pure mocking solutions, Scenarist tests your real application logic.** Your Server Components execute, your API routes process requests, your business logic validates data. Only external API calls (Stripe, SendGrid, etc.) are mocked. This means you're testing the actual code that runs in production, not just mock responses.
+**Next.js Server Components can't be unit tested—they require E2E testing.** But traditional E2E testing with MSW means your Server Components never execute. You're testing mock responses, not your actual rendering logic.
+
+**Scenarist changes this:** Your Server Components render, your API routes process requests, your business logic validates data. Only external API calls (Stripe, SendGrid, etc.) are mocked. Test the actual code that runs in production.
 
 :::tip[The Critical Difference]
 **Traditional MSW approach:** Mock everything → Your backend never runs → You're testing mocks, not your code
