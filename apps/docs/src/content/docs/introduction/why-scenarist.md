@@ -3,13 +3,54 @@ title: Why Scenarist?
 description: Understanding the testing gap and how Scenarist fills it
 ---
 
-Scenarist tests your real backend code through HTTP with different scenarios, filling the gap between unit tests (which mock too much) and E2E tests (which test too little). Your entire backend executes—Server Components render, API routes process requests, middleware chains run—with only external APIs mocked.
+**Testing backend code through HTTP with different scenarios is painful:**
+
+**Before Scenarist (testing Server Components with Jest):**
+```typescript
+// ❌ Painful mocking just to test YOUR code
+jest.mock('next/headers', () => ({
+  cookies: () => ({ get: jest.fn(() => 'mocked') })
+}));
+jest.mock('your-auth-provider');
+jest.mock('stripe');
+// ... 30+ lines of mocks before testing YOUR 5 lines of code
+```
+
+**With Scenarist:**
+```typescript
+// ✅ Mock only external APIs, test real backend code
+const scenarios = {
+  premium: { mocks: [{ url: 'https://auth-api.com/session', response: { tier: 'premium' } }] }
+};
+
+test('premium users see discount', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'premium');
+  await page.goto('/dashboard');
+  // Your Server Component renders for REAL with mocked external API
+});
+```
+
+**The difference:** Scenarist tests your real backend code (Server Components render, API routes process, middleware chains run) with only external APIs mocked. No mocking framework internals, no brittle test setup.
 
 :::tip[TL;DR]
 **The Problem:** Unit tests mock too much. Browser tests test too little. The gap: testing your real backend code (API routes, Server Components, middleware) through HTTP with different scenarios.
 
 **Scenarist's Solution:** Define scenarios once, switch at runtime, test everything in parallel. Your entire backend executes—Next.js Server Components render, API routes process requests, middleware chains run—only external APIs are mocked.
 :::
+
+## Quick Navigation
+
+| Problem | Solution |
+|---------|----------|
+| "My middleware chains are hard to test" | [What Gets Tested](#what-gets-tested) |
+| "E2E tests are too slow for all scenarios" | [Runtime Scenario Switching](#runtime-scenario-switching) |
+| "How is this different from unit/E2E tests?" | [Quick Comparison](#quick-comparison) |
+| "What frameworks does this support?" | [Framework-Agnostic Architecture](#framework-agnostic-architecture) |
+| "Can I test polling/sequences/state?" | [Dynamic Response Features](#dynamic-response-features) |
+| "Show me a complete example" | [Real-World Example](#real-world-example-testing-premium-checkout) |
+| "When should I NOT use Scenarist?" | [Trade-offs & Alternatives](#trade-offs--when-to-consider-alternatives) |
+
+---
 
 ## The Testing Gap
 
@@ -73,6 +114,38 @@ graph LR
 | **Speed** | ✅ Fast | ❌ Slow | ✅ Fast |
 | **Parallel execution** | ✅ Yes | ⚠️ Usually no | ✅ Yes (perfect isolation) |
 | **Production-like** | ❌ Mocks create gap | ✅ Real backend | ✅ Real backend |
+
+### Success Criteria
+
+You'll know Scenarist is working when:
+
+- ✅ **Test output shows parallel execution** - All tests run simultaneously (not sequentially)
+  ```bash
+  Running 15 tests using 4 workers
+  ✓ 15 passed in 2.3s  # Not 15s+ sequential
+  ```
+
+- ✅ **Same server handles all scenarios** - One port, one process, zero startup delays
+  ```typescript
+  // All tests use http://localhost:3000 concurrently
+  test('scenario A', ...) // → localhost:3000
+  test('scenario B', ...) // → localhost:3000 (same server!)
+  ```
+
+- ✅ **Real backend code executes** - Enable logging to verify:
+  ```typescript
+  // Your middleware logs show REAL execution
+  [Middleware] Processing request for test-id: abc123
+  [Auth] Retrieved session from database  // ← Real DB call!
+  [Route] Applied tier-based pricing      // ← YOUR code ran!
+  ```
+
+- ✅ **Test isolation verified** - Failed scenarios don't affect others
+  ```bash
+  ✓ premium checkout succeeds (passed)
+  ✗ rate-limited checkout fails (expected failure)
+  ✓ standard checkout succeeds (passed) # ← Isolated!
+  ```
 
 ## Runtime Scenario Switching
 
