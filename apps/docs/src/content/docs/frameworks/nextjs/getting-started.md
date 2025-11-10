@@ -28,10 +28,10 @@ npm install -D @playwright/test @scenarist/playwright-helpers
 ### 1. Define Scenarios
 
 ```typescript
-// src/scenarios.ts
-import type { ScenarioDefinition } from '@scenarist/core';
+// lib/scenarios.ts
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/core';
 
-export const successScenario: ScenarioDefinition = {
+const successScenario: ScenaristScenario = {
   id: 'success',
   name: 'Payment Success',
   mocks: [
@@ -53,19 +53,28 @@ export const successScenario: ScenarioDefinition = {
     },
   ],
 };
+
+export const scenarios = {
+  default: successScenario,
+  success: successScenario,
+} as const satisfies ScenaristScenarios;
 ```
 
-### 2. Create Scenario Endpoint
+### 2. Set Up Scenarist
 
 ```typescript
+// lib/scenarist.ts
+import { createScenarist } from '@scenarist/nextjs-adapter/pages';
+import { scenarios } from './scenarios';
+
+export const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  scenarios,
+});
+
 // pages/api/__scenario__.ts
-import { createScenaristHandler } from '@scenarist/nextjs-adapter/pages';
-import { successScenario } from '@/scenarios';
-
-const scenarist = createScenaristHandler();
-scenarist.registerScenarios([successScenario]);
-
-export default scenarist.handler();
+import { scenarist } from '@/lib/scenarist';
+export default scenarist.createScenarioEndpoint();
 ```
 
 ### 3. Add MSW Setup
@@ -85,13 +94,13 @@ export const config = {
 
 ```typescript
 // tests/checkout.spec.ts
-import { test, expect } from '@playwright/test';
-import { switchScenario } from '@scenarist/playwright-helpers';
+import { expect, withScenarios } from '@scenarist/playwright-helpers';
+import { scenarios } from '../lib/scenarios';
 
-test('renders Server-Side page with product data', async ({ page }) => {
-  await switchScenario(page, 'success', {
-    baseURL: 'http://localhost:3000',
-  });
+export const test = withScenarios(scenarios);
+
+test('renders Server-Side page with product data', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'success'); // ✅ Type-safe!
 
   await page.goto('/products');
 
@@ -99,10 +108,8 @@ test('renders Server-Side page with product data', async ({ page }) => {
   await expect(page.locator('h2')).toContainText('Premium Plan');
 });
 
-test('processes payment via API route', async ({ page }) => {
-  await switchScenario(page, 'success', {
-    baseURL: 'http://localhost:3000',
-  });
+test('processes payment via API route', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'success');
 
   // Your API route validation runs
   const response = await page.request.post('/api/checkout', {
@@ -127,10 +134,10 @@ npm install -D @playwright/test @scenarist/playwright-helpers
 ### 1. Define Scenarios
 
 ```typescript
-// src/scenarios.ts
-import type { ScenarioDefinition } from '@scenarist/core';
+// lib/scenarios.ts
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/core';
 
-export const successScenario: ScenarioDefinition = {
+const successScenario: ScenaristScenario = {
   id: 'success',
   name: 'Payment Success',
   mocks: [
@@ -144,19 +151,31 @@ export const successScenario: ScenarioDefinition = {
     },
   ],
 };
+
+export const scenarios = {
+  default: successScenario,
+  success: successScenario,
+} as const satisfies ScenaristScenarios;
 ```
 
-### 2. Create Scenario Endpoint
+### 2. Set Up Scenarist
 
 ```typescript
+// lib/scenarist.ts
+import { createScenarist } from '@scenarist/nextjs-adapter/app';
+import { scenarios } from './scenarios';
+
+export const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  scenarios,
+});
+
 // app/api/__scenario__/route.ts
-import { createScenaristHandler } from '@scenarist/nextjs-adapter/app';
-import { successScenario } from '@/scenarios';
+import { scenarist } from '@/lib/scenarist';
 
-const scenarist = createScenaristHandler();
-scenarist.registerScenarios([successScenario]);
-
-export const { GET, POST } = scenarist.handlers();
+const handler = scenarist.createScenarioEndpoint();
+export const GET = handler;
+export const POST = handler;
 ```
 
 ### 3. Add MSW Setup
@@ -172,13 +191,13 @@ export const { GET } = createMSWHandler();
 
 ```typescript
 // tests/products.spec.ts
-import { test, expect } from '@playwright/test';
-import { switchScenario } from '@scenarist/playwright-helpers';
+import { expect, withScenarios } from '@scenarist/playwright-helpers';
+import { scenarios } from '../lib/scenarios';
 
-test('Server Component fetches and renders product data', async ({ page }) => {
-  await switchScenario(page, 'success', {
-    baseURL: 'http://localhost:3000',
-  });
+export const test = withScenarios(scenarios);
+
+test('Server Component fetches and renders product data', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'success'); // ✅ Type-safe!
 
   await page.goto('/products');
 
@@ -229,5 +248,5 @@ export default async function ProductsPage() {
 
 ## Next Steps
 
-- **Advanced features:** [Request matching](/concepts/request-matching), [sequences](/concepts/sequences), [stateful mocks](/concepts/stateful-mocks)
 - **Example apps:** See complete examples for [Pages Router](https://github.com/citypaul/scenarist/tree/main/apps/nextjs-pages-router-example) and [App Router](https://github.com/citypaul/scenarist/tree/main/apps/nextjs-app-router-example)
+- **Architecture:** Learn [how Scenarist works](/concepts/architecture)
