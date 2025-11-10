@@ -1,0 +1,550 @@
+---
+title: Endpoint APIs
+description: Complete reference for POST /__scenario__ and GET /__scenario__ endpoints
+---
+
+# Endpoint APIs
+
+Scenarist provides two HTTP endpoints for scenario management: `POST /__scenario__` to switch scenarios and `GET /__scenario__` to check the active scenario. These endpoints are framework-agnostic and work consistently across Express, Next.js, and all supported frameworks.
+
+## POST /__scenario__ - Switch Scenario
+
+Switch the active scenario for a test ID.
+
+### Request
+
+**Method:** `POST`
+
+**URL:** `/__scenario__` (configurable via `endpoints.setScenario`)
+
+**Headers:**
+```
+Content-Type: application/json
+x-test-id: <test-id>  (configurable via headers.testId)
+```
+
+**Body:**
+```typescript
+{
+  scenario: string;    // Required: scenario ID to activate
+  variant?: string;    // Optional: variant name within scenario
+}
+```
+
+### Responses
+
+**Success (200):**
+```typescript
+{
+  success: true;
+  testId: string;         // The test ID used for routing
+  scenarioId: string;     // The activated scenario ID
+  variant?: string;       // The variant name (if provided)
+}
+```
+
+**Example:**
+```json
+{
+  "success": true,
+  "testId": "test-abc123",
+  "scenarioId": "payment-error",
+  "variant": "visa-declined"
+}
+```
+
+**Validation Error (400):**
+```typescript
+{
+  error: string;         // Error message
+  details?: unknown;     // Validation error details (Zod errors)
+}
+```
+
+**Example:**
+```json
+{
+  "error": "Invalid request body",
+  "details": [
+    {
+      "code": "invalid_type",
+      "expected": "string",
+      "received": "undefined",
+      "path": ["scenario"],
+      "message": "Required"
+    }
+  ]
+}
+```
+
+**Scenario Not Found (400):**
+```typescript
+{
+  error: string;  // "Scenario 'xyz' not found. Did you forget to register it?"
+}
+```
+
+**Internal Server Error (500):**
+```typescript
+{
+  error: string;  // "Internal server error"
+}
+```
+
+### Example Usage
+
+**With Playwright helpers:**
+```typescript
+import { test } from '@scenarist/playwright-helpers';
+
+test('my test', async ({ page, switchScenario }) => {
+  // Helper handles POST request automatically
+  await switchScenario(page, 'payment-error');
+  // Sends POST /__scenario__ with auto-generated test ID
+});
+```
+
+**Manual (curl):**
+```bash
+curl -X POST http://localhost:3000/__scenario__ \
+  -H "Content-Type: application/json" \
+  -H "x-test-id: test-123" \
+  -d '{"scenario": "payment-error"}'
+```
+
+**Manual (fetch):**
+```typescript
+const response = await fetch('http://localhost:3000/__scenario__', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'x-test-id': 'test-123',
+  },
+  body: JSON.stringify({ scenario: 'payment-error' }),
+});
+
+const result = await response.json();
+// { success: true, testId: 'test-123', scenarioId: 'payment-error' }
+```
+
+**With Playwright (supertest):**
+```typescript
+import request from 'supertest';
+import app from './app';
+
+const response = await request(app)
+  .post('/__scenario__')
+  .set('x-test-id', 'test-123')
+  .send({ scenario: 'payment-error' });
+
+expect(response.status).toBe(200);
+expect(response.body.scenarioId).toBe('payment-error');
+```
+
+## GET /__scenario__ - Get Active Scenario
+
+Retrieve the currently active scenario for a test ID.
+
+### Request
+
+**Method:** `GET`
+
+**URL:** `/__scenario__` (configurable via `endpoints.getScenario`)
+
+**Headers:**
+```
+x-test-id: <test-id>  (configurable via headers.testId)
+```
+
+**No body required.**
+
+### Responses
+
+**Success (200):**
+```typescript
+{
+  testId: string;           // The test ID
+  scenarioId: string;       // The active scenario ID
+  scenarioName?: string;    // The scenario's human-readable name (if found)
+  variantName?: string;     // The variant name (if set)
+}
+```
+
+**Example:**
+```json
+{
+  "testId": "test-abc123",
+  "scenarioId": "payment-error",
+  "scenarioName": "Payment Error Scenarios",
+  "variantName": "visa-declined"
+}
+```
+
+**No Active Scenario (404):**
+```typescript
+{
+  error: string;    // "No active scenario for this test ID"
+  testId: string;   // The test ID that was queried
+}
+```
+
+**Example:**
+```json
+{
+  "error": "No active scenario for this test ID",
+  "testId": "test-xyz789"
+}
+```
+
+### Example Usage
+
+**With fetch:**
+```typescript
+const response = await fetch('http://localhost:3000/__scenario__', {
+  headers: {
+    'x-test-id': 'test-123',
+  },
+});
+
+const result = await response.json();
+// { testId: 'test-123', scenarioId: 'payment-error', scenarioName: '...' }
+```
+
+**With curl:**
+```bash
+curl http://localhost:3000/__scenario__ \
+  -H "x-test-id: test-123"
+```
+
+**With Playwright (supertest):**
+```typescript
+const response = await request(app)
+  .get('/__scenario__')
+  .set('x-test-id', 'test-123');
+
+expect(response.status).toBe(200);
+expect(response.body.scenarioId).toBe('payment-error');
+```
+
+## Test ID Extraction
+
+Both endpoints extract the test ID from the request header:
+
+```typescript
+// Configuration
+const scenarist = createScenarist({
+  enabled: true,
+  scenarios,
+  headers: {
+    testId: 'x-test-id',  // Header name (configurable)
+  },
+});
+```
+
+**Test ID behavior:**
+- **Header present:** Uses value from header (e.g., `'test-abc123'`)
+- **Header missing:** Uses default test ID (e.g., `'default-test'`)
+- **Empty string:** Treated as missing, uses default
+
+**Example:**
+```typescript
+// Request with header
+Headers: { 'x-test-id': 'test-123' }
+// Uses test ID: 'test-123'
+
+// Request without header
+// Uses test ID: 'default-test'
+```
+
+## Request Validation
+
+The `POST /__scenario__` endpoint validates the request body using Zod:
+
+```typescript
+import { z } from 'zod';
+
+const ScenarioRequestSchema = z.object({
+  scenario: z.string().min(1),  // Required, non-empty string
+  variant: z.string().optional(),  // Optional string
+});
+```
+
+**Valid requests:**
+```json
+{ "scenario": "payment-error" }
+{ "scenario": "payment-error", "variant": "visa-declined" }
+```
+
+**Invalid requests:**
+```json
+{}  // Missing 'scenario'
+{ "scenario": "" }  // Empty string
+{ "scenario": 123 }  // Wrong type
+```
+
+## Framework-Specific Implementations
+
+While the API is consistent across frameworks, the implementation differs:
+
+### Express
+
+```typescript
+// Express endpoint handler
+export const handleSetScenario = (manager: ScenarioManager, config: ScenaristConfig) => {
+  return (req: Request, res: Response): void => {
+    const { scenario, variant } = ScenarioRequestSchema.parse(req.body);
+    const context = new ExpressRequestContext(req, config);
+    const testId = context.getTestId();
+
+    const result = manager.switchScenario(testId, scenario, variant);
+
+    if (!result.success) {
+      res.status(400).json({ error: result.error.message });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      testId,
+      scenarioId: scenario,
+      ...(variant && { variant }),
+    });
+  };
+};
+```
+
+### Next.js App Router
+
+```typescript
+// Next.js App Router endpoint handler
+export const POST = async (req: Request): Promise<Response> => {
+  const body = await req.json();
+  const context = new AppRequestContext(req, config);
+  const result = await handlePostLogic(body, context, manager);
+
+  if (!result.success) {
+    return Response.json(
+      { error: result.error, details: result.details },
+      { status: result.status }
+    );
+  }
+
+  return Response.json(
+    {
+      success: true,
+      testId: result.testId,
+      scenarioId: result.scenarioId,
+      ...(result.variant && { variant: result.variant }),
+    },
+    { status: 200 }
+  );
+};
+```
+
+### Next.js Pages Router
+
+```typescript
+// Next.js Pages Router endpoint handler
+export default async (req: NextApiRequest, res: NextApiResponse) => {
+  if (req.method === 'POST') {
+    const { scenario, variant } = ScenarioRequestSchema.parse(req.body);
+    const context = new PagesRequestContext(req, config);
+    const testId = context.getTestId();
+
+    const result = manager.switchScenario(testId, scenario, variant);
+
+    if (!result.success) {
+      return res.status(400).json({ error: result.error.message });
+    }
+
+    return res.status(200).json({
+      success: true,
+      testId,
+      scenarioId: scenario,
+      ...(variant && { variant }),
+    });
+  }
+
+  // GET handler...
+};
+```
+
+## Configuration
+
+Endpoint paths and headers are configurable:
+
+```typescript
+const scenarist = createScenarist({
+  enabled: true,
+  scenarios,
+
+  // Customize endpoint paths
+  endpoints: {
+    setScenario: '/__scenario__',        // POST endpoint (default)
+    getScenario: '/__scenario__',        // GET endpoint (default)
+    // Or customize:
+    // setScenario: '/__test/switch',
+    // getScenario: '/__test/status',
+  },
+
+  // Customize headers
+  headers: {
+    testId: 'x-test-id',                 // Test ID header (default)
+    // Or customize:
+    // testId: 'x-scenarist-test-id',
+  },
+});
+```
+
+**Why customize?**
+- Security: Use non-standard paths in production (if `enabled: true` accidentally)
+- Compatibility: Avoid conflicts with existing routes
+- Convention: Match your team's naming standards
+
+## Scenario Manager Coordination
+
+Both endpoints delegate to `ScenarioManager`:
+
+```typescript
+// POST /__scenario__ flow
+const result = manager.switchScenario(testId, scenarioId, variantName);
+// 1. Looks up scenario definition by ID
+// 2. Returns error if not found
+// 3. Stores active scenario for test ID
+// 4. Resets sequences and state for test ID
+// 5. Returns success
+
+// GET /__scenario__ flow
+const activeScenario = manager.getActiveScenario(testId);
+// 1. Retrieves active scenario for test ID
+// 2. Returns undefined if none set
+const scenarioDefinition = manager.getScenarioById(activeScenario.scenarioId);
+// 3. Looks up full definition for metadata
+```
+
+## State and Sequence Reset
+
+When switching scenarios, state and sequences are reset:
+
+```typescript
+manager.switchScenario(testId, scenarioId, variantName);
+// Internally calls:
+// - sequenceTracker.reset(testId)  // All sequence positions cleared
+// - stateManager.reset(testId)     // All captured state cleared
+```
+
+**Why reset?**
+- Clean slate for new scenario
+- Prevents state bleeding between scenarios
+- Ensures idempotent test execution
+
+**Example:**
+```typescript
+// Test 1
+await switchScenario(page, 'shopping-cart');
+// Add items, state captured: { cartItems: ['item-1', 'item-2'] }
+
+// Switch to error scenario
+await switchScenario(page, 'payment-error');
+// State reset: { } (empty)
+// Sequences reset: all positions → 0
+```
+
+## Security Considerations
+
+**Production Safety:**
+- When `enabled: false`, endpoints return 404
+- When `enabled: true`, consider:
+  - Custom endpoint paths (non-standard)
+  - Network-level blocking (firewall)
+  - Environment-based enablement (never `true` in production)
+
+**Test Isolation:**
+- Each test ID is isolated
+- No cross-test interference
+- Test IDs should be unique (use UUIDs)
+
+**Header Validation:**
+- Test ID header validated (configurable name)
+- Missing header → uses default test ID
+- Empty header → uses default test ID
+
+## Error Handling
+
+All endpoints return structured errors:
+
+```typescript
+// Validation error
+{
+  error: 'Invalid request body',
+  details: [/* Zod validation errors */]
+}
+
+// Scenario not found
+{
+  error: "Scenario 'xyz' not found. Did you forget to register it?"
+}
+
+// No active scenario
+{
+  error: 'No active scenario for this test ID',
+  testId: 'test-123'
+}
+
+// Internal error
+{
+  error: 'Internal server error'
+}
+```
+
+**Best practice:** Always check response status before parsing body.
+
+## Complete Example
+
+Full workflow with both endpoints:
+
+```typescript
+import { test } from '@scenarist/playwright-helpers';
+import { scenarios } from './scenarios';
+
+export const testWithScenarios = test.extend({
+  scenarios,
+});
+
+testWithScenarios('payment flow', async ({ page, switchScenario }) => {
+  // 1. Switch to payment success scenario
+  const testId = await switchScenario(page, 'payment-success');
+  // POST /__scenario__ called with:
+  // { scenario: 'payment-success' }
+  // Response: { success: true, testId: 'test-abc123', scenarioId: 'payment-success' }
+
+  // 2. Verify active scenario (optional)
+  const response = await page.request.get('http://localhost:3000/__scenario__', {
+    headers: { 'x-test-id': testId },
+  });
+  const activeScenario = await response.json();
+  // { testId: 'test-abc123', scenarioId: 'payment-success', scenarioName: '...' }
+
+  // 3. Test with success scenario
+  await page.goto('/checkout');
+  await page.click('button:has-text("Pay")');
+  await expect(page.getByText('Payment successful')).toBeVisible();
+
+  // 4. Switch to error scenario
+  await switchScenario(page, 'payment-error');
+  // POST /__scenario__ called with:
+  // { scenario: 'payment-error' }
+  // Sequences and state reset
+
+  // 5. Test with error scenario
+  await page.goto('/checkout');
+  await page.click('button:has-text("Pay")');
+  await expect(page.getByText('Payment failed')).toBeVisible();
+});
+```
+
+## Next Steps
+
+- [Scenario Format →](/introduction/scenario-format) - Learn the complete scenario structure
+- [Default Mocks →](/introduction/default-mocks) - Understand override behavior
+- [Ephemeral Endpoints →](/introduction/ephemeral-endpoints) - Understand test-only activation

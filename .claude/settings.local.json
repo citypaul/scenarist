@@ -23,7 +23,8 @@
       "Bash(gh pr list:*)",
       "Bash(git rebase:*)",
       "Bash(gh run view:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(pnpm --filter=@scenarist/docs build:*)"
     ],
     "deny": [],
     "ask": []
