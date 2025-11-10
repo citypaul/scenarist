@@ -528,8 +528,8 @@ export const test = withScenarios(scenarios).extend<MyFixtures>({
 | **Middleware Chains** | ❌ Mocked away (isolated) | ✅ Execute | ✅ **Execute** |
 | **Server Components** | ⚠️ Painful framework mocking | ❌ Can't test multiple scenarios | ✅ **Multiple scenarios** |
 | **Session Logic** | ⚠️ Mock session store | ✅ Real sessions | ✅ **Real sessions** |
-| **Multiple Scenarios** | ✅ Unlimited (with mocks) | ❌ 1-2 only (too slow) | ✅ **Unlimited, fast** |
-| **Test Speed** | ✅ Very fast (50ms) | ❌ Slow (5-10s per scenario) | ✅ **Fast (2s per scenario)** |
+| **Multiple Scenarios** | ✅ Unlimited (with mocks) | ❌ Limited (too slow) | ✅ **Unlimited, in parallel** |
+| **Test Speed** | ✅ Very fast | ❌ Slow per scenario | ✅ **Fast** |
 | **Parallel Execution** | ✅ Yes | ⚠️ Limited | ✅ **Perfect isolation** |
 | **Production-like** | ❌ Mocks create distance | ✅ Real everything | ✅ **Real backend, mocked externals** |
 
@@ -543,16 +543,16 @@ jest.mock('next/headers', () => ({ cookies: () => mockCookies }));
 ```
 
 **The problem with E2E tests:**
-- Testing 10 scenarios = 10 separate test runs (slow)
+- Testing multiple scenarios requires multiple test runs (each spawns new server)
 - Can't test error states without hitting real APIs
-- Too slow for comprehensive coverage
+- Too slow for comprehensive coverage of edge cases
 
 **Scenarist's approach:**
 ```typescript
 // No framework mocking, just external API mocking
 const scenario = { mocks: [{ url: 'external-api.com', response: {...} }] };
 // Your code runs exactly like production
-// 10 scenarios = 20 seconds total (parallel)
+// Multiple scenarios run in parallel against same server
 ```
 :::
 

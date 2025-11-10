@@ -125,7 +125,7 @@ You'll know Scenarist is working when:
 - ✅ **Test output shows parallel execution** - All tests run simultaneously (not sequentially)
   ```bash
   Running 15 tests using 4 workers
-  ✓ 15 passed in 2.3s  # Not 15s+ sequential
+  ✓ 15 passed (fast)  # Not 15+ separate server spawns
   ```
 
 - ✅ **Same server handles all scenarios** - One port, one process, zero startup delays
@@ -436,7 +436,7 @@ test('premium checkout succeeds at $5000', async ({ page, switchScenario }) => {
 
 ## Practical Guidance
 
-**Getting Started (15 minutes):**
+**Getting Started:**
 1. Install adapter for your framework
 2. Define simple scenario (single mock, static response)
 3. Write first test using scenario
@@ -459,9 +459,9 @@ console.log(page.context().extraHTTPHeaders()); // Should include x-test-id
 ```
 
 **Real-World Metrics:**
-- Express example app: 49 tests run in 2.3s (parallel execution)
+- Express example app: 49 tests run fast with parallel execution
 - Test isolation: 100% success rate with concurrent execution
-- Setup time: ~15 minutes for new framework adapter
+- Setup time: Quick for new framework adapters
 
 ## Framework-Specific Benefits
 
