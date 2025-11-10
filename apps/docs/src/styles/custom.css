@@ -58,15 +58,25 @@
 	border-radius: 0.5rem;
 }
 
-/* Homepage hero customization */
-.hero h1 {
-	font-size: clamp(2rem, 5vw, 3.5rem);
-	line-height: 1.1;
-}
-
 /* Navigation hover states */
 .sidebar-content a:hover {
 	text-decoration: underline;
+}
+
+/* Fix selected/active menu item visibility - ensure text remains visible */
+.sidebar-content a[aria-current='page'],
+.sidebar-content a[aria-current='page']:hover,
+.sidebar-content a[aria-current='page']:focus {
+	color: var(--sl-color-white) !important;
+	background-color: rgb(var(--sl-color-accent)) !important;
+}
+
+/* Dark mode: ensure selected items remain visible */
+:root[data-theme='dark'] .sidebar-content a[aria-current='page'],
+:root[data-theme='dark'] .sidebar-content a[aria-current='page']:hover,
+:root[data-theme='dark'] .sidebar-content a[aria-current='page']:focus {
+	color: var(--sl-color-white) !important;
+	background-color: rgb(var(--sl-color-accent)) !important;
 }
 
 /* Improve code block contrast in dark mode */
@@ -74,9 +84,60 @@
 	background-color: rgb(17, 24, 39);
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-	.hero h1 {
-		font-size: 2rem;
+/* Hero button visibility improvements */
+.hero .sl-link-button.primary {
+	background: rgb(var(--sl-color-accent));
+	color: white;
+	border: 2px solid rgb(var(--sl-color-accent));
+}
+
+.hero .sl-link-button.primary:hover {
+	background: rgb(var(--sl-color-accent-high));
+	border-color: rgb(var(--sl-color-accent-high));
+}
+
+.hero .sl-link-button.secondary {
+	background: transparent;
+	color: rgb(var(--sl-color-white));
+	border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.hero .sl-link-button.secondary:hover {
+	border-color: rgb(var(--sl-color-accent));
+	background: rgba(var(--sl-color-accent), 0.1);
+}
+
+/* Dark mode hero button adjustments */
+:root[data-theme='dark'] .hero .sl-link-button.primary {
+	background: rgb(var(--sl-color-accent));
+	border-color: rgb(var(--sl-color-accent));
+}
+
+:root[data-theme='dark'] .hero .sl-link-button.secondary {
+	border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Hero image sizing - make it significantly larger */
+.hero {
+	--__hero-image-width: min(100%, 700px);
+}
+
+.hero img {
+	width: var(--__hero-image-width) !important;
+	height: auto !important;
+	max-width: none !important;
+}
+
+/* On tablet screens, make image even larger */
+@media (min-width: 768px) {
+	.hero {
+		--__hero-image-width: min(100%, 850px);
+	}
+}
+
+/* On desktop screens, make image huge */
+@media (min-width: 1024px) {
+	.hero {
+		--__hero-image-width: min(100%, 1000px);
 	}
 }

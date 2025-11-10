@@ -285,7 +285,7 @@ docs-site/
 3. [ ] Add navigation and search
 4. [ ] Add code examples (syntax highlighting)
 5. [ ] Add interactive examples (embedded CodeSandbox?)
-6. [ ] Deploy to **Cloudflare Pages** (scenarist.dev domain?)
+6. [ ] Deploy to **Cloudflare Pages** (scenarist.io domain)
 7. [ ] Add Open Graph images
 8. [ ] Add Google Analytics (optional)
 
@@ -327,7 +327,7 @@ docs-site/
     "url": "https://github.com/citypaul/scenarist.git",
     "directory": "packages/core"
   },
-  "homepage": "https://scenarist.dev",
+  "homepage": "https://scenarist.io",
   "bugs": "https://github.com/citypaul/scenarist/issues",
   "author": "Paul Hammond",
   "license": "MIT",
@@ -687,13 +687,7 @@ Response:
 
 ### Domain Name
 
-Options:
-- scenarist.dev (recommended)
-- scenarist.io
-- getscenarist.com
-- scenarist-testing.dev
-
-**Decision needed:** Which domain to buy?
+**Decision:** scenarist.io (scenarist.dev was taken, scenarist.io is available)
 
 ### npm Organization
 

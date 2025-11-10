@@ -1,27 +1,59 @@
 // @ts-check
-import { defineConfig } from 'astro/config';
-import starlight from '@astrojs/starlight';
+import cloudflare from "@astrojs/cloudflare";
+import starlight from "@astrojs/starlight";
+import { defineConfig } from "astro/config";
+import rehypeMermaid from "rehype-mermaid";
 
 // https://astro.build/config
 export default defineConfig({
-	integrations: [
-		starlight({
-			title: 'Scenarist',
-			description: 'Fix E2E testing for Next.js, Remix, and TanStack',
-			social: [
-				{
-					icon: 'github',
-					label: 'GitHub',
-					href: 'https://github.com/citypaul/scenarist'
-				}
-			],
-			sidebar: [
-				// Phase 1: Minimal navigation - content pages will be added in Phase 2
-				// Introduction pages exist but are placeholders, so not shown in navigation yet
-			],
-			customCss: [
-				'./src/styles/custom.css',
-			],
-		}),
-	],
+  adapter: cloudflare(),
+  markdown: {
+    syntaxHighlight: {
+      type: "shiki",
+      excludeLangs: ["mermaid"],
+    },
+    rehypePlugins: [rehypeMermaid],
+  },
+  integrations: [
+    starlight({
+      title: "Scenarist",
+      description: "Fix E2E testing for Next.js, Remix, and TanStack",
+      social: [
+        {
+          icon: "github",
+          label: "GitHub",
+          href: "https://github.com/citypaul/scenarist",
+        },
+      ],
+      sidebar: [
+        {
+          label: "Introduction",
+          items: [
+            { label: "Quick Start", slug: "introduction/quick-start" },
+            { label: "Why Scenarist?", slug: "introduction/why-scenarist" },
+            { label: "Installation", slug: "introduction/installation" },
+            { label: "Overview", slug: "introduction/overview" },
+          ],
+        },
+        {
+          label: "Framework Guides",
+          items: [
+            { label: "Express", slug: "frameworks/express/getting-started" },
+            { label: "Next.js", slug: "frameworks/nextjs/getting-started" },
+          ],
+        },
+        {
+          label: "Concepts",
+          collapsed: true,
+          items: [{ label: "Coming Soon", slug: "guides/example" }],
+        },
+        {
+          label: "Reference",
+          collapsed: true,
+          items: [{ label: "Coming Soon", slug: "reference/example" }],
+        },
+      ],
+      customCss: ["./src/styles/custom.css"],
+    }),
+  ],
 });
