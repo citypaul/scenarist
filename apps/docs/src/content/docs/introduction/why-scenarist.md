@@ -11,13 +11,13 @@ description: Understanding the testing gap and how Scenarist fills it
 
 ## The Testing Gap
 
-Most applications have three types of tests:
+Applications typically use three testing approaches:
 
 ```mermaid
 graph TD
     A[Unit Tests] -->|Mock Everything| B[Fast but Incomplete]
     C[Integration Tests] -->|Mock External APIs| D["THE GAP:<br/>Test Real Backend<br/>Multiple Scenarios"]
-    E[E2E Tests] -->|Real Everything| F[Slow but Complete]
+    E[E2E Tests] -->|Real Everything| F[Slow, Happy Path Only]
 
     style D fill:#ff6b6b,stroke:#c92a2a,color:#fff
     style A fill:#51cf66,stroke:#2f9e44
@@ -26,7 +26,7 @@ graph TD
 
 **Unit tests** mock your database, external APIs, and HTTP layer. Fast, but don't verify your middleware, routing, or error handling work together.
 
-**E2E tests** use real servers and browsers. Thorough, but too slow for comprehensive scenario coverage (typically test happy path only).
+**E2E tests** use real servers and browsers. Production-like execution, but too slow for comprehensive scenario coverage—testing all edge cases and error scenarios is impractical.
 
 **The gap:** Testing your actual backend code (middleware, auth, routing, error handling) through HTTP without spawning separate servers or sacrificing parallelization.
 
@@ -135,6 +135,8 @@ This means:
 - Define scenarios once, use across all frameworks
 - Switching frameworks doesn't require rewriting test scenarios
 - Core improvements benefit all adapters
+
+[Learn more about the architecture →](/concepts/architecture)
 
 :::note[Why This Matters for Modern Frameworks]
 **Next.js Server Components**, **Remix loaders**, and **SvelteKit server routes** are notoriously hard to test in isolation. Unit tests require complex mocking of framework internals. E2E tests work but are too slow for comprehensive scenario coverage.
@@ -325,9 +327,9 @@ test('premium checkout succeeds at $5000', async ({ page, switchScenario }) => {
 
 **What's mocked:** Only external services (Auth, Stripe, SendGrid) you don't control.
 
-## Trade-offs & When NOT to Use
+## Trade-offs & When to Consider Alternatives
 
-**Scenarist is NOT the right choice if:**
+**Consider alternatives when:**
 
 - **You need true E2E testing**: Scenarist mocks external APIs. If you need to verify integration with real third-party services, use full E2E tests.
 - **Your app has no external dependencies**: If your backend doesn't call external APIs, Scenarist adds unnecessary complexity.
@@ -336,7 +338,7 @@ test('premium checkout succeeds at $5000', async ({ page, switchScenario }) => {
 
 **Trade-offs to consider:**
 
-- **Learning curve**: Understanding scenario definitions, test ID isolation, and MSW interception requires initial investment (1-2 hours).
+- **Learning curve**: Understanding scenario definitions, test ID isolation, and MSW interception requires initial time investment.
 - **Debugging complexity**: Failed tests require tracing through both your code and scenario definitions. MSW debug logging helps but adds setup.
 - **Mock maintenance**: External APIs evolve, scenario definitions need updates. No automated contract validation.
 
