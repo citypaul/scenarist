@@ -102,35 +102,71 @@ graph LR
 
 ### Example
 
-```typescript
-// Define a scenario
-const premiumUserScenario = {
-  id: 'premiumUser',
-  name: 'Premium User',
-  mocks: [{
-    method: 'GET',
-    url: 'https://api.auth-provider.com/session',
-    response: {
-      status: 200,
-      body: { tier: 'premium', userId: 'user-123' }
-    }
-  }]
-};
+This example demonstrates HTTP-level testing with Next.js. Each framework has its own adapter that integrates Scenarist into your application.
 
-// Test uses the scenario
+**Step 1: Framework-specific setup** (done once per application)
+
+```typescript
+// app/api/[[...route]]/route.ts - Next.js App Router
+import { createScenarist } from '@scenarist/nextjs-adapter';
+import { scenarios } from './scenarios';
+
+export const { GET, POST } = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  scenarios,
+});
+```
+
+**Step 2: Define scenarios** (reusable across tests)
+
+```typescript
+// scenarios.ts
+export const scenarios = {
+  premiumUser: {
+    id: 'premiumUser',
+    name: 'Premium User',
+    mocks: [{
+      method: 'GET',
+      url: 'https://api.auth-provider.com/session',
+      response: {
+        status: 200,
+        body: { tier: 'premium', userId: 'user-123' }
+      }
+    }]
+  }
+} as const;
+```
+
+**Step 3: Write tests** (framework-agnostic)
+
+```typescript
+// tests/premium-features.spec.ts
+import { test, expect } from '@playwright/test';
+
 test('premium users access advanced features', async ({ page, switchScenario }) => {
   await switchScenario(page, 'premiumUser');
 
-  // This HTTP request goes to your real backend
+  // Real HTTP request → Next.js route → middleware → business logic
   await page.goto('/dashboard');
 
-  // Your middleware runs, your route handler executes,
-  // external auth API call returns mocked premium tier,
-  // your business logic processes the tier correctly
-
+  // External auth API call intercepted, returns mocked premium tier
+  // Your business logic processes the tier correctly
   await expect(page.getByText('Advanced Analytics')).toBeVisible();
 });
 ```
+
+**What's happening:**
+1. Framework adapter integrates Scenarist into your Next.js app
+2. Scenario defines how external APIs behave
+3. Test switches to scenario and makes real HTTP requests
+4. Your backend code executes with production behavior
+5. External API calls return scenario-defined responses
+
+**Framework-specific guides:**
+- [Next.js setup →](/frameworks/nextjs) - Server Components, API routes, Server Actions
+- [Express setup →](/frameworks/express) - Middleware, route handlers
+- [Remix setup →](/frameworks/remix) - Loaders, actions (coming soon)
+- [SvelteKit setup →](/frameworks/sveltekit) - Server routes (coming soon)
 
 ## Comparison with Other Testing Approaches
 
