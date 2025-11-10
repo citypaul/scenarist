@@ -1,5 +1,4 @@
 // @ts-check
-import cloudflare from "@astrojs/cloudflare";
 import starlight from "@astrojs/starlight";
 import { defineConfig } from "astro/config";
 import rehypeMermaid from "rehype-mermaid";
@@ -7,7 +6,6 @@ import rehypeMermaid from "rehype-mermaid";
 // https://astro.build/config
 export default defineConfig({
   output: 'static',
-  adapter: cloudflare(),
   markdown: {
     syntaxHighlight: {
       type: "shiki",
