@@ -4,9 +4,9 @@ description: Understanding the testing gap and how Scenarist fills it
 ---
 
 :::tip[TL;DR]
-**The Problem:** Unit tests mock too much. Browser tests test too little. The gap: testing your real backend code through HTTP with different scenarios.
+**The Problem:** Unit tests mock too much. Browser tests test too little. The gap: testing your real backend code (API routes, Server Components, middleware) through HTTP with different scenarios.
 
-**Scenarist's Solution:** Define scenarios once, switch at runtime, test everything in parallel. Your entire backend executes (middleware, auth, routes), only external APIs are mocked.
+**Scenarist's Solution:** Define scenarios once, switch at runtime, test everything in parallel. Your entire backend executes—Next.js Server Components render, API routes process requests, middleware chains run—only external APIs are mocked.
 :::
 
 ## The Testing Gap
@@ -54,9 +54,13 @@ graph LR
     style H fill:#ffd43b,stroke:#fab005
 ```
 
-**Green (Real Execution):** Your middleware, auth, routes, database queries all execute with production code.
+**Green (Real Execution):** Your entire backend executes with production code:
+- Next.js Server Components render with real data fetching
+- API routes process requests through full middleware chains
+- Express/Fastify/Hono routes execute with real validation and business logic
+- Database queries run (or can be mocked separately if needed)
 
-**Yellow (Mocked):** Only external API calls are intercepted by MSW and return scenario-based responses.
+**Yellow (Mocked):** Only external API calls (Stripe, Auth0, SendGrid, etc.) are intercepted by MSW and return scenario-based responses.
 
 ## Runtime Scenario Switching
 
@@ -131,6 +135,12 @@ This means:
 - Define scenarios once, use across all frameworks
 - Switching frameworks doesn't require rewriting test scenarios
 - Core improvements benefit all adapters
+
+:::note[Why This Matters for Modern Frameworks]
+**Next.js Server Components**, **Remix loaders**, and **SvelteKit server routes** are notoriously hard to test in isolation. Unit tests require complex mocking of framework internals. E2E tests work but are too slow for comprehensive scenario coverage.
+
+**Scenarist solves this:** Your Server Components render for real, loaders execute with actual data fetching, server routes process requests through full middleware chains. Only external API calls are mocked, not your framework code.
+:::
 
 ## Dynamic Response Features
 
@@ -209,7 +219,7 @@ Capture data from POST requests and return it in GET requests:
 
 ## Real-World Example: Testing Premium Checkout
 
-Here's a complete example testing a premium checkout flow with tier-based pricing:
+Here's a complete example testing a premium checkout flow with tier-based pricing. This works identically whether you're using **Express API routes**, **Next.js Server Components**, **Remix loaders**, or any other framework:
 
 <details>
 <summary><strong>Scenario Definition</strong> - Mock external APIs, not your code</summary>
@@ -306,7 +316,14 @@ test('premium checkout succeeds at $5000', async ({ page, switchScenario }) => {
 
 </details>
 
-**What executes:** All your backend code (API routes, middleware, validation, business logic). What's mocked: External services (Auth, Stripe, SendGrid).
+**What executes:** All your backend code runs with production logic:
+- Next.js Server Components render with real data fetching
+- API routes process requests (Express, Next.js, Remix, etc.)
+- Middleware chains execute in order
+- Validation and business logic run
+- Database queries execute (or can be mocked separately)
+
+**What's mocked:** Only external services (Auth, Stripe, SendGrid) you don't control.
 
 ## Trade-offs & When NOT to Use
 
