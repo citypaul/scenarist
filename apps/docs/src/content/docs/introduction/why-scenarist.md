@@ -3,13 +3,13 @@ title: Why Scenarist?
 description: Understanding the testing gap and how Scenarist fills it
 ---
 
-**Testing backend code through HTTP with different scenarios is painful:**
+**Most developers struggle to test backend code properly:**
 
-**Before Scenarist:**
-- Mock framework internals (request/response objects, cookies, headers)
-- Mock external dependencies (auth providers, payment APIs, databases)
-- Set up test infrastructure for each scenario
-- Tests either mock too much (distant from production) or spawn servers (too slow)
+**The Problem:**
+- Unit tests force you to mock framework internals (request objects, cookies, middleware chains)
+- These mocks create distance from production reality
+- Testing different scenarios (premium user, error states, edge cases) means duplicating complex mock setups
+- Browser tests work but are too slow for comprehensive scenario coverage
 
 **With Scenarist:**
 ```typescript
@@ -30,7 +30,7 @@ test('premium users see discount', async ({ page, switchScenario }) => {
 });
 ```
 
-**The difference:** Scenarist tests your real backend code (Server Components render, API routes process, middleware chains run) with only external APIs mocked. No mocking framework internals, no brittle test setup, no spawning separate servers.
+**The difference:** Scenarist tests your real backend code (Server Components render, API routes process, middleware chains run) with only external APIs mocked. No mocking framework internals, no brittle test setup, no spawning separate servers. Runtime scenario switching via ephemeral endpoints means all tests run in parallel against the same server instance.
 
 :::tip[TL;DR]
 **The Problem:** Unit tests mock too much. Browser tests test too little. The gap: testing your real backend code (API routes, Server Components, middleware) through HTTP with different scenarios.
@@ -44,6 +44,7 @@ test('premium users see discount', async ({ page, switchScenario }) => {
 |---------|----------|
 | "My middleware chains are hard to test" | [What Gets Tested](#what-gets-tested) |
 | "E2E tests are too slow for all scenarios" | [Runtime Scenario Switching](#runtime-scenario-switching) |
+| "How do tests run in parallel safely?" | [Ephemeral Endpoints](#ephemeral-endpoints-for-runtime-control) |
 | "How is this different from unit/E2E tests?" | [Quick Comparison](#quick-comparison) |
 | "What frameworks does this support?" | [Framework-Agnostic Architecture](#framework-agnostic-architecture) |
 | "Can I test polling/sequences/state?" | [Dynamic Response Features](#dynamic-response-features) |
@@ -191,6 +192,35 @@ test('free users see upgrade prompts', async ({ page, switchScenario }) => {
 ```
 
 **Key Benefit:** All tests run in parallel against the same server. No port conflicts, no startup delays, no process coordination.
+
+### Ephemeral Endpoints for Runtime Control
+
+Scenarist adds ephemeral control endpoints (like `/__scenario__`) to your application during testing. These endpoints enable runtime scenario switching without restarting your server:
+
+```typescript
+// switchScenario() helper sends POST to /__scenario__
+await switchScenario(page, 'premiumUser');
+
+// Behind the scenes:
+// POST /__scenario__
+// { scenario: 'premiumUser' }
+// x-test-id: uuid-abc-123
+
+// Your server responds:
+// { success: true }
+
+// All subsequent requests with x-test-id: uuid-abc-123
+// now use the 'premiumUser' scenario mocks
+```
+
+**How it enables parallel testing:**
+- Each test gets a unique test ID (via `crypto.randomUUID()`)
+- Test IDs are sent via request headers (`x-test-id`)
+- Different tests run different scenarios simultaneously
+- Complete isolation - one test's scenario doesn't affect others
+- Same server instance handles all tests concurrently
+
+**Production safety:** Ephemeral endpoints are only registered when `enabled: true` in config. Disable in production to remove all overhead.
 
 ## Framework-Agnostic Architecture
 
