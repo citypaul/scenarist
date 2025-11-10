@@ -9,6 +9,18 @@ Modern web applications consist of frontend and backend code that communicate ov
 
 Between these extremes lies a testing gap: **verifying that your backend HTTP layer (middleware, routing, request/response handling) behaves correctly under different scenarios**, without the overhead of full end-to-end tests.
 
+### Modern Framework Testing Challenges
+
+This gap is particularly evident with modern full-stack frameworks:
+
+**Next.js Server Components** - The [official Next.js documentation](https://nextjs.org/docs/app/building-your-application/testing#async-server-components) states: "Since async Server Components are new to the React ecosystem, Next.js recommends using end-to-end testing." Unit testing Server Components requires mocking Next.js internals (fetch, cookies, headers), which creates distance from how your code actually executes.
+
+**Remix loaders and actions** - The [Remix documentation](https://remix.run/docs/en/main/discussion/testing) notes: "There aren't standard ways of testing components that have Remix code." Developers must test loaders and actions separately from components, then hope they integrate correctly.
+
+**SvelteKit server routes** - Testing server-side logic requires either mocking the framework's request/response handling or running full end-to-end tests, with no standard middle ground.
+
+These frameworks shift more logic to the server, making the HTTP boundary increasingly important to test. Traditional unit tests can verify this logic, but require extensive mocking of framework internals. End-to-end tests provide confidence but are too slow for comprehensive scenario coverage.
+
 ### Common Testing Approaches
 
 ```mermaid
