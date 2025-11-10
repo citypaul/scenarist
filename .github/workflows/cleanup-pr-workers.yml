@@ -1,0 +1,90 @@
+name: Cleanup PR Workers
+
+on:
+  pull_request:
+    types: [closed]
+  schedule:
+    # Run daily at 2 AM UTC to clean up orphaned workers
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  cleanup-closed-pr:
+    name: Delete Worker for Closed PR
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Delete PR worker
+        run: |
+          WORKER_NAME="scenarist-pr-${{ github.event.pull_request.number }}"
+          echo "Deleting worker: $WORKER_NAME"
+
+          # Delete the worker (fails gracefully if doesn't exist)
+          npx wrangler delete --name "$WORKER_NAME" --force || echo "Worker $WORKER_NAME not found or already deleted"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  cleanup-orphaned-workers:
+    name: Delete Orphaned PR Workers
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Get list of open PRs
+        id: open-prs
+        run: |
+          # Get all open PR numbers
+          OPEN_PRS=$(gh pr list --state open --json number --jq '.[].number' | tr '\n' ' ')
+          echo "open_prs=$OPEN_PRS" >> $GITHUB_OUTPUT
+          echo "Open PRs: $OPEN_PRS"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: List and cleanup PR workers
+        run: |
+          OPEN_PRS="${{ steps.open-prs.outputs.open_prs }}"
+
+          echo "Fetching list of workers..."
+          WORKERS=$(npx wrangler list --json 2>/dev/null | jq -r '.[].name' || echo "")
+
+          if [ -z "$WORKERS" ]; then
+            echo "No workers found or unable to list workers"
+            exit 0
+          fi
+
+          echo "Found workers:"
+          echo "$WORKERS"
+          echo ""
+
+          # Process each worker
+          echo "$WORKERS" | while read -r WORKER_NAME; do
+            # Only process PR workers (pattern: scenarist-pr-*)
+            if [[ "$WORKER_NAME" =~ ^scenarist-pr-([0-9]+)$ ]]; then
+              PR_NUMBER="${BASH_REMATCH[1]}"
+
+              # Check if PR is still open
+              if echo "$OPEN_PRS" | grep -wq "$PR_NUMBER"; then
+                echo "✓ Keeping $WORKER_NAME (PR #$PR_NUMBER is still open)"
+              else
+                echo "✗ Deleting $WORKER_NAME (PR #$PR_NUMBER is closed)"
+                npx wrangler delete --name "$WORKER_NAME" --force || echo "Failed to delete $WORKER_NAME"
+              fi
+            fi
+          done
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
