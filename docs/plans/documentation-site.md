@@ -63,7 +63,11 @@ Scenarist Documentation
 │   ├── Overview (/) - "Testing Next.js, Remix, and TanStack Is Broken. Scenarist fixes it."
 │   ├── Why Scenarist? - Framework-specific pain points
 │   ├── Quick Start (Framework Selector: Next.js / Remix / Express)
-│   └── Installation
+│   ├── Installation
+│   ├── Scenario Format - Complete structure and all features
+│   ├── Default Mocks - Override behavior and fallback patterns
+│   ├── Ephemeral Endpoints - Test-only activation and isolation
+│   └── Endpoint APIs - GET/POST /__scenario__ reference
 │
 ├── Framework Guides (PROMOTED - Consumer Priority)
 │   ├── Next.js
@@ -643,13 +647,58 @@ When reviewing documentation PRs, AI agents should:
    - Peer dependencies (MSW explicitly listed)
    - TypeScript setup
 
-5. **Framework Guide → Next.js Pages Router → Getting Started**
+5. **Introduction → Scenario Format**
+   - Complete scenario structure (id, name, description, mocks, variants)
+   - Mock definition anatomy (method, url, match, response/sequence, captureState)
+   - Response structure (status, body, headers, delay)
+   - Sequence structure (responses array, repeat modes: last/cycle/none)
+   - Match criteria (body partial match, headers/query exact match)
+   - Specificity-based selection algorithm
+   - State capture with path expressions (body.field, headers.field, query.field)
+   - State injection with template syntax ({{state.key}})
+   - Array append syntax (stateKey[])
+   - Serializable nature and version control benefits
+
+6. **Introduction → Default Mocks**
+   - The 'default' scenario requirement (enforced via schema)
+   - How default scenario works as baseline
+   - Override behavior (other scenarios override default by URL)
+   - Fallback pattern (no match criteria = fallback mock)
+   - Specificity-based selection (more specific mocks win)
+   - First-fallback-wins tiebreaker
+   - Test ID isolation (different tests, different scenarios)
+   - Default test ID when header absent
+
+7. **Introduction → Ephemeral Endpoints**
+   - What ephemeral endpoints are (test-only activation)
+   - The `enabled` flag controls endpoint availability
+   - When enabled: endpoints active, middleware extracts IDs, MSW registered
+   - When disabled: endpoints return 404, middleware no-ops, zero overhead
+   - Test ID extraction mechanism (x-test-id header, configurable)
+   - Unique test IDs enable parallel execution
+   - How test IDs route to correct scenarios
+   - Production safety guarantees
+
+8. **Introduction → Endpoint APIs**
+   - POST /__scenario__ - Switch scenario API
+     - Request format: {scenario: string, variant?: string}
+     - Response format: {success: boolean, testId: string, scenarioId: string, variant?: string}
+     - Error responses: 400 (validation), 404 (not found), 500 (internal)
+   - GET /__scenario__ - Get active scenario API
+     - Response format: {testId: string, scenarioId: string, scenarioName?: string, variantName?: string}
+     - Error response: 404 (no active scenario)
+   - Test ID extraction from request context
+   - Validation with ScenarioRequestSchema
+   - ScenarioManager coordination
+   - Framework-specific implementations (Express vs Next.js App vs Next.js Pages)
+
+9. **Framework Guide → Next.js Pages Router → Getting Started**
    - Complete setup walkthrough
    - Scenario registration
    - First test
    - Runtime scenario switching demo
 
-6. **Framework Guide → Express → Getting Started**
+10. **Framework Guide → Express → Getting Started**
    - Complete setup walkthrough
    - Middleware integration
    - Scenario endpoints
@@ -1276,7 +1325,93 @@ Technical details like "how enabled flag works" are valuable but too detailed fo
 
 ---
 
-**Document Status:** APPROVED PLAN - Ready for Implementation
+**Document Status:** APPROVED PLAN - In Progress (Phase 2)
 **Created:** 2025-11-08
+**Last Updated:** 2025-11-10
 **Research Sources:** Next.js docs, Remix docs, TanStack GitHub, PropelAuth blog, Stack Overflow
-**Next Action:** Phase 1 - Astro + Starlight Setup (Week 0)
+
+## Current Status (As of 2025-11-10)
+
+### Completed Work
+
+**Phase 1: Astro + Starlight Setup** ✅
+- Astro + Starlight site initialized at `apps/docs`
+- Framework structure configured (Next.js, Express, future Remix/TanStack)
+- Deployed at scenarist.io (Cloudflare Pages)
+- Search enabled (Starlight built-in Pagefind)
+- Dark mode configured
+- Custom styling applied
+
+**Phase 2: Essential Content** (In Progress)
+- ✅ Homepage (pain-first approach)
+- ✅ Why Scenarist page (framework-specific pain)
+- ✅ Installation guide
+- ✅ Quick Start with framework selector
+- ✅ Framework Guide → Next.js App Router → Getting Started
+- ✅ Framework Guide → Next.js Pages Router → Getting Started
+- ✅ Framework Guide → Express → Getting Started
+- ✅ Example apps for all three frameworks
+
+**Documentation Fixes (PR #76)** ✅
+- Fixed incorrect API documentation (removed non-existent `createMSWHandler`)
+- Corrected App Router endpoint path to use URL-encoded `%5F%5Fscenario%5F%5F`
+- Added explanation of Next.js private folders
+- Fixed FileTree component rendering
+- Documented endpoint path configurability
+- Converted appropriate files to MDX for component support
+
+### In Progress
+
+**Phase 2: Introduction Section Enhancements** (Current Work)
+- [ ] Introduction → Scenario Format (comprehensive structure documentation)
+- [ ] Introduction → Default Mocks (override behavior and fallback patterns)
+- [ ] Introduction → Ephemeral Endpoints (test-only activation mechanism)
+- [ ] Introduction → Endpoint APIs (GET/POST /__scenario__ reference)
+
+### Implementation Research Complete
+
+The following has been thoroughly researched from actual implementation:
+
+1. **Scenario Format:**
+   - Schema definitions from `packages/core/src/schemas/scenario-definition.ts`
+   - Complete type structure (ScenaristScenario, ScenaristMock, ScenaristResponse, ScenaristSequence, ScenaristMatch, ScenaristCaptureConfig)
+   - All features: request matching, sequences, stateful mocks, composition
+
+2. **Default Mocks:**
+   - ScenariosObjectSchema enforces 'default' key requirement
+   - Specificity-based selection algorithm from `response-selector.ts`
+   - Fallback mock behavior (no match criteria = specificity 0)
+   - Override mechanism via URL matching
+
+3. **Ephemeral Endpoints:**
+   - `enabled` flag controls endpoint availability
+   - Test ID extraction from headers (configurable)
+   - Scenario store routing by test ID
+   - Production safety (404 when disabled)
+
+4. **Endpoint APIs:**
+   - Express implementation: `packages/express-adapter/src/endpoints/scenario-endpoints.ts`
+   - Next.js App: `packages/nextjs-adapter/src/app/endpoints.ts`
+   - Next.js Pages: `packages/nextjs-adapter/src/pages/endpoints.ts`
+   - ScenarioRequestSchema validation
+   - ScenarioManager coordination
+   - Complete request/response formats
+
+### Next Actions
+
+1. Create 4 new introduction pages with researched content:
+   - `apps/docs/src/content/docs/introduction/scenario-format.mdx`
+   - `apps/docs/src/content/docs/introduction/default-mocks.mdx`
+   - `apps/docs/src/content/docs/introduction/ephemeral-endpoints.mdx`
+   - `apps/docs/src/content/docs/introduction/endpoint-apis.mdx`
+
+2. Update Starlight navigation config to include new pages
+
+3. Extract real-world examples from:
+   - `apps/express-example/src/scenarios.ts` (comprehensive examples)
+   - `apps/nextjs-app-router-example/lib/scenarios.ts`
+   - `apps/nextjs-pages-router-example/lib/scenarios.ts`
+
+4. Create PR for introduction enhancements
+
+5. Continue with Phase 3: Framework Coverage (landing pages, core concepts)
