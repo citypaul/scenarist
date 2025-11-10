@@ -19,7 +19,3 @@ pnpm-debug.log*
 
 # macOS-specific files
 .DS_Store
-
-# Cloudflare Pages auto-generated files
-wrangler.jsonc
-.wrangler/

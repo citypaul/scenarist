@@ -3,9 +3,12 @@ import starlight from "@astrojs/starlight";
 import { defineConfig } from "astro/config";
 import rehypeMermaid from "rehype-mermaid";
 
+import cloudflare from "@astrojs/cloudflare";
+
 // https://astro.build/config
 export default defineConfig({
   output: 'static',
+
   markdown: {
     syntaxHighlight: {
       type: "shiki",
@@ -13,6 +16,7 @@ export default defineConfig({
     },
     rehypePlugins: [rehypeMermaid],
   },
+
   integrations: [
     starlight({
       title: "Scenarist",
@@ -58,4 +62,6 @@ export default defineConfig({
       customCss: ["./src/styles/custom.css"],
     }),
   ],
+
+  adapter: cloudflare(),
 });
