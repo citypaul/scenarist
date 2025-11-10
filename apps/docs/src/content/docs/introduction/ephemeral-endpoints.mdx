@@ -1,0 +1,442 @@
+---
+title: Ephemeral Endpoints
+description: Test-only activation, production safety, and test ID isolation in Scenarist
+---
+
+# Ephemeral Endpoints
+
+Scenarist creates **ephemeral endpoints** that only exist when testing is enabled. In production, these endpoints return 404 and have zero overhead. This ensures scenario switching infrastructure never leaks into production.
+
+## The `enabled` Flag
+
+The `enabled` flag controls whether Scenarist's testing infrastructure is active:
+
+```typescript
+import { createScenarist } from '@scenarist/express-adapter';
+
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',  // Only in test environment
+  scenarios,
+});
+```
+
+### When `enabled: true` (Test Mode)
+
+**Endpoints are active:**
+- `POST /__scenario__` accepts scenario switch requests
+- `GET /__scenario__` returns active scenario
+- Both endpoints process requests normally
+
+**Middleware extracts test IDs:**
+- Reads `x-test-id` header from requests
+- Routes requests to correct scenario
+- Maintains test isolation
+
+**MSW is registered:**
+- Handlers created from scenario definitions
+- External API calls intercepted
+- Responses returned based on active scenario
+
+### When `enabled: false` (Production Mode)
+
+**Endpoints return 404:**
+```typescript
+// Request: POST /__scenario__
+// Response: 404 Not Found
+```
+
+**Middleware no-ops:**
+- Extracts no headers
+- Adds no overhead
+- Passes requests through unchanged
+
+**MSW is not registered:**
+- No handlers created
+- No interception occurs
+- External APIs called normally
+
+**Result: Zero production overhead.** The testing infrastructure simply doesn't exist.
+
+## Production Safety Guarantees
+
+Scenarist provides multiple layers of production safety:
+
+### 1. Configuration Check
+
+```typescript
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV !== 'production',  // Explicit check
+  scenarios,
+});
+```
+
+**Best practice:** Use environment variables to ensure `enabled` is never `true` in production.
+
+### 2. Endpoint Availability
+
+Even if `enabled` accidentally left as `true`, endpoints can be configured to non-standard paths:
+
+```typescript
+const scenarist = createScenarist({
+  enabled: true,
+  scenarios,
+  endpoints: {
+    setScenario: '/__internal_test_scenario_switch__',  // Obscure path
+    getScenario: '/__internal_test_scenario_status__',
+  },
+});
+```
+
+### 3. Middleware Safety
+
+The middleware only activates when `enabled: true`:
+
+```typescript
+// Express example
+app.use(scenarist.middleware());
+
+// When enabled: false
+// - Middleware installed but inactive
+// - No header extraction
+// - No performance impact
+```
+
+### 4. MSW Registration
+
+MSW handlers only registered when `enabled: true`:
+
+```typescript
+// Next.js example
+if (scenarist.config.enabled) {
+  scenarist.start();  // Registers MSW handlers
+}
+// In production: handlers never registered
+```
+
+## Test ID Isolation
+
+Each test gets a unique test ID that routes requests to the correct scenario:
+
+### How Test IDs Work
+
+```typescript
+// Test 1
+test('handles success', async ({ page, switchScenario }) => {
+  const testId = await switchScenario(page, 'success');
+  // testId = 'test-abc123' (auto-generated UUID)
+
+  await page.goto('/api/payment');
+  // Request includes header: x-test-id: test-abc123
+  // Scenarist routes to 'success' scenario for this test ID
+});
+
+// Test 2 (runs in parallel)
+test('handles error', async ({ page, switchScenario }) => {
+  const testId = await switchScenario(page, 'error');
+  // testId = 'test-def456' (different UUID)
+
+  await page.goto('/api/payment');
+  // Request includes header: x-test-id: test-def456
+  // Scenarist routes to 'error' scenario for this test ID
+});
+```
+
+**Tests run in parallel without interference** because each has its own test ID and scenario.
+
+### Test ID Lifecycle
+
+1. **Test starts**: No test ID or scenario set
+2. **`switchScenario()` called**: Generates unique test ID (UUID)
+3. **Scenario activated**: Test ID → Scenario mapping stored
+4. **Request made**: Test ID header included automatically
+5. **Scenario selected**: Based on test ID from header
+6. **Response returned**: From active scenario for that test ID
+7. **Test ends**: Test ID and scenario cleaned up
+
+### Test ID Header Configuration
+
+The header name is configurable:
+
+```typescript
+const scenarist = createScenarist({
+  enabled: true,
+  scenarios,
+  headers: {
+    testId: 'x-test-id',  // Default
+    // Or customize:
+    // testId: 'x-scenarist-test-id',
+  },
+});
+```
+
+**All requests must include this header** for scenario routing to work.
+
+### Automatic Test ID Propagation
+
+Playwright helpers automatically include the test ID header:
+
+```typescript
+import { test as base } from '@playwright/test';
+import { withScenarios } from '@scenarist/playwright-helpers';
+import { scenarios } from './scenarios';
+
+export const test = withScenarios(scenarios);
+
+test('my test', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'success');
+  // Helper automatically:
+  // 1. Generates test ID
+  // 2. Calls POST /__scenario__ with test ID header
+  // 3. Sets page.setExtraHTTPHeaders({ 'x-test-id': testId })
+
+  await page.goto('/profile');
+  // All navigation requests include x-test-id header
+
+  await page.request.post('/api/data', { data: { foo: 'bar' } });
+  // API requests need explicit test ID (Playwright limitation):
+  const testId = await switchScenario(page, 'success');
+  await page.request.post('/api/data', {
+    headers: { 'x-test-id': testId },  // Manual header for page.request
+    data: { foo: 'bar' },
+  });
+});
+```
+
+### Default Test ID
+
+When no test ID header is present, Scenarist uses a default test ID:
+
+```typescript
+// Request without x-test-id header
+GET /api/user
+// No x-test-id header
+
+// Scenarist uses default test ID: 'default-test'
+// Routes to 'default' scenario
+```
+
+**Use case:** Manual testing during development. Open browser, navigate to app, no test ID needed.
+
+## How Ephemeral Endpoints Enable Parallel Tests
+
+Traditional E2E testing forces **sequential execution** because of shared global state:
+
+```typescript
+// ❌ Traditional approach - shared MSW handlers
+beforeAll(() => {
+  server.use(
+    http.get('/api/user', () => HttpResponse.json({ role: 'admin' }))
+  );
+});
+
+test('test 1: admin view', () => {
+  // Uses global handler: admin
+});
+
+test('test 2: guest view', () => {
+  // PROBLEM: Still sees admin handler!
+  // Must run sequentially or reset handlers between tests
+});
+```
+
+Scenarist enables **parallel execution** via test ID isolation:
+
+```typescript
+// ✅ Scenarist approach - isolated scenarios
+test('test 1: admin view', async ({ switchScenario }) => {
+  await switchScenario(page, 'admin-user');
+  // Test ID: test-1 → Scenario: admin-user
+});
+
+test('test 2: guest view', async ({ switchScenario }) => {
+  await switchScenario(page, 'guest-user');
+  // Test ID: test-2 → Scenario: guest-user
+  // Runs in parallel with test 1, no interference
+});
+```
+
+**10x faster test suites** because tests run in parallel instead of sequentially.
+
+## Runtime Scenario Switching
+
+Ephemeral endpoints enable **runtime scenario switching** without restarting your application:
+
+### Traditional Approach (Slow)
+
+```bash
+# Test success case
+NODE_ENV=test SCENARIO=success npm start
+# Run test
+# Kill server
+
+# Test error case
+NODE_ENV=test SCENARIO=error npm start
+# Run test
+# Kill server
+
+# Test edge case
+NODE_ENV=test SCENARIO=edge npm start
+# Run test
+# Kill server
+```
+
+**Problem:** Each scenario requires full server restart. Slow and painful.
+
+### Scenarist Approach (Fast)
+
+```typescript
+// Start server once
+// NODE_ENV=test npm start
+
+// Switch scenarios at runtime
+test('success case', async ({ switchScenario }) => {
+  await switchScenario(page, 'success');
+  // Instant scenario switch, no restart
+});
+
+test('error case', async ({ switchScenario }) => {
+  await switchScenario(page, 'error');
+  // Instant scenario switch, no restart
+});
+
+test('edge case', async ({ switchScenario }) => {
+  await switchScenario(page, 'edge');
+  // Instant scenario switch, no restart
+});
+```
+
+**Benefit:** Server runs continuously. Tests switch scenarios instantly via HTTP requests to `/__scenario__` endpoint.
+
+## Manual Testing with Scenarios
+
+Ephemeral endpoints also enable **manual testing** with different scenarios:
+
+```bash
+# Start your app in test mode
+NODE_ENV=test npm start
+
+# Switch to error scenario via curl
+curl -X POST http://localhost:3000/__scenario__ \
+  -H "Content-Type: application/json" \
+  -H "x-test-id: manual-testing" \
+  -d '{"scenario": "payment-error"}'
+
+# Open browser and manually test error scenario
+# All requests with x-test-id: manual-testing see error scenario
+
+# Switch to success scenario
+curl -X POST http://localhost:3000/__scenario__ \
+  -H "Content-Type: application/json" \
+  -H "x-test-id: manual-testing" \
+  -d '{"scenario": "payment-success"}'
+
+# Manually test success scenario
+```
+
+**Use cases:**
+- QA testing different error states
+- Demo different scenarios to stakeholders
+- Debug edge cases locally
+- Validate UI behavior across scenarios
+
+## Architecture: How It Works
+
+### Request Flow
+
+```
+1. Test calls switchScenario('payment-error')
+   ↓
+2. Helper generates test ID: 'test-abc123'
+   ↓
+3. Helper calls: POST /__scenario__
+   Headers: { x-test-id: 'test-abc123' }
+   Body: { scenario: 'payment-error' }
+   ↓
+4. Endpoint stores: test-abc123 → payment-error
+   ↓
+5. Test makes request: GET /api/payment
+   Headers: { x-test-id: 'test-abc123' }
+   ↓
+6. Middleware extracts test ID from header
+   ↓
+7. ScenarioManager looks up active scenario for test ID
+   ↓
+8. MSW handler finds matching mock in scenario
+   ↓
+9. Response returned from mock definition
+```
+
+### Scenario Storage
+
+Scenarios are stored in-memory (current implementation):
+
+```typescript
+// Simplified internal structure
+const scenarioStore = new Map<string, ActiveScenario>();
+
+// After switchScenario('test-abc123', 'payment-error')
+scenarioStore.set('test-abc123', {
+  scenarioId: 'payment-error',
+  variantName: undefined,
+});
+
+// On request with x-test-id: test-abc123
+const activeScenario = scenarioStore.get('test-abc123');
+// { scenarioId: 'payment-error', variantName: undefined }
+```
+
+**Why serializable?** The serializable design allows future implementations (Redis, PostgreSQL) for distributed testing, but these don't exist yet. The architecture supports them without breaking changes.
+
+### State and Sequence Isolation
+
+State capture and sequence positions are also isolated by test ID:
+
+```typescript
+// Internal structure (simplified)
+const stateStore = new Map<string, Record<string, unknown>>();
+const sequenceStore = new Map<string, SequencePosition>();
+
+// Test ID: test-abc123
+stateStore.set('test-abc123', { cartItems: ['item-1', 'item-2'] });
+sequenceStore.set('test-abc123:scenario:mockIndex', { position: 2 });
+
+// Test ID: test-def456
+stateStore.set('test-def456', { cartItems: ['item-3'] });
+sequenceStore.set('test-def456:scenario:mockIndex', { position: 0 });
+
+// Tests have independent state and sequence positions
+```
+
+## Configuration Reference
+
+Complete configuration options related to ephemeral endpoints:
+
+```typescript
+const scenarist = createScenarist({
+  // Enable/disable testing infrastructure
+  enabled: process.env.NODE_ENV === 'test',
+
+  // Scenario definitions
+  scenarios: {
+    default: defaultScenario,
+    // ... other scenarios
+  },
+
+  // Endpoint paths (configurable)
+  endpoints: {
+    setScenario: '/__scenario__',     // POST: switch scenario
+    getScenario: '/__scenario__',     // GET: get active scenario
+  },
+
+  // Header names (configurable)
+  headers: {
+    testId: 'x-test-id',               // Test ID routing
+  },
+});
+```
+
+## Next Steps
+
+- [Scenario Format →](/introduction/scenario-format) - Learn the complete scenario structure
+- [Default Mocks →](/introduction/default-mocks) - Understand override behavior
+- [Endpoint APIs →](/introduction/endpoint-apis) - Reference for GET/POST /__scenario__

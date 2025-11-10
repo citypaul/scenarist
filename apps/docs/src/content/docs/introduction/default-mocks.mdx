@@ -1,0 +1,484 @@
+---
+title: Default Mocks & Overrides
+description: How default scenarios, override behavior, and fallback patterns work in Scenarist
+---
+
+# Default Mocks & Overrides
+
+Scenarist uses a **default-first** approach: define baseline mocks in a 'default' scenario, then create specialized scenarios that override specific behaviors. This eliminates duplication and makes intent crystal clear.
+
+## The 'default' Scenario Requirement
+
+Every scenarios object **must have a 'default' key** (enforced via schema validation):
+
+```typescript
+import type { ScenaristScenarios } from '@scenarist/core';
+
+export const scenarios = {
+  default: defaultScenario,    // ✅ Required
+  success: successScenario,
+  error: errorScenario,
+} as const satisfies ScenaristScenarios;
+```
+
+**Why 'default' is required:**
+1. **Fallback behavior**: When no scenario is set, default is used
+2. **Baseline mocks**: Provides common responses across all tests
+3. **Clarity**: Makes it obvious what the baseline behavior is
+4. **Safety**: Tests without explicit scenarios still work
+
+## How Default Scenarios Work
+
+The default scenario defines baseline responses for all external APIs:
+
+```typescript
+export const defaultScenario: ScenaristScenario = {
+  id: 'default',
+  name: 'Default Scenario',
+  description: 'Baseline responses for all external APIs',
+  mocks: [
+    // GitHub API - successful user lookup
+    {
+      method: 'GET',
+      url: 'https://api.github.com/users/:username',
+      response: {
+        status: 200,
+        body: {
+          login: 'octocat',
+          name: 'The Octocat',
+          public_repos: 8,
+        },
+      },
+    },
+    // Stripe API - successful payment
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      response: {
+        status: 200,
+        body: {
+          id: 'ch_default123',
+          status: 'succeeded',
+          amount: 1000,
+        },
+      },
+    },
+    // Weather API - default weather
+    {
+      method: 'GET',
+      url: 'https://api.weather.com/v1/weather/:city',
+      response: {
+        status: 200,
+        body: {
+          city: 'London',
+          temperature: 18,
+          conditions: 'Cloudy',
+        },
+      },
+    },
+  ],
+};
+```
+
+**When default is used:**
+- Test doesn't call `switchScenario()`
+- Test ID header is missing
+- Scenario switching fails
+- Between test runs (before first scenario switch)
+
+## Override Behavior
+
+Other scenarios **override default by URL**. If a specialized scenario defines a mock for the same URL, it wins:
+
+```typescript
+// Default scenario: GitHub returns success
+export const defaultScenario: ScenaristScenario = {
+  id: 'default',
+  name: 'Default',
+  description: 'Baseline responses',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.github.com/users/:username',
+      response: {
+        status: 200,
+        body: { login: 'octocat', name: 'Octocat' },
+      },
+    },
+  ],
+};
+
+// Error scenario: Override GitHub to return 404
+export const githubNotFoundScenario: ScenaristScenario = {
+  id: 'github-not-found',
+  name: 'GitHub User Not Found',
+  description: 'GitHub API returns 404',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.github.com/users/:username',  // Same URL
+      response: {
+        status: 404,  // ← Overrides default response
+        body: { message: 'Not Found' },
+      },
+    },
+  ],
+};
+```
+
+**What happens during test:**
+
+```typescript
+// Test without scenario switch
+test('uses default', async () => {
+  await page.goto('/profile/octocat');
+  // GitHub API → 200 (default scenario)
+  await expect(page.getByText('Octocat')).toBeVisible();
+});
+
+// Test with scenario switch
+test('handles 404', async ({ switchScenario }) => {
+  await switchScenario(page, 'github-not-found');
+  await page.goto('/profile/unknown');
+  // GitHub API → 404 (overrides default)
+  await expect(page.getByText('User not found')).toBeVisible();
+});
+```
+
+## Partial Override (Not Full Replacement)
+
+Specialized scenarios only need to define **mocks they override**. Other URLs fall back to default:
+
+```typescript
+export const githubErrorScenario: ScenaristScenario = {
+  id: 'github-error',
+  name: 'GitHub Error',
+  description: 'GitHub returns error, other APIs work normally',
+  mocks: [
+    // ONLY override GitHub
+    {
+      method: 'GET',
+      url: 'https://api.github.com/users/:username',
+      response: {
+        status: 500,
+        body: { error: 'Internal Server Error' },
+      },
+    },
+    // Stripe and Weather mocks NOT defined
+    // → Fall back to default scenario
+  ],
+};
+```
+
+**Behavior:**
+- GitHub API → 500 (specialized scenario)
+- Stripe API → 200 (default scenario)
+- Weather API → 200 (default scenario)
+
+**Without defaults, you'd duplicate everything:**
+
+```typescript
+// ❌ WITHOUT DEFAULTS - Duplication hell
+export const githubErrorScenario: ScenaristScenario = {
+  mocks: [
+    // Override GitHub
+    { method: 'GET', url: 'https://api.github.com/...', response: { status: 500 } },
+    // Duplicate Stripe (unchanged)
+    { method: 'POST', url: 'https://api.stripe.com/...', response: { status: 200, body: {...} } },
+    // Duplicate Weather (unchanged)
+    { method: 'GET', url: 'https://api.weather.com/...', response: { status: 200, body: {...} } },
+    // ... 50 more unchanged APIs duplicated ...
+  ],
+};
+```
+
+**With defaults:**
+
+```typescript
+// ✅ WITH DEFAULTS - Only define what changes
+export const githubErrorScenario: ScenaristScenario = {
+  mocks: [
+    // Only override what changes
+    { method: 'GET', url: 'https://api.github.com/...', response: { status: 500 } },
+    // Everything else: default scenario
+  ],
+};
+```
+
+## URL Matching for Overrides
+
+Overrides work at the URL + method level:
+
+```typescript
+// Default has both GET and POST for same URL
+export const defaultScenario: ScenaristScenario = {
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.example.com/data',
+      response: { status: 200, body: { data: 'default' } },
+    },
+    {
+      method: 'POST',
+      url: 'https://api.example.com/data',
+      response: { status: 201, body: { created: true } },
+    },
+  ],
+};
+
+// Specialized scenario overrides only GET
+export const customScenario: ScenaristScenario = {
+  mocks: [
+    {
+      method: 'GET',  // Only override GET
+      url: 'https://api.example.com/data',
+      response: { status: 200, body: { data: 'custom' } },
+    },
+    // POST not defined → falls back to default
+  ],
+};
+```
+
+**Result:**
+- `GET /data` → Custom response (override)
+- `POST /data` → Default response (fallback)
+
+## Fallback Mocks (Within a Scenario)
+
+Within a single scenario, mocks without `match` criteria act as **fallbacks** for the same URL:
+
+```typescript
+export const tierPricingScenario: ScenaristScenario = {
+  id: 'tier-pricing',
+  mocks: [
+    // Premium pricing (specific)
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      match: { body: { tier: 'premium' } },  // Specificity: 1
+      response: { status: 200, body: { amount: 8000 } },
+    },
+    // Standard pricing (specific)
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      match: { body: { tier: 'standard' } },  // Specificity: 1
+      response: { status: 200, body: { amount: 10000 } },
+    },
+    // Fallback pricing (no match criteria)
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      // No match criteria → Specificity: 0 (fallback)
+      response: { status: 200, body: { amount: 5000 } },
+    },
+  ],
+};
+```
+
+**Selection logic:**
+1. Request with `{ tier: 'premium' }` → First mock (specificity 1)
+2. Request with `{ tier: 'standard' }` → Second mock (specificity 1)
+3. Request with `{ tier: 'guest' }` → Third mock (specificity 0, fallback)
+4. Request with `{}` → Third mock (fallback)
+
+## Specificity-Based Selection
+
+When multiple mocks match the same URL, Scenarist uses **specificity scoring**:
+
+- Each `body` field = +1 point
+- Each `headers` field = +1 point
+- Each `query` parameter = +1 point
+- No `match` criteria = 0 points (fallback)
+
+**Most specific mock wins**, regardless of order.
+
+### Example: Complex Specificity
+
+```typescript
+export const complexMatchingScenario: ScenaristScenario = {
+  mocks: [
+    // Specificity: 3 (body: type, quantity + headers: region)
+    {
+      method: 'POST',
+      url: 'https://api.example.com/purchase',
+      match: {
+        body: { type: 'premium', quantity: 10 },
+        headers: { 'x-region': 'eu' },
+      },
+      response: { status: 200, body: { price: 950 } },  // EU bulk discount
+    },
+    // Specificity: 2 (body: type, quantity)
+    {
+      method: 'POST',
+      url: 'https://api.example.com/purchase',
+      match: {
+        body: { type: 'premium', quantity: 10 },
+      },
+      response: { status: 200, body: { price: 1000 } },  // Bulk discount
+    },
+    // Specificity: 1 (body: type)
+    {
+      method: 'POST',
+      url: 'https://api.example.com/purchase',
+      match: {
+        body: { type: 'premium' },
+      },
+      response: { status: 200, body: { price: 1200 } },  // Premium pricing
+    },
+    // Specificity: 0 (fallback)
+    {
+      method: 'POST',
+      url: 'https://api.example.com/purchase',
+      response: { status: 200, body: { price: 1500 } },  // Standard pricing
+    },
+  ],
+};
+```
+
+**Selection:**
+- `{ type: 'premium', quantity: 10 }` + `x-region: eu` → First mock (specificity 3)
+- `{ type: 'premium', quantity: 10 }` → Second mock (specificity 2)
+- `{ type: 'premium' }` → Third mock (specificity 1)
+- `{ type: 'standard' }` → Fourth mock (specificity 0, fallback)
+
+## Tiebreaker: First Match Wins
+
+When mocks have **equal specificity**, the **first one wins**:
+
+```typescript
+mocks: [
+  // Both have specificity: 1 (body: type)
+  {
+    match: { body: { type: 'premium' } },
+    response: { status: 200, body: { discount: 20 } },  // ← This one wins
+  },
+  {
+    match: { body: { type: 'premium' } },
+    response: { status: 200, body: { discount: 15 } },
+  },
+]
+```
+
+**Best practice:** Avoid equal specificity. Make match criteria distinct.
+
+## Test ID Isolation
+
+Each test gets its own scenario instance, isolated by test ID:
+
+```typescript
+// Test 1 uses default scenario
+test('test 1', async () => {
+  // No switchScenario call
+  // Test ID: 'test-1'
+  // Active scenario: 'default'
+});
+
+// Test 2 uses error scenario
+test('test 2', async ({ switchScenario }) => {
+  await switchScenario(page, 'github-error');
+  // Test ID: 'test-2'
+  // Active scenario: 'github-error'
+});
+
+// Tests run in parallel without interference
+```
+
+**Isolation mechanism:**
+- Each test has unique test ID (auto-generated or explicit)
+- Scenario store maps test ID → active scenario
+- Requests include test ID header
+- Correct scenario selected based on test ID
+- Tests never interfere
+
+## Default Test ID
+
+When test ID header is missing, Scenarist uses a default test ID:
+
+```typescript
+// Configuration
+const scenarist = createScenarist({
+  enabled: true,
+  scenarios,
+  // Default test ID used when header absent
+});
+```
+
+**Default test ID behavior:**
+- Used when `x-test-id` header missing
+- Typically happens during manual testing
+- All requests without header share same scenario
+- Useful for local development
+
+## When Scenarios Are Applied
+
+1. **Test starts**: No scenario set → uses 'default'
+2. **`switchScenario()` called**: Switches to specified scenario
+3. **Request intercepted**: MSW checks active scenario for test ID
+4. **URL matched**: Finds matching mock in active scenario
+5. **Specificity calculated**: Selects best matching mock
+6. **Response returned**: From selected mock
+
+## Complete Example
+
+```typescript
+// Default: All APIs work
+export const scenarios = {
+  default: {
+    id: 'default',
+    mocks: [
+      { method: 'GET', url: 'https://api.github.com/users/:username', response: { status: 200, body: { login: 'octocat' } } },
+      { method: 'POST', url: 'https://api.stripe.com/v1/charges', response: { status: 200, body: { status: 'succeeded' } } },
+      { method: 'GET', url: 'https://api.weather.com/v1/weather/:city', response: { status: 200, body: { temp: 18 } } },
+    ],
+  },
+
+  // Override: GitHub returns 404, others default
+  githubError: {
+    id: 'github-error',
+    mocks: [
+      { method: 'GET', url: 'https://api.github.com/users/:username', response: { status: 404 } },
+      // Stripe and Weather: fall back to default
+    ],
+  },
+
+  // Override: Stripe fails, others default
+  stripeError: {
+    id: 'stripe-error',
+    mocks: [
+      { method: 'POST', url: 'https://api.stripe.com/v1/charges', response: { status: 402, body: { error: 'Card declined' } } },
+      // GitHub and Weather: fall back to default
+    ],
+  },
+
+  // Override: All APIs slow
+  slowNetwork: {
+    id: 'slow-network',
+    mocks: [
+      { method: 'GET', url: 'https://api.github.com/users/:username', response: { status: 200, delay: 2000, body: { login: 'octocat' } } },
+      { method: 'POST', url: 'https://api.stripe.com/v1/charges', response: { status: 200, delay: 1500, body: { status: 'succeeded' } } },
+      { method: 'GET', url: 'https://api.weather.com/v1/weather/:city', response: { status: 200, delay: 1000, body: { temp: 18 } } },
+    ],
+  },
+} as const satisfies ScenaristScenarios;
+```
+
+**Usage:**
+- No scenario switch → All APIs work (default)
+- `switchScenario('github-error')` → GitHub 404, Stripe/Weather work
+- `switchScenario('stripe-error')` → Stripe fails, GitHub/Weather work
+- `switchScenario('slow-network')` → All APIs slow
+
+## Benefits of Default-First Approach
+
+1. **No Duplication**: Define common mocks once
+2. **Clear Intent**: Specialized scenarios show exactly what changes
+3. **Maintainability**: Update defaults, all scenarios benefit
+4. **Safety**: Tests always have fallback behavior
+5. **Flexibility**: Override as little or as much as needed
+
+## Next Steps
+
+- [Scenario Format →](/introduction/scenario-format) - Learn the complete scenario structure
+- [Ephemeral Endpoints →](/introduction/ephemeral-endpoints) - Understand test-only activation
+- [Endpoint APIs →](/introduction/endpoint-apis) - Reference for GET/POST /__scenario__

@@ -36,6 +36,10 @@ export default defineConfig({
             { label: "Why Scenarist?", slug: "introduction/why-scenarist" },
             { label: "Installation", slug: "introduction/installation" },
             { label: "Overview", slug: "introduction/overview" },
+            { label: "Scenario Format", slug: "introduction/scenario-format" },
+            { label: "Default Mocks & Overrides", slug: "introduction/default-mocks" },
+            { label: "Ephemeral Endpoints", slug: "introduction/ephemeral-endpoints" },
+            { label: "Endpoint APIs", slug: "introduction/endpoint-apis" },
           ],
         },
         {
