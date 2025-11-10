@@ -31,12 +31,20 @@ This gap is particularly evident with modern full-stack frameworks:
 
 **Next.js Server Components** - The [official Next.js documentation](https://nextjs.org/docs/app/building-your-application/testing#async-server-components) states: *"Since async Server Components are new to the React ecosystem, Next.js recommends using end-to-end testing."* Unit testing requires mocking Next.js internals (fetch, cookies, headers), creating distance from production execution.
 
+→ **Scenarist solves this** by testing Server Components with real HTTP requests to your Next.js routes. [See how →](/frameworks/nextjs)
+
 **Remix Loaders & Actions** - The [Remix documentation](https://remix.run/docs/en/main/discussion/testing) notes: *"There aren't standard ways of testing components that have Remix code."* Developers must test loaders and actions separately from components, then hope they integrate correctly.
+
+→ **Scenarist solves this** by testing loaders and actions at the HTTP layer where they naturally integrate. [See how →](/frameworks/remix)
 
 **SvelteKit Server Routes** - Testing server-side logic requires either mocking the framework's request/response handling or running full end-to-end tests, with no standard middle ground.
 
+→ **Scenarist solves this** by providing HTTP-level testing without browser overhead. [See how →](/frameworks/sveltekit)
+
 :::note[The Pattern]
 These frameworks shift more logic to the server, making the HTTP boundary increasingly important to test. Traditional unit tests can verify this logic, but require extensive mocking of framework internals. End-to-end tests provide confidence but are too slow for comprehensive scenario coverage.
+
+**Scenarist addresses all these challenges** by testing at the HTTP boundary with real backend execution and mocked external APIs.
 :::
 
 ### Common Testing Approaches
