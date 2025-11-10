@@ -29,13 +29,27 @@ Between these extremes lies a testing gap: **verifying that your backend HTTP la
 
 This gap is particularly evident with modern full-stack frameworks:
 
-**Next.js Server Components** - The [official Next.js documentation](https://nextjs.org/docs/app/building-your-application/testing#async-server-components) states: "Since async Server Components are new to the React ecosystem, Next.js recommends using end-to-end testing." Unit testing Server Components requires mocking Next.js internals (fetch, cookies, headers), which creates distance from how your code actually executes.
+:::note[Next.js Server Components]
+The [official Next.js documentation](https://nextjs.org/docs/app/building-your-application/testing#async-server-components) states:
 
-**Remix loaders and actions** - The [Remix documentation](https://remix.run/docs/en/main/discussion/testing) notes: "There aren't standard ways of testing components that have Remix code." Developers must test loaders and actions separately from components, then hope they integrate correctly.
+> "Since async Server Components are new to the React ecosystem, Next.js recommends using end-to-end testing."
 
-**SvelteKit server routes** - Testing server-side logic requires either mocking the framework's request/response handling or running full end-to-end tests, with no standard middle ground.
+**The challenge:** Unit testing Server Components requires mocking Next.js internals (fetch, cookies, headers), creating distance from production execution.
+:::
 
-These frameworks shift more logic to the server, making the HTTP boundary increasingly important to test. Traditional unit tests can verify this logic, but require extensive mocking of framework internals. End-to-end tests provide confidence but are too slow for comprehensive scenario coverage.
+:::note[Remix Loaders & Actions]
+The [Remix documentation](https://remix.run/docs/en/main/discussion/testing) notes:
+
+> "There aren't standard ways of testing components that have Remix code."
+
+**The challenge:** Developers must test loaders and actions separately from components, then hope they integrate correctly.
+:::
+
+:::note[SvelteKit Server Routes]
+**The challenge:** Testing server-side logic requires either mocking the framework's request/response handling or running full end-to-end tests, with no standard middle ground.
+:::
+
+**The pattern:** These frameworks shift more logic to the server, making the HTTP boundary increasingly important to test. Traditional unit tests can verify this logic, but require extensive mocking of framework internals. End-to-end tests provide confidence but are too slow for comprehensive scenario coverage.
 
 ### Common Testing Approaches
 
