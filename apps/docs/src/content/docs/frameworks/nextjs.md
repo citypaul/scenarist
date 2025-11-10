@@ -11,50 +11,64 @@ Scenarist provides first-class support for testing Next.js applications, address
 
 Next.js recommends end-to-end testing for Server Components because *"async Server Components are new to the React ecosystem."* Unit testing requires mocking Next.js internals (fetch, cookies, headers), creating distance from production execution.
 
+Traditional testing approaches face similar challenges across both routing paradigms:
+- Mocking framework internals creates distance from production behavior
+- Testing server-side logic requires complex setup
+- End-to-end tests are too slow for comprehensive scenario coverage
+
 ### How Scenarist Helps
 
-Scenarist enables testing Next.js Server Components, API routes, and server actions through real HTTP requests:
+Scenarist enables testing Next.js applications through real HTTP requests:
 
-- Test Server Components without mocking framework internals
-- Verify API routes with different external API scenarios
-- Test server actions with runtime scenario switching
+- Test server-side code without mocking framework internals
+- Verify different external API scenarios with runtime switching
 - Run parallel tests without interference
+- Fast execution without browser overhead for every scenario
 
 ## Next.js Support
 
 Scenarist supports both Next.js routing patterns:
 
-- **App Router** - Server Components, Server Actions, Route Handlers
-- **Pages Router** - API Routes, getServerSideProps, getStaticProps
+- **[App Router](/frameworks/nextjs-app-router)** - Server Components, Server Actions, Route Handlers
+- **[Pages Router](/frameworks/nextjs-pages-router)** - API Routes, getServerSideProps, getStaticProps
 
-## Working Example
+## Choose Your Router
 
-See Scenarist in action with a complete Next.js App Router application:
+### App Router (Modern)
 
-[**Explore the Next.js Example App →**](/frameworks/nextjs/example-app)
+The App Router introduces React Server Components, allowing server-side rendering with direct data fetching. Scenarist enables testing these components without mocking Next.js internals.
 
-The example demonstrates:
-- Testing Server Components without mocking Next.js internals
-- Request matching for tier-based pricing
-- Sequences for polling scenarios
-- Stateful mocks for shopping cart functionality
-- Complete installation and usage instructions
+[**Get started with App Router →**](/frameworks/nextjs-app-router)
 
-**[View source on GitHub →](https://github.com/citypaul/scenarist/tree/main/apps/nextjs-app-router-example)**
+**Best for:**
+- New Next.js projects (Next.js 13+)
+- Server Components and streaming
+- Server Actions for mutations
+- Route Handlers for API endpoints
 
-## Getting Started
+### Pages Router (Traditional)
 
-Ready to integrate Scenarist into your Next.js application?
+The Pages Router uses the traditional pages directory with API routes and data fetching methods. Scenarist enables testing API routes and server-side rendering without complex mocking.
 
-[Get started with Next.js →](/frameworks/nextjs/getting-started)
+[**Get started with Pages Router →**](/frameworks/nextjs-pages-router)
 
-## Coming Soon
+**Best for:**
+- Existing Next.js projects
+- Traditional API routes
+- getServerSideProps and getStaticProps
+- Gradual migration strategies
 
-Additional Next.js-specific guides:
+## What Makes Next.js Testing Different
 
-- Testing Server Components with dynamic scenarios
-- Testing Server Actions with state capture
-- Testing Route Handlers with request matching
-- Testing with App Router layouts and middleware
-- Testing Pages Router with getServerSideProps
-- Example applications and patterns
+**Server-Side Execution** - Both routers execute code on the server that needs testing with different external API scenarios.
+
+**Framework Internals** - Traditional unit testing requires mocking Next.js internals (fetch, cookies, headers), creating distance from production.
+
+**Parallel Testing** - Scenarist's test ID isolation allows concurrent tests with different scenarios, maintaining fast test execution.
+
+## Next Steps
+
+Choose your routing paradigm to get started:
+
+- [App Router Guide →](/frameworks/nextjs-app-router)
+- [Pages Router Guide →](/frameworks/nextjs-pages-router)

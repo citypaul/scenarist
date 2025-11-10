@@ -53,8 +53,21 @@ export default defineConfig({
               label: "Next.js",
               items: [
                 { label: "Overview", slug: "frameworks/nextjs" },
-                { label: "Getting Started", slug: "frameworks/nextjs/getting-started" },
-                { label: "Example App", slug: "frameworks/nextjs/example-app" },
+                {
+                  label: "App Router",
+                  items: [
+                    { label: "Overview", slug: "frameworks/nextjs-app-router" },
+                    { label: "Getting Started", slug: "frameworks/nextjs-app-router/getting-started" },
+                    { label: "Example App", slug: "frameworks/nextjs-app-router/example-app" },
+                  ],
+                },
+                {
+                  label: "Pages Router",
+                  items: [
+                    { label: "Overview", slug: "frameworks/nextjs-pages-router" },
+                    { label: "Getting Started", slug: "frameworks/nextjs-pages-router/getting-started" },
+                  ],
+                },
               ],
             },
             { label: "Remix", slug: "frameworks/remix" },
