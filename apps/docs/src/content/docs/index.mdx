@@ -1,13 +1,13 @@
 ---
 title: Scenarist
-description: Test your backend through real HTTP requests with multiple scenarios—without mocking framework internals or waiting for E2E tests. Faster than E2E. More realistic than unit tests.
+description: Test real backend code with controlled scenarios. Your Server Components render, middleware executes, validation runs—for real. Only external APIs are mocked. Switch scenarios instantly without restarting.
 template: splash
 hero:
-  title: The Hardest Part of Testing? The HTTP Boundary
-  tagline: Unit tests mock framework internals. E2E tests are too slow for all scenarios. Test your real backend code through HTTP with unlimited scenarios—no framework mocking, no app restarts.
+  title: Test Real Backend Code with Controlled Scenarios
+  tagline: Your Server Components render. Your middleware executes. Your validation runs—for real. Only external APIs are mocked. Switch scenarios instantly without restarting your server.
   image:
     file: ../../assets/hero-illustration.svg
-    alt: Illustration showing the gap between unit tests with mocks and slow E2E tests
+    alt: Server code executing with controlled external API scenarios
   actions:
     - text: Get Started
       link: /introduction/quick-start
@@ -21,19 +21,27 @@ hero:
 
 import { Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
 
-:::tip[The Testing Gap]
-**Unit tests:** Fast but require mocking Request objects, cookies, middleware chains—creating distance from production reality.
+:::tip[The Key Insight]
+**Stop mocking framework internals.** Test your actual backend code with real HTTP requests. Only external APIs are mocked—and you switch scenarios at runtime without restarting.
 
-**E2E tests:** Production-like but too slow for comprehensive scenario coverage (error cases, edge cases, different user states).
-
-**Scenarist:** Test real backend code through HTTP with multiple scenarios. Faster than E2E, more realistic than unit tests.
+**Real execution + Controlled scenarios + Runtime switching = Comprehensive backend testing**
 :::
 
-**What executes:** Server Components, API routes, middleware chains, validation logic—all your backend code runs for real.
+**What executes for real:**
+- ✅ Server Components render with actual data fetching
+- ✅ Remix loaders execute with real session handling
+- ✅ Middleware chains process requests through your logic
+- ✅ API routes run validation and business rules
+- ✅ Authentication flows work with real cookies/headers
 
-**What's mocked:** Only external APIs (Stripe, Auth0, SendGrid) via MSW. No mocking framework internals.
+**What's mocked:**
+- Only external APIs (Stripe, SendGrid, Auth0) via MSW
+- No framework mocking, no Request object mocks, no brittle internal mocks
 
-**Works everywhere:** Express, Next.js (Pages + App Router), Hono, Fastify, Remix, and any Node.js framework.
+**The magic:**
+- Switch scenarios at runtime (no app restarts, no port conflicts)
+- Run unlimited scenarios in parallel (perfect test isolation)
+- Works everywhere (Express, Next.js, Remix, Fastify, Hono, any Node.js framework)
 
 ---
 
@@ -314,9 +322,11 @@ test('successful checkout', async ({ page, switchScenario }) => {
 
 ---
 
-## What's Actually Hard About Testing the HTTP Boundary?
+## The Framework Mocking Problem
 
-Testing Server Components, API routes, and middleware chains in isolation requires mocking framework internals. Here's what that looks like:
+Unit tests for backend code require extensive mocking of framework internals—Request objects, cookies, headers, session stores. This creates brittle tests that don't match production behavior.
+
+**Scenarist lets your actual backend code execute.** No framework mocking required.
 
 <Tabs>
 <TabItem label="❌ Unit Test Pain" icon="warning">
@@ -446,20 +456,38 @@ Use Scenarist for comprehensive scenario coverage. Still use a few E2E tests for
 
 ## Why Scenarist?
 
-:::tip[TL;DR]
-Test your real backend code (Server Components, API routes, middleware) through HTTP with unlimited scenarios. Mock only external APIs. No app restarts, no port conflicts, perfect test isolation.
+:::tip[Three Core Pillars]
+**Real Execution** - Your Server Components render, middleware runs, validation executes—all for real
+
+**Controlled Scenarios** - External APIs mocked via MSW (Stripe, Auth0, SendGrid)
+
+**Runtime Switching** - Change scenarios instantly without restarting your server
 :::
 
-**Scenarist fills the testing gap:**
-- ✅ **Your backend executes:** API routes, Server Components, middleware chains, validation logic
-- ✅ **External APIs mocked:** Stripe, Auth0, SendGrid (via MSW)
-- ✅ **Unlimited scenarios:** Test success, errors, edge cases—all in parallel
-- ✅ **Instant switching:** No app restarts, no port conflicts
-- ✅ **Test isolation:** Each test gets unique ID for parallel execution
+**What this enables:**
 
-**Key features:**
+✅ **Comprehensive scenario testing**
+- Premium vs free user flows
+- Error states and edge cases
+- Multi-step journeys with session state
+- Permission levels and authentication states
+- All running in parallel against one server
+
+✅ **No framework mocking required**
+- Real `cookies()` and `headers()` from Next.js
+- Real session handling in Remix loaders
+- Real middleware chains in Express
+- Real Request/Response objects everywhere
+
+✅ **Fast parallel execution**
+- Unique test IDs prevent interference
+- 10+ scenarios run simultaneously
+- No port conflicts, no app restarts
+- Test suite completes in seconds, not minutes
+
+**How it works:**
 - **Ephemeral endpoints:** Scenario switching only active when `enabled: true` (zero production overhead)
-- **Test isolation:** Unique test IDs enable parallel execution without interference
+- **Test isolation:** Cryptographic UUIDs per test for perfect isolation
 - **Type-safe helpers:** Playwright integration with autocomplete and automatic test ID management
 - **Framework-agnostic:** Express, Next.js (Pages + App Router), Fastify, Hono, Remix, and SvelteKit
 
@@ -522,37 +550,57 @@ export const test = withScenarios(scenarios).extend<MyFixtures>({
 
 ## How Scenarist Compares
 
-| What You're Testing | Unit Tests (Jest/Vitest) | E2E Tests (Playwright) | **Scenarist + Playwright** |
-|---------------------|-------------------------|------------------------|----------------------------|
-| **Framework Mocking** | ⚠️ Mock Request, cookies, headers | ✅ No mocking needed | ✅ **No mocking needed** |
-| **Middleware Chains** | ❌ Mocked away (isolated) | ✅ Execute | ✅ **Execute** |
-| **Server Components** | ⚠️ Painful framework mocking | ❌ Can't test multiple scenarios | ✅ **Multiple scenarios** |
-| **Session Logic** | ⚠️ Mock session store | ✅ Real sessions | ✅ **Real sessions** |
-| **Multiple Scenarios** | ✅ Unlimited (with mocks) | ❌ Limited (too slow) | ✅ **Unlimited, in parallel** |
-| **Test Speed** | ✅ Very fast | ❌ Slow per scenario | ✅ **Fast** |
-| **Parallel Execution** | ✅ Yes | ⚠️ Limited | ✅ **Perfect isolation** |
-| **Production-like** | ❌ Mocks create distance | ✅ Real everything | ✅ **Real backend, mocked externals** |
+| What You Need | Unit Tests (Jest/Vitest) | E2E Tests (Playwright) | **Scenarist + Playwright** |
+|---------------|-------------------------|------------------------|----------------------------|
+| **Backend Code Execution** | ❌ Mocked away (isolated) | ✅ Executes for real | ✅ **Executes for real** |
+| **Framework Mocking** | ❌ Mock Request, cookies, headers | ✅ No mocking needed | ✅ **No mocking needed** |
+| **Server Components** | ❌ Painful framework mocking | ⚠️ Can't test multiple scenarios easily | ✅ **Multiple scenarios without restarts** |
+| **Middleware Chains** | ❌ Skipped (isolated) | ✅ Execute | ✅ **Execute** |
+| **Session Handling** | ❌ Mock session store | ✅ Real sessions | ✅ **Real sessions** |
+| **Multiple Scenarios** | ⚠️ One per test suite | ❌ One per server spawn | ✅ **Unlimited, runtime switching** |
+| **Parallel Execution** | ✅ Yes (isolated) | ⚠️ Limited (port conflicts) | ✅ **Perfect isolation (test IDs)** |
+| **Test Speed** | ✅ Very fast | ❌ Slow (server spawns) | ✅ **Fast (no restarts)** |
 
-:::tip[What's the Actual Difference?]
+:::tip[The Key Differences]
 
-**The problem with unit tests:**
+**Unit Tests:**
 ```typescript
-// You mock framework internals
+// ❌ Mock framework internals - your code doesn't execute
 jest.mock('next/headers', () => ({ cookies: () => mockCookies }));
-// Your code doesn't run like production
+test('my component', () => {
+  // Component doesn't actually render
+  // Middleware doesn't actually run
+  // Just testing mocked behavior
+});
 ```
 
-**The problem with E2E tests:**
-- Testing multiple scenarios requires multiple test runs (each spawns new server)
-- Can't test error states without hitting real APIs
-- Too slow for comprehensive coverage of edge cases
-
-**Scenarist's approach:**
+**E2E Tests:**
 ```typescript
-// No framework mocking, just external API mocking
-const scenario = { mocks: [{ url: 'external-api.com', response: {...} }] };
-// Your code runs exactly like production
-// Multiple scenarios run in parallel against same server
+// ✅ Real execution, but...
+// ❌ One scenario per server instance
+// ❌ Can't test error states easily (hit real APIs)
+// ❌ Too slow for 10+ scenarios
+test('premium flow', ...);  // Spawns server #1
+test('free flow', ...);     // Spawns server #2
+test('error case', ...);    // Spawns server #3
+```
+
+**Scenarist:**
+```typescript
+// ✅ Real backend execution
+// ✅ Multiple scenarios without restarts
+// ✅ Only external APIs mocked
+test('premium flow', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'premium');  // Instant switch, no restart
+  // Server Component renders FOR REAL
+  // Middleware executes FOR REAL
+  // Only Stripe API is mocked
+});
+
+test('free flow', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'free');  // Same server, different scenario
+});
+// All run in parallel against one server ✅
 ```
 :::
 
@@ -563,14 +611,22 @@ const scenario = { mocks: [{ url: 'external-api.com', response: {...} }] };
 <details>
 <summary><strong>How is this different from unit tests with mocks?</strong></summary>
 
-Unit tests CAN test backend logic, but require extensive mocking of framework internals (request/response objects, sessions, middleware context). This creates distance from production reality. Scenarist tests your code through real HTTP requests with real server-side context—no framework mocking needed.
+**Unit tests mock framework internals:** You mock Request, cookies, headers, session stores—your actual code doesn't execute.
+
+**Scenarist runs your real code:** Server Components render for real, middleware chains execute for real, validation logic runs for real. Only external APIs (Stripe, Auth0) are mocked.
+
+No more mocking `next/headers`, `req.session`, or Request objects. Test real execution with controlled scenarios.
 
 </details>
 
 <details>
 <summary><strong>How is this different from E2E tests?</strong></summary>
 
-Traditional E2E tests are too slow for testing multiple scenarios (error cases, edge cases, different user states). Scenarist runs all scenarios in parallel against the same server process with instant switching—no app restarts, no port conflicts.
+**E2E tests require server spawns per scenario:** Testing 10 scenarios means spawning 10 server instances, which is slow and creates port conflicts.
+
+**Scenarist uses runtime switching:** All scenarios run against one server instance. Switch scenarios instantly without restarting. Test 10 scenarios in parallel with perfect isolation.
+
+Same real execution as E2E, but with unlimited scenarios and instant switching.
 
 </details>
 
