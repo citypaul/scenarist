@@ -60,24 +60,20 @@ export const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
   scenarios,
 });
+```
 
+## 3. Create Scenario Control Endpoint
+
+```typescript
 // pages/api/__scenario__.ts
 import { scenarist } from '@/lib/scenarist';
+
 export default scenarist.createScenarioEndpoint();
 ```
 
-## 3. Add MSW Setup
-
-```typescript
-// pages/api/_msw.ts
-import { createMSWHandler } from '@scenarist/nextjs-adapter/pages';
-
-export default createMSWHandler();
-
-export const config = {
-  api: { externalResolver: true },
-};
-```
+:::note[Endpoint path]
+The `/__scenario__` endpoint path is configurable via `scenarist` config options, but this is the recommended approach for consistency across projects.
+:::
 
 ## 4. Write Tests
 
