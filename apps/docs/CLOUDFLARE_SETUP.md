@@ -99,32 +99,61 @@ On the "Set up builds and deployments" page, configure:
 
 ## Step 4: Set Up Custom Domain (scenarist.io)
 
-### Add Custom Domain
+⚠️ **IMPORTANT:** Custom domains are configured in the **Cloudflare Pages dashboard**, NOT in `wrangler.jsonc` or any config file.
 
-1. **In Cloudflare Pages project:**
-   - Go to project settings
-   - Click **Custom domains** tab
-   - Click **Set up a custom domain**
+### Add Custom Domain in Dashboard
 
-2. **Enter domain:**
+1. **Navigate to your Pages project:**
+   - Go to Cloudflare Dashboard → Workers & Pages
+   - Click on your project (e.g., `scenarist` or `scenarist-docs`)
+
+2. **Access Custom domains settings:**
+   - Click **Custom domains** tab at the top
+   - Click **Set up a custom domain** button
+
+3. **Enter your domain:**
    - Domain: `scenarist.io`
    - Click **Continue**
 
-3. **DNS Configuration:**
-   - Cloudflare will automatically create DNS records if domain is on Cloudflare
-   - **CNAME record:** `scenarist.io` → `scenarist-docs.pages.dev`
-   - Or **A/AAAA records** if using apex domain
+4. **Cloudflare configures DNS automatically:**
+   - If `scenarist.io` is managed by Cloudflare, DNS is configured automatically
+   - Creates **CNAME record:** `scenarist.io` → `<project-name>.pages.dev`
+   - For apex domains, may use **A/AAAA records** instead
 
-4. **SSL/TLS:**
+5. **SSL/TLS certificate provisioning:**
    - Cloudflare automatically provisions SSL certificate
    - Wait 1-5 minutes for certificate activation
-   - SSL mode: **Full (strict)** recommended
+   - SSL mode: **Full (strict)** is recommended
+   - Certificate renews automatically
 
 ### Verify Custom Domain
 
-1. Wait for DNS propagation (usually <5 minutes)
-2. Visit `https://scenarist.io`
-3. Should see documentation site
+1. **Wait for DNS propagation** (usually <5 minutes, sometimes up to 24 hours)
+2. **Check DNS:**
+   ```bash
+   dig scenarist.io
+   # Should show CNAME to <project-name>.pages.dev
+   ```
+3. **Visit your site:**
+   - Go to `https://scenarist.io`
+   - Should see documentation site
+   - SSL padlock should show in browser
+
+### Troubleshooting Domain Setup
+
+**Domain not working after 5 minutes:**
+- Check DNS records in Cloudflare DNS settings
+- Verify CNAME points to correct `.pages.dev` URL
+- Check SSL/TLS certificate status (should be "Active")
+
+**SSL errors:**
+- Wait a bit longer (can take up to 24 hours)
+- Verify SSL mode is "Full (strict)" not "Flexible"
+- Check certificate status in Custom domains tab
+
+**"Too many redirects" error:**
+- SSL mode is likely wrong
+- Change to "Full (strict)" in SSL/TLS settings
 
 ## Step 5: Configure Automatic Deployments
 
