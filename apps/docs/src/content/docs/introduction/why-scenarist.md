@@ -5,22 +5,22 @@ description: Understanding the testing gap and how Scenarist fills it
 
 **Testing backend code through HTTP with different scenarios is painful:**
 
-**Before Scenarist (testing Server Components with Jest):**
-```typescript
-// ❌ Painful mocking just to test YOUR code
-jest.mock('next/headers', () => ({
-  cookies: () => ({ get: jest.fn(() => 'mocked') })
-}));
-jest.mock('your-auth-provider');
-jest.mock('stripe');
-// ... 30+ lines of mocks before testing YOUR 5 lines of code
-```
+**Before Scenarist:**
+- Mock framework internals (request/response objects, cookies, headers)
+- Mock external dependencies (auth providers, payment APIs, databases)
+- Set up test infrastructure for each scenario
+- Tests either mock too much (distant from production) or spawn servers (too slow)
 
 **With Scenarist:**
 ```typescript
 // ✅ Mock only external APIs, test real backend code
 const scenarios = {
-  premium: { mocks: [{ url: 'https://auth-api.com/session', response: { tier: 'premium' } }] }
+  premium: {
+    mocks: [{
+      url: 'https://auth-api.com/session',
+      response: { tier: 'premium' }
+    }]
+  }
 };
 
 test('premium users see discount', async ({ page, switchScenario }) => {
@@ -30,7 +30,7 @@ test('premium users see discount', async ({ page, switchScenario }) => {
 });
 ```
 
-**The difference:** Scenarist tests your real backend code (Server Components render, API routes process, middleware chains run) with only external APIs mocked. No mocking framework internals, no brittle test setup.
+**The difference:** Scenarist tests your real backend code (Server Components render, API routes process, middleware chains run) with only external APIs mocked. No mocking framework internals, no brittle test setup, no spawning separate servers.
 
 :::tip[TL;DR]
 **The Problem:** Unit tests mock too much. Browser tests test too little. The gap: testing your real backend code (API routes, Server Components, middleware) through HTTP with different scenarios.
