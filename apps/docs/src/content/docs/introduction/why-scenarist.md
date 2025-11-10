@@ -3,6 +3,22 @@ title: Why Scenarist?
 description: Understanding the HTTP boundary testing gap and how Scenarist addresses it
 ---
 
+## Quick Navigation
+
+**Choose your path based on what you need:**
+
+| If you want to... | Go to... |
+|-------------------|----------|
+| Understand the testing gap Scenarist addresses | [HTTP Boundary Testing Gap](#the-http-boundary-testing-gap) |
+| See framework-specific challenges (Next.js, Remix) | [Modern Framework Testing Challenges](#modern-framework-testing-challenges) |
+| Understand how Scenarist works | [What Scenarist Provides](#what-scenarist-provides) |
+| See concrete examples | [Example](#example) |
+| Compare with unit/E2E tests | [Comparison](#comparison-with-other-testing-approaches) |
+| Understand limitations and trade-offs | [Limitations](#limitations-and-trade-offs) |
+| Start implementing | [Getting Started](#getting-started) |
+
+---
+
 ## The HTTP Boundary Testing Gap
 
 Modern web applications consist of frontend and backend code that communicate over HTTP. Testing these layers presents a challenge: unit tests test each side in isolation, while end-to-end tests test the full system including browser rendering.
@@ -39,6 +55,10 @@ graph TD
 **End-to-end tests** run the full system including a real browser and server. This provides confidence that everything works together, but the test execution time limits how many scenarios you can practically cover. Testing every edge case, error state, and user type becomes impractical.
 
 **The gap**: Testing your backend's HTTP behavior (middleware execution, routing, request handling) with different scenarios, using real HTTP requests, without the overhead of browser automation for each test case.
+
+:::note[Key Insight]
+The HTTP boundary testing gap exists because unit tests mock the HTTP layer entirely, while E2E tests include browser overhead. Scenarist fills this gap by testing the real HTTP layer with mocked external dependencies.
+:::
 
 ## What Scenarist Provides
 
@@ -161,6 +181,10 @@ Each test:
 
 This enables parallel test execution without process coordination or port conflicts.
 
+:::tip[Runtime Scenario Switching]
+Unlike traditional E2E tests that require separate deployments or complex data setup for different scenarios, Scenarist switches scenarios at runtime using test IDs. This enables testing premium users, free users, and error states concurrently against the same server instance.
+:::
+
 ### How Test Isolation Works
 
 Scenarist adds control endpoints (like `/__scenario__`) during testing. These endpoints enable scenario switching:
@@ -276,6 +300,10 @@ Consider alternatives when:
 - Testing frontend-only applications with no backend HTTP layer
 - Verifying API contracts match specifications (consider contract testing tools)
 
+:::caution[Not a Replacement for E2E Testing]
+Scenarist tests HTTP-level backend behavior, not complete user workflows. Browser interactions, JavaScript execution, visual rendering, and client-side state management still require end-to-end tests. Use Scenarist to complement E2E tests, not replace them.
+:::
+
 ## Limitations and Trade-offs
 
 **Single-server deployment**: Scenarist stores test ID to scenario mappings in memory. This works well for local development and single-instance CI environments. Load-balanced deployments would require additional state management.
@@ -285,6 +313,34 @@ Consider alternatives when:
 **Learning curve**: Understanding scenario definitions, test ID isolation, and the relationship between mocks and real backend code requires initial investment. The documentation and examples aim to reduce this learning time.
 
 **Not a replacement for E2E testing**: Scenarist tests backend HTTP behavior, not complete user workflows. Browser interactions, JavaScript execution, and visual verification still require E2E tests.
+
+## Success Criteria
+
+When evaluating whether Scenarist is working correctly in your project, verify:
+
+**Core Functionality:**
+- ✓ Tests run in parallel without interference
+- ✓ Different scenarios can be active simultaneously (different test IDs)
+- ✓ Scenario switching works at runtime (no server restarts required)
+- ✓ Backend code executes with real middleware, routing, and business logic
+
+**Integration Quality:**
+- ✓ Only external API calls are mocked (not framework internals)
+- ✓ Test isolation is maintained (parallel tests don't affect each other)
+- ✓ Scenario definitions are reusable across different test suites
+- ✓ Mock definitions accurately represent external API contracts
+
+**Test Coverage:**
+- ✓ Edge cases and error states can be tested without complex setup
+- ✓ Multiple user types/tiers can be tested concurrently
+- ✓ API rate limiting and retry logic can be verified
+- ✓ Tests remain fast enough for frequent execution during development
+
+**Common Issues to Watch:**
+- ⚠ If tests interfere with each other → check test ID isolation
+- ⚠ If framework internals are mocked → refactor to mock external APIs only
+- ⚠ If scenarios can't switch at runtime → verify scenario registration
+- ⚠ If tests are slow → consider if you're running full browser automation when HTTP-level testing would suffice
 
 ## Getting Started
 
