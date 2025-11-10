@@ -319,20 +319,24 @@ Response to Client
 
 ### File Structure
 
-```text
-apps/express-example/
-├── src/
-│   ├── server.ts           # Express app with Scenarist
-│   ├── scenarios.ts        # Scenario definitions
-│   └── routes/             # Express routes
-├── tests/
-│   ├── scenario-switching.test.ts
-│   ├── test-id-isolation.test.ts
-│   ├── dynamic-sequences.test.ts
-│   ├── dynamic-matching.test.ts
-│   └── stateful-scenarios.test.ts
-└── package.json
-```
+import { FileTree } from '@astrojs/starlight/components';
+
+<FileTree>
+
+- apps/express-example/
+  - src/
+    - server.ts Express app with Scenarist
+    - scenarios.ts Scenario definitions
+    - routes/ Express routes
+  - tests/
+    - scenario-switching.test.ts
+    - test-id-isolation.test.ts
+    - dynamic-sequences.test.ts
+    - dynamic-matching.test.ts
+    - stateful-scenarios.test.ts
+  - package.json
+
+</FileTree>
 
 ## Common Patterns
 

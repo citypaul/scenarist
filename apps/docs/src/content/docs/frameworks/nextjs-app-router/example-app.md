@@ -232,23 +232,27 @@ Each test gets a unique test ID:
 
 ### File Structure
 
-```text
-apps/nextjs-app-router-example/
-├── app/
-│   ├── api/
-│   │   └── [[...route]]/route.ts   # Scenarist endpoints
-│   ├── products/                    # Server Components
-│   ├── polling/                     # Sequence example
-│   └── cart-server/                 # Stateful mock example
-├── lib/
-│   ├── scenarist.ts                 # Scenarist setup
-│   └── scenarios.ts                 # Scenario definitions
-└── tests/
-    └── playwright/
-        ├── products-server-components.spec.ts
-        ├── sequences.spec.ts
-        └── cart-server-rsc.spec.ts
-```
+import { FileTree } from '@astrojs/starlight/components';
+
+<FileTree>
+
+- apps/nextjs-app-router-example/
+  - app/
+    - api/
+      - [[...route]]/route.ts Scenarist endpoints
+    - products/ Server Components
+    - polling/ Sequence example
+    - cart-server/ Stateful mock example
+  - lib/
+    - scenarist.ts Scenarist setup
+    - scenarios.ts Scenario definitions
+  - tests/
+    - playwright/
+      - products-server-components.spec.ts
+      - sequences.spec.ts
+      - cart-server-rsc.spec.ts
+
+</FileTree>
 
 ## Common Patterns
 

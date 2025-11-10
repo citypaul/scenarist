@@ -334,27 +334,31 @@ Each test gets a unique test ID:
 
 ### File Structure
 
-```text
-apps/nextjs-pages-router-example/
-├── pages/
-│   ├── index.tsx                    # Products page (getServerSideProps)
-│   ├── cart.tsx                     # Cart page
-│   ├── polling.tsx                  # Polling example
-│   └── api/
-│       ├── __scenario__.ts          # Scenarist endpoint
-│       ├── products.ts              # Products API route
-│       ├── cart.ts                  # Cart API route
-│       └── checkout/                # Checkout API routes
-├── lib/
-│   ├── scenarist.ts                 # Scenarist setup
-│   └── scenarios.ts                 # Scenario definitions
-└── tests/
-    └── playwright/
-        ├── products-server-side.spec.ts
-        ├── sequences.spec.ts
-        ├── cart-server-side.spec.ts
-        └── checkout.spec.ts
-```
+import { FileTree } from '@astrojs/starlight/components';
+
+<FileTree>
+
+- apps/nextjs-pages-router-example/
+  - pages/
+    - index.tsx Products page (getServerSideProps)
+    - cart.tsx Cart page
+    - polling.tsx Polling example
+    - api/
+      - __scenario__.ts Scenarist endpoint
+      - products.ts Products API route
+      - cart.ts Cart API route
+      - checkout/ Checkout API routes
+  - lib/
+    - scenarist.ts Scenarist setup
+    - scenarios.ts Scenario definitions
+  - tests/
+    - playwright/
+      - products-server-side.spec.ts
+      - sequences.spec.ts
+      - cart-server-side.spec.ts
+      - checkout.spec.ts
+
+</FileTree>
 
 ## Common Patterns
 

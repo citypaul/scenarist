@@ -67,21 +67,38 @@ export const scenarios = { ... };
 - `typescript` - TypeScript code
 - `javascript` - JavaScript code
 - `json` - JSON configuration
-- `text` - Plain text, file structures, tree diagrams
+- `text` - Plain text (use `<FileTree>` component for file structures)
 - `markdown` - Markdown examples
 
 ### File Structure Blocks
 
-Use `text` for file tree structures:
+Use Starlight's `<FileTree>` component for file structures:
 
 ```markdown
-```text
-apps/nextjs-app-router-example/
-├── app/
-│   └── api/
-└── tests/
-\```
+import { FileTree } from '@astrojs/starlight/components';
+
+<FileTree>
+
+- apps/nextjs-app-router-example/
+  - app/
+    - api/
+      - route.ts Scenarist endpoints
+  - lib/
+    - scenarist.ts Scenarist setup
+    - scenarios.ts Scenario definitions
+  - tests/
+    - playwright/
+      - example.spec.ts
+
+</FileTree>
 ```
+
+**Features:**
+- Directories end with `/`
+- Add comments after filenames to explain purpose
+- Comments support **bold** and *italic* formatting
+- Use `...` for omitted content
+- Automatically renders as collapsible tree structure
 
 ## Example App Documentation Standards
 
