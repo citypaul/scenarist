@@ -13,7 +13,7 @@ Testing Pages Router applications traditionally requires choosing between:
 
 - **Unit testing API routes** in isolation (misses integration with middleware and framework features)
 - **Mocking framework features** (getServerSideProps, request/response objects) which creates distance from production
-- **Full E2E tests** with browser automation (too slow for comprehensive coverage)
+- **Testing each API route separately** with mocked dependencies (creates test maintenance burden)
 
 **Specific Pages Router challenges:**
 - API routes need testing with different external API scenarios

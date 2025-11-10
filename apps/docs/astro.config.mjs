@@ -66,6 +66,7 @@ export default defineConfig({
                   items: [
                     { label: "Overview", slug: "frameworks/nextjs-pages-router" },
                     { label: "Getting Started", slug: "frameworks/nextjs-pages-router/getting-started" },
+                    { label: "Example App", slug: "frameworks/nextjs-pages-router/example-app" },
                   ],
                 },
               ],
