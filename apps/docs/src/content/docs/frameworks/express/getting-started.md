@@ -20,9 +20,9 @@ npm install -D @playwright/test @scenarist/playwright-helpers
 
 ```typescript
 // src/scenarios.ts
-import type { ScenarioDefinition } from '@scenarist/core';
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/core';
 
-export const successScenario: ScenarioDefinition = {
+const successScenario: ScenaristScenario = {
   id: 'success',
   name: 'All APIs Succeed',
   mocks: [
@@ -37,7 +37,7 @@ export const successScenario: ScenarioDefinition = {
   ],
 };
 
-export const cardDeclinedScenario: ScenarioDefinition = {
+const cardDeclinedScenario: ScenaristScenario = {
   id: 'cardDeclined',
   name: 'Card Declined',
   mocks: [
@@ -51,6 +51,12 @@ export const cardDeclinedScenario: ScenarioDefinition = {
     },
   ],
 };
+
+export const scenarios = {
+  default: successScenario,
+  success: successScenario,
+  cardDeclined: cardDeclinedScenario,
+} as const satisfies ScenaristScenarios;
 ```
 
 **2. Set up Scenarist in your Express app:**
@@ -59,19 +65,19 @@ export const cardDeclinedScenario: ScenarioDefinition = {
 // src/server.ts
 import express from 'express';
 import { createScenarist } from '@scenarist/express-adapter';
-import { successScenario, cardDeclinedScenario } from './scenarios';
+import { scenarios } from './scenarios';
 
 const app = express();
 app.use(express.json());
 
-// Create Scenarist instance
-const scenarist = createScenarist();
-
-// Register scenarios
-scenarist.registerScenarios([successScenario, cardDeclinedScenario]);
+// Create Scenarist instance with scenarios
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  scenarios,
+});
 
 // Add Scenarist middleware BEFORE your routes
-app.use(scenarist.middleware());
+app.use(scenarist.middleware);
 
 // Your routes run normally - Scenarist just mocks external APIs
 app.post('/api/checkout', async (req, res) => {
@@ -106,13 +112,14 @@ app.listen(3000, () => console.log('Server running on :3000'));
 
 ```typescript
 // tests/checkout.spec.ts
-import { test, expect } from '@playwright/test';
-import { switchScenario } from '@scenarist/playwright-helpers';
+import { expect, withScenarios } from '@scenarist/playwright-helpers';
+import { scenarios } from '../src/scenarios';
 
-test('processes payment successfully', async ({ page }) => {
-  await switchScenario(page, 'success', {
-    baseURL: 'http://localhost:3000',
-  });
+// Create type-safe test helper
+export const test = withScenarios(scenarios);
+
+test('processes payment successfully', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'success'); // ✅ Autocomplete!
 
   // Make API request - your Express route runs normally
   const response = await page.request.post('http://localhost:3000/api/checkout', {
@@ -126,10 +133,8 @@ test('processes payment successfully', async ({ page }) => {
   expect(data.chargeId).toBe('ch_123');
 });
 
-test('handles card declined error', async ({ page }) => {
-  await switchScenario(page, 'cardDeclined', {
-    baseURL: 'http://localhost:3000',
-  });
+test('handles card declined error', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'cardDeclined'); // ✅ Type-safe!
 
   const response = await page.request.post('http://localhost:3000/api/checkout', {
     data: { amount: 5000, token: 'tok_test' },
@@ -152,5 +157,5 @@ test('handles card declined error', async ({ page }) => {
 
 ## Next Steps
 
-- **Advanced features:** [Request matching](/concepts/request-matching), [sequences](/concepts/sequences), [stateful mocks](/concepts/stateful-mocks)
-- **Example app:** See [complete Express example](https://github.com/citypaul/scenarist/tree/main/apps/express-example)
+- **Example app:** See [complete Express example](https://github.com/citypaul/scenarist/tree/main/apps/express-example) with comprehensive test suite
+- **Architecture:** Learn [how Scenarist works](/concepts/architecture)

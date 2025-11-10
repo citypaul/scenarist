@@ -4,7 +4,7 @@ description: Browser-based testing where your backend actually runs. Test API ro
 template: splash
 hero:
   title: Browser Testing That Actually Runs Your Backend
-  tagline: Test your backend logic in the browser without compromises. Traditional approaches either mock everything (your code never runs) or require slow app restarts per scenario. Scenarist mocks only external APIs while your API routes, validation logic, middleware, SSR, and Server Components execute normally. Works with Express, Next.js, Hono, Fastify, and any Node.js framework. Instant scenario switching in Playwright with type-safe helpers.
+  tagline: Test Next.js Server Components, Remix loaders, and Express APIs with unlimited scenarios. Mock only external APIs. Everything runs with real server-side context.
   image:
     file: ../../assets/hero-illustration.svg
     alt: Illustration showing backend server with API routes, Server Components, and validation connected to a browser running tests
@@ -21,42 +21,315 @@ hero:
 
 import { Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
 
+**Test the hard stuff:** Server Components, Remix loaders, TanStack Start, middleware chains—code that's difficult to test in isolation.
+
+**Works everywhere:** Express, Next.js (Pages + App Router), Hono, Fastify, Remix, and any Node.js framework.
+
+**Type-safe testing:** Playwright helpers with autocomplete, automatic test ID management, and guaranteed test isolation.
+
 ---
 
-## The Testing Gap (And How Scenarist Fills It)
+## Quick Example
 
-**Most teams split testing:**
-- **Unit tests (Jest/Vitest)** → Test functions in isolation
-- **Browser tests (Playwright/Cypress)** → Test happy path only
+**See it in action:** Choose your framework below to see a complete working example in 4 steps.
 
-**The critical gap:**
+---
 
-Unit tests CAN test server-side logic, but it's painful and risky:
-- ⚠️ Requires extensive mocking at the code level (sessions, auth, request objects)
-- ⚠️ Mocks create a gap between how you test vs. how code actually runs
-- ⚠️ Easy to introduce bugs that only surface in real user journeys
-- ⚠️ Testing integrated flows requires complex test setup (mocking middleware chains, context, etc.)
+<Tabs>
+<TabItem label="Express" icon="seti:nodejs">
 
-Browser tests capture real user journeys, but only for 1-2 scenarios:
-- ❌ Can't test error cases, edge cases, different user states
-- ❌ Testing multiple scenarios requires complex per-test mocking OR impractical server restarts
+**File structure:**
+```
+src/
+├── scenarios.ts       ← 1. Define scenarios
+├── setup.ts          ← 2. Initialize Scenarist
+└── app.ts           ← 3. Add middleware
+tests/
+└── checkout.spec.ts  ← 4. Write tests
+```
 
-**The reality:** You can test server-side logic in unit tests with enough mocking, but those mocks create distance from production reality. Browser tests are closer to reality but limited to happy paths.
+---
 
-**Scenarist fills the gap:**
-Test your backend logic through real HTTP requests in the browser with **unlimited scenarios**. Your code executes with real server-side context, sessions, and middleware chains—just like production—but with external APIs mocked per scenario.
+### 1. Define scenarios
 
-:::tip[How It Works]
-**Traditional approach:** Unit tests (isolated functions) + Browser tests (happy path only)
+Create `src/scenarios.ts`:
 
-**Scenarist approach:** Unit tests (isolated functions) + Browser tests with Scenarist (all scenarios through real server execution)
+```typescript
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/express-adapter';
 
-**What executes:** Your API routes, validation logic, middleware chains, SSR, Server Components (Next.js)—everything runs with real server-side context, sessions, and request lifecycle
+const successScenario: ScenaristScenario = {
+  id: 'success',
+  name: 'Payment Success',
+  mocks: [{
+    method: 'POST',
+    url: 'https://api.stripe.com/v1/charges',
+    response: { status: 200, body: { id: 'ch_123', status: 'succeeded' } },
+  }],
+};
 
-**What's mocked:** Only external APIs you don't control (Stripe, SendGrid, Auth0, etc.)
+export const scenarios = {
+  default: successScenario,
+  success: successScenario,
+} as const satisfies ScenaristScenarios;
+```
 
-**The difference:** Your code runs as part of actual user journeys in the browser, not in isolation, giving you confidence that server-side logic works correctly in the real execution environment.
+### 2. Initialize Scenarist
+
+Create `src/setup.ts`:
+
+```typescript
+import { createScenarist } from '@scenarist/express-adapter';
+import { scenarios } from './scenarios';
+
+export const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  scenarios,
+});
+```
+
+### 3. Add middleware
+
+In your `src/app.ts`:
+
+```typescript
+import express from 'express';
+import { scenarist } from './setup';
+
+const app = express();
+app.use(express.json());
+
+// Add Scenarist middleware
+app.use(scenarist.middleware);
+
+// Your routes work normally
+app.post('/api/checkout', async (req, res) => {
+  // Your validation runs
+  // External API calls are mocked
+  // Your business logic executes
+});
+
+export default app;
+```
+
+### 4. Write tests
+
+Create `tests/checkout.spec.ts`:
+
+```typescript
+import { expect, withScenarios } from '@scenarist/playwright-helpers';
+import { scenarios } from '../src/scenarios';
+
+export const test = withScenarios(scenarios);
+
+test('successful checkout', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'success');
+  await page.goto('/checkout');
+  await page.fill('[name="amount"]', '100');
+  await page.click('button[type="submit"]');
+
+  await expect(page.locator('.success')).toBeVisible();
+});
+```
+
+</TabItem>
+
+<TabItem label="Next.js (Pages)" icon="seti:next">
+
+**File structure:**
+```
+lib/
+├── scenarios.ts       ← 1. Define scenarios
+└── scenarist.ts      ← 2. Initialize Scenarist
+pages/api/
+└── __scenario__.ts   ← 3. Create endpoint
+tests/
+└── checkout.spec.ts  ← 4. Write tests
+```
+
+---
+
+### 1. Define scenarios
+
+Create `lib/scenarios.ts`:
+
+```typescript
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/nextjs-adapter/pages';
+
+const successScenario: ScenaristScenario = {
+  id: 'success',
+  name: 'Payment Success',
+  mocks: [{
+    method: 'POST',
+    url: 'https://api.stripe.com/v1/charges',
+    response: { status: 200, body: { id: 'ch_123', status: 'succeeded' } },
+  }],
+};
+
+export const scenarios = {
+  default: successScenario,
+  success: successScenario,
+} as const satisfies ScenaristScenarios;
+```
+
+### 2. Initialize Scenarist
+
+Create `lib/scenarist.ts`:
+
+```typescript
+import { createScenarist } from '@scenarist/nextjs-adapter/pages';
+import { scenarios } from './scenarios';
+
+export const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  scenarios,
+});
+```
+
+### 3. Create scenario endpoint
+
+Create `pages/api/__scenario__.ts`:
+
+```typescript
+import { scenarist } from '@/lib/scenarist';
+
+export default scenarist.createScenarioEndpoint();
+```
+
+### 4. Write tests
+
+Create `tests/checkout.spec.ts`:
+
+```typescript
+import { expect, withScenarios } from '@scenarist/playwright-helpers';
+import { scenarios } from '../lib/scenarios';
+
+export const test = withScenarios(scenarios);
+
+test('successful checkout', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'success');
+  await page.goto('/checkout');
+  await page.fill('[name="amount"]', '100');
+  await page.click('button[type="submit"]');
+
+  await expect(page.locator('.success')).toBeVisible();
+});
+```
+
+</TabItem>
+
+<TabItem label="Next.js (App Router)" icon="seti:next">
+
+**File structure:**
+```
+lib/
+├── scenarios.ts       ← 1. Define scenarios
+└── scenarist.ts      ← 2. Initialize Scenarist
+app/api/__scenario__/
+└── route.ts          ← 3. Create endpoint
+tests/
+└── checkout.spec.ts  ← 4. Write tests
+```
+
+---
+
+### 1. Define scenarios
+
+Create `lib/scenarios.ts`:
+
+```typescript
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/nextjs-adapter/app';
+
+const successScenario: ScenaristScenario = {
+  id: 'success',
+  name: 'Payment Success',
+  mocks: [{
+    method: 'POST',
+    url: 'https://api.stripe.com/v1/charges',
+    response: { status: 200, body: { id: 'ch_123', status: 'succeeded' } },
+  }],
+};
+
+export const scenarios = {
+  default: successScenario,
+  success: successScenario,
+} as const satisfies ScenaristScenarios;
+```
+
+### 2. Initialize Scenarist
+
+Create `lib/scenarist.ts`:
+
+```typescript
+import { createScenarist } from '@scenarist/nextjs-adapter/app';
+import { scenarios } from './scenarios';
+
+export const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  scenarios,
+});
+```
+
+### 3. Create scenario endpoint
+
+Create `app/api/__scenario__/route.ts`:
+
+```typescript
+import { scenarist } from '@/lib/scenarist';
+
+const handler = scenarist.createScenarioEndpoint();
+export const POST = handler;
+export const GET = handler;
+```
+
+### 4. Write tests
+
+Create `tests/checkout.spec.ts`:
+
+```typescript
+import { expect, withScenarios } from '@scenarist/playwright-helpers';
+import { scenarios } from '../lib/scenarios';
+
+export const test = withScenarios(scenarios);
+
+test('successful checkout', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'success');
+  await page.goto('/checkout');
+  await page.fill('[name="amount"]', '100');
+  await page.click('button[type="submit"]');
+
+  await expect(page.locator('.success')).toBeVisible();
+});
+```
+
+</TabItem>
+</Tabs>
+
+---
+
+## Why Scenarist?
+
+:::tip[TL;DR]
+Test your real backend code (Server Components, API routes, middleware) through HTTP with unlimited scenarios. Mock only external APIs. No app restarts, no port conflicts, perfect test isolation.
 :::
+
+**The problem:** Most teams test backend logic in one of two ways:
+
+**Unit tests:**
+- ✅ Can test everything
+- ❌ Require extensive mocking of framework internals (sessions, request objects, middleware)
+- ❌ Create distance from production reality
+
+**Browser tests:**
+- ✅ Execute real code without mocks
+- ❌ Too slow for comprehensive scenario coverage
+- ❌ Limited to happy path only
+
+**Scenarist fills this gap:**
+- ✅ **Your backend executes:** API routes, Server Components, middleware chains, validation logic
+- ✅ **External APIs mocked:** Stripe, Auth0, SendGrid (via MSW)
+- ✅ **Unlimited scenarios:** Test success, errors, edge cases—all in parallel
+- ✅ **Instant switching:** No app restarts, no port conflicts
+- ✅ **Test isolation:** Each test gets unique ID for parallel execution
 
 **Key features:**
 - **Ephemeral endpoints:** Scenario switching only active when `enabled: true` (zero production overhead)
@@ -121,7 +394,9 @@ export const test = withScenarios(scenarios).extend<MyFixtures>({
 
 ---
 
-## Why Scenarist?
+## How Scenarist Compares
+
+This table shows what gets **real execution** (✅), what requires **painful workarounds** (⚠️), and what **can't be tested** (❌) in each approach:
 
 ### The Standard Approach (and Where It Falls Short)
 
@@ -153,160 +428,81 @@ export const test = withScenarios(scenarios).extend<MyFixtures>({
 
 ---
 
-## Quick Example
+## Frequently Asked Questions
 
-<Tabs>
-<TabItem label="Express" icon="seti:nodejs">
+<details>
+<summary><strong>How is this different from unit tests with mocks?</strong></summary>
 
+Unit tests CAN test backend logic, but require extensive mocking of framework internals (request/response objects, sessions, middleware context). This creates distance from production reality. Scenarist tests your code through real HTTP requests with real server-side context—no framework mocking needed.
+
+</details>
+
+<details>
+<summary><strong>How is this different from E2E tests?</strong></summary>
+
+Traditional E2E tests are too slow for testing multiple scenarios (error cases, edge cases, different user states). Scenarist runs all scenarios in parallel against the same server process with instant switching—no app restarts, no port conflicts.
+
+</details>
+
+<details>
+<summary><strong>What gets mocked vs. what executes?</strong></summary>
+
+**Your code executes:** API routes, Server Components, middleware chains, validation logic, database queries
+
+**External APIs are mocked:** Stripe, Auth0, SendGrid, or any third-party API you don't control
+
+</details>
+
+<details>
+<summary><strong>Does this work with Server Components?</strong></summary>
+
+Yes! Next.js Server Components render normally with Scenarist. Your data fetching, logic, and rendering all execute—only external API calls are mocked. No Jest configuration pain.
+
+</details>
+
+<details>
+<summary><strong>Can tests run in parallel?</strong></summary>
+
+Yes. Each test gets a unique test ID, enabling perfect isolation. Run hundreds of tests concurrently against the same server with zero interference.
+
+</details>
+
+<details>
+<summary><strong>Do I need to restart my app per scenario?</strong></summary>
+
+No. Scenarios switch instantly at runtime via the `switchScenario()` helper. Same server, same process, different external API responses.
+
+</details>
+
+<details>
+<summary><strong>What if my test uses page.request.post()?</strong></summary>
+
+Use the `withScenarios()` helper to get automatic test ID propagation:
 ```typescript
-// src/scenarios.ts
-import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/express-adapter';
+export const test = withScenarios(scenarios);
+```
 
-const successScenario: ScenaristScenario = {
-  id: 'success',
-  name: 'Payment Success',
-  mocks: [{
-    method: 'POST',
-    url: 'https://api.stripe.com/v1/charges',
-    response: { status: 200, body: { id: 'ch_123', status: 'succeeded' } },
-  }],
-};
+For manual `page.request` calls, the helper returns the test ID so you can include it explicitly in headers.
 
-export const scenarios = {
-  default: successScenario,
-  success: successScenario,
-} as const satisfies ScenaristScenarios;
+</details>
 
-// src/setup.ts
-import { createScenarist } from '@scenarist/express-adapter';
-import { scenarios } from './scenarios';
+<details>
+<summary><strong>How do I debug failed tests?</strong></summary>
 
-export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
-  scenarios,
-});
-
-// src/app.ts
-import { scenarist } from './setup';
-const app = express();
-app.use(scenarist.middleware);  // Everything wired automatically
-
-// tests/checkout.spec.ts
-import { test, expect } from '@scenarist/playwright-helpers';
-
-test('successful checkout', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'success');
-  await page.goto('/checkout');
-  await page.fill('[name="amount"]', '100');
-  await page.click('button[type="submit"]');
-
-  await expect(page.locator('.success')).toBeVisible();
+Enable MSW request logging:
+```typescript
+server.events.on('request:start', ({ request }) => {
+  console.log('[MSW]', request.method, request.url);
 });
 ```
 
-</TabItem>
-
-<TabItem label="Next.js (Pages)" icon="seti:next">
-
+Check active scenario:
 ```typescript
-// lib/scenarios.ts
-import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/nextjs-adapter/pages';
-
-const successScenario: ScenaristScenario = {
-  id: 'success',
-  name: 'Payment Success',
-  mocks: [{
-    method: 'POST',
-    url: 'https://api.stripe.com/v1/charges',
-    response: { status: 200, body: { id: 'ch_123', status: 'succeeded' } },
-  }],
-};
-
-export const scenarios = {
-  default: successScenario,
-  success: successScenario,
-} as const satisfies ScenaristScenarios;
-
-// lib/scenarist.ts
-import { createScenarist } from '@scenarist/nextjs-adapter/pages';
-import { scenarios } from './scenarios';
-
-export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
-  scenarios,
-});
-
-// pages/api/__scenario__.ts
-import { scenarist } from '@/lib/scenarist';
-export default scenarist.createScenarioEndpoint();
-
-// tests/checkout.spec.ts
-import { test, expect } from '@scenarist/playwright-helpers';
-
-test('successful checkout', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'success');
-  await page.goto('/checkout');
-  await page.fill('[name="amount"]', '100');
-  await page.click('button[type="submit"]');
-
-  await expect(page.locator('.success')).toBeVisible();
-});
+const response = await page.request.get('http://localhost:3000/__scenario__');
+console.log(await response.json());
 ```
 
-</TabItem>
-
-<TabItem label="Next.js (App Router)" icon="seti:next">
-
-```typescript
-// lib/scenarios.ts
-import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/nextjs-adapter/app';
-
-const successScenario: ScenaristScenario = {
-  id: 'success',
-  name: 'Payment Success',
-  mocks: [{
-    method: 'POST',
-    url: 'https://api.stripe.com/v1/charges',
-    response: { status: 200, body: { id: 'ch_123', status: 'succeeded' } },
-  }],
-};
-
-export const scenarios = {
-  default: successScenario,
-  success: successScenario,
-} as const satisfies ScenaristScenarios;
-
-// lib/scenarist.ts
-import { createScenarist } from '@scenarist/nextjs-adapter/app';
-import { scenarios } from './scenarios';
-
-export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
-  scenarios,
-});
-
-// app/api/__scenario__/route.ts
-import { scenarist } from '@/lib/scenarist';
-
-const handler = scenarist.createScenarioEndpoint();
-export const POST = handler;
-export const GET = handler;
-
-// tests/checkout.spec.ts
-import { test, expect } from '@scenarist/playwright-helpers';
-
-test('successful checkout', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'success');
-  await page.goto('/checkout');
-  await page.fill('[name="amount"]', '100');
-  await page.click('button[type="submit"]');
-
-  await expect(page.locator('.success')).toBeVisible();
-});
-```
-
-</TabItem>
-</Tabs>
+</details>
 
 ---
 

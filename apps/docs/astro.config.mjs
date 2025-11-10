@@ -45,7 +45,10 @@ export default defineConfig({
         {
           label: "Concepts",
           collapsed: true,
-          items: [{ label: "Coming Soon", slug: "guides/example" }],
+          items: [
+            { label: "Architecture", slug: "concepts/architecture" },
+            { label: "Coming Soon", slug: "guides/example" },
+          ],
         },
         {
           label: "Reference",

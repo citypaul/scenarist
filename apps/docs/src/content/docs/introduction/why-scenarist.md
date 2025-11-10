@@ -1,215 +1,324 @@
 ---
 title: Why Scenarist?
-description: The pain points Scenarist solves and how Scenarist's framework-agnostic architecture enables true full-stack testing
+description: Understanding the testing gap and how Scenarist fills it
 ---
 
-# Why Scenarist?
+**The hardest part of testing isn't your backend or your frontend—it's the HTTP boundary between them.**
 
-## The Problem: The Testing Gap
+**The Problem:**
+- Unit tests let you test backend logic in isolation, but require mocking framework internals (request objects, cookies, middleware chains)
+- These mocks create distance from production reality
+- Testing different scenarios (premium user, error states, edge cases) means duplicating complex mock setups
+- E2E tests work but are too slow for comprehensive scenario coverage
 
-Whether you're building with **Express**, **Hono**, **Fastify**, **Next.js**, or **Remix**, you probably test your backend using this standard approach:
+**The gap:** You can test backend logic in isolation and frontend components in isolation, but testing how they connect through HTTP with multiple scenarios requires choosing between slow (E2E) or fake (mocked frameworks).
 
-### What Teams Actually Do Today
-
-**1. Unit Tests (Jest/Vitest)** - Test business logic in isolation
+**With Scenarist:**
 ```typescript
-// Test individual functions
-test('calculateDiscount returns 20% for premium', () => {
-  expect(calculateDiscount(100, 'premium')).toBe(80);
-});
+// ✅ Mock only external APIs, test real backend code
+const scenarios = {
+  premium: {
+    mocks: [{
+      url: 'https://auth-api.com/session',
+      response: { tier: 'premium' }
+    }]
+  }
+};
 
-test('validatePaymentAmount rejects negative amounts', () => {
-  expect(validatePaymentAmount(-100)).toBe(false);
+test('premium users see discount', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'premium');
+  await page.goto('/dashboard');
+  // Your Server Component renders for REAL with mocked external API
 });
 ```
 
-**2. Browser Tests (Playwright/Cypress)** - Test happy path only
+**The difference:** Scenarist tests your real backend code (Server Components render, API routes process, middleware chains run) with only external APIs mocked. No mocking framework internals, no brittle test setup, no spawning separate servers. Runtime scenario switching via ephemeral endpoints means all tests run in parallel against the same server instance.
+
+:::tip[TL;DR]
+**The Problem:** Unit tests mock framework internals. E2E tests are too slow for all scenarios. The gap: testing your real backend code (API routes, Server Components, middleware) through HTTP with different scenarios.
+
+**Scenarist's Solution:** Define scenarios once, switch at runtime, test everything in parallel. Your entire backend executes—Next.js Server Components render, API routes process requests, middleware chains run—only external APIs are mocked.
+:::
+
+## Quick Navigation
+
+| Problem | Solution |
+|---------|----------|
+| "My middleware chains are hard to test" | [What Gets Tested](#what-gets-tested) |
+| "E2E tests are too slow for all scenarios" | [Runtime Scenario Switching](#runtime-scenario-switching) |
+| "How do tests run in parallel safely?" | [Ephemeral Endpoints](#ephemeral-endpoints-for-runtime-control) |
+| "How is this different from unit/E2E tests?" | [Quick Comparison](#quick-comparison) |
+| "What frameworks does this support?" | [How Scenarist Works with Any Framework](#how-scenarist-works-with-any-framework) |
+| "Can I test polling/sequences/state?" | [Dynamic Response Features](#dynamic-response-features) |
+| "Show me a complete example" | [Real-World Example](#real-world-example-testing-premium-checkout) |
+| "When should I NOT use Scenarist?" | [Trade-offs & Alternatives](#trade-offs--when-to-consider-alternatives) |
+
+---
+
+## The Testing Gap
+
+Applications typically use three testing approaches:
+
+```mermaid
+graph TD
+    A[Unit Tests] -->|Mock Everything| B[Fast but Incomplete]
+    C[Integration Tests] -->|Mock External APIs| D["THE GAP:<br/>Test Real Backend<br/>Multiple Scenarios"]
+    E[E2E Tests] -->|Real Everything| F[Slow, Happy Path Only]
+
+    style D fill:#ff6b6b,stroke:#c92a2a,color:#fff
+    style A fill:#51cf66,stroke:#2f9e44
+    style E fill:#ffd43b,stroke:#fab005
+```
+
+**Unit tests** mock your database, external APIs, and HTTP layer. Fast, but testing your middleware, routing, and error handling together requires painful mocking—creating a gap between how you test and how code actually runs in production.
+
+**E2E tests** use real servers and browsers. Production-like execution, but too slow for comprehensive scenario coverage—testing all edge cases and error scenarios is impractical.
+
+**The gap:** You CAN test backend code (middleware, auth, routing, error handling) through HTTP in unit tests, but the extensive mocking required creates distance from production reality. You need production-like execution without the speed penalty or scenario limitations of E2E tests.
+
+Scenarist fills this gap by letting you test your real backend with different external API scenarios, all in the same process.
+
+## What Gets Tested
+
+When you test with Scenarist, here's what actually executes:
+
+```mermaid
+graph LR
+    A[Test HTTP Request] --> B[Your Middleware]
+    B --> C[Your Auth]
+    C --> D[Your Routes]
+    D --> E[Your Database]
+    D --> F[External API Call]
+    F --> G[MSW Intercepts]
+    G --> H[Scenario Response]
+
+    style B fill:#51cf66,stroke:#2f9e44
+    style C fill:#51cf66,stroke:#2f9e44
+    style D fill:#51cf66,stroke:#2f9e44
+    style E fill:#51cf66,stroke:#2f9e44
+    style G fill:#ffd43b,stroke:#fab005
+    style H fill:#ffd43b,stroke:#fab005
+```
+
+**Green (Real Execution):** Your entire backend executes with production code:
+- Next.js Server Components render with real data fetching
+- API routes process requests through full middleware chains
+- Express/Fastify/Hono routes execute with real validation and business logic
+- Database queries run (or can be mocked separately if needed)
+
+**Yellow (Mocked):** Only external API calls (Stripe, Auth0, SendGrid, etc.) are intercepted by MSW and return scenario-based responses.
+
+### Quick Comparison
+
+| Capability | Unit Tests | E2E Tests | **Scenarist** |
+|------------|-----------|-----------|---------------|
+| **Test middleware chains** | ⚠️ Painful mocking | ❌ Not isolated | ✅ Real execution |
+| **Multiple scenarios** | ✅ With mocks | ⚠️ 1-2 only (slow) | ✅ Unlimited |
+| **Speed** | ✅ Fast | ❌ Slow | ✅ Fast |
+| **Parallel execution** | ✅ Yes | ⚠️ Usually no | ✅ Yes (perfect isolation) |
+| **Production-like** | ❌ Mocks create gap | ✅ Real backend | ✅ Real backend |
+
+### Success Criteria
+
+You'll know Scenarist is working when:
+
+- ✅ **Test output shows parallel execution** - All tests run simultaneously (not sequentially)
+  ```bash
+  Running 15 tests using 4 workers
+  ✓ 15 passed in 2.3s  # Not 15s+ sequential
+  ```
+
+- ✅ **Same server handles all scenarios** - One port, one process, zero startup delays
+  ```typescript
+  // All tests use http://localhost:3000 concurrently
+  test('scenario A', ...) // → localhost:3000
+  test('scenario B', ...) // → localhost:3000 (same server!)
+  ```
+
+- ✅ **Real backend code executes** - Enable logging to verify:
+  ```typescript
+  // Your middleware logs show REAL execution
+  [Middleware] Processing request for test-id: abc123
+  [Auth] Retrieved session from database  // ← Real DB call!
+  [Route] Applied tier-based pricing      // ← YOUR code ran!
+  ```
+
+- ✅ **Test isolation verified** - Failed scenarios don't affect others
+  ```bash
+  ✓ premium checkout succeeds (passed)
+  ✗ rate-limited checkout fails (expected failure)
+  ✓ standard checkout succeeds (passed) # ← Isolated!
+  ```
+
+## Runtime Scenario Switching
+
+Instead of spawning different servers for different test scenarios, Scenarist switches scenarios at runtime using test IDs:
+
 ```typescript
-// Test one scenario: successful checkout
-test('user completes checkout', async ({ page }) => {
-  await page.goto('/checkout');
-  await page.fill('[name="amount"]', '100');
-  await page.click('button[type="submit"]');
-  await expect(page.getByText('Success')).toBeVisible();
+// Define scenarios once
+const scenarios = {
+  premiumUser: {
+    id: 'premiumUser',
+    name: 'Premium User',
+    mocks: [{
+      method: 'GET',
+      url: 'https://api.auth-provider.com/session',
+      response: { status: 200, body: { tier: 'premium' } }
+    }]
+  },
+  freeUser: {
+    id: 'freeUser',
+    name: 'Free User',
+    mocks: [{
+      method: 'GET',
+      url: 'https://api.auth-provider.com/session',
+      response: { status: 200, body: { tier: 'free' } }
+    }]
+  }
+} as const satisfies ScenaristScenarios;
+
+// Tests run in parallel, each with different scenario
+test('premium users see advanced features', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'premiumUser');
+  // Your full backend executes with premium tier mock
+  await page.goto('/dashboard');
+  await expect(page.getByText('Advanced Analytics')).toBeVisible();
+});
+
+test('free users see upgrade prompts', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'freeUser');
+  // Same backend, different external API response
+  await page.goto('/dashboard');
+  await expect(page.getByText('Upgrade to Premium')).toBeVisible();
 });
 ```
 
-### The Critical Gap
+**Key Benefit:** All tests run in parallel against the same server. No port conflicts, no startup delays, no process coordination.
 
-**What's painful with unit tests:**
+### Ephemeral Endpoints for Runtime Control
 
-You CAN test server-side logic in unit tests, but it requires extensive code-level mocking:
-- ⚠️ Mock request/response objects manually
-- ⚠️ Mock session state and auth context
-- ⚠️ Mock middleware chains and execution order
-- ⚠️ Mock database connections, external service clients
-- ⚠️ Server Components require especially complex test setup
+Scenarist adds ephemeral control endpoints (like `/__scenario__`) to your application during testing. These endpoints enable runtime scenario switching without restarting your server:
 
-**The risk:** Those mocks create distance from production. Code tested with mocked sessions/auth/middleware can hide bugs that only surface when users hit real journeys with real server-side context.
+```typescript
+// switchScenario() helper sends POST to /__scenario__
+await switchScenario(page, 'premiumUser');
 
-**What browser tests DON'T cover:**
-- ❌ Error scenarios (payment failures, validation errors, API timeouts)
-- ❌ Edge cases (negative amounts, invalid formats, missing fields)
-- ❌ Different user states (premium vs standard, authenticated vs guest)
-- ❌ Various API response scenarios (rate limits, partial failures)
+// Behind the scenes:
+// POST /__scenario__
+// { scenario: 'premiumUser' }
+// x-test-id: uuid-abc-123
 
-**Why? Because testing multiple scenarios in the browser requires:**
-- Mocking external APIs per scenario (complex setup)
-- OR restarting your server per scenario (impractical in CI)
-- OR hitting real external APIs (slow, flaky, expensive)
+// Your server responds:
+// { success: true }
 
-**The result:** You can test everything in unit tests with enough mocking, but those mocks create a gap between how you test and how code actually runs in production. Browser tests give you production-like execution, but only for the happy path.
+// All subsequent requests with x-test-id: uuid-abc-123
+// now use the 'premiumUser' scenario mocks
+```
 
-### What Developers Actually Need
+**How it enables parallel testing:**
+- Each test gets a unique test ID (via `crypto.randomUUID()`)
+- Test IDs are sent via request headers (`x-test-id`)
+- Different tests run different scenarios simultaneously
+- Complete isolation - one test's scenario doesn't affect others
+- Same server instance handles all tests concurrently
 
-Test your backend logic (API routes, validation, middleware, business rules) through real HTTP requests in the browser with multiple scenarios—without external API dependencies and without server restarts.
+**Production safety:** Ephemeral endpoints are only registered when `enabled: true` in config. Disable in production to remove all overhead.
 
-## How Scenarist Solves This
+## How Scenarist Works with Any Framework
 
-Scenarist mocks **only external APIs you don't control** (Stripe, SendGrid, Auth0, etc.) while letting **your entire backend run normally**. Your API routes execute. Your validation logic runs. Your middleware chains process requests. Your business logic calculates results. Your SSR fetches and renders data. Your Server Components render (Next.js). Everything in your codebase executes just like production.
+Scenarist uses **hexagonal architecture** (ports and adapters) to maintain complete framework independence. The core package (`@scenarist/core`) has zero dependencies on any web framework—all scenario management, test isolation, and response selection logic is framework-agnostic.
 
-### The Architecture
+**This means:**
+- Define scenarios once, use with Express, Next.js, Remix, Fastify, or any framework
+- Switching frameworks doesn't require rewriting test scenarios
+- Thin adapters (~100 lines) handle framework-specific integration
+- Core improvements benefit all frameworks immediately
 
-Scenarist is built using **hexagonal architecture** (ports and adapters):
+[Learn how the architecture works internally →](/concepts/architecture)
 
-- **Core domain** = Framework-agnostic scenario management with zero dependencies
-- **Thin adapters** = Small integration layers for Express, Next.js, Fastify, etc. (typically ~100 lines)
-- **MSW integration** = Intercepts only EXTERNAL HTTP calls, not your application code
+## Dynamic Response Features
 
-This means:
-1. Write scenario definitions once (plain JavaScript objects)
-2. Use with any framework via thin adapters
-3. Switch scenarios at runtime with a single HTTP request
-4. Run parallel tests with perfect isolation (unique test IDs per test)
-
-**The key insight:** Your application runs one instance. MSW intercepts external API calls. Scenarist routes each test to its own mock scenario based on test ID headers. No restarts. No shared state. Your backend always executes.
-
-## Real-World Example: Premium Checkout API
-
-Let's see this with a complex feature that's nearly impossible to test with traditional approaches. This example uses **Express**, but the same principles apply to Next.js, Hono, Fastify, or any Node.js framework.
-
-### The Feature Requirements
-
-**A checkout API with tier-based pricing and validation:**
-
-- User authenticates via OAuth (external auth provider API)
-- Premium/Standard tier retrieved from session
-- `/api/cart` endpoint:
-  - Fetches user tier from external auth API
-  - Calculates dynamic pricing (premium users get 20% discount)
-  - Returns cart with personalized prices
-- `/api/checkout` endpoint validates payment:
-  - Middleware checks authentication
-  - Validates tier-based limits (premium: $10,000, standard: $1,000)
-  - Processes payment via Stripe API (external)
-  - Sends confirmation email via SendGrid API (external)
-  - Returns success/error response
-- Frontend displays cart and checkout UI (tested in browser)
-
-### Test Coverage Needed
-
-✅ Premium users see 20% discount (API pricing logic)
-✅ Standard users see full price (API pricing logic)
-✅ Premium checkout succeeds at $5,000 (validation allows it)
-✅ Standard checkout blocked at $1,500 (validation rejects it)
-✅ Failed Stripe payment shows error (error handling)
-✅ Successful payment sends email (SendGrid integration)
-✅ All scenarios run in parallel without interference
-
-### With Traditional Approaches: 4 Bad Options
+Scenarist supports three types of dynamic responses for realistic testing scenarios:
 
 <details>
-<summary><strong>❌ Option 1: Jest/Vitest (Can't test browser flows)</strong></summary>
+<summary><strong>1. Request Content Matching</strong> - Different responses based on request data</summary>
+
+Return different responses based on request body, headers, or query parameters:
 
 ```typescript
-// Can test individual functions, but not the full flow
-test('calculateDiscount returns 20% for premium', () => {
-  expect(calculateDiscount(100, 'premium')).toBe(80);
-  // ✅ Tests function in isolation
-  // ❌ Doesn't test API endpoint behavior
-  // ❌ Doesn't test middleware execution
-  // ❌ Doesn't test full user journey in browser
-});
+{
+  method: 'POST',
+  url: '/api/checkout',
+  match: {
+    body: { tier: 'premium' },
+    headers: { 'x-feature-flag': 'enabled' }
+  },
+  response: { status: 200, body: { discount: 20 } }
+}
 ```
 
-**Why it fails:** No browser, can't test how your API routes respond to actual HTTP requests, can't test full user journey.
+[Full documentation →](/core-concepts/dynamic-responses#request-matching)
 
 </details>
 
 <details>
-<summary><strong>❌ Option 2: Playwright with True E2E (Too slow)</strong></summary>
+<summary><strong>2. Response Sequences</strong> - Simulate polling, rate limiting, multi-step flows</summary>
 
-```bash
-# Test premium scenario
-$ TIER=premium STRIPE_KEY=test npm run dev
-$ playwright test premium.spec.ts  # 45 seconds (app startup + test)
+Sequences return different responses on successive calls:
 
-# Must kill and restart for standard scenario
-$ kill $(lsof -t -i:3000)
-$ TIER=standard STRIPE_KEY=test npm run dev
-$ playwright test standard.spec.ts  # 45 seconds
-
-# Total: 90 seconds for 2 tests
-# Can't run in parallel (port conflicts)
-# Real external API calls (Stripe/SendGrid) make tests slow and flaky
+```typescript
+{
+  method: 'GET',
+  url: '/api/job/status',
+  sequence: {
+    responses: [
+      { status: 200, body: { status: 'pending' } },
+      { status: 200, body: { status: 'processing' } },
+      { status: 200, body: { status: 'complete' } }
+    ],
+    repeat: 'last'  // Keep returning 'complete' after sequence ends
+  }
+}
 ```
 
-**Why it fails:** App restart per scenario = slow. Can't run parallel tests. Real external API calls create flaky tests.
+[Full documentation →](/core-concepts/dynamic-responses#sequences)
 
 </details>
 
 <details>
-<summary><strong>❌ Option 3: Playwright + MSW (Mocking Your Backend)</strong></summary>
+<summary><strong>3. Stateful Mocks</strong> - Capture data from requests, inject into responses</summary>
+
+Capture data from POST requests and return it in GET requests:
 
 ```typescript
-// Mock your own API routes
-worker.use(
-  http.get('/api/cart', () => {
-    return HttpResponse.json({
-      items: [...],
-      discount: 0.2,  // Hardcoded - your pricing logic never runs
-      total: 4000     // Hardcoded - your calculation never runs
-    });
-  })
-);
-
-test('premium user sees discount', async ({ page }) => {
-  await page.goto('/cart');
-  await expect(page.getByText('$4,000')).toBeVisible();
-  // ✅ Test passes
-  // ❌ Your Server Component never rendered
-  // ❌ Your pricing calculation never executed
-  // ❌ You tested the mock, not your code
-});
+{
+  method: 'POST',
+  url: '/api/cart/add',
+  captureState: { cartItems: { from: 'body', path: 'productId' } },
+  response: { status: 201 }
+},
+{
+  method: 'GET',
+  url: '/api/cart',
+  response: {
+    status: 200,
+    body: { items: '{{state.cartItems}}' }  // Injected from captured state
+  }
+}
 ```
 
-**Why it fails:** Mocking your own API routes means your backend logic (Server Components, validation, business logic) never executes. You're testing mock responses, not actual application behavior.
+[Full documentation →](/core-concepts/dynamic-responses#stateful-mocks)
 
 </details>
+
+## Real-World Example: Testing Premium Checkout
+
+Here's a complete example testing a premium checkout flow with tier-based pricing. This works identically whether you're using **Express API routes**, **Next.js Server Components**, **Remix loaders**, or any other framework:
 
 <details>
-<summary><strong>❌ Option 4: Cypress (Stubs everything)</strong></summary>
+<summary><strong>Scenario Definition</strong> - Mock external APIs, not your code</summary>
 
 ```typescript
-cy.intercept('GET', '/api/cart', { fixture: 'premium-cart.json' });
-cy.visit('/cart');
-cy.contains('$4,000').should('be.visible');
-
-// Your Server Component never rendered
-// Your API route never ran
-// Testing stubs, not real code
-```
-
-**Why it fails:** Same as MSW—backend bypassed completely.
-
-</details>
-
-### With Scenarist: Test Everything, Fast
-
-Scenarist mocks **only external APIs** while your backend runs normally:
-
-```typescript
-// Scenario definition (framework-agnostic)
 const premiumCheckoutScenario = {
   id: 'premiumCheckout',
   name: 'Premium User Checkout Flow',
@@ -231,12 +340,6 @@ const premiumCheckoutScenario = {
         status: 200,
         body: { id: 'ch_123', status: 'succeeded' }
       }
-    },
-    // Mock EXTERNAL SendGrid API (not your code)
-    {
-      method: 'POST',
-      url: 'https://api.sendgrid.com/v3/mail/send',
-      response: { status: 202 }
     }
   ]
 };
@@ -250,382 +353,139 @@ const standardCheckoutScenario = {
       url: 'https://auth.provider.com/api/session',
       response: {
         status: 200,
-        body: { userId: 'user-456', tier: 'standard' } // Different tier
+        body: { userId: 'user-456', tier: 'standard' }
       }
     },
-    // Same Stripe/SendGrid mocks...
+    // Same Stripe mock...
   ]
 };
-
-const paymentFailureScenario = {
-  id: 'paymentFailure',
-  name: 'Stripe Payment Failure',
-  mocks: [
-    // Auth returns premium tier
-    { /* ... */ },
-    // But Stripe fails
-    {
-      method: 'POST',
-      url: 'https://api.stripe.com/v1/charges',
-      response: {
-        status: 402,
-        body: { error: 'card_declined' }
-      }
-    }
-  ]
-};
-
-export const scenarios = {
-  default: premiumCheckoutScenario,
-  premiumCheckout: premiumCheckoutScenario,
-  standardCheckout: standardCheckoutScenario,
-  paymentFailure: paymentFailureScenario,
-} as const satisfies ScenaristScenarios;
 ```
 
-### Your Tests (All Run in Parallel)
+</details>
+
+<details>
+<summary><strong>Tests</strong> - All run in parallel, testing real backend code</summary>
 
 ```typescript
-import { test, expect } from '@scenarist/playwright-helpers';
-
-test('premium user sees 20% discount in cart', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'premiumCheckout'); // Instant (no restart)
+test('premium user sees 20% discount', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'premiumCheckout');
 
   await page.goto('/cart');
 
-  // Your API route /api/cart:
-  // 1. Fetches session from mocked auth API → gets tier: 'premium'
-  // 2. YOUR pricing logic executes: price * 0.8
+  // Your backend executes:
+  // 1. Calls mocked auth API → gets tier: 'premium'
+  // 2. YOUR pricing logic: price * 0.8
   // 3. YOUR API returns calculated discount
-  // 4. Browser renders the response
+  // 4. Browser renders response
 
-  await expect(page.getByText('$4,000.00')).toBeVisible(); // Was $5000, 20% off
-  await expect(page.getByText('Premium Member Discount')).toBeVisible();
+  await expect(page.getByText('$4,000.00')).toBeVisible(); // Was $5000
+  await expect(page.getByText('Premium Discount')).toBeVisible();
 });
 
-test('standard user sees full price in cart', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'standardCheckout'); // Instant switch (same app instance!)
+test('standard user sees full price', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'standardCheckout');
 
   await page.goto('/cart');
 
-  // Your API route /api/cart:
-  // 1. Fetches session from mocked auth API → gets tier: 'standard'
-  // 2. YOUR pricing logic executes: price * 1.0 (no discount)
-  // 3. YOUR API returns full price
-  // 4. Browser renders the response
-
-  await expect(page.getByText('$5,000.00')).toBeVisible(); // Full price
-  await expect(page.queryByText('Premium Member Discount')).not.toBeVisible();
+  // Same backend, different tier → different price
+  await expect(page.getByText('$5,000.00')).toBeVisible();
 });
 
-test('premium user completes $5000 checkout', async ({ page, switchScenario }) => {
+test('premium checkout succeeds at $5000', async ({ page, switchScenario }) => {
   await switchScenario(page, 'premiumCheckout');
 
   await page.goto('/checkout');
   await page.fill('[name="amount"]', '5000');
   await page.click('button[type="submit"]');
 
-  // API route executes:
-  // 1. Fetches tier from mocked auth API → 'premium'
-  // 2. YOUR validation logic: 5000 <= 10000 (premium limit) ✓
-  // 3. Calls mocked Stripe API → success
-  // 4. Calls mocked SendGrid API → email queued
-  // 5. YOUR response handling returns success
-
-  await expect(page.getByText('Order confirmed')).toBeVisible();
-  await expect(page.getByText('Check your email')).toBeVisible();
-});
-
-test('standard user blocked at $1500', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'standardCheckout');
-
-  await page.goto('/checkout');
-  await page.fill('[name="amount"]', '1500');
-  await page.click('button[type="submit"]');
-
-  // API route executes:
-  // 1. Fetches tier from mocked auth API → 'standard'
-  // 2. YOUR validation logic: 1500 > 1000 (standard limit) ✗
-  // 3. YOUR error handling returns rejection
-
-  await expect(page.getByText('Amount exceeds your account limit')).toBeVisible();
-  await expect(page.getByText('Upgrade to Premium')).toBeVisible();
-});
-
-test('stripe payment failure shows error', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'paymentFailure');
-
-  await page.goto('/checkout');
-  await page.fill('[name="amount"]', '100');
-  await page.click('button[type="submit"]');
-
-  // API route executes:
-  // 1. Validation passes
-  // 2. Calls mocked Stripe API → card_declined (402)
-  // 3. YOUR error handling catches Stripe error
-  // 4. YOUR error response logic formats user message
-
-  await expect(page.getByText('Payment failed: card declined')).toBeVisible();
-});
-
-// All 5 tests run in parallel: ~3 seconds total
-// Each test has unique test ID (no interference)
-// All YOUR code executed (Server Components, API routes, validation)
-// Only EXTERNAL APIs mocked (auth, Stripe, SendGrid)
-```
-
-### What Actually Happened
-
-For each test, **your entire backend executed**:
-
-✅ **API routes processed requests** with real HTTP flow
-✅ **Middleware chains executed** (authentication, logging, etc.)
-✅ **Pricing calculations ran** in your backend code
-✅ **Validation logic executed** with real tier-based limits
-✅ **Error handling logic ran** when Stripe returned failures
-✅ **Response formatting logic executed** for success/error messages
-
-The **only things mocked** were external services you don't control:
-- Auth provider API (returns tier data)
-- Stripe API (processes payments)
-- SendGrid API (sends emails)
-
-**This works identically across frameworks:** Express, Hono, Fastify, Next.js, Remix, SvelteKit—your backend code always executes.
-
-## Framework Adapters: Same Scenarios, Any Framework
-
-The scenario definitions above work with any framework. You just swap the adapter:
-
-```typescript
-// Express
-import { createScenarist } from '@scenarist/express-adapter';
-const scenarist = createScenarist({ enabled: true, scenarios });
-app.use(scenarist.middleware);
-
-// Next.js Pages Router
-import { createScenarist } from '@scenarist/nextjs-adapter/pages';
-const scenarist = createScenarist({ enabled: true, scenarios });
-// pages/api/__scenario__.ts
-export default scenarist.createScenarioEndpoint();
-
-// Next.js App Router
-import { createScenarist } from '@scenarist/nextjs-adapter/app';
-const scenarist = createScenarist({ enabled: true, scenarios });
-// app/api/__scenario__/route.ts
-const handler = scenarist.createScenarioEndpoint();
-export const POST = handler;
-export const GET = handler;
-
-// Fastify, Hono, Remix, SvelteKit - same pattern
-```
-
-### Why This Works
-
-Each adapter is ~100 lines that does three things:
-1. Extract test ID from request headers (framework-specific)
-2. Wire up scenario switching endpoint (framework-specific)
-3. Delegate everything else to framework-agnostic core
-
-The core handles:
-- Scenario management
-- Mock registration with MSW
-- Test ID isolation
-- State management
-- Response selection
-
-### The Result
-
-✅ Write scenarios once (framework-agnostic)
-✅ Run parallel tests with perfect isolation
-✅ Switch scenarios instantly (no restarts)
-✅ Your backend always executes
-✅ Only external APIs are mocked
-✅ Fast feedback loop (seconds, not minutes)
-
-## How It Works: Ephemeral Endpoints & Test Isolation
-
-### Ephemeral Scenario Endpoints
-
-Scenarist creates **ephemeral endpoints** that only exist when testing is enabled. This is controlled via the `enabled` flag:
-
-```typescript
-// Express
-const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',  // ← Only active in test mode
-  scenarios,
-});
-app.use(scenarist.middleware);
-
-// Next.js App Router
-export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
-  scenarios,
-});
-// app/api/__scenario__/route.ts
-const handler = scenarist.createScenarioEndpoint();
-export const POST = handler;
-export const GET = handler;
-```
-
-**What the `enabled` flag controls:**
-
-When `enabled: true` (test mode):
-- Scenario switching endpoint is active (e.g., `POST /api/__scenario__`)
-- Middleware extracts test IDs from request headers
-- MSW handlers are registered for mocking external APIs
-- All scenario management features are available
-
-When `enabled: false` (production):
-- Scenario endpoints return 404
-- Middleware passes requests through unchanged (zero overhead)
-- No MSW handlers registered
-- Zero attack surface (no test endpoints in production)
-
-**Why this matters:**
-
-You can safely include Scenarist in your production code because when disabled, it has:
-- **Zero runtime overhead** - Middleware becomes a no-op
-- **Zero security risk** - No endpoints exposed
-- **Zero bundle impact** - MSW and test infrastructure not loaded
-
-### Test Isolation via Unique Test IDs
-
-Each Playwright test gets a **unique test ID** (via `crypto.randomUUID()`), enabling parallel execution without interference:
-
-```typescript
-import { test } from '@scenarist/playwright-helpers';
-
-// Test 1 runs with unique ID: uuid-abc-123
-test('premium user flow', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'premiumUser');
-  // All requests from this test include header: x-test-id: uuid-abc-123
-
-  await page.goto('/checkout');
-  await page.fill('[name="amount"]', '5000');
-  await page.click('button[type="submit"]');
+  // YOUR validation: 5000 <= 10000 (premium limit) ✓
+  // Mocked Stripe API returns success
+  // YOUR response handling
 
   await expect(page.getByText('Order confirmed')).toBeVisible();
 });
+```
 
-// Test 2 runs in parallel with different ID: uuid-xyz-789
-test('standard user blocked at limit', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'standardUser');
-  // All requests from this test include header: x-test-id: uuid-xyz-789
+[See full example →](https://github.com/citypaul/scenarist/tree/main/apps/express-example)
 
-  await page.goto('/checkout');
-  await page.fill('[name="amount"]', '1500');
-  await page.click('button[type="submit"]');
+</details>
 
-  await expect(page.getByText('Amount exceeds limit')).toBeVisible();
+**What executes:** All your backend code runs with production logic:
+- Next.js Server Components render with real data fetching
+- API routes process requests (Express, Next.js, Remix, etc.)
+- Middleware chains execute in order
+- Validation and business logic run
+- Database queries execute (or can be mocked separately)
+
+**What's mocked:** Only external services (Auth, Stripe, SendGrid) you don't control.
+
+## Trade-offs & When to Consider Alternatives
+
+**Consider alternatives when:**
+
+- **You need true E2E testing**: Scenarist mocks external APIs. If you need to verify integration with real third-party services, use full E2E tests.
+- **Your app has no external dependencies**: If your backend doesn't call external APIs, Scenarist adds unnecessary complexity.
+- **You're testing frontend-only apps**: Scenarist tests backend HTTP behavior. For frontend components, use React Testing Library or similar.
+- **You need API contract testing**: Scenarist verifies your code handles responses correctly, but doesn't validate that mocks match real API contracts. Consider Pact for contract testing.
+
+**Trade-offs to consider:**
+
+- **Learning curve**: Understanding scenario definitions, test ID isolation, and MSW interception requires initial time investment.
+- **Debugging complexity**: Failed tests require tracing through both your code and scenario definitions. MSW debug logging helps but adds setup.
+- **Mock maintenance**: External APIs evolve, scenario definitions need updates. No automated contract validation.
+
+## Practical Guidance
+
+**Getting Started (15 minutes):**
+1. Install adapter for your framework
+2. Define simple scenario (single mock, static response)
+3. Write first test using scenario
+4. Add request matching when needed
+5. Progress to sequences/state for complex flows
+
+**Debugging Failed Tests:**
+```typescript
+// 1. Enable MSW request logging
+server.events.on('request:start', ({ request }) => {
+  console.log('[MSW]', request.method, request.url);
 });
 
-// These tests run simultaneously without interfering with each other
+// 2. Check active scenario
+const response = await page.request.get('http://localhost:3000/__scenario__');
+console.log(await response.json()); // Shows current scenario for test ID
+
+// 3. Verify test ID propagation
+console.log(page.context().extraHTTPHeaders()); // Should include x-test-id
 ```
 
-**How isolation works:**
+**Real-World Metrics:**
+- Express example app: 49 tests run in 2.3s (parallel execution)
+- Test isolation: 100% success rate with concurrent execution
+- Setup time: ~15 minutes for new framework adapter
 
-1. **Unique ID generation**: Each test gets `crypto.randomUUID()` (e.g., `uuid-abc-123`)
-2. **Header propagation**: The ID is sent in the `x-test-id` header with every request
-3. **Scenario routing**: Scenarist uses the test ID to route requests to the correct scenario
-4. **Parallel execution**: Multiple tests run simultaneously with zero interference
+## Framework-Specific Benefits
 
-**Under the hood:**
+:::note[Modern Framework Testing]
+**Next.js Server Components**, **Remix loaders**, and **SvelteKit server routes** are notoriously hard to test in isolation. Unit tests require complex mocking of framework internals. E2E tests work but are too slow for comprehensive scenario coverage.
 
-```typescript
-// Test 1 requests → x-test-id: uuid-abc-123 → premiumUser scenario
-GET /api/cart
-Headers: { 'x-test-id': 'uuid-abc-123' }
-→ Scenarist routes to premiumUser scenario
-→ External auth API returns: { tier: 'premium' }
-→ Your pricing logic executes: price * 0.8
-→ Returns: $4,000 (20% discount applied)
+**Scenarist solves this:** Your Server Components render for real, loaders execute with actual data fetching, server routes process requests through full middleware chains. Only external API calls are mocked, not your framework code.
+:::
 
-// Test 2 requests → x-test-id: uuid-xyz-789 → standardUser scenario (runs in parallel!)
-GET /api/cart
-Headers: { 'x-test-id': 'uuid-xyz-789' }
-→ Scenarist routes to standardUser scenario
-→ External auth API returns: { tier: 'standard' }
-→ Your pricing logic executes: price * 1.0
-→ Returns: $5,000 (no discount)
-```
+## Getting Started
 
-**Why unique test IDs matter:**
+Choose your framework:
 
-- **Parallel execution**: Run hundreds of tests simultaneously in CI
-- **No shared state**: Each test has isolated scenario configuration
-- **No flakiness**: Tests can't interfere with each other
-- **Scalable**: Works with Playwright's parallel workers
+- [Express →](/frameworks/express)
+- [Next.js (Pages Router) →](/frameworks/nextjs-pages)
+- [Next.js (App Router) →](/frameworks/nextjs-app)
 
-### Playwright Helpers
+Or understand [core concepts →](/core-concepts/scenarios) that apply to all frameworks.
 
-The `@scenarist/playwright-helpers` package provides:
+## Related Documentation
 
-**1. Automatic test ID generation and management:**
-```typescript
-import { test } from '@scenarist/playwright-helpers';
+Now that you understand why Scenarist exists, explore:
 
-// Helpers automatically generate unique ID and set x-test-id header
-test('my test', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'myScenario');
-  // No manual test ID management needed
-});
-```
-
-**2. Type-safe scenario IDs with autocomplete:**
-```typescript
-const scenarios = {
-  premiumUser: { id: 'premiumUser', name: 'Premium User', /* ... */ },
-  standardUser: { id: 'standardUser', name: 'Standard User', /* ... */ },
-} as const satisfies ScenaristScenarios;
-
-export const test = withScenarios(scenarios);
-
-// TypeScript provides autocomplete for scenario IDs
-test('my test', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'premiumUser');  // ✅ Autocomplete works
-  await switchScenario(page, 'typoUser');     // ❌ TypeScript error
-});
-```
-
-**3. Easy composition with existing fixtures:**
-```typescript
-export const test = withScenarios(scenarios).extend<MyFixtures>({
-  authenticatedPage: async ({ page }, use) => {
-    // Your custom fixture
-    await page.goto('/login');
-    await page.fill('[name="email"]', 'test@example.com');
-    await page.click('button[type="submit"]');
-    await use(page);
-  },
-  database: async ({}, use) => {
-    const db = await connectDatabase();
-    await use(db);
-    await db.disconnect();
-  },
-});
-
-// Use both Scenarist helpers and your custom fixtures
-test('authenticated premium flow', async ({ page, switchScenario, authenticatedPage, database }) => {
-  await switchScenario(page, 'premiumUser');
-  // authenticatedPage fixture runs automatically
-  // Your test code here
-});
-```
-
-**Without helpers (manual setup):**
-```typescript
-const testId = `test-${Date.now()}-${Math.random()}`;
-const response = await page.request.post('http://localhost:3000/api/__scenario__', {
-  headers: { 'x-test-id': testId },
-  data: { scenario: 'premiumUser' },
-});
-expect(response.status()).toBe(200);
-await page.setExtraHTTPHeaders({ 'x-test-id': testId });
-```
-
-**With helpers (automatic):**
-```typescript
-await switchScenario(page, 'premiumUser');
-```
-
-The helpers handle all the boilerplate: test ID generation, scenario switching API call, header management, and error handling.
+- [Scenarios & Mocks →](/core-concepts/scenarios) - How to define test scenarios
+- [Installation →](/introduction/installation) - Framework-specific setup
+- [Architecture Deep Dive →](/concepts/architecture) - How ports & adapters work internally
+- [Quick Start →](/introduction/quick-start) - Get up and running in 5 minutes

@@ -6,7 +6,9 @@
       "WebFetch(domain:docs.astro.build)",
       "Bash(git add:*)",
       "Bash(git push:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(pnpm build:*)"
     ],
     "deny": [],
     "ask": []
