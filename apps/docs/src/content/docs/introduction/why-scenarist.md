@@ -3,17 +3,19 @@ title: Why Scenarist?
 description: Understanding the HTTP boundary testing gap and how Scenarist addresses it
 ---
 
+## The HTTP Boundary Testing Gap
+
+Modern web applications consist of frontend and backend code that communicate over HTTP. Testing these layers presents a challenge: unit tests test each side in isolation, while end-to-end tests test the full system including browser rendering.
+
+Between these extremes lies a testing gap: **verifying that your backend HTTP layer (middleware, routing, request/response handling) behaves correctly under different scenarios**, without the overhead of full end-to-end tests.
+
 ## Quick Navigation
 
 **Choose your path based on what you need:**
 
 | If you want to... | Go to... |
 |-------------------|----------|
-| Understand the testing gap Scenarist addresses | [HTTP Boundary Testing Gap](#the-http-boundary-testing-gap) |
 | See framework-specific challenges (Next.js, Remix) | [Modern Framework Testing Challenges](#modern-framework-testing-challenges) |
-| **Test Next.js Server Components** | [Next.js Guide →](/frameworks/nextjs) |
-| **Test Remix loaders & actions** | [Remix Guide →](/frameworks/remix) |
-| **Test SvelteKit server routes** | [SvelteKit Guide →](/frameworks/sveltekit) |
 | Understand how Scenarist works | [What Scenarist Provides](#what-scenarist-provides) |
 | See concrete examples | [Example](#example) |
 | Compare with unit/E2E tests | [Comparison](#comparison-with-other-testing-approaches) |
@@ -21,12 +23,6 @@ description: Understanding the HTTP boundary testing gap and how Scenarist addre
 | Start implementing | [Getting Started](#getting-started) |
 
 ---
-
-## The HTTP Boundary Testing Gap
-
-Modern web applications consist of frontend and backend code that communicate over HTTP. Testing these layers presents a challenge: unit tests test each side in isolation, while end-to-end tests test the full system including browser rendering.
-
-Between these extremes lies a testing gap: **verifying that your backend HTTP layer (middleware, routing, request/response handling) behaves correctly under different scenarios**, without the overhead of full end-to-end tests.
 
 ### Modern Framework Testing Challenges
 
