@@ -68,7 +68,7 @@ graph LR
 |------------|-----------|-----------|---------------|
 | **Test middleware chains** | ⚠️ Painful mocking | ❌ Not isolated | ✅ Real execution |
 | **Multiple scenarios** | ✅ With mocks | ⚠️ 1-2 only (slow) | ✅ Unlimited |
-| **Speed** | ✅ Fast | ❌ Slow | ✅ Fast (2-3s for 50 tests) |
+| **Speed** | ✅ Fast | ❌ Slow | ✅ Fast |
 | **Parallel execution** | ✅ Yes | ⚠️ Usually no | ✅ Yes (perfect isolation) |
 | **Production-like** | ❌ Mocks create gap | ✅ Real backend | ✅ Real backend |
 
