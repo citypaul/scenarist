@@ -24,11 +24,11 @@ graph TD
     style E fill:#ffd43b,stroke:#fab005
 ```
 
-**Unit tests** mock your database, external APIs, and HTTP layer. Fast, but don't verify your middleware, routing, or error handling work together.
+**Unit tests** mock your database, external APIs, and HTTP layer. Fast, but testing your middleware, routing, and error handling together requires painful mocking—creating a gap between how you test and how code actually runs in production.
 
 **E2E tests** use real servers and browsers. Production-like execution, but too slow for comprehensive scenario coverage—testing all edge cases and error scenarios is impractical.
 
-**The gap:** Testing your actual backend code (middleware, auth, routing, error handling) through HTTP without spawning separate servers or sacrificing parallelization.
+**The gap:** You CAN test backend code (middleware, auth, routing, error handling) through HTTP in unit tests, but the extensive mocking required creates distance from production reality. You need production-like execution without the speed penalty or scenario limitations of E2E tests.
 
 Scenarist fills this gap by letting you test your real backend with different external API scenarios, all in the same process.
 
@@ -61,6 +61,16 @@ graph LR
 - Database queries run (or can be mocked separately if needed)
 
 **Yellow (Mocked):** Only external API calls (Stripe, Auth0, SendGrid, etc.) are intercepted by MSW and return scenario-based responses.
+
+### Quick Comparison
+
+| Capability | Unit Tests | E2E Tests | **Scenarist** |
+|------------|-----------|-----------|---------------|
+| **Test middleware chains** | ⚠️ Painful mocking | ❌ Not isolated | ✅ Real execution |
+| **Multiple scenarios** | ✅ With mocks | ⚠️ 1-2 only (slow) | ✅ Unlimited |
+| **Speed** | ✅ Fast | ❌ Slow | ✅ Fast (2-3s for 50 tests) |
+| **Parallel execution** | ✅ Yes | ⚠️ Usually no | ✅ Yes (perfect isolation) |
+| **Production-like** | ❌ Mocks create gap | ✅ Real backend | ✅ Real backend |
 
 ## Runtime Scenario Switching
 
@@ -117,13 +127,7 @@ Scenarist uses **hexagonal architecture** (ports and adapters) to maintain compl
 - Thin adapters (~100 lines) handle framework-specific integration
 - Core improvements benefit all frameworks immediately
 
-:::note[Why This Matters for Modern Frameworks]
-**Next.js Server Components**, **Remix loaders**, and **SvelteKit server routes** are notoriously hard to test in isolation. Unit tests require complex mocking of framework internals. E2E tests work but are too slow for comprehensive scenario coverage.
-
-**Scenarist solves this:** Your Server Components render for real, loaders execute with actual data fetching, server routes process requests through full middleware chains. Only external API calls are mocked, not your framework code.
-
 [Learn how the architecture works internally →](/concepts/architecture)
-:::
 
 ## Dynamic Response Features
 
@@ -351,6 +355,14 @@ console.log(page.context().extraHTTPHeaders()); // Should include x-test-id
 - Express example app: 49 tests run in 2.3s (parallel execution)
 - Test isolation: 100% success rate with concurrent execution
 - Setup time: ~15 minutes for new framework adapter
+
+## Framework-Specific Benefits
+
+:::note[Modern Framework Testing]
+**Next.js Server Components**, **Remix loaders**, and **SvelteKit server routes** are notoriously hard to test in isolation. Unit tests require complex mocking of framework internals. E2E tests work but are too slow for comprehensive scenario coverage.
+
+**Scenarist solves this:** Your Server Components render for real, loaders execute with actual data fetching, server routes process requests through full middleware chains. Only external API calls are mocked, not your framework code.
+:::
 
 ## Getting Started
 
