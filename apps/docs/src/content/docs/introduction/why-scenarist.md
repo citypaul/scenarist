@@ -3,13 +3,15 @@ title: Why Scenarist?
 description: Understanding the testing gap and how Scenarist fills it
 ---
 
-**Most developers struggle to test backend code properly:**
+**The hardest part of testing isn't your backend or your frontend—it's the HTTP boundary between them.**
 
 **The Problem:**
-- Unit tests force you to mock framework internals (request objects, cookies, middleware chains)
+- Unit tests let you test backend logic in isolation, but require mocking framework internals (request objects, cookies, middleware chains)
 - These mocks create distance from production reality
 - Testing different scenarios (premium user, error states, edge cases) means duplicating complex mock setups
-- Browser tests work but are too slow for comprehensive scenario coverage
+- E2E tests work but are too slow for comprehensive scenario coverage
+
+**The gap:** You can test backend logic in isolation and frontend components in isolation, but testing how they connect through HTTP with multiple scenarios requires choosing between slow (E2E) or fake (mocked frameworks).
 
 **With Scenarist:**
 ```typescript
