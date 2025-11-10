@@ -92,6 +92,7 @@ jobs:
         with:
           script: |
             const deployUrl = '${{ steps.deploy-preview.outputs.url }}';
+            const workflowUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
 
             const comment = deployUrl
               ? `## ✅ Documentation Preview Deployed
@@ -102,12 +103,20 @@ jobs:
 
             The preview will be updated automatically when you push new commits to this PR.
 
-            **Note:** When this PR is merged to \`main\`, the changes will be deployed to production at https://scenarist.workers.dev`
+            **Note:** When this PR is merged to \`main\`, the changes will be deployed to production at https://scenarist.workers.dev
+
+            ---
+
+            [View deployment logs](${workflowUrl})`
               : `## ✅ Documentation Build Verified
 
             Your documentation changes build successfully!
 
-            The docs will be deployed to production when this PR is merged to \`main\`.`;
+            The docs will be deployed to production when this PR is merged to \`main\`.
+
+            ---
+
+            [View build logs](${workflowUrl})`;
 
             // Find existing comment
             const { data: comments } = await github.rest.issues.listComments({
