@@ -11,6 +11,9 @@ description: Understanding the HTTP boundary testing gap and how Scenarist addre
 |-------------------|----------|
 | Understand the testing gap Scenarist addresses | [HTTP Boundary Testing Gap](#the-http-boundary-testing-gap) |
 | See framework-specific challenges (Next.js, Remix) | [Modern Framework Testing Challenges](#modern-framework-testing-challenges) |
+| **Test Next.js Server Components** | [Next.js Guide →](/frameworks/nextjs) |
+| **Test Remix loaders & actions** | [Remix Guide →](/frameworks/remix) |
+| **Test SvelteKit server routes** | [SvelteKit Guide →](/frameworks/sveltekit) |
 | Understand how Scenarist works | [What Scenarist Provides](#what-scenarist-provides) |
 | See concrete examples | [Example](#example) |
 | Compare with unit/E2E tests | [Comparison](#comparison-with-other-testing-approaches) |
@@ -344,9 +347,10 @@ When evaluating whether Scenarist is working correctly in your project, verify:
 
 Choose your framework to see specific installation and usage instructions:
 
-- [Express →](/frameworks/express)
-- [Next.js (Pages Router) →](/frameworks/nextjs-pages)
-- [Next.js (App Router) →](/frameworks/nextjs-app)
+- [Next.js →](/frameworks/nextjs) - Test Server Components and API routes
+- [Express →](/frameworks/express) - Test middleware and route handlers
+- [Remix →](/frameworks/remix) - Test loaders and actions (coming soon)
+- [SvelteKit →](/frameworks/sveltekit) - Test server routes (coming soon)
 
 Or explore core concepts that apply to all frameworks:
 

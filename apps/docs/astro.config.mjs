@@ -42,7 +42,15 @@ export default defineConfig({
           label: "Framework Guides",
           items: [
             { label: "Express", slug: "frameworks/express/getting-started" },
-            { label: "Next.js", slug: "frameworks/nextjs/getting-started" },
+            {
+              label: "Next.js",
+              items: [
+                { label: "Overview", slug: "frameworks/nextjs" },
+                { label: "Getting Started", slug: "frameworks/nextjs/getting-started" },
+              ],
+            },
+            { label: "Remix", slug: "frameworks/remix" },
+            { label: "SvelteKit", slug: "frameworks/sveltekit" },
           ],
         },
         {
