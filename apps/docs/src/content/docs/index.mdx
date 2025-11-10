@@ -4,10 +4,10 @@ description: Test real backend code with controlled scenarios. Your Server Compo
 template: splash
 hero:
   title: Test Real Backend Code with Controlled Scenarios
-  tagline: Your Server Components render. Your middleware executes. Your validation runs—for real. Only external APIs are mocked. Switch scenarios instantly without restarting your server.
+  tagline: Test Server Components, API routes, and middleware with real HTTP requests. Your backend executes for real. Only external APIs are mocked. Switch scenarios instantly without restarting your server.
   image:
     file: ../../assets/hero-illustration.svg
-    alt: Server code executing with controlled external API scenarios
+    alt: Testing real backend code with controlled external API scenarios
   actions:
     - text: Get Started
       link: /introduction/quick-start
@@ -22,7 +22,9 @@ hero:
 import { Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
 
 :::tip[The Key Insight]
-**Stop mocking framework internals.** Test your actual backend code with real HTTP requests. Only external APIs are mocked—and you switch scenarios at runtime without restarting.
+**Test through real HTTP requests.** Your Server Components render, middleware chains execute, validation runs—all for real.
+
+**Built-in adapters:** Express, Next.js (Pages + App Router), with more coming. **Type-safe Playwright helpers** included for browser testing, or use supertest/Vitest for API-level tests.
 
 **Real execution + Controlled scenarios + Runtime switching = Comprehensive backend testing**
 :::
@@ -39,9 +41,10 @@ import { Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
 - No framework mocking, no Request object mocks, no brittle internal mocks
 
 **The magic:**
+- **Framework adapters:** Express, Next.js (Pages + App Router) available now, more coming soon
+- **Type-safe Playwright helpers:** Automatic test ID management with TypeScript autocomplete
 - Switch scenarios at runtime (no app restarts, no port conflicts)
 - Run unlimited scenarios in parallel (perfect test isolation)
-- Works everywhere (Express, Next.js, Remix, Fastify, Hono, any Node.js framework)
 
 ---
 
@@ -486,10 +489,10 @@ Use Scenarist for comprehensive scenario coverage. Still use a few E2E tests for
 - Test suite completes in seconds, not minutes
 
 **How it works:**
+- **Built-in framework adapters:** Express, Next.js (Pages + App Router) available now—Remix, Fastify, Hono, SvelteKit coming soon
+- **Type-safe Playwright helpers:** `withScenarios()` provides TypeScript autocomplete for scenario IDs and automatic test isolation
 - **Ephemeral endpoints:** Scenario switching only active when `enabled: true` (zero production overhead)
-- **Test isolation:** Cryptographic UUIDs per test for perfect isolation
-- **Type-safe helpers:** Playwright integration with autocomplete and automatic test ID management
-- **Framework-agnostic:** Express, Next.js (Pages + App Router), Fastify, Hono, Remix, and SvelteKit
+- **Guaranteed isolation:** Cryptographic UUIDs per test ensure parallel tests never interfere
 
 ---
 
