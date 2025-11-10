@@ -162,6 +162,10 @@ test('premium users access advanced features', async ({ page, switchScenario }) 
 4. Your backend code executes with production behavior
 5. External API calls return scenario-defined responses
 
+**See complete working examples:**
+- [Next.js Example App →](/frameworks/nextjs/example-app) - Full Next.js App Router application with installation instructions
+- [Express Example App →](/frameworks/express/example-app) - Complete Express application with comprehensive tests
+
 **Framework-specific guides:**
 - [Next.js setup →](/frameworks/nextjs) - Server Components, API routes, Server Actions
 - [Express setup →](/frameworks/express) - Middleware, route handlers

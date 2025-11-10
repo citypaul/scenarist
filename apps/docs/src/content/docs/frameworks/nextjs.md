@@ -27,9 +27,24 @@ Scenarist supports both Next.js routing patterns:
 - **App Router** - Server Components, Server Actions, Route Handlers
 - **Pages Router** - API Routes, getServerSideProps, getStaticProps
 
+## Working Example
+
+See Scenarist in action with a complete Next.js App Router application:
+
+[**Explore the Next.js Example App →**](/frameworks/nextjs/example-app)
+
+The example demonstrates:
+- Testing Server Components without mocking Next.js internals
+- Request matching for tier-based pricing
+- Sequences for polling scenarios
+- Stateful mocks for shopping cart functionality
+- Complete installation and usage instructions
+
+**[View source on GitHub →](https://github.com/citypaul/scenarist/tree/main/apps/nextjs-app-router-example)**
+
 ## Getting Started
 
-Ready to test your Next.js application with Scenarist?
+Ready to integrate Scenarist into your Next.js application?
 
 [Get started with Next.js →](/frameworks/nextjs/getting-started)
 

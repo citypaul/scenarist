@@ -41,12 +41,20 @@ export default defineConfig({
         {
           label: "Framework Guides",
           items: [
-            { label: "Express", slug: "frameworks/express/getting-started" },
+            {
+              label: "Express",
+              items: [
+                { label: "Overview", slug: "frameworks/express" },
+                { label: "Getting Started", slug: "frameworks/express/getting-started" },
+                { label: "Example App", slug: "frameworks/express/example-app" },
+              ],
+            },
             {
               label: "Next.js",
               items: [
                 { label: "Overview", slug: "frameworks/nextjs" },
                 { label: "Getting Started", slug: "frameworks/nextjs/getting-started" },
+                { label: "Example App", slug: "frameworks/nextjs/example-app" },
               ],
             },
             { label: "Remix", slug: "frameworks/remix" },
