@@ -14,7 +14,9 @@
       "Bash(pnpm preview:*)",
       "Bash(pnpm wrangler pages dev:*)",
       "Bash(curl:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(gh pr edit:*)",
+      "Bash(pnpm remove:*)"
     ],
     "deny": [],
     "ask": []
