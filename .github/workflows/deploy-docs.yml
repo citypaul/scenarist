@@ -6,6 +6,10 @@ on:
     paths:
       - "apps/docs/**"
       - ".github/workflows/deploy-docs.yml"
+  pull_request:
+    paths:
+      - "apps/docs/**"
+      - ".github/workflows/deploy-docs.yml"
   workflow_dispatch:
 
 concurrency:
