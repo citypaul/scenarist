@@ -52,23 +52,23 @@ export const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
   scenarios,
 });
-
-// app/api/__scenario__/route.ts
-import { scenarist } from '@/lib/scenarist';
-
-const handler = scenarist.createScenarioEndpoint();
-export const GET = handler;
-export const POST = handler;
 ```
 
-## 3. Add MSW Setup
+## 3. Create Scenario Control Endpoint
 
 ```typescript
-// app/api/_msw/route.ts
-import { createMSWHandler } from '@scenarist/nextjs-adapter/app';
+// app/api/%5F%5Fscenario%5F%5F/route.ts
+import { scenarist } from '@/lib/scenarist';
 
-export const { GET } = createMSWHandler();
+export const POST = scenarist.createScenarioEndpoint();
+export const GET = scenarist.createScenarioEndpoint();
 ```
+
+:::note[Why URL-encoded folder name?]
+The folder is named `%5F%5Fscenario%5F%5F` (URL-encoded underscores) because Next.js treats folders starting with `_` as [private folders](https://nextjs.org/docs/app/getting-started/project-structure#private-folders) that are excluded from routing. To create a public route with underscores, you must URL-encode them.
+
+The route will be accessible at `/__scenario__` in your application. While this endpoint path is configurable via `scenarist` config options, using `/__scenario__` is the recommended approach.
+:::
 
 ## 4. Test Server Components
 
