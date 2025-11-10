@@ -42,7 +42,7 @@ These frameworks shift more logic to the server, making the HTTP boundary increa
 ```mermaid
 graph TD
     A[Unit Tests] -->|Mock HTTP Layer| B[Fast, Isolated]
-    C[Integration Tests] -->|"THE GAP:<br/>Real Backend HTTP<br/>Multiple Scenarios"| D[Missing Approach]
+    C[Integration Tests] -->|"Missing Approach:<br/>Real Backend HTTP<br/>Multiple Scenarios"| D[HTTP-Level Testing]
     E[E2E Tests] -->|Real Browser + Server| F[Slow, Limited Coverage]
 
     style D fill:#ff6b6b,stroke:#c92a2a,color:#fff
@@ -55,10 +55,6 @@ graph TD
 **End-to-end tests** run the full system including a real browser and server. This provides confidence that everything works together, but the test execution time limits how many scenarios you can practically cover. Testing every edge case, error state, and user type becomes impractical.
 
 **The gap**: Testing your backend's HTTP behavior (middleware execution, routing, request handling) with different scenarios, using real HTTP requests, without the overhead of browser automation for each test case.
-
-:::note[Key Insight]
-The HTTP boundary testing gap exists because unit tests mock the HTTP layer entirely, while E2E tests include browser overhead. Scenarist fills this gap by testing the real HTTP layer with mocked external dependencies.
-:::
 
 ## What Scenarist Provides
 
@@ -146,12 +142,9 @@ None of these approaches replaces the others—they serve different purposes:
 
 ## Runtime Scenario Switching
 
-With traditional end-to-end tests, testing different scenarios (premium user vs free user, error states, different API responses) typically requires either:
-- Separate test runs against different deployments/environments
-- Complex test data setup before each test
-- Conditional logic that changes application behavior based on test flags
+Traditional end-to-end tests cannot switch external API behavior at runtime. Testing different scenarios (premium vs free users, error states) typically requires separate deployments, complex data setup, or conditional logic in application code.
 
-You cannot switch the external API behavior at runtime during a test run. Scenarist addresses this by enabling runtime scenario switching using test identifiers:
+Scenarist addresses this through runtime scenario switching using test identifiers:
 
 ```typescript
 // Define multiple scenarios
@@ -181,13 +174,9 @@ Each test:
 
 This enables parallel test execution without process coordination or port conflicts.
 
-:::tip[Runtime Scenario Switching]
-Unlike traditional E2E tests that require separate deployments or complex data setup for different scenarios, Scenarist switches scenarios at runtime using test IDs. This enables testing premium users, free users, and error states concurrently against the same server instance.
-:::
-
 ### How Test Isolation Works
 
-Scenarist adds control endpoints (like `/__scenario__`) during testing. These endpoints enable scenario switching:
+Scenarist adds control endpoints (like `/__scenario__`) during testing:
 
 ```typescript
 // Behind the scenes when you call switchScenario()
@@ -195,23 +184,22 @@ POST /__scenario__
 Headers: x-test-id: abc-123
 Body: { scenario: 'premium' }
 
-// Server stores: test-id abc-123 → premium scenario
-// All subsequent requests with x-test-id: abc-123 use premium mocks
+// Server maps: test-id abc-123 → premium scenario
+// All requests with x-test-id: abc-123 use premium mocks
 ```
 
-Different test IDs can use different scenarios simultaneously. The server handles them concurrently without interference.
+Different test IDs use different scenarios simultaneously without interference.
 
 ## Framework Independence
 
-Scenarist uses hexagonal architecture (ports and adapters pattern) to maintain framework independence. The core scenario management logic has no dependencies on any web framework.
+Scenarist uses hexagonal architecture to maintain framework independence. The core has no web framework dependencies.
 
-This means:
-- Scenario definitions work with any framework
+Benefits:
+- Scenario definitions work across all frameworks
+- Framework-specific adapters handle integration (~100 lines each)
 - Switching frameworks doesn't require rewriting scenarios
-- Framework-specific adapters handle integration (typically ~100 lines)
-- Core improvements benefit all frameworks
 
-Supported frameworks include Express, Next.js (Pages and App Router), Fastify, and others via framework-specific adapters.
+Supported frameworks: Express, Next.js (Pages and App Router), Fastify, and others.
 
 [Learn about the architecture →](/concepts/architecture)
 
