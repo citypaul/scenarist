@@ -3,6 +3,8 @@ title: Why Scenarist?
 description: Understanding the testing gap and how Scenarist fills it
 ---
 
+Scenarist tests your real backend code through HTTP with different scenarios, filling the gap between unit tests (which mock too much) and E2E tests (which test too little). Your entire backend executes—Server Components render, API routes process requests, middleware chains run—with only external APIs mocked.
+
 :::tip[TL;DR]
 **The Problem:** Unit tests mock too much. Browser tests test too little. The gap: testing your real backend code (API routes, Server Components, middleware) through HTTP with different scenarios.
 
