@@ -6,6 +6,7 @@ import rehypeMermaid from "rehype-mermaid";
 
 // https://astro.build/config
 export default defineConfig({
+  output: 'static',
   adapter: cloudflare(),
   markdown: {
     syntaxHighlight: {
