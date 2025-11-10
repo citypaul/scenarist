@@ -107,41 +107,22 @@ test('free users see upgrade prompts', async ({ page, switchScenario }) => {
 
 **Key Benefit:** All tests run in parallel against the same server. No port conflicts, no startup delays, no process coordination.
 
-## Architecture: Framework-Agnostic Core
+## Framework-Agnostic Architecture
 
-Scenarist uses hexagonal architecture to support any framework:
+Scenarist uses **hexagonal architecture** (ports and adapters) to maintain complete framework independence. The core package (`@scenarist/core`) has zero dependencies on any web framework—all scenario management, test isolation, and response selection logic is framework-agnostic.
 
-```mermaid
-graph TD
-    A[Your Tests] --> B[Framework Adapter]
-    B --> C[Scenarist Core]
-    C --> D[MSW Adapter]
-    D --> E[Mock Service Worker]
-
-    B2[Express] -.-> C
-    B3[Next.js] -.-> C
-    B4[Fastify] -.-> C
-
-    style C fill:#228be6,stroke:#1971c2,color:#fff
-    style B fill:#51cf66,stroke:#2f9e44
-    style B2 fill:#51cf66,stroke:#2f9e44
-    style B3 fill:#51cf66,stroke:#2f9e44
-    style B4 fill:#51cf66,stroke:#2f9e44
-```
-
-The **core package** (`@scenarist/core`) is framework-agnostic. Adapters integrate with Express, Next.js, Fastify, etc.
-
-This means:
-- Define scenarios once, use across all frameworks
+**This means:**
+- Define scenarios once, use with Express, Next.js, Remix, Fastify, or any framework
 - Switching frameworks doesn't require rewriting test scenarios
-- Core improvements benefit all adapters
-
-[Learn more about the architecture →](/concepts/architecture)
+- Thin adapters (~100 lines) handle framework-specific integration
+- Core improvements benefit all frameworks immediately
 
 :::note[Why This Matters for Modern Frameworks]
 **Next.js Server Components**, **Remix loaders**, and **SvelteKit server routes** are notoriously hard to test in isolation. Unit tests require complex mocking of framework internals. E2E tests work but are too slow for comprehensive scenario coverage.
 
 **Scenarist solves this:** Your Server Components render for real, loaders execute with actual data fetching, server routes process requests through full middleware chains. Only external API calls are mocked, not your framework code.
+
+[Learn how the architecture works internally →](/concepts/architecture)
 :::
 
 ## Dynamic Response Features
