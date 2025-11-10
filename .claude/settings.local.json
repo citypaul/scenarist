@@ -16,7 +16,14 @@
       "Bash(curl:*)",
       "Bash(git stash:*)",
       "Bash(gh pr edit:*)",
-      "Bash(pnpm remove:*)"
+      "Bash(pnpm remove:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh run list:*)",
+      "Bash(git fetch:*)",
+      "Bash(gh pr list:*)",
+      "Bash(git rebase:*)",
+      "Bash(gh run view:*)",
+      "Bash(git pull:*)"
     ],
     "deny": [],
     "ask": []

@@ -9,24 +9,49 @@ Modern web applications consist of frontend and backend code that communicate ov
 
 Between these extremes lies a testing gap: **verifying that your backend HTTP layer (middleware, routing, request/response handling) behaves correctly under different scenarios**, without the overhead of full end-to-end tests.
 
+## Quick Navigation
+
+**Choose your path based on what you need:**
+
+| If you want to... | Go to... |
+|-------------------|----------|
+| See framework-specific challenges (Next.js, Remix) | [Modern Framework Testing Challenges](#modern-framework-testing-challenges) |
+| Understand how Scenarist works | [What Scenarist Provides](#what-scenarist-provides) |
+| See concrete examples | [Example](#example) |
+| Compare with unit/E2E tests | [Comparison](#comparison-with-other-testing-approaches) |
+| Understand limitations and trade-offs | [Limitations](#limitations-and-trade-offs) |
+| Start implementing | [Getting Started](#getting-started) |
+
+---
+
 ### Modern Framework Testing Challenges
 
 This gap is particularly evident with modern full-stack frameworks:
 
-**Next.js Server Components** - The [official Next.js documentation](https://nextjs.org/docs/app/building-your-application/testing#async-server-components) states: "Since async Server Components are new to the React ecosystem, Next.js recommends using end-to-end testing." Unit testing Server Components requires mocking Next.js internals (fetch, cookies, headers), which creates distance from how your code actually executes.
+**Next.js Server Components** - The [official Next.js documentation](https://nextjs.org/docs/app/building-your-application/testing#async-server-components) states: *"Since async Server Components are new to the React ecosystem, Next.js recommends using end-to-end testing."* Unit testing requires mocking Next.js internals (fetch, cookies, headers), creating distance from production execution.
 
-**Remix loaders and actions** - The [Remix documentation](https://remix.run/docs/en/main/discussion/testing) notes: "There aren't standard ways of testing components that have Remix code." Developers must test loaders and actions separately from components, then hope they integrate correctly.
+→ **Scenarist solves this** by testing Server Components with real HTTP requests to your Next.js routes. [See how →](/frameworks/nextjs)
 
-**SvelteKit server routes** - Testing server-side logic requires either mocking the framework's request/response handling or running full end-to-end tests, with no standard middle ground.
+**Remix Loaders & Actions** - The [Remix documentation](https://remix.run/docs/en/main/discussion/testing) notes: *"There aren't standard ways of testing components that have Remix code."* Developers must test loaders and actions separately from components, then hope they integrate correctly.
 
+→ **Scenarist solves this** by testing loaders and actions at the HTTP layer where they naturally integrate. [See how →](/frameworks/remix)
+
+**SvelteKit Server Routes** - Testing server-side logic requires either mocking the framework's request/response handling or running full end-to-end tests, with no standard middle ground.
+
+→ **Scenarist solves this** by providing HTTP-level testing without browser overhead. [See how →](/frameworks/sveltekit)
+
+:::note[The Pattern]
 These frameworks shift more logic to the server, making the HTTP boundary increasingly important to test. Traditional unit tests can verify this logic, but require extensive mocking of framework internals. End-to-end tests provide confidence but are too slow for comprehensive scenario coverage.
+
+**Scenarist addresses all these challenges** by testing at the HTTP boundary with real backend execution and mocked external APIs.
+:::
 
 ### Common Testing Approaches
 
 ```mermaid
 graph TD
     A[Unit Tests] -->|Mock HTTP Layer| B[Fast, Isolated]
-    C[Integration Tests] -->|"THE GAP:<br/>Real Backend HTTP<br/>Multiple Scenarios"| D[Missing Approach]
+    C[Integration Tests] -->|"Missing Approach:<br/>Real Backend HTTP<br/>Multiple Scenarios"| D[HTTP-Level Testing]
     E[E2E Tests] -->|Real Browser + Server| F[Slow, Limited Coverage]
 
     style D fill:#ff6b6b,stroke:#c92a2a,color:#fff
@@ -77,35 +102,75 @@ graph LR
 
 ### Example
 
-```typescript
-// Define a scenario
-const premiumUserScenario = {
-  id: 'premiumUser',
-  name: 'Premium User',
-  mocks: [{
-    method: 'GET',
-    url: 'https://api.auth-provider.com/session',
-    response: {
-      status: 200,
-      body: { tier: 'premium', userId: 'user-123' }
-    }
-  }]
-};
+This example demonstrates HTTP-level testing with Next.js. Each framework has its own adapter that integrates Scenarist into your application.
 
-// Test uses the scenario
+**Step 1: Framework-specific setup** (done once per application)
+
+```typescript
+// app/api/[[...route]]/route.ts - Next.js App Router
+import { createScenarist } from '@scenarist/nextjs-adapter';
+import { scenarios } from './scenarios';
+
+export const { GET, POST } = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  scenarios,
+});
+```
+
+**Step 2: Define scenarios** (reusable across tests)
+
+```typescript
+// scenarios.ts
+export const scenarios = {
+  premiumUser: {
+    id: 'premiumUser',
+    name: 'Premium User',
+    mocks: [{
+      method: 'GET',
+      url: 'https://api.auth-provider.com/session',
+      response: {
+        status: 200,
+        body: { tier: 'premium', userId: 'user-123' }
+      }
+    }]
+  }
+} as const;
+```
+
+**Step 3: Write tests** (framework-agnostic)
+
+```typescript
+// tests/premium-features.spec.ts
+import { test, expect } from '@playwright/test';
+
 test('premium users access advanced features', async ({ page, switchScenario }) => {
   await switchScenario(page, 'premiumUser');
 
-  // This HTTP request goes to your real backend
+  // Real HTTP request → Next.js route → middleware → business logic
   await page.goto('/dashboard');
 
-  // Your middleware runs, your route handler executes,
-  // external auth API call returns mocked premium tier,
-  // your business logic processes the tier correctly
-
+  // External auth API call intercepted, returns mocked premium tier
+  // Your business logic processes the tier correctly
   await expect(page.getByText('Advanced Analytics')).toBeVisible();
 });
 ```
+
+**What's happening:**
+1. Framework adapter integrates Scenarist into your Next.js app
+2. Scenario defines how external APIs behave
+3. Test switches to scenario and makes real HTTP requests
+4. Your backend code executes with production behavior
+5. External API calls return scenario-defined responses
+
+**See complete working examples:**
+- [Next.js Example App →](/frameworks/nextjs/example-app) - Full Next.js App Router application with installation instructions
+- [Express Example App →](/frameworks/express/example-app) - Complete Express application with comprehensive tests
+
+**Framework-specific guides:**
+- [Next.js setup →](/frameworks/nextjs) - Server Components, API routes, Server Actions
+- [Express setup →](/frameworks/express) - Middleware, route handlers
+- [Remix setup →](/frameworks/remix) - Loaders, actions (coming soon)
+- [SvelteKit setup →](/frameworks/sveltekit) - Server routes (coming soon)
 
 ## Comparison with Other Testing Approaches
 
@@ -126,12 +191,9 @@ None of these approaches replaces the others—they serve different purposes:
 
 ## Runtime Scenario Switching
 
-With traditional end-to-end tests, testing different scenarios (premium user vs free user, error states, different API responses) typically requires either:
-- Separate test runs against different deployments/environments
-- Complex test data setup before each test
-- Conditional logic that changes application behavior based on test flags
+Traditional end-to-end tests cannot switch external API behavior at runtime. Testing different scenarios (premium vs free users, error states) typically requires separate deployments, complex data setup, or conditional logic in application code.
 
-You cannot switch the external API behavior at runtime during a test run. Scenarist addresses this by enabling runtime scenario switching using test identifiers:
+Scenarist addresses this through runtime scenario switching using test identifiers:
 
 ```typescript
 // Define multiple scenarios
@@ -163,7 +225,7 @@ This enables parallel test execution without process coordination or port confli
 
 ### How Test Isolation Works
 
-Scenarist adds control endpoints (like `/__scenario__`) during testing. These endpoints enable scenario switching:
+Scenarist adds control endpoints (like `/__scenario__`) during testing:
 
 ```typescript
 // Behind the scenes when you call switchScenario()
@@ -171,23 +233,22 @@ POST /__scenario__
 Headers: x-test-id: abc-123
 Body: { scenario: 'premium' }
 
-// Server stores: test-id abc-123 → premium scenario
-// All subsequent requests with x-test-id: abc-123 use premium mocks
+// Server maps: test-id abc-123 → premium scenario
+// All requests with x-test-id: abc-123 use premium mocks
 ```
 
-Different test IDs can use different scenarios simultaneously. The server handles them concurrently without interference.
+Different test IDs use different scenarios simultaneously without interference.
 
 ## Framework Independence
 
-Scenarist uses hexagonal architecture (ports and adapters pattern) to maintain framework independence. The core scenario management logic has no dependencies on any web framework.
+Scenarist uses hexagonal architecture to maintain framework independence. The core has no web framework dependencies.
 
-This means:
-- Scenario definitions work with any framework
+Benefits:
+- Scenario definitions work across all frameworks
+- Framework-specific adapters handle integration (~100 lines each)
 - Switching frameworks doesn't require rewriting scenarios
-- Framework-specific adapters handle integration (typically ~100 lines)
-- Core improvements benefit all frameworks
 
-Supported frameworks include Express, Next.js (Pages and App Router), Fastify, and others via framework-specific adapters.
+Supported frameworks: Express, Next.js (Pages and App Router), Fastify, and others.
 
 [Learn about the architecture →](/concepts/architecture)
 
@@ -276,6 +337,10 @@ Consider alternatives when:
 - Testing frontend-only applications with no backend HTTP layer
 - Verifying API contracts match specifications (consider contract testing tools)
 
+:::caution[Not a Replacement for E2E Testing]
+Scenarist tests HTTP-level backend behavior, not complete user workflows. Browser interactions, JavaScript execution, visual rendering, and client-side state management still require end-to-end tests. Use Scenarist to complement E2E tests, not replace them.
+:::
+
 ## Limitations and Trade-offs
 
 **Single-server deployment**: Scenarist stores test ID to scenario mappings in memory. This works well for local development and single-instance CI environments. Load-balanced deployments would require additional state management.
@@ -286,13 +351,42 @@ Consider alternatives when:
 
 **Not a replacement for E2E testing**: Scenarist tests backend HTTP behavior, not complete user workflows. Browser interactions, JavaScript execution, and visual verification still require E2E tests.
 
+## Success Criteria
+
+When evaluating whether Scenarist is working correctly in your project, verify:
+
+**Core Functionality:**
+- ✓ Tests run in parallel without interference
+- ✓ Different scenarios can be active simultaneously (different test IDs)
+- ✓ Scenario switching works at runtime (no server restarts required)
+- ✓ Backend code executes with real middleware, routing, and business logic
+
+**Integration Quality:**
+- ✓ Only external API calls are mocked (not framework internals)
+- ✓ Test isolation is maintained (parallel tests don't affect each other)
+- ✓ Scenario definitions are reusable across different test suites
+- ✓ Mock definitions accurately represent external API contracts
+
+**Test Coverage:**
+- ✓ Edge cases and error states can be tested without complex setup
+- ✓ Multiple user types/tiers can be tested concurrently
+- ✓ API rate limiting and retry logic can be verified
+- ✓ Tests remain fast enough for frequent execution during development
+
+**Common Issues to Watch:**
+- ⚠ If tests interfere with each other → check test ID isolation
+- ⚠ If framework internals are mocked → refactor to mock external APIs only
+- ⚠ If scenarios can't switch at runtime → verify scenario registration
+- ⚠ If tests are slow → consider if you're running full browser automation when HTTP-level testing would suffice
+
 ## Getting Started
 
 Choose your framework to see specific installation and usage instructions:
 
-- [Express →](/frameworks/express)
-- [Next.js (Pages Router) →](/frameworks/nextjs-pages)
-- [Next.js (App Router) →](/frameworks/nextjs-app)
+- [Next.js →](/frameworks/nextjs) - Test Server Components and API routes
+- [Express →](/frameworks/express) - Test middleware and route handlers
+- [Remix →](/frameworks/remix) - Test loaders and actions (coming soon)
+- [SvelteKit →](/frameworks/sveltekit) - Test server routes (coming soon)
 
 Or explore core concepts that apply to all frameworks:
 

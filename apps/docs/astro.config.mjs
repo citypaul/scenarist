@@ -41,8 +41,38 @@ export default defineConfig({
         {
           label: "Framework Guides",
           items: [
-            { label: "Express", slug: "frameworks/express/getting-started" },
-            { label: "Next.js", slug: "frameworks/nextjs/getting-started" },
+            {
+              label: "Express",
+              items: [
+                { label: "Overview", slug: "frameworks/express" },
+                { label: "Getting Started", slug: "frameworks/express/getting-started" },
+                { label: "Example App", slug: "frameworks/express/example-app" },
+              ],
+            },
+            {
+              label: "Next.js",
+              items: [
+                { label: "Overview", slug: "frameworks/nextjs" },
+                {
+                  label: "App Router",
+                  items: [
+                    { label: "Overview", slug: "frameworks/nextjs-app-router" },
+                    { label: "Getting Started", slug: "frameworks/nextjs-app-router/getting-started" },
+                    { label: "Example App", slug: "frameworks/nextjs-app-router/example-app" },
+                  ],
+                },
+                {
+                  label: "Pages Router",
+                  items: [
+                    { label: "Overview", slug: "frameworks/nextjs-pages-router" },
+                    { label: "Getting Started", slug: "frameworks/nextjs-pages-router/getting-started" },
+                    { label: "Example App", slug: "frameworks/nextjs-pages-router/example-app" },
+                  ],
+                },
+              ],
+            },
+            { label: "Remix", slug: "frameworks/remix" },
+            { label: "SvelteKit", slug: "frameworks/sveltekit" },
           ],
         },
         {

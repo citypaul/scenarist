@@ -1,0 +1,133 @@
+---
+title: Next.js App Router - Getting Started
+description: Set up Scenarist with Next.js App Router in 5 minutes
+---
+
+# Next.js App Router - Getting Started
+
+Test your Next.js App Router application with Server Components, Route Handlers, and Server Actions all executing. No mocking of Next.js internals required.
+
+## Installation
+
+```bash
+npm install @scenarist/core @scenarist/nextjs-adapter
+npm install -D @playwright/test @scenarist/playwright-helpers
+```
+
+## 1. Define Scenarios
+
+```typescript
+// lib/scenarios.ts
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/core';
+
+const successScenario: ScenaristScenario = {
+  id: 'success',
+  name: 'Payment Success',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.stripe.com/v1/products',
+      response: {
+        status: 200,
+        body: { data: [{ id: 'prod_123', name: 'Premium Plan', price: 5000 }] },
+      },
+    },
+  ],
+};
+
+export const scenarios = {
+  default: successScenario,
+  success: successScenario,
+} as const satisfies ScenaristScenarios;
+```
+
+## 2. Set Up Scenarist
+
+```typescript
+// lib/scenarist.ts
+import { createScenarist } from '@scenarist/nextjs-adapter/app';
+import { scenarios } from './scenarios';
+
+export const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  scenarios,
+});
+
+// app/api/__scenario__/route.ts
+import { scenarist } from '@/lib/scenarist';
+
+const handler = scenarist.createScenarioEndpoint();
+export const GET = handler;
+export const POST = handler;
+```
+
+## 3. Add MSW Setup
+
+```typescript
+// app/api/_msw/route.ts
+import { createMSWHandler } from '@scenarist/nextjs-adapter/app';
+
+export const { GET } = createMSWHandler();
+```
+
+## 4. Test Server Components
+
+```typescript
+// tests/products.spec.ts
+import { expect, withScenarios } from '@scenarist/playwright-helpers';
+import { scenarios } from '../lib/scenarios';
+
+export const test = withScenarios(scenarios);
+
+test('Server Component fetches and renders product data', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'success'); // ✅ Type-safe!
+
+  await page.goto('/products');
+
+  // Your Server Component executes and renders
+  // fetch() call to Stripe API is mocked
+  await expect(page.locator('h2')).toContainText('Premium Plan');
+  await expect(page.locator('.price')).toContainText('$50.00');
+});
+```
+
+**Example Server Component:**
+
+```typescript
+// app/products/page.tsx
+export default async function ProductsPage() {
+  // This fetch is mocked by Scenarist
+  const response = await fetch('https://api.stripe.com/v1/products', {
+    headers: { 'Authorization': `Bearer ${process.env.STRIPE_KEY}` },
+  });
+
+  const { data: products } = await response.json();
+
+  // Your component renders with mocked data
+  return (
+    <div>
+      {products.map(product => (
+        <div key={product.id}>
+          <h2>{product.name}</h2>
+          <span className="price">${(product.price / 100).toFixed(2)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+## What Makes App Router Setup Special
+
+**Server Components Actually Execute** - Unlike traditional mocking, your React Server Components render and run your application logic.
+
+**Route Handlers Run Normally** - Your validation, error handling, and business logic all execute.
+
+**Test Isolation** - Each test gets isolated scenario state. Run tests in parallel with zero interference.
+
+**No App Restart** - Switch scenarios instantly during test execution.
+
+## Next Steps
+
+- **[Example App →](/frameworks/nextjs-app-router/example-app)** - See a complete working example with Server Components, sequences, and stateful mocks
+- **[Architecture →](/concepts/architecture)** - Learn how Scenarist works under the hood

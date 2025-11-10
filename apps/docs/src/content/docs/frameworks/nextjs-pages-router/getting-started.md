@@ -1,0 +1,189 @@
+---
+title: Next.js Pages Router - Getting Started
+description: Set up Scenarist with Next.js Pages Router in 5 minutes
+---
+
+# Next.js Pages Router - Getting Started
+
+Test your Next.js Pages Router application with API routes, getServerSideProps, and getStaticProps all executing. No mocking of Next.js internals required.
+
+## Installation
+
+```bash
+npm install @scenarist/core @scenarist/nextjs-adapter
+npm install -D @playwright/test @scenarist/playwright-helpers
+```
+
+## 1. Define Scenarios
+
+```typescript
+// lib/scenarios.ts
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/core';
+
+const successScenario: ScenaristScenario = {
+  id: 'success',
+  name: 'Payment Success',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.stripe.com/v1/products',
+      response: {
+        status: 200,
+        body: { data: [{ id: 'prod_123', name: 'Premium Plan', price: 5000 }] },
+      },
+    },
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      response: {
+        status: 200,
+        body: { id: 'ch_123', status: 'succeeded' },
+      },
+    },
+  ],
+};
+
+export const scenarios = {
+  default: successScenario,
+  success: successScenario,
+} as const satisfies ScenaristScenarios;
+```
+
+## 2. Set Up Scenarist
+
+```typescript
+// lib/scenarist.ts
+import { createScenarist } from '@scenarist/nextjs-adapter/pages';
+import { scenarios } from './scenarios';
+
+export const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  scenarios,
+});
+
+// pages/api/__scenario__.ts
+import { scenarist } from '@/lib/scenarist';
+export default scenarist.createScenarioEndpoint();
+```
+
+## 3. Add MSW Setup
+
+```typescript
+// pages/api/_msw.ts
+import { createMSWHandler } from '@scenarist/nextjs-adapter/pages';
+
+export default createMSWHandler();
+
+export const config = {
+  api: { externalResolver: true },
+};
+```
+
+## 4. Write Tests
+
+### Testing Server-Side Rendering
+
+```typescript
+// tests/products.spec.ts
+import { expect, withScenarios } from '@scenarist/playwright-helpers';
+import { scenarios } from '../lib/scenarios';
+
+export const test = withScenarios(scenarios);
+
+test('renders Server-Side page with product data', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'success'); // ✅ Type-safe!
+
+  await page.goto('/products');
+
+  // Your getServerSideProps runs, fetches from mocked Stripe API
+  await expect(page.locator('h2')).toContainText('Premium Plan');
+  await expect(page.locator('.price')).toContainText('$50.00');
+});
+```
+
+**Example Page with getServerSideProps:**
+
+```typescript
+// pages/products.tsx
+export async function getServerSideProps() {
+  // This fetch is mocked by Scenarist
+  const response = await fetch('https://api.stripe.com/v1/products', {
+    headers: { 'Authorization': `Bearer ${process.env.STRIPE_KEY}` },
+  });
+
+  const { data: products } = await response.json();
+
+  return { props: { products } };
+}
+
+export default function ProductsPage({ products }) {
+  return (
+    <div>
+      {products.map(product => (
+        <div key={product.id}>
+          <h2>{product.name}</h2>
+          <span className="price">${(product.price / 100).toFixed(2)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### Testing API Routes
+
+```typescript
+// tests/checkout.spec.ts
+test('processes payment via API route', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'success');
+
+  // Your API route validation runs
+  const response = await page.request.post('/api/checkout', {
+    data: { amount: 5000, token: 'tok_test' },
+  });
+
+  expect(response.status()).toBe(200);
+  const data = await response.json();
+  expect(data.status).toBe('succeeded');
+});
+```
+
+**Example API Route:**
+
+```typescript
+// pages/api/checkout.ts
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Validation runs normally
+  if (!req.body.amount || !req.body.token) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  // External API call is mocked by Scenarist
+  const response = await fetch('https://api.stripe.com/v1/charges', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.STRIPE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(req.body),
+  });
+
+  const data = await response.json();
+  res.status(200).json(data);
+}
+```
+
+## What Makes Pages Router Setup Special
+
+**API Routes Execute Normally** - Your validation, error handling, and business logic all run as they would in production.
+
+**Server-Side Rendering Works** - Your getServerSideProps and getStaticProps fetch data from mocked external APIs.
+
+**Test Isolation** - Each test gets isolated scenario state. Run tests in parallel with zero interference.
+
+**No App Restart** - Switch scenarios instantly during test execution.
+
+## Next Steps
+
+- **Example apps:** See complete example for [Pages Router](https://github.com/citypaul/scenarist/tree/main/apps/nextjs-pages-router-example)
+- **[Architecture →](/concepts/architecture)** - Learn how Scenarist works under the hood
