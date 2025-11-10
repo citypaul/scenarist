@@ -33,7 +33,7 @@ test('premium users see discount', async ({ page, switchScenario }) => {
 **The difference:** Scenarist tests your real backend code (Server Components render, API routes process, middleware chains run) with only external APIs mocked. No mocking framework internals, no brittle test setup, no spawning separate servers. Runtime scenario switching via ephemeral endpoints means all tests run in parallel against the same server instance.
 
 :::tip[TL;DR]
-**The Problem:** Unit tests mock too much. Browser tests test too little. The gap: testing your real backend code (API routes, Server Components, middleware) through HTTP with different scenarios.
+**The Problem:** Unit tests mock framework internals. E2E tests are too slow for all scenarios. The gap: testing your real backend code (API routes, Server Components, middleware) through HTTP with different scenarios.
 
 **Scenarist's Solution:** Define scenarios once, switch at runtime, test everything in parallel. Your entire backend executes—Next.js Server Components render, API routes process requests, middleware chains run—only external APIs are mocked.
 :::
@@ -46,7 +46,7 @@ test('premium users see discount', async ({ page, switchScenario }) => {
 | "E2E tests are too slow for all scenarios" | [Runtime Scenario Switching](#runtime-scenario-switching) |
 | "How do tests run in parallel safely?" | [Ephemeral Endpoints](#ephemeral-endpoints-for-runtime-control) |
 | "How is this different from unit/E2E tests?" | [Quick Comparison](#quick-comparison) |
-| "What frameworks does this support?" | [Framework-Agnostic Architecture](#framework-agnostic-architecture) |
+| "What frameworks does this support?" | [How Scenarist Works with Any Framework](#how-scenarist-works-with-any-framework) |
 | "Can I test polling/sequences/state?" | [Dynamic Response Features](#dynamic-response-features) |
 | "Show me a complete example" | [Real-World Example](#real-world-example-testing-premium-checkout) |
 | "When should I NOT use Scenarist?" | [Trade-offs & Alternatives](#trade-offs--when-to-consider-alternatives) |
@@ -222,7 +222,7 @@ await switchScenario(page, 'premiumUser');
 
 **Production safety:** Ephemeral endpoints are only registered when `enabled: true` in config. Disable in production to remove all overhead.
 
-## Framework-Agnostic Architecture
+## How Scenarist Works with Any Framework
 
 Scenarist uses **hexagonal architecture** (ports and adapters) to maintain complete framework independence. The core package (`@scenarist/core`) has zero dependencies on any web framework—all scenario management, test isolation, and response selection logic is framework-agnostic.
 
@@ -478,3 +478,12 @@ Choose your framework:
 - [Next.js (App Router) →](/frameworks/nextjs-app)
 
 Or understand [core concepts →](/core-concepts/scenarios) that apply to all frameworks.
+
+## Related Documentation
+
+Now that you understand why Scenarist exists, explore:
+
+- [Scenarios & Mocks →](/core-concepts/scenarios) - How to define test scenarios
+- [Installation →](/introduction/installation) - Framework-specific setup
+- [Architecture Deep Dive →](/concepts/architecture) - How ports & adapters work internally
+- [Quick Start →](/introduction/quick-start) - Get up and running in 5 minutes
