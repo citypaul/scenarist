@@ -319,7 +319,7 @@ Response to Client
 
 ### File Structure
 
-```
+```text
 apps/express-example/
 ├── src/
 │   ├── server.ts           # Express app with Scenarist

@@ -232,7 +232,7 @@ Each test gets a unique test ID:
 
 ### File Structure
 
-```
+```text
 apps/nextjs-app-router-example/
 ├── app/
 │   ├── api/

@@ -334,7 +334,7 @@ Each test gets a unique test ID:
 
 ### File Structure
 
-```
+```text
 apps/nextjs-pages-router-example/
 ├── pages/
 │   ├── index.tsx                    # Products page (getServerSideProps)
