@@ -40,9 +40,13 @@ const extractHttpRequestContext = async (
   }
 
   // Extract headers as Record<string, string>
+  // CRITICAL: Normalize header keys to lowercase for case-insensitive matching.
+  // HTTP headers are case-insensitive per RFC 2616.
+  // While the Fetch API Headers object automatically normalizes to lowercase,
+  // we explicitly normalize here for defense in depth and documentation.
   const headers: Record<string, string> = {};
   request.headers.forEach((value, key) => {
-    headers[key] = value;
+    headers[key.toLowerCase()] = value;
   });
 
   // Extract query parameters from URL
