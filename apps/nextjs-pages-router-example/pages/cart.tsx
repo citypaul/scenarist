@@ -180,7 +180,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   try {
     // Fetch cart data server-side
     // This demonstrates Scenarist stateful mocks working during getServerSideProps
-    const response = await fetch('http://localhost:3001/api/cart', {
+    // Call internal Next.js API route (which then calls external json-server)
+    const response = await fetch('http://localhost:3000/api/cart', {
       headers: scenarist.getHeaders(context.req),
     });
 

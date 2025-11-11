@@ -178,7 +178,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   try {
     // Fetch products server-side with tier header
     // This demonstrates Scenarist working during getServerSideProps
-    const response = await fetch('http://localhost:3001/api/products', {
+    // Call internal Next.js API route (which then calls external json-server)
+    const response = await fetch('http://localhost:3000/api/products', {
       headers: {
         ...scenarist.getHeaders(context.req),
         'x-user-tier': tier,
