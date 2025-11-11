@@ -652,6 +652,56 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       }
     });
 
+    it("should return last sequence fallback when multiple sequence fallbacks exist", () => {
+      // When multiple mocks have sequences but no match criteria (all are sequence fallbacks),
+      // the last sequence fallback wins (all have specificity 1)
+
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/status",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "GET",
+          url: "/api/status",
+          // First sequence fallback (no match criteria, specificity 1)
+          sequence: {
+            responses: [
+              { status: 200, body: { status: "pending", source: "first-sequence" } },
+              { status: 200, body: { status: "complete", source: "first-sequence" } },
+            ],
+            repeat: "last",
+          },
+        },
+        {
+          method: "GET",
+          url: "/api/status",
+          // Second sequence fallback (no match criteria, specificity 1)
+          sequence: {
+            responses: [
+              { status: 200, body: { status: "processing", source: "second-sequence" } },
+              { status: 200, body: { status: "done", source: "second-sequence" } },
+            ],
+            repeat: "last",
+          },
+        },
+      ];
+
+      const sequenceTracker = createInMemorySequenceTracker();
+      const selector = createResponseSelector({ sequenceTracker });
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        // Last sequence fallback wins when all have equal specificity (1)
+        expect(result.data.body).toEqual({ status: "processing", source: "second-sequence" });
+      }
+    });
+
     it("should prefer specific match over fallback mock", () => {
       // When a request matches both a specific mock and a fallback,
       // the specific mock should win due to higher specificity
