@@ -235,6 +235,124 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
     });
   });
 
+  describe("Case-Insensitive Header Matching", () => {
+    it("should match when criteria headers use uppercase but request headers are lowercase", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/data",
+        body: undefined,
+        headers: { "x-user-tier": "premium" }, // Lowercase (normalized by adapter)
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "GET",
+          url: "/api/data",
+          match: { headers: { "X-User-Tier": "premium" } }, // Mixed case in criteria
+          response: { status: 200, body: { data: "premium-data" } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({ data: "premium-data" });
+      }
+    });
+
+    it("should match when criteria headers are all uppercase", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/data",
+        body: undefined,
+        headers: { "x-api-key": "secret123" }, // Lowercase (normalized by adapter)
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "GET",
+          url: "/api/data",
+          match: { headers: { "X-API-KEY": "secret123" } }, // All uppercase
+          response: { status: 200, body: { data: "secure-data" } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({ data: "secure-data" });
+      }
+    });
+
+    it("should match with multiple headers of different casing", () => {
+      const context: HttpRequestContext = {
+        method: "POST",
+        url: "/api/submit",
+        body: { data: "test" },
+        headers: {
+          "x-user-tier": "premium",
+          "x-api-version": "v2",
+          "content-type": "application/json",
+        },
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "POST",
+          url: "/api/submit",
+          match: {
+            headers: {
+              "X-User-Tier": "premium", // Mixed case
+              "X-API-Version": "v2", // Mixed case
+              "Content-Type": "application/json", // Mixed case
+            },
+          },
+          response: { status: 201, body: { created: true } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.status).toBe(201);
+        expect(result.data.body).toEqual({ created: true });
+      }
+    });
+
+    it("should not match when header value differs (case still matters for values)", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/data",
+        body: undefined,
+        headers: { "x-user-tier": "premium" }, // Lowercase value
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "GET",
+          url: "/api/data",
+          match: { headers: { "X-User-Tier": "PREMIUM" } }, // Uppercase value
+          response: { status: 200, body: { data: "premium-data" } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+      expect(result.success).toBe(false); // Values are case-sensitive
+    });
+  });
+
   describe("Match on Query Parameters (Exact Match)", () => {
     it("should match when all specified query params match exactly", () => {
       const context: HttpRequestContext = {
