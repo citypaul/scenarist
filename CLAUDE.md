@@ -2969,3 +2969,253 @@ The specificity system uses **semantic ranges** not just numeric scores:
 | 0 | Simple fallbacks | 0 (simple response) |
 
 This architecture prevents feature conflicts and maintains clean separation of concerns. Each feature type gets its own range, guaranteeing correct priority regardless of field counts or combinations.
+
+## PR Review Fixes: Singleton Architecture & Test Coverage
+
+**Implemented:** 2025-11-11
+**Status:** Complete - All tests passing (51 core + 25 Next.js adapter + 35 Playwright)
+**Context:** PR review identified 4 critical issues that needed addressing
+
+### Issue #1: Singleton Guard Belongs in Adapter, Not Application
+
+**Problem:** Application code (`apps/nextjs-app-router-example/lib/scenarist.ts`) implemented global singleton pattern - this violates hexagonal architecture.
+
+**Why It's Wrong:**
+- Application layer shouldn't handle infrastructure concerns
+- Singleton logic IS adapter responsibility (per CLAUDE.md guidelines)
+- Redundant with adapter's existing MSW/registry/store singletons
+- Forces ALL applications to implement same pattern (boilerplate)
+
+**Root Cause:** Next.js module duplication causes `createScenarist()` to be called multiple times:
+- Webpack/Turbopack bundle code in ways that can duplicate modules across chunks
+- Each chunk evaluation creates new instance
+- Without singleton guard: DuplicateScenarioError when scenarios re-register
+- See: [Next.js Discussion #68572](https://github.com/vercel/next.js/discussions/68572)
+
+**The Fix (commit 84f5fb3):**
+
+Added singleton guard in `packages/nextjs-adapter/src/app/setup.ts`:
+
+```typescript
+declare global {
+  var __scenarist_instance: AppScenarist | undefined;
+}
+
+export const createScenarist = (options: AppAdapterOptions): AppScenarist => {
+  // Singleton guard - return existing instance if already created
+  if (global.__scenarist_instance) {
+    return global.__scenarist_instance;
+  }
+
+  // ... create instance ...
+
+  global.__scenarist_instance = instance;
+  return instance;
+};
+```
+
+Application code simplified to:
+
+```typescript
+// ✅ CORRECT - Simple const export, adapter handles singleton
+export const scenarist = createScenarist({
+  enabled: true,
+  scenarios,
+});
+```
+
+**Why This Architecture:**
+- ✅ Adapter layer handles infrastructure concerns (singleton management)
+- ✅ Application layer stays simple (`export const`)
+- ✅ Consistent with Express adapter pattern
+- ✅ Single source of truth for singleton logic
+- ✅ Users don't need to understand Next.js module duplication
+
+### Issue #2: Simplify Specificity Condition
+
+**Problem:** Redundant condition in `response-selector.ts:89-90`:
+
+```typescript
+// ❌ WRONG - Explicitly checks both > and ===
+if (!bestMatch || fallbackSpecificity > bestMatch.specificity ||
+    (fallbackSpecificity === bestMatch.specificity)) {
+```
+
+**Fix (commit fa49e43):**
+
+```typescript
+// ✅ CORRECT - >= is clearer and logically equivalent
+if (!bestMatch || fallbackSpecificity >= bestMatch.specificity) {
+```
+
+**Why:** Condition always updates when `>=`, so checking equality separately was redundant.
+
+### Issue #3: Missing Test for Sequence Fallback Tie-Breaking
+
+**Problem:** No test for TWO sequences with no match criteria (both specificity 1).
+
+**Why It Matters:** Tests proved simple fallbacks (specificity 0) use last-wins, but didn't prove sequence fallbacks (specificity 1) also use last-wins.
+
+**Fix (commit a0c5743):**
+
+Added test in `packages/core/tests/response-selector.test.ts`:
+
+```typescript
+it('should return last sequence fallback when multiple sequence fallbacks exist', () => {
+  const mocks = [
+    {
+      method: 'GET',
+      url: '/api/status',
+      sequence: {
+        responses: [
+          { status: 200, body: { status: 'pending', source: 'first-sequence' } },
+          { status: 200, body: { status: 'complete', source: 'first-sequence' } },
+        ],
+        repeat: 'last',
+      },
+    },
+    {
+      method: 'GET',
+      url: '/api/status',
+      sequence: {
+        responses: [
+          { status: 200, body: { status: 'processing', source: 'second-sequence' } },
+          { status: 200, body: { status: 'done', source: 'second-sequence' } },
+        ],
+        repeat: 'last',
+      },
+    },
+  ];
+
+  const result = selector.selectResponse('test-1', 'default-scenario', context, mocks);
+
+  // Last sequence fallback wins
+  expect(result.data.body).toEqual({ status: 'processing', source: 'second-sequence' });
+});
+```
+
+**Result:** Test count 51 (up from 50), 100% coverage maintained.
+
+### Issue #4: Missing Tests for Adapter Singleton Guard
+
+**CRITICAL TDD VIOLATION:** Added singleton guard in commit 84f5fb3 without tests!
+
+**Fix (commit 16a0d73):**
+
+Added 5 comprehensive tests in `packages/nextjs-adapter/tests/app/app-setup.test.ts`:
+
+1. **Same instance returned:** Verifies `createScenarist()` called twice returns same object reference
+2. **Prevents DuplicateScenarioError:** Without singleton, second call would throw when re-registering scenarios
+3. **Shared registry:** Both instances see same scenarios
+4. **Shared store:** Scenario switches visible across instances
+5. **First config wins:** Subsequent calls with different config return first instance (config ignored)
+
+**Key Learning:** Tests for custom configs needed `clearAllGlobals()` before each test:
+
+```typescript
+const clearAllGlobals = () => {
+  delete (global as any).__scenarist_instance;
+  delete (global as any).__scenarist_registry;
+  delete (global as any).__scenarist_store;
+  delete (global as any).__scenarist_msw_started;
+};
+
+it('should respect custom header name from config', () => {
+  clearAllGlobals(); // ✅ CRITICAL - allows fresh instance with different config
+  const scenarist = createScenarist({
+    enabled: true,
+    scenarios: testScenarios,
+    headers: { testId: 'x-custom-test-id' },
+  });
+  // Test custom config works...
+});
+```
+
+**Result:** Test count 25 (up from 20), all passing.
+
+### Authoritative Sources
+
+**Next.js Module Duplication:**
+- [GitHub Discussion #68572](https://github.com/vercel/next.js/discussions/68572) - Canonical approach to singletons in Next.js
+- Root cause: webpack bundles modules across multiple chunks, breaking Node.js module caching
+- Solution: Use `globalThis` or `global` to ensure single instance across all chunks
+
+**Key Quote from Discussion:**
+> "globalThis.instance = globalThis.instance || { db: new DBConnection() }"
+>
+> This technique ensures that despite multiple bundled copies of your singleton file, all references point to the same memory location through the global object.
+
+### Why Scenarist Handles This For You
+
+**The Problem Next.js Users Face:**
+- Module duplication is non-obvious framework-specific behavior
+- Requires understanding webpack/Turbopack internals
+- Easy to forget and causes confusing errors
+- Every library/application needs to implement same pattern
+
+**How Scenarist Solves It:**
+- ✅ Singleton guard built into adapter (`createScenarist()`)
+- ✅ Users just `export const scenarist = createScenarist(...)`
+- ✅ No global variable management in application code
+- ✅ Works correctly out-of-the-box
+
+**Anti-Pattern Prevented:**
+```typescript
+// ❌ WRONG - Function wrapper breaks singleton
+export function getScenarist() {
+  return createScenarist({ enabled: true, scenarios });
+}
+// Each call creates new MSW server → handler conflicts!
+```
+
+**Correct Pattern:**
+```typescript
+// ✅ CORRECT - Adapter handles singleton internally
+export const scenarist = createScenarist({ enabled: true, scenarios });
+// Module duplication? No problem - adapter returns same instance
+```
+
+### Files Modified
+
+**Core Package:**
+- `packages/core/src/domain/response-selector.ts:89` - Simplified condition to `>=`
+- `packages/core/tests/response-selector.test.ts` - Added sequence fallback test
+
+**Next.js Adapter:**
+- `packages/nextjs-adapter/src/app/setup.ts` - Added `__scenarist_instance` singleton guard
+- `packages/nextjs-adapter/tests/app/app-setup.test.ts` - Added 5 singleton tests + clearAllGlobals
+
+**Application:**
+- `apps/nextjs-app-router-example/lib/scenarist.ts` - Removed app-level singleton (adapter handles it)
+
+### Key Lessons
+
+1. **Singleton Logic Belongs in Adapter Layer**
+   - Infrastructure concerns → adapter responsibility
+   - Application code stays simple
+   - Prevents boilerplate across all applications
+   - Hexagonal architecture enforced
+
+2. **TDD is Non-Negotiable - Even for "Simple" Code**
+   - Singleton guard seemed simple → skipped tests
+   - PR review caught the violation
+   - Had to retroactively add tests (costly)
+   - Lesson: NO code without tests, no exceptions
+
+3. **Test Isolation Requires Cleanup**
+   - Singletons persist across test runs
+   - Must explicitly clear globals between tests
+   - Without cleanup: tests interfere with each other
+   - Pattern: `clearAllGlobals()` helper in each describe block
+
+4. **Framework Quirks Should Be Hidden From Users**
+   - Next.js module duplication is confusing
+   - Most users don't understand webpack/Turbopack internals
+   - Libraries should handle framework-specific issues
+   - Good API: works correctly by default
+
+5. **Document Edge Cases with Authoritative Sources**
+   - Link to official discussions/issues
+   - Explain WHY the pattern exists
+   - Show what problems it prevents
+   - Users trust official sources more than library docs
