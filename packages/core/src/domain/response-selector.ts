@@ -87,10 +87,10 @@ export const createResponseSelector = (
         const fallbackSpecificity = mock.sequence ? 1 : 0;
 
         if (!bestMatch || fallbackSpecificity > bestMatch.specificity ||
-            (fallbackSpecificity === bestMatch.specificity && fallbackSpecificity === 0)) {
-          // For equal non-sequence fallbacks (both specificity 0), last wins
+            (fallbackSpecificity === bestMatch.specificity)) {
+          // For equal specificity fallbacks, last wins
           // This allows active scenario mocks to override default mocks
-          // For sequences (specificity 1), they always win over simple responses
+          // Applies to both simple fallbacks (0) and sequence fallbacks (1)
           bestMatch = { mock, mockIndex, specificity: fallbackSpecificity };
         }
       }
@@ -299,8 +299,10 @@ const matchesHeaders = (
   criteriaHeaders: Record<string, string>
 ): boolean => {
   // Check all required headers exist with exact matching values
+  // HTTP headers are case-insensitive, so normalize keys for comparison
   for (const [key, value] of Object.entries(criteriaHeaders)) {
-    if (requestHeaders[key] !== value) {
+    const normalizedKey = key.toLowerCase();
+    if (requestHeaders[normalizedKey] !== value) {
       return false;
     }
   }
