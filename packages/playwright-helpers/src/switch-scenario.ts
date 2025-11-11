@@ -121,10 +121,6 @@ export const switchScenario = async (
     );
   }
 
-  // Small delay to ensure MSW has fully updated handlers
-  // Prevents race condition where first request after scenario switch uses old handlers
-  await new Promise(resolve => setTimeout(resolve, 100));
-
   // Return test ID for explicit use in page.request calls
   return testId;
 };
