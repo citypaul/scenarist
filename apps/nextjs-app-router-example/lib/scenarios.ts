@@ -44,6 +44,18 @@ export const premiumUserScenario: ScenaristScenario = {
         },
       },
     },
+    // TEMPORARY: Fallback mock to test theory about missing fallback causing 500 errors
+    // TODO: Remove once we implement automatic fallback behavior
+    {
+      method: "GET",
+      url: "http://localhost:3001/products",
+      response: {
+        status: 200,
+        body: {
+          products: buildProducts("premium"),
+        },
+      },
+    },
   ],
 };
 
