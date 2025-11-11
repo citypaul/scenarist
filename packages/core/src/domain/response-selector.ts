@@ -82,11 +82,9 @@ export const createResponseSelector = (
         // No match criteria = fallback mock (always matches)
         // Fallback has specificity of 0
         if (!bestMatch || bestMatch.specificity === 0) {
-          // Only use fallback if no better match exists, or if we only have
-          // other fallbacks (first fallback wins as tiebreaker)
-          if (!bestMatch) {
-            bestMatch = { mock, mockIndex, specificity: 0 };
-          }
+          // Last fallback wins - this allows active scenario mocks (added last)
+          // to override default mocks (added first) when both have no match criteria
+          bestMatch = { mock, mockIndex, specificity: 0 };
         }
       }
 

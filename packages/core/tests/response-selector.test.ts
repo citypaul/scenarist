@@ -491,9 +491,9 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       }
     });
 
-    it("should return first fallback when multiple fallback mocks exist", () => {
+    it("should return last fallback when multiple fallback mocks exist", () => {
       // When multiple mocks have no match criteria (all are fallbacks),
-      // the first fallback should win as tiebreaker (all have specificity 0)
+      // the last fallback wins (all have specificity 0)
 
       const context: HttpRequestContext = {
         method: "POST",
@@ -529,8 +529,8 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        // First fallback wins when all have equal specificity (0)
-        expect(result.data.body).toEqual({ price: 50, source: "first-fallback" });
+        // Last fallback wins when all have equal specificity (0)
+        expect(result.data.body).toEqual({ price: 70, source: "third-fallback" });
       }
     });
 
@@ -845,7 +845,10 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       }
     });
 
-    it("should mark sequence as exhausted when repeat mode is 'none'", () => {
+    it("should fallback to next mock after sequence exhausted (repeat: 'none')", () => {
+      // When sequence is exhausted (repeat: 'none'), it should be skipped
+      // and the next mock (fallback) should be selected
+
       const context: HttpRequestContext = {
         method: "GET",
         url: "/api/limited",
@@ -855,6 +858,13 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       };
 
       const mocks: ReadonlyArray<MockDefinition> = [
+        // Fallback mock - comes first but has lower priority than sequence (next)
+        {
+          method: "GET",
+          url: "/api/limited",
+          response: { status: 410, body: { error: "Sequence exhausted" } },
+        },
+        // Sequence mock with repeat: 'none' - last fallback wins
         {
           method: "GET",
           url: "/api/limited",
@@ -866,19 +876,13 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
             repeat: "none",
           },
         },
-        // Fallback mock when sequence is exhausted
-        {
-          method: "GET",
-          url: "/api/limited",
-          response: { status: 410, body: { error: "Sequence exhausted" } },
-        },
       ];
 
       const selector = createResponseSelector({
         sequenceTracker: createInMemorySequenceTracker(),
       });
 
-      // First two calls go through sequence
+      // First two calls go through sequence (sequence is last = wins as fallback)
       const result1 = selector.selectResponse("test-4", "limited-scenario", context, mocks);
       expect(result1.success).toBe(true);
       if (result1.success) {
@@ -891,17 +895,15 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         expect(result2.data.body).toEqual({ attempt: 2 });
       }
 
-      // Third call should use fallback (sequence exhausted)
-      // Note: This requires implementing exhaustion checking in the matching phase
-      // For now, this test documents the expected behavior
+      // Third call: sequence exhausted and skipped, fallback mock selected
       const result3 = selector.selectResponse("test-4", "limited-scenario", context, mocks);
       expect(result3.success).toBe(true);
       if (result3.success) {
-        // Current implementation will return null from exhausted sequence
-        // which causes the selector to fall through to the next mock (fallback)
         expect(result3.data.status).toBe(410);
+        expect(result3.data.body).toEqual({ error: "Sequence exhausted" });
       }
     });
+
 
     it("should maintain independent sequence positions per test ID", () => {
       const selector = createResponseSelector({
