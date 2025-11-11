@@ -15,23 +15,20 @@
 import { scenarist } from '../../lib/scenarist.js';
 
 /**
- * Wait for server to be fully ready by making warmup requests.
- * This ensures Next.js has compiled routes and MSW is initialized.
+ * Wait for server to be ready before starting tests.
+ * Playwright's webServer.waitOnServer ensures server is listening,
+ * but we verify it responds to requests.
  */
-async function warmupServer(): Promise<void> {
+async function waitForServer(): Promise<void> {
   const baseURL = 'http://localhost:3002';
   const maxRetries = 30;
   const retryDelay = 500;
 
-  console.log('🔥 Warming up Next.js server and MSW...');
-
-  // Warmup: Fetch home page to trigger Next.js compilation and MSW initialization
   for (let i = 0; i < maxRetries; i++) {
     try {
       const response = await fetch(baseURL);
       if (response.ok) {
-        console.log('✅ Server responding');
-        break;
+        return;
       }
     } catch (error) {
       if (i === maxRetries - 1) {
@@ -40,18 +37,6 @@ async function warmupServer(): Promise<void> {
       await new Promise(resolve => setTimeout(resolve, retryDelay));
     }
   }
-
-  // Warmup: Fetch products API to ensure route handlers are compiled
-  try {
-    await fetch(`${baseURL}/api/products`);
-    console.log('✅ API routes compiled');
-  } catch (error) {
-    console.warn('⚠️  API warmup failed (non-fatal):', error);
-  }
-
-  // Give MSW a moment to fully register all handlers
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  console.log('✅ MSW initialization complete');
 }
 
 export default async function globalSetup(): Promise<void> {
@@ -61,6 +46,6 @@ export default async function globalSetup(): Promise<void> {
   // It's kept here for API consistency and potential future use.
   await scenarist.start();
 
-  // Warmup server to ensure everything is ready before tests run
-  await warmupServer();
+  // Wait for server to be ready before tests start
+  await waitForServer();
 }
