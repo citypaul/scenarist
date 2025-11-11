@@ -82,18 +82,13 @@ const getMocksFromScenarios = (
   // These act as fallback when active scenario mocks don't match
   const defaultScenario = getScenarioDefinition('default');
   if (defaultScenario) {
-    let defaultAdded = 0;
     defaultScenario.mocks.forEach((mock) => {
       const methodMatches = mock.method.toUpperCase() === method.toUpperCase();
       const urlMatch = matchesUrl(mock.url, url);
       if (methodMatches && urlMatch.matches) {
         mocks.push(mock);
-        defaultAdded++;
       }
     });
-    console.log(`[MSW] Default scenario: added ${defaultAdded}/${defaultScenario.mocks.length} mocks for ${method} ${url}`);
-  } else {
-    console.log(`[MSW] WARNING: Default scenario not found!`);
   }
 
   // Step 2: Add active scenario mocks (if any)
@@ -101,20 +96,16 @@ const getMocksFromScenarios = (
   if (activeScenario) {
     const scenarioDefinition = getScenarioDefinition(activeScenario.scenarioId);
     if (scenarioDefinition) {
-      let activeAdded = 0;
       scenarioDefinition.mocks.forEach((mock) => {
         const methodMatches = mock.method.toUpperCase() === method.toUpperCase();
         const urlMatch = matchesUrl(mock.url, url);
         if (methodMatches && urlMatch.matches) {
           mocks.push(mock);
-          activeAdded++;
         }
       });
-      console.log(`[MSW] Active scenario (${activeScenario.scenarioId}): added ${activeAdded}/${scenarioDefinition.mocks.length} mocks`);
     }
   }
 
-  console.log(`[MSW] Total mocks collected: ${mocks.length}`);
   return mocks;
 };
 
@@ -141,19 +132,13 @@ export const createDynamicHandler = (
     const result = options.responseSelector.selectResponse(testId, scenarioId, context, mocks);
 
     if (result.success) {
-      console.log(`[MSW] ✅ Mock matched for ${request.method} ${request.url}`);
       return buildResponse(result.data);
     }
 
-    console.log(`[MSW] ❌ No mock matched for ${request.method} ${request.url}`);
-    console.log(`[MSW] Error: ${result.error.message}`);
-
     if (options.strictMode) {
-      console.log(`[MSW] Returning 501 (strict mode)`);
       return new Response(null, { status: 501 });
     }
 
-    console.log(`[MSW] Passing through to real server`);
     return passthrough();
   });
 };
