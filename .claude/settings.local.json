@@ -44,7 +44,8 @@
       "Bash(done)",
       "Bash(git reset:*)",
       "Bash(pnpm typecheck:*)",
-      "Bash(git show:*)"
+      "Bash(git show:*)",
+      "Bash(pkill:*)"
     ],
     "deny": [],
     "ask": []

@@ -10,6 +10,7 @@ import { createScenarioEndpoint } from './endpoints.js';
  * to be called multiple times. These globals ensure:
  * 1. MSW server.listen() is only called once
  * 2. All instances share the same scenario registry and store
+ * 3. The same Scenarist instance is returned when called multiple times
  */
 declare global {
   // eslint-disable-next-line no-var
@@ -18,6 +19,8 @@ declare global {
   var __scenarist_registry: InstanceType<typeof import('@scenarist/core').InMemoryScenarioRegistry> | undefined;
   // eslint-disable-next-line no-var
   var __scenarist_store: InstanceType<typeof import('@scenarist/core').InMemoryScenarioStore> | undefined;
+  // eslint-disable-next-line no-var
+  var __scenarist_instance: AppScenarist | undefined;
 }
 
 /**
@@ -112,6 +115,12 @@ export type AppScenarist = Omit<ScenaristAdapter<never>, 'middleware'> & {
  * ```
  */
 export const createScenarist = (options: AppAdapterOptions): AppScenarist => {
+  // Singleton guard - return existing instance if already created
+  // This prevents duplicate scenario registration errors when Next.js creates multiple module instances
+  if (global.__scenarist_instance) {
+    return global.__scenarist_instance;
+  }
+
   // Create or reuse global singleton stores for Next.js
   // This ensures all module instances share the same scenario state
   if (!global.__scenarist_registry) {
@@ -128,7 +137,7 @@ export const createScenarist = (options: AppAdapterOptions): AppScenarist => {
     store: global.__scenarist_store,
   });
 
-  return {
+  const instance: AppScenarist = {
     config,
     switchScenario: (testId, scenarioId, variantName) => {
       currentTestId.value = testId; // Update for MSW handler
@@ -160,4 +169,9 @@ export const createScenarist = (options: AppAdapterOptions): AppScenarist => {
     },
     stop: async () => server.close(),
   };
+
+  // Store instance in global for singleton pattern
+  global.__scenarist_instance = instance;
+
+  return instance;
 };
