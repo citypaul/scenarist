@@ -85,10 +85,17 @@ export const switchScenario = async (
   // Date.now() can collide when tests run in parallel within the same millisecond
   const testId = providedTestId ?? `test-${scenarioId}-${crypto.randomUUID()}`;
 
-  // CRITICAL: Set up route interception FIRST (before any requests)
-  // This ensures test isolation works even when Client Components make API calls
-  // without explicitly including the test ID header.
-  // Must be set up before scenario switch to avoid race conditions.
+  // Call scenario endpoint
+  const url = `${baseURL}${endpoint}`;
+  const response = await page.request.post(url, {
+    headers: { [testIdHeader]: testId },
+    data: {
+      scenario: scenarioId,
+      ...(variant && { variant }),
+    },
+  });
+
+  // Set up route interception to inject test ID header into all subsequent requests
   await page.route('**/*', (route) => {
     // Get existing headers from the request
     const headers = route.request().headers();
@@ -102,16 +109,6 @@ export const switchScenario = async (
 
   // Set test ID header for navigation requests (belt and suspenders)
   await page.setExtraHTTPHeaders({ [testIdHeader]: testId });
-
-  // Call scenario endpoint
-  const url = `${baseURL}${endpoint}`;
-  const response = await page.request.post(url, {
-    headers: { [testIdHeader]: testId },
-    data: {
-      scenario: scenarioId,
-      ...(variant && { variant }),
-    },
-  });
 
   // Verify scenario switch succeeded
   if (response.status() !== 200) {
