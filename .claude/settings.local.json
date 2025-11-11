@@ -48,7 +48,8 @@
       "Bash(pkill:*)",
       "Bash(git grep:*)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:www.hawu.me)"
+      "WebFetch(domain:www.hawu.me)",
+      "WebFetch(domain:starlight.astro.build)"
     ],
     "deny": [],
     "ask": []

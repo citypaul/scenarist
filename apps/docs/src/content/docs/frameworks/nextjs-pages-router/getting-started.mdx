@@ -3,6 +3,8 @@ title: Next.js Pages Router - Getting Started
 description: Set up Scenarist with Next.js Pages Router in 5 minutes
 ---
 
+import { Aside } from '@astrojs/starlight/components';
+
 # Next.js Pages Router - Getting Started
 
 Test your Next.js Pages Router application with API routes, getServerSideProps, and getStaticProps all executing. No mocking of Next.js internals required.
@@ -61,6 +63,42 @@ export const scenarist = createScenarist({
   scenarios,
 });
 ```
+
+<Aside type="danger" title="CRITICAL: Singleton Pattern Required">
+
+**You MUST use the `export const scenarist` pattern shown above.** Do NOT create scenarist inside functions or components:
+
+```typescript
+// ❌ WRONG - Creates new instance each time
+export function getScenarist() {
+  return createScenarist({ enabled: true, scenarios });
+}
+
+// ❌ WRONG - Creates new instance per import
+export default createScenarist({ enabled: true, scenarios });
+
+// ✅ CORRECT - Single exported constant
+export const scenarist = createScenarist({ enabled: true, scenarios });
+```
+
+**Why this matters:** Scenarist handles a Next.js-specific issue for you. Next.js can cause module duplication, where the same file is loaded multiple times in the same process ([see Next.js Discussion #68572](https://github.com/vercel/next.js/discussions/68572)). This breaks the singleton pattern and can cause:
+
+- `[MSW] Multiple handlers with the same URL` warnings
+- Intermittent 500 errors from MSW
+- Different tests getting wrong scenarios
+- Scenarios not switching properly
+
+**How Scenarist solves this:** The `createScenarist()` function includes built-in singleton protection using `global.__scenarist_instance`, ensuring only ONE instance exists even when Next.js duplicates your module. However, this protection **only works if you export a constant** - wrapping it in a function bypasses the singleton guard because each function call creates a new instance.
+
+**The pattern:** Always use `export const scenarist = createScenarist(...)`. Scenarist handles the complex singleton logic for you so you don't need to understand Next.js internals or manage global variables yourself.
+
+</Aside>
+
+<Aside type="tip" title="Why Scenarist Handles This For You">
+
+The module duplication issue is a [well-known Next.js challenge](https://github.com/vercel/next.js/discussions/68572) that affects any library using singletons. Rather than forcing every application to implement the `globalThis` pattern correctly, Scenarist builds singleton protection directly into the adapter. You just use a simple `export const` and everything works.
+
+</Aside>
 
 ## 3. Create Scenario Control Endpoint
 

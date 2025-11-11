@@ -3,6 +3,8 @@ title: Next.js App Router - Getting Started
 description: Set up Scenarist with Next.js App Router in 5 minutes
 ---
 
+import { Aside } from '@astrojs/starlight/components';
+
 # Next.js App Router - Getting Started
 
 Test your Next.js App Router application with Server Components, Route Handlers, and Server Actions all executing. No mocking of Next.js internals required.
@@ -54,7 +56,8 @@ export const scenarist = createScenarist({
 });
 ```
 
-:::caution[CRITICAL: Singleton Pattern Required]
+<Aside type="danger" title="CRITICAL: Singleton Pattern Required">
+
 **You MUST use the `export const scenarist` pattern shown above.** Do NOT create scenarist inside functions or components:
 
 ```typescript
@@ -81,10 +84,13 @@ export const scenarist = createScenarist({ enabled: true, scenarios });
 
 **The pattern:** Always use `export const scenarist = createScenarist(...)`. Scenarist handles the complex singleton logic for you so you don't need to understand Next.js internals or manage global variables yourself.
 
-:::note[Why Scenarist Handles This For You]
+</Aside>
+
+<Aside type="tip" title="Why Scenarist Handles This For You">
+
 The module duplication issue is a [well-known Next.js challenge](https://github.com/vercel/next.js/discussions/68572) that affects any library using singletons. Rather than forcing every application to implement the `globalThis` pattern correctly, Scenarist builds singleton protection directly into the adapter. You just use a simple `export const` and everything works.
-:::
-:::
+
+</Aside>
 
 ## 3. Create Scenario Control Endpoint
 
