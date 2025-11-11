@@ -117,11 +117,16 @@ Scenarist provides 20+ powerful features for E2E testing. All capabilities are f
 - Most specific mock wins regardless of position
 - Calculated score: body fields + headers + query params
 - No need to carefully order your mocks
+- **Tie-breaking:** For mocks with same specificity:
+  - Specificity > 0 (with match criteria): First match wins
+  - Specificity = 0 (fallback mocks): Last match wins
+- Last fallback wins enables active scenario fallbacks to override default fallbacks
 
 **6. Fallback mocks**
 - Mocks without match criteria act as catch-all
 - Specific mocks always take precedence
 - Perfect for default responses
+- When multiple fallbacks exist, last one wins (enables override pattern)
 
 ### Response Sequences (4 capabilities)
 
@@ -174,9 +179,12 @@ Scenarist provides 20+ powerful features for E2E testing. All capabilities are f
 - Mock any number of external APIs
 - Combine APIs in single scenario
 
-**18. Default scenario fallback**
-- Unmocked endpoints fall back to default scenario
-- Define baseline responses once
+**18. Automatic default scenario fallback**
+- Active scenarios automatically inherit mocks from default scenario
+- Default + active scenario mocks collected together
+- Specificity-based selection chooses best match
+- Only define what changes in active scenario - rest falls back to default
+- No explicit fallback mocks needed in specialized scenarios
 
 **19. Test ID isolation (parallel tests)**
 - Run 100+ tests concurrently

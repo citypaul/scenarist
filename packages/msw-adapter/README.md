@@ -86,7 +86,7 @@ This adapter implements all 25 Scenarist capabilities:
 ### MSW Integration (6 capabilities)
 - **Dynamic handler generation** - Single handler routes at runtime
 - **Response building** - Status codes, JSON bodies, headers, delays
-- **Default scenario fallback** - Falls back to "default" scenario
+- **Automatic default fallback** - Collects default + active scenario mocks together
 - **Strict mode** - Fail on unmocked requests
 - **Test ID isolation** - Separate state per test ID
 - **Framework-agnostic** - Works with any Node.js framework
@@ -98,7 +98,7 @@ This adapter implements all 25 Scenarist capabilities:
 - ✅ **Dynamic MSW handler generation** - Single handler routes to correct scenario at runtime
 - ✅ **Response building** - Status codes, JSON bodies, headers, delays, state injection
 - ✅ **Sequences and state** - Polling scenarios and stateful mocks fully supported
-- ✅ **Default scenario fallback** - Falls back to "default" scenario when mock not found
+- ✅ **Automatic default fallback** - Collects default + active scenario mocks, uses specificity to select best match
 - ✅ **Framework-agnostic** - Works with Express, Fastify, Next.js, Remix, any Node.js framework
 
 ## Internal Package
@@ -192,9 +192,12 @@ server.listen();
 **How it works:**
 1. Gets test ID from AsyncLocalStorage (or other context)
 2. Looks up active scenario for that test ID
-3. Finds matching mock in active scenario
-4. Falls back to "default" scenario if not found
-5. Returns mocked response or passthrough
+3. **Collects mocks from BOTH default AND active scenario** for matching URL + method
+4. Uses specificity-based selection to choose best match
+5. Active scenario mocks (with match criteria) override default mocks (no criteria)
+6. Returns mocked response or passthrough (if no match found)
+
+**Key insight:** Default scenario mocks are ALWAYS collected first, then active scenario mocks are added. The specificity algorithm (from `ResponseSelector`) chooses the most specific match. This means specialized scenarios only need to define what changes - everything else automatically falls back to default.
 
 ## Architecture
 

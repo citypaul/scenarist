@@ -2537,3 +2537,271 @@ This is the SAME violation documented in Phase 2 (PR #26):
 - Having to retrofit tests after implementation
 
 **The lesson keeps repeating: TDD is non-negotiable. No shortcuts, no exceptions.**
+
+## Automatic Default Fallback - Critical Learnings
+
+**Implemented:** 2025-11-11
+**Status:** Complete - All documentation updated
+**Plan Document:** `docs/plans/automatic-default-fallback.md`
+
+### Feature Overview
+
+Active scenarios now **automatically fall back to default scenario mocks**. When switching to a specialized scenario, Scenarist collects mocks from BOTH default AND active scenarios, then uses specificity-based selection to choose the best match.
+
+**Before (manual fallback):**
+```typescript
+export const premiumUserScenario: ScenaristScenario = {
+  id: 'premium-user',
+  mocks: [
+    // Override: Premium products
+    {
+      method: 'GET',
+      url: '/api/products',
+      match: { headers: { 'x-user-tier': 'premium' } },
+      response: { status: 200, body: buildProducts('premium') }
+    },
+    // DUPLICATION: Had to explicitly add fallback
+    {
+      method: 'GET',
+      url: '/api/products',
+      response: { status: 200, body: buildProducts('standard') }
+    }
+  ]
+};
+```
+
+**After (automatic fallback):**
+```typescript
+export const defaultScenario: ScenaristScenario = {
+  id: 'default',
+  mocks: [
+    {
+      method: 'GET',
+      url: '/api/products',
+      response: { status: 200, body: buildProducts('standard') }  // Baseline
+    }
+  ]
+};
+
+export const premiumUserScenario: ScenaristScenario = {
+  id: 'premium-user',
+  mocks: [
+    // Only define what changes - fallback automatic!
+    {
+      method: 'GET',
+      url: '/api/products',
+      match: { headers: { 'x-user-tier': 'premium' } },
+      response: { status: 200, body: buildProducts('premium') }
+    }
+  ]
+};
+```
+
+### Key Architectural Decision: Last Fallback Wins
+
+**Problem:** With automatic fallback, default AND active scenarios both contribute mocks. When BOTH have fallback mocks (specificity = 0), which wins?
+
+**Solution:** **Last fallback wins** (last mock in collected array wins for specificity = 0)
+
+**Why this matters:**
+
+Without this rule, default fallbacks would ALWAYS win over active scenario fallbacks (because default is collected first). This would break the ability for active scenarios to provide their own catch-all responses.
+
+**Implementation in ResponseSelector:**
+```typescript
+// For mocks with specificity > 0: First match wins
+if (bestMatch.mock && bestMatch.specificity > 0) {
+  return bestMatch;
+}
+
+// For fallback mocks (specificity = 0): Last match wins
+// This allows active scenario fallbacks to override default fallbacks
+for (let i = mocks.length - 1; i >= 0; i--) {
+  const mock = mocks[i];
+  if (!mock.match) {  // Fallback mock
+    return mock;
+  }
+}
+```
+
+**Example:**
+```typescript
+// Collected mocks for GET /api/data:
+const mocks = [
+  // From default scenario
+  { method: 'GET', url: '/api/data', response: { status: 200, body: { tier: 'standard' } } },
+  // From active scenario
+  { method: 'GET', url: '/api/data', response: { status: 200, body: { tier: 'premium' } } }
+];
+
+// Both have specificity = 0 (no match criteria)
+// Last fallback wins → active scenario response returned
+```
+
+**This enables the default + override pattern without requiring match criteria on fallbacks.**
+
+### Critical Gotcha: Next.js Module Duplication
+
+**Problem Discovered:** Playwright tests were intermittently failing with:
+- `[MSW] Multiple handlers with the same URL` warnings
+- JSON-server 500 errors (MSW passthrough to non-existent server)
+- Scenarios not switching properly
+- Different tests getting wrong responses
+
+**Root Cause:** Next.js dev server (and Turbopack) can load the same module multiple times, causing module duplication. If users wrap `createScenarist()` in a function, each function call creates a NEW MSW server instance, leading to handler conflicts.
+
+**The Wrong Pattern (causes duplication):**
+```typescript
+// ❌ WRONG - Creates new instance each time
+export function getScenarist() {
+  return createScenarist({ enabled: true, scenarios });
+}
+
+// Each import that calls getScenarist() creates a new MSW server!
+```
+
+**The Correct Pattern (singleton):**
+```typescript
+// ✅ CORRECT - Single exported constant
+export const scenarist = createScenarist({ enabled: true, scenarios });
+
+// All imports share the same instance, even if module loads twice
+```
+
+**Why Singleton Protection Works:**
+
+Inside `createScenarist()`, there's a singleton guard:
+```typescript
+const SCENARIST_INSTANCES = new Map<string, ScenaristInstance>();
+
+export const createScenarist = (config) => {
+  const key = JSON.stringify(config);
+
+  if (SCENARIST_INSTANCES.has(key)) {
+    return SCENARIST_INSTANCES.get(key)!;  // Return existing
+  }
+
+  const instance = /* create new instance */;
+  SCENARIST_INSTANCES.set(key, instance);
+  return instance;
+};
+```
+
+**But this ONLY works if you export a constant:**
+- `export const scenarist = createScenarist(...)` → Called once, singleton works ✅
+- `export function getScenarist() { return createScenarist(...) }` → Called N times, singleton bypassed ❌
+
+**Detection:**
+- MSW warnings in console
+- Intermittent test failures (different results on reruns)
+- Multiple scenario switches affecting each other
+
+**The Fix:**
+Always use `export const scenarist = createScenarist(...)` pattern. Never wrap in a function.
+
+### Documentation Updates Applied
+
+**Docs Site (`apps/docs/src/content/docs/`):**
+1. **`introduction/default-mocks.mdx`**
+   - Updated "Override Behavior" → "Automatic Fallback Behavior"
+   - Added explanation of default-first collection
+   - Updated "Tiebreaker: First Match Wins" → "Tiebreaker Rules" (with last fallback wins)
+   - Added concrete examples showing automatic fallback in action
+   - Explained specificity-based override mechanism
+
+2. **`frameworks/nextjs-app-router/getting-started.mdx`**
+   - Added "CRITICAL: Singleton Pattern Required" warning
+   - Showed wrong patterns (function wrapper, default export)
+   - Showed correct pattern (export const)
+   - Explained Next.js module duplication issue
+   - Listed symptoms of violation (MSW warnings, 500 errors)
+
+**Package READMEs:**
+3. **`packages/core/README.md`**
+   - Updated "Specificity-based selection" with tie-breaking rules
+   - Added "Last fallback wins enables override pattern"
+   - Updated "Default scenario fallback" → "Automatic default scenario fallback"
+   - Explained default + active collection
+
+4. **`packages/msw-adapter/README.md`**
+   - Updated "Default scenario fallback" → "Automatic default fallback"
+   - Updated "How it works" section in Dynamic Handler
+   - Added explanation: "Default mocks ALWAYS collected first"
+   - Documented specificity-based selection algorithm
+
+5. **`packages/nextjs-adapter/README.md`**
+   - Added "CRITICAL: Singleton Pattern Required" warning in Quick Start
+   - Showed anti-patterns and symptoms
+   - Explained module duplication gotcha
+   - Updated "Default scenario fallback" → "Automatic default fallback"
+
+**Plans:**
+6. **Moved** `docs/wip/automatic-default-fallback.md` → `docs/plans/automatic-default-fallback.md`
+
+### Why This Design Was Chosen
+
+**Familiar Pattern:** Default + override is common across programming:
+- CSS: Default styles + specific overrides
+- Environment variables: Default values + environment-specific overrides
+- TypeScript: Default props + specific props
+
+**Reduces Duplication:** Don't repeat fallback mocks in every specialized scenario.
+
+**Fail-Safe:** Always have a response (prevent MSW passthrough to real APIs).
+
+**Better Mental Model:** "Default = safety net, Scenario = variations"
+
+**Leverages Existing Architecture:** Specificity-based selection (Phase 1) already existed. Adding default-first collection to `getMocksFromScenarios` enables automatic override without new logic in `ResponseSelector`.
+
+**This is architectural leverage** - new feature emerges from existing design by composing two simple changes:
+1. Collect default mocks first (MSW adapter)
+2. Last fallback wins (ResponseSelector tie-breaking)
+
+### Files Modified
+
+**Core Changes:**
+- `packages/core/src/domain/response-selector.ts` - Added last fallback wins tie-breaking logic
+- `packages/core/tests/response-selector.test.ts` - Added test for last fallback wins behavior
+
+**MSW Adapter:**
+- `packages/msw-adapter/src/handlers/dynamic-handler.ts` - Changed `getMocksFromScenarios` to collect default first
+- `packages/msw-adapter/tests/dynamic-handler.test.ts` - Updated tests for default-first behavior
+
+**Next.js Adapter (Singleton):**
+- `packages/nextjs-adapter/src/app/setup.ts` - Added singleton guard to `createScenarist`
+- `packages/nextjs-adapter/src/pages/setup.ts` - Added singleton guard to `createScenarist`
+
+**Documentation (6 files):**
+- `apps/docs/src/content/docs/introduction/default-mocks.mdx` - Updated automatic fallback explanation
+- `apps/docs/src/content/docs/frameworks/nextjs-app-router/getting-started.mdx` - Added singleton warning
+- `packages/core/README.md` - Updated capability descriptions
+- `packages/msw-adapter/README.md` - Updated dynamic handler explanation
+- `packages/nextjs-adapter/README.md` - Added singleton warning and updated capabilities
+- `docs/plans/automatic-default-fallback.md` - Moved from wip/
+
+### Key Lessons
+
+1. **Default-first collection + last fallback wins = automatic override**
+   - Simple compositional change
+   - Leverages existing specificity algorithm
+   - No new complexity in ResponseSelector
+
+2. **Module duplication is a Next.js-specific concern**
+   - Not all frameworks have this issue
+   - Singleton pattern is defensive programming
+   - Export pattern matters: `const` vs `function`
+
+3. **Tie-breaking rules must consider use case**
+   - First match wins: Good for match criteria (specificity > 0)
+   - Last match wins: Good for fallbacks (enables override)
+   - Different rules for different specificity levels
+
+4. **Documentation is part of "done"**
+   - Feature incomplete without docs
+   - Must update: docs site, READMEs, plans, CLAUDE.md
+   - Each document serves different audience (users, maintainers, future devs)
+
+5. **Gotchas must be documented prominently**
+   - Singleton pattern is non-obvious
+   - Next.js module duplication is framework-specific
+   - Warning boxes and examples prevent user confusion

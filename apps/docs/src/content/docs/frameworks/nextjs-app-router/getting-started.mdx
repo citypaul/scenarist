@@ -54,6 +54,35 @@ export const scenarist = createScenarist({
 });
 ```
 
+:::caution[CRITICAL: Singleton Pattern Required]
+**You MUST use the `export const scenarist` pattern shown above.** Do NOT create scenarist inside functions or components:
+
+```typescript
+// ❌ WRONG - Creates new instance each time
+export function getScenarist() {
+  return createScenarist({ enabled: true, scenarios });
+}
+
+// ❌ WRONG - Creates new instance per import
+export default createScenarist({ enabled: true, scenarios });
+
+// ✅ CORRECT - Single exported constant
+export const scenarist = createScenarist({ enabled: true, scenarios });
+```
+
+**Why this matters:** Next.js dev server (and Turbopack) can cause module duplication, where the same file is loaded multiple times. If `createScenarist()` is called multiple times, you'll get multiple MSW servers trying to intercept the same requests, causing conflicts and 500 errors.
+
+The singleton pattern inside `createScenarist()` ensures that even if the module is loaded twice, only ONE MSW server is created. But this ONLY works if you export a constant, not a function that calls `createScenarist()` on each invocation.
+
+**Symptoms of violation:**
+- `[MSW] Multiple handlers with the same URL` warnings
+- Intermittent 500 errors from JSON-server
+- Different tests getting wrong scenarios
+- Scenarios not switching properly
+
+**The Fix:** Always use `export const scenarist = createScenarist(...)` pattern.
+:::
+
 ## 3. Create Scenario Control Endpoint
 
 ```typescript
