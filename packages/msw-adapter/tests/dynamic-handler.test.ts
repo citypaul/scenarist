@@ -97,6 +97,74 @@ describe('Dynamic Handler', () => {
       server.close();
     });
 
+    it('should fall back to default mock when active scenario mock match criteria fail', async () => {
+      // This test reproduces the root cause:
+      // - premiumUser scenario has mock with match: { headers: { 'x-user-tier': 'premium' } }
+      // - Request comes with 'x-user-tier': 'standard' (doesn't match)
+      // - Should fall back to default mock (not passthrough)
+      const scenarios = new Map<string, ScenarioDefinition>([
+        [
+          'default',
+          mockScenario({
+            id: 'default',
+            mocks: [
+              mockDefinition({
+                method: 'GET',
+                url: 'https://api.example.com/users',
+                response: { status: 200, body: { source: 'default', users: [] } },
+              }),
+            ],
+          }),
+        ],
+        [
+          'premiumUser',
+          mockScenario({
+            id: 'premiumUser',
+            mocks: [
+              mockDefinition({
+                method: 'GET',
+                url: 'https://api.example.com/users',
+                match: { headers: { 'x-user-tier': 'premium' } },
+                response: {
+                  status: 200,
+                  body: { source: 'premium', users: ['premium-user'] },
+                },
+              }),
+            ],
+          }),
+        ],
+      ]);
+
+      const getTestId = () => 'test-123';
+      const getActiveScenario = (): ActiveScenario => ({
+        scenarioId: 'premiumUser',
+      });
+      const getScenarioDefinition = (scenarioId: string) =>
+        scenarios.get(scenarioId);
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: false,
+        responseSelector,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      // Request with 'standard' tier (doesn't match premium criteria)
+      const response = await fetch('https://api.example.com/users', {
+        headers: { 'x-user-tier': 'standard' },
+      });
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data).toEqual({ source: 'default', users: [] });
+
+      server.close();
+    });
+
     it('should use default scenario when no active scenario is set', async () => {
       const scenarios = new Map<string, ScenarioDefinition>([
         [
