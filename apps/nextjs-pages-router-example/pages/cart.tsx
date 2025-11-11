@@ -179,9 +179,9 @@ export default function Cart({ initialCartItems = [] }: CartProps) {
 export const getServerSideProps: GetServerSideProps = async (context) => {
   try {
     // Fetch cart data server-side
-    // This demonstrates Scenarist stateful mocks working during getServerSideProps
-    // Call internal Next.js API route (which then calls external json-server)
-    const response = await fetch('http://localhost:3000/api/cart', {
+    // This demonstrates Scenarist intercepting EXTERNAL API calls directly from getServerSideProps
+    // No API route in between - direct external call that MSW intercepts
+    const response = await fetch('http://localhost:3001/cart', {
       headers: scenarist.getHeaders(context.req),
     });
 

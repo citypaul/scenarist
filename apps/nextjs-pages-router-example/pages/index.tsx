@@ -49,7 +49,13 @@ export default function Home({ initialProducts = [], initialTier = 'standard' }:
   }, []);
 
   // Fetch products when tier changes
+  // Only fetch client-side if we don't have SSR data or tier changed after mount
   useEffect(() => {
+    // Skip initial fetch if we have SSR data for the current tier
+    if (initialProducts.length > 0 && userTier === initialTier) {
+      return;
+    }
+
     const fetchProducts = async () => {
       setLoading(true);
       setError(null);
@@ -76,7 +82,7 @@ export default function Home({ initialProducts = [], initialTier = 'standard' }:
     };
 
     fetchProducts();
-  }, [userTier]);
+  }, [userTier, initialProducts.length, initialTier]);
 
   const handleAddToCart = async (productId: number) => {
     try {
@@ -177,9 +183,9 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
   try {
     // Fetch products server-side with tier header
-    // This demonstrates Scenarist working during getServerSideProps
-    // Call internal Next.js API route (which then calls external json-server)
-    const response = await fetch('http://localhost:3000/api/products', {
+    // This demonstrates Scenarist intercepting EXTERNAL API calls directly from getServerSideProps
+    // No API route in between - direct external call that MSW intercepts
+    const response = await fetch('http://localhost:3001/products', {
       headers: {
         ...scenarist.getHeaders(context.req),
         'x-user-tier': tier,

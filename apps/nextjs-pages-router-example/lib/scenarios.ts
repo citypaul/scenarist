@@ -10,12 +10,37 @@ import { buildProducts } from "../data/products";
 
 /**
  * Default scenario - baseline behavior
+ * Provides fallback mocks for all endpoints
+ * This ensures getServerSideProps works when Next.js server starts (no test-id yet)
  */
 export const defaultScenario: ScenaristScenario = {
   id: "default",
   name: "Default Scenario",
-  description: "Default baseline behavior",
-  mocks: [],
+  description: "Default baseline behavior with standard fallbacks",
+  mocks: [
+    // Products endpoint - standard pricing (fallback)
+    {
+      method: "GET",
+      url: "http://localhost:3001/products",
+      response: {
+        status: 200,
+        body: {
+          products: buildProducts("standard"),
+        },
+      },
+    },
+    // Cart endpoint - empty cart (fallback)
+    {
+      method: "GET",
+      url: "http://localhost:3001/cart",
+      response: {
+        status: 200,
+        body: {
+          items: [],
+        },
+      },
+    },
+  ],
 };
 
 /**
@@ -23,14 +48,16 @@ export const defaultScenario: ScenaristScenario = {
  *
  * Demonstrates Scenarist's request matching feature:
  * - Intercepts calls to localhost:3001/products (json-server)
- * - Matches on x-user-tier: premium header
- * - Returns premium pricing (£99.99)
+ * - Matches on x-user-tier: premium header for specific pricing
+ * - Automatic default fallback provides standard pricing for non-matching requests
  */
 export const premiumUserScenario: ScenaristScenario = {
   id: "premiumUser",
   name: "Premium User",
   description: "Premium tier pricing (£99.99)",
   mocks: [
+    // Specific match: premium tier header gets premium pricing
+    // Fallback handled automatically by default scenario
     {
       method: "GET",
       url: "http://localhost:3001/products",
@@ -53,13 +80,15 @@ export const premiumUserScenario: ScenaristScenario = {
  * Demonstrates Scenarist's request matching feature:
  * - Intercepts calls to localhost:3001/products (json-server)
  * - Matches on x-user-tier: standard header
- * - Returns standard pricing (£149.99)
+ * - Automatic default fallback provides standard pricing for non-matching requests
  */
 export const standardUserScenario: ScenaristScenario = {
   id: "standardUser",
   name: "Standard User",
   description: "Standard tier pricing (£149.99)",
   mocks: [
+    // Match with standard tier header
+    // Fallback handled automatically by default scenario
     {
       method: "GET",
       url: "http://localhost:3001/products",
