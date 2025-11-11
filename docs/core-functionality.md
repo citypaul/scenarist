@@ -281,48 +281,76 @@ You can combine multiple match criteria. **All** criteria must pass for the mock
 
 When multiple mocks match the same URL, Scenarist selects the **most specific** match. This prevents less specific mocks from shadowing more specific ones.
 
+#### Specificity Priority Ranges
+
+Scenarist uses **separate priority ranges** to ensure correct selection:
+
+1. **Mocks WITH match criteria:** Base 100 + field count (minimum 101)
+2. **Fallback sequences:** Specificity 1
+3. **Simple fallback responses:** Specificity 0
+
+This guarantees:
+- ✅ Mocks with match criteria ALWAYS win over fallbacks
+- ✅ Sequence fallbacks take priority over simple response fallbacks
+- ✅ No conflicts between match criteria and sequence features
+
 #### Specificity Scoring
 
-Each match criterion adds to the specificity score:
-- Each body field = **+1 point**
-- Each header = **+1 point**
-- Each query parameter = **+1 point**
+**Mocks with match criteria:**
+- Base specificity: **100**
+- Each body field: **+1 point**
+- Each header: **+1 point**
+- Each query parameter: **+1 point**
+
+**Mocks without match criteria (fallbacks):**
+- Has `sequence`: **1 point**
+- Simple `response`: **0 points**
 
 **Examples:**
 ```typescript
-// Specificity: 1 (one body field)
+// Specificity: 101 (100 base + 1 body field)
 match: { body: { itemId: 'premium' } }
 
-// Specificity: 2 (two body fields)
+// Specificity: 102 (100 base + 2 body fields)
 match: { body: { itemId: 'premium', quantity: 5 } }
 
-// Specificity: 3 (two body fields + one header)
+// Specificity: 103 (100 base + 2 body + 1 header)
 match: {
   body: { itemId: 'premium', quantity: 5 },
   headers: { 'x-user-tier': 'gold' }
 }
+
+// Specificity: 1 (sequence fallback, no match criteria)
+sequence: {
+  responses: [...],
+  repeat: 'last'
+}
+
+// Specificity: 0 (simple fallback, no match criteria)
+response: { status: 200, body: { default: true } }
 ```
 
 #### Selection Algorithm
 
 1. **Filter candidates** - Only consider mocks with matching URL and method
-2. **Check match criteria** - Skip mocks where match criteria don't pass
-3. **Calculate specificity** - Score each matching mock
-4. **Select most specific** - Return mock with highest specificity score
-5. **Break ties by order** - If multiple mocks have equal specificity, first one wins
+2. **Skip exhausted sequences** - If `repeat: 'none'` and position exceeded
+3. **Check match criteria** - Skip mocks where match criteria don't pass
+4. **Calculate specificity** - Score each matching mock (separate ranges)
+5. **Select most specific** - Return mock with highest specificity score
+6. **Break ties by order** - If multiple mocks have equal specificity, first one wins
 
 #### Example: Specificity in Action
 
 ```typescript
 const mocks = [
-  // Mock 1: Specificity 1 (one body field)
+  // Mock 1: Specificity 101 (100 base + 1 body field)
   {
     method: 'POST',
     url: '/api/charge',
     match: { body: { itemType: 'premium' } },
     response: { status: 200, body: { discount: 10 } }
   },
-  // Mock 2: Specificity 3 (two body fields + one header)
+  // Mock 2: Specificity 103 (100 base + 2 body + 1 header)
   {
     method: 'POST',
     url: '/api/charge',
@@ -339,13 +367,14 @@ const mocks = [
 // Headers: { 'x-user-tier': 'gold' }
 // Body: { itemType: 'premium', quantity: 5 }
 
-// Result: Mock 2 wins (specificity 3 > 1)
+// Result: Mock 2 wins (specificity 103 > 101)
 // Response: { discount: 20 }
 ```
 
 **Why this matters:**
 - Place mocks in any order - specificity determines selection
-- More specific matches always win, regardless of position
+- Mocks with match criteria always win over fallbacks
+- Sequence fallbacks take priority over simple fallbacks
 - Order only matters when specificity is equal (tiebreaker)
 
 ### Fallback Behavior
@@ -361,20 +390,36 @@ const mocks = [
     match: { body: { itemId: 'premium' } },
     response: { status: 200, body: { price: 100 } }
   },
-  // Fallback mock: For all other items
+  // Sequence fallback: For all other items
   {
     method: 'POST',
     url: '/api/items',
-    // No match criteria = catches everything that didn't match above
+    sequence: {
+      responses: [
+        { status: 200, body: { price: 50, attempt: 1 } },
+        { status: 200, body: { price: 50, attempt: 2 } },
+      ],
+      repeat: 'last'
+    }
+  },
+  // Simple fallback: Last resort
+  {
+    method: 'POST',
+    url: '/api/items',
     response: { status: 200, body: { price: 50 } }
   }
 ];
 ```
 
+**Priority order (highest to lowest):**
+1. **Match criteria mocks** (specificity 101+) - Always checked first
+2. **Sequence fallbacks** (specificity 1) - Used when no match criteria mocks match
+3. **Simple fallbacks** (specificity 0) - Used when sequences exhausted or no sequences
+
 **Behavior:**
 - Specific mocks (with match criteria) always take precedence over fallbacks
-- Fallbacks have specificity of 0
-- Multiple fallbacks: first one wins as tiebreaker
+- Sequence fallbacks take priority over simple response fallbacks
+- Multiple fallbacks of equal priority: first one wins as tiebreaker
 - If no mocks match and no fallback exists: error returned
 
 ### Three-Phase Execution Model

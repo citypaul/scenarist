@@ -103,8 +103,22 @@ export const switchScenario = async (
     );
   }
 
-  // Set test ID header for all subsequent requests
+  // Set test ID header for navigation requests
   await page.setExtraHTTPHeaders({ [testIdHeader]: testId });
+
+  // CRITICAL: Intercept ALL requests (including Client Component fetch()) and inject test ID
+  // This ensures test isolation works even when Client Components make API calls
+  // without explicitly including the test ID header.
+  await page.route('**/*', (route) => {
+    // Get existing headers from the request
+    const headers = route.request().headers();
+
+    // Inject test ID header (overwrite if exists, ensuring consistency)
+    headers[testIdHeader] = testId;
+
+    // Continue request with modified headers
+    route.continue({ headers });
+  });
 
   // Return test ID for explicit use in page.request calls
   return testId;

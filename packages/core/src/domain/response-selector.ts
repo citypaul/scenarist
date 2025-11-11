@@ -67,7 +67,9 @@ export const createResponseSelector = (
         if (mock.match) {
           // If match criteria exists, check if it matches the request
           if (matchesCriteria(context, mock.match)) {
-            const specificity = calculateSpecificity(mock.match);
+            // Match criteria always have higher priority than fallbacks
+            // Base specificity of 100 ensures even 1 field (100+1=101) beats any fallback (max 1)
+            const specificity = 100 + calculateSpecificity(mock.match);
 
             // Keep this mock if it's more specific than current best
             // (or if no best match yet)
@@ -80,11 +82,16 @@ export const createResponseSelector = (
         }
 
         // No match criteria = fallback mock (always matches)
-        // Fallback has specificity of 0
-        if (!bestMatch || bestMatch.specificity === 0) {
-          // Last fallback wins - this allows active scenario mocks (added last)
-          // to override default mocks (added first) when both have no match criteria
-          bestMatch = { mock, mockIndex, specificity: 0 };
+        // Sequences get specificity 1 (higher than simple responses at 0)
+        // This ensures sequences are selected over simple fallback responses
+        const fallbackSpecificity = mock.sequence ? 1 : 0;
+
+        if (!bestMatch || fallbackSpecificity > bestMatch.specificity ||
+            (fallbackSpecificity === bestMatch.specificity && fallbackSpecificity === 0)) {
+          // For equal non-sequence fallbacks (both specificity 0), last wins
+          // This allows active scenario mocks to override default mocks
+          // For sequences (specificity 1), they always win over simple responses
+          bestMatch = { mock, mockIndex, specificity: fallbackSpecificity };
         }
       }
 

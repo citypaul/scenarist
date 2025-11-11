@@ -2805,3 +2805,167 @@ Always use `export const scenarist = createScenarist(...)` pattern. Never wrap i
    - Singleton pattern is non-obvious
    - Next.js module duplication is framework-specific
    - Warning boxes and examples prevent user confusion
+
+## Specificity Bug: Sequences vs Match Criteria - Critical Fix
+
+**Implemented:** 2025-11-11
+**Status:** Complete - All tests passing (159 unit + 35 Playwright)
+
+### Bug Discovery
+
+**Symptom:** Payment sequence test (repeat: 'none') immediately returned rate limit error (429) instead of first sequence response (ch_1 pending).
+
+**Root Cause:** Sequences without match criteria were treated as fallback mocks with specificity 0, causing them to be overwritten by simple response fallbacks due to "last fallback wins" logic.
+
+**Initial Investigation:**
+```typescript
+// Payment sequence scenario:
+{
+  method: "POST",
+  url: "http://localhost:3001/payments",
+  sequence: {  // Mock 0: No match criteria
+    responses: [
+      { status: 200, body: { id: "ch_1", status: "pending" } },
+      { status: 200, body: { id: "ch_2", status: "pending" } },
+      { status: 200, body: { id: "ch_3", status: "succeeded" } },
+    ],
+    repeat: "none",
+  },
+},
+{
+  method: "POST",
+  url: "http://localhost:3001/payments",
+  response: {  // Mock 1: No match criteria, rate limit fallback
+    status: 429,
+    body: { error: { message: "Rate limit exceeded" } },
+  },
+}
+
+// Both mocks have specificity 0
+// "Last fallback wins" → Mock 1 overwrites Mock 0
+// MSW returns 429 instead of sequence!
+```
+
+### First Fix Attempt: Give Sequences Priority
+
+**Solution:** Modified `response-selector.ts:87` to give sequences specificity 1:
+
+```typescript
+const fallbackSpecificity = mock.sequence ? 1 : 0;
+```
+
+**Result:** Payment test started passing! MSW returned 200 instead of 429.
+
+### Second Bug: Unit Test Failure
+
+**Problem:** Unit test "should work correctly with match criteria and specificity" failed:
+- Expected: 'premium'
+- Received: 'generic'
+
+**Test Setup:**
+```typescript
+const mocks = [
+  // Mock 0: Generic sequence (no match criteria)
+  {
+    method: "POST",
+    url: "/api/process",
+    sequence: { responses: [...] },  // Specificity: 1
+  },
+  // Mock 1: Premium sequence (WITH match criteria)
+  {
+    method: "POST",
+    url: "/api/process",
+    match: { body: { tier: "premium" } },
+    sequence: { responses: [...] },  // Specificity: 1 (100 base + 1 field = 101 expected!)
+  },
+];
+```
+
+**Problem:** With first fix, Mock 0 (no match, sequence) got specificity 1. Mock 1 (match criteria with 1 field) also got specificity 1. They're equal, so Mock 0 (processed first) won instead of Mock 1.
+
+### Final Fix: Separate Specificity Ranges
+
+**Solution:** Use separate priority ranges to guarantee correct selection:
+
+```typescript
+// packages/core/src/domain/response-selector.ts:72
+if (mock.match) {
+  // Match criteria always have higher priority than fallbacks
+  // Base specificity of 100 ensures even 1 field (100+1=101) beats any fallback (max 1)
+  const specificity = 100 + calculateSpecificity(mock.match);
+
+  if (!bestMatch || specificity > bestMatch.specificity) {
+    bestMatch = { mock, mockIndex, specificity };
+  }
+}
+```
+
+**Specificity Ranges:**
+1. **Match criteria mocks:** 101+ (100 base + field count)
+2. **Fallback sequences:** 1
+3. **Simple fallback responses:** 0
+
+**Guarantees:**
+- ✅ Mocks with match criteria ALWAYS win over fallbacks
+- ✅ Sequence fallbacks take priority over simple response fallbacks
+- ✅ No conflicts between match criteria and sequence features
+
+### Test Results
+
+**Before Fix:**
+- Playwright: 34/35 passing (payment sequence failing)
+- Unit tests: 158/159 passing (specificity test failing)
+
+**After Fix:**
+- Playwright: 35/35 passing ✅
+- Unit tests: 159/159 passing ✅
+
+### Files Modified
+
+**Core Package:**
+- `packages/core/src/domain/response-selector.ts:72` - Added base specificity of 100 for match criteria
+- Lines 72-78 updated with new specificity calculation and comments
+
+**Documentation:**
+- `docs/core-functionality.md` - Updated specificity section with priority ranges
+- `CLAUDE.md` - Added this section
+
+### Key Lessons
+
+1. **Separate Priority Ranges Prevent Conflicts**
+   - Don't mix different feature types in same specificity range
+   - Match criteria (conditional behavior) vs sequences (stateful behavior) need separation
+   - Use large gaps (100) to avoid future conflicts
+
+2. **Specificity = 0 is Ambiguous**
+   - Both simple fallbacks and sequences were using 0
+   - Created conflict when both present
+   - Solution: Give sequences higher priority (1 > 0)
+
+3. **Unit Tests Catch Edge Cases**
+   - Playwright tests passed with first fix
+   - Unit test revealed conflict between match + sequence
+   - Different test types catch different bugs
+
+4. **Base Specificity Pattern**
+   - Base 100 for conditional logic (match criteria)
+   - Base 1-10 for stateful features (sequences, state)
+   - Base 0 for simple fallbacks
+   - Leaves room for future features
+
+5. **Test Both Positive and Negative Cases**
+   - Payment test: sequences work (positive)
+   - Unit test: sequences don't override matches (negative)
+   - Both needed to catch the bug
+
+### Architectural Insight
+
+The specificity system uses **semantic ranges** not just numeric scores:
+
+| Range | Feature | Example Specificity |
+|-------|---------|---------------------|
+| 100+ | Conditional logic (match criteria) | 101 (1 field), 102 (2 fields), 103 (3 fields) |
+| 1-99 | Stateful features (sequences, future) | 1 (sequence fallback) |
+| 0 | Simple fallbacks | 0 (simple response) |
+
+This architecture prevents feature conflicts and maintains clean separation of concerns. Each feature type gets its own range, guaranteeing correct priority regardless of field counts or combinations.
