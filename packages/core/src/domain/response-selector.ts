@@ -86,8 +86,7 @@ export const createResponseSelector = (
         // This ensures sequences are selected over simple fallback responses
         const fallbackSpecificity = mock.sequence ? 1 : 0;
 
-        if (!bestMatch || fallbackSpecificity > bestMatch.specificity ||
-            (fallbackSpecificity === bestMatch.specificity)) {
+        if (!bestMatch || fallbackSpecificity >= bestMatch.specificity) {
           // For equal specificity fallbacks, last wins
           // This allows active scenario mocks to override default mocks
           // Applies to both simple fallbacks (0) and sequence fallbacks (1)
