@@ -299,10 +299,8 @@ const matchesHeaders = (
   criteriaHeaders: Record<string, string>
 ): boolean => {
   // Check all required headers exist with exact matching values
-  // HTTP headers are case-insensitive, so normalize keys for comparison
   for (const [key, value] of Object.entries(criteriaHeaders)) {
-    const normalizedKey = key.toLowerCase();
-    if (requestHeaders[normalizedKey] !== value) {
+    if (requestHeaders[key] !== value) {
       return false;
     }
   }
