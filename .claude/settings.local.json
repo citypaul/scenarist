@@ -45,7 +45,10 @@
       "Bash(git reset:*)",
       "Bash(pnpm typecheck:*)",
       "Bash(git show:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(git grep:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.hawu.me)"
     ],
     "deny": [],
     "ask": []

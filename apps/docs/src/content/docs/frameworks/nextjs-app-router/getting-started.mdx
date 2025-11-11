@@ -70,7 +70,7 @@ export default createScenarist({ enabled: true, scenarios });
 export const scenarist = createScenarist({ enabled: true, scenarios });
 ```
 
-**Why this matters:** Scenarist handles a Next.js-specific issue for you. Next.js's webpack bundler can duplicate modules across multiple chunks, causing the same file to be loaded multiple times in the same process ([see Next.js Discussion #68572](https://github.com/vercel/next.js/discussions/68572)). This breaks the singleton pattern and can cause:
+**Why this matters:** Scenarist handles a Next.js-specific issue for you. Next.js can cause module duplication, where the same file is loaded multiple times in the same process ([see Next.js Discussion #68572](https://github.com/vercel/next.js/discussions/68572)). This breaks the singleton pattern and can cause:
 
 - `[MSW] Multiple handlers with the same URL` warnings
 - Intermittent 500 errors from MSW
@@ -79,7 +79,7 @@ export const scenarist = createScenarist({ enabled: true, scenarios });
 
 **How Scenarist solves this:** The `createScenarist()` function includes built-in singleton protection using `global.__scenarist_instance`, ensuring only ONE instance exists even when Next.js duplicates your module. However, this protection **only works if you export a constant** - wrapping it in a function bypasses the singleton guard because each function call creates a new instance.
 
-**The pattern:** Always use `export const scenarist = createScenarist(...)`. Scenarist handles the complex singleton logic for you so you don't need to understand webpack internals or manage global variables yourself.
+**The pattern:** Always use `export const scenarist = createScenarist(...)`. Scenarist handles the complex singleton logic for you so you don't need to understand Next.js internals or manage global variables yourself.
 
 :::note[Why Scenarist Handles This For You]
 The module duplication issue is a [well-known Next.js challenge](https://github.com/vercel/next.js/discussions/68572) that affects any library using singletons. Rather than forcing every application to implement the `globalThis` pattern correctly, Scenarist builds singleton protection directly into the adapter. You just use a simple `export const` and everything works.

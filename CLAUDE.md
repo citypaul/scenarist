@@ -2648,7 +2648,7 @@ const mocks = [
 - Scenarios not switching properly
 - Different tests getting wrong responses
 
-**Root Cause:** Next.js dev server (and Turbopack) can load the same module multiple times, causing module duplication. If users wrap `createScenarist()` in a function, each function call creates a NEW MSW server instance, leading to handler conflicts.
+**Root Cause:** Next.js can load the same module multiple times, causing module duplication. If users wrap `createScenarist()` in a function, each function call creates a NEW MSW server instance, leading to handler conflicts.
 
 **The Wrong Pattern (causes duplication):**
 ```typescript
@@ -2987,8 +2987,8 @@ This architecture prevents feature conflicts and maintains clean separation of c
 - Forces ALL applications to implement same pattern (boilerplate)
 
 **Root Cause:** Next.js module duplication causes `createScenarist()` to be called multiple times:
-- Webpack/Turbopack bundle code in ways that can duplicate modules across chunks
-- Each chunk evaluation creates new instance
+- Next.js bundling can duplicate modules across chunks
+- Each module evaluation creates new instance
 - Without singleton guard: DuplicateScenarioError when scenarios re-register
 - See: [Next.js Discussion #68572](https://github.com/vercel/next.js/discussions/68572)
 
@@ -3137,7 +3137,7 @@ it('should respect custom header name from config', () => {
 
 **Next.js Module Duplication:**
 - [GitHub Discussion #68572](https://github.com/vercel/next.js/discussions/68572) - Canonical approach to singletons in Next.js
-- Root cause: webpack bundles modules across multiple chunks, breaking Node.js module caching
+- Root cause: Next.js bundling can duplicate modules across chunks, breaking Node.js module caching
 - Solution: Use `globalThis` or `global` to ensure single instance across all chunks
 
 **Key Quote from Discussion:**
@@ -3149,7 +3149,7 @@ it('should respect custom header name from config', () => {
 
 **The Problem Next.js Users Face:**
 - Module duplication is non-obvious framework-specific behavior
-- Requires understanding webpack/Turbopack internals
+- Requires understanding Next.js bundling internals
 - Easy to forget and causes confusing errors
 - Every library/application needs to implement same pattern
 
@@ -3210,7 +3210,7 @@ export const scenarist = createScenarist({ enabled: true, scenarios });
 
 4. **Framework Quirks Should Be Hidden From Users**
    - Next.js module duplication is confusing
-   - Most users don't understand webpack/Turbopack internals
+   - Most users don't understand Next.js bundling internals
    - Libraries should handle framework-specific issues
    - Good API: works correctly by default
 
@@ -3219,3 +3219,22 @@ export const scenarist = createScenarist({ enabled: true, scenarios });
    - Explain WHY the pattern exists
    - Show what problems it prevents
    - Users trust official sources more than library docs
+
+### Related Issue: Client-Side MSW + HMR
+
+**Note:** There's a **separate** but related Next.js + MSW singleton issue: [MSW Examples PR #101](https://github.com/mswjs/examples/pull/101/files#diff-8c12b389f7663528d803c57e6fe92f1635c6bbeafcf9d1b3d069d8b31fc88471R5-R12)
+
+**Their Problem:** Client-side MSW + HMR (Hot Module Replacement) = duplicate browser workers during development
+
+**Our Problem:** Server-side MSW + module duplication = duplicate Node.js servers (dev and production)
+
+**Different Contexts:**
+- MSW PR: Browser worker, HMR re-imports, development only
+- Scenarist: Node.js server, module chunk duplication, all environments
+
+**Why Not Link in Public Docs:**
+- Different problem (client vs server)
+- Different cause (HMR vs bundling)
+- Would confuse users about what Scenarist solves
+
+**Key Takeaway:** MSW + Next.js has multiple singleton challenges depending on context. Scenarist specifically solves the server-side module duplication issue for App Router testing.
