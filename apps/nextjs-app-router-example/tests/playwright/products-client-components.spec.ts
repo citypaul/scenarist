@@ -33,8 +33,13 @@ test.describe('Products Page - Request Matching (with Scenarist)', () => {
     // Navigate to products page
     await page.goto('/');
 
-    // Click premium tier button to switch pricing
-    await page.getByRole('button', { name: 'Select premium tier' }).click();
+    // Click premium tier button and wait for API response
+    await Promise.all([
+      page.waitForResponse(
+        (resp) => resp.url().includes('/api/products') && resp.ok()
+      ),
+      page.getByRole('button', { name: 'Select premium tier' }).click(),
+    ]);
 
     // Verify premium pricing is displayed (£99.99 for first product)
     const firstProduct = page.getByRole('article').first();
@@ -47,6 +52,14 @@ test.describe('Products Page - Request Matching (with Scenarist)', () => {
 
     // Navigate to products page
     await page.goto('/');
+
+    // Click standard tier button and wait for API response
+    await Promise.all([
+      page.waitForResponse(
+        (resp) => resp.url().includes('/api/products') && resp.ok()
+      ),
+      page.getByRole('button', { name: 'Select standard tier' }).click(),
+    ]);
 
     // Verify standard pricing is displayed (£149.99 for first product)
     const firstProduct = page.getByRole('article').first();
