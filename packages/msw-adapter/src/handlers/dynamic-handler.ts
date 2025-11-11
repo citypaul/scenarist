@@ -40,9 +40,10 @@ const extractHttpRequestContext = async (
   }
 
   // Extract headers as Record<string, string>
+  // Normalize header keys to lowercase (HTTP headers are case-insensitive)
   const headers: Record<string, string> = {};
   request.headers.forEach((value, key) => {
-    headers[key] = value;
+    headers[key.toLowerCase()] = value;
   });
 
   // Extract query parameters from URL

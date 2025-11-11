@@ -64,7 +64,8 @@ export const defaultScenario: ScenaristScenario = {
  * - Matches on x-user-tier: premium header
  * - Returns premium pricing (£99.99)
  *
- * Includes explicit fallback for non-premium requests to ensure consistent behavior.
+ * When request doesn't match (e.g., x-user-tier: standard), automatically
+ * falls back to default scenario's mock (standard pricing).
  */
 export const premiumUserScenario: ScenaristScenario = {
   id: "premiumUser",
@@ -84,17 +85,6 @@ export const premiumUserScenario: ScenaristScenario = {
         },
       },
     },
-    // Explicit fallback for non-premium requests (e.g., initial page load with standard tier)
-    {
-      method: "GET",
-      url: "http://localhost:3001/products",
-      response: {
-        status: 200,
-        body: {
-          products: buildProducts("standard"),
-        },
-      },
-    },
   ],
 };
 
@@ -105,8 +95,6 @@ export const premiumUserScenario: ScenaristScenario = {
  * - Intercepts calls to localhost:3001/products (json-server)
  * - Matches on x-user-tier: standard header
  * - Returns standard pricing (£149.99)
- *
- * Includes explicit fallback for consistency with other scenarios.
  */
 export const standardUserScenario: ScenaristScenario = {
   id: "standardUser",
@@ -119,17 +107,6 @@ export const standardUserScenario: ScenaristScenario = {
       match: {
         headers: { "x-user-tier": "standard" },
       },
-      response: {
-        status: 200,
-        body: {
-          products: buildProducts("standard"),
-        },
-      },
-    },
-    // Explicit fallback for non-standard requests
-    {
-      method: "GET",
-      url: "http://localhost:3001/products",
       response: {
         status: 200,
         body: {
