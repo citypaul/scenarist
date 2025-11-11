@@ -1,12 +1,12 @@
 /**
- * Scenarist Setup - App Router (with Next.js Singleton Pattern)
+ * Scenarist Setup - App Router
  *
  * Creates and configures Scenarist instance for scenario-based testing.
  * Server Components fetch data server-side, so MSW runs in Node.js (not browser).
  *
- * IMPORTANT: Uses global singleton pattern to prevent Next.js from creating
- * multiple instances of this module. Without this, Next.js creates separate
- * instances for each API route, causing scenario switching to fail.
+ * Note: Next.js (Turbopack) creates multiple module instances. This singleton pattern
+ * ensures all route handlers share the same Scenarist instance, while the adapter
+ * handles store/MSW singleton logic internally.
  */
 
 import { createScenarist } from '@scenarist/nextjs-adapter/app';
@@ -21,8 +21,8 @@ declare global {
 /**
  * Get or create the singleton Scenarist instance.
  *
- * This ensures all API routes and MSW handlers share the same
- * ScenarioStore instance, allowing scenario switching to work correctly.
+ * This ensures all API routes and MSW handlers share the same instance.
+ * The adapter handles store and MSW singleton logic internally.
  */
 export const getScenarist = () => {
   if (!global.__scenarist) {
@@ -31,7 +31,7 @@ export const getScenarist = () => {
       scenarios,
     });
 
-    // Auto-start MSW in Node.js environment
+    // Start MSW in Node.js environment
     if (typeof window === 'undefined') {
       global.__scenarist.start();
     }

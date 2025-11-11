@@ -1,6 +1,24 @@
 import type { BaseAdapterOptions, ScenaristAdapter } from '@scenarist/core';
+import { InMemoryScenarioRegistry, InMemoryScenarioStore } from '@scenarist/core';
 import { createScenaristBase } from '../common/create-scenarist-base.js';
 import { createScenarioEndpoint } from './endpoints.js';
+
+/**
+ * Global state for Next.js App Router adapter.
+ *
+ * Next.js (Turbopack) creates multiple module instances, causing createScenarist()
+ * to be called multiple times. These globals ensure:
+ * 1. MSW server.listen() is only called once
+ * 2. All instances share the same scenario registry and store
+ */
+declare global {
+  // eslint-disable-next-line no-var
+  var __scenarist_msw_started: boolean | undefined;
+  // eslint-disable-next-line no-var
+  var __scenarist_registry: InstanceType<typeof import('@scenarist/core').InMemoryScenarioRegistry> | undefined;
+  // eslint-disable-next-line no-var
+  var __scenarist_store: InstanceType<typeof import('@scenarist/core').InMemoryScenarioStore> | undefined;
+}
 
 /**
  * Next.js App Router adapter options.
@@ -94,8 +112,21 @@ export type AppScenarist = Omit<ScenaristAdapter<never>, 'middleware'> & {
  * ```
  */
 export const createScenarist = (options: AppAdapterOptions): AppScenarist => {
-  const { config, manager, server, currentTestId } =
-    createScenaristBase(options);
+  // Create or reuse global singleton stores for Next.js
+  // This ensures all module instances share the same scenario state
+  if (!global.__scenarist_registry) {
+    global.__scenarist_registry = new InMemoryScenarioRegistry();
+  }
+  if (!global.__scenarist_store) {
+    global.__scenarist_store = new InMemoryScenarioStore();
+  }
+
+  // Inject global singletons into base setup
+  const { config, manager, server, currentTestId } = createScenaristBase({
+    ...options,
+    registry: global.__scenarist_registry,
+    store: global.__scenarist_store,
+  });
 
   return {
     config,
@@ -116,7 +147,17 @@ export const createScenarist = (options: AppAdapterOptions): AppScenarist => {
         [headerName]: testId,
       };
     },
-    start: () => server.listen(),
+    start: () => {
+      // Singleton guard - prevents duplicate MSW initialization
+      // Next.js (Turbopack) creates multiple module instances, so this ensures
+      // server.listen() is only called once across all instances
+      if (global.__scenarist_msw_started) {
+        return;
+      }
+
+      global.__scenarist_msw_started = true;
+      server.listen();
+    },
     stop: async () => server.close(),
   };
 };

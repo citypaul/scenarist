@@ -121,6 +121,75 @@ describe('App Router createScenarist', () => {
     await expect(scenarist.stop()).resolves.not.toThrow();
   });
 
+  describe('Singleton guard in start() method', () => {
+    // Clean up global flag between tests
+    const clearGlobalFlag = () => {
+      delete (global as any).__scenarist_msw_started;
+    };
+
+    it('should start MSW on first start() call', () => {
+      clearGlobalFlag();
+      const { scenarist } = createTestSetup();
+
+      // Should start MSW without throwing
+      expect(() => scenarist.start()).not.toThrow();
+    });
+
+    it('should skip MSW initialization on subsequent start() calls from different instances', () => {
+      clearGlobalFlag();
+      const scenarist1 = createScenarist({
+        enabled: true,
+        scenarios: testScenarios,
+      });
+      const scenarist2 = createScenarist({
+        enabled: true,
+        scenarios: testScenarios,
+      });
+
+      scenarist1.start(); // First call - should start MSW
+
+      // Second call from different instance - should skip but not throw
+      expect(() => scenarist2.start()).not.toThrow();
+    });
+
+    it('should share scenario store across multiple instances', () => {
+      clearGlobalFlag();
+      const scenarist1 = createScenarist({
+        enabled: true,
+        scenarios: testScenarios,
+      });
+      const scenarist2 = createScenarist({
+        enabled: true,
+        scenarios: testScenarios,
+      });
+
+      scenarist1.start();
+      scenarist2.start();
+
+      // Switch scenario using instance 1
+      scenarist1.switchScenario('test-singleton-1', 'premium', undefined);
+
+      // Verify instance 2 sees the same scenario
+      const active = scenarist2.getActiveScenario('test-singleton-1');
+      expect(active).toEqual({
+        scenarioId: 'premium',
+        variantName: undefined,
+      });
+    });
+
+    it('should allow multiple start() calls on same instance', () => {
+      clearGlobalFlag();
+      const { scenarist } = createTestSetup();
+
+      // Multiple start() calls should not throw
+      expect(() => {
+        scenarist.start();
+        scenarist.start();
+        scenarist.start();
+      }).not.toThrow();
+    });
+  });
+
   describe('getHeaders method', () => {
     it('should extract test ID from request using default configured header name', () => {
       const { scenarist } = createTestSetup();
