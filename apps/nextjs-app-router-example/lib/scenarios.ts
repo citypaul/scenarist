@@ -9,13 +9,51 @@ import type { ScenaristScenario, ScenaristScenarios } from "@scenarist/nextjs-ad
 import { buildProducts } from "../data/products";
 
 /**
- * Default scenario - baseline behavior
+ * Default scenario - baseline behavior with happy path mocks
+ *
+ * These mocks provide fallback responses when active scenario mocks don't match.
+ * They represent the most common/expected behavior for each API.
  */
 export const defaultScenario: ScenaristScenario = {
   id: "default",
   name: "Default Scenario",
-  description: "Default baseline behavior",
-  mocks: [],
+  description: "Default baseline behavior with happy path mocks",
+  mocks: [
+    // Products API - standard tier pricing (most common case)
+    {
+      method: "GET",
+      url: "http://localhost:3001/products",
+      response: {
+        status: 200,
+        body: {
+          products: buildProducts("standard"),
+        },
+      },
+    },
+    // Cart API - empty cart (initial state)
+    {
+      method: "GET",
+      url: "http://localhost:3001/cart",
+      response: {
+        status: 200,
+        body: {
+          items: [],
+        },
+      },
+    },
+    // Cart add - successful addition
+    {
+      method: "POST",
+      url: "http://localhost:3001/cart/add",
+      response: {
+        status: 200,
+        body: {
+          success: true,
+          message: "Item added to cart",
+        },
+      },
+    },
+  ],
 };
 
 /**
@@ -25,6 +63,9 @@ export const defaultScenario: ScenaristScenario = {
  * - Intercepts calls to localhost:3001/products (json-server)
  * - Matches on x-user-tier: premium header
  * - Returns premium pricing (£99.99)
+ *
+ * When request doesn't match (e.g., x-user-tier: standard), automatically
+ * falls back to default scenario's mock (standard pricing).
  */
 export const premiumUserScenario: ScenaristScenario = {
   id: "premiumUser",
@@ -37,18 +78,6 @@ export const premiumUserScenario: ScenaristScenario = {
       match: {
         headers: { "x-user-tier": "premium" },
       },
-      response: {
-        status: 200,
-        body: {
-          products: buildProducts("premium"),
-        },
-      },
-    },
-    // TEMPORARY: Fallback mock to test theory about missing fallback causing 500 errors
-    // TODO: Remove once we implement automatic fallback behavior
-    {
-      method: "GET",
-      url: "http://localhost:3001/products",
       response: {
         status: 200,
         body: {
