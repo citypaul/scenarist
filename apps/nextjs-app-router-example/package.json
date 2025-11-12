@@ -10,10 +10,10 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "pnpm test:e2e && pnpm test:api",
-    "test:e2e": "playwright test --project=chromium",
-    "test:e2e:ui": "playwright test --project=chromium --ui",
+    "test:e2e": "SCENARIST_ENABLED=true playwright test --project=chromium",
+    "test:e2e:ui": "SCENARIST_ENABLED=true playwright test --project=chromium --ui",
     "test:e2e:comparison": "SCENARIST_ENABLED=false playwright test --project=comparison",
-    "test:e2e:all": "playwright test",
+    "test:e2e:all": "SCENARIST_ENABLED=true playwright test",
     "test:api": "vitest run",
     "fake-api": "json-server fake-api/db.json --port 3001"
   },

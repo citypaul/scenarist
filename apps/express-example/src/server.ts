@@ -21,7 +21,7 @@ export const createApp = (): { app: Express; scenarist: ExpressScenarist<typeof 
 
   // Initialize Scenarist with all scenarios registered upfront
   const scenarist = createScenarist({
-    enabled: process.env.SCENARIST_ENABLED !== 'false', // Enable by default, disable via env var
+    enabled: process.env.SCENARIST_ENABLED === 'true', // Disable by default, enable via env var
     scenarios, // All scenarios registered at initialization (must include 'default')
     strictMode: false, // Allow passthrough for unmocked requests
   });

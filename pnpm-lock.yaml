@@ -146,6 +146,9 @@ importers:
       jsdom:
         specifier: ^25.0.0
         version: 25.0.1
+      json-server:
+        specifier: ^1.0.0-beta.3
+        version: 1.0.0-beta.3
       postcss:
         specifier: ^8.4.0
         version: 8.5.6

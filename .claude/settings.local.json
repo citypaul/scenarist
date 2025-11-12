@@ -64,7 +64,8 @@
       "Bash(gh api:*)",
       "Bash(pnpm --filter=@scenarist/core test)",
       "Bash(pnpm test:e2e:comparison:*)",
-      "Bash(SCENARIST_ENABLED=true pnpm exec playwright test:*)"
+      "Bash(SCENARIST_ENABLED=true pnpm exec playwright test:*)",
+      "Bash(pnpm install)"
     ],
     "deny": [],
     "ask": []

@@ -18,7 +18,7 @@ import { scenarios } from './scenarios';
  * - Scenario endpoint handlers
  */
 export const scenarist = createScenarist({
-  enabled: process.env.SCENARIST_ENABLED !== 'false', // Enable by default, disable via env var
+  enabled: process.env.SCENARIST_ENABLED === 'true', // Disable by default, enable via env var
   scenarios, // All scenarios registered at initialization (must include 'default')
 });
 

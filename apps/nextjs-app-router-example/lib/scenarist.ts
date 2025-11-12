@@ -13,7 +13,7 @@ import { createScenarist } from '@scenarist/nextjs-adapter/app';
 import { scenarios } from './scenarios';
 
 export const scenarist = createScenarist({
-  enabled: process.env.SCENARIST_ENABLED !== 'false', // Enable by default, disable via env var
+  enabled: process.env.SCENARIST_ENABLED === 'true', // Disable by default, enable via env var
   scenarios,
 });
 
