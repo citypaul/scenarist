@@ -49,7 +49,7 @@ export default defineConfig<ScenaristOptions>({
     {
       command: 'pnpm fake-api',
       url: 'http://localhost:3001/products',
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: true,  // Allow sharing json-server across test suites
     },
   ],
 });
