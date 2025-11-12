@@ -65,7 +65,8 @@
       "Bash(pnpm --filter=@scenarist/core test)",
       "Bash(pnpm test:e2e:comparison:*)",
       "Bash(SCENARIST_ENABLED=true pnpm exec playwright test:*)",
-      "Bash(pnpm install)"
+      "Bash(pnpm install)",
+      "Bash(pnpm --filter=@scenarist/nextjs-app-router-example typecheck:*)"
     ],
     "deny": [],
     "ask": []

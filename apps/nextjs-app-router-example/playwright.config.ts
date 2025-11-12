@@ -44,7 +44,7 @@ export default defineConfig<ScenaristOptions>({
       command: 'pnpm dev',
       url: 'http://localhost:3002',
       reuseExistingServer: !process.env.CI,
-      env: process.env,  // Pass through all env vars (including SCENARIST_ENABLED)
+      env: process.env as Record<string, string>,  // Pass through all env vars (including SCENARIST_ENABLED)
     },
     {
       command: 'pnpm fake-api',

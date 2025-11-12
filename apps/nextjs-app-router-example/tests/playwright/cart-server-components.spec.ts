@@ -30,7 +30,7 @@ test.describe('Cart Server Page - Stateful Mocks with Server Components', () => 
     page,
     switchScenario,
   }) => {
-    const testId = await switchScenario(page, 'cartWithState');
+    await switchScenario(page, 'cartWithState');
     await page.goto('/cart-server');
 
     // Verify server component rendered
