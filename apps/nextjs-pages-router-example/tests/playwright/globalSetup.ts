@@ -16,7 +16,6 @@ export default async function globalSetup(): Promise<void> {
     return;
   }
 
-  console.log('[globalSetup] MSW already auto-started in Next.js process (lib/scenarist.ts)');
-  console.log('[globalSetup] NOT starting MSW in Playwright process to avoid conflicts');
-  console.log('[globalSetup] MSW in Next.js process should intercept fetch calls from getServerSideProps');
+  // MSW is auto-started in Next.js process by lib/scenarist.ts
+  // No additional setup needed here
 }

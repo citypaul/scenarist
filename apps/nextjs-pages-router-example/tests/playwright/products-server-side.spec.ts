@@ -30,9 +30,6 @@ test.describe('Products Page - Server-Side Rendering (getServerSideProps)', () =
     // Premium mock (specificity 1) will override default fallback (specificity 0)
     await switchScenario(page, 'premiumUser');
 
-    console.log('[TEST] Testing premium products with premiumUser scenario active');
-    console.log('[TEST] Automatic default fallback combines default + premium mocks');
-
     // Navigate to products page with tier query param for getServerSideProps
     await page.goto('/?tier=premium');
 

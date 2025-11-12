@@ -187,9 +187,6 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       'x-user-tier': tier,
     };
 
-    console.log('[getServerSideProps] About to fetch products with headers:', headers);
-    console.log('[getServerSideProps] tier param:', tier);
-
     // Fetch products server-side - DIRECT external API call
     // This is the whole point: prove MSW can intercept external calls from getServerSideProps
     const response = await fetch('http://localhost:3001/products', {

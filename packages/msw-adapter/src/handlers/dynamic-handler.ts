@@ -120,17 +120,6 @@ export const createDynamicHandler = (
     const activeScenario = options.getActiveScenario(testId);
     const scenarioId = activeScenario?.scenarioId ?? 'default';
 
-    // DEBUG: Log ALL requests to localhost:3001
-    if (request.url.includes('localhost:3001')) {
-      console.log('\n[MSW] ========================================');
-      console.log('[MSW] Intercepted request:', request.method, request.url);
-      console.log('[MSW] testId extracted:', testId);
-      console.log('[MSW] activeScenario:', activeScenario);
-      console.log('[MSW] scenarioId to use:', scenarioId);
-      console.log('[MSW] request headers:', Object.fromEntries(request.headers.entries()));
-      console.log('[MSW] ========================================\n');
-    }
-
     // Extract request context for matching
     const context = await extractHttpRequestContext(request);
 
@@ -142,29 +131,8 @@ export const createDynamicHandler = (
       request.url
     );
 
-    // DEBUG: Log mocks being evaluated
-    if (request.url.includes('localhost:3001/products')) {
-      console.log('[MSW] Number of mocks to evaluate:', mocks.length);
-      mocks.forEach((mock, index) => {
-        console.log(`[MSW] Mock ${index}:`, {
-          method: mock.method,
-          url: mock.url,
-          hasMatch: !!mock.match,
-          match: mock.match,
-        });
-      });
-    }
-
     // Use injected ResponseSelector to find matching mock
     const result = options.responseSelector.selectResponse(testId, scenarioId, context, mocks);
-
-    // DEBUG: Log response selection result
-    if (request.url.includes('localhost:3001/products')) {
-      console.log('[MSW] ResponseSelector result:', result.success ? 'SUCCESS' : 'FAILED');
-      if (result.success) {
-        console.log('[MSW] Selected response status:', result.data.status);
-      }
-    }
 
     if (result.success) {
       return buildResponse(result.data);

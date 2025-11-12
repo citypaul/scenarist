@@ -71,22 +71,8 @@ export const handlePostLogic = async (
     // Extract test ID from context
     const testId = context.getTestId();
 
-    // DEBUG: Log scenario switch attempt
-    console.log('[Scenario Endpoint POST] Switching scenario');
-    console.log('[Scenario Endpoint POST] testId:', testId);
-    console.log('[Scenario Endpoint POST] scenarioId:', scenario);
-    console.log('[Scenario Endpoint POST] variant:', variant);
-
     // Attempt scenario switch
     const result = manager.switchScenario(testId, scenario, variant);
-
-    // DEBUG: Log result
-    console.log('[Scenario Endpoint POST] Result:', result.success ? 'SUCCESS' : 'FAILED');
-    if (result.success) {
-      console.log('[Scenario Endpoint POST] Scenario is now active for test ID:', testId);
-    } else {
-      console.log('[Scenario Endpoint POST] Error:', result.error);
-    }
 
     if (!result.success) {
       return {

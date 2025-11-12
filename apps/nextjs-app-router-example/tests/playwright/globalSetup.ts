@@ -40,8 +40,6 @@ async function waitForServer(): Promise<void> {
 }
 
 export default async function globalSetup(): Promise<void> {
-  console.log('✅ MSW server runs in Next.js process (started by lib/scenarist.ts)');
-
   // Note: This start() call runs in Playwright process and doesn't intercept Next.js requests.
   // It's kept here for API consistency and potential future use.
   await scenarist.start();

@@ -163,12 +163,6 @@ export const createScenarist = (
       const headerValue = req.headers[headerName.toLowerCase()];
       const testId = (Array.isArray(headerValue) ? headerValue[0] : headerValue) || defaultTestId;
 
-      // DEBUG: Log test ID extraction
-      console.log('[getHeaders] headerName:', headerName);
-      console.log('[getHeaders] headerValue from request:', headerValue);
-      console.log('[getHeaders] resolved testId:', testId);
-      console.log('[getHeaders] all request headers:', Object.keys(req.headers));
-
       return {
         [headerName]: testId,
       };
@@ -181,28 +175,7 @@ export const createScenarist = (
         return;
       }
 
-      console.log('[Pages Adapter] Starting MSW server with onUnhandledRequest logging');
-
-      // Add event listeners to see what MSW is intercepting
-      server.events.on('request:start', ({ request }) => {
-        console.log('[MSW] Request intercepted:', request.method, request.url);
-      });
-
-      server.events.on('request:match', ({ request }) => {
-        console.log('[MSW] Request matched handler:', request.method, request.url);
-      });
-
-      server.events.on('request:unhandled', ({ request }) => {
-        console.log('[MSW] Request unhandled:', request.method, request.url);
-      });
-
-      server.listen({
-        onUnhandledRequest: (request, print) => {
-          console.log('[MSW onUnhandledRequest]', request.method, request.url);
-          print.warning();
-        },
-      });
-      console.log('[Pages Adapter] MSW server.listen() completed');
+      server.listen();
 
       // Mark as started
       global.__scenarist_msw_started_pages = true;

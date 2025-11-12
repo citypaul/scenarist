@@ -25,6 +25,4 @@ export const scenarist = createScenarist({
 // Auto-start MSW server in development
 if (typeof window === 'undefined' && scenarist.config.enabled) {
   scenarist.start();
-  console.log('[Scenarist AUTO-START] MSW server started in Next.js process');
-  console.log('[Scenarist AUTO-START] This MSW can intercept fetch calls made by getServerSideProps');
 }
