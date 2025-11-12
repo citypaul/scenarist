@@ -12,7 +12,7 @@
     "test": "pnpm test:e2e && pnpm test:api",
     "test:e2e": "playwright test --project=chromium",
     "test:e2e:ui": "playwright test --project=chromium --ui",
-    "test:e2e:comparison": "SKIP_MSW=true playwright test --project=comparison",
+    "test:e2e:comparison": "SCENARIST_ENABLED=false playwright test --project=comparison",
     "test:e2e:all": "playwright test",
     "test:api": "vitest run",
     "fake-api": "json-server fake-api/db.json --port 3001"

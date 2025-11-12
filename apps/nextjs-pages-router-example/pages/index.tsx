@@ -199,9 +199,12 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
     const data = await response.json();
 
+    // Handle both json-server format (array) and Scenarist mock format ({ products: array })
+    const products = Array.isArray(data) ? data : data.products;
+
     return {
       props: {
-        initialProducts: data.products,
+        initialProducts: products,
         initialTier: tier,
       },
     };

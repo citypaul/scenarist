@@ -21,7 +21,7 @@ export const createApp = (): { app: Express; scenarist: ExpressScenarist<typeof 
 
   // Initialize Scenarist with all scenarios registered upfront
   const scenarist = createScenarist({
-    enabled: true,
+    enabled: process.env.SCENARIST_ENABLED !== 'false', // Enable by default, disable via env var
     scenarios, // All scenarios registered at initialization (must include 'default')
     strictMode: false, // Allow passthrough for unmocked requests
   });
@@ -52,8 +52,10 @@ export const createApp = (): { app: Express; scenarist: ExpressScenarist<typeof 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const { app, scenarist } = createApp();
 
-  // Start MSW
-  scenarist.start();
+  // Start MSW if enabled
+  if (scenarist.config.enabled) {
+    scenarist.start();
+  }
 
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {

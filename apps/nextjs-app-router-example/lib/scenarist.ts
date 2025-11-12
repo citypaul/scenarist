@@ -13,11 +13,11 @@ import { createScenarist } from '@scenarist/nextjs-adapter/app';
 import { scenarios } from './scenarios';
 
 export const scenarist = createScenarist({
-  enabled: true,
+  enabled: process.env.SCENARIST_ENABLED !== 'false', // Enable by default, disable via env var
   scenarios,
 });
 
 // Start MSW in Node.js environment
-if (typeof window === 'undefined') {
+if (typeof window === 'undefined' && scenarist.config.enabled) {
   scenarist.start();
 }

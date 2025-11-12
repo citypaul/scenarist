@@ -51,7 +51,12 @@ test.describe('Products Page - Comparison (without Scenarist)', () => {
     // Verify product fields (using semantic selectors)
     const firstProduct = productCards.first();
     await expect(firstProduct.getByRole('heading', { level: 3 })).toBeVisible();
-    await expect(firstProduct.getByText(/£\d+\.\d{2}/)).toBeVisible();
+
+    // CRITICAL ASSERTION: Verify json-server prices (NOT Scenarist prices)
+    // json-server db.json has: Product A = £149.99, Product B = £199.99, Product C = £99.99
+    // Scenarist standard mocks have: Product A = £29.99, Product B = £49.99, Product C = £19.99
+    // If we see £149.99, we know json-server is responding (MSW is disabled)
+    await expect(firstProduct.getByText('£149.99')).toBeVisible();
 
     // Note: json-server data doesn't include category field
     // Only Scenarist mocks add category - this demonstrates another difference!

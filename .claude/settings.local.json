@@ -62,7 +62,8 @@
       "Bash(pnpm --filter=@scenarist/nextjs-adapter build:*)",
       "Bash(pnpm --filter=@scenarist/core build)",
       "Bash(gh api:*)",
-      "Bash(pnpm --filter=@scenarist/core test)"
+      "Bash(pnpm --filter=@scenarist/core test)",
+      "Bash(pnpm test:e2e:comparison:*)"
     ],
     "deny": [],
     "ask": []
