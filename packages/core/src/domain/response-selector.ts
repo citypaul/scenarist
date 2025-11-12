@@ -322,18 +322,24 @@ const matchesBody = (
  * Request can have additional headers beyond what's specified in criteria.
  * 
  * Header names are case-insensitive per RFC 2616.
- * Request headers are assumed to be normalized to lowercase by the adapter.
- * Criteria headers are normalized to lowercase here for matching.
+ * Core normalizes BOTH request headers AND criteria headers for matching.
+ * Adapters pass through headers as-is; normalization is core's responsibility.
  */
 const matchesHeaders = (
   requestHeaders: Readonly<Record<string, string>>,
   criteriaHeaders: Record<string, string>
 ): boolean => {
+  // Normalize request headers to lowercase for case-insensitive matching
+  const normalizedRequestHeaders: Record<string, string> = {};
+  for (const [key, value] of Object.entries(requestHeaders)) {
+    normalizedRequestHeaders[key.toLowerCase()] = value;
+  }
+
   // Check all required headers exist with exact matching values
   // Normalize criteria header keys to lowercase for case-insensitive matching
   for (const [key, value] of Object.entries(criteriaHeaders)) {
     const normalizedKey = key.toLowerCase();
-    if (requestHeaders[normalizedKey] !== value) {
+    if (normalizedRequestHeaders[normalizedKey] !== value) {
       return false;
     }
   }

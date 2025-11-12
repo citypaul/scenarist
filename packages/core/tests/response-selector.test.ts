@@ -351,6 +351,35 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
 
       expect(result.success).toBe(false); // Values are case-sensitive
     });
+
+    it("should match when request headers are NOT normalized (mixed case from adapter)", () => {
+      // This tests the new architecture where adapters pass through headers as-is
+      // and core normalizes both request AND criteria headers
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/data",
+        body: undefined,
+        headers: { "X-User-Tier": "premium", "Content-Type": "application/json" }, // Mixed case from adapter
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "GET",
+          url: "/api/data",
+          match: { headers: { "x-user-tier": "premium" } }, // Lowercase in criteria
+          response: { status: 200, body: { data: "premium-data" } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({ data: "premium-data" });
+      }
+    });
   });
 
   describe("Match on Query Parameters (Exact Match)", () => {
