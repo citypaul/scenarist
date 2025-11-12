@@ -317,29 +317,27 @@ const matchesBody = (
   return true;
 };
 
-/**
- * Check if request headers contain all specified headers with exact values.
- * Request can have additional headers beyond what's specified in criteria.
- * 
- * Header names are case-insensitive per RFC 2616.
- * Core normalizes BOTH request headers AND criteria headers for matching.
- * Adapters pass through headers as-is; normalization is core's responsibility.
- */
+// Header matching follows RFC 2616 (case-insensitive names, case-sensitive values)
+const normalizeHeaderName = (name: string): string => name.toLowerCase();
+
+const createNormalizedHeaderMap = (
+  headers: Readonly<Record<string, string>>
+): Record<string, string> => {
+  const normalized: Record<string, string> = {};
+  for (const [key, value] of Object.entries(headers)) {
+    normalized[normalizeHeaderName(key)] = value;
+  }
+  return normalized;
+};
+
 const matchesHeaders = (
   requestHeaders: Readonly<Record<string, string>>,
   criteriaHeaders: Record<string, string>
 ): boolean => {
-  // Normalize request headers to lowercase for case-insensitive matching
-  const normalizedRequestHeaders: Record<string, string> = {};
-  for (const [key, value] of Object.entries(requestHeaders)) {
-    normalizedRequestHeaders[key.toLowerCase()] = value;
-  }
+  const normalizedRequest = createNormalizedHeaderMap(requestHeaders);
 
-  // Check all required headers exist with exact matching values
-  // Normalize criteria header keys to lowercase for case-insensitive matching
   for (const [key, value] of Object.entries(criteriaHeaders)) {
-    const normalizedKey = key.toLowerCase();
-    if (normalizedRequestHeaders[normalizedKey] !== value) {
+    if (normalizedRequest[normalizeHeaderName(key)] !== value) {
       return false;
     }
   }

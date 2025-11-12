@@ -1,5 +1,5 @@
 import type { IncomingMessage } from 'http';
-import type { BaseAdapterOptions, ScenaristAdapter } from '@scenarist/core';
+import type { BaseAdapterOptions, ScenaristAdapter, ScenarioRegistry, ScenarioStore } from '@scenarist/core';
 import { InMemoryScenarioRegistry, InMemoryScenarioStore } from '@scenarist/core';
 import { createScenaristBase } from '../common/create-scenarist-base.js';
 import { createScenarioEndpoint } from './endpoints.js';
@@ -25,9 +25,9 @@ declare global {
   // eslint-disable-next-line no-var
   var __scenarist_msw_started_pages: boolean | undefined;
   // eslint-disable-next-line no-var
-  var __scenarist_registry_pages: InstanceType<typeof import('@scenarist/core').InMemoryScenarioRegistry> | undefined;
+  var __scenarist_registry_pages: ScenarioRegistry | undefined;
   // eslint-disable-next-line no-var
-  var __scenarist_store_pages: InstanceType<typeof import('@scenarist/core').InMemoryScenarioStore> | undefined;
+  var __scenarist_store_pages: ScenarioStore | undefined;
   // eslint-disable-next-line no-var
   var __scenarist_instance_pages: PagesScenarist | undefined;
 }

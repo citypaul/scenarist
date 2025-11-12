@@ -1,4 +1,4 @@
-import type { BaseAdapterOptions, ScenaristAdapter } from '@scenarist/core';
+import type { BaseAdapterOptions, ScenaristAdapter, ScenarioRegistry, ScenarioStore } from '@scenarist/core';
 import { InMemoryScenarioRegistry, InMemoryScenarioStore } from '@scenarist/core';
 import { createScenaristBase } from '../common/create-scenarist-base.js';
 import { createScenarioEndpoint } from './endpoints.js';
@@ -24,9 +24,9 @@ declare global {
   // eslint-disable-next-line no-var
   var __scenarist_msw_started: boolean | undefined;
   // eslint-disable-next-line no-var
-  var __scenarist_registry: InstanceType<typeof import('@scenarist/core').InMemoryScenarioRegistry> | undefined;
+  var __scenarist_registry: ScenarioRegistry | undefined;
   // eslint-disable-next-line no-var
-  var __scenarist_store: InstanceType<typeof import('@scenarist/core').InMemoryScenarioStore> | undefined;
+  var __scenarist_store: ScenarioStore | undefined;
   // eslint-disable-next-line no-var
   var __scenarist_instance: AppScenarist | undefined;
 }
