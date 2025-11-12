@@ -241,7 +241,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         method: "GET",
         url: "/api/data",
         body: undefined,
-        headers: { "x-user-tier": "premium" }, // Lowercase (normalized by adapter)
+        headers: { "x-user-tier": "premium" }, // Lowercase (from Fetch API)
         query: {},
       };
 
@@ -268,7 +268,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         method: "GET",
         url: "/api/data",
         body: undefined,
-        headers: { "x-api-key": "secret123" }, // Lowercase (normalized by adapter)
+        headers: { "x-api-key": "secret123" }, // Lowercase (from Fetch API)
         query: {},
       };
 
