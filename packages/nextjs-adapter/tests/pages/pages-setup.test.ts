@@ -125,6 +125,14 @@ describe('Pages Router createScenarist', () => {
   });
 
   describe('getHeaders method', () => {
+    // Clean up all global state between tests to allow different configs
+    const clearAllGlobals = () => {
+      delete (global as any).__scenarist_instance_pages;
+      delete (global as any).__scenarist_registry_pages;
+      delete (global as any).__scenarist_store_pages;
+      delete (global as any).__scenarist_msw_started_pages;
+    };
+
     it('should extract test ID from request using default configured header name', () => {
       const { scenarist } = createTestSetup();
       const req = {
@@ -148,6 +156,7 @@ describe('Pages Router createScenarist', () => {
     });
 
     it('should respect custom header name from config', () => {
+      clearAllGlobals();
       const scenarist = createScenarist({
         enabled: true,
         scenarios: testScenarios,
@@ -163,6 +172,7 @@ describe('Pages Router createScenarist', () => {
     });
 
     it('should respect custom default test ID from config', () => {
+      clearAllGlobals();
       const scenarist = createScenarist({
         enabled: true,
         scenarios: testScenarios,
@@ -178,6 +188,7 @@ describe('Pages Router createScenarist', () => {
     });
 
     it('should handle both custom header name and custom default test ID', () => {
+      clearAllGlobals();
       const scenarist = createScenarist({
         enabled: true,
         scenarios: testScenarios,
@@ -194,6 +205,7 @@ describe('Pages Router createScenarist', () => {
     });
 
     it('should handle header value as array (take first element)', () => {
+      clearAllGlobals();
       const { scenarist } = createTestSetup();
       const req = {
         headers: { 'x-test-id': ['test-123', 'test-456'] },
@@ -205,6 +217,7 @@ describe('Pages Router createScenarist', () => {
     });
 
     it('should work with GetServerSidePropsContext.req type (IncomingMessage with cookies)', () => {
+      clearAllGlobals();
       const { scenarist } = createTestSetup();
 
       // Type from GetServerSidePropsContext: IncomingMessage & { cookies: NextApiRequestCookies }
