@@ -63,7 +63,9 @@
       "Bash(pnpm --filter=@scenarist/core build)",
       "Bash(gh api:*)",
       "Bash(pnpm --filter=@scenarist/core test)",
-      "Bash(pnpm --filter=@scenarist/core exec vitest run:*)"
+      "Bash(pnpm --filter=@scenarist/core exec vitest run:*)",
+      "Bash(pnpm test:e2e:comparison:*)",
+      "Bash(pnpm --filter=@scenarist/playwright-helpers build:*)"
     ],
     "deny": [],
     "ask": []

@@ -21,8 +21,8 @@ export default defineConfig<ScenaristOptions>({
     trace: 'on-first-retry',
   },
 
-  // Global setup/teardown for MSW server
-  globalSetup: './tests/playwright/globalSetup.ts',
+  // Global teardown for MSW server
+  // Note: MSW is auto-started in lib/scenarist.ts when Next.js imports it
   globalTeardown: './tests/playwright/globalTeardown.ts',
 
   projects: [
