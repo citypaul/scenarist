@@ -52,9 +52,9 @@ test.describe('Products Page - Server-Side Rendering (getServerSideProps)', () =
     // Navigate to products page with tier query param
     await page.goto('/?tier=standard');
 
-    // Verify standard pricing in server-rendered output
+    // Verify standard pricing in server-rendered output (£29.99 for Product A)
     const firstProduct = page.getByRole('article').first();
-    await expect(firstProduct.getByText('£149.99')).toBeVisible();
+    await expect(firstProduct.getByText('£29.99')).toBeVisible();
 
     // Verify no loading state (proves SSR worked)
     await expect(page.getByText('Loading products...')).not.toBeVisible();

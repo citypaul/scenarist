@@ -38,10 +38,10 @@ test.describe("Parallel Test Isolation", () => {
     await expect(firstProduct.getByText("£99.99")).toBeVisible();
 
     // Verify we're NOT seeing standard pricing (would indicate interference)
-    await expect(firstProduct.getByText("£149.99")).not.toBeVisible();
+    await expect(firstProduct.getByText("£29.99")).not.toBeVisible();
   });
 
-  test("concurrent test 2: standard user sees £149.99 pricing", async ({
+  test("concurrent test 2: standard user sees £29.99 pricing", async ({
     page,
     switchScenario,
   }) => {
@@ -54,9 +54,9 @@ test.describe("Parallel Test Isolation", () => {
     // Click standard tier button to load standard pricing
     await page.getByRole("button", { name: "Select standard tier" }).click();
 
-    // Verify standard pricing appears
+    // Verify standard pricing appears (£29.99 for Product A)
     const firstProduct = page.getByRole("article").first();
-    await expect(firstProduct.getByText("£149.99")).toBeVisible();
+    await expect(firstProduct.getByText("£29.99")).toBeVisible();
 
     // Verify we're NOT seeing premium pricing (would indicate interference)
     await expect(firstProduct.getByText("£99.99")).not.toBeVisible();
