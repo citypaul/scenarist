@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "start": "NODE_ENV=test tsx src/server.ts",
+    "start": "NODE_ENV=test SCENARIST_ENABLED=true tsx src/server.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:bruno": "cd bruno && bru run --env local",
