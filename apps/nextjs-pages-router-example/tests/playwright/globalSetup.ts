@@ -9,8 +9,6 @@
  * For comparison tests (without Scenarist), MSW is skipped so tests hit real json-server.
  */
 
-import { scenarist } from '../../lib/scenarist';
-
 export default async function globalSetup(): Promise<void> {
   // Skip MSW for comparison tests (they should hit real json-server)
   if (process.env.SKIP_MSW === 'true') {
@@ -18,8 +16,7 @@ export default async function globalSetup(): Promise<void> {
     return;
   }
 
-  // Start MSW server
-  scenarist.start();
-
-  console.log('✅ MSW server started for Playwright tests');
+  console.log('[globalSetup] MSW already auto-started in Next.js process (lib/scenarist.ts)');
+  console.log('[globalSetup] NOT starting MSW in Playwright process to avoid conflicts');
+  console.log('[globalSetup] MSW in Next.js process should intercept fetch calls from getServerSideProps');
 }
