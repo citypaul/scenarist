@@ -18,7 +18,7 @@ export const defaultScenario: ScenaristScenario = {
   name: "Default Scenario",
   description: "Default baseline behavior with standard fallbacks",
   mocks: [
-    // Products endpoint - standard pricing (fallback)
+    // Products endpoint - fallback with standard pricing
     {
       method: "GET",
       url: "http://localhost:3001/products",

@@ -49,7 +49,20 @@
       "Bash(git grep:*)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:www.hawu.me)",
-      "WebFetch(domain:starlight.astro.build)"
+      "WebFetch(domain:starlight.astro.build)",
+      "Bash(timeout 30 pnpm test:e2e:*)",
+      "Bash(pnpm add:*)",
+      "WebFetch(domain:mswjs.io)",
+      "Bash(node --version)",
+      "Bash(timeout 10 pnpm dev:*)",
+      "Bash(timeout 30 sh:*)",
+      "Bash(bash:*)",
+      "Bash(xargs cat:*)",
+      "Bash(/Users/paulhammond/personal/scenarist/CLAUDE.md)",
+      "Bash(pnpm --filter=@scenarist/nextjs-adapter build:*)",
+      "Bash(pnpm --filter=@scenarist/core build)",
+      "Bash(gh api:*)",
+      "Bash(pnpm --filter=@scenarist/core test)"
     ],
     "deny": [],
     "ask": []

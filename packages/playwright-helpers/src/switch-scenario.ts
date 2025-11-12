@@ -85,6 +85,11 @@ export const switchScenario = async (
   // Date.now() can collide when tests run in parallel within the same millisecond
   const testId = providedTestId ?? `test-${scenarioId}-${crypto.randomUUID()}`;
 
+  // DEBUG: Log scenario switch attempt
+  console.log('[switchScenario] Switching to scenario:', scenarioId);
+  console.log('[switchScenario] Generated testId:', testId);
+  console.log('[switchScenario] testIdHeader:', testIdHeader);
+
   // Call scenario endpoint
   const url = `${baseURL}${endpoint}`;
   const response = await page.request.post(url, {
@@ -95,10 +100,24 @@ export const switchScenario = async (
     },
   });
 
+  // DEBUG: Log response
+  console.log('[switchScenario] Response status:', response.status());
+  if (response.status() === 200) {
+    console.log('[switchScenario] Scenario switch SUCCESS');
+  }
+
   // Set up route interception to inject test ID header into all subsequent requests
   await page.route('**/*', (route) => {
     // Get existing headers from the request
     const headers = route.request().headers();
+
+    // DEBUG: Log header injection for document/navigation requests
+    const url = route.request().url();
+    const method = route.request().method();
+    if (method === 'GET' && (url.includes('localhost:3000') || url.includes('localhost:3001'))) {
+      console.log('[route intercept] Injecting header for:', method, url);
+      console.log('[route intercept] Header being injected:', testIdHeader, '=', testId);
+    }
 
     // Inject test ID header (overwrite if exists, ensuring consistency)
     headers[testIdHeader] = testId;

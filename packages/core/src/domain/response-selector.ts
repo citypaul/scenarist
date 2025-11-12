@@ -10,6 +10,32 @@ import { extractFromPath } from "./path-extraction.js";
 import { applyTemplates } from "./template-replacement.js";
 
 /**
+ * Specificity Ranges for Mock Selection Priority
+ *
+ * These constants define semantic priority ranges that guarantee correct
+ * mock selection across different feature types. Using named constants
+ * makes architectural intent explicit and prevents conflicts when adding
+ * new features.
+ *
+ * Priority Order (highest to lowest):
+ * 1. Match Criteria Mocks (101+): Conditional logic based on request content
+ * 2. Sequence Fallbacks (1): Stateful behavior without conditions
+ * 3. Simple Fallbacks (0): Default responses
+ *
+ * The large gap (100) between match criteria and fallbacks ensures that
+ * even a single match field (100+1=101) always beats any fallback (max 1).
+ * This prevents feature conflicts and maintains clean separation of concerns.
+ */
+const SPECIFICITY_RANGES = {
+  /** Base specificity for match criteria mocks (101+ when fields added) */
+  MATCH_CRITERIA_BASE: 100,
+  /** Specificity for sequence fallbacks (stateful mocks without conditions) */
+  SEQUENCE_FALLBACK: 1,
+  /** Specificity for simple fallback responses (default behavior) */
+  SIMPLE_FALLBACK: 0,
+} as const;
+
+/**
  * Options for creating a response selector.
  */
 type CreateResponseSelectorOptions = {
@@ -68,8 +94,8 @@ export const createResponseSelector = (
           // If match criteria exists, check if it matches the request
           if (matchesCriteria(context, mock.match)) {
             // Match criteria always have higher priority than fallbacks
-            // Base specificity of 100 ensures even 1 field (100+1=101) beats any fallback (max 1)
-            const specificity = 100 + calculateSpecificity(mock.match);
+            // Base specificity ensures even 1 field beats any fallback
+            const specificity = SPECIFICITY_RANGES.MATCH_CRITERIA_BASE + calculateSpecificity(mock.match);
 
             // Keep this mock if it's more specific than current best
             // (or if no best match yet)
@@ -82,9 +108,11 @@ export const createResponseSelector = (
         }
 
         // No match criteria = fallback mock (always matches)
-        // Sequences get specificity 1 (higher than simple responses at 0)
+        // Sequences get higher priority than simple responses
         // This ensures sequences are selected over simple fallback responses
-        const fallbackSpecificity = mock.sequence ? 1 : 0;
+        const fallbackSpecificity = mock.sequence
+          ? SPECIFICITY_RANGES.SEQUENCE_FALLBACK
+          : SPECIFICITY_RANGES.SIMPLE_FALLBACK;
 
         if (!bestMatch || fallbackSpecificity >= bestMatch.specificity) {
           // For equal specificity fallbacks, last wins

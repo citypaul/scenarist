@@ -182,14 +182,18 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const tier = Array.isArray(tierParam) ? tierParam[0] : tierParam || 'standard';
 
   try {
-    // Fetch products server-side with tier header
-    // This demonstrates Scenarist intercepting EXTERNAL API calls directly from getServerSideProps
-    // No API route in between - direct external call that MSW intercepts
+    const headers = {
+      ...scenarist.getHeaders(context.req),
+      'x-user-tier': tier,
+    };
+
+    console.log('[getServerSideProps] About to fetch products with headers:', headers);
+    console.log('[getServerSideProps] tier param:', tier);
+
+    // Fetch products server-side - DIRECT external API call
+    // This is the whole point: prove MSW can intercept external calls from getServerSideProps
     const response = await fetch('http://localhost:3001/products', {
-      headers: {
-        ...scenarist.getHeaders(context.req),
-        'x-user-tier': tier,
-      },
+      headers,
     });
 
     if (!response.ok) {

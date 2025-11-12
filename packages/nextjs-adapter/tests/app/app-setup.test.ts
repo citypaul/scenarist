@@ -130,8 +130,12 @@ describe('App Router createScenarist', () => {
       delete (global as any).__scenarist_msw_started;
     };
 
-    it('should return same instance when createScenarist() called multiple times', () => {
+    // Clear globals before each test to ensure test isolation
+    beforeEach(() => {
       clearAllGlobals();
+    });
+
+    it('should return same instance when createScenarist() called multiple times', () => {
 
       const instance1 = createScenarist({
         enabled: true,
@@ -148,8 +152,6 @@ describe('App Router createScenarist', () => {
     });
 
     it('should prevent duplicate scenario registration errors', () => {
-      clearAllGlobals();
-
       // First call registers all scenarios
       const instance1 = createScenarist({
         enabled: true,
@@ -167,8 +169,6 @@ describe('App Router createScenarist', () => {
     });
 
     it('should share scenario registry across all instances', () => {
-      clearAllGlobals();
-
       const instance1 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
@@ -188,8 +188,6 @@ describe('App Router createScenarist', () => {
     });
 
     it('should share scenario store across all instances', () => {
-      clearAllGlobals();
-
       const instance1 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
@@ -212,8 +210,6 @@ describe('App Router createScenarist', () => {
     });
 
     it('should maintain singleton across different scenario configurations', () => {
-      clearAllGlobals();
-
       const instance1 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
