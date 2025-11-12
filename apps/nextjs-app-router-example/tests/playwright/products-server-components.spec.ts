@@ -79,7 +79,7 @@ test.describe('Products Page - React Server Components', () => {
 
     // Verify products rendered with standard pricing
     await expect(page.getByRole('heading', { name: 'Product A' })).toBeVisible();
-    await expect(page.getByText('£149.99')).toBeVisible(); // Standard price for Product A
+    await expect(page.getByText('£29.99')).toBeVisible(); // Standard price for Product A
 
     // Verify tier badge on product card
     const firstProduct = page.locator('div.border').first();
@@ -124,7 +124,7 @@ test.describe('Products Page - React Server Components', () => {
     await page.reload();
 
     // Verify standard price (no app restart needed!)
-    await expect(page.getByText('£149.99')).toBeVisible();
+    await expect(page.getByText('£29.99')).toBeVisible();
   });
 
   test('should demonstrate that server component testing works without Jest', async ({

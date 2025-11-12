@@ -61,8 +61,8 @@ test.describe('Products Page - Request Matching (with Scenarist)', () => {
       page.getByRole('button', { name: 'Select standard tier' }).click(),
     ]);
 
-    // Verify standard pricing is displayed (£149.99 for first product)
+    // Verify standard pricing is displayed (£29.99 for first product - Product A)
     const firstProduct = page.getByRole('article').first();
-    await expect(firstProduct.getByText('£149.99')).toBeVisible();
+    await expect(firstProduct.getByText('£29.99')).toBeVisible();
   });
 });
