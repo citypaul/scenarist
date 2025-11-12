@@ -1,24 +1,25 @@
 import { describe, it, expect } from 'vitest';
 
 /**
- * This test documents the header normalization contract between MSW adapter and Core.
+ * This test documents the header handling contract between MSW adapter and Core.
  * 
- * CONTRACT:
- * - MSW adapter MUST normalize all request header keys to lowercase
- * - Core ResponseSelector expects lowercase header keys
- * - This ensures case-insensitive header matching works correctly
+ * NEW CONTRACT (after architectural fix):
+ * - MSW adapter passes headers through as-is (no normalization)
+ * - Core normalizes ALL headers (request + criteria) for matching
+ * - This centralizes normalization logic in one place (core)
  * 
  * WHY THIS MATTERS:
  * - HTTP headers are case-insensitive per RFC 2616
  * - Browsers can send headers with any casing (Authorization, AUTHORIZATION, authorization)
- * - Without normalization, header matching would fail
+ * - Core handles normalization so adapters don't have to
  * 
- * CURRENT STATE:
+ * IMPLEMENTATION DETAIL:
  * - The Fetch API Headers object automatically normalizes keys to lowercase
- * - We still normalize explicitly for: defense in depth, documentation, future-proofing
+ * - Even if it didn't, core would still handle normalization correctly
+ * - Adapters can safely pass through headers without worrying about casing
  */
-describe('Header normalization contract', () => {
-  it('documents that Headers API normalizes keys automatically', () => {
+describe('Header handling contract', () => {
+  it('documents that Fetch API Headers normalizes keys automatically', () => {
     // Fetch API Headers object automatically normalizes to lowercase
     const headers = new Headers();
     headers.set('Content-Type', 'application/json');
@@ -38,55 +39,70 @@ describe('Header normalization contract', () => {
     expect(keys.every(key => key === key.toLowerCase())).toBe(true);
   });
 
-  it('documents the contract with core ResponseSelector', () => {
-    // Core expects lowercase header keys in HttpRequestContext
+  it('documents that core normalizes both request and criteria headers', () => {
+    // Adapter passes through headers as-is (in practice, Fetch API normalizes them)
     const requestContext = {
       method: 'GET' as const,
       url: 'https://api.example.com/test',
       body: undefined,
       headers: {
-        'content-type': 'application/json',  // Lowercase
-        'x-custom-header': 'test-value',     // Lowercase
+        'content-type': 'application/json',  // Lowercase (from Fetch API)
+        'x-custom-header': 'test-value',     // Lowercase (from Fetch API)
       },
       query: {},
     };
 
-    // Core normalizes criteria keys to lowercase and matches against request headers
+    // Core normalizes criteria keys to lowercase for matching
     const criteriaHeaders = {
       'Content-Type': 'application/json',    // Mixed case in criteria
       'X-Custom-Header': 'test-value',       // Mixed case in criteria
     };
 
-    // Simulate core's matching logic (from response-selector.ts:306-309)
+    // Simulate core's matching logic (from response-selector.ts matchesHeaders)
+    // Core normalizes BOTH request and criteria headers
+    const normalizedRequest: Record<string, string> = {};
+    Object.entries(requestContext.headers).forEach(([key, value]) => {
+      normalizedRequest[key.toLowerCase()] = value;
+    });
+
     const matches = Object.entries(criteriaHeaders).every(([key, value]) => {
       const normalizedKey = key.toLowerCase();
-      return requestContext.headers[normalizedKey] === value;
+      return normalizedRequest[normalizedKey] === value;
     });
 
     expect(matches).toBe(true);
   });
 
-  it('shows why normalization is needed for defense in depth', () => {
-    // Even though Headers API normalizes, we should explicitly normalize for:
-    // 1. Defense in depth - don't rely on external behavior
-    // 2. Documentation - makes contract explicit
-    // 3. Future-proofing - in case we use different environments
-
-    // Mock scenario where headers might NOT be normalized (hypothetical)
-    const rawHeaders: Record<string, string> = {
-      'Content-Type': 'application/json',    // Mixed case
-      'X-Custom-Header': 'test-value',       // Mixed case
+  it('shows core handles normalization even if adapter sends mixed-case headers', () => {
+    // Hypothetical: adapter sends mixed-case headers (even though Fetch API normalizes)
+    const requestContext = {
+      method: 'GET' as const,
+      url: 'https://api.example.com/test',
+      body: undefined,
+      headers: {
+        'Content-Type': 'application/json',  // Mixed case (hypothetical)
+        'X-Custom-Header': 'test-value',     // Mixed case (hypothetical)
+      },
+      query: {},
     };
 
-    // Without normalization, matching would fail
-    const criteriaKey = 'x-custom-header';
-    expect(rawHeaders[criteriaKey]).toBeUndefined();  // Case mismatch
+    const criteriaHeaders = {
+      'content-type': 'application/json',    // Lowercase in criteria
+      'x-custom-header': 'test-value',       // Lowercase in criteria
+    };
 
-    // With normalization, matching succeeds
-    const normalizedHeaders: Record<string, string> = {};
-    Object.entries(rawHeaders).forEach(([key, value]) => {
-      normalizedHeaders[key.toLowerCase()] = value;
+    // Core normalizes BOTH request and criteria headers
+    const normalizedRequest: Record<string, string> = {};
+    Object.entries(requestContext.headers).forEach(([key, value]) => {
+      normalizedRequest[key.toLowerCase()] = value;
     });
-    expect(normalizedHeaders[criteriaKey]).toBe('test-value');  // Match!
+
+    const matches = Object.entries(criteriaHeaders).every(([key, value]) => {
+      const normalizedKey = key.toLowerCase();
+      return normalizedRequest[normalizedKey] === value;
+    });
+
+    // Matching succeeds because core normalizes both sides
+    expect(matches).toBe(true);
   });
 });
