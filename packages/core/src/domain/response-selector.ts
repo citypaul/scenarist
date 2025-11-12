@@ -9,29 +9,9 @@ import { ResponseSelectionError } from "../ports/driven/response-selector.js";
 import { extractFromPath } from "./path-extraction.js";
 import { applyTemplates } from "./template-replacement.js";
 
-/**
- * Specificity Ranges for Mock Selection Priority
- *
- * These constants define semantic priority ranges that guarantee correct
- * mock selection across different feature types. Using named constants
- * makes architectural intent explicit and prevents conflicts when adding
- * new features.
- *
- * Priority Order (highest to lowest):
- * 1. Match Criteria Mocks (101+): Conditional logic based on request content
- * 2. Sequence Fallbacks (1): Stateful behavior without conditions
- * 3. Simple Fallbacks (0): Default responses
- *
- * The large gap (100) between match criteria and fallbacks ensures that
- * even a single match field (100+1=101) always beats any fallback (max 1).
- * This prevents feature conflicts and maintains clean separation of concerns.
- */
 const SPECIFICITY_RANGES = {
-  /** Base specificity for match criteria mocks (101+ when fields added) */
   MATCH_CRITERIA_BASE: 100,
-  /** Specificity for sequence fallbacks (stateful mocks without conditions) */
   SEQUENCE_FALLBACK: 1,
-  /** Specificity for simple fallback responses (default behavior) */
   SIMPLE_FALLBACK: 0,
 } as const;
 
