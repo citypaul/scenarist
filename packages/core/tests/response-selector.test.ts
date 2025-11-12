@@ -769,6 +769,97 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       }
     });
   });
+  describe("Last Fallback Wins for Simple Responses (Automatic Default Fallback)", () => {
+    it("should prefer active scenario fallback over default fallback", () => {
+      // This test documents the "last fallback wins" behavior that enables
+      // automatic default fallback. When default scenario and active scenario
+      // both provide fallback mocks (specificity = 0), the last one wins.
+      //
+      // Real-world usage:
+      // - Default scenario provides baseline fallback
+      // - Active scenario provides override fallback
+      // - Active override wins without needing match criteria
+
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/data",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        // Default scenario fallback (collected first in automatic default fallback)
+        {
+          method: "GET",
+          url: "/api/data",
+          response: { status: 200, body: { tier: "standard" } },
+        },
+        // Active scenario fallback (collected second in automatic default fallback)
+        {
+          method: "GET",
+          url: "/api/data",
+          response: { status: 200, body: { tier: "premium" } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", "active-scenario", context, mocks);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        // Last fallback wins - active scenario overrides default
+        expect(result.data.body).toEqual({ tier: "premium" });
+      }
+    });
+
+    it("should still use highest specificity for mocks with match criteria", () => {
+      // This test verifies that "last wins" ONLY applies to fallback mocks.
+      // Mocks with match criteria use specificity-based selection (highest wins),
+      // not position-based selection.
+      //
+      // Specificity priority ranges:
+      // - Match criteria: 101+ (100 base + field count)
+      // - Sequence fallbacks: 1
+      // - Simple fallbacks: 0
+
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/data",
+        body: undefined,
+        headers: { tier: "standard" },
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        // First mock with match criteria (specificity: 101 = 100 base + 1 header)
+        {
+          method: "GET",
+          url: "/api/data",
+          match: { headers: { tier: "standard" } },
+          response: { status: 200, body: { tier: "standard", source: "first" } },
+        },
+        // Second mock with match criteria (specificity: 101 = 100 base + 1 header)
+        {
+          method: "GET",
+          url: "/api/data",
+          match: { headers: { tier: "premium" } },
+          response: { status: 200, body: { tier: "premium", source: "second" } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", "active-scenario", context, mocks);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        // First matching mock wins for specificity > 0
+        // (Both have equal specificity, first match wins as tiebreaker)
+        expect(result.data.body).toEqual({ tier: "standard", source: "first" });
+      }
+    });
+  });
+
 
   describe("Combined Match Criteria", () => {
     it("should match when body AND headers both match", () => {

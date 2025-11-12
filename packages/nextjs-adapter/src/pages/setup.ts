@@ -12,6 +12,14 @@ import { createScenarioEndpoint } from './endpoints.js';
  * 1. MSW server.listen() is only called once
  * 2. All instances share the same scenario registry and store
  * 3. The same Scenarist instance is returned when called multiple times
+ *
+ * IMPORTANT: App Router and Pages Router use separate global keys (_pages suffix) to enable isolation.
+ * This allows a single Next.js application to use both routers simultaneously with
+ * independent scenario states. For example, App Router pages can be on scenario A
+ * while Pages Router pages are on scenario B, enabling gradual migration patterns.
+ *
+ * If shared globals were used, switching scenarios in Pages Router would affect App
+ * Router and vice versa, breaking test isolation when both routers are present.
  */
 declare global {
   // eslint-disable-next-line no-var

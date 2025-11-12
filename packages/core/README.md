@@ -128,6 +128,39 @@ Scenarist provides 20+ powerful features for E2E testing. All capabilities are f
 - Perfect for default responses
 - When multiple fallbacks exist, last one wins (enables override pattern)
 
+### Case-Insensitive Header Matching (RFC 2616 Compliant)
+
+Per [RFC 2616 Section 4.2](https://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2), HTTP header names are case-insensitive. Scenarist implements this standard correctly:
+
+**Header Keys:** Case-insensitive (normalized to lowercase for matching)
+**Header Values:** Case-sensitive (preserved as-is)
+
+```typescript
+// All of these match the same mock:
+{
+  match: {
+    headers: { 'x-user-tier': 'premium' }
+  }
+}
+
+// Request with 'X-User-Tier: premium' → ✅ Matches
+// Request with 'x-user-tier: premium' → ✅ Matches
+// Request with 'X-USER-TIER: premium' → ✅ Matches
+
+// But header VALUES are case-sensitive:
+// Request with 'x-user-tier: Premium' → ❌ Does NOT match (value casing differs)
+```
+
+**Implementation Details:**
+- Core's `ResponseSelector` normalizes both request headers AND criteria headers to lowercase
+- Adapters pass headers as-is (no normalization required)
+- Works regardless of framework (Express, Next.js, Fastify, etc.)
+
+**Why This Matters:**
+- Browser and client libraries may send headers with any casing
+- Tests remain portable across different HTTP clients
+- Standards-compliant behavior prevents matching bugs
+
 ### Response Sequences (4 capabilities)
 
 **7. Single responses**
