@@ -40,6 +40,9 @@ const extractHttpRequestContext = async (
   }
 
   // Extract headers as Record<string, string>
+  // Headers are passed through as-is; normalization is core's responsibility.
+  // The Fetch API Headers object already normalizes keys to lowercase,
+  // but even if it didn't, core would handle normalization.
   const headers: Record<string, string> = {};
   request.headers.forEach((value, key) => {
     headers[key] = value;
@@ -62,8 +65,12 @@ const extractHttpRequestContext = async (
 };
 
 /**
- * Get mocks from active scenario, falling back to default scenario.
+ * Get mocks from active scenario, with default scenario mocks as fallback.
  * Returns URL-matching mocks for ResponseSelector to evaluate.
+ *
+ * Default mocks are ALWAYS included (if they match URL+method).
+ * Active scenario mocks are added after defaults, allowing them to override
+ * based on specificity (mocks with match criteria have higher specificity).
  */
 const getMocksFromScenarios = (
   activeScenario: ActiveScenario | undefined,
@@ -73,26 +80,25 @@ const getMocksFromScenarios = (
 ): ReadonlyArray<import('@scenarist/core').ScenaristMock> => {
   const mocks: Array<import('@scenarist/core').ScenaristMock> = [];
 
-  // First, try active scenario
+  // Step 1: ALWAYS include default scenario mocks first
+  // These act as fallback when active scenario mocks don't match
+  const defaultScenario = getScenarioDefinition('default');
+  if (defaultScenario) {
+    defaultScenario.mocks.forEach((mock) => {
+      const methodMatches = mock.method.toUpperCase() === method.toUpperCase();
+      const urlMatch = matchesUrl(mock.url, url);
+      if (methodMatches && urlMatch.matches) {
+        mocks.push(mock);
+      }
+    });
+  }
+
+  // Step 2: Add active scenario mocks (if any)
+  // These override defaults based on specificity (via ResponseSelector)
   if (activeScenario) {
     const scenarioDefinition = getScenarioDefinition(activeScenario.scenarioId);
     if (scenarioDefinition) {
-      // Add all URL and method matching mocks from active scenario
       scenarioDefinition.mocks.forEach((mock) => {
-        const methodMatches = mock.method.toUpperCase() === method.toUpperCase();
-        const urlMatch = matchesUrl(mock.url, url);
-        if (methodMatches && urlMatch.matches) {
-          mocks.push(mock);
-        }
-      });
-    }
-  }
-
-  // If no mocks found in active scenario, fall back to default
-  if (mocks.length === 0) {
-    const defaultScenario = getScenarioDefinition('default');
-    if (defaultScenario) {
-      defaultScenario.mocks.forEach((mock) => {
         const methodMatches = mock.method.toUpperCase() === method.toUpperCase();
         const urlMatch = matchesUrl(mock.url, url);
         if (methodMatches && urlMatch.matches) {

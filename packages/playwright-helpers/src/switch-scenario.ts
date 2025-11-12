@@ -36,6 +36,33 @@ export type SwitchScenarioOptions = {
 };
 
 /**
+ * Establish route interception and header injection for test ID propagation.
+ *
+ * CRITICAL: Must be called BEFORE navigation to prevent race conditions.
+ * Client Components may fire API calls immediately on mount, and if route
+ * interception isn't established first, those requests bypass MSW.
+ *
+ * @param page - Playwright Page object
+ * @param testId - Test ID to inject into all requests
+ * @param testIdHeader - Header name for test ID
+ */
+const establishTestIdInterception = async (
+  page: Page,
+  testId: string,
+  testIdHeader: string
+): Promise<void> => {
+  // Intercept all routes to inject test ID header
+  await page.route('**/*', (route) => {
+    const headers = route.request().headers();
+    headers[testIdHeader] = testId;
+    route.continue({ headers });
+  });
+
+  // Set test ID header for navigation requests (belt and suspenders)
+  await page.setExtraHTTPHeaders({ [testIdHeader]: testId });
+};
+
+/**
  * Switch to a different scenario in Playwright tests.
  *
  * This helper simplifies scenario switching by:
@@ -85,6 +112,10 @@ export const switchScenario = async (
   // Date.now() can collide when tests run in parallel within the same millisecond
   const testId = providedTestId ?? `test-${scenarioId}-${crypto.randomUUID()}`;
 
+  // Establish test ID interception BEFORE scenario switch to prevent race conditions
+  // Client Components may fire API calls immediately on mount/navigation
+  await establishTestIdInterception(page, testId, testIdHeader);
+
   // Call scenario endpoint
   const url = `${baseURL}${endpoint}`;
   const response = await page.request.post(url, {
@@ -102,9 +133,6 @@ export const switchScenario = async (
       `Failed to switch scenario: ${response.status()} ${response.statusText()}\n${body}`,
     );
   }
-
-  // Set test ID header for all subsequent requests
-  await page.setExtraHTTPHeaders({ [testIdHeader]: testId });
 
   // Return test ID for explicit use in page.request calls
   return testId;

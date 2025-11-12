@@ -24,17 +24,16 @@ import { test, expect } from './fixtures';
  */
 
 test.describe('Products Page - Server-Side Rendering (getServerSideProps)', () => {
-  test('should render premium products server-side', async ({
-    page,
-    switchScenario,
-  }) => {
-    // Switch to premium user scenario
+  test('should render premium products server-side', async ({ page, switchScenario }) => {
+    // Switch to premiumUserScenario to activate premium mocks
+    // Automatic default fallback will combine default + premium mocks
+    // Premium mock (specificity 1) will override default fallback (specificity 0)
     await switchScenario(page, 'premiumUser');
 
     // Navigate to products page with tier query param for getServerSideProps
     await page.goto('/?tier=premium');
 
-    // Verify products are visible (should be server-rendered, not client-fetched)
+    // Verify products are visible with PREMIUM pricing (should be server-rendered)
     const firstProduct = page.getByRole('article').first();
     await expect(firstProduct.getByText('£99.99')).toBeVisible();
 

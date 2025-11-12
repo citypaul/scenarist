@@ -49,7 +49,13 @@ export default function Home({ initialProducts = [], initialTier = 'standard' }:
   }, []);
 
   // Fetch products when tier changes
+  // Only fetch client-side if we don't have SSR data or tier changed after mount
   useEffect(() => {
+    // Skip initial fetch if we have SSR data for the current tier
+    if (initialProducts.length > 0 && userTier === initialTier) {
+      return;
+    }
+
     const fetchProducts = async () => {
       setLoading(true);
       setError(null);
@@ -76,7 +82,7 @@ export default function Home({ initialProducts = [], initialTier = 'standard' }:
     };
 
     fetchProducts();
-  }, [userTier]);
+  }, [userTier, initialProducts.length, initialTier]);
 
   const handleAddToCart = async (productId: number) => {
     try {
@@ -176,13 +182,15 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const tier = Array.isArray(tierParam) ? tierParam[0] : tierParam || 'standard';
 
   try {
-    // Fetch products server-side with tier header
-    // This demonstrates Scenarist working during getServerSideProps
-    const response = await fetch('http://localhost:3001/api/products', {
-      headers: {
-        ...scenarist.getHeaders(context.req),
-        'x-user-tier': tier,
-      },
+    const headers = {
+      ...scenarist.getHeaders(context.req),
+      'x-user-tier': tier,
+    };
+
+    // Fetch products server-side - DIRECT external API call
+    // This is the whole point: prove MSW can intercept external calls from getServerSideProps
+    const response = await fetch('http://localhost:3001/products', {
+      headers,
     });
 
     if (!response.ok) {

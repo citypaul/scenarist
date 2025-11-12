@@ -2,7 +2,7 @@
  * Scenarist Setup for Next.js Pages Router
  *
  * Phase 1: Minimal setup
- * Phase 2: Auto-start MSW for server-side interception
+ * Phase 2: Auto-start MSW for development
  */
 
 import { createScenarist } from '@scenarist/nextjs-adapter/pages';
@@ -22,9 +22,7 @@ export const scenarist = createScenarist({
   scenarios, // All scenarios registered at initialization (must include 'default')
 });
 
-// Auto-start MSW server for server-side API route interception
-// This ensures fetch() calls from API routes are intercepted by MSW
-if (typeof window === 'undefined') {
-  // Only start on server-side (Node.js environment)
+// Auto-start MSW server in development
+if (typeof window === 'undefined' && scenarist.config.enabled) {
   scenarist.start();
 }

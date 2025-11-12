@@ -235,6 +235,153 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
     });
   });
 
+  describe("Case-Insensitive Header Matching", () => {
+    it("should match when criteria headers use uppercase but request headers are lowercase", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/data",
+        body: undefined,
+        headers: { "x-user-tier": "premium" }, // Lowercase (from Fetch API)
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "GET",
+          url: "/api/data",
+          match: { headers: { "X-User-Tier": "premium" } }, // Mixed case in criteria
+          response: { status: 200, body: { data: "premium-data" } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({ data: "premium-data" });
+      }
+    });
+
+    it("should match when criteria headers are all uppercase", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/data",
+        body: undefined,
+        headers: { "x-api-key": "secret123" }, // Lowercase (from Fetch API)
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "GET",
+          url: "/api/data",
+          match: { headers: { "X-API-KEY": "secret123" } }, // All uppercase
+          response: { status: 200, body: { data: "secure-data" } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({ data: "secure-data" });
+      }
+    });
+
+    it("should match with multiple headers of different casing", () => {
+      const context: HttpRequestContext = {
+        method: "POST",
+        url: "/api/submit",
+        body: { data: "test" },
+        headers: {
+          "x-user-tier": "premium",
+          "x-api-version": "v2",
+          "content-type": "application/json",
+        },
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "POST",
+          url: "/api/submit",
+          match: {
+            headers: {
+              "X-User-Tier": "premium", // Mixed case
+              "X-API-Version": "v2", // Mixed case
+              "Content-Type": "application/json", // Mixed case
+            },
+          },
+          response: { status: 201, body: { created: true } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.status).toBe(201);
+        expect(result.data.body).toEqual({ created: true });
+      }
+    });
+
+    it("should not match when header value differs (case still matters for values)", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/data",
+        body: undefined,
+        headers: { "x-user-tier": "premium" }, // Lowercase value
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "GET",
+          url: "/api/data",
+          match: { headers: { "X-User-Tier": "PREMIUM" } }, // Uppercase value
+          response: { status: 200, body: { data: "premium-data" } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+      expect(result.success).toBe(false); // Values are case-sensitive
+    });
+
+    it("should match when request headers are NOT normalized (mixed case from adapter)", () => {
+      // This tests the new architecture where adapters pass through headers as-is
+      // and core normalizes both request AND criteria headers
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/data",
+        body: undefined,
+        headers: { "X-User-Tier": "premium", "Content-Type": "application/json" }, // Mixed case from adapter
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "GET",
+          url: "/api/data",
+          match: { headers: { "x-user-tier": "premium" } }, // Lowercase in criteria
+          response: { status: 200, body: { data: "premium-data" } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({ data: "premium-data" });
+      }
+    });
+  });
+
   describe("Match on Query Parameters (Exact Match)", () => {
     it("should match when all specified query params match exactly", () => {
       const context: HttpRequestContext = {
@@ -491,9 +638,9 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       }
     });
 
-    it("should return first fallback when multiple fallback mocks exist", () => {
+    it("should return last fallback when multiple fallback mocks exist", () => {
       // When multiple mocks have no match criteria (all are fallbacks),
-      // the first fallback should win as tiebreaker (all have specificity 0)
+      // the last fallback wins (all have specificity 0)
 
       const context: HttpRequestContext = {
         method: "POST",
@@ -529,8 +676,58 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        // First fallback wins when all have equal specificity (0)
-        expect(result.data.body).toEqual({ price: 50, source: "first-fallback" });
+        // Last fallback wins when all have equal specificity (0)
+        expect(result.data.body).toEqual({ price: 70, source: "third-fallback" });
+      }
+    });
+
+    it("should return last sequence fallback when multiple sequence fallbacks exist", () => {
+      // When multiple mocks have sequences but no match criteria (all are sequence fallbacks),
+      // the last sequence fallback wins (all have specificity 1)
+
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/status",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "GET",
+          url: "/api/status",
+          // First sequence fallback (no match criteria, specificity 1)
+          sequence: {
+            responses: [
+              { status: 200, body: { status: "pending", source: "first-sequence" } },
+              { status: 200, body: { status: "complete", source: "first-sequence" } },
+            ],
+            repeat: "last",
+          },
+        },
+        {
+          method: "GET",
+          url: "/api/status",
+          // Second sequence fallback (no match criteria, specificity 1)
+          sequence: {
+            responses: [
+              { status: 200, body: { status: "processing", source: "second-sequence" } },
+              { status: 200, body: { status: "done", source: "second-sequence" } },
+            ],
+            repeat: "last",
+          },
+        },
+      ];
+
+      const sequenceTracker = createInMemorySequenceTracker();
+      const selector = createResponseSelector({ sequenceTracker });
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        // Last sequence fallback wins when all have equal specificity (1)
+        expect(result.data.body).toEqual({ status: "processing", source: "second-sequence" });
       }
     });
 
@@ -572,6 +769,97 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       }
     });
   });
+  describe("Last Fallback Wins for Simple Responses (Automatic Default Fallback)", () => {
+    it("should prefer active scenario fallback over default fallback", () => {
+      // This test documents the "last fallback wins" behavior that enables
+      // automatic default fallback. When default scenario and active scenario
+      // both provide fallback mocks (specificity = 0), the last one wins.
+      //
+      // Real-world usage:
+      // - Default scenario provides baseline fallback
+      // - Active scenario provides override fallback
+      // - Active override wins without needing match criteria
+
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/data",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        // Default scenario fallback (collected first in automatic default fallback)
+        {
+          method: "GET",
+          url: "/api/data",
+          response: { status: 200, body: { tier: "standard" } },
+        },
+        // Active scenario fallback (collected second in automatic default fallback)
+        {
+          method: "GET",
+          url: "/api/data",
+          response: { status: 200, body: { tier: "premium" } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", "active-scenario", context, mocks);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        // Last fallback wins - active scenario overrides default
+        expect(result.data.body).toEqual({ tier: "premium" });
+      }
+    });
+
+    it("should still use highest specificity for mocks with match criteria", () => {
+      // This test verifies that "last wins" ONLY applies to fallback mocks.
+      // Mocks with match criteria use specificity-based selection (highest wins),
+      // not position-based selection.
+      //
+      // Specificity priority ranges:
+      // - Match criteria: 101+ (100 base + field count)
+      // - Sequence fallbacks: 1
+      // - Simple fallbacks: 0
+
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/data",
+        body: undefined,
+        headers: { tier: "standard" },
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        // First mock with match criteria (specificity: 101 = 100 base + 1 header)
+        {
+          method: "GET",
+          url: "/api/data",
+          match: { headers: { tier: "standard" } },
+          response: { status: 200, body: { tier: "standard", source: "first" } },
+        },
+        // Second mock with match criteria (specificity: 101 = 100 base + 1 header)
+        {
+          method: "GET",
+          url: "/api/data",
+          match: { headers: { tier: "premium" } },
+          response: { status: 200, body: { tier: "premium", source: "second" } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", "active-scenario", context, mocks);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        // First matching mock wins for specificity > 0
+        // (Both have equal specificity, first match wins as tiebreaker)
+        expect(result.data.body).toEqual({ tier: "standard", source: "first" });
+      }
+    });
+  });
+
 
   describe("Combined Match Criteria", () => {
     it("should match when body AND headers both match", () => {
@@ -845,7 +1133,10 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       }
     });
 
-    it("should mark sequence as exhausted when repeat mode is 'none'", () => {
+    it("should fallback to next mock after sequence exhausted (repeat: 'none')", () => {
+      // When sequence is exhausted (repeat: 'none'), it should be skipped
+      // and the next mock (fallback) should be selected
+
       const context: HttpRequestContext = {
         method: "GET",
         url: "/api/limited",
@@ -855,6 +1146,13 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       };
 
       const mocks: ReadonlyArray<MockDefinition> = [
+        // Fallback mock - comes first but has lower priority than sequence (next)
+        {
+          method: "GET",
+          url: "/api/limited",
+          response: { status: 410, body: { error: "Sequence exhausted" } },
+        },
+        // Sequence mock with repeat: 'none' - last fallback wins
         {
           method: "GET",
           url: "/api/limited",
@@ -866,19 +1164,13 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
             repeat: "none",
           },
         },
-        // Fallback mock when sequence is exhausted
-        {
-          method: "GET",
-          url: "/api/limited",
-          response: { status: 410, body: { error: "Sequence exhausted" } },
-        },
       ];
 
       const selector = createResponseSelector({
         sequenceTracker: createInMemorySequenceTracker(),
       });
 
-      // First two calls go through sequence
+      // First two calls go through sequence (sequence is last = wins as fallback)
       const result1 = selector.selectResponse("test-4", "limited-scenario", context, mocks);
       expect(result1.success).toBe(true);
       if (result1.success) {
@@ -891,17 +1183,15 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         expect(result2.data.body).toEqual({ attempt: 2 });
       }
 
-      // Third call should use fallback (sequence exhausted)
-      // Note: This requires implementing exhaustion checking in the matching phase
-      // For now, this test documents the expected behavior
+      // Third call: sequence exhausted and skipped, fallback mock selected
       const result3 = selector.selectResponse("test-4", "limited-scenario", context, mocks);
       expect(result3.success).toBe(true);
       if (result3.success) {
-        // Current implementation will return null from exhausted sequence
-        // which causes the selector to fall through to the next mock (fallback)
         expect(result3.data.status).toBe(410);
+        expect(result3.data.body).toEqual({ error: "Sequence exhausted" });
       }
     });
+
 
     it("should maintain independent sequence positions per test ID", () => {
       const selector = createResponseSelector({

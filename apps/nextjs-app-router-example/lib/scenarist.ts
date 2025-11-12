@@ -3,6 +3,10 @@
  *
  * Creates and configures Scenarist instance for scenario-based testing.
  * Server Components fetch data server-side, so MSW runs in Node.js (not browser).
+ *
+ * CRITICAL: Always use `export const scenarist = createScenarist(...)` pattern.
+ * The adapter handles singleton logic internally (MSW, registry, store).
+ * Never wrap in a function or default export - module duplication requires this pattern.
  */
 
 import { createScenarist } from '@scenarist/nextjs-adapter/app';
@@ -13,10 +17,7 @@ export const scenarist = createScenarist({
   scenarios,
 });
 
-// Auto-start MSW server for server-side API route interception
-// Server Components and Route Handlers run in Node.js, not the browser
-// Note: This starts MSW in the Next.js server process
-// Playwright globalSetup also starts MSW in its own process (both needed!)
+// Start MSW in Node.js environment
 if (typeof window === 'undefined') {
   scenarist.start();
 }

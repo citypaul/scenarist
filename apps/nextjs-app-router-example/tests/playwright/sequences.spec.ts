@@ -99,6 +99,18 @@ test.describe('Sequences - Response Sequences', () => {
 
     // First payment - Pending (ch_1)
     await paymentButton.click();
+
+    // Wait for button to finish loading (disabled state goes away)
+    await expect(paymentButton).not.toBeDisabled({ timeout: 10000 });
+
+    // Check if there's an error alert instead of success
+    // Filter out Next.js route announcer (has id="__next-route-announcer__")
+    const unexpectedError = page.getByRole('alert').and(page.locator(':not([id="__next-route-announcer__"])'));
+    if (await unexpectedError.isVisible()) {
+      const errorText = await unexpectedError.textContent();
+      throw new Error(`Payment failed with error: ${errorText}`);
+    }
+
     const paymentStatus = page.getByRole('status').filter({ hasText: 'Payment ID' });
     await expect(paymentStatus).toContainText('Payment ID: ch_1');
     await expect(paymentStatus).toContainText('Status: pending');

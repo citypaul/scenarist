@@ -9,6 +9,12 @@ import { ResponseSelectionError } from "../ports/driven/response-selector.js";
 import { extractFromPath } from "./path-extraction.js";
 import { applyTemplates } from "./template-replacement.js";
 
+const SPECIFICITY_RANGES = {
+  MATCH_CRITERIA_BASE: 100,
+  SEQUENCE_FALLBACK: 1,
+  SIMPLE_FALLBACK: 0,
+} as const;
+
 /**
  * Options for creating a response selector.
  */
@@ -67,7 +73,9 @@ export const createResponseSelector = (
         if (mock.match) {
           // If match criteria exists, check if it matches the request
           if (matchesCriteria(context, mock.match)) {
-            const specificity = calculateSpecificity(mock.match);
+            // Match criteria always have higher priority than fallbacks
+            // Base specificity ensures even 1 field beats any fallback
+            const specificity = SPECIFICITY_RANGES.MATCH_CRITERIA_BASE + calculateSpecificity(mock.match);
 
             // Keep this mock if it's more specific than current best
             // (or if no best match yet)
@@ -80,13 +88,17 @@ export const createResponseSelector = (
         }
 
         // No match criteria = fallback mock (always matches)
-        // Fallback has specificity of 0
-        if (!bestMatch || bestMatch.specificity === 0) {
-          // Only use fallback if no better match exists, or if we only have
-          // other fallbacks (first fallback wins as tiebreaker)
-          if (!bestMatch) {
-            bestMatch = { mock, mockIndex, specificity: 0 };
-          }
+        // Sequences get higher priority than simple responses
+        // This ensures sequences are selected over simple fallback responses
+        const fallbackSpecificity = mock.sequence
+          ? SPECIFICITY_RANGES.SEQUENCE_FALLBACK
+          : SPECIFICITY_RANGES.SIMPLE_FALLBACK;
+
+        if (!bestMatch || fallbackSpecificity >= bestMatch.specificity) {
+          // For equal specificity fallbacks, last wins
+          // This allows active scenario mocks to override default mocks
+          // Applies to both simple fallbacks (0) and sequence fallbacks (1)
+          bestMatch = { mock, mockIndex, specificity: fallbackSpecificity };
         }
       }
 
@@ -285,17 +297,27 @@ const matchesBody = (
   return true;
 };
 
-/**
- * Check if request headers contain all specified headers with exact values.
- * Request can have additional headers beyond what's specified in criteria.
- */
+// Header matching follows RFC 2616 (case-insensitive names, case-sensitive values)
+const normalizeHeaderName = (name: string): string => name.toLowerCase();
+
+const createNormalizedHeaderMap = (
+  headers: Readonly<Record<string, string>>
+): Record<string, string> => {
+  const normalized: Record<string, string> = {};
+  for (const [key, value] of Object.entries(headers)) {
+    normalized[normalizeHeaderName(key)] = value;
+  }
+  return normalized;
+};
+
 const matchesHeaders = (
   requestHeaders: Readonly<Record<string, string>>,
   criteriaHeaders: Record<string, string>
 ): boolean => {
-  // Check all required headers exist with exact matching values
+  const normalizedRequest = createNormalizedHeaderMap(requestHeaders);
+
   for (const [key, value] of Object.entries(criteriaHeaders)) {
-    if (requestHeaders[key] !== value) {
+    if (normalizedRequest[normalizeHeaderName(key)] !== value) {
       return false;
     }
   }

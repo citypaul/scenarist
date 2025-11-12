@@ -86,9 +86,17 @@ export const defaultScenario: ScenaristScenario = {
 - Scenario switching fails
 - Between test runs (before first scenario switch)
 
-## Override Behavior
+## Automatic Fallback Behavior
 
-Other scenarios **override default by URL**. If a specialized scenario defines a mock for the same URL, it wins:
+Active scenarios **automatically fall back to default scenario mocks**. When you switch to a specialized scenario, Scenarist collects mocks from BOTH the default scenario AND the active scenario, then uses specificity-based selection to choose the best match.
+
+**How it works:**
+1. Collect all mocks from default scenario matching URL + method
+2. Collect all mocks from active scenario matching URL + method
+3. Use specificity scoring to select best match
+4. Active scenario mocks (with match criteria) override default mocks (no criteria) due to higher specificity
+
+This means specialized scenarios only need to define what changes - everything else automatically falls back to the default:
 
 ```typescript
 // Default scenario: GitHub returns success
@@ -133,17 +141,23 @@ export const githubNotFoundScenario: ScenaristScenario = {
 test('uses default', async () => {
   await page.goto('/profile/octocat');
   // GitHub API → 200 (default scenario)
+  // Stripe API → 200 (default scenario)
+  // Weather API → 200 (default scenario)
   await expect(page.getByText('Octocat')).toBeVisible();
 });
 
-// Test with scenario switch
+// Test with scenario switch to github-not-found
 test('handles 404', async ({ switchScenario }) => {
   await switchScenario(page, 'github-not-found');
   await page.goto('/profile/unknown');
-  // GitHub API → 404 (overrides default)
+  // GitHub API → 404 (overridden by active scenario)
+  // Stripe API → 200 (falls back to default - not defined in github-not-found)
+  // Weather API → 200 (falls back to default - not defined in github-not-found)
   await expect(page.getByText('User not found')).toBeVisible();
 });
 ```
+
+**Key insight:** The active scenario only overrides GitHub - Stripe and Weather automatically fall back to default without needing explicit fallback mocks in the `github-not-found` scenario.
 
 ## Partial Override (Not Full Replacement)
 
@@ -342,16 +356,18 @@ export const complexMatchingScenario: ScenaristScenario = {
 - `{ type: 'premium' }` → Third mock (specificity 1)
 - `{ type: 'standard' }` → Fourth mock (specificity 0, fallback)
 
-## Tiebreaker: First Match Wins
+## Tiebreaker Rules
 
-When mocks have **equal specificity**, the **first one wins**:
+When multiple mocks have **equal specificity**, the tiebreaker depends on specificity level:
+
+**For mocks with specificity > 0** (have match criteria): **First match wins**
 
 ```typescript
 mocks: [
   // Both have specificity: 1 (body: type)
   {
     match: { body: { type: 'premium' } },
-    response: { status: 200, body: { discount: 20 } },  // ← This one wins
+    response: { status: 200, body: { discount: 20 } },  // ← This one wins (first)
   },
   {
     match: { body: { type: 'premium' } },
@@ -360,7 +376,33 @@ mocks: [
 ]
 ```
 
-**Best practice:** Avoid equal specificity. Make match criteria distinct.
+**For fallback mocks (specificity = 0)** (no match criteria): **Last match wins**
+
+This is critical for automatic default fallback - it allows active scenario fallback mocks to override default scenario fallback mocks:
+
+```typescript
+// Scenario mocks collected for same URL:
+const mocks = [
+  // From default scenario
+  {
+    method: 'GET',
+    url: '/api/data',
+    // No match criteria → specificity: 0
+    response: { status: 200, body: { tier: 'standard' } }  // Default fallback
+  },
+  // From active scenario
+  {
+    method: 'GET',
+    url: '/api/data',
+    // No match criteria → specificity: 0
+    response: { status: 200, body: { tier: 'premium' } }  // ← This one wins (last)
+  }
+];
+```
+
+**Why last fallback wins:** Enables active scenarios to provide their own fallback responses that override the default fallback, without needing match criteria.
+
+**Best practice:** Avoid equal specificity > 0. Make match criteria distinct when possible.
 
 ## Test ID Isolation
 

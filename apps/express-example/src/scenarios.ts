@@ -495,6 +495,16 @@ export const paymentLimitedScenario: ScenaristScenario = {
   name: 'Limited Payment Attempts',
   description: 'Allows 3 attempts then falls back to error',
   mocks: [
+    // Fallback mock - comes first but has lower priority
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      response: {
+        status: 429,
+        body: { error: { message: 'Rate limit exceeded' } },
+      },
+    },
+    // Sequence mock - last fallback wins (will be selected until exhausted)
     {
       method: 'POST',
       url: 'https://api.stripe.com/v1/charges',
@@ -505,14 +515,6 @@ export const paymentLimitedScenario: ScenaristScenario = {
           { status: 200, body: { id: 'ch_3', status: 'succeeded' } },
         ],
         repeat: 'none',
-      },
-    },
-    {
-      method: 'POST',
-      url: 'https://api.stripe.com/v1/charges',
-      response: {
-        status: 429,
-        body: { error: { message: 'Rate limit exceeded' } },
       },
     },
   ],

@@ -22,11 +22,13 @@ export async function GET(request: NextRequest) {
 
     // Fetch from json-server (external API)
     // Scenarist MSW will intercept this request and return mocked data based on scenario
+    const fetchHeaders = {
+      ...scenarist.getHeaders(request),  // ✅ Scenarist infrastructure headers (x-test-id)
+      'x-user-tier': userTier,                      // ✅ Application-specific header
+    };
+
     const response = await fetch('http://localhost:3001/products', {
-      headers: {
-        ...scenarist.getHeaders(request),  // ✅ Scenarist infrastructure headers (x-test-id)
-        'x-user-tier': userTier,                      // ✅ Application-specific header
-      },
+      headers: fetchHeaders,
     });
 
     if (!response.ok) {

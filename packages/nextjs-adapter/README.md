@@ -140,7 +140,7 @@ Scenarist provides 20+ powerful features for E2E testing. All capabilities work 
 ### Core Features (4 capabilities)
 
 **Multiple API mocking** - Mock any number of external APIs in one scenario
-**Default scenario fallback** - Unmocked endpoints fall back to default scenario
+**Automatic default fallback** - Active scenarios inherit mocks from default, override via specificity
 **Test ID isolation** - Run 100+ tests concurrently without conflicts
 **Runtime scenario switching** - Change backend state with one API call
 
@@ -287,6 +287,24 @@ export const scenarist = createScenarist({
   scenarios,                    // All scenarios registered upfront
 });
 ```
+
+> **CRITICAL: Singleton Pattern Required**
+>
+> **You MUST use `export const scenarist` as shown above.** Do NOT wrap `createScenarist()` in a function:
+>
+> ```typescript
+> // ❌ WRONG - Creates new instance each time
+> export function getScenarist() {
+>   return createScenarist({ enabled: true, scenarios });
+> }
+>
+> // ✅ CORRECT - Single exported constant
+> export const scenarist = createScenarist({ enabled: true, scenarios });
+> ```
+>
+> **Why:** Next.js dev server (and Turbopack) can load the same module multiple times. If you call `createScenarist()` repeatedly, you'll get multiple MSW servers conflicting with each other, causing `[MSW] Multiple handlers with the same URL` warnings and intermittent 500 errors.
+>
+> The singleton pattern inside `createScenarist()` prevents this - but ONLY if you export a constant. Wrapping in a function breaks the singleton protection.
 
 ### 3. Create Scenario Endpoint
 
