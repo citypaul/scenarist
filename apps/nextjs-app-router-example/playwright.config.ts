@@ -29,12 +29,27 @@ export default defineConfig<ScenaristOptions>({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+      testIgnore: '**/*.comparison.spec.ts', // Exclude comparison tests from main suite
+    },
+    {
+      name: 'comparison',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: '**/*.comparison.spec.ts', // Only run comparison tests
+      // Note: globalSetup will detect comparison project and skip MSW initialization
     },
   ],
 
-  webServer: {
-    command: 'pnpm dev',
-    url: 'http://localhost:3002',
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      command: 'pnpm dev',
+      url: 'http://localhost:3002',
+      reuseExistingServer: !process.env.CI,
+      env: process.env,  // Pass through all env vars (including SCENARIST_ENABLED)
+    },
+    {
+      command: 'pnpm fake-api',
+      url: 'http://localhost:3001/products',
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
 });

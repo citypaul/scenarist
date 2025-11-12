@@ -37,9 +37,9 @@ export const PREMIUM_PRICES: Record<number, number> = {
 } as const;
 
 export const STANDARD_PRICES: Record<number, number> = {
-  1: 149.99,
-  2: 199.99,
-  3: 99.99,
+  1: 29.99,  // Scenarist mock price (different from json-server £149.99)
+  2: 49.99,  // Scenarist mock price (different from json-server £199.99)
+  3: 19.99,  // Scenarist mock price (different from json-server £99.99)
 } as const;
 
 /**
