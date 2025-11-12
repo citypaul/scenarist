@@ -89,7 +89,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {data.products.map((product) => (
-          <div
+          <article
             key={product.id}
             className="border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
           >
@@ -103,7 +103,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                 {product.tier}
               </span>
             </div>
-          </div>
+          </article>
         ))}
       </div>
 
