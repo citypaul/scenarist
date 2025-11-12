@@ -85,7 +85,8 @@ jobs:
       - name: Bruno API Tests
         run: pnpm test:bruno:ci
 
-      - name: Comparison E2E Tests (without Scenarist)
+      - name: Comparison E2E Tests - Pages Router (without Scenarist)
         run: pnpm --filter=@scenarist/nextjs-pages-router-example test:e2e:comparison
-        env:
-          SKIP_MSW: 'true'
+
+      - name: Comparison E2E Tests - App Router (without Scenarist)
+        run: pnpm --filter=@scenarist/nextjs-app-router-example test:e2e:comparison
