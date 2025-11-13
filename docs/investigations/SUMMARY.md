@@ -1,8 +1,35 @@
-# Next.js Pages Router Investigation - Summary
+# Scenarist Investigation Summary
 
-**Date:** 2025-11-12
+**Date:** 2025-11-13
 **Branch:** fix/playwright-test-flakiness
-**Status:** ✅ RESOLVED - Singleton Fix Applied
+**Status:** ✅ RESOLVED - All Flakiness Issues Fixed
+
+---
+
+## Issues Resolved
+
+### 1. ✅ Next.js Pages Router HMR Singleton Issue (2025-11-12)
+**Problem:** Multiple ScenarioStore instances due to Next.js HMR module reloading
+**Fix:** Applied singleton pattern with global state
+
+### 2. ✅ Playwright Test Flakiness (2025-11-13)
+**Problem:** Race condition in `route.continue()` causing intermittent test failures
+**Fix:** Added missing `await` and handler cleanup
+
+**Root Cause:** Missing `await` on `route.continue()` in `switch-scenario.ts:58`
+- `route.continue()` is async but wasn't awaited
+- Under parallel test load, header modification completed after navigation started
+- Some requests missed x-test-id header → wrong scenario data → test failures
+
+**Changes Applied:**
+1. Added `await page.unroute('**/*')` - prevents handler accumulation
+2. Added `async` to route callback
+3. Added `await` to `route.continue({ headers })` - fixes race condition
+
+**Files Modified:**
+- `packages/playwright-helpers/src/switch-scenario.ts` - Fixed race condition
+- `docs/investigations/playwright-fetch-headers-flakiness.md` - Documented resolution
+- `docs/investigations/parallel-execution-race-condition.md` - Documented resolution
 
 ---
 

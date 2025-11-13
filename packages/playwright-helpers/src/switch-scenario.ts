@@ -51,11 +51,14 @@ const establishTestIdInterception = async (
   testId: string,
   testIdHeader: string
 ): Promise<void> => {
+  // Clear any existing handlers to prevent accumulation
+  await page.unroute('**/*');
+
   // Intercept all routes to inject test ID header
-  await page.route('**/*', (route) => {
+  await page.route('**/*', async (route) => {
     const headers = route.request().headers();
     headers[testIdHeader] = testId;
-    route.continue({ headers });
+    await route.continue({ headers });
   });
 
   // Set test ID header for navigation requests (belt and suspenders)
