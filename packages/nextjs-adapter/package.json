@@ -31,21 +31,21 @@
   "dependencies": {
     "@scenarist/core": "workspace:*",
     "@scenarist/msw-adapter": "workspace:*",
-    "zod": "^3.22.4"
+    "zod": "^4.1.12"
   },
   "peerDependencies": {
-    "next": "^14.0.0 || ^15.0.0",
-    "msw": "^2.0.0"
+    "msw": "^2.0.0",
+    "next": "^14.0.0 || ^15.0.0"
   },
   "devDependencies": {
     "@scenarist/eslint-config": "workspace:^",
     "@scenarist/typescript-config": "workspace:*",
-    "@types/node": "^20.11.5",
-    "@vitest/coverage-v8": "^1.6.1",
-    "eslint": "^9.34.0",
-    "msw": "^2.0.0",
+    "@types/node": "^24.10.1",
+    "@vitest/coverage-v8": "^4.0.8",
+    "eslint": "^9.39.1",
+    "msw": "^2.12.1",
     "next": "^14.0.0",
-    "typescript": "^5.3.3",
-    "vitest": "^1.6.1"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.8"
   }
 }

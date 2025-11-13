@@ -27,9 +27,9 @@
   "devDependencies": {
     "@scenarist/eslint-config": "workspace:*",
     "@scenarist/typescript-config": "workspace:*",
-    "@types/node": "^22.10.1",
-    "msw": "^2.11.6",
-    "typescript": "^5.7.2"
+    "@types/node": "^24.10.1",
+    "msw": "^2.12.1",
+    "typescript": "^5.9.3"
   },
   "publishConfig": {
     "access": "public"
