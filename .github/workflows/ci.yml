@@ -30,8 +30,8 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'pnpm'
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -79,7 +79,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-reports
-          path: '**/coverage/**'
+          path: "**/coverage/**"
           if-no-files-found: ignore
 
       - name: Bruno API Tests
@@ -88,4 +88,4 @@ jobs:
       - name: Comparison E2E Tests (without Scenarist)
         run: pnpm --filter=@scenarist/nextjs-pages-router-example test:e2e:comparison
         env:
-          SKIP_MSW: 'true'
+          SKIP_MSW: "true"
