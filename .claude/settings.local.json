@@ -3,7 +3,9 @@
     "allow": [
       "Bash(pnpm build:*)",
       "Bash(pnpm add:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr view:*)"
     ],
     "deny": [],
     "ask": []
