@@ -3,8 +3,10 @@ title: Scenarist
 description: Test real backend code with controlled scenarios. Your Server Components render, middleware executes, validation runs—for real. Only external APIs are mocked. Switch scenarios instantly without restarting.
 template: splash
 hero:
-  title: Test Real Backend Code with Controlled Scenarios
-  tagline: Test Server Components, API routes, and middleware with real HTTP requests. Your backend executes for real. Only external APIs are mocked. Switch scenarios instantly without restarting your server.
+  title: Test Real Backend Code. Not Mocks.
+  tagline: |
+    Your Server Components render. Middleware executes. Validation runs—all for real.
+    Only external APIs are mocked. Switch scenarios instantly without restarting.
   image:
     file: ../../assets/hero-illustration.svg
     alt: Testing real backend code with controlled external API scenarios
@@ -21,533 +23,279 @@ hero:
 
 import { Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
 
-:::tip[The Key Insight]
-**Test through real HTTP requests.** Your Server Components render, middleware chains execute, validation runs—all for real.
-
-**Built-in adapters:** Express, Next.js (Pages + App Router), with more coming. **Type-safe Playwright helpers** included for browser testing, or use supertest/Vitest for API-level tests.
-
-**Real execution + Controlled scenarios + Runtime switching = Comprehensive backend testing**
-:::
-
-**What executes for real:**
-- ✅ Server Components render with actual data fetching
-- ✅ Remix loaders execute with real session handling
-- ✅ Middleware chains process requests through your logic
-- ✅ API routes run validation and business rules
-- ✅ Authentication flows work with real cookies/headers
-
-**What's mocked:**
-- Only external APIs (Stripe, SendGrid, Auth0) via MSW
-- No framework mocking, no Request object mocks, no brittle internal mocks
-
-**The magic:**
-- **Framework adapters:** Express, Next.js (Pages + App Router) available now, more coming soon
-- **Type-safe Playwright helpers:** Automatic test ID management with TypeScript autocomplete
-- Switch scenarios at runtime (no app restarts, no port conflicts)
-- Run unlimited scenarios in parallel (perfect test isolation)
+<div class="install-command">
+  <code>npm install @scenarist/express-adapter</code>
+</div>
 
 ---
 
-## Quick Example
+## Why Developers Choose Scenarist
 
-**See it in action:** Choose your framework below to see a complete working example in 4 steps.
+<CardGrid>
+  <Card title="Real Execution" icon="rocket">
+    Your Server Components render, middleware runs, validation executes—all for real.
 
----
+    **No framework mocking required.**
 
-<Tabs>
-<TabItem label="Express" icon="seti:nodejs">
+    No mocking `next/headers`, `cookies()`, or Request objects. Test real execution with controlled scenarios.
+  </Card>
 
-**File structure:**
-```
-src/
-├── scenarios.ts       ← 1. Define scenarios
-├── setup.ts          ← 2. Initialize Scenarist
-└── app.ts           ← 3. Add middleware
-tests/
-└── checkout.spec.ts  ← 4. Write tests
-```
+  <Card title="Controlled Scenarios" icon="setting">
+    External APIs mocked via MSW (Stripe, Auth0, SendGrid).
 
----
+    **Switch scenarios instantly.**
 
-### 1. Define scenarios
+    Test premium flows, error states, and edge cases without restarting your server.
+  </Card>
 
-Create `src/scenarios.ts`:
+  <Card title="Perfect Isolation" icon="approve-check">
+    Unique test IDs prevent interference. Run unlimited scenarios in parallel.
 
-```typescript
-import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/express-adapter';
+    **True parallel execution.**
 
-const successScenario: ScenaristScenario = {
-  id: 'success',
-  name: 'Payment Success',
-  mocks: [{
-    method: 'POST',
-    url: 'https://api.stripe.com/v1/charges',
-    response: { status: 200, body: { id: 'ch_123', status: 'succeeded' } },
-  }],
-};
-
-export const scenarios = {
-  default: successScenario,
-  success: successScenario,
-} as const satisfies ScenaristScenarios;
-```
-
-### 2. Initialize Scenarist
-
-Create `src/setup.ts`:
-
-```typescript
-import { createScenarist } from '@scenarist/express-adapter';
-import { scenarios } from './scenarios';
-
-export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
-  scenarios,
-});
-```
-
-### 3. Add middleware
-
-In your `src/app.ts`:
-
-```typescript
-import express from 'express';
-import { scenarist } from './setup';
-
-const app = express();
-app.use(express.json());
-
-// Add Scenarist middleware
-app.use(scenarist.middleware);
-
-// Your routes work normally
-app.post('/api/checkout', async (req, res) => {
-  // Your validation runs
-  // External API calls are mocked
-  // Your business logic executes
-});
-
-export default app;
-```
-
-### 4. Write tests
-
-Create `tests/checkout.spec.ts`:
-
-```typescript
-import { expect, withScenarios } from '@scenarist/playwright-helpers';
-import { scenarios } from '../src/scenarios';
-
-export const test = withScenarios(scenarios);
-
-test('successful checkout', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'success');
-  await page.goto('/checkout');
-  await page.fill('[name="amount"]', '100');
-  await page.click('button[type="submit"]');
-
-  await expect(page.locator('.success')).toBeVisible();
-});
-```
-
-</TabItem>
-
-<TabItem label="Next.js (Pages)" icon="seti:next">
-
-**File structure:**
-```
-lib/
-├── scenarios.ts       ← 1. Define scenarios
-└── scenarist.ts      ← 2. Initialize Scenarist
-pages/api/
-└── __scenario__.ts   ← 3. Create endpoint
-tests/
-└── checkout.spec.ts  ← 4. Write tests
-```
+    Cryptographic UUIDs ensure parallel tests never collide. Same server, different scenarios.
+  </Card>
+</CardGrid>
 
 ---
 
-### 1. Define scenarios
+## Works With Your Framework
 
-Create `lib/scenarios.ts`:
+Scenarist provides built-in adapters for popular Node.js frameworks, with more coming soon:
 
-```typescript
-import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/nextjs-adapter/pages';
+<div class="framework-grid">
+  <a href="/frameworks/express/getting-started" class="framework-card">
+    <span class="framework-icon">🟢</span>
+    <span class="framework-name">Express</span>
+  </a>
+  <a href="/frameworks/nextjs-pages-router/getting-started" class="framework-card">
+    <span class="framework-icon">▲</span>
+    <span class="framework-name">Next.js Pages</span>
+  </a>
+  <a href="/frameworks/nextjs-app-router/getting-started" class="framework-card">
+    <span class="framework-icon">▲</span>
+    <span class="framework-name">Next.js App Router</span>
+  </a>
+  <div class="framework-card coming-soon">
+    <span class="framework-icon">💿</span>
+    <span class="framework-name">Remix <em>(coming soon)</em></span>
+  </div>
+  <div class="framework-card coming-soon">
+    <span class="framework-icon">⚡</span>
+    <span class="framework-name">Fastify <em>(coming soon)</em></span>
+  </div>
+  <div class="framework-card coming-soon">
+    <span class="framework-icon">🔥</span>
+    <span class="framework-name">Hono <em>(coming soon)</em></span>
+  </div>
+</div>
 
-const successScenario: ScenaristScenario = {
-  id: 'success',
-  name: 'Payment Success',
-  mocks: [{
-    method: 'POST',
-    url: 'https://api.stripe.com/v1/charges',
-    response: { status: 200, body: { id: 'ch_123', status: 'succeeded' } },
-  }],
-};
-
-export const scenarios = {
-  default: successScenario,
-  success: successScenario,
-} as const satisfies ScenaristScenarios;
-```
-
-### 2. Initialize Scenarist
-
-Create `lib/scenarist.ts`:
-
-```typescript
-import { createScenarist } from '@scenarist/nextjs-adapter/pages';
-import { scenarios } from './scenarios';
-
-export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
-  scenarios,
-});
-```
-
-### 3. Create scenario endpoint
-
-Create `pages/api/__scenario__.ts`:
-
-```typescript
-import { scenarist } from '@/lib/scenarist';
-
-export default scenarist.createScenarioEndpoint();
-```
-
-### 4. Write tests
-
-Create `tests/checkout.spec.ts`:
-
-```typescript
-import { expect, withScenarios } from '@scenarist/playwright-helpers';
-import { scenarios } from '../lib/scenarios';
-
-export const test = withScenarios(scenarios);
-
-test('successful checkout', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'success');
-  await page.goto('/checkout');
-  await page.fill('[name="amount"]', '100');
-  await page.click('button[type="submit"]');
-
-  await expect(page.locator('.success')).toBeVisible();
-});
-```
-
-</TabItem>
-
-<TabItem label="Next.js (App Router)" icon="seti:next">
-
-**File structure:**
-```
-lib/
-├── scenarios.ts       ← 1. Define scenarios
-└── scenarist.ts      ← 2. Initialize Scenarist
-app/api/__scenario__/
-└── route.ts          ← 3. Create endpoint
-tests/
-└── checkout.spec.ts  ← 4. Write tests
-```
-
----
-
-### 1. Define scenarios
-
-Create `lib/scenarios.ts`:
-
-```typescript
-import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/nextjs-adapter/app';
-
-const successScenario: ScenaristScenario = {
-  id: 'success',
-  name: 'Payment Success',
-  mocks: [{
-    method: 'POST',
-    url: 'https://api.stripe.com/v1/charges',
-    response: { status: 200, body: { id: 'ch_123', status: 'succeeded' } },
-  }],
-};
-
-export const scenarios = {
-  default: successScenario,
-  success: successScenario,
-} as const satisfies ScenaristScenarios;
-```
-
-### 2. Initialize Scenarist
-
-Create `lib/scenarist.ts`:
-
-```typescript
-import { createScenarist } from '@scenarist/nextjs-adapter/app';
-import { scenarios } from './scenarios';
-
-export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
-  scenarios,
-});
-```
-
-### 3. Create scenario endpoint
-
-Create `app/api/__scenario__/route.ts`:
-
-```typescript
-import { scenarist } from '@/lib/scenarist';
-
-const handler = scenarist.createScenarioEndpoint();
-export const POST = handler;
-export const GET = handler;
-```
-
-### 4. Write tests
-
-Create `tests/checkout.spec.ts`:
-
-```typescript
-import { expect, withScenarios } from '@scenarist/playwright-helpers';
-import { scenarios } from '../lib/scenarios';
-
-export const test = withScenarios(scenarios);
-
-test('successful checkout', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'success');
-  await page.goto('/checkout');
-  await page.fill('[name="amount"]', '100');
-  await page.click('button[type="submit"]');
-
-  await expect(page.locator('.success')).toBeVisible();
-});
-```
-
-</TabItem>
-</Tabs>
+**Built-in TypeScript support** with autocomplete for scenario IDs and automatic test isolation.
 
 ---
 
 ## The Framework Mocking Problem
 
-Unit tests for backend code require extensive mocking of framework internals—Request objects, cookies, headers, session stores. This creates brittle tests that don't match production behavior.
+Testing backend code with unit tests requires extensive mocking of framework internals. This creates brittle tests that don't match production behavior.
 
-**Scenarist lets your actual backend code execute.** No framework mocking required.
+<div class="comparison-grid">
+  <div class="approach-card problem">
+    <h3>❌ Unit Tests with Mocks</h3>
+
+    **What you mock:**
+    - Request objects
+    - Cookies and headers
+    - Session stores
+    - Middleware chains
+    - Framework internals
+
+    **The cost:**
+    - Brittle tests that break on framework updates
+    - Mocks don't match production behavior
+    - Each scenario needs duplicate mock setup
+    - Your actual code doesn't execute
+  </div>
+
+  <div class="approach-card solution">
+    <h3>✅ Scenarist Approach</h3>
+
+    **What executes for real:**
+    - Server Components render
+    - Middleware chains process
+    - Validation logic runs
+    - Session handling works
+    - Real Request/Response objects
+
+    **The benefit:**
+    - No framework mocking required
+    - Tests match production exactly
+    - One scenario, unlimited tests
+    - Parallel execution works perfectly
+  </div>
+</div>
+
+[See detailed comparison →](/introduction/why-scenarist#unit-vs-e2e-vs-scenarist)
+
+---
+
+## Get Started in 2 Minutes
 
 <Tabs>
-<TabItem label="❌ Unit Test Pain" icon="warning">
+<TabItem label="Express" icon="seti:nodejs">
 
-**Testing Next.js Server Components with unit tests:**
+### 1. Define scenarios
 
 ```typescript
-// You have to mock Next.js framework internals
-const mockCookies = {
-  get: jest.fn((name) => name === 'tier' ? 'premium' : null),
-};
-const mockHeaders = {
-  get: jest.fn((name) => name === 'x-user-id' ? '123' : null),
-};
+import type { ScenaristScenarios } from '@scenarist/express-adapter';
 
-jest.mock('next/headers', () => ({
-  cookies: () => mockCookies,
-  headers: () => mockHeaders,
-}));
-
-// Now test your component with fake framework objects
-// Any change to Next.js internals breaks your tests
-// Mocks don't match production Request behavior
+const scenarios = {
+  success: {
+    id: 'success',
+    name: 'Payment Success',
+    mocks: [{
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      response: { status: 200, body: { id: 'ch_123', status: 'succeeded' } }
+    }]
+  }
+} as const satisfies ScenaristScenarios;
 ```
 
-**The pain:**
-- Mock setup is brittle and framework-specific
-- Mocks create distance from production reality
-- Middleware chains don't execute (you're testing in isolation)
-- Session logic doesn't run (mocked away)
-- Each scenario needs duplicate mock setup
-
-</TabItem>
-
-<TabItem label="✅ Scenarist Approach" icon="approve-check">
-
-**Testing the same code with Scenarist:**
+### 2. Write tests
 
 ```typescript
-// Define scenario once
-const premiumScenario = {
-  id: 'premium',
-  name: 'Premium User',
-  mocks: [{
-    method: 'GET',
-    url: 'https://auth.external-api.com/session',
-    response: { status: 200, body: { tier: 'premium' } }
-  }]
-};
+import { withScenarios } from '@scenarist/playwright-helpers';
+import { scenarios } from './scenarios';
 
-// Test with real HTTP, real Next.js, real everything
-test('premium user sees discount', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'premium');
-  await page.goto('/dashboard');
+export const test = withScenarios(scenarios);
 
-  // Real Server Component renders
-  // Real cookies() and headers() from Next.js
-  // Real middleware chain executes
-  // Only external API is mocked
+test('successful checkout', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'success');
+  await page.goto('/checkout');
+  await expect(page.locator('.success')).toBeVisible();
 });
 ```
 
-**The difference:**
-- No framework mocking required
-- Server Component renders for real
-- Middleware chains execute
-- Session logic runs
-- One scenario definition, unlimited tests
+[See full Express setup guide →](/frameworks/express/getting-started)
+
+</TabItem>
+
+<TabItem label="Next.js (Pages)" icon="seti:next">
+
+### 1. Define scenarios
+
+```typescript
+import type { ScenaristScenarios } from '@scenarist/nextjs-adapter/pages';
+
+const scenarios = {
+  success: {
+    id: 'success',
+    name: 'Payment Success',
+    mocks: [{
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      response: { status: 200, body: { id: 'ch_123', status: 'succeeded' } }
+    }]
+  }
+} as const satisfies ScenaristScenarios;
+```
+
+### 2. Write tests
+
+```typescript
+import { withScenarios } from '@scenarist/playwright-helpers';
+import { scenarios } from './scenarios';
+
+export const test = withScenarios(scenarios);
+
+test('successful checkout', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'success');
+  await page.goto('/checkout');
+  await expect(page.locator('.success')).toBeVisible();
+});
+```
+
+[See full Next.js Pages setup guide →](/frameworks/nextjs-pages-router/getting-started)
+
+</TabItem>
+
+<TabItem label="Next.js (App Router)" icon="seti:next">
+
+### 1. Define scenarios
+
+```typescript
+import type { ScenaristScenarios } from '@scenarist/nextjs-adapter/app';
+
+const scenarios = {
+  success: {
+    id: 'success',
+    name: 'Payment Success',
+    mocks: [{
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      response: { status: 200, body: { id: 'ch_123', status: 'succeeded' } }
+    }]
+  }
+} as const satisfies ScenaristScenarios;
+```
+
+### 2. Write tests
+
+```typescript
+import { withScenarios } from '@scenarist/playwright-helpers';
+import { scenarios } from './scenarios';
+
+export const test = withScenarios(scenarios);
+
+test('successful checkout', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'success');
+  await page.goto('/checkout');
+  await expect(page.locator('.success')).toBeVisible();
+});
+```
+
+[See full Next.js App Router setup guide →](/frameworks/nextjs-app-router/getting-started)
 
 </TabItem>
 </Tabs>
 
-[Read more about why this is hard →](/introduction/why-scenarist)
-
 ---
 
-## When to Use Scenarist
+## Everything You Need
 
-### ✅ Good Use Cases
+<CardGrid>
+  <Card title="Type-Safe Helpers" icon="approve-check">
+    TypeScript autocomplete for scenario IDs. Automatic test ID management. Zero boilerplate.
+  </Card>
 
-**Local development with multiple scenarios:**
-- Testing premium vs free user features
-- Error states and edge cases
-- Multi-step flows with session state
-- Different permission levels
+  <Card title="Perfect Isolation" icon="shield">
+    Cryptographic UUIDs per test. Run unlimited tests in parallel without interference.
+  </Card>
 
-**Single-instance CI pipelines:**
-- GitHub Actions with single worker
-- GitLab CI with one instance
-- Local CI servers (Jenkins, TeamCity)
+  <Card title="Runtime Switching" icon="random">
+    Change scenarios instantly. No app restarts, no port conflicts, no slowdowns.
+  </Card>
 
-**Integration tests needing real HTTP:**
-- Server Components that need real rendering
-- Middleware chains that need real execution
-- API routes with complex validation
-- Session-based authentication flows
+  <Card title="Request Matching" icon="magnifier">
+    Match on body, headers, or query params. Premium vs free users. Tier-based access. A/B testing.
+  </Card>
 
-### ⚠️ Limitations
+  <Card title="Response Sequences" icon="list-format">
+    Polling flows (pending → processing → complete). Multi-step workflows. Repeat modes (last/cycle/none).
+  </Card>
 
-**Single-instance deployments only:**
-Scenarist uses in-memory state to map test IDs to scenarios. This works perfectly for:
-- Local development
-- Single-instance CI (most common)
-- Tests against `localhost`
+  <Card title="Stateful Mocks" icon="document">
+    Capture state from requests. Inject into responses. Shopping carts, sessions, dynamic flows.
+  </Card>
 
-This does NOT work for:
-- Load-balanced deployments
-- Testing production environments
-- Distributed testing across multiple instances
+  <Card title="Ephemeral Endpoints" icon="setting">
+    Zero production overhead. Endpoints only active when `enabled: true`. Safe for all environments.
+  </Card>
 
-**Not a replacement for all E2E:**
-Use Scenarist for comprehensive scenario coverage. Still use a few E2E tests for:
-- Critical happy paths against real external APIs
-- Production-like environment verification
-- Contract validation with third-party services
-
-### ❌ When NOT to Use
-
-- **You need true E2E with real external APIs** - Scenarist mocks external services
-- **Your app has no external dependencies** - Unnecessary complexity
-- **You're testing frontend-only apps** - Scenarist is for backend HTTP behavior
-- **You need load-balanced deployment testing** - Current architecture requires single instance
-
-[Understand the trade-offs →](/introduction/why-scenarist#trade-offs--when-to-consider-alternatives)
-
----
-
-## Why Scenarist?
-
-:::tip[Three Core Pillars]
-**Real Execution** - Your Server Components render, middleware runs, validation executes—all for real
-
-**Controlled Scenarios** - External APIs mocked via MSW (Stripe, Auth0, SendGrid)
-
-**Runtime Switching** - Change scenarios instantly without restarting your server
-:::
-
-**What this enables:**
-
-✅ **Comprehensive scenario testing**
-- Premium vs free user flows
-- Error states and edge cases
-- Multi-step journeys with session state
-- Permission levels and authentication states
-- All running in parallel against one server
-
-✅ **No framework mocking required**
-- Real `cookies()` and `headers()` from Next.js
-- Real session handling in Remix loaders
-- Real middleware chains in Express
-- Real Request/Response objects everywhere
-
-✅ **Fast parallel execution**
-- Unique test IDs prevent interference
-- 10+ scenarios run simultaneously
-- No port conflicts, no app restarts
-- Test suite completes in seconds, not minutes
-
-**How it works:**
-- **Built-in framework adapters:** Express, Next.js (Pages + App Router) available now—Remix, Fastify, Hono, SvelteKit coming soon
-- **Type-safe Playwright helpers:** `withScenarios()` provides TypeScript autocomplete for scenario IDs and automatic test isolation
-- **Ephemeral endpoints:** Scenario switching only active when `enabled: true` (zero production overhead)
-- **Guaranteed isolation:** Cryptographic UUIDs per test ensure parallel tests never interfere
-
----
-
-## Playwright Integration with Type Safety
-
-Scenarist includes **first-class Playwright support** with helpers that eliminate boilerplate and guarantee test isolation:
-
-**Without helpers:**
-```typescript
-const testId = `test-premium-${Date.now()}`;
-const response = await page.request.post('http://localhost:3000/api/__scenario__', {
-  headers: { 'x-test-id': testId },
-  data: { scenario: 'premiumUser' },
-});
-expect(response.status()).toBe(200);
-await page.setExtraHTTPHeaders({ 'x-test-id': testId });
-```
-
-**With helpers:**
-```typescript
-import { test, expect } from '@scenarist/playwright-helpers';
-await switchScenario(page, 'premiumUser');
-```
-
-**Type-Safe Scenario IDs** - Get autocomplete and compile-time validation:
-
-```typescript
-// Define scenarios once
-const scenarios = {
-  cartWithState: { id: 'cartWithState', name: 'Cart with State', ... },
-  premiumUser: { id: 'premiumUser', name: 'Premium User', ... },
-} as const satisfies ScenaristScenarios;
-
-// Create typed test object
-export const test = withScenarios(scenarios);
-
-// TypeScript autocomplete in tests
-test('my test', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'cartWithState'); // ✅ Autocomplete works!
-  await switchScenario(page, 'typo');          // ❌ TypeScript error
-});
-```
-
-**Guaranteed Test Isolation** - Unique test IDs prevent collisions in parallel execution (uses `crypto.randomUUID()` per test).
-
-**Easy Composition** - Extend with your existing Playwright fixtures:
-
-```typescript
-export const test = withScenarios(scenarios).extend<MyFixtures>({
-  authenticatedPage: async ({ page }, use) => { /* your fixture */ },
-  database: async ({}, use) => { /* your fixture */ },
-});
-```
-
-[Learn more about Playwright helpers →](https://github.com/citypaul/scenarist/tree/main/packages/playwright-helpers)
+  <Card title="Framework Agnostic" icon="puzzle">
+    Express, Next.js, Fastify, Hono, Remix, SvelteKit. Hexagonal architecture. Swap frameworks easily.
+  </Card>
+</CardGrid>
 
 ---
 
@@ -562,7 +310,6 @@ export const test = withScenarios(scenarios).extend<MyFixtures>({
 | **Session Handling** | ❌ Mock session store | ✅ Real sessions | ✅ **Real sessions** |
 | **Multiple Scenarios** | ⚠️ One per test suite | ❌ One per server spawn | ✅ **Unlimited, runtime switching** |
 | **Parallel Execution** | ✅ Yes (isolated) | ⚠️ Limited (port conflicts) | ✅ **Perfect isolation (test IDs)** |
-| **Test Speed** | ✅ Very fast | ❌ Slow (server spawns) | ✅ **Fast (no restarts)** |
 
 :::tip[The Key Differences]
 
@@ -582,7 +329,7 @@ test('my component', () => {
 // ✅ Real execution, but...
 // ❌ One scenario per server instance
 // ❌ Can't test error states easily (hit real APIs)
-// ❌ Too slow for 10+ scenarios
+// ❌ Sequential execution required
 test('premium flow', ...);  // Spawns server #1
 test('free flow', ...);     // Spawns server #2
 test('error case', ...);    // Spawns server #3
@@ -625,9 +372,9 @@ No more mocking `next/headers`, `req.session`, or Request objects. Test real exe
 <details>
 <summary><strong>How is this different from E2E tests?</strong></summary>
 
-**E2E tests require server spawns per scenario:** Testing 10 scenarios means spawning 10 server instances, which is slow and creates port conflicts.
+**E2E tests require server spawns per scenario:** Testing multiple scenarios means spawning multiple server instances or restarting between tests.
 
-**Scenarist uses runtime switching:** All scenarios run against one server instance. Switch scenarios instantly without restarting. Test 10 scenarios in parallel with perfect isolation.
+**Scenarist uses runtime switching:** All scenarios run against one server instance. Switch scenarios instantly without restarting. Test unlimited scenarios in parallel with perfect isolation.
 
 Same real execution as E2E, but with unlimited scenarios and instant switching.
 
@@ -652,7 +399,7 @@ Yes! Next.js Server Components render normally with Scenarist. Your data fetchin
 <details>
 <summary><strong>Can tests run in parallel?</strong></summary>
 
-Yes. Each test gets a unique test ID, enabling perfect isolation. Run hundreds of tests concurrently against the same server with zero interference.
+Yes. Each test gets a unique test ID, enabling perfect isolation. Run unlimited tests concurrently against the same server with zero interference.
 
 </details>
 
@@ -664,60 +411,39 @@ No. Scenarios switch instantly at runtime via the `switchScenario()` helper. Sam
 </details>
 
 <details>
-<summary><strong>What if my test uses page.request.post()?</strong></summary>
+<summary><strong>What are the limitations?</strong></summary>
 
-Use the `withScenarios()` helper to get automatic test ID propagation:
-```typescript
-export const test = withScenarios(scenarios);
-```
+**Single-instance deployments only:** Scenarist uses in-memory state to map test IDs to scenarios. This works perfectly for local development and single-instance CI, but not for load-balanced deployments or testing production environments.
 
-For manual `page.request` calls, the helper returns the test ID so you can include it explicitly in headers.
+**Not a replacement for all E2E:** Still use a few E2E tests for critical happy paths against real external APIs and production-like environment verification.
 
-</details>
-
-<details>
-<summary><strong>How do I debug failed tests?</strong></summary>
-
-Enable MSW request logging:
-```typescript
-server.events.on('request:start', ({ request }) => {
-  console.log('[MSW]', request.method, request.url);
-});
-```
-
-Check active scenario:
-```typescript
-const response = await page.request.get('http://localhost:3000/__scenario__');
-console.log(await response.json());
-```
+[Read full trade-offs →](/introduction/why-scenarist#trade-offs--when-to-consider-alternatives)
 
 </details>
 
 ---
 
-## Get Started
+## Ready to Ship Faster?
 
 <CardGrid>
   <Card title="Quick Start" icon="rocket">
-    Framework-agnostic 5-minute guide. Works with Express, Next.js, Fastify, Hono, Remix, and any Node.js framework.
+    Framework-agnostic 5-minute guide. Works with Express, Next.js, and more.
 
     [Get Started →](/introduction/quick-start)
   </Card>
-  <Card title="Playwright Helpers" icon="approve-check">
-    Type-safe scenario switching with automatic test ID management. Guaranteed test isolation for parallel execution.
 
-    [Playwright Guide →](https://github.com/citypaul/scenarist/tree/main/packages/playwright-helpers)
-  </Card>
-  <Card title="Express Setup" icon="seti:nodejs">
-    REST APIs, GraphQL servers, microservices. Zero boilerplate with AsyncLocalStorage.
-
-    [Express Guide →](/frameworks/express/getting-started)
-  </Card>
-  <Card title="Next.js Setup" icon="seti:next">
+  <Card title="Next.js Guide" icon="seti:next">
     Test Server Components, Server Actions, and API routes. Supports Pages and App Router.
 
-    [Next.js Guide →](/frameworks/nextjs/getting-started)
+    [Next.js Setup →](/frameworks/nextjs/getting-started)
   </Card>
+
+  <Card title="Express Guide" icon="seti:nodejs">
+    REST APIs, GraphQL servers, microservices. Zero boilerplate with AsyncLocalStorage.
+
+    [Express Setup →](/frameworks/express/getting-started)
+  </Card>
+
   <Card title="Example Apps" icon="open-book">
     Explore complete working examples with comprehensive test suites.
 

@@ -1,1 +1,199 @@
 /* Scenarist Documentation Custom Styles */
+
+/* ============================================
+   Install Command Box
+   ============================================ */
+.install-command {
+  margin: 2rem auto;
+  max-width: 600px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  padding: 1.5rem 2rem;
+  box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+  position: relative;
+}
+
+.install-command code {
+  color: #ffffff;
+  font-size: 1.125rem;
+  font-weight: 600;
+  display: block;
+  text-align: center;
+  background: transparent;
+  padding: 0;
+}
+
+/* ============================================
+   Framework Grid Showcase
+   ============================================ */
+.framework-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1.5rem;
+  margin: 3rem 0;
+  max-width: 1200px;
+}
+
+.framework-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem 1.5rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.framework-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(102, 126, 234, 0.15);
+  border-color: #667eea;
+}
+
+.framework-card.coming-soon {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.framework-card.coming-soon:hover {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-color: #e2e8f0;
+}
+
+.framework-icon {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.framework-name {
+  font-weight: 600;
+  font-size: 1.125rem;
+  text-align: center;
+}
+
+.framework-name em {
+  font-size: 0.875rem;
+  font-style: italic;
+  color: #64748b;
+  display: block;
+  margin-top: 0.25rem;
+}
+
+/* ============================================
+   Comparison Grid (Problem vs Solution)
+   ============================================ */
+.comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin: 3rem 0;
+}
+
+.approach-card {
+  padding: 2rem;
+  border-radius: 12px;
+  border: 2px solid;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.approach-card h3 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.approach-card strong {
+  display: block;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.approach-card ul {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.approach-card li {
+  margin: 0.5rem 0;
+  line-height: 1.6;
+}
+
+/* Problem Card (Red Theme) */
+.approach-card.problem {
+  background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
+  border-color: #fca5a5;
+}
+
+.approach-card.problem h3 {
+  color: #dc2626;
+}
+
+.approach-card.problem strong {
+  color: #991b1b;
+}
+
+/* Solution Card (Green Theme) */
+.approach-card.solution {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+  border-color: #86efac;
+}
+
+.approach-card.solution h3 {
+  color: #16a34a;
+}
+
+.approach-card.solution strong {
+  color: #166534;
+}
+
+/* ============================================
+   Responsive Breakpoints
+   ============================================ */
+@media (max-width: 768px) {
+  .install-command {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .install-command code {
+    font-size: 1rem;
+  }
+
+  .framework-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+  }
+
+  .framework-card {
+    padding: 1.5rem 1rem;
+  }
+
+  .framework-icon {
+    font-size: 2.5rem;
+  }
+
+  .framework-name {
+    font-size: 1rem;
+  }
+
+  .comparison-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .approach-card {
+    padding: 1.5rem;
+  }
+
+  .approach-card h3 {
+    font-size: 1.25rem;
+  }
+}
