@@ -1325,16 +1325,18 @@ Technical details like "how enabled flag works" are valuable but too detailed fo
 
 ---
 
-**Document Status:** APPROVED PLAN - In Progress (Phase 2)
+**Document Status:** APPROVED PLAN - Phase 2 Complete, Phase 3 In Progress
 **Created:** 2025-11-08
-**Last Updated:** 2025-11-10
+**Last Updated:** 2025-11-13
+**Current Phase:** 3 (Framework Coverage)
+**Weeks Remaining:** ~3 weeks to v1.0
 **Research Sources:** Next.js docs, Remix docs, TanStack GitHub, PropelAuth blog, Stack Overflow
 
-## Current Status (As of 2025-11-10)
+## Current Status (As of 2025-11-13)
 
 ### Completed Work
 
-**Phase 1: Astro + Starlight Setup** ✅
+**Phase 1: Astro + Starlight Setup** ✅ COMPLETE
 - Astro + Starlight site initialized at `apps/docs`
 - Framework structure configured (Next.js, Express, future Remix/TanStack)
 - Deployed at scenarist.io (Cloudflare Pages)
@@ -1342,17 +1344,22 @@ Technical details like "how enabled flag works" are valuable but too detailed fo
 - Dark mode configured
 - Custom styling applied
 
-**Phase 2: Essential Content** (In Progress)
+**Phase 2: Essential Content** ✅ COMPLETE
 - ✅ Homepage (pain-first approach)
 - ✅ Why Scenarist page (framework-specific pain)
 - ✅ Installation guide
 - ✅ Quick Start with framework selector
+- ✅ All Introduction pages:
+  - ✅ Scenario Format (comprehensive structure)
+  - ✅ Default Mocks (override behavior, fallback patterns)
+  - ✅ Ephemeral Endpoints (test-only activation)
+  - ✅ Endpoint APIs (GET/POST /__scenario__ reference)
 - ✅ Framework Guide → Next.js App Router → Getting Started
 - ✅ Framework Guide → Next.js Pages Router → Getting Started
 - ✅ Framework Guide → Express → Getting Started
 - ✅ Example apps for all three frameworks
 
-**Documentation Fixes (PR #76)** ✅
+**Documentation Fixes (PR #76)** ✅ COMPLETE
 - Fixed incorrect API documentation (removed non-existent `createMSWHandler`)
 - Corrected App Router endpoint path to use URL-encoded `%5F%5Fscenario%5F%5F`
 - Added explanation of Next.js private folders
@@ -1360,58 +1367,74 @@ Technical details like "how enabled flag works" are valuable but too detailed fo
 - Documented endpoint path configurability
 - Converted appropriate files to MDX for component support
 
+### Recent Achievements (November 2025)
+
+**Technical Implementation (ALL COMPLETE):**
+- ✅ All core packages COMPLETE (300+ tests passing)
+- ✅ Next.js adapter with singleton pattern (ADR-0013, ADR-0014)
+- ✅ Playwright helpers package (70% boilerplate reduction)
+- ✅ Automatic default fallback feature (ADR-0011)
+- ✅ Parallel test execution with unique test IDs (ADR-0016)
+- ✅ All example apps with comprehensive test coverage
+- ✅ Express, Next.js Pages Router, Next.js App Router adapters complete
+- ✅ Hexagonal architecture fully implemented
+
+**Documentation Progress:**
+- ✅ Phase 2 introduction pages COMPLETE (Scenario Format, Default Mocks, Ephemeral Endpoints, Endpoint APIs)
+- ✅ Framework-specific getting started guides COMPLETE (Next.js Pages, App Router, Express)
+- ✅ Example app documentation COMPLETE (all three frameworks)
+- ✅ API correctness fixes (PR #76)
+
 ### In Progress
 
-**Phase 2: Introduction Section Enhancements** (Current Work)
-- [ ] Introduction → Scenario Format (comprehensive structure documentation)
-- [ ] Introduction → Default Mocks (override behavior and fallback patterns)
-- [ ] Introduction → Ephemeral Endpoints (test-only activation mechanism)
-- [ ] Introduction → Endpoint APIs (GET/POST /__scenario__ reference)
+**Phase 3: Framework Coverage** (Current Work - Week 4-5)
+- [ ] Landing Page: Why Testing Next.js Is Broken (SEO priority)
+- [ ] Landing Page: Why Testing Express/Node Is Broken
+- [ ] Core Concepts: Scenarios & Variants
+- [ ] Core Concepts: Test Isolation (parallel execution benefits)
+- [ ] Core Concepts: Mock Definitions (serializable nature)
 
-### Implementation Research Complete
+### Timeline Context
 
-The following has been thoroughly researched from actual implementation:
+**Original Plan:** 7 weeks (Phases 0-7)
+**Current Position:** Week 4-5 (Phase 3 in progress)
+**Weeks Remaining:** ~3 weeks to v1.0 release
 
-1. **Scenario Format:**
-   - Schema definitions from `packages/core/src/schemas/scenario-definition.ts`
-   - Complete type structure (ScenaristScenario, ScenaristMock, ScenaristResponse, ScenaristSequence, ScenaristMatch, ScenaristCaptureConfig)
-   - All features: request matching, sequences, stateful mocks, composition
+**Progress Summary:**
+- ✅ Weeks 0-1: Phases 1-2 COMPLETE (Setup + Essential Content)
+- 🚧 Weeks 2-3: Phase 3 IN PROGRESS (Framework Coverage)
+- ⏳ Weeks 4-7: Phases 4-7 REMAINING (Features, API Reference, Recipes, Polish)
 
-2. **Default Mocks:**
-   - ScenariosObjectSchema enforces 'default' key requirement
-   - Specificity-based selection algorithm from `response-selector.ts`
-   - Fallback mock behavior (no match criteria = specificity 0)
-   - Override mechanism via URL matching
+### Next Actions (Phase 3 Focus)
 
-3. **Ephemeral Endpoints:**
-   - `enabled` flag controls endpoint availability
-   - Test ID extraction from headers (configurable)
-   - Scenario store routing by test ID
-   - Production safety (404 when disabled)
+**Immediate Priorities:**
 
-4. **Endpoint APIs:**
-   - Express implementation: `packages/express-adapter/src/endpoints/scenario-endpoints.ts`
-   - Next.js App: `packages/nextjs-adapter/src/app/endpoints.ts`
-   - Next.js Pages: `packages/nextjs-adapter/src/pages/endpoints.ts`
-   - ScenarioRequestSchema validation
-   - ScenarioManager coordination
-   - Complete request/response formats
+1. **Create Framework Landing Pages (SEO Critical)**
+   - `/docs/frameworks/nextjs` - "Why Testing Next.js Is Broken"
+   - `/docs/frameworks/express` - "Why Testing Express/Node Is Broken"
+   - Use real developer quotes from official docs
+   - Show before/after code comparisons
 
-### Next Actions
+2. **Write Core Concepts Pages**
+   - Scenarios & Variants (eliminate test pollution)
+   - Test Isolation (parallel execution benefits)
+   - Mock Definitions (serializable nature, version control)
+   - Runtime Scenario Switching (no app restarts)
 
-1. Create 4 new introduction pages with researched content:
-   - `apps/docs/src/content/docs/introduction/scenario-format.mdx`
-   - `apps/docs/src/content/docs/introduction/default-mocks.mdx`
-   - `apps/docs/src/content/docs/introduction/ephemeral-endpoints.mdx`
-   - `apps/docs/src/content/docs/introduction/endpoint-apis.mdx`
+3. **Extract Real-World Examples**
+   - From `apps/express-example/src/scenarios.ts`
+   - From `apps/nextjs-app-router-example/lib/scenarios.ts`
+   - From `apps/nextjs-pages-router-example/lib/scenarios.ts`
+   - Use in landing pages and concept pages
 
-2. Update Starlight navigation config to include new pages
+4. **SEO Optimization for Framework Pages**
+   - Meta descriptions targeting framework-specific pain
+   - OpenGraph tags for social sharing
+   - Keyword targeting: "Next.js testing problems", "Remix testing", etc.
 
-3. Extract real-world examples from:
-   - `apps/express-example/src/scenarios.ts` (comprehensive examples)
-   - `apps/nextjs-app-router-example/lib/scenarios.ts`
-   - `apps/nextjs-pages-router-example/lib/scenarios.ts`
-
-4. Create PR for introduction enhancements
-
-5. Continue with Phase 3: Framework Coverage (landing pages, core concepts)
+**Success Criteria for Phase 3:**
+- [ ] Framework landing pages deployed and indexed
+- [ ] All core concepts documented
+- [ ] Real-world examples showcased
+- [ ] SEO metadata in place
+- [ ] "Fix Next.js Testing" → Quick Start conversion >40%
