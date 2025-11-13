@@ -1,11 +1,11 @@
-import { Router, type Request, type Response } from 'express';
-import { z } from 'zod';
 import {
   ScenarioRequestSchema,
   type ScenarioManager,
   type ScenaristConfig,
-} from '@scenarist/core';
-import { ExpressRequestContext } from '../context/express-request-context.js';
+} from "@scenarist/core";
+import { Router, type Request, type Response } from "express";
+import { z } from "zod";
+import { ExpressRequestContext } from "../context/express-request-context.js";
 
 const handleSetScenario = (
   manager: ScenarioManager,
@@ -35,14 +35,14 @@ const handleSetScenario = (
     } catch (error) {
       if (error instanceof z.ZodError) {
         res.status(400).json({
-          error: 'Invalid request body',
-          details: error.errors,
+          error: "Invalid request body",
+          details: error.issues,
         });
         return;
       }
 
       res.status(500).json({
-        error: 'Internal server error',
+        error: "Internal server error",
       });
     }
   };
@@ -60,19 +60,23 @@ const handleGetScenario = (
 
     if (!activeScenario) {
       res.status(404).json({
-        error: 'No active scenario for this test ID',
+        error: "No active scenario for this test ID",
         testId,
       });
       return;
     }
 
-    const scenarioDefinition = manager.getScenarioById(activeScenario.scenarioId);
+    const scenarioDefinition = manager.getScenarioById(
+      activeScenario.scenarioId
+    );
 
     res.status(200).json({
       testId,
       scenarioId: activeScenario.scenarioId,
       ...(scenarioDefinition && { scenarioName: scenarioDefinition.name }),
-      ...(activeScenario.variantName && { variantName: activeScenario.variantName }),
+      ...(activeScenario.variantName && {
+        variantName: activeScenario.variantName,
+      }),
     });
   };
 };

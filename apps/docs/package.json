@@ -8,7 +8,8 @@
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "typecheck": "astro check"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.10",
@@ -18,7 +19,9 @@
     "sharp": "^0.34.5"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.5",
     "playwright": "^1.56.1",
+    "typescript": "^5.9.3",
     "wrangler": "^4.48.0"
   }
 }

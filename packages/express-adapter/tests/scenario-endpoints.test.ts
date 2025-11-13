@@ -68,6 +68,33 @@ describe('Scenario Endpoints', () => {
       expect(response.body.error).toBe('Invalid request body');
     });
 
+    it('should return 400 with validation details when request body is invalid', async () => {
+      const config = mockConfig();
+      const manager = mockScenarioManager();
+
+      const router = createScenarioEndpoints(manager, config);
+      const app = express();
+      app.use(express.json());
+      app.use(router!);
+
+      // Send invalid data: scenario is a number instead of string
+      const response = await request(app)
+        .post('/__scenario__')
+        .set('x-test-id', 'test-123')
+        .send({ scenario: 123 });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        error: 'Invalid request body',
+        details: expect.arrayContaining([
+          expect.objectContaining({
+            path: expect.any(Array),
+            message: expect.any(String),
+          }),
+        ]),
+      });
+    });
+
     it('should return 400 when scenario switch fails', async () => {
       const config = mockConfig();
       const manager = mockScenarioManager({

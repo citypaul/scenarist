@@ -65,7 +65,11 @@
       "Bash(pnpm --filter=@scenarist/core test)",
       "Bash(pnpm --filter=@scenarist/core exec vitest run:*)",
       "Bash(pnpm test:e2e:comparison:*)",
-      "Bash(pnpm --filter=@scenarist/playwright-helpers build:*)"
+      "Bash(pnpm --filter=@scenarist/playwright-helpers build:*)",
+      "Bash(pnpm exec tsc:*)",
+      "Bash(pnpm exec node:*)",
+      "Bash(for dir in packages/eslint-config packages/typescript-config apps/docs)",
+      "Bash(do echo '=== $dir ===' find $dir -name *.ts -o -name *.tsx)"
     ],
     "deny": [],
     "ask": []
