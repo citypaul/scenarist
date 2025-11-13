@@ -5,7 +5,12 @@
       "Bash(pnpm add:*)",
       "WebSearch",
       "Bash(gh pr list:*)",
-      "Bash(gh pr view:*)"
+      "Bash(gh pr view:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:handlebarsjs.com)",
+      "WebFetch(domain:stackoverflow.com)",
+      "Bash(gh issue create:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
