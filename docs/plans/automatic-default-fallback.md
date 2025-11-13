@@ -1,8 +1,9 @@
-# WIP: Automatic Default Scenario Fallback
+# Automatic Default Scenario Fallback
 
 **Started:** 2025-11-11
-**Status:** Planning
-**Current Step:** 0 (Planning)
+**Completed:** 2025-11-11
+**Status:** ✅ Complete (Merged)
+**Related ADR:** [ADR-0011: Domain Constants Location](../adrs/0011-domain-constants-location.md)
 
 ## Goal
 
