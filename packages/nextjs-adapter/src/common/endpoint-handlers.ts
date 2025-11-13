@@ -95,7 +95,7 @@ export const handlePostLogic = async (
         success: false,
         status: 400,
         error: 'Invalid request body',
-        details: error.errors,
+        details: error.issues,
       };
     }
 

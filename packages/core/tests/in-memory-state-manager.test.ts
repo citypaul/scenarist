@@ -157,3 +157,32 @@ describe('InMemoryStateManager', () => {
     expect(result).toBe('value');
   });
 });
+
+  it('should overwrite null value with object when setting nested path through it', () => {
+    const stateManager = createInMemoryStateManager();
+
+    // First set a null value
+    stateManager.set('test-1', 'data', null);
+
+    // Now set a nested path - should overwrite null with object
+    stateManager.set('test-1', 'data.field', 'value');
+
+    const result = stateManager.get('test-1', 'data.field');
+    expect(result).toBe('value');
+  });
+
+  it('should preserve existing nested objects when setting deeper paths', () => {
+    const stateManager = createInMemoryStateManager();
+
+    // Create a nested structure
+    stateManager.set('test-1', 'user.profile.name', 'Alice');
+    stateManager.set('test-1', 'user.profile.age', 30);
+
+    // Add another field to the existing nested object
+    stateManager.set('test-1', 'user.profile.email', 'alice@example.com');
+
+    // All fields should exist
+    expect(stateManager.get('test-1', 'user.profile.name')).toBe('Alice');
+    expect(stateManager.get('test-1', 'user.profile.age')).toBe(30);
+    expect(stateManager.get('test-1', 'user.profile.email')).toBe('alice@example.com');
+  });
