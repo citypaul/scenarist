@@ -1,8 +1,8 @@
 # Scenarist: Next Development Stages
 
-**Status:** Planning
+**Status:** Active - Documentation Phase
 **Created:** 2025-10-27
-**Last Updated:** 2025-10-27
+**Last Updated:** 2025-11-13
 
 ## Current Status
 
@@ -12,16 +12,20 @@
 - Phase 3: Stateful Mocks (capture, templates, reset)
 - Phase 4: Composition (guaranteed by architecture, no implementation needed)
 
-✅ **Test Coverage:** 281 tests across all packages, 100% coverage maintained
-✅ **Documentation:** Complete (core-functionality.md, stateful-mocks.md, 5 ADRs, CLAUDE.md)
-✅ **Example App:** Express adapter with comprehensive scenarios and Bruno tests
+✅ **Adapters & Examples Complete:**
+- Express adapter + example app with comprehensive E2E tests
+- Next.js adapter (Pages Router + App Router with singleton pattern)
+- Playwright helpers package (70% boilerplate reduction)
+- Next.js Pages Router example (e-commerce flow)
+- Next.js App Router example (Server Components + stateful mocks)
+
+✅ **Test Coverage:** 300+ tests across all packages, 100% coverage maintained
+✅ **Documentation:** Complete (core-functionality.md, stateful-mocks.md, 12 ADRs, CLAUDE.md)
 
 **What's Missing for v1.0 Release:**
-- Next.js adapter package + example applications (PRIORITY 1)
-- Playwright helpers package (PRIORITY 1)
-- Consumer-facing documentation site (PRIORITY 2)
-- Package metadata and licensing (PRIORITY 3)
-- Security vulnerability fixes (PRIORITY 3)
+- Consumer-facing documentation site (PRIORITY 1 - Next Up)
+- Package metadata and licensing (PRIORITY 2)
+- Security vulnerability fixes (PRIORITY 2)
 
 ---
 
@@ -29,17 +33,17 @@
 
 These items MUST be complete before v1.0 release.
 
-### 1. Next.js Adapter + Examples (REQUIRED - PRIORITY 1)
+### 1. Next.js Adapter + Examples ✅ COMPLETE
 
 **Goal:** Full Next.js support with adapter package + example applications demonstrating all Scenarist features
 
-**Why First:** Next.js is the most popular framework. Examples validate architecture and provide concrete demos for future documentation.
+**Status:** ✅ COMPLETE (Nov 2025) - All deliverables shipped
 
 **Three Deliverables:**
 
-#### 1a. Next.js Adapter Package (`packages/nextjs-adapter`)
+#### 1a. Next.js Adapter Package (`packages/nextjs-adapter`) ✅ COMPLETE
 
-**Status:** ⏳ Not Started - CRITICAL dependency for examples
+**Status:** ✅ COMPLETE - Shipped with singleton pattern for HMR compatibility
 
 **What it provides:**
 - Middleware for Pages Router API routes
@@ -76,23 +80,24 @@ import { createScenarist } from '@scenarist/nextjs-adapter/app';
 ```
 
 **Tasks:**
-- [ ] Create package structure
-- [ ] Implement Pages Router middleware
-- [ ] Implement App Router middleware
-- [ ] Implement RequestContext for Next.js
-- [ ] Add scenario endpoints
-- [ ] Write unit tests (100% coverage)
-- [ ] Write integration tests
-- [ ] Document API
+- [x] Create package structure
+- [x] Implement Pages Router middleware
+- [x] Implement App Router middleware
+- [x] Implement RequestContext for Next.js
+- [x] Add scenario endpoints
+- [x] Write unit tests (100% coverage)
+- [x] Write integration tests
+- [x] Document API
+- [x] Implement singleton pattern for HMR compatibility
 
-**Estimated Time:** 2-3 days
-**Priority:** CRITICAL - Must complete BEFORE example apps
+**Completed:** Nov 2025
+**Key Learning:** Singleton pattern required to prevent module duplication in Next.js HMR
 
 ---
 
-#### 1b. Playwright Helpers Package (`packages/playwright-helpers`)
+#### 1b. Playwright Helpers Package (`packages/playwright-helpers`) ✅ COMPLETE
 
-**Status:** ⏳ Not Started - Developed alongside Pages Router example
+**Status:** ✅ COMPLETE - Shipped with auto test ID generation and scenario switching
 
 **What it provides:**
 - Reusable Playwright test utilities
@@ -129,22 +134,22 @@ test('my test', async ({ page, scenarist }) => {
 ```
 
 **Tasks:**
-- [ ] Create package structure
-- [ ] Implement ScenaristFixtures type
-- [ ] Implement auto test ID generation
-- [ ] Implement scenario switching helper
-- [ ] Write unit tests
-- [ ] Document API
-- [ ] Verify works with multiple frameworks
+- [x] Create package structure
+- [x] Implement ScenaristFixtures type
+- [x] Implement auto test ID generation
+- [x] Implement scenario switching helper
+- [x] Write unit tests
+- [x] Document API
+- [x] Verify works with multiple frameworks
 
-**Estimated Time:** Developed in parallel with Pages Router (included in 5-6 day estimate)
-**Priority:** HIGH - Needed for Pages Router example
+**Completed:** Nov 2025
+**Achievement:** 70% reduction in test boilerplate validated across Express and Next.js
 
 ---
 
-#### 1c. Pages Router Example (`apps/nextjs-pages-router-example`)
+#### 1c. Pages Router Example (`apps/nextjs-pages-router-example`) ✅ COMPLETE
 
-**Status:** ⏳ Not Started - Depends on Next.js adapter + Playwright helpers
+**Status:** ✅ COMPLETE - Full e-commerce flow with comprehensive E2E tests
 
 **What it demonstrates:**
 - Full Next.js Pages Router integration
@@ -163,31 +168,30 @@ test('my test', async ({ page, scenarist }) => {
 6. **Parallel Isolation:** Multiple tests with different scenarios concurrently
 
 **Implementation Phases:**
-- [ ] Phase 0: Setup (Next.js app + adapter integration)
-- [ ] Phase 1: Scenarist integration + first helper
-- [ ] Phase 2: Products page (request matching demo)
-- [ ] Phase 3: Shopping cart (stateful mocks demo)
-- [ ] Phase 4: Checkout (composition demo)
-- [ ] Phase 5: Payment (sequences demo)
-- [ ] Phase 6: Parallel test isolation proof
-- [ ] Phase 7: Documentation & polish
+- [x] Phase 0: Setup (Next.js app + adapter integration)
+- [x] Phase 1: Scenarist integration + first helper
+- [x] Phase 2: Products page (request matching demo)
+- [x] Phase 3: Shopping cart (stateful mocks demo)
+- [x] Phase 4: Checkout (composition demo)
+- [x] Phase 5: Payment (sequences demo)
+- [x] Phase 6: Parallel test isolation proof
+- [x] Phase 7: Documentation & polish
 
 **Deliverables:**
-- [ ] Full e-commerce app using @scenarist/nextjs-adapter
-- [ ] 20+ Playwright E2E tests using @scenarist/playwright-helpers
-- [ ] 100% API route coverage (Vitest)
-- [ ] Bruno collection (10+ requests)
-- [ ] Comprehensive README with setup instructions
+- [x] Full e-commerce app using @scenarist/nextjs-adapter
+- [x] 20+ Playwright E2E tests using @scenarist/playwright-helpers
+- [x] 100% API route coverage (Vitest)
+- [x] Bruno collection (10+ requests)
+- [x] Comprehensive README with setup instructions
 
-**Detailed Plan:** [nextjs-pages-and-playwright-helpers.md](./nextjs-pages-and-playwright-helpers.md)
-**Estimated Time:** 5-6 days (includes Playwright helpers development)
-**Priority:** CRITICAL - Primary v1.0 deliverable
+**Completed:** Nov 2025
+**Key Achievement:** First complete proof of Scenarist value with Next.js Pages Router
 
 ---
 
-#### 1d. App Router Example (`apps/nextjs-app-router-example`)
+#### 1d. App Router Example (`apps/nextjs-app-router-example`) ✅ COMPLETE
 
-**Status:** ⏳ Not Started (after Pages Router complete)
+**Status:** ✅ COMPLETE - Server Components with stateful mocks and sequences
 
 **What it demonstrates:**
 - Next.js App Router integration (modern, recommended approach)
@@ -203,30 +207,34 @@ test('my test', async ({ page, scenarist }) => {
 - Playwright helpers package already exists and works with both
 
 **Tasks:**
-- [ ] Create Next.js app (App Router with `app/` directory)
-- [ ] Adapt e-commerce flow to Server Components
-- [ ] Use Server Actions for mutations
-- [ ] Integrate @scenarist/nextjs-adapter/app
-- [ ] Reuse Playwright helpers package
-- [ ] Write tests (Playwright + Vitest)
-- [ ] Bruno collection
-- [ ] Comprehensive README
+- [x] Create Next.js app (App Router with `app/` directory)
+- [x] Adapt e-commerce flow to Server Components
+- [x] Use Server Actions for mutations (where applicable)
+- [x] Integrate @scenarist/nextjs-adapter/app
+- [x] Reuse Playwright helpers package
+- [x] Write tests (Playwright + Vitest)
+- [x] Bruno collection
+- [x] Comprehensive README
+- [x] Add RSC examples (products, polling, cart-server pages)
 
-**Estimated Time:** 3-4 days (faster due to Pages Router learnings + adapter exists)
-**Priority:** CRITICAL - Must have before v1.0
+**Completed:** Nov 2025
+**Key Achievement:** Proves Scenarist handles React Server Components without Jest issues
 
-**Combined Time for Next.js Work (1a-1d):** 10-13 days
-- Next.js adapter: 2-3 days
-- Pages Router example + Playwright helpers: 5-6 days
-- App Router example: 3-4 days
+**Combined Time for Next.js Work (1a-1d):** COMPLETE
+- Next.js adapter: ✅ Done
+- Playwright helpers: ✅ Done
+- Pages Router example: ✅ Done
+- App Router example: ✅ Done
 
 ---
 
-### 2. Documentation Site (REQUIRED - PRIORITY 2)
+### 2. Documentation Site (REQUIRED - PRIORITY 1 - NEXT UP)
 
 **Goal:** Professional, searchable documentation for users
 
-**Why After Next.js Examples:** Documentation can reference real working examples, making it more concrete and useful.
+**Status:** ⏳ Not Started - Ready to begin now that all examples are complete
+
+**Why Now:** All adapters and examples are complete. Documentation can reference real working code.
 
 **Technology Choice:** Nextra (Next.js + MDX)
 - Fast, modern
@@ -521,58 +529,43 @@ Response:
 
 ### Pre-v1.0 (Required Work)
 
-**CORRECTED Approach:** Next.js adapter + examples FIRST, then documentation site, then polish
+**Current Status:** ✅ All technical work COMPLETE. Ready for documentation + polish.
 
-**Weeks 1-3: Next.js Adapter + Examples + Playwright Helpers**
-- **Days 1-3:** Next.js adapter package (2-3 days)
-  - Implement Pages Router middleware
-  - Implement App Router middleware
-  - RequestContext, scenario endpoints
-  - Tests + documentation
-- **Days 4-9:** Pages Router example + Playwright helpers (5-6 days)
-  - Phases 0-7 of implementation plan
-  - E-commerce flow with all Scenarist features
-  - Playwright helpers developed alongside (70% boilerplate reduction)
-  - 20+ E2E tests, Bruno collection
-- **Days 10-13:** App Router example (3-4 days)
-  - Adapt e-commerce flow to Server Components
-  - Reuse Playwright helpers and scenarios
-  - Tests + documentation
+**✅ COMPLETED: Weeks 1-3 - Next.js Adapter + Examples + Playwright Helpers**
+- ✅ Next.js adapter package (Pages Router + App Router)
+- ✅ Playwright helpers (70% boilerplate reduction)
+- ✅ Pages Router example (e-commerce with all features)
+- ✅ App Router example (Server Components + RSC examples)
+- ✅ Singleton pattern for HMR compatibility
+- ✅ 300+ tests passing, 100% coverage maintained
 
-**Weeks 4-5: Documentation Site**
-- Days 1-2: Nextra setup, structure
-- Days 3-5: Migrate existing docs to MDX
-- Days 6-7: Add Next.js adapter/examples documentation
-- Days 8-10: Cookbook recipes, polish, deploy to **Cloudflare Pages**
+**🚧 IN PROGRESS: Weeks 4-5 - Documentation Site**
+- [ ] Days 1-2: Nextra setup, structure
+- [ ] Days 3-5: Migrate existing docs to MDX
+- [ ] Days 6-7: Add Next.js adapter/examples documentation
+- [ ] Days 8-10: Cookbook recipes, polish, deploy to **Cloudflare Pages**
 
-**Week 6: Polish & Release Prep**
-- Days 1-2: Fix security vulnerabilities
-- Day 3: Package metadata & licensing
-- Days 4-5: Package READMEs
-- Days 6-7: Final review, testing, release prep
+**⏳ REMAINING: Week 6 - Polish & Release Prep**
+- [ ] Days 1-2: Fix security vulnerabilities (2 Dependabot alerts)
+- [ ] Day 3: Package metadata & licensing (MIT)
+- [ ] Days 4-5: Package READMEs verification
+- [ ] Days 6-7: Final review, testing, release prep
 
-**Total Time:** ~6 weeks
-
-**Why This Order:**
-1. **Next.js adapter first** - Required dependency for examples
-2. **Pages Router + Playwright helpers** - Battle-tested patterns for docs
-3. **App Router** - Reuses adapter, helpers, and patterns
-4. **Documentation** - Can reference real working examples with adapter
-5. **Polish** - Final pass before release
+**Remaining Time to v1.0:** ~3 weeks (documentation + polish)
 
 ### v1.0 Release
 
 **Release Checklist:**
-- [x] All 281 tests passing (core features complete)
+- [x] All 300+ tests passing (core features complete)
 - [x] Express adapter complete (with example app + Bruno tests)
-- [ ] **Next.js adapter package complete** ← NEW
-- [ ] Playwright helpers package complete
-- [ ] Next.js Pages Router example complete
-- [ ] Next.js App Router example complete
+- [x] Next.js adapter package complete (Pages Router + App Router)
+- [x] Playwright helpers package complete
+- [x] Next.js Pages Router example complete
+- [x] Next.js App Router example complete (with RSC examples)
 - [ ] Documentation site live (deployed to Cloudflare Pages)
-- [ ] Security issues resolved
-- [ ] Package metadata complete
-- [ ] Package READMEs written
+- [ ] Security issues resolved (2 Dependabot alerts)
+- [ ] Package metadata complete (MIT license, keywords)
+- [ ] Package READMEs verified
 - [ ] CHANGELOG created
 - [ ] Changesets configured
 
@@ -712,33 +705,38 @@ Do we need:
 ## Next Actions (Current State)
 
 **Recently Completed:**
-- ✅ PR #36 merged (documentation cleanup, ADRs)
-- ✅ PR #39 updated (consolidated living plan for Next.js implementation)
-- ✅ Implementation plan document consolidated
+- ✅ Next.js adapter package (Pages Router + App Router with singleton pattern)
+- ✅ Playwright helpers package (70% boilerplate reduction achieved)
+- ✅ Next.js Pages Router example (full e-commerce flow)
+- ✅ Next.js App Router example (Server Components + RSC examples)
+- ✅ Automatic default fallback feature
+- ✅ Parallel test execution with singleton fix
+- ✅ Documentation cleanup (PR #80)
 
-**In Progress:**
-- 🚧 Planning Next.js adapter + examples ([Plan](./nextjs-pages-and-playwright-helpers.md) | [PR #39](https://github.com/citypaul/scenarist/pull/39))
-  - Status: Ready to start implementation
-  - **CRITICAL**: Plan needs update to include Next.js adapter package
+**Current Priority: Documentation Site**
+- Status: ⏳ Not Started - Ready to begin
+- Timeline: 5-7 days
+- Technology: Nextra + Cloudflare Pages
+- Content: Migrate existing docs, add API references, cookbook recipes
 
-**Up Next (CORRECTED ORDER):**
-1. **Update implementation plan** - Add Next.js adapter package (~1 hour)
-2. **Build Next.js adapter package** (~2-3 days)
-   - Pages Router middleware
-   - App Router middleware
-   - Tests + documentation
-3. **Build Pages Router example + Playwright helpers** (~5-6 days)
-   - Phases 0-7 of implementation plan
-   - E-commerce flow demonstrating all features
-4. **Build App Router example** (~3-4 days)
-   - Reuse adapter, helpers, and patterns
-5. **Build documentation site** (Nextra + Cloudflare Pages, ~5-7 days)
-   - Reference real working examples
-6. **Fix security vulnerabilities** (~4-8 hours)
-7. **Package metadata & licensing** (~1-2 days)
-8. **Final polish & release** (~1-2 days)
+**Up Next (Final v1.0 Steps):**
+1. **Build documentation site** (Nextra + Cloudflare Pages, ~5-7 days)
+   - Setup Nextra
+   - Migrate existing markdown docs to MDX
+   - Add navigation and search
+   - Deploy to scenarist.io on Cloudflare Pages
+2. **Fix security vulnerabilities** (~4-8 hours)
+   - Resolve 2 Dependabot alerts (1 high, 1 moderate)
+3. **Package metadata & licensing** (~1-2 days)
+   - Add MIT LICENSE files
+   - Update package.json metadata
+   - Verify exports and entry points
+4. **Final polish & release** (~1-2 days)
+   - CHANGELOG
+   - Changesets configuration
+   - npm publishing
 
-**Estimated time to v1.0:** ~6 weeks of focused work
+**Estimated time to v1.0:** ~3 weeks (documentation + polish)
 
 ---
 
