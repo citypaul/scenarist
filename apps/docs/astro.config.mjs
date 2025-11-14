@@ -37,6 +37,7 @@ export default defineConfig({
             { label: "Installation", slug: "introduction/installation" },
             { label: "Overview", slug: "introduction/overview" },
             { label: "Scenario Format", slug: "introduction/scenario-format" },
+            { label: "Declarative Design", slug: "introduction/declarative-design" },
             { label: "Default Mocks & Overrides", slug: "introduction/default-mocks" },
             { label: "Ephemeral Endpoints", slug: "introduction/ephemeral-endpoints" },
             { label: "Endpoint APIs", slug: "introduction/endpoint-apis" },
