@@ -301,11 +301,48 @@ const successOver75Scenario: ScenaristScenario = {
 };
 ```
 
-**Trade-off accepted:**
-- More duplication
+**Trade-off accepted (for simple cases):**
+- More duplication (acceptable when only 2-3 variants)
 - But CLEARER intent
 - Easier to modify individual scenarios
 - No variant system to understand
+
+**For complex cases with many variants (12+ combinations):**
+
+When duplication becomes unmanageable (like 12 tier×context variants), `buildVariants` utility (Issue #89) provides a third option:
+
+```typescript
+// Build-time generation (maintains declarative constraint)
+import { buildVariants } from '@scenarist/core';
+
+const scenarios = buildVariants(
+  { mocks: [/* 90 shared mocks */] },  // Base config (defined once)
+  [
+    { tier: 'premium', age: 'under75' },
+    { tier: 'premium', age: 'over75' },
+    { tier: 'standard', age: 'under75' },
+    { tier: 'standard', age: 'over75' },
+  ],
+  (base, variant) => ({
+    id: `${variant.tier}-${variant.age}`,
+    mocks: [
+      ...base.mocks,
+      {
+        method: 'GET',
+        url: '/applications/:id',
+        response: { status: 200, body: { tier: variant.tier, age: variant.age } }
+      }
+    ]
+  })
+);
+// Result: 4 fully expanded scenarios (all JSON-serializable)
+```
+
+**Key distinction from Acquisition.Web runtime variants:**
+- ❌ **Runtime interpolation** - Functions in scenarios (breaks declarative constraint)
+- ✅ **Build-time generation** - Functions run ONCE at module load, output is pure JSON
+
+This maintains serializability while reducing source duplication. See ADR-0014 for full rationale.
 
 ## The "Routing Hacks" Reconsidered
 

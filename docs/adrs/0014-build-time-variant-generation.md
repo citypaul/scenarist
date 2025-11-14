@@ -59,19 +59,18 @@ Per ADR-0013 (Declarative Scenarios Through JSON Constraint), scenarios must be 
 
 **We need a solution that:**
 - ✅ Eliminates source duplication (shared mocks defined once)
-- ✅ Maintains JSON serializability (functions → data expansion)
-- ✅ Enables storage adapters like Redis (distributed testing, side benefit)
+- ✅ Maintains JSON serializability (enforces declarative patterns per ADR-0013)
 - ✅ Provides type safety (TypeScript inference)
 - ✅ Stays maintainable (clear separation of shared vs variant logic)
+- ✅ Enables storage adapters as side benefit (Redis, files, remote APIs)
 
 ## Problem
 
 **How can we support scenarios with multiple variants while:**
 1. Avoiding massive source code duplication (12 copies of 100 mocks)
-2. Maintaining JSON serializability (no runtime functions)
-3. Enabling distributed testing (Redis adapter)
-4. Providing good developer experience (clear, maintainable code)
-5. Keeping memory overhead acceptable (runtime cost trade-off)
+2. Maintaining JSON serializability (enforces declarative patterns, enables storage adapters as side benefit)
+3. Providing good developer experience (clear, maintainable code)
+4. Keeping memory overhead acceptable (runtime cost trade-off)
 
 **Requirements:**
 - ✅ Shared mocks defined once (DRY at source level)

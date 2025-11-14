@@ -1,16 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(pnpm build:*)",
-      "Bash(pnpm add:*)",
-      "WebSearch",
-      "Bash(gh pr list:*)",
-      "Bash(gh pr view:*)",
-      "WebFetch(domain:github.com)",
-      "WebFetch(domain:handlebarsjs.com)",
-      "WebFetch(domain:stackoverflow.com)",
-      "Bash(gh issue create:*)",
-      "Bash(git add:*)"
+      "Bash(git commit:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue edit:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []
