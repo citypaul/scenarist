@@ -20,6 +20,21 @@ ADRs capture the **context**, **decision**, **alternatives considered**, and **c
   - **Why**: Support request matching, sequences, and stateful mocks
   - **Impact**: Enables realistic testing scenarios (polling, state capture, content-based responses)
 
+- **[ADR-0013: Declarative Scenarios Through JSON Serializability Constraint](0013-declarative-scenarios-through-json-constraint.md)** ✨ NEW (2025-11-14)
+  - **Decision**: Enforce declarative patterns through strict JSON serializability
+  - **Why**: Prevents imperative routing hacks, makes logic explicit, enables composition (side benefit: Redis adapter possible)
+  - **Impact**: Forces match criteria over if/else, sequences over counters, templates over concatenation
+
+- **[ADR-0014: Build-Time Variant Generation](0014-build-time-variant-generation.md)** ✨ NEW (2025-11-14)
+  - **Decision**: Implement `buildVariants` utility for build-time variant expansion
+  - **Why**: Eliminate source duplication while maintaining JSON serializability
+  - **Impact**: 5x memory overhead acceptable, enables Redis adapter, DRY source code
+
+- **[ADR-0015: Response Sequences Over Referer-Based Routing](0015-sequences-over-referer-routing.md)** ✨ NEW (2025-11-14)
+  - **Decision**: Use Phase 2 Response Sequences for multi-page journeys instead of referer routing
+  - **Why**: Explicit progression, framework-agnostic, self-documenting, maintainable
+  - **Impact**: Replaces 48/64 Acquisition.Web tests, validates Phase 2 architecture
+
 ### Testing Strategy
 
 - **[ADR-0003: Testing Strategy](0003-testing-strategy.md)** (2025-11-02)
@@ -104,12 +119,17 @@ ADRs capture the **context**, **decision**, **alternatives considered**, and **c
 - **Nov 02**: ADR-0010 (Default Key) - Future convention consideration
 - **Nov 02**: ADR-0011 (Domain Constants) - DRY refactoring
 - **Nov 09**: ADR-0012 (Template Undefined) - Type-safe missing state handling
+- **Nov 14**: ADR-0013 (Declarative Constraint) - Enforcing declarative patterns through JSON serializability
+- **Nov 14**: ADR-0014 (Build Variants) - Variant generation utility
+- **Nov 14**: ADR-0015 (Sequences over Referer) - Multi-page journey pattern
 
 ## Key Decisions by Category
 
 ### Hexagonal Architecture
 - [ADR-0001](0001-serializable-scenario-definitions.md): Serializable definitions enable multiple storage implementations
 - [ADR-0011](0011-domain-constants-location.md): Domain constants belong in core, not adapters
+- [ADR-0013](0013-declarative-scenarios-through-json-constraint.md): JSON constraint enforces declarative patterns (side benefit: storage adapters possible)
+- [ADR-0014](0014-build-time-variant-generation.md): Build-time variant generation maintains serializability while reducing duplication
 
 ### Type Safety
 - [ADR-0008](0008-type-safe-scenario-ids.md): TypeScript generics provide compile-time scenario ID validation
@@ -127,6 +147,7 @@ ADRs capture the **context**, **decision**, **alternatives considered**, and **c
 - [ADR-0005](0005-state-sequence-reset-on-scenario-switch.md): Idempotent tests through reset
 - [ADR-0007](0007-framework-specific-header-helpers.md): Framework-specific helpers in adapters
 - [ADR-0008](0008-type-safe-scenario-ids.md): Autocomplete and compile-time errors
+- [ADR-0015](0015-sequences-over-referer-routing.md): Sequences for multi-page journeys instead of referer routing
 
 ## Related Documentation
 

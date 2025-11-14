@@ -1,11 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(pnpm build:*)",
-      "Bash(pnpm add:*)",
-      "WebSearch",
-      "Bash(gh pr list:*)",
-      "Bash(gh pr view:*)"
+      "Bash(git commit:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue edit:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

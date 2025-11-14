@@ -14,6 +14,12 @@ Scenarist scenarios are **serializable JSON objects** that define how your appli
 
 The serializable design enables future features like remote storage (Redis, PostgreSQL) without breaking changes.
 
+:::tip[Why Serializable?]
+Scenarist scenarios are pure data (no functions) to enforce **declarative design patterns**. This constraint leads to clearer, more maintainable tests.
+
+[Learn about the declarative philosophy →](/introduction/declarative-design)
+:::
+
 ## Basic Scenario Structure
 
 Every scenario follows this structure:
@@ -28,9 +34,6 @@ const myScenario: ScenaristScenario = {
   mocks: [                              // Array of mock definitions (required)
     // Mock definitions go here
   ],
-  variants: [                           // Optional scenario variants
-    // Variant definitions go here
-  ],
 };
 ```
 
@@ -40,10 +43,6 @@ const myScenario: ScenaristScenario = {
 - **`name`**: Human-readable name displayed in documentation and tooling
 - **`description`**: Explains when and why to use this scenario
 - **`mocks`**: Array of mock definitions (at least one required)
-
-### Optional Fields
-
-- **`variants`**: Array of scenario variations (e.g., different user roles, edge cases)
 
 ## Mock Definition Structure
 
