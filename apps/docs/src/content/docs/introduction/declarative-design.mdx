@@ -29,7 +29,7 @@ Scenarist scenarios are **pure data structures** (JSON-serializable objects), no
 
 ### Imperative Example (What Scenarist Prevents)
 
-Here's a real example from Acquisition.Web (pre-Scenarist era) that used imperative mocking:
+Here's a real example from a legacy codebase (pre-Scenarist era) that used imperative mocking:
 
 ```typescript
 // ❌ IMPERATIVE - Procedure-based routing hack
@@ -178,7 +178,7 @@ server.use('/api/status', (req, res) => {
 
 **Imperative approach (from legacy code):**
 ```typescript
-// ❌ Acquisition.Web referer hack
+// ❌ Referer routing hack (common anti-pattern)
 const getStatusFromReferer = (referer) => {
   if (referer.includes('step1')) return 'pending';
   if (referer.includes('step2')) return 'processing';
