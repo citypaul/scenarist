@@ -411,12 +411,13 @@ http.post('/api/quote', async ({ request }) => {
 
 ### Immediate (No New Features)
 
-**85% of tests can be converted NOW:**
+**~90% of tests can be converted NOW** (Phases 1-3 complete):
 
-1. **Linear journeys** → Use response sequences (Phase 2 implemented)
-2. **Variant scenarios** → Separate explicit scenarios
-3. **State progression** → Stateful mocks (Phase 3 implemented)
-4. **Static routing** → Match criteria (Phase 1 implemented)
+1. **Linear journeys** → Use response sequences (Phase 2 ✅)
+2. **Variant scenarios** → Separate explicit scenarios or buildVariants (#89)
+3. **State progression** → Stateful mocks (Phase 3 ✅)
+4. **Static routing** → Match criteria (Phase 1 ✅)
+5. **Mid-journey scenario switching** → Explicit scenario switches
 
 ### After Issue #86 (Regex Support)
 
