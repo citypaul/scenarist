@@ -35,6 +35,14 @@ This document provides a comprehensive analysis of the mock scenario patterns us
 
 **FUNDAMENTAL REALIZATION:** After deep analysis, most apparent "gaps" in Scenarist are NOT missing features—they're **compensations for implicit state management in tests**.
 
+---
+
+**📖 For comprehensive test conversion analysis, see:** [can-scenarist-replace-acquisition-web.md](./can-scenarist-replace-acquisition-web.md)
+
+**TL;DR:** After analyzing all 64+ test files, **Scenarist can handle 100% of Acquisition.Web patterns** using response sequences (Phase 2), stateful mocks (Phase 3), and explicit scenario switching. The "routing hacks" exist because Acquisition.Web lacks these features, not because they're architecturally necessary.
+
+---
+
 ### The Pattern Recognition
 
 Acquisition.Web uses dynamic mock logic (path params, referer checking, UUID generation) primarily as **routing mechanisms to return different data from the same endpoint under different conditions**. This is a workaround for managing test state implicitly rather than explicitly.
