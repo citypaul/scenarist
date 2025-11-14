@@ -1,0 +1,502 @@
+---
+title: Declarative Design Philosophy
+description: Why Scenarist enforces JSON serializability and how constraint leads to better patterns
+---
+
+# Declarative Design Philosophy
+
+Scenarist scenarios are **pure data structures** (JSON-serializable objects), not executable code. This constraint isn't primarily about storage—it's about **enforcing declarative API design patterns** that lead to clearer, more maintainable tests.
+
+## Quick Navigation
+
+**Choose your path:**
+
+| If you want to... | Go to... |
+|-------------------|----------|
+| Understand declarative vs imperative | [The Core Distinction](#the-core-distinction-declarative-vs-imperative) |
+| See real-world examples | [Real Examples](#real-examples-from-production-code) |
+| Learn why JSON constraint matters | [How Constraint Enforces Good Patterns](#how-constraint-enforces-good-patterns) |
+| Compare with other declarative systems | [Analogy to Other Systems](#analogy-to-other-declarative-systems) |
+| Know when to use declarative vs imperative | [When Imperative is Tempting](#when-imperative-is-tempting-but-declarative-is-better) |
+
+---
+
+## The Core Distinction: Declarative vs Imperative
+
+**Imperative:** You describe **how** to do something (step-by-step procedures, if/else logic, function calls)
+
+**Declarative:** You describe **what** you want (data structures that express intent, patterns that compose)
+
+### Imperative Example (What Scenarist Prevents)
+
+Here's a real example from Acquisition.Web (pre-Scenarist era) that used imperative mocking:
+
+```typescript
+// ❌ IMPERATIVE - Procedure-based routing hack
+server.use('/api/webhook', (req, res) => {
+  const referer = req.headers.referer;
+
+  // Routing logic hidden in procedures
+  if (referer?.includes('/checkout/step1')) {
+    return res.json({ status: 'pending' });
+  }
+
+  if (referer?.includes('/checkout/step2')) {
+    return res.json({ status: 'processing' });
+  }
+
+  if (referer?.includes('/checkout/complete')) {
+    return res.json({ status: 'complete' });
+  }
+
+  return res.status(500).json({ error: 'Unknown state' });
+});
+```
+
+**Problems with this approach:**
+- Logic hidden in if/else chains (hard to scan)
+- State management via referer hacks (implicit, brittle)
+- No clear sequence representation (mental model required)
+- Can't inspect state without running code
+- Difficult to debug ("which if/else did it hit?")
+
+### Declarative Example (Scenarist Approach)
+
+The same multi-step journey expressed declaratively:
+
+```typescript
+// ✅ DECLARATIVE - Pattern-based sequence
+{
+  method: 'POST',
+  url: '/api/webhook',
+  sequence: {
+    responses: [
+      { status: 200, body: { status: 'pending' } },
+      { status: 200, body: { status: 'processing' } },
+      { status: 200, body: { status: 'complete' } },
+    ],
+    repeat: 'last',
+  },
+}
+```
+
+**Benefits of declarative approach:**
+- Intent is immediately visible (sequence pattern)
+- State progression explicit (position in array)
+- No hidden logic (just data)
+- Debuggable (inspect structure, not trace execution)
+- Composable (add match criteria, state capture, etc.)
+
+**The key insight:** When you're forced to express logic as data, you naturally discover clearer patterns.
+
+## How Constraint Enforces Good Patterns
+
+Scenarist's JSON-serializability constraint **forces you to think in patterns instead of procedures**. This leads to better design.
+
+### Pattern Discovery Through Constraint
+
+**When you can't write functions, you must:**
+1. Identify the **pattern** you're trying to express
+2. Find the **declarative equivalent** in Scenarist's feature set
+3. Compose **existing primitives** instead of inventing custom logic
+
+**This mirrors constraint-driven design in other domains:**
+- CSS (layout patterns vs DOM manipulation)
+- SQL (query patterns vs procedural loops)
+- React (component patterns vs jQuery-style DOM updates)
+
+### Example: Multi-Page Journey
+
+**Imperative temptation:**
+```typescript
+// What you WANT to write (but can't in Scenarist):
+let currentStep = 0;
+
+server.use('/api/status', (req, res) => {
+  currentStep++;
+  if (currentStep === 1) return res.json({ step: 'welcome' });
+  if (currentStep === 2) return res.json({ step: 'configure' });
+  if (currentStep === 3) return res.json({ step: 'complete' });
+});
+```
+
+**Declarative solution:**
+```typescript
+// What you're FORCED to write (clearer pattern):
+{
+  method: 'GET',
+  url: '/api/status',
+  sequence: {
+    responses: [
+      { status: 200, body: { step: 'welcome' } },
+      { status: 200, body: { step: 'configure' } },
+      { status: 200, body: { step: 'complete' } },
+    ],
+    repeat: 'last',
+  },
+}
+```
+
+**What the constraint teaches:** Multi-step journeys are **sequences**, not procedural counters. The pattern is clearer when expressed as data.
+
+## Real Examples from Production Code
+
+### Phase 1: Match Criteria Instead of If/Else
+
+**Imperative approach (prevented by Scenarist):**
+```typescript
+// ❌ Can't write this - requires function
+(req) => {
+  if (req.headers['x-user-tier'] === 'premium') {
+    return { price: 99.99, discount: true };
+  }
+  return { price: 149.99, discount: false };
+}
+```
+
+**Declarative approach (Scenarist pattern):**
+```typescript
+// ✅ Forced to use match criteria
+[
+  {
+    method: 'GET',
+    url: '/api/pricing',
+    match: { headers: { 'x-user-tier': 'premium' } },
+    response: { status: 200, body: { price: 99.99, discount: true } },
+  },
+  {
+    method: 'GET',
+    url: '/api/pricing',
+    response: { status: 200, body: { price: 149.99, discount: false } },
+  },
+]
+```
+
+**Pattern discovered:** Conditional responses are **specificity-based selection**, not if/else logic.
+
+### Phase 2: Sequences Instead of Referer Routing
+
+**Imperative approach (from legacy code):**
+```typescript
+// ❌ Acquisition.Web referer hack
+const getStatusFromReferer = (referer) => {
+  if (referer.includes('step1')) return 'pending';
+  if (referer.includes('step2')) return 'processing';
+  if (referer.includes('complete')) return 'success';
+  return 'unknown';
+};
+```
+
+**Declarative approach (Scenarist pattern):**
+```typescript
+// ✅ Sequence pattern
+{
+  method: 'GET',
+  url: '/api/job/status',
+  sequence: {
+    responses: [
+      { status: 200, body: { status: 'pending' } },
+      { status: 200, body: { status: 'processing' } },
+      { status: 200, body: { status: 'success' } },
+    ],
+    repeat: 'last',
+  },
+}
+```
+
+**Pattern discovered:** Multi-step workflows are **ordered sequences**, not routing hacks.
+
+### Phase 3: Templates Instead of String Concatenation
+
+**Imperative approach (prevented by Scenarist):**
+```typescript
+// ❌ Can't write this - requires function
+(req) => {
+  const items = globalState.cart || [];
+  items.push(req.body.item);
+  globalState.cart = items;
+  return { items: items };
+}
+```
+
+**Declarative approach (Scenarist pattern):**
+```typescript
+// ✅ Forced to use state capture and templates
+[
+  {
+    method: 'POST',
+    url: '/api/cart/add',
+    captureState: { 'cartItems[]': 'body.item' },
+    response: { status: 200 },
+  },
+  {
+    method: 'GET',
+    url: '/api/cart',
+    response: {
+      status: 200,
+      body: { items: '{{state.cartItems}}' },
+    },
+  },
+]
+```
+
+**Pattern discovered:** Stateful mocks use **capture/inject pattern**, not mutable global state.
+
+## Analogy to Other Declarative Systems
+
+This design philosophy appears across successful technologies:
+
+### React: Declarative UI
+
+**Imperative (jQuery era):**
+```javascript
+// ❌ Describe HOW to update DOM
+$('#list').append('<li>' + item.name + '</li>');
+if (item.active) {
+  $('#list li:last').addClass('active');
+}
+```
+
+**Declarative (React):**
+```jsx
+// ✅ Describe WHAT you want
+<ul>
+  {items.map(item => (
+    <li className={item.active ? 'active' : ''}>
+      {item.name}
+    </li>
+  ))}
+</ul>
+```
+
+**Lesson:** Expressing UI as data structure (JSX) leads to clearer mental model than procedural DOM updates.
+
+### SQL: Declarative Queries
+
+**Imperative (procedural loops):**
+```javascript
+// ❌ Describe HOW to find data
+const results = [];
+for (const user of users) {
+  if (user.tier === 'premium' && user.active) {
+    results.push(user);
+  }
+}
+results.sort((a, b) => a.created - b.created);
+return results.slice(0, 10);
+```
+
+**Declarative (SQL):**
+```sql
+-- ✅ Describe WHAT you want
+SELECT * FROM users
+WHERE tier = 'premium' AND active = true
+ORDER BY created DESC
+LIMIT 10;
+```
+
+**Lesson:** Expressing queries as patterns enables optimization and reasoning that procedural code doesn't allow.
+
+### HTML/CSS: Declarative Layout
+
+**Imperative (programmatic positioning):**
+```javascript
+// ❌ Describe HOW to position elements
+element.style.position = 'absolute';
+element.style.left = (window.width / 2 - element.width / 2) + 'px';
+element.style.top = (window.height / 2 - element.height / 2) + 'px';
+```
+
+**Declarative (Flexbox/Grid):**
+```css
+/* ✅ Describe WHAT layout you want */
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+```
+
+**Lesson:** Layout patterns (flexbox, grid) are clearer than procedural calculations.
+
+### The Pattern: Constraint → Discovery
+
+In each case, **constraint forces pattern discovery:**
+
+| System | Constraint | Pattern Discovered |
+|--------|-----------|-------------------|
+| React | No imperative DOM manipulation | Component composition |
+| SQL | No procedural loops | Query patterns (WHERE, JOIN, GROUP BY) |
+| CSS | No programmatic positioning | Layout patterns (flexbox, grid) |
+| **Scenarist** | **No functions/closures** | **Match, sequence, state patterns** |
+
+**Scenarist applies the same principle to testing:** Force declarative patterns, discover clearer mental models.
+
+## When Imperative is Tempting But Declarative is Better
+
+### Scenario 1: Multi-Page Journey
+
+**Imperative temptation:**
+```typescript
+// "I'll just check the referer to know which step we're on"
+if (req.headers.referer?.includes('/step2')) {
+  return { status: 'processing' };
+}
+```
+
+**Declarative solution:**
+```typescript
+// Use sequences - explicit progression
+sequence: {
+  responses: [
+    { status: 200, body: { status: 'pending' } },
+    { status: 200, body: { status: 'processing' } },
+    { status: 200, body: { status: 'complete' } },
+  ],
+  repeat: 'last',
+}
+```
+
+**Why declarative is better:** Referer is brittle (what if page is refreshed?). Sequences make progression explicit and testable.
+
+### Scenario 2: Conditional Responses
+
+**Imperative temptation:**
+```typescript
+// "I'll just write an if/else to check the request"
+if (req.body.tier === 'premium') {
+  return { price: 99.99 };
+} else {
+  return { price: 149.99 };
+}
+```
+
+**Declarative solution:**
+```typescript
+// Use match criteria - specificity-based selection
+match: { body: { tier: 'premium' } },
+response: { status: 200, body: { price: 99.99 } }
+```
+
+**Why declarative is better:** Specificity algorithm handles complex cases (multiple matches, fallbacks) consistently. If/else grows into spaghetti.
+
+### Scenario 3: Dynamic Values
+
+**Imperative temptation:**
+```typescript
+// "I'll just concatenate the captured value"
+return {
+  message: `Hello, ${capturedName}!`,
+  items: capturedItems,
+};
+```
+
+**Declarative solution:**
+```typescript
+// Use templates - explicit injection points
+response: {
+  status: 200,
+  body: {
+    message: 'Hello, {{state.userName}}!',
+    items: '{{state.cartItems}}',
+  },
+}
+```
+
+**Why declarative is better:** Templates are serializable, inspectable, and composable. String concatenation hides injection points.
+
+## The Philosophy in Practice
+
+### Design Principle
+
+> **"If you can't express it as data, you haven't found the right abstraction yet."**
+
+When you're tempted to write imperative code, ask:
+1. What **pattern** am I trying to express?
+2. Does Scenarist already have a **declarative equivalent**?
+3. If not, is this a **missing pattern** that should be added to core?
+
+### Pattern Hierarchy
+
+Scenarist provides four levels of abstraction:
+
+1. **Simple responses** - Static data (most common)
+2. **Request matching** - Conditional logic (when request content matters)
+3. **Sequences** - Stateful progression (when order matters)
+4. **State capture/injection** - Dynamic values (when data flows between requests)
+
+**Start simple, compose as needed.** Don't jump to complex patterns when simple responses suffice.
+
+### Example: Shopping Cart Journey
+
+**Step 1: Start simple**
+```typescript
+{
+  method: 'GET',
+  url: '/api/cart',
+  response: { status: 200, body: { items: ['item-1'] } },
+}
+```
+
+**Step 2: Add state when needed**
+```typescript
+{
+  method: 'POST',
+  url: '/api/cart/add',
+  captureState: { 'cartItems[]': 'body.item' },
+  response: { status: 200 },
+},
+{
+  method: 'GET',
+  url: '/api/cart',
+  response: {
+    status: 200,
+    body: { items: '{{state.cartItems}}' },
+  },
+}
+```
+
+**Step 3: Add matching if needed**
+```typescript
+{
+  method: 'POST',
+  url: '/api/cart/add',
+  match: { headers: { 'x-tier': 'premium' } },
+  captureState: { 'cartItems[]': 'body.item' },
+  response: { status: 200, body: { discount: 0.2 } },
+}
+```
+
+**Progressive disclosure:** Start with the simplest pattern, add complexity only when required.
+
+## Why This Matters
+
+**For Test Maintainability:**
+- Declarative scenarios are **scannable** (see intent at a glance)
+- Patterns are **composable** (match + sequence + state work together)
+- Logic is **explicit** (no hidden procedures)
+
+**For Team Collaboration:**
+- Junior developers can understand scenarios without tracing execution
+- Patterns are **documented by existence** (sequence means ordered responses)
+- Mental models align (sequences are arrays, matches are specificity)
+
+**For Future Flexibility:**
+- Scenarios can be **versioned** (JSON diffs in git)
+- Scenarios can be **stored remotely** (Redis, PostgreSQL, HTTP APIs)
+- Scenarios can be **generated** (from OpenAPI specs, contract tests, etc.)
+
+**The constraint that enables all of this:** JSON serializability forces declarative thinking.
+
+## Next Steps
+
+Now that you understand the declarative philosophy:
+
+- [Scenario Format →](/introduction/scenario-format) - Learn all declarative patterns in detail
+- [Default Mocks →](/introduction/default-mocks) - See how default + override pattern works
+- [Architecture →](/concepts/architecture) - Understand how hexagonal architecture enables serializability
+- [Quick Start →](/introduction/quick-start) - Put declarative patterns into practice
+
+:::tip[Remember]
+When you're tempted to write imperative code, **that's the moment to discover a declarative pattern**. The constraint isn't a limitation—it's a guide toward clearer design.
+:::

@@ -14,6 +14,12 @@ Scenarist scenarios are **serializable JSON objects** that define how your appli
 
 The serializable design enables future features like remote storage (Redis, PostgreSQL) without breaking changes.
 
+:::tip[Why Serializable?]
+Scenarist scenarios are pure data (no functions) to enforce **declarative design patterns**. This constraint leads to clearer, more maintainable tests.
+
+[Learn about the declarative philosophy →](/introduction/declarative-design)
+:::
+
 ## Basic Scenario Structure
 
 Every scenario follows this structure:

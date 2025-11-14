@@ -433,6 +433,171 @@ Tests care about:
 
 Scenarist focuses on **test intent** (journey progression, state) rather than **implementation details** (referer strings, dynamic IDs).
 
+## Why JSON Serializability Matters: Redis Architecture for Load-Balanced Testing
+
+**Key Architectural Insight:** Maintaining JSON serializability isn't just about storage—it enables the **Redis adapter pattern** for distributed scenario management across load-balanced Next.js deployments.
+
+### The Problem: Load-Balanced Testing
+
+Many production Next.js applications run behind load balancers with multiple server instances:
+
+```
+Test Suite → Load Balancer → [Server 1, Server 2, Server 3]
+```
+
+**Challenge:** How do you ensure all servers use the same mock scenario for a given test ID?
+
+**Without shared state:**
+- Test switches to "premium" scenario
+- Request 1 hits Server 1 (has "premium" active) ✅
+- Request 2 hits Server 2 (still on "default") ❌
+- Test fails with inconsistent responses
+
+### The Solution: RedisScenarioRegistry + RedisScenarioStore
+
+With JSON-serializable scenarios, Scenarist can implement Redis-backed adapters:
+
+```typescript
+class RedisScenarioRegistry implements ScenarioRegistry {
+  async register(scenario: ScenaristScenario) {
+    // Serialize scenario definition to JSON
+    await redis.set(
+      `scenario:${scenario.id}`,
+      JSON.stringify(scenario)  // ← REQUIRES JSON-serializable
+    );
+  }
+
+  async get(scenarioId: string): Promise<ScenaristScenario | undefined> {
+    const data = await redis.get(`scenario:${scenarioId}`);
+    return data ? JSON.parse(data) : undefined;
+  }
+}
+
+class RedisScenarioStore implements ScenarioStore {
+  async set(testId: string, scenario: ActiveScenario) {
+    await redis.set(
+      `test:${testId}`,
+      JSON.stringify(scenario)  // ← REQUIRES JSON-serializable
+    );
+  }
+
+  async get(testId: string): Promise<ActiveScenario | undefined> {
+    const data = await redis.get(`test:${testId}`);
+    return data ? JSON.parse(data) : undefined;
+  }
+}
+```
+
+**Architecture:**
+```
+Test Suite
+    ↓
+POST /__scenario__ (switch to "premium")
+    ↓
+Load Balancer
+    ↓
+Server 1 → RedisScenarioStore.set('test-123', {scenarioId: 'premium'})
+    ↓
+   Redis
+    ↓
+[Server 1, Server 2, Server 3] ← All read from same Redis
+    ↓
+RedisScenarioRegistry.get('premium') → Scenario definition
+RedisScenarioStore.get('test-123') → {scenarioId: 'premium'}
+```
+
+**Benefits:**
+- ✅ All servers share scenario state via Redis
+- ✅ Test ID isolation maintained across servers
+- ✅ Scenario definitions stored once, accessed by all servers
+- ✅ State management (Phase 3) also shared via Redis
+- ✅ No coordination needed between Next.js instances
+
+### Why This Requires JSON Serializability
+
+**If scenarios contained functions/closures:**
+```typescript
+// ❌ CANNOT serialize to Redis
+const scenario = {
+  id: 'premium',
+  mocks: [{
+    method: 'GET',
+    url: '/api/products',
+    response: () => {  // Function - cannot JSON.stringify!
+      return buildProducts('premium');
+    }
+  }]
+};
+
+JSON.stringify(scenario);  // Error: Cannot serialize function
+```
+
+**With JSON-serializable scenarios:**
+```typescript
+// ✅ CAN serialize to Redis
+const scenario = {
+  id: 'premium',
+  mocks: [{
+    method: 'GET',
+    url: '/api/products',
+    response: {  // Plain JSON
+      status: 200,
+      body: { products: buildProducts('premium') }
+    }
+  }]
+};
+
+JSON.stringify(scenario);  // Works perfectly
+```
+
+### The buildVariants Trade-off
+
+**The duplication problem remains:** 12 variants × complex scenarios = lots of duplication
+
+**buildVariants utility solves this while maintaining serializability:**
+
+```typescript
+const onlineJourneyScenarios = buildVariants({
+  family: 'onlineJourney',
+  sharedMocks: [...],  // Steps 1,2,3,5,6,8 (identical across variants)
+  variants: {
+    approve: { state: 'approve', decision: 'approve' },
+    decline: { state: 'sign', decision: 'decline' },
+    // ... 10 more variants
+  },
+  createVariantMocks: (config) => [
+    // Only steps 4,7 that vary between variants
+  ]
+});
+
+// Returns: Map<string, ScenaristScenario>
+// Each scenario is FULLY JSON-serializable
+// Can be stored in Redis: redis.set('scenario:approve', JSON.stringify(scenario))
+```
+
+**Trade-off accepted:**
+- ✅ Minimal source duplication (shared mocks + variant configs)
+- ✅ All generated scenarios are JSON-serializable
+- ✅ Enables Redis adapter for load-balanced testing
+- ⚠️ 5x memory at runtime (3 MB vs 500 KB - negligible)
+
+**Alternative considered and rejected:**
+- Runtime variant interpolation (Acquisition.Web style)
+- ❌ Cannot serialize functions to Redis
+- ❌ Blocks load-balanced testing architecture
+- ❌ Prevents scenario versioning/storage
+
+### Architectural Principle
+
+**"Don't paint yourself into a corner"** - By maintaining JSON serializability from the start, Scenarist enables:
+- Redis adapters for load-balanced testing
+- Database storage adapters (PostgreSQL, MongoDB)
+- Remote scenario fetching (HTTP API)
+- Scenario versioning and storage
+- File-based scenario definitions
+
+**Without serializability, these would be impossible.**
+
 ## Conclusion
 
 **Question:** Can Scenarist replace Acquisition.Web testing patterns?

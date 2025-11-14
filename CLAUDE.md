@@ -1015,6 +1015,206 @@ const config = buildConfig({
 
 **The principle:** ALL data structures in ports and domain must be serializable. No exceptions.
 
+### The Real Value: Constraints Force Better Design
+
+**CRITICAL REFRAMING**: The serialization constraint's primary value is NOT enabling Redis/storage adapters. It's that the constraint **forces declarative API design**, which leads to clearer, more composable, more maintainable scenarios.
+
+**The Initial Justification (Incomplete):**
+
+When we first enforced JSON serializability, we justified it as enabling multiple storage implementations:
+- Redis for distributed testing
+- File system for version control
+- Remote APIs for centralized scenarios
+- Databases for persistence
+
+**The Challenge:**
+
+During design review, a simple question exposed the flaw: "Is there another way we could solve the load balancing problem with cookies though?"
+
+Answer: Yes. Cookies can solve session stickiness without Redis. The Redis justification was over-engineered.
+
+**The Deeper Insight:**
+
+The serialization constraint is valuable **because it forces you toward declarative patterns**, not because of storage flexibility.
+
+**How Constraints Drove Better Patterns:**
+
+Each phase of development hit the serialization constraint and was forced to find declarative solutions:
+
+**Phase 1 - Request Content Matching:**
+```typescript
+// ❌ CAN'T DO (not serializable) - Imperative function
+{
+  method: 'GET',
+  url: '/api/products',
+  shouldMatch: (request) => request.headers['x-user-tier'] === 'premium'  // Function!
+}
+
+// ✅ FORCED TO DO (serializable) - Declarative criteria
+{
+  method: 'GET',
+  url: '/api/products',
+  match: {  // Pattern-based, explicit
+    headers: { 'x-user-tier': 'premium' }
+  }
+}
+```
+
+**Why declarative is better:**
+- Logic is VISIBLE in the scenario definition
+- No hidden behavior in function closures
+- Can be inspected, logged, validated
+- Enables tooling (scenario visualizers, validators)
+- Easier to reason about and debug
+
+**Phase 2 - Response Sequences:**
+```typescript
+// ❌ CAN'T DO (not serializable) - Imperative state check
+{
+  method: 'GET',
+  url: '/api/status',
+  respond: (request) => {
+    const referer = request.headers.referer;
+    if (isFirstVisit(referer)) {
+      return { status: 200, body: { state: 'pending' } };
+    } else if (isSecondVisit(referer)) {
+      return { status: 200, body: { state: 'processing' } };
+    } else {
+      return { status: 200, body: { state: 'complete' } };
+    }
+  }
+}
+
+// ✅ FORCED TO DO (serializable) - Declarative sequence
+{
+  method: 'GET',
+  url: '/api/status',
+  sequence: {  // Pattern-based progression
+    responses: [
+      { status: 200, body: { state: 'pending' } },
+      { status: 200, body: { state: 'processing' } },
+      { status: 200, body: { state: 'complete' } },
+    ],
+    repeat: 'last'
+  }
+}
+```
+
+**Why declarative is better:**
+- Polling progression is EXPLICIT, not implicit
+- Sequence is clear at a glance
+- No hidden state management in closures
+- Can visualize the flow easily
+- Test assertions match sequence structure
+
+**Phase 3 - Stateful Mocks:**
+```typescript
+// ❌ CAN'T DO (not serializable) - Imperative concatenation
+{
+  method: 'GET',
+  url: '/api/cart',
+  respond: (request) => {
+    const cartItems = getStateFromSomewhere(request);
+    return {
+      status: 200,
+      body: {
+        items: cartItems,  // Runtime variable reference
+        total: calculateTotal(cartItems)  // Function call
+      }
+    };
+  }
+}
+
+// ✅ FORCED TO DO (serializable) - Declarative templates
+{
+  method: 'GET',
+  url: '/api/cart',
+  response: {
+    status: 200,
+    body: {
+      items: '{{state.cartItems}}',  // Template, not function
+      total: '{{state.cartTotal}}'
+    }
+  },
+  captureState: {  // Explicit state capture
+    cartTotal: 'body.total'
+  }
+}
+```
+
+**Why declarative is better:**
+- State dependencies are VISIBLE in scenario
+- Templates document what state is used
+- No hidden side effects in functions
+- Can validate state keys exist
+- Clear separation: capture vs inject
+
+**The Pattern Recognition:**
+
+This is the same principle as React's constraint:
+
+**React forces declarative UI:**
+```typescript
+// ❌ CAN'T DO - Imperative DOM manipulation
+function updateUI() {
+  const div = document.getElementById('counter');
+  div.innerHTML = `Count: ${count}`;  // Manual DOM updates
+}
+
+// ✅ FORCED TO DO - Declarative component
+function Counter() {
+  return <div>Count: {count}</div>;  // Describe desired state
+}
+```
+
+**Why React's constraint is valuable:**
+- Not because DOM manipulation is impossible
+- Because declarative UI is clearer
+- Easier to reason about state → UI relationship
+- Enables composition and reusability
+
+**Same principle applies to Scenarist:**
+- Not because functions are impossible
+- Because declarative scenarios are clearer
+- Easier to reason about request → response relationship
+- Enables composition (match + sequence + state)
+
+**The Lesson:**
+
+When you encounter a constraint that feels limiting:
+
+1. **Don't immediately fight it** - explore what it forces you toward
+2. **Look for patterns** - constraints often guide toward better abstractions
+3. **Question initial justifications** - the real value might be different than you think
+4. **Embrace declarative over imperative** - if serialization forces it, that's good!
+
+**False Justification Danger:**
+
+We initially over-engineered the Redis justification:
+- "Need distributed testing across load-balanced servers"
+- "Must store scenarios in Redis for session stickiness"
+- Complex solution for hypothetical problem
+
+**Simple question exposed this:**
+- "Could we use cookies for session stickiness?"
+- Answer: Yes, cookies solve it simply
+- Redis justification crumbled
+
+**But the constraint was still valuable:**
+- Not for Redis capabilities
+- For declarative design patterns
+- The "why" was wrong, but the "what" was right
+
+**Important:** Revisit your assumptions when challenged. The real value of a decision might be different than your initial reasoning.
+
+**This applies beyond Scenarist:**
+- Type systems constrain but force clearer code
+- Immutability constraints force functional patterns
+- Pure functions force explicit dependencies
+- Constraints guide toward better architectures
+
+**The principle:** Constraints aren't just limitations. They're **design guides** that push you toward clearer, more maintainable patterns. When a constraint feels painful, ask "What pattern is this forcing me toward?" The answer is often better than what you would have built without it.
+
 ### Sequence Reset on Scenario Switch - Idempotency Fix
 
 **Problem:** Bruno tests passed on first run (133/133 assertions) but failed on second run (117/133 assertions)
