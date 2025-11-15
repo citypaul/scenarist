@@ -15,34 +15,29 @@ Scenarist fills the testing gap by enabling **HTTP-level integration testing** w
 
 ```mermaid
 %%{init: {'theme':'neutral', 'themeVariables': {'fontSize':'16px', 'fontFamily':'arial'}}}%%
-graph TB
-    T1["Test 1: Happy path<br/>switchScenario('allSucceed')"]
-    T2["Test 2: Payment error<br/>switchScenario('paymentFails')"]
+flowchart TB
+    subgraph Flow1[" "]
+        direction TB
+        T1["🧪 Test 1: Happy path<br/>switchScenario('allSucceed')"]
+        B1["🟢 Your Real Backend<br/>(Middleware + Routes + Business Logic)"]
+        S1["📦 Scenario: allSucceed<br/>💳 Stripe: {status: 'succeeded'}<br/>🔐 Auth0: {user: 'john@example.com'}<br/>📧 SendGrid: {status: 'sent'}"]
 
-    T1 -->|"1. HTTP Request"| B1["🟢 Your Real Backend<br/>(HTTP + Middleware + Business Logic)"]
-    T2 -->|"1. HTTP Request"| B2["🟢 Your Real Backend<br/>(HTTP + Middleware + Business Logic)"]
-
-    B1 -->|"4. HTTP Response"| T1
-    B2 -->|"4. HTTP Response"| T2
-
-    B1 -.->|"2. External API call"| S1
-    B2 -.->|"2. External API call"| S2
-
-    S1 -.->|"3. Returns mocked responses"| B1
-    S2 -.->|"3. Returns mocked responses"| B2
-
-    subgraph S1["Scenario: allSucceed"]
-        direction LR
-        S1A["💳 Stripe<br/>{status: 'succeeded',<br/>amount: 5000}"]
-        S1B["🔐 Auth0<br/>{user: 'john@example.com',<br/>tier: 'standard'}"]
-        S1C["📧 SendGrid<br/>{status: 'sent',<br/>message_id: 'msg_123'}"]
+        T1 ==>|"① HTTP Request"| B1
+        B1 -.->|"② External API calls"| S1
+        S1 -.->|"③ Mocked responses"| B1
+        B1 ==>|"④ HTTP Response"| T1
     end
 
-    subgraph S2["Scenario: paymentFails"]
-        direction LR
-        S2A["💳 Stripe<br/>{status: 'declined',<br/>code: 'card_declined'}"]
-        S2B["🔐 Auth0<br/>{user: 'john@example.com',<br/>tier: 'standard'}"]
-        S2C["📧 SendGrid<br/>{status: 'sent',<br/>message_id: 'msg_456'}"]
+    subgraph Flow2[" "]
+        direction TB
+        T2["🧪 Test 2: Payment error<br/>switchScenario('paymentFails')"]
+        B2["🟢 Your Real Backend<br/>(Middleware + Routes + Business Logic)"]
+        S2["📦 Scenario: paymentFails<br/>💳 Stripe: {status: 'declined'}<br/>🔐 Auth0: {user: 'john@example.com'}<br/>📧 SendGrid: {status: 'sent'}"]
+
+        T2 ==>|"① HTTP Request"| B2
+        B2 -.->|"② External API calls"| S2
+        S2 -.->|"③ Mocked responses"| B2
+        B2 ==>|"④ HTTP Response"| T2
     end
 
     style T1 fill:#e7f5ff,stroke:#1971c2,stroke-width:2px
