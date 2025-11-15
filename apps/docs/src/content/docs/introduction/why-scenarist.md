@@ -53,51 +53,51 @@ These frameworks shift more logic to the server, making the HTTP boundary increa
 graph LR
     subgraph tests[" "]
         direction TB
-        T1["Test 1:<br/>Happy path"]
-        T2["Test 2:<br/>Payment error"]
-        T3["Test 3:<br/>Auth error"]
-        T4["Test 4:<br/>Email failure"]
+        T1["Test 1: Happy path<br/><br/>switchScenario('allSucceed')"]
+        T2["Test 2: Payment error<br/><br/>switchScenario('paymentFails')"]
+        T3["Test 3: Auth error<br/><br/>switchScenario('authFails')"]
+        T4["Test 4: Email failure<br/><br/>switchScenario('emailFails')"]
     end
 
     B["🟢 Your Real Backend<br/>(HTTP + Middleware + Business Logic)"]
 
-    subgraph scenario1["Scenario 1: All Services Succeed"]
+    subgraph scenario1["Scenario: allSucceed"]
         direction TB
-        S1A["Stripe API<br/>→ Payment accepted"]
-        S1B["Auth0 API<br/>→ User authenticated"]
-        S1C["SendGrid API<br/>→ Email sent"]
+        S1A["💳 Stripe<br/>status: 'succeeded'<br/>amount: 5000"]
+        S1B["🔐 Auth0<br/>user: 'john@example.com'<br/>tier: 'premium'"]
+        S1C["📧 SendGrid<br/>status: 'sent'<br/>messageId: 'abc123'"]
     end
 
-    subgraph scenario2["Scenario 2: Payment Fails"]
+    subgraph scenario2["Scenario: paymentFails"]
         direction TB
-        S2A["Stripe API<br/>→ Card declined"]
-        S2B["Auth0 API<br/>→ User authenticated"]
-        S2C["SendGrid API<br/>→ Email sent"]
+        S2A["💳 Stripe<br/>status: 'declined'<br/>code: 'card_declined'"]
+        S2B["🔐 Auth0<br/>user: 'john@example.com'<br/>tier: 'premium'"]
+        S2C["📧 SendGrid<br/>status: 'sent'<br/>messageId: 'def456'"]
     end
 
-    subgraph scenario3["Scenario 3: Auth Fails"]
+    subgraph scenario3["Scenario: authFails"]
         direction TB
-        S3A["Stripe API<br/>→ Payment accepted"]
-        S3B["Auth0 API<br/>→ Invalid credentials"]
-        S3C["SendGrid API<br/>→ Email sent"]
+        S3A["💳 Stripe<br/>status: 'succeeded'<br/>amount: 5000"]
+        S3B["🔐 Auth0<br/>status: 401<br/>error: 'invalid_grant'"]
+        S3C["📧 SendGrid<br/>status: 'sent'<br/>messageId: 'ghi789'"]
     end
 
-    subgraph scenario4["Scenario 4: Email Fails"]
+    subgraph scenario4["Scenario: emailFails"]
         direction TB
-        S4A["Stripe API<br/>→ Payment accepted"]
-        S4B["Auth0 API<br/>→ User authenticated"]
-        S4C["SendGrid API<br/>→ 500 error"]
+        S4A["💳 Stripe<br/>status: 'succeeded'<br/>amount: 5000"]
+        S4B["🔐 Auth0<br/>user: 'john@example.com'<br/>tier: 'premium'"]
+        S4C["📧 SendGrid<br/>status: 500<br/>error: 'service_unavailable'"]
     end
 
-    T1 -->|Real HTTP| B
-    T2 -->|Real HTTP| B
-    T3 -->|Real HTTP| B
-    T4 -->|Real HTTP| B
+    T1 -->|"switchScenario('allSucceed')"<br/>then real HTTP requests| B
+    T2 -->|"switchScenario('paymentFails')"<br/>then real HTTP requests| B
+    T3 -->|"switchScenario('authFails')"<br/>then real HTTP requests| B
+    T4 -->|"switchScenario('emailFails')"<br/>then real HTTP requests| B
 
-    B -.->|Scenario 1<br/>mocks| scenario1
-    B -.->|Scenario 2<br/>mocks| scenario2
-    B -.->|Scenario 3<br/>mocks| scenario3
-    B -.->|Scenario 4<br/>mocks| scenario4
+    B -.->|Routes to<br/>scenario| scenario1
+    B -.->|Routes to<br/>scenario| scenario2
+    B -.->|Routes to<br/>scenario| scenario3
+    B -.->|Routes to<br/>scenario| scenario4
 
     style tests fill:#f1f3f5,stroke:#868e96,stroke-width:2px
     style B fill:#51cf66,stroke:#2f9e44,stroke-width:4px
