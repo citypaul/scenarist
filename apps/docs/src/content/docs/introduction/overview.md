@@ -14,7 +14,7 @@ Scenarist fills the testing gap by enabling **HTTP-level integration testing** w
 ## One Server, Unlimited Scenarios
 
 ```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'fontSize':'14px', 'fontFamily':'arial'}}}%%
+%%{init: {'theme':'neutral', 'themeVariables': {'fontSize':'16px', 'fontFamily':'arial'}}}%%
 graph LR
     subgraph tests[" "]
         direction TB
