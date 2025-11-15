@@ -22,8 +22,8 @@ graph TB
     T1 -->|HTTP Request| B1["🟢 Your Real Backend<br/>(HTTP + Middleware + Business Logic)"]
     T2 -->|HTTP Request| B2["🟢 Your Real Backend<br/>(HTTP + Middleware + Business Logic)"]
 
-    B1 -.->|Routes to scenario| S1
-    B2 -.->|Routes to scenario| S2
+    S1 -.->|Routes to scenario| B1
+    S2 -.->|Routes to scenario| B2
 
     subgraph S1["Scenario: allSucceed"]
         direction LR
@@ -39,8 +39,8 @@ graph TB
         S2C["📧 SendGrid<br/>{status: 'sent',<br/>message_id: 'msg_456'}"]
     end
 
-    S1 -.->|Returns mocked responses| B1
-    S2 -.->|Returns mocked responses| B2
+    B1 -.->|Returns mocked responses| S1
+    B2 -.->|Returns mocked responses| S2
 
     B1 -->|HTTP Response| T1
     B2 -->|HTTP Response| T2
