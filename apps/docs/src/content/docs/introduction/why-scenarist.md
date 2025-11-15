@@ -37,33 +37,15 @@ This creates a testing challenge:
 
 **Scenarist fills this gap** by testing your server-side HTTP layer with mocked external APIs. Your code—Server Components, loaders, middleware, business logic—executes normally. Only the external API calls are intercepted, returning scenario-defined responses based on test ID. This enables testing full user journeys through the browser using Playwright helpers, with each test isolated and running in parallel.
 
+**Test 100+ external API scenarios in parallel** without expensive cloud API calls or complex test infrastructure.
+
 [Learn how it works →](/introduction/overview)
 
 ### Why Framework Documentation Recommends E2E
 
-This gap is evident in how framework authors struggle to provide testing guidance:
+This gap is evident in how framework authors struggle to provide testing guidance. The Next.js documentation states: *"Since async Server Components are new to the React ecosystem, Next.js recommends using end-to-end testing."* Remix notes: *"There aren't standard ways of testing components that have Remix code."* SvelteKit faces similar challenges with server route testing.
 
-**Next.js Server Components** - The [official Next.js documentation](https://nextjs.org/docs/app/building-your-application/testing#async-server-components) states: *"Since async Server Components are new to the React ecosystem, Next.js recommends using end-to-end testing."* Unit testing requires mocking Next.js internals (fetch, cookies, headers), creating distance from production execution.
-
-→ **Scenarist solves this** by testing Server Components with real HTTP requests to your Next.js routes. [See how →](/frameworks/nextjs)
-
-**Remix Loaders & Actions** - The [Remix documentation](https://remix.run/docs/en/main/discussion/testing) notes: *"There aren't standard ways of testing components that have Remix code."* Developers must test loaders and actions separately from components, then hope they integrate correctly.
-
-→ **Scenarist solves this** by testing loaders and actions at the HTTP layer where they naturally integrate. [See how →](/frameworks/remix)
-
-**SvelteKit Server Routes** - Testing server-side logic requires either mocking the framework's request/response handling or running full end-to-end tests, with no standard middle ground.
-
-→ **Scenarist solves this** by providing HTTP-level testing without browser overhead. [See how →](/frameworks/sveltekit)
-
-:::note[The Pattern]
-When your "frontend" components run on the server and call external APIs directly, traditional testing approaches break down:
-
-- **Unit tests** mock too much (framework internals) → not testing real execution
-- **E2E tests** are too slow → can't test all scenarios
-- **No middle ground exists** → until Scenarist
-
-**Scenarist fills this gap** by testing your real server-side code with mocked external APIs. Your Next.js Server Components, Remix loaders, TanStack server functions—they all execute normally. Only the external API calls (Stripe, Auth0, SendGrid) are intercepted.
-:::
+The pattern is clear: when "frontend" components run on the server and call external APIs directly, traditional testing approaches break down. **Scenarist fills this gap** by testing real server-side code with mocked external APIs.
 
 ## Testing Behavior, Not Implementation
 
@@ -90,6 +72,7 @@ This follows Test-Driven Development principles: tests document expected behavio
 | HTTP layer | Mocked | Real | Real |
 | Backend execution | Real (but isolated) | Real | Real |
 | External APIs | Mocked | Real or mocked | Mocked via scenarios |
+| Tests behavior over implementation | No (mocks internals) | Yes | Yes |
 | Parallel execution | Yes | Typically no | Yes |
 | Speed | Fast | Slow | Fast |
 | Scenario coverage | High (with mocking) | Low (speed constraint) | High |
@@ -112,11 +95,9 @@ Consider Scenarist when:
 
 Consider alternatives when:
 
-- Testing individual functions in isolation (use unit tests)
-- Verifying complete user workflows including browser interactions (use E2E tests)
-- Validating integration with real third-party services (use E2E or integration tests with real services)
-- Testing frontend-only applications with no backend HTTP layer
-- Verifying API contracts match specifications (consider contract testing tools)
+- Testing isolated functions (use unit tests) or complete user workflows with browser interactions (use E2E tests)
+- Validating integration with real third-party services or API contract specifications (use integration/contract tests)
+- Working with frontend-only applications with no HTTP layer
 
 :::caution[Not a Replacement for E2E Testing]
 Scenarist tests HTTP-level backend behavior, not complete user workflows. Browser interactions, JavaScript execution, visual rendering, and client-side state management still require end-to-end tests. Use Scenarist to complement E2E tests, not replace them.
