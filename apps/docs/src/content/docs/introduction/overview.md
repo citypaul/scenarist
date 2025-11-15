@@ -19,11 +19,17 @@ graph TB
     T1["Test 1: Happy path<br/>switchScenario('allSucceed')"]
     T2["Test 2: Payment error<br/>switchScenario('paymentFails')"]
 
-    T1 -->|HTTP Request| B1["🟢 Your Real Backend<br/>(HTTP + Middleware + Business Logic)"]
-    T2 -->|HTTP Request| B2["🟢 Your Real Backend<br/>(HTTP + Middleware + Business Logic)"]
+    T1 -->|"1. HTTP Request"| B1["🟢 Your Real Backend<br/>(HTTP + Middleware + Business Logic)"]
+    T2 -->|"1. HTTP Request"| B2["🟢 Your Real Backend<br/>(HTTP + Middleware + Business Logic)"]
 
-    B1 -.->|External API call| S1
-    B2 -.->|External API call| S2
+    B1 -->|"4. HTTP Response"| T1
+    B2 -->|"4. HTTP Response"| T2
+
+    B1 -.->|"2. External API call"| S1
+    B2 -.->|"2. External API call"| S2
+
+    S1 -.->|"3. Returns mocked responses"| B1
+    S2 -.->|"3. Returns mocked responses"| B2
 
     subgraph S1["Scenario: allSucceed"]
         direction LR
@@ -38,12 +44,6 @@ graph TB
         S2B["🔐 Auth0<br/>{user: 'john@example.com',<br/>tier: 'standard'}"]
         S2C["📧 SendGrid<br/>{status: 'sent',<br/>message_id: 'msg_456'}"]
     end
-
-    S1 -.->|Returns mocked responses| B1
-    S2 -.->|Returns mocked responses| B2
-
-    B1 -->|HTTP Response| T1
-    B2 -->|HTTP Response| T2
 
     style T1 fill:#e7f5ff,stroke:#1971c2,stroke-width:2px
     style T2 fill:#e7f5ff,stroke:#1971c2,stroke-width:2px

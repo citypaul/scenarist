@@ -3,8 +3,6 @@ title: Express - Getting Started
 description: Set up Scenarist with Express in 5 minutes
 ---
 
-# Express - Getting Started
-
 Test your Express APIs with runtime scenario switching. Zero boilerplate setup using AsyncLocalStorage.
 
 ## Installation
@@ -20,12 +18,15 @@ npm install -D @playwright/test @scenarist/playwright-helpers
 
 ```typescript
 // src/scenarios.ts
-import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/core';
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/express-adapter';
 
-const successScenario: ScenaristScenario = {
-  id: 'success',
-  name: 'All APIs Succeed',
+// ✅ RECOMMENDED - Default scenario with complete happy path
+const defaultScenario: ScenaristScenario = {
+  id: 'default',
+  name: 'Happy Path',
+  description: 'All external APIs succeed with valid responses',
   mocks: [
+    // Stripe: Successful payment
     {
       method: 'POST',
       url: 'https://api.stripe.com/v1/charges',
@@ -34,27 +35,48 @@ const successScenario: ScenaristScenario = {
         body: { id: 'ch_123', status: 'succeeded', amount: 5000 },
       },
     },
-  ],
-};
-
-const cardDeclinedScenario: ScenaristScenario = {
-  id: 'cardDeclined',
-  name: 'Card Declined',
-  mocks: [
+    // Auth0: Authenticated user
+    {
+      method: 'GET',
+      url: 'https://api.auth0.com/userinfo',
+      response: {
+        status: 200,
+        body: { sub: 'user_123', email: 'john@example.com', tier: 'standard' },
+      },
+    },
+    // SendGrid: Email sent successfully
     {
       method: 'POST',
-      url: 'https://api.stripe.com/v1/charges',
+      url: 'https://api.sendgrid.com/v3/mail/send',
       response: {
-          status: 402,
-          body: { error: { code: 'card_declined', message: 'Your card was declined' } },
+        status: 202,
+        body: { message_id: 'msg_123' },
       },
     },
   ],
 };
 
+// Specialized scenario: Override ONLY Stripe for payment failure
+const cardDeclinedScenario: ScenaristScenario = {
+  id: 'cardDeclined',
+  name: 'Card Declined',
+  description: 'Stripe declines payment, everything else succeeds',
+  mocks: [
+    // Override: Stripe declines payment
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      response: {
+        status: 402,
+        body: { error: { code: 'card_declined', message: 'Your card was declined' } },
+      },
+    },
+    // Auth0 and SendGrid automatically fall back to default (happy path)
+  ],
+};
+
 export const scenarios = {
-  default: successScenario,
-  success: successScenario,
+  default: defaultScenario,
   cardDeclined: cardDeclinedScenario,
 } as const satisfies ScenaristScenarios;
 ```
@@ -108,44 +130,79 @@ app.post('/api/checkout', async (req, res) => {
 app.listen(3000, () => console.log('Server running on :3000'));
 ```
 
-**3. Write your first test:**
+**3. Install testing dependencies:**
+
+```bash
+npm install -D vitest supertest @types/supertest
+```
+
+**4. Write your tests:**
 
 ```typescript
-// tests/checkout.spec.ts
-import { expect, withScenarios } from '@scenarist/playwright-helpers';
+// tests/checkout.test.ts
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import request from 'supertest';
+import { createApp } from '../src/server'; // Your Express app factory
 import { scenarios } from '../src/scenarios';
 
-// Create type-safe test helper
-export const test = withScenarios(scenarios);
+describe('Checkout API', () => {
+  const { app, scenarist } = createApp();
 
-test('processes payment successfully', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'success'); // ✅ Autocomplete!
-
-  // Make API request - your Express route runs normally
-  const response = await page.request.post('http://localhost:3000/api/checkout', {
-    data: { amount: 5000, token: 'tok_test' },
+  beforeAll(() => {
+    scenarist.start(); // Start MSW
   });
 
-  const data = await response.json();
-
-  expect(response.status()).toBe(200);
-  expect(data.success).toBe(true);
-  expect(data.chargeId).toBe('ch_123');
-});
-
-test('handles card declined error', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'cardDeclined'); // ✅ Type-safe!
-
-  const response = await page.request.post('http://localhost:3000/api/checkout', {
-    data: { amount: 5000, token: 'tok_test' },
+  afterAll(() => {
+    scenarist.stop(); // Stop MSW
   });
 
-  const data = await response.json();
+  it('processes payment successfully', async () => {
+    // Switch to default scenario
+    await request(app)
+      .post(scenarist.config.endpoints.setScenario)
+      .set(scenarist.config.headers.testId, 'test-1')
+      .send({ scenario: 'default' });
 
-  expect(response.status()).toBe(402);
-  expect(data.error).toContain('declined');
+    // Make API request - your Express route runs normally
+    const response = await request(app)
+      .post('/api/checkout')
+      .set(scenarist.config.headers.testId, 'test-1')
+      .send({ amount: 5000, token: 'tok_test' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.chargeId).toBe('ch_123');
+  });
+
+  it('handles card declined error', async () => {
+    // Switch to cardDeclined scenario
+    await request(app)
+      .post(scenarist.config.endpoints.setScenario)
+      .set(scenarist.config.headers.testId, 'test-2')
+      .send({ scenario: 'cardDeclined' });
+
+    const response = await request(app)
+      .post('/api/checkout')
+      .set(scenarist.config.headers.testId, 'test-2')
+      .send({ amount: 5000, token: 'tok_test' });
+
+    expect(response.status).toBe(402);
+    expect(response.body.error).toContain('declined');
+  });
 });
 ```
+
+:::tip[Recommended: Supertest for Express APIs]
+We recommend using **Supertest** with **Vitest** for testing Express applications. Supertest is designed specifically for HTTP API testing and provides a clean, fluent interface for making requests and assertions.
+
+**Why Supertest?**
+- Direct HTTP requests to your Express app (no browser needed)
+- Fluent API for building requests and setting headers
+- Works perfectly with Express middleware and route handlers
+- Fast parallel test execution
+
+**Example app:** See [complete Express example](https://github.com/citypaul/scenarist/tree/main/apps/express-example) with comprehensive test suite using Supertest + Vitest.
+:::
 
 ## What Makes Express Setup Special
 
