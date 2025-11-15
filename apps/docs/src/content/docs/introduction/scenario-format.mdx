@@ -23,7 +23,9 @@ Scenarist scenarios are pure data (no functions) to enforce **declarative design
 Every scenario follows this structure:
 
 ```typescript
-import type { ScenaristScenario } from '@scenarist/core';
+// Import from your framework's adapter package (all adapters re-export these types)
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+// Or: '@scenarist/nextjs-adapter/app', '@scenarist/nextjs-adapter/pages', etc.
 
 const myScenario: ScenaristScenario = {
   id: 'my-scenario',                    // Unique identifier (required)
@@ -113,6 +115,9 @@ Every response (single or in sequence) contains:
 Match mocks based on request content to return different responses for the same URL:
 
 ```typescript
+// Import from your framework's adapter package (all adapters re-export these types)
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
 const scenario: ScenaristScenario = {
   id: 'tiered-pricing',
   name: 'Tiered Pricing',
@@ -226,6 +231,9 @@ Request with `{ itemType: 'premium', quantity: 5 }` → First mock wins (specifi
 Test polling, multi-step workflows, and async operations with declarative sequences:
 
 ```typescript
+// Import from your framework's adapter package (all adapters re-export these types)
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
 const scenario: ScenaristScenario = {
   id: 'github-polling',
   name: 'GitHub Job Polling',
@@ -311,6 +319,9 @@ After 3 calls, sequence exhausts and fallback mock returns 429 error.
 Capture state from requests and inject it into responses for dynamic behavior:
 
 ```typescript
+// Import from your framework's adapter package (all adapters re-export these types)
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
 const scenario: ScenaristScenario = {
   id: 'shopping-cart',
   name: 'Shopping Cart',
@@ -396,6 +407,9 @@ response: {
 All features compose together for powerful scenarios:
 
 ```typescript
+// Import from your framework's adapter package (all adapters re-export these types)
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
 const scenario: ScenaristScenario = {
   id: 'premium-onboarding',
   name: 'Premium User Onboarding',
@@ -438,7 +452,8 @@ const scenario: ScenaristScenario = {
 Organize scenarios in a typed object for type-safe access:
 
 ```typescript
-import type { ScenaristScenarios } from '@scenarist/core';
+// Import from your framework's adapter package (all adapters re-export these types)
+import type { ScenaristScenarios } from '@scenarist/express-adapter';
 
 export const scenarios = {
   default: defaultScenario,        // Required: 'default' key
@@ -452,17 +467,119 @@ type ScenarioId = keyof typeof scenarios;
 // 'default' | 'success' | 'error' | 'premiumUser'
 ```
 
-### The 'default' Scenario Requirement
+### The 'default' Scenario: Happy Path Foundation
 
-Every scenarios object **must** have a 'default' key (enforced by schema validation):
+Every scenarios object **must** have a 'default' key (enforced by schema validation). This isn't just a fallback—it's the **foundation** for all your scenarios.
+
+**Recommended pattern:** Define your **happy path** in the default scenario:
 
 ```typescript
-// ✅ CORRECT
-export const scenarios = {
-  default: defaultScenario,  // Required key
-  other: otherScenario,
-} as const satisfies ScenaristScenarios;
+// Import from your framework's adapter package (all adapters re-export these types)
+import type { ScenaristScenario } from '@scenarist/express-adapter';
 
+// ✅ RECOMMENDED - Happy path as default
+const defaultScenario: ScenaristScenario = {
+  id: 'default',
+  name: 'Happy Path',
+  description: 'All external APIs succeed with valid responses',
+  mocks: [
+    // Stripe: Successful payment
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      response: {
+        status: 200,
+        body: { id: 'ch_123', status: 'succeeded', amount: 5000 }
+      }
+    },
+    // Auth0: Authenticated user
+    {
+      method: 'GET',
+      url: 'https://api.auth0.com/userinfo',
+      response: {
+        status: 200,
+        body: { sub: 'user_123', email: 'john@example.com', tier: 'standard' }
+      }
+    },
+    // SendGrid: Email sent successfully
+    {
+      method: 'POST',
+      url: 'https://api.sendgrid.com/v3/mail/send',
+      response: {
+        status: 202,
+        body: { message_id: 'msg_123' }
+      }
+    },
+  ],
+};
+```
+
+### Automatic Fallback: Override Only What Changes
+
+When you switch to a specialized scenario, Scenarist **automatically falls back to default** for any mocks not defined in that scenario. This means you only need to define what's different:
+
+```typescript
+// Import from your framework's adapter package (all adapters re-export these types)
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
+// Scenario that overrides ONLY Stripe - Auth0 and SendGrid fall back to default
+const paymentFailsScenario: ScenaristScenario = {
+  id: 'payment-fails',
+  name: 'Payment Declined',
+  description: 'Stripe declines payment, everything else succeeds',
+  mocks: [
+    // Override: Stripe declines payment
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      response: {
+        status: 402,
+        body: { error: { code: 'card_declined', message: 'Card was declined' } }
+      }
+    },
+    // Auth0 and SendGrid NOT defined here → automatically use default scenario mocks
+  ],
+};
+
+// Scenario that overrides ONLY Auth0 - Stripe and SendGrid fall back to default
+const authFailsScenario: ScenaristScenario = {
+  id: 'auth-fails',
+  name: 'Authentication Failed',
+  description: 'Auth0 returns 401, everything else succeeds',
+  mocks: [
+    // Override: Auth0 authentication fails
+    {
+      method: 'GET',
+      url: 'https://api.auth0.com/userinfo',
+      response: {
+        status: 401,
+        body: { error: 'invalid_token', error_description: 'Token expired' }
+      }
+    },
+    // Stripe and SendGrid NOT defined here → automatically use default scenario mocks
+  ],
+};
+```
+
+**When you switch to `paymentFailsScenario`:**
+1. Scenarist collects mocks from **default** (all 3 APIs)
+2. Scenarist collects mocks from **paymentFailsScenario** (Stripe only)
+3. Stripe: Uses override (payment declined)
+4. Auth0: Falls back to default (authenticated user)
+5. SendGrid: Falls back to default (email sent)
+
+**This eliminates duplication.** Without automatic fallback, you'd have to copy all the happy path mocks into every scenario and manually update them when defaults change.
+
+### Why 'default' Is Required
+
+The 'default' scenario serves as the baseline:
+- **Primary purpose**: Foundation for all other scenarios via automatic fallback
+- **Secondary purposes**:
+  - When no scenario is explicitly set for a test
+  - When test ID header is missing (manual testing)
+  - When scenario switching fails
+
+```typescript
 // ❌ WRONG - Missing 'default' key
 export const scenarios = {
   success: successScenario,
@@ -471,16 +588,14 @@ export const scenarios = {
 // Error: Scenarios object must have a 'default' key
 ```
 
-The 'default' scenario serves as the baseline when:
-- No scenario is explicitly set for a test
-- A test ID header is missing
-- Scenario switching fails
-
 ## Real-World Example
 
 Complete scenario from production code:
 
 ```typescript
+// Import from your framework's adapter package (all adapters re-export these types)
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
 export const contentMatchingScenario: ScenaristScenario = {
   id: 'content-matching',
   name: 'Content Matching',

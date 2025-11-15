@@ -5,8 +5,6 @@ description: Set up Scenarist with Next.js Pages Router in 5 minutes
 
 import { Aside } from '@astrojs/starlight/components';
 
-# Next.js Pages Router - Getting Started
-
 Test your Next.js Pages Router application with API routes, getServerSideProps, and getStaticProps all executing. No mocking of Next.js internals required.
 
 ## Installation
@@ -20,34 +18,66 @@ npm install -D @playwright/test @scenarist/playwright-helpers
 
 ```typescript
 // lib/scenarios.ts
-import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/core';
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/nextjs-adapter/pages';
 
-const successScenario: ScenaristScenario = {
-  id: 'success',
-  name: 'Payment Success',
+// ✅ RECOMMENDED - Default scenario with complete happy path
+const defaultScenario: ScenaristScenario = {
+  id: 'default',
+  name: 'Happy Path',
+  description: 'All external APIs succeed with valid responses',
   mocks: [
-    {
-      method: 'GET',
-      url: 'https://api.stripe.com/v1/products',
-      response: {
-        status: 200,
-        body: { data: [{ id: 'prod_123', name: 'Premium Plan', price: 5000 }] },
-      },
-    },
+    // Stripe: Successful payment
     {
       method: 'POST',
       url: 'https://api.stripe.com/v1/charges',
       response: {
         status: 200,
-        body: { id: 'ch_123', status: 'succeeded' },
+        body: { id: 'ch_123', status: 'succeeded', amount: 5000 },
+      },
+    },
+    // Auth0: Authenticated standard user
+    {
+      method: 'GET',
+      url: 'https://api.auth0.com/userinfo',
+      response: {
+        status: 200,
+        body: { sub: 'user_123', email: 'john@example.com', tier: 'standard' },
+      },
+    },
+    // SendGrid: Email sent successfully
+    {
+      method: 'POST',
+      url: 'https://api.sendgrid.com/v3/mail/send',
+      response: {
+        status: 202,
+        body: { message_id: 'msg_123' },
       },
     },
   ],
 };
 
+// Specialized scenario: Override ONLY Auth0 for premium user
+const premiumUserScenario: ScenaristScenario = {
+  id: 'premiumUser',
+  name: 'Premium User',
+  description: 'Premium tier user, everything else succeeds',
+  mocks: [
+    // Override: Auth0 returns premium tier
+    {
+      method: 'GET',
+      url: 'https://api.auth0.com/userinfo',
+      response: {
+        status: 200,
+        body: { sub: 'user_456', email: 'premium@example.com', tier: 'premium' },
+      },
+    },
+    // Stripe and SendGrid automatically fall back to default (happy path)
+  ],
+};
+
 export const scenarios = {
-  default: successScenario,
-  success: successScenario,
+  default: defaultScenario,
+  premiumUser: premiumUserScenario,
 } as const satisfies ScenaristScenarios;
 ```
 
@@ -113,27 +143,57 @@ export default scenarist.createScenarioEndpoint();
 The `/__scenario__` endpoint path is configurable via `scenarist` config options, but this is the recommended approach for consistency across projects.
 :::
 
-## 4. Write Tests
+## 4. Set Up Playwright Fixtures
+
+```typescript
+// tests/fixtures.ts
+import { withScenarios, expect } from '@scenarist/playwright-helpers';
+import { scenarios } from '../lib/scenarios';
+
+// Create type-safe test object with scenario IDs
+export const test = withScenarios(scenarios);
+export { expect };
+```
+
+## 5. Write Tests
 
 ### Testing Server-Side Rendering
 
 ```typescript
 // tests/products.spec.ts
-import { expect, withScenarios } from '@scenarist/playwright-helpers';
-import { scenarios } from '../lib/scenarios';
+import { test, expect } from './fixtures'; // ✅ Import from fixtures
 
-export const test = withScenarios(scenarios);
-
-test('renders Server-Side page with product data', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'success'); // ✅ Type-safe!
+test('premium users see premium pricing', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'premiumUser'); // ✅ Type-safe! Autocomplete works
 
   await page.goto('/products');
 
-  // Your getServerSideProps runs, fetches from mocked Stripe API
-  await expect(page.locator('h2')).toContainText('Premium Plan');
-  await expect(page.locator('.price')).toContainText('$50.00');
+  // Your getServerSideProps runs, Auth0 returns premium tier
+  await expect(page.getByText('Premium Plan')).toBeVisible();
+  await expect(page.getByText('$50.00')).toBeVisible();
+});
+
+test('standard users see standard pricing', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'default'); // Default scenario (happy path)
+
+  await page.goto('/products');
+
+  await expect(page.getByText('Standard Plan')).toBeVisible();
+  await expect(page.getByText('$25.00')).toBeVisible();
 });
 ```
+
+:::tip[Recommended: Playwright Testing]
+We recommend using **Playwright** for testing Next.js applications with Scenarist. The fixtures pattern shown above provides type-safe scenario switching with autocomplete.
+
+**Why Playwright?**
+- Test getServerSideProps with real execution
+- Type-safe scenario IDs with autocomplete
+- Parallel test execution with test ID isolation
+- No mocking of Next.js internals
+
+**[Learn more about Playwright testing →](/introduction/testing-with-playwright)**
+:::
 
 **Example Page with getServerSideProps:**
 

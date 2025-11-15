@@ -14,79 +14,80 @@ Scenarist fills the testing gap by enabling **HTTP-level integration testing** w
 ## One Server, Unlimited Scenarios
 
 ```mermaid
-%%{init: {'theme':'neutral', 'themeVariables': {'fontSize':'14px', 'fontFamily':'arial'}}}%%
-graph LR
-    subgraph tests[" "]
+%%{init: {'theme':'neutral', 'themeVariables': {'fontSize':'16px', 'fontFamily':'arial'}}}%%
+flowchart TB
+    subgraph Flow1[" "]
         direction TB
-        T1["Test 1: Happy path<br/><br/>switchScenario('allSucceed')"]
-        T2["Test 2: Payment error<br/><br/>switchScenario('paymentFails')"]
-        T3["Test 3: Auth error<br/><br/>switchScenario('authFails')"]
-        T4["Test 4: Email failure<br/><br/>switchScenario('emailFails')"]
+        T1["🧪 Test 1: Happy path<br/>switchScenario('allSucceed')"]
+        B1["🟢 Your Real Backend<br/>(Middleware + Routes + Business Logic)"]
+        S1["📦 Scenario: allSucceed<br/>💳 Stripe: {status: 'succeeded'}<br/>🔐 Auth0: {user: 'john@example.com'}<br/>📧 SendGrid: {status: 'sent'}"]
+
+        T1 ==>|"① HTTP Request"| B1
+        B1 -.->|"② External API calls"| S1
+        S1 -.->|"③ Mocked responses"| B1
+        B1 ==>|"④ HTTP Response"| T1
     end
 
-    B["🟢 Your Real Backend<br/>(HTTP + Middleware + Business Logic)"]
-
-    subgraph scenario1["Scenario: allSucceed"]
+    subgraph Flow2[" "]
         direction TB
-        S1A["💳 Stripe<br/>status: 'succeeded'<br/>amount: 5000"]
-        S1B["🔐 Auth0<br/>user: 'john@example.com'<br/>tier: 'premium'"]
-        S1C["📧 SendGrid<br/>status: 'sent'<br/>messageId: 'abc123'"]
+        T2["🧪 Test 2: Payment error<br/>switchScenario('paymentFails')"]
+        B2["🟢 Your Real Backend<br/>(Middleware + Routes + Business Logic)"]
+        S2["📦 Scenario: paymentFails<br/>💳 Stripe: {status: 'declined'}<br/>🔐 Auth0: {user: 'john@example.com'}<br/>📧 SendGrid: {status: 'sent'}"]
+
+        T2 ==>|"① HTTP Request"| B2
+        B2 -.->|"② External API calls"| S2
+        S2 -.->|"③ Mocked responses"| B2
+        B2 ==>|"④ HTTP Response"| T2
     end
 
-    subgraph scenario2["Scenario: paymentFails"]
-        direction TB
-        S2A["💳 Stripe<br/>status: 'declined'<br/>code: 'card_declined'"]
-        S2B["🔐 Auth0<br/>user: 'john@example.com'<br/>tier: 'premium'"]
-        S2C["📧 SendGrid<br/>status: 'sent'<br/>messageId: 'def456'"]
-    end
-
-    subgraph scenario3["Scenario: authFails"]
-        direction TB
-        S3A["💳 Stripe<br/>status: 'succeeded'<br/>amount: 5000"]
-        S3B["🔐 Auth0<br/>status: 401<br/>error: 'invalid_grant'"]
-        S3C["📧 SendGrid<br/>status: 'sent'<br/>messageId: 'ghi789'"]
-    end
-
-    subgraph scenario4["Scenario: emailFails"]
-        direction TB
-        S4A["💳 Stripe<br/>status: 'succeeded'<br/>amount: 5000"]
-        S4B["🔐 Auth0<br/>user: 'john@example.com'<br/>tier: 'premium'"]
-        S4C["📧 SendGrid<br/>status: 500<br/>error: 'service_unavailable'"]
-    end
-
-    T1 -->|"switchScenario('allSucceed')"<br/>then real HTTP requests| B
-    T2 -->|"switchScenario('paymentFails')"<br/>then real HTTP requests| B
-    T3 -->|"switchScenario('authFails')"<br/>then real HTTP requests| B
-    T4 -->|"switchScenario('emailFails')"<br/>then real HTTP requests| B
-
-    B -.->|Routes to<br/>scenario| scenario1
-    B -.->|Routes to<br/>scenario| scenario2
-    B -.->|Routes to<br/>scenario| scenario3
-    B -.->|Routes to<br/>scenario| scenario4
-
-    style tests fill:#f1f3f5,stroke:#868e96,stroke-width:2px
-    style B fill:#51cf66,stroke:#2f9e44,stroke-width:4px
-    style scenario1 fill:#d3f9d8,stroke:#2f9e44,stroke-width:2px
-    style scenario2 fill:#fff3bf,stroke:#fab005,stroke-width:2px
-    style scenario3 fill:#ffe3e3,stroke:#fa5252,stroke-width:2px
-    style scenario4 fill:#ffe3e3,stroke:#fa5252,stroke-width:2px
-    style T1 fill:#e7f5ff,stroke:#1971c2
-    style T2 fill:#e7f5ff,stroke:#1971c2
-    style T3 fill:#e7f5ff,stroke:#1971c2
-    style T4 fill:#e7f5ff,stroke:#1971c2
+    style T1 fill:#e7f5ff,stroke:#1971c2,stroke-width:2px
+    style T2 fill:#e7f5ff,stroke:#1971c2,stroke-width:2px
+    style B1 fill:#51cf66,stroke:#2f9e44,stroke-width:3px
+    style B2 fill:#51cf66,stroke:#2f9e44,stroke-width:3px
+    style S1 fill:#d3f9d8,stroke:#2f9e44,stroke-width:2px
+    style S2 fill:#fff3bf,stroke:#fab005,stroke-width:2px
 ```
 
-**The key insight:** Each scenario is a **complete set of API mocks**. One scenario controls what Stripe returns AND what Auth0 returns AND what SendGrid returns—all coordinated for that test case.
+**The key insight:** Each scenario is a **complete set of API mocks** that defines how every external API behaves for that test. The diagram shows 2 scenarios as examples—you can define as many as you need, and each scenario can mock as many APIs as your application uses.
 
-**What this means:**
-- ✅ **One scenario = All API responses** - "Payment Fails" scenario: Stripe declines card, but Auth0 still succeeds, SendGrid still sends
-- ✅ **Test edge cases exhaustively** - Can't test "payment succeeds but email fails" with real APIs
-- ✅ **Real backend execution** - Your code handles the declined card, processes the error, logs appropriately—all tested
-- ✅ **Fast parallel testing** - All 4 tests run simultaneously, each with different external API behavior
-- ✅ **Test scenarios impossible in production** - Auth failures, API timeouts, network errors, edge cases
+**Understanding the pattern:**
 
-**Example scenario names explained:**
-When we say "Premium User Scenario" in the docs, we mean: *a scenario where Auth0 returns `{tier: "premium"}` and Stripe returns successful payment responses*. It's shorthand for "the complete set of API mocks that simulate a premium user experience."
+Each test switches to a specific scenario, and that scenario controls **all external API responses** for the duration of that test:
+
+- **Test 1** switches to `allSucceed` → Stripe succeeds, Auth0 authenticates, SendGrid sends
+- **Test 2** switches to `paymentFails` → Stripe declines, Auth0 authenticates, SendGrid sends
+
+Notice how each scenario defines the complete behavior: in `paymentFails`, only Stripe fails—Auth0 and SendGrid still succeed. This lets you test **exactly** the edge case you care about.
+
+**Default scenario pattern (recommended):**
+
+Define a `default` scenario with your **happy path** responses for all external APIs. Then create specialized scenarios that override only what changes:
+
+```typescript
+const scenarios = {
+  default: {  // Happy path - all APIs succeed
+    mocks: [
+      { url: 'https://api.stripe.com/...', response: { status: 'succeeded' } },
+      { url: 'https://api.auth0.com/...', response: { user: 'john@example.com' } },
+      { url: 'https://api.sendgrid.com/...', response: { status: 'sent' } }
+    ]
+  },
+  paymentFails: {  // Only override Stripe - Auth0 and SendGrid automatically fall back to default
+    mocks: [
+      { url: 'https://api.stripe.com/...', response: { status: 'declined' } }
+    ]
+  }
+};
+```
+
+When you switch to `paymentFails`, Scenarist uses that scenario's mocks (Stripe declines) **and automatically falls back to the default scenario** for any APIs not defined (Auth0 and SendGrid succeed). This eliminates duplication—you only define what changes.
+
+**What this enables:**
+- ✅ **Unlimited scenarios** - Premium users, free users, error states, edge cases—as many as you need
+- ✅ **Unlimited APIs per scenario** - Mock Stripe, Auth0, SendGrid, GitHub, Twilio—as many as your app uses
+- ✅ **Default fallback** - Define happy path once, override only what changes in each scenario
+- ✅ **Test edge cases exhaustively** - Can't make real Stripe decline with a specific error code, but your scenario can
+- ✅ **Fast parallel testing** - All scenarios run simultaneously against the same server
 
 ## Execution Model
 
@@ -150,14 +151,26 @@ export const scenarios = {
 } as const;
 ```
 
-**Step 3: Write tests** (framework-agnostic)
+**Step 3: Set up Playwright fixtures** (one-time setup)
+
+```typescript
+// tests/fixtures.ts
+import { withScenarios, expect } from '@scenarist/playwright-helpers';
+import { scenarios } from './scenarios'; // Import your scenarios
+
+// Create type-safe test object with scenario IDs
+export const test = withScenarios(scenarios);
+export { expect };
+```
+
+**Step 4: Write tests** (import from fixtures, not @playwright/test)
 
 ```typescript
 // tests/premium-features.spec.ts
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures'; // ✅ Import from fixtures, NOT @playwright/test
 
 test('premium users access advanced features', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'premiumUser');
+  await switchScenario(page, 'premiumUser'); // ✅ Type-safe! Autocomplete works
 
   // Real HTTP request → Next.js route → middleware → business logic
   await page.goto('/dashboard');
@@ -170,10 +183,12 @@ test('premium users access advanced features', async ({ page, switchScenario }) 
 
 **What's happening:**
 1. Framework adapter integrates Scenarist into your Next.js app
-2. Scenario defines how external APIs behave
-3. Test switches to scenario and makes real HTTP requests
-4. Your backend code executes with production behavior
-5. External API calls return scenario-defined responses
+2. Scenarios define how external APIs behave
+3. Playwright fixtures create type-safe test helpers with scenario autocomplete
+4. Tests import from fixtures (not @playwright/test directly)
+5. Test switches to scenario and makes real HTTP requests
+6. Your backend code executes with production behavior
+7. External API calls return scenario-defined responses
 
 **See complete working examples:**
 - [Next.js Example App →](/frameworks/nextjs-app-router/example-app)

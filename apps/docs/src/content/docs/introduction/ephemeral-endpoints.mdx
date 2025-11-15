@@ -174,16 +174,20 @@ const scenarist = createScenarist({
 Playwright helpers automatically include the test ID header:
 
 ```typescript
-import { test as base } from '@playwright/test';
-import { withScenarios } from '@scenarist/playwright-helpers';
+// tests/fixtures.ts - Set up once
+import { withScenarios, expect } from '@scenarist/playwright-helpers';
 import { scenarios } from './scenarios';
 
 export const test = withScenarios(scenarios);
+export { expect };
+
+// tests/my-test.spec.ts - Use in tests
+import { test, expect } from './fixtures'; // ✅ Import from fixtures
 
 test('my test', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'success');
+  await switchScenario(page, 'success'); // ✅ Type-safe scenario IDs
   // Helper automatically:
-  // 1. Generates test ID
+  // 1. Generates unique test ID
   // 2. Calls POST /__scenario__ with test ID header
   // 3. Sets page.setExtraHTTPHeaders({ 'x-test-id': testId })
 
