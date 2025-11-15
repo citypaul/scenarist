@@ -34,8 +34,9 @@ export default defineConfig({
           items: [
             { label: "Quick Start", slug: "introduction/quick-start" },
             { label: "Why Scenarist?", slug: "introduction/why-scenarist" },
+            { label: "How it works", slug: "introduction/overview" },
+            { label: "Dynamic Capabilities", slug: "introduction/capabilities" },
             { label: "Installation", slug: "introduction/installation" },
-            { label: "Overview", slug: "introduction/overview" },
             { label: "Scenario Format", slug: "introduction/scenario-format" },
             { label: "Declarative Design", slug: "introduction/declarative-design" },
             { label: "Default Mocks & Overrides", slug: "introduction/default-mocks" },
@@ -91,7 +92,7 @@ export default defineConfig({
         {
           label: "Reference",
           collapsed: true,
-          items: [{ label: "Coming Soon", slug: "reference/example" }],
+          items: [{ label: "Verification Guide", slug: "reference/verification" }],
         },
       ],
       customCss: ["./src/styles/custom.css"],
