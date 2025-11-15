@@ -1,0 +1,434 @@
+---
+title: Dynamic Response Capabilities
+description: Request matching, sequences, and stateful mocks for realistic test scenarios
+---
+
+# Dynamic Response Capabilities
+
+Scenarist supports three types of dynamic responses for realistic test scenarios. These capabilities work together to simulate complex external API behaviors.
+
+## Request Content Matching
+
+Return different responses based on request content. Multiple mocks can exist for the same URL, and Scenarist selects the most specific match based on the actual request.
+
+### Matching Criteria
+
+Match on request body, headers, or query parameters:
+
+```typescript
+{
+  method: 'POST',
+  url: '/api/checkout',
+  match: {
+    body: { tier: 'premium' },
+    headers: { 'x-api-version': 'v2' },
+    query: { detailed: 'true' }
+  },
+  response: { status: 200, body: { discount: 20 } }
+}
+```
+
+### Specificity-Based Selection
+
+When multiple mocks match the same URL, Scenarist uses specificity scoring:
+
+- Mocks with match criteria are more specific than mocks without
+- Among mocks with criteria, more fields = higher specificity
+- Ties are broken by position (first wins)
+
+**Example:**
+
+```typescript
+const premiumScenario = {
+  id: 'premium',
+  mocks: [
+    // Specificity: 2 (body.tier + body.category)
+    {
+      method: 'POST',
+      url: '/api/products',
+      match: {
+        body: { tier: 'premium', category: 'electronics' }
+      },
+      response: { status: 200, body: { discount: 30 } }
+    },
+    // Specificity: 1 (body.tier only)
+    {
+      method: 'POST',
+      url: '/api/products',
+      match: {
+        body: { tier: 'premium' }
+      },
+      response: { status: 200, body: { discount: 20 } }
+    },
+    // Specificity: 0 (no match criteria, fallback)
+    {
+      method: 'POST',
+      url: '/api/products',
+      response: { status: 200, body: { discount: 10 } }
+    }
+  ]
+};
+
+// Request with tier='premium' and category='electronics'
+// → Returns 30% discount (specificity 2 wins)
+
+// Request with tier='premium' only
+// → Returns 20% discount (specificity 1 wins)
+
+// Request with neither
+// → Returns 10% discount (fallback)
+```
+
+### Partial Body Matching
+
+Body matching is **partial** - only the specified fields must match:
+
+```typescript
+{
+  method: 'POST',
+  url: '/api/create-order',
+  match: {
+    body: { itemType: 'premium' }  // Only checks itemType field
+  },
+  response: { status: 201, body: { orderId: 'premium-order-123' } }
+}
+
+// Matches requests with itemType='premium', regardless of other fields:
+// { itemType: 'premium', quantity: 5, color: 'red' } ✓
+// { itemType: 'premium' } ✓
+// { itemType: 'standard' } ✗
+```
+
+### Header and Query Matching
+
+Header and query parameter matching is **exact** for specified keys:
+
+```typescript
+{
+  method: 'GET',
+  url: '/api/data',
+  match: {
+    headers: { 'x-tier': 'premium' },  // Exact match
+    query: { format: 'json' }          // Exact match
+  },
+  response: { status: 200, body: { detailed: true } }
+}
+```
+
+[Learn more about scenario format →](/introduction/scenario-format)
+
+## Response Sequences
+
+Simulate multi-step processes like polling, where each request advances through a sequence of responses.
+
+### Basic Sequence
+
+```typescript
+{
+  method: 'GET',
+  url: '/api/job/status',
+  sequence: {
+    responses: [
+      { status: 200, body: { status: 'pending' } },
+      { status: 200, body: { status: 'processing' } },
+      { status: 200, body: { status: 'complete' } }
+    ],
+    repeat: 'last'  // Options: 'last' | 'cycle' | 'none'
+  }
+}
+```
+
+**Behavior:**
+1. First request → returns 'pending'
+2. Second request → returns 'processing'
+3. Third request → returns 'complete'
+4. Fourth+ requests → returns 'complete' (repeats last)
+
+### Repeat Modes
+
+**`repeat: 'last'`** - Repeat the last response indefinitely (most common)
+
+```typescript
+sequence: {
+  responses: [
+    { status: 200, body: { status: 'pending' } },
+    { status: 200, body: { status: 'complete' } }
+  ],
+  repeat: 'last'
+}
+// Request 1: pending
+// Request 2: complete
+// Request 3+: complete (keeps repeating)
+```
+
+**`repeat: 'cycle'`** - Loop back to the beginning
+
+```typescript
+sequence: {
+  responses: [
+    { status: 200, body: { weather: 'sunny' } },
+    { status: 200, body: { weather: 'cloudy' } },
+    { status: 200, body: { weather: 'rainy' } }
+  ],
+  repeat: 'cycle'
+}
+// Request 1: sunny
+// Request 2: cloudy
+// Request 3: rainy
+// Request 4: sunny (cycles back)
+// Request 5: cloudy
+```
+
+**`repeat: 'none'`** - After sequence exhausts, fall through to next mock
+
+```typescript
+{
+  mocks: [
+    {
+      method: 'POST',
+      url: '/api/payment',
+      sequence: {
+        responses: [
+          { status: 200, body: { id: 'ch_1', status: 'pending' } },
+          { status: 200, body: { id: 'ch_2', status: 'pending' } },
+          { status: 200, body: { id: 'ch_3', status: 'succeeded' } }
+        ],
+        repeat: 'none'  // After 3rd request, sequence exhausted
+      }
+    },
+    {
+      method: 'POST',
+      url: '/api/payment',
+      response: { status: 429, body: { error: 'Rate limit exceeded' } }
+    }
+  ]
+}
+// Request 1-3: Sequence responses
+// Request 4+: Rate limit error (sequence exhausted, falls through to next mock)
+```
+
+### Combining Sequences with Matching
+
+Sequences can be combined with match criteria:
+
+```typescript
+{
+  method: 'GET',
+  url: '/api/onboarding/step',
+  match: {
+    headers: { 'x-tier': 'premium' }
+  },
+  sequence: {
+    responses: [
+      { status: 200, body: { step: 1, message: 'Welcome!' } },
+      { status: 200, body: { step: 2, message: 'Configure...' } },
+      { status: 200, body: { step: 3, message: 'Complete!' } }
+    ],
+    repeat: 'last'
+  }
+}
+```
+
+**Important:** Only matching requests advance the sequence. Non-matching requests don't affect sequence position.
+
+## Stateful Mocks
+
+Capture data from requests and inject it into subsequent responses, enabling stateful scenarios like shopping carts.
+
+### Basic State Capture and Injection
+
+```typescript
+{
+  mocks: [
+    // Capture state from POST request
+    {
+      method: 'POST',
+      url: '/api/cart/add',
+      captureState: {
+        cartItems: { from: 'body', path: 'productId' }
+      },
+      response: { status: 201 }
+    },
+    // Inject state into GET response
+    {
+      method: 'GET',
+      url: '/api/cart',
+      response: {
+        status: 200,
+        body: {
+          items: '{{state.cartItems}}'
+        }
+      }
+    }
+  ]
+}
+```
+
+**How it works:**
+
+1. POST to `/api/cart/add` with body `{ productId: 'prod-1' }`
+2. Scenarist captures `productId` value and stores as `cartItems`
+3. GET to `/api/cart` returns `{ items: 'prod-1' }`
+
+### Array Append Syntax
+
+Use `stateKey[]` to append values to an array:
+
+```typescript
+{
+  method: 'POST',
+  url: '/api/cart/add',
+  captureState: {
+    'cartItems[]': { from: 'body', path: 'productId' }  // Note the [] suffix
+  },
+  response: { status: 201 }
+}
+```
+
+**Behavior:**
+
+```typescript
+// Request 1: { productId: 'prod-1' }
+// State: { cartItems: ['prod-1'] }
+
+// Request 2: { productId: 'prod-2' }
+// State: { cartItems: ['prod-1', 'prod-2'] }
+
+// Request 3: { productId: 'prod-3' }
+// State: { cartItems: ['prod-1', 'prod-2', 'prod-3'] }
+```
+
+### Nested Path Support
+
+Capture deeply nested values using dot notation:
+
+```typescript
+{
+  method: 'POST',
+  url: '/api/profile/update',
+  captureState: {
+    userName: { from: 'body', path: 'user.profile.name' }
+  },
+  response: { status: 200 }
+}
+
+// Request body:
+// {
+//   user: {
+//     profile: {
+//       name: 'John Doe',
+//       email: 'john@example.com'
+//     }
+//   }
+// }
+
+// Captured: userName = 'John Doe'
+```
+
+### Template Replacement
+
+Use `{{state.key}}` syntax to inject captured state into responses:
+
+```typescript
+{
+  method: 'GET',
+  url: '/api/profile',
+  response: {
+    status: 200,
+    body: {
+      username: '{{state.userName}}',
+      items: '{{state.cartItems}}',
+      itemCount: '{{state.cartItems.length}}'  // Can access array length
+    }
+  }
+}
+```
+
+### State Isolation Per Test ID
+
+State is isolated per test ID, ensuring parallel tests don't interfere:
+
+```typescript
+// Test 1 (test-id: abc-123)
+POST /api/cart/add { productId: 'prod-1' }
+GET /api/cart  // Returns { items: ['prod-1'] }
+
+// Test 2 (test-id: xyz-789) - runs simultaneously
+POST /api/cart/add { productId: 'prod-999' }
+GET /api/cart  // Returns { items: ['prod-999'] }
+
+// No interference - each test has isolated state
+```
+
+### State Reset on Scenario Switch
+
+When a test switches scenarios, all state for that test ID is cleared:
+
+```typescript
+test('cart workflow', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'cart-scenario');
+
+  // Add items...
+  await fetch('/api/cart/add', { body: { productId: 'prod-1' } });
+
+  // Switch to different scenario
+  await switchScenario(page, 'different-scenario');
+
+  // State is cleared when switching - cart is now empty
+});
+```
+
+## Combining All Three Capabilities
+
+The power comes from combining request matching, sequences, and state together:
+
+```typescript
+{
+  mocks: [
+    // Match premium users, advance through onboarding sequence, capture profile
+    {
+      method: 'POST',
+      url: '/api/onboarding',
+      match: {
+        headers: { 'x-tier': 'premium' }
+      },
+      sequence: {
+        responses: [
+          { status: 200, body: { step: 1, message: 'Welcome premium user!' } },
+          { status: 200, body: { step: 2, message: 'Set up your profile' } },
+          { status: 200, body: { step: 3, message: 'You are all set!' } }
+        ],
+        repeat: 'last'
+      },
+      captureState: {
+        'completedSteps[]': { from: 'body', path: 'stepNumber' }
+      }
+    },
+    // Use captured state in dashboard
+    {
+      method: 'GET',
+      url: '/api/dashboard',
+      response: {
+        status: 200,
+        body: {
+          completedSteps: '{{state.completedSteps}}',
+          onboardingComplete: '{{state.completedSteps.length >= 3}}'
+        }
+      }
+    }
+  ]
+}
+```
+
+**This enables:**
+- Request with premium header triggers premium onboarding sequence
+- Each step is captured in state
+- Dashboard shows progress based on captured steps
+- All isolated per test ID for parallel execution
+
+## Next Steps
+
+- [Scenario Format Reference →](/introduction/scenario-format) - Complete schema and syntax
+- [Declarative Design Philosophy →](/introduction/declarative-design) - Why scenarios are pure data
+- [Example Apps →](/frameworks/express/example-app) - See capabilities in action
+- [Framework Guides →](/frameworks/nextjs-app-router/getting-started) - Start building tests
