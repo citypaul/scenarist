@@ -3,8 +3,6 @@ title: Installation
 description: How to install Scenarist in your project
 ---
 
-# Installation
-
 **Coming soon:** Framework-specific installation instructions.
 
 For now, see the framework-specific guides for installation steps:

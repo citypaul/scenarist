@@ -3,8 +3,6 @@ title: Verification Guide
 description: How to verify Scenarist is working correctly in your project
 ---
 
-# Verification Guide
-
 When evaluating whether Scenarist is working correctly in your project, use this guide to verify core functionality, integration quality, and test coverage.
 
 ## Core Functionality Checks

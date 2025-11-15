@@ -3,8 +3,6 @@ title: Ephemeral Endpoints
 description: Test-only activation, production safety, and test ID isolation in Scenarist
 ---
 
-# Ephemeral Endpoints
-
 Scenarist creates **ephemeral endpoints** that only exist when testing is enabled. In production, these endpoints return 404 and have zero overhead. This ensures scenario switching infrastructure never leaks into production.
 
 ## The `enabled` Flag

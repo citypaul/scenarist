@@ -3,8 +3,6 @@ title: "How it works"
 description: "Understanding Scenarist's execution model and runtime scenario switching"
 ---
 
-# How it works
-
 Scenarist fills the testing gap by enabling **HTTP-level integration testing** with **runtime scenario switching**:
 
 - Tests make real HTTP requests to your backend
@@ -186,6 +184,39 @@ test('premium users access advanced features', async ({ page, switchScenario }) 
 - [Express setup →](/frameworks/express/getting-started)
 - [Remix setup →](/frameworks/remix) (coming soon)
 - [SvelteKit setup →](/frameworks/sveltekit) (coming soon)
+
+## Ephemeral Endpoints: Test-Only Activation
+
+Scenarist creates special `/__scenario__` endpoints that **only exist when testing is enabled**. These ephemeral endpoints enable runtime scenario switching while maintaining production safety.
+
+**What are ephemeral endpoints?**
+- `POST /__scenario__` - Switch the active scenario for a test
+- `GET /__scenario__` - Check which scenario is currently active
+
+**Why "ephemeral"?**
+
+The endpoints only exist when you set `enabled: true` in your Scenarist configuration:
+
+```typescript
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',  // Only active in test environment
+  scenarios,
+});
+```
+
+**When `enabled: true` (test mode):**
+- Endpoints accept requests and switch scenarios
+- MSW intercepts external API calls
+- Test ID headers route requests to correct scenarios
+
+**When `enabled: false` (production):**
+- Endpoints return 404 (do not exist)
+- Zero overhead - no middleware, no MSW, no scenario infrastructure
+- Your app runs exactly as it would without Scenarist
+
+This ensures scenario switching infrastructure **never leaks into production**, even if you accidentally deploy with `enabled: true`.
+
+[Learn more about ephemeral endpoints →](/introduction/ephemeral-endpoints)
 
 ## Runtime Scenario Switching
 
