@@ -17,7 +17,7 @@ This creates a testing challenge:
 
 **Unit tests** can test server-side logic, but require mocking framework internals (Next.js `fetch`, `cookies`, `headers`) or HTTP clients. This creates distance between test execution and production behavior.
 
-**End-to-end tests** provide confidence by testing the complete system, but are too slow for comprehensive scenario coverage. Testing 100 different external API scenarios (payment errors, auth failures, rate limiting, edge cases) would require hours of test execution.
+**End-to-end tests** provide confidence by testing the complete system, but cannot reach most edge case states. How do you make Stripe return a specific decline code? Or Auth0 timeout? Or SendGrid fail with a particular error? You can't control real external APIs to test these scenarios. Testing the few scenarios you can reach would also be prohibitively slow.
 
 **Between these approaches lies a gap:** Testing server-side HTTP behavior with different external API responses, without browser overhead or extensive framework mocking.
 

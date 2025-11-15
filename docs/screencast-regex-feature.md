@@ -6,7 +6,7 @@
 
 > "Modern web development has blurred the separation between frontend and backend. Frameworks like Next.js, Remix, and SvelteKit run server-side logic alongside UI components. Traditional backends built with Express, Hono, or Fastify make HTTP calls to external services—Stripe, Auth0, SendGrid—that need different behaviors in tests.
 >
-> This creates a testing challenge. Unit tests can verify server-side logic, but require mocking framework internals or HTTP clients. This creates distance between test execution and production behavior. End-to-end tests provide confidence, but are too slow for comprehensive scenario coverage. Testing 100 different API scenarios would require hours.
+> This creates a testing challenge. Unit tests can verify server-side logic, but require mocking framework internals or HTTP clients—creating distance from production behavior. End-to-end tests provide confidence, but can't reach most edge case states. How do you make Stripe return a specific decline code? Or Auth0 timeout? Or SendGrid fail with a particular error? You can't control real external APIs to test these scenarios.
 >
 > There's a gap between these approaches.
 >
