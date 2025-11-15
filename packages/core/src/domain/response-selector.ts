@@ -8,6 +8,8 @@ import type { ResponseSelector, SequenceTracker, StateManager } from "../ports/i
 import { ResponseSelectionError } from "../ports/driven/response-selector.js";
 import { extractFromPath } from "./path-extraction.js";
 import { applyTemplates } from "./template-replacement.js";
+import { matchesRegex } from "./regex-matching.js";
+import type { MatchValue } from "../schemas/scenario-definition.js";
 
 const SPECIFICITY_RANGES = {
   MATCH_CRITERIA_BASE: 100,
@@ -310,14 +312,40 @@ const createNormalizedHeaderMap = (
   return normalized;
 };
 
+
+/**
+ * Match a request value against a match criteria value.
+ * Supports both exact string matching and regex pattern matching.
+ *
+ * @param requestValue - The actual value from the request
+ * @param criteriaValue - The expected value (string or regex pattern)
+ * @returns true if values match, false otherwise
+ */
+const matchesValue = (requestValue: string, criteriaValue: MatchValue): boolean => {
+  // Exact string match
+  if (typeof criteriaValue === "string") {
+    return requestValue === criteriaValue;
+  }
+
+  // Regex pattern match
+  if ("regex" in criteriaValue) {
+    return matchesRegex(requestValue, criteriaValue.regex);
+  }
+
+  return false;
+};
+
 const matchesHeaders = (
   requestHeaders: Readonly<Record<string, string>>,
-  criteriaHeaders: Record<string, string>
+  criteriaHeaders: Record<string, MatchValue>
 ): boolean => {
   const normalizedRequest = createNormalizedHeaderMap(requestHeaders);
 
   for (const [key, value] of Object.entries(criteriaHeaders)) {
-    if (normalizedRequest[normalizeHeaderName(key)] !== value) {
+    const normalizedKey = normalizeHeaderName(key);
+    const requestValue = normalizedRequest[normalizedKey];
+    
+    if (!requestValue || !matchesValue(requestValue, value)) {
       return false;
     }
   }
@@ -331,11 +359,13 @@ const matchesHeaders = (
  */
 const matchesQuery = (
   requestQuery: Readonly<Record<string, string>>,
-  criteriaQuery: Record<string, string>
+  criteriaQuery: Record<string, MatchValue>
 ): boolean => {
   // Check all required query params exist with exact matching values
   for (const [key, value] of Object.entries(criteriaQuery)) {
-    if (requestQuery[key] !== value) {
+    const requestValue = requestQuery[key];
+    
+    if (!requestValue || !matchesValue(requestValue, value)) {
       return false;
     }
   }
