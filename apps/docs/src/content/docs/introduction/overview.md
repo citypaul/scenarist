@@ -1,9 +1,9 @@
 ---
-title: "Overview: How It Works"
+title: "How it works"
 description: "Understanding Scenarist's execution model and runtime scenario switching"
 ---
 
-# How Scenarist Works
+# How it works
 
 Scenarist fills the testing gap by enabling **HTTP-level integration testing** with **runtime scenario switching**:
 

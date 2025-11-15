@@ -19,7 +19,7 @@ This creates a testing challenge:
 
 | If you want to... | Go to... |
 |-------------------|----------|
-| See how Scenarist works | [Overview](/introduction/overview) |
+| See how Scenarist works | [How it works](/introduction/overview) |
 | Learn about dynamic capabilities | [Capabilities](/introduction/capabilities) |
 | Compare with unit/E2E tests | [Comparison](#comparison-with-other-testing-approaches) |
 | Understand limitations | [Limitations](#limitations-and-trade-offs) |

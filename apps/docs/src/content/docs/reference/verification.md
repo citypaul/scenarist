@@ -478,7 +478,7 @@ If verification reveals issues:
    - [Scenario Format →](/introduction/scenario-format)
 
 3. **Examine test setup** - Ensure test isolation is working
-   - [Overview: Test Isolation →](/introduction/overview#how-test-isolation-works-complete-request-flow)
+   - [How it works: Test Isolation →](/introduction/overview#how-test-isolation-works-complete-request-flow)
 
 4. **Consult architecture docs** - Understand how pieces fit together
    - [Architecture →](/concepts/architecture)

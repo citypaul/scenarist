@@ -34,7 +34,7 @@ export default defineConfig({
           items: [
             { label: "Quick Start", slug: "introduction/quick-start" },
             { label: "Why Scenarist?", slug: "introduction/why-scenarist" },
-            { label: "Overview: How It Works", slug: "introduction/overview" },
+            { label: "How it works", slug: "introduction/overview" },
             { label: "Dynamic Capabilities", slug: "introduction/capabilities" },
             { label: "Installation", slug: "introduction/installation" },
             { label: "Scenario Format", slug: "introduction/scenario-format" },
