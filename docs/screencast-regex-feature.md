@@ -10,11 +10,9 @@
 >
 > There's a gap between these approaches.
 >
-> Scenarist fills that gap by testing your server-side HTTP layer with mocked external APIs. Your code—Server Components, loaders, middleware, business logic—executes normally. Only the external API calls are intercepted, returning scenario-defined responses based on test ID.
+> Scenarist fills that gap by testing your server-side HTTP layer with mocked external APIs. Your code—Server Components, loaders, middleware, business logic—executes normally. Only the external API calls are intercepted, returning scenario-defined responses based on test ID. This enables testing full user journeys through the browser using Playwright helpers, with each test isolated and running in parallel.
 >
-> You switch scenarios at runtime: 'premium user', 'payment declined', 'auth failure', 'rate limited'. Each test gets different API behaviors. Multiple tests run in parallel against the same server, completely isolated via test IDs.
->
-> HTTP-level integration testing with runtime scenario switching. Real server execution, mocked external dependencies, comprehensive scenario coverage.
+> You switch scenarios at runtime: 'premium user', 'payment declined', 'auth failure', 'rate limited'. Each test gets different API behaviors. The docs explain how it all works—scenario definitions, runtime switching, framework integration.
 >
 > Today I'm using Claude Code to add regex pattern matching to Scenarist. You'll see the full TDD workflow—test-first, small commits, 100% coverage. Let's build it."
 
