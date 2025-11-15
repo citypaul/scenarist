@@ -181,11 +181,20 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const tierParam = context.query.tier;
   const tier = Array.isArray(tierParam) ? tierParam[0] : tierParam || 'standard';
 
+  // Extract campaign from query param for regex matching
+  const campaignParam = context.query.campaign;
+  const campaign = Array.isArray(campaignParam) ? campaignParam[0] : campaignParam;
+
   try {
-    const headers = {
+    const headers: Record<string, string> = {
       ...scenarist.getHeaders(context.req),
       'x-user-tier': tier,
     };
+
+    // Add campaign header if present (enables regex matching on server-side fetch)
+    if (campaign) {
+      headers['x-campaign'] = campaign;
+    }
 
     // Fetch products server-side - DIRECT external API call
     // This is the whole point: prove MSW can intercept external calls from getServerSideProps

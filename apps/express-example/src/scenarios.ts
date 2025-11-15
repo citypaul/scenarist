@@ -692,6 +692,50 @@ export const tempCaptureScenario: ScenaristScenario = {
 };
 
 /**
+ * Campaign Regex Scenario - Testing regex pattern matching (server-side)
+ *
+ * Demonstrates Scenarist's regex matching feature:
+ * - Intercepts server-side calls to GitHub API
+ * - Matches x-campaign header against regex pattern /premium|vip/i
+ * - Returns premium user data when campaign contains 'premium' or 'vip'
+ * - Falls back to default scenario (guest user) when no match
+ *
+ * Use case: Different user tiers based on marketing campaign
+ * Server-side: API route extracts campaign from query param, adds as header to fetch
+ */
+export const campaignRegexScenario: ScenaristScenario = {
+  id: 'campaignRegex',
+  name: 'Campaign Regex Matching',
+  description: 'Premium user data for premium/vip campaigns',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.github.com/users/:username',
+      match: {
+        headers: {
+          'x-campaign': {
+            regex: { source: 'premium|vip', flags: 'i' },
+          },
+        },
+      },
+      response: {
+        status: 200,
+        body: {
+          login: 'premium-campaign-user',
+          id: 9999,
+          name: 'Premium Campaign User',
+          bio: 'VIP access via marketing campaign',
+          public_repos: 200,
+          followers: 10000,
+          private_repos: 100,
+          total_private_repos: 100,
+        },
+      },
+    },
+  ],
+};
+
+/**
  * Scenarios organized as typed object for easy access in tests.
  *
  * Use this to get type-safe access to scenario IDs with autocomplete:
@@ -719,5 +763,6 @@ export const scenarios = {
   multiStepForm: multiStepFormScenario,
   sharedPolling: sharedPollingScenario,
   tempCapture: tempCaptureScenario,
+  campaignRegex: campaignRegexScenario,
 } as const satisfies ScenaristScenarios;
 
