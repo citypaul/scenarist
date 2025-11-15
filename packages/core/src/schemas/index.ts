@@ -17,6 +17,7 @@ export { ScenariosObjectSchema } from './scenarios-object.js';
 export {
   HttpMethodSchema,
   ScenaristResponseSchema,
+  MatchValueSchema,
   ScenaristMatchSchema,
   RepeatModeSchema,
   ScenaristSequenceSchema,
@@ -27,6 +28,7 @@ export {
   // Export schema-inferred types (single source of truth)
   type HttpMethod,
   type ScenaristResponse,
+  type MatchValue,
   type ScenaristMatch,
   type RepeatMode,
   type ScenaristSequence,
