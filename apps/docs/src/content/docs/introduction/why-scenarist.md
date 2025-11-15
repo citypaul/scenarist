@@ -3,30 +3,23 @@ title: Why Scenarist?
 description: Understanding the testing gap in modern full-stack frameworks and how Scenarist addresses it
 ---
 
-## Modern Frameworks Have Blurred the Lines
+## The Testing Gap
 
-In the past, web applications had clear separation: **frontend** (JavaScript in the browser) and **backend** (API server). You could test each side independently.
+Modern web development has blurred the traditional separation between frontend and backend code. Frameworks like **Next.js**, **Remix**, **SvelteKit**, and **SolidStart** run server-side logic alongside UI components. Traditional backends built with **Express**, **Hono**, or **Fastify** make HTTP calls to external services (Stripe, Auth0, SendGrid) that need different behaviors in tests.
 
-**That world no longer exists.**
+This creates a testing challenge:
 
-Modern frameworks like **Next.js**, **Remix**, **TanStack Router**, **SvelteKit**, and **SolidStart** have fundamentally changed this:
+**Server Components, loaders, and API routes** execute server-side but are defined alongside components. Your UI code calls external APIs directly on the server. Testing this requires either mocking framework internals or running full end-to-end tests.
 
-- **Server Components** run on the server but look like frontend code
-- **Loaders and Actions** execute server-side but are defined alongside components
-- **Server Functions** are called from client code but execute on the backend
-- **API routes** live in the same codebase as your UI components
+**Traditional backend services** call the same external APIs. Testing payment flows, authentication errors, or email delivery requires simulating different API responses.
 
-**The result:** You can't separate "frontend" from "backend" anymore. Your UI components are making direct server-side HTTP calls to external APIs (Stripe, Auth0, SendGrid). There's no clean boundary to test around.
+## Testing Options and Their Trade-offs
 
-## The Testing Gap This Creates
+**Unit tests** can test server-side logic, but require mocking framework internals (Next.js `fetch`, `cookies`, `headers`) or HTTP clients. This creates distance between test execution and production behavior.
 
-This blur creates a **new testing challenge**:
+**End-to-end tests** provide confidence by testing the complete system, but are too slow for comprehensive scenario coverage. Testing 100 different external API scenarios (payment errors, auth failures, rate limiting, edge cases) would require hours of test execution.
 
-**Unit tests** require mocking framework internals (Next.js `fetch`, `cookies`, `headers`), creating distance from production execution. You're not testing real code—you're testing mocked abstractions.
-
-**End-to-end tests** provide confidence but are too slow for comprehensive scenario coverage. Testing 100 different external API scenarios (payment errors, auth failures, rate limiting) would take hours.
-
-**Between these extremes lies a gap:** How do you test your server-side code (middleware, routing, business logic) with different external API behaviors, without browser overhead or framework mocking?
+**Between these approaches lies a gap:** Testing server-side HTTP behavior with different external API responses, without browser overhead or extensive framework mocking.
 
 ## Quick Navigation
 

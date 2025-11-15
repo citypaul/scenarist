@@ -4,17 +4,17 @@
 
 **What to say:**
 
-> "Modern frameworks like Next.js, Remix, and TanStack Router have fundamentally changed how we build web applications. The lines between frontend and backend are blurred—Server Components run on the server, loaders execute server-side, server functions are called from client code. Your 'frontend' is making direct HTTP calls to external APIs.
+> "Modern web development has blurred the separation between frontend and backend. Frameworks like Next.js, Remix, and SvelteKit run server-side logic alongside UI components. Traditional backends built with Express, Hono, or Fastify make HTTP calls to external services—Stripe, Auth0, SendGrid—that need different behaviors in tests.
 >
-> This creates a testing problem. You can't test 'frontend' and 'backend' separately anymore. Unit tests require mocking framework internals—you're not testing real code. E2E tests work but they're too slow—testing 100 different API scenarios would take hours.
+> This creates a testing challenge. Unit tests can verify server-side logic, but require mocking framework internals or HTTP clients. This creates distance between test execution and production behavior. End-to-end tests provide confidence, but are too slow for comprehensive scenario coverage. Testing 100 different API scenarios would require hours.
 >
-> There's no middle ground. Until Scenarist.
+> There's a gap between these approaches.
 >
-> Scenarist lets you test your real server-side code—Next.js Server Components, Remix loaders, your business logic—with mocked external APIs. Your code executes normally. Only the external calls (Stripe, Auth0, SendGrid) are intercepted.
+> Scenarist fills that gap by testing your server-side HTTP layer with mocked external APIs. Your code—Server Components, loaders, middleware, business logic—executes normally. Only the external API calls are intercepted.
 >
-> You switch scenarios at runtime: 'premium user', 'payment declined', 'auth failure', 'rate limited'. Each test gets a different set of API behaviors. Multiple tests run in parallel, all hitting the same server, completely isolated.
+> You switch scenarios at runtime: 'premium user', 'payment declined', 'auth failure', 'rate limited'. Each test gets different API behaviors. Multiple tests run in parallel against the same server, completely isolated via test IDs.
 >
-> It's HTTP-level integration testing for the full-stack framework era. Real server code, fake external APIs, unlimited scenarios.
+> HTTP-level integration testing with runtime scenario switching. Real server execution, mocked external dependencies, comprehensive scenario coverage.
 >
 > Today I'm using Claude Code to add regex pattern matching to Scenarist. You'll see the full TDD workflow—test-first, small commits, 100% coverage. Let's build it."
 
