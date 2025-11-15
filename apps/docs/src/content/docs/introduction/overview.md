@@ -156,14 +156,26 @@ export const scenarios = {
 } as const;
 ```
 
-**Step 3: Write tests** (framework-agnostic)
+**Step 3: Set up Playwright fixtures** (one-time setup)
+
+```typescript
+// tests/fixtures.ts
+import { withScenarios, expect } from '@scenarist/playwright-helpers';
+import { scenarios } from './scenarios'; // Import your scenarios
+
+// Create type-safe test object with scenario IDs
+export const test = withScenarios(scenarios);
+export { expect };
+```
+
+**Step 4: Write tests** (import from fixtures, not @playwright/test)
 
 ```typescript
 // tests/premium-features.spec.ts
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures'; // ✅ Import from fixtures, NOT @playwright/test
 
 test('premium users access advanced features', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'premiumUser');
+  await switchScenario(page, 'premiumUser'); // ✅ Type-safe! Autocomplete works
 
   // Real HTTP request → Next.js route → middleware → business logic
   await page.goto('/dashboard');
@@ -176,10 +188,12 @@ test('premium users access advanced features', async ({ page, switchScenario }) 
 
 **What's happening:**
 1. Framework adapter integrates Scenarist into your Next.js app
-2. Scenario defines how external APIs behave
-3. Test switches to scenario and makes real HTTP requests
-4. Your backend code executes with production behavior
-5. External API calls return scenario-defined responses
+2. Scenarios define how external APIs behave
+3. Playwright fixtures create type-safe test helpers with scenario autocomplete
+4. Tests import from fixtures (not @playwright/test directly)
+5. Test switches to scenario and makes real HTTP requests
+6. Your backend code executes with production behavior
+7. External API calls return scenario-defined responses
 
 **See complete working examples:**
 - [Next.js Example App →](/frameworks/nextjs-app-router/example-app)
