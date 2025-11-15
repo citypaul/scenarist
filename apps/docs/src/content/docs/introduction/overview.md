@@ -47,17 +47,46 @@ graph TB
     style S2 fill:#fff3bf,stroke:#fab005,stroke-width:2px
 ```
 
-**The key insight:** Each scenario is a **complete set of API mocks**. One scenario controls what Stripe returns AND what Auth0 returns AND what SendGrid returns—all coordinated for that test case.
+**The key insight:** Each scenario is a **complete set of API mocks** that defines how every external API behaves for that test. The diagram shows 2 scenarios as examples—you can define as many as you need, and each scenario can mock as many APIs as your application uses.
 
-**What this means:**
-- ✅ **One scenario = All API responses** - The "Payment Fails" scenario: Stripe declines the card, but Auth0 and SendGrid still succeed
-- ✅ **Test edge cases exhaustively** - Can't test "payment succeeds but email fails" with real APIs—but you can with scenarios
-- ✅ **Real backend execution** - Your code handles the declined card, processes the error, logs appropriately—all tested
-- ✅ **Fast parallel testing** - Tests run simultaneously, each with different external API behavior
-- ✅ **Unlimited scenarios** - Not limited to 2 examples shown—define as many scenarios as you need
+**Understanding the pattern:**
 
-**Example scenario names explained:**
-When we say "Premium User Scenario" in the docs, we mean: *a scenario where Auth0 returns `{tier: "premium"}` and Stripe returns successful payment responses*. It's shorthand for "the complete set of API mocks that simulate a premium user experience."
+Each test switches to a specific scenario, and that scenario controls **all external API responses** for the duration of that test:
+
+- **Test 1** switches to `allSucceed` → Stripe succeeds, Auth0 authenticates, SendGrid sends
+- **Test 2** switches to `paymentFails` → Stripe declines, Auth0 authenticates, SendGrid sends
+
+Notice how each scenario defines the complete behavior: in `paymentFails`, only Stripe fails—Auth0 and SendGrid still succeed. This lets you test **exactly** the edge case you care about.
+
+**Default scenario pattern (recommended):**
+
+Define a `default` scenario with your **happy path** responses for all external APIs. Then create specialized scenarios that override only what changes:
+
+```typescript
+const scenarios = {
+  default: {  // Happy path - all APIs succeed
+    mocks: [
+      { url: 'https://api.stripe.com/...', response: { status: 'succeeded' } },
+      { url: 'https://api.auth0.com/...', response: { user: 'john@example.com' } },
+      { url: 'https://api.sendgrid.com/...', response: { status: 'sent' } }
+    ]
+  },
+  paymentFails: {  // Only override Stripe - Auth0 and SendGrid automatically fall back to default
+    mocks: [
+      { url: 'https://api.stripe.com/...', response: { status: 'declined' } }
+    ]
+  }
+};
+```
+
+When you switch to `paymentFails`, Scenarist uses that scenario's mocks (Stripe declines) **and automatically falls back to the default scenario** for any APIs not defined (Auth0 and SendGrid succeed). This eliminates duplication—you only define what changes.
+
+**What this enables:**
+- ✅ **Unlimited scenarios** - Premium users, free users, error states, edge cases—as many as you need
+- ✅ **Unlimited APIs per scenario** - Mock Stripe, Auth0, SendGrid, GitHub, Twilio—as many as your app uses
+- ✅ **Default fallback** - Define happy path once, override only what changes in each scenario
+- ✅ **Test edge cases exhaustively** - Can't make real Stripe decline with a specific error code, but your scenario can
+- ✅ **Fast parallel testing** - All scenarios run simultaneously against the same server
 
 ## Execution Model
 
