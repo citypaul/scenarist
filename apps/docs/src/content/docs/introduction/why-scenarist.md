@@ -37,7 +37,7 @@ This creates a testing challenge:
 
 **Scenarist fills this gap** by testing your server-side HTTP layer with mocked external APIs. Your code—Server Components, loaders, middleware, business logic—executes normally. Only the external API calls are intercepted, returning scenario-defined responses based on test ID. This enables testing full user journeys through the browser using Playwright helpers, with each test isolated and running in parallel.
 
-**Test 100+ external API scenarios in parallel** without expensive cloud API calls or complex test infrastructure.
+**Test extensive external API scenarios in parallel** without expensive cloud API calls or complex test infrastructure.
 
 [Learn how it works →](/introduction/overview)
 
