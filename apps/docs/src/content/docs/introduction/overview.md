@@ -1,6 +1,6 @@
 ---
-title: Overview: How It Works
-description: Understanding Scenarist's execution model and runtime scenario switching
+title: "Overview: How It Works"
+description: "Understanding Scenarist's execution model and runtime scenario switching"
 ---
 
 # How Scenarist Works
