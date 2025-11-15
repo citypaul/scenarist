@@ -111,37 +111,75 @@ tests/
 import type { ScenaristScenarios } from '@scenarist/express-adapter';
 
 export const scenarios = {
+  // ✅ RECOMMENDED - Default scenario with complete happy path
   default: {
     id: 'default',
     name: 'Happy Path',
+    description: 'All external APIs succeed with valid responses',
     mocks: [
+      // Stripe: Successful payment
       {
-        method: 'GET',
+        method: 'POST',
         url: 'https://api.stripe.com/v1/charges',
-        response: { status: 200, body: { status: 'succeeded' } },
+        response: {
+          status: 200,
+          body: { id: 'ch_123', status: 'succeeded', amount: 5000 },
+        },
       },
-    ],
-  },
-  premiumUser: {
-    id: 'premiumUser',
-    name: 'Premium User',
-    mocks: [
+      // Auth0: Authenticated standard user
       {
         method: 'GET',
         url: 'https://api.auth0.com/userinfo',
-        response: { status: 200, body: { tier: 'premium' } },
+        response: {
+          status: 200,
+          body: { sub: 'user_123', email: 'john@example.com', tier: 'standard' },
+        },
+      },
+      // SendGrid: Email sent successfully
+      {
+        method: 'POST',
+        url: 'https://api.sendgrid.com/v3/mail/send',
+        response: {
+          status: 202,
+          body: { message_id: 'msg_123' },
+        },
       },
     ],
   },
+  // Specialized scenario: Override ONLY Auth0 for premium user
+  premiumUser: {
+    id: 'premiumUser',
+    name: 'Premium User',
+    description: 'Premium tier user, everything else succeeds',
+    mocks: [
+      // Override: Auth0 returns premium tier
+      {
+        method: 'GET',
+        url: 'https://api.auth0.com/userinfo',
+        response: {
+          status: 200,
+          body: { sub: 'user_456', email: 'premium@example.com', tier: 'premium' },
+        },
+      },
+      // Stripe and SendGrid automatically fall back to default (happy path)
+    ],
+  },
+  // Specialized scenario: Override ONLY Stripe for payment failure
   paymentFails: {
     id: 'paymentFails',
     name: 'Payment Declined',
+    description: 'Stripe declines payment, everything else succeeds',
     mocks: [
+      // Override: Stripe declines payment
       {
-        method: 'GET',
+        method: 'POST',
         url: 'https://api.stripe.com/v1/charges',
-        response: { status: 402, body: { error: 'card_declined' } },
+        response: {
+          status: 402,
+          body: { error: { code: 'card_declined', message: 'Card was declined' } },
+        },
       },
+      // Auth0 and SendGrid automatically fall back to default (happy path)
     ],
   },
 } as const satisfies ScenaristScenarios;
