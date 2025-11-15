@@ -1,13 +1,32 @@
 ---
 title: Why Scenarist?
-description: Understanding the HTTP boundary testing gap and how Scenarist addresses it
+description: Understanding the testing gap in modern full-stack frameworks and how Scenarist addresses it
 ---
 
-## The HTTP Boundary Testing Gap
+## Modern Frameworks Have Blurred the Lines
 
-Modern web applications consist of frontend and backend code that communicate over HTTP. Testing these layers presents a challenge: unit tests test each side in isolation, while end-to-end tests test the full system including browser rendering.
+In the past, web applications had clear separation: **frontend** (JavaScript in the browser) and **backend** (API server). You could test each side independently.
 
-Between these extremes lies a testing gap: **verifying that your backend HTTP layer (middleware, routing, request/response handling) behaves correctly under different scenarios**, without the overhead of full end-to-end tests.
+**That world no longer exists.**
+
+Modern frameworks like **Next.js**, **Remix**, **TanStack Router**, **SvelteKit**, and **SolidStart** have fundamentally changed this:
+
+- **Server Components** run on the server but look like frontend code
+- **Loaders and Actions** execute server-side but are defined alongside components
+- **Server Functions** are called from client code but execute on the backend
+- **API routes** live in the same codebase as your UI components
+
+**The result:** You can't separate "frontend" from "backend" anymore. Your UI components are making direct server-side HTTP calls to external APIs (Stripe, Auth0, SendGrid). There's no clean boundary to test around.
+
+## The Testing Gap This Creates
+
+This blur creates a **new testing challenge**:
+
+**Unit tests** require mocking framework internals (Next.js `fetch`, `cookies`, `headers`), creating distance from production execution. You're not testing real code—you're testing mocked abstractions.
+
+**End-to-end tests** provide confidence but are too slow for comprehensive scenario coverage. Testing 100 different external API scenarios (payment errors, auth failures, rate limiting) would take hours.
+
+**Between these extremes lies a gap:** How do you test your server-side code (middleware, routing, business logic) with different external API behaviors, without browser overhead or framework mocking?
 
 ## Quick Navigation
 
@@ -24,9 +43,9 @@ Between these extremes lies a testing gap: **verifying that your backend HTTP la
 
 ---
 
-### Modern Framework Testing Challenges
+### Why Framework Documentation Recommends E2E
 
-This gap is particularly evident with modern full-stack frameworks:
+This gap is evident in how framework authors struggle to provide testing guidance:
 
 **Next.js Server Components** - The [official Next.js documentation](https://nextjs.org/docs/app/building-your-application/testing#async-server-components) states: *"Since async Server Components are new to the React ecosystem, Next.js recommends using end-to-end testing."* Unit testing requires mocking Next.js internals (fetch, cookies, headers), creating distance from production execution.
 
@@ -41,9 +60,13 @@ This gap is particularly evident with modern full-stack frameworks:
 → **Scenarist solves this** by providing HTTP-level testing without browser overhead. [See how →](/frameworks/sveltekit)
 
 :::note[The Pattern]
-These frameworks shift more logic to the server, making the HTTP boundary increasingly important to test. Traditional unit tests can verify this logic, but require extensive mocking of framework internals. End-to-end tests provide confidence but are too slow for comprehensive scenario coverage.
+When your "frontend" components run on the server and call external APIs directly, traditional testing approaches break down:
 
-**Scenarist addresses all these challenges** by testing at the HTTP boundary with real backend execution and mocked external APIs.
+- **Unit tests** mock too much (framework internals) → not testing real execution
+- **E2E tests** are too slow → can't test all scenarios (100+ API behaviors)
+- **No middle ground exists** → until Scenarist
+
+**Scenarist fills this gap** by testing your real server-side code with mocked external APIs. Your Next.js Server Components, Remix loaders, TanStack server functions—they all execute normally. Only the external API calls (Stripe, Auth0, SendGrid) are intercepted.
 :::
 
 ### How Scenarist Works: One Server, Unlimited Scenarios
