@@ -21,10 +21,13 @@ import type { ProductsResponse } from '@/types/product';
 import { scenarist } from '@/lib/scenarist';
 
 type ProductsPageProps = {
-  searchParams: Promise<{ tier?: string }>;
+  searchParams: Promise<{ tier?: string; campaign?: string }>;
 };
 
-async function fetchProducts(tier: string = 'standard'): Promise<ProductsResponse> {
+async function fetchProducts(
+  tier: string = 'standard',
+  campaign?: string
+): Promise<ProductsResponse> {
   // Create a mock Request object from the incoming headers
   // This allows us to use scenarist.getHeaders() method
   const headersList = await headers();
@@ -32,7 +35,12 @@ async function fetchProducts(tier: string = 'standard'): Promise<ProductsRespons
     headers: headersList,
   });
 
-  const response = await fetch('http://localhost:3002/api/products', {
+  const url = new URL('http://localhost:3002/api/products');
+  if (campaign) {
+    url.searchParams.set('campaign', campaign);
+  }
+
+  const response = await fetch(url.toString(), {
     headers: {
       ...scenarist.getHeaders(mockRequest),
       'x-user-tier': tier, // Application-specific header for tier matching
@@ -55,8 +63,8 @@ async function fetchProducts(tier: string = 'standard'): Promise<ProductsRespons
  * Scenarist + Playwright CAN test this - works perfectly!
  */
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
-  const { tier = 'standard' } = await searchParams;
-  const data = await fetchProducts(tier);
+  const { tier = 'standard', campaign } = await searchParams;
+  const data = await fetchProducts(tier, campaign);
 
   return (
     <div className="container mx-auto px-4 py-8">
