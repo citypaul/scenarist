@@ -4,7 +4,10 @@
       "Bash(git commit:*)",
       "Bash(gh issue view:*)",
       "Bash(gh issue edit:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(git checkout:*)",
+      "Bash(pnpm dev)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
