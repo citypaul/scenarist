@@ -19,25 +19,31 @@ graph TB
     T1["Test 1: Happy path<br/>switchScenario('allSucceed')"]
     T2["Test 2: Payment error<br/>switchScenario('paymentFails')"]
 
-    T1 --> B1["🟢 Your Real Backend<br/>(HTTP + Middleware + Business Logic)"]
-    T2 --> B2["🟢 Your Real Backend<br/>(HTTP + Middleware + Business Logic)"]
+    T1 -->|HTTP Request| B1["🟢 Your Real Backend<br/>(HTTP + Middleware + Business Logic)"]
+    T2 -->|HTTP Request| B2["🟢 Your Real Backend<br/>(HTTP + Middleware + Business Logic)"]
 
     B1 -.->|Routes to scenario| S1
     B2 -.->|Routes to scenario| S2
 
     subgraph S1["Scenario: allSucceed"]
         direction LR
-        S1A["💳 Stripe<br/>status: 'succeeded'"]
-        S1B["🔐 Auth0<br/>user: 'john@example.com'"]
-        S1C["📧 SendGrid<br/>status: 'sent'"]
+        S1A["💳 Stripe<br/>{status: 'succeeded',<br/>amount: 5000}"]
+        S1B["🔐 Auth0<br/>{user: 'john@example.com',<br/>tier: 'standard'}"]
+        S1C["📧 SendGrid<br/>{status: 'sent',<br/>message_id: 'msg_123'}"]
     end
 
     subgraph S2["Scenario: paymentFails"]
         direction LR
-        S2A["💳 Stripe<br/>status: 'declined'"]
-        S2B["🔐 Auth0<br/>user: 'john@example.com'"]
-        S2C["📧 SendGrid<br/>status: 'sent'"]
+        S2A["💳 Stripe<br/>{status: 'declined',<br/>code: 'card_declined'}"]
+        S2B["🔐 Auth0<br/>{user: 'john@example.com',<br/>tier: 'standard'}"]
+        S2C["📧 SendGrid<br/>{status: 'sent',<br/>message_id: 'msg_456'}"]
     end
+
+    S1 -.->|Returns mocked responses| B1
+    S2 -.->|Returns mocked responses| B2
+
+    B1 -->|HTTP Response| T1
+    B2 -->|HTTP Response| T2
 
     style T1 fill:#e7f5ff,stroke:#1971c2,stroke-width:2px
     style T2 fill:#e7f5ff,stroke:#1971c2,stroke-width:2px
