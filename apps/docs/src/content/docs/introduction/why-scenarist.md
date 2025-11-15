@@ -5,7 +5,7 @@ description: Understanding the testing gap in modern full-stack frameworks and h
 
 ## The Testing Gap
 
-Modern web development has blurred the traditional separation between frontend and backend code. Frameworks like **Next.js**, **Remix**, **SvelteKit**, and **SolidStart** run server-side logic alongside UI components. Traditional backends built with **Express**, **Hono**, or **Fastify** make HTTP calls to external services (Stripe, Auth0, SendGrid) that need different behaviors in tests.
+Modern web development has blurred the traditional separation between frontend and backend code. Frameworks like **Next.js**, **Remix**, **SvelteKit**, and **SolidStart** run server-side logic alongside UI components. Traditional backends built with **Express**, **Hono**, or **Fastify** face the same challenge: all make HTTP calls to external services (Stripe, Auth0, SendGrid) that need different behaviors in tests.
 
 This creates a testing challenge:
 
@@ -20,6 +20,8 @@ This creates a testing challenge:
 **End-to-end tests** provide confidence by testing the complete system, but cannot reach most edge case states. How do you make Stripe return a specific decline code? Or Auth0 timeout? Or SendGrid fail with a particular error? You can't control real external APIs to test these scenarios. Testing the few scenarios you can reach would also be prohibitively slow.
 
 **Between these approaches lies a gap:** Testing server-side HTTP behavior with different external API responses, without browser overhead or extensive framework mocking.
+
+**Scenarist fills this gap** by testing your server-side HTTP layer with mocked external APIs. Your code—Server Components, loaders, middleware, business logic—executes normally. Only the external API calls are intercepted, returning scenario-defined responses based on test ID.
 
 ## Quick Navigation
 

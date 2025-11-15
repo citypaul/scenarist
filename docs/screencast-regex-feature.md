@@ -4,13 +4,13 @@
 
 **What to say:**
 
-> "Modern web development has blurred the separation between frontend and backend. Frameworks like Next.js, Remix, and SvelteKit run server-side logic alongside UI components. Traditional backends built with Express, Hono, or Fastify make HTTP calls to external services—Stripe, Auth0, SendGrid—that need different behaviors in tests.
+> "Modern web development has blurred the separation between frontend and backend. Frameworks like Next.js, Remix, and SvelteKit run server-side logic alongside UI components. Traditional backends built with Express, Hono, or Fastify face the same challenge: all make HTTP calls to external services—Stripe, Auth0, SendGrid—that need different behaviors in tests.
 >
-> This creates a testing challenge. Unit tests can verify server-side logic, but require mocking framework internals or HTTP clients—creating distance from production behavior. End-to-end tests provide confidence, but can't reach most edge case states. How do you make Stripe return a specific decline code? Or Auth0 timeout? Or SendGrid fail with a particular error? You can't control real external APIs to test these scenarios.
+> Unit tests can verify server-side logic, but require mocking framework internals or HTTP clients—creating distance from production behavior. End-to-end tests provide confidence, but can't reach most edge case states. How do you make Stripe return a specific decline code? Or Auth0 timeout? Or SendGrid fail with a particular error? You can't control real external APIs to test these scenarios.
 >
 > There's a gap between these approaches.
 >
-> Scenarist fills that gap by testing your server-side HTTP layer with mocked external APIs. Your code—Server Components, loaders, middleware, business logic—executes normally. Only the external API calls are intercepted.
+> Scenarist fills that gap by testing your server-side HTTP layer with mocked external APIs. Your code—Server Components, loaders, middleware, business logic—executes normally. Only the external API calls are intercepted, returning scenario-defined responses based on test ID.
 >
 > You switch scenarios at runtime: 'premium user', 'payment declined', 'auth failure', 'rate limited'. Each test gets different API behaviors. Multiple tests run in parallel against the same server, completely isolated via test IDs.
 >
