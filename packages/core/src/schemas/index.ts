@@ -35,3 +35,4 @@ export {
   type ScenaristVariant,
   type ScenaristScenario,
 } from './scenario-definition.js';
+export { SerializedRegexSchema, type SerializedRegex } from './match-criteria.js';
