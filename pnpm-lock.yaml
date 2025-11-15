@@ -249,6 +249,9 @@ importers:
       msw:
         specifier: ^2.12.1
         version: 2.12.1(@types/node@24.10.1)(typescript@5.9.3)
+      redos-detector:
+        specifier: ^6.1.2
+        version: 6.1.2
       zod:
         specifier: ^4.1.12
         version: 4.1.12
@@ -5109,6 +5112,11 @@ packages:
       canvas:
         optional: true
 
+  jsesc@3.0.2:
+    resolution: {integrity: sha512-xKqzzWXDttJuOcawBt4KnKHHIf5oQ/Cxax+0PWFG+DFDgHNAdi+TXECADI+RYiFUMmx8792xsMbbgXj4CwnP4g==, tarball: https://registry.npmjs.org/jsesc/-/jsesc-3.0.2.tgz}
+    engines: {node: '>=6'}
+    hasBin: true
+
   jsesc@3.1.0:
     resolution: {integrity: sha512-/sM3dO2FOzXjKQhJuo0Q173wf2KOo8t4I8vHy6lF9poUp7bKT0/NHE8fPX23PwfhnykfqnC2xRxOnVw5XuGIaA==, tarball: https://registry.npmjs.org/jsesc/-/jsesc-3.1.0.tgz}
     engines: {node: '>=6'}
@@ -6151,6 +6159,11 @@ packages:
   recma-stringify@1.0.0:
     resolution: {integrity: sha512-cjwII1MdIIVloKvC9ErQ+OgAtwHBmcZ0Bg4ciz78FtbT8In39aAYbaA7zvxQ61xVMSPE8WxhLwLbhif4Js2C+g==, tarball: https://registry.npmjs.org/recma-stringify/-/recma-stringify-1.0.0.tgz}
 
+  redos-detector@6.1.2:
+    resolution: {integrity: sha512-xyBnPq9WBqK1h4eQPvSJIVsAwsRligAwGLGS7ukCHxz2CTHxCMviB0v5mxDV+/6jPsf5q0I17PquNH0E7y02Hg==, tarball: https://registry.npmjs.org/redos-detector/-/redos-detector-6.1.2.tgz}
+    engines: {node: '>=16.0.0'}
+    hasBin: true
+
   reflect.getprototypeof@1.0.10:
     resolution: {integrity: sha512-00o4I+DVrefhv+nX0ulyi3biSHCPDe+yLv5o/p6d/UVlirijB8E16FtfwSAi4g3tcqrQ4lRAqQSoFEZJehYEcw==}
     engines: {node: '>= 0.4'}
@@ -6171,6 +6184,10 @@ packages:
   regexparam@2.0.2:
     resolution: {integrity: sha512-A1PeDEYMrkLrfyOwv2jwihXbo9qxdGD3atBYQA9JJgreAx8/7rC6IUkWOw2NQlOxLp2wL0ifQbh1HuidDfYA6w==, tarball: https://registry.npmjs.org/regexparam/-/regexparam-2.0.2.tgz}
     engines: {node: '>=8'}
+
+  regjsparser@0.12.0:
+    resolution: {integrity: sha512-cnE+y8bz4NhMjISKbgeVJtqNbtf5QpjZP+Bslo+UqkIt9QPnX9q095eiRRASJG1/tz6dlNr6Z5NsBiWYokp6EQ==, tarball: https://registry.npmjs.org/regjsparser/-/regjsparser-0.12.0.tgz}
+    hasBin: true
 
   rehype-expressive-code@0.41.3:
     resolution: {integrity: sha512-8d9Py4c/V6I/Od2VIXFAdpiO2kc0SV2qTJsRAaqSIcM9aruW4ASLNe2kOEo1inXAAkIhpFzAHTc358HKbvpNUg==, tarball: https://registry.npmjs.org/rehype-expressive-code/-/rehype-expressive-code-0.41.3.tgz}
@@ -13201,6 +13218,8 @@ snapshots:
       - supports-color
       - utf-8-validate
 
+  jsesc@3.0.2: {}
+
   jsesc@3.1.0: {}
 
   json-buffer@3.0.1: {}
@@ -14594,6 +14613,10 @@ snapshots:
       unified: 11.0.5
       vfile: 6.0.3
 
+  redos-detector@6.1.2:
+    dependencies:
+      regjsparser: 0.12.0
+
   reflect.getprototypeof@1.0.10:
     dependencies:
       call-bind: 1.0.8
@@ -14625,6 +14648,10 @@ snapshots:
       set-function-name: 2.0.2
 
   regexparam@2.0.2: {}
+
+  regjsparser@0.12.0:
+    dependencies:
+      jsesc: 3.0.2
 
   rehype-expressive-code@0.41.3:
     dependencies:
