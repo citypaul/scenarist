@@ -77,15 +77,15 @@ export type ScenaristCaptureConfig = z.infer<typeof ScenaristCaptureConfigSchema
  * - String: exact match, path params (/users/:id), or glob (/api/*)
  * - Native RegExp: pattern match (e.g., /\/users\/\d+/)
  */
-export const UrlPatternSchema = z.union([
+export const ScenaristUrlPatternSchema = z.union([
   z.string().min(1),
   z.instanceof(RegExp),
 ]);
-export type UrlPattern = z.infer<typeof UrlPatternSchema>;
+export type ScenaristUrlPattern = z.infer<typeof ScenaristUrlPatternSchema>;
 
 export const ScenaristMockSchema = z.object({
   method: HttpMethodSchema,
-  url: UrlPatternSchema,
+  url: ScenaristUrlPatternSchema,
   match: ScenaristMatchSchema.optional(),
   response: ScenaristResponseSchema.optional(),
   sequence: ScenaristSequenceSchema.optional(),
