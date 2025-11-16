@@ -2883,6 +2883,42 @@ describe("ResponseSelector - Regex Matching", () => {
           expect(result.data.body).toEqual({ matched: true });
         }
       });
+
+      it("should NOT match when body criteria has unknown/invalid strategy property", () => {
+        const context: HttpRequestContext = {
+          method: "POST",
+          url: "/api/test",
+          headers: {},
+          body: { field: "value" },
+          query: {},
+        };
+
+        const mocks: ReadonlyArray<ScenaristMock> = [
+          {
+            method: "POST",
+            url: "/api/test",
+            match: {
+              body: {
+                field: { unknownStrategy: "value" } as any,
+              },
+            },
+            response: { status: 200, body: { matched: true } },
+          },
+          {
+            method: "POST",
+            url: "/api/test",
+            response: { status: 200, body: { fallback: true } },
+          },
+        ];
+
+        const selector = createResponseSelector();
+        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.body).toEqual({ fallback: true });
+        }
+      });
     });
   });
 });
