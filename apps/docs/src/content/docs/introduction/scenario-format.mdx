@@ -1,16 +1,28 @@
 ---
-title: Scenario Format
-description: Complete structure and all features of Scenarist scenarios
+title: Scenario Format Reference
+description: Complete syntax and structure for writing Scenarist scenarios
 ---
 
-Scenarist scenarios are **serializable JSON objects** that define how your application behaves during testing. Unlike traditional mocking where you write functions and closures, scenarios are pure data that can be:
+:::tip[Looking for Feature Examples?]
+This page is a **syntax reference** showing how to write scenarios. For detailed feature explanations and real-world use cases, see [Dynamic Capabilities →](/introduction/capabilities).
+:::
 
-- Version controlled (TypeScript scenario definitions in git)
-- Shared across test files
-- Sent over HTTP
-- Generated programmatically
+Scenarist scenarios are **TypeScript objects** that define how external APIs behave during testing. Unlike traditional mocking where you write functions and closures, scenarios are **declarative, serializable data structures**.
 
-The serializable design enables future features like remote storage (Redis, PostgreSQL) without breaking changes.
+**What you can do with scenarios:**
+- Define once, use across all tests (shared scenario definitions)
+- Version control as TypeScript files in git
+- Switch between scenarios at runtime (no app restarts)
+- Compose features: request matching + sequences + state
+
+**Example use cases:**
+- Happy path: All APIs succeed
+- Payment failed: Stripe declines, everything else succeeds
+- Rate limiting: API exhausts after N requests
+- Async workflows: Job goes pending → processing → complete
+- User tiers: Premium users get different API responses
+
+The declarative design enforces clear, maintainable test scenarios.
 
 :::tip[Why Serializable?]
 Scenarist scenarios are pure data (no functions) to enforce **declarative design patterns**. This constraint leads to clearer, more maintainable tests.
@@ -27,12 +39,19 @@ Every scenario follows this structure:
 import type { ScenaristScenario } from '@scenarist/express-adapter';
 // Or: '@scenarist/nextjs-adapter/app', '@scenarist/nextjs-adapter/pages', etc.
 
-const myScenario: ScenaristScenario = {
+export const myScenario: ScenaristScenario = {
   id: 'my-scenario',                    // Unique identifier (required)
   name: 'My Scenario',                  // Human-readable name (required)
   description: 'What this scenario represents',  // Documentation (required)
   mocks: [                              // Array of mock definitions (required)
-    // Mock definitions go here
+    {
+      method: 'GET',
+      url: 'https://api.example.com/user',
+      response: {
+        status: 200,
+        body: { id: 1, name: 'Test User' },
+      },
+    },
   ],
 };
 ```
@@ -46,43 +65,86 @@ const myScenario: ScenaristScenario = {
 
 ## Mock Definition Structure
 
-Mocks define how to intercept HTTP requests and what responses to return:
+Mocks define how to intercept HTTP requests and what responses to return. Each mock requires a `method`, `url`, and **either** a `response` or `sequence`.
+
+### Simple Response Mock
 
 ```typescript
-{
-  method: 'GET',                        // HTTP method (required)
-  url: 'https://api.example.com/user',  // URL pattern (required)
+import type { ScenaristScenario } from '@scenarist/express-adapter';
 
-  // EITHER response OR sequence (at least one required)
-  response: {                           // Single static response
-    status: 200,
-    body: { id: 1, name: 'Test User' },
-    headers: { 'x-custom': 'value' },
-    delay: 1000,                        // Optional delay in ms
-  },
+export const simpleScenario: ScenaristScenario = {
+  id: 'simple-mock',
+  name: 'Simple Response Mock',
+  description: 'Basic mock with single response',
+  mocks: [
+    {
+      method: 'GET',                        // HTTP method (required)
+      url: 'https://api.example.com/user',  // URL pattern (required)
+      response: {                           // Single static response
+        status: 200,
+        body: { id: 1, name: 'Test User' },
+        headers: { 'x-custom': 'value' },   // Optional
+        delay: 1000,                        // Optional delay in ms
+      },
+    },
+  ],
+};
+```
 
-  // OR
-  sequence: {                           // Response sequence (polling, multi-step)
-    responses: [                        // Array of responses
-      { status: 200, body: { status: 'pending' } },
-      { status: 200, body: { status: 'complete' } },
-    ],
-    repeat: 'last',                     // 'last' | 'cycle' | 'none'
-  },
+### Sequence Mock
 
-  // Optional: Request matching criteria
-  match: {
-    body: { itemType: 'premium' },      // Partial body match
-    headers: { 'x-tier': 'premium' },   // Exact header match
-    query: { detailed: 'true' },        // Exact query param match
-  },
+```typescript
+import type { ScenaristScenario } from '@scenarist/express-adapter';
 
-  // Optional: State capture for stateful mocks
-  captureState: {
-    'userId': 'body.id',                // Capture from request
-    'cartItems[]': 'body.item',         // Append to array
-  },
-}
+export const sequenceScenario: ScenaristScenario = {
+  id: 'sequence-mock',
+  name: 'Response Sequence Mock',
+  description: 'Mock with multiple responses (polling, async operations)',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.example.com/job/:id',
+      sequence: {                           // Response sequence
+        responses: [                        // Array of responses
+          { status: 200, body: { status: 'pending' } },
+          { status: 200, body: { status: 'complete' } },
+        ],
+        repeat: 'last',                     // 'last' | 'cycle' | 'none'
+      },
+    },
+  ],
+};
+```
+
+### Advanced: With Matching and State
+
+```typescript
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
+export const advancedScenario: ScenaristScenario = {
+  id: 'advanced-mock',
+  name: 'Advanced Mock Features',
+  description: 'Mock with request matching and state capture',
+  mocks: [
+    {
+      method: 'POST',
+      url: 'https://api.example.com/cart/add',
+      match: {                              // Optional: Request matching
+        body: { itemType: 'premium' },      // Partial body match
+        headers: { 'x-tier': 'premium' },   // Exact header match
+        query: { detailed: 'true' },        // Exact query param match
+      },
+      captureState: {                       // Optional: State capture
+        'userId': 'body.id',                // Capture from request
+        'cartItems[]': 'body.item',         // Append to array
+      },
+      response: {
+        status: 200,
+        body: { success: true },
+      },
+    },
+  ],
+};
 ```
 
 ### HTTP Methods
@@ -102,12 +164,31 @@ URLs can be:
 Every response (single or in sequence) contains:
 
 ```typescript
-{
-  status: 200,          // HTTP status code (100-599, required)
-  body: { },            // Response body (any JSON-serializable value, optional)
-  headers: { },         // Response headers (string key-value pairs, optional)
-  delay: 1000,          // Delay in milliseconds (optional)
-}
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
+export const responseExample: ScenaristScenario = {
+  id: 'response-structure',
+  name: 'Response Structure Example',
+  description: 'Shows all response fields',
+  mocks: [
+    {
+      method: 'POST',
+      url: 'https://api.example.com/data',
+      response: {
+        status: 200,          // HTTP status code (100-599, required)
+        body: {               // Response body (any JSON-serializable value, optional)
+          id: 1,
+          data: 'example',
+        },
+        headers: {            // Response headers (string key-value pairs, optional)
+          'x-custom': 'value',
+          'x-request-id': 'abc123',
+        },
+        delay: 1000,          // Delay in milliseconds (optional)
+      },
+    },
+  ],
+};
 ```
 
 ## Feature 1: Request Matching
@@ -118,7 +199,7 @@ Match mocks based on request content to return different responses for the same 
 // Import from your framework's adapter package (all adapters re-export these types)
 import type { ScenaristScenario } from '@scenarist/express-adapter';
 
-const scenario: ScenaristScenario = {
+export const scenario: ScenaristScenario = {
   id: 'tiered-pricing',
   name: 'Tiered Pricing',
   description: 'Different pricing based on user tier',
@@ -191,6 +272,34 @@ match: {
 // Matches if request query has these params with exact values
 ```
 
+**Pattern Matching with Regex:**
+```typescript
+match: {
+  headers: {
+    // Exact match (default)
+    'x-api-version': 'v2',
+
+    // Contains substring
+    'user-agent': { contains: 'Mobile' },
+
+    // Starts with prefix
+    'referer': { startsWith: 'https://example.com' },
+
+    // Ends with suffix
+    'accept': { endsWith: 'json' },
+
+    // Regex pattern (case-insensitive campaign matching)
+    'x-campaign': {
+      regex: { source: 'premium|vip', flags: 'i' }
+    }
+  }
+}
+```
+
+Scenarist supports five matching strategies for flexible pattern matching. Regex patterns include ReDoS protection and 100ms timeout.
+
+[See detailed regex examples and security considerations →](/introduction/capabilities#pattern-matching-with-regex)
+
 **Combined Matching** (all criteria must match):
 ```typescript
 match: {
@@ -234,7 +343,7 @@ Test polling, multi-step workflows, and async operations with declarative sequen
 // Import from your framework's adapter package (all adapters re-export these types)
 import type { ScenaristScenario } from '@scenarist/express-adapter';
 
-const scenario: ScenaristScenario = {
+export const scenario: ScenaristScenario = {
   id: 'github-polling',
   name: 'GitHub Job Polling',
   description: 'Simulates async job progression',
@@ -322,7 +431,7 @@ Capture state from requests and inject it into responses for dynamic behavior:
 // Import from your framework's adapter package (all adapters re-export these types)
 import type { ScenaristScenario } from '@scenarist/express-adapter';
 
-const scenario: ScenaristScenario = {
+export const scenario: ScenaristScenario = {
   id: 'shopping-cart',
   name: 'Shopping Cart',
   description: 'Cart with state persistence',
@@ -410,7 +519,7 @@ All features compose together for powerful scenarios:
 // Import from your framework's adapter package (all adapters re-export these types)
 import type { ScenaristScenario } from '@scenarist/express-adapter';
 
-const scenario: ScenaristScenario = {
+export const scenario: ScenaristScenario = {
   id: 'premium-onboarding',
   name: 'Premium User Onboarding',
   description: 'Multi-step onboarding with state and sequences',
@@ -478,7 +587,7 @@ Every scenarios object **must** have a 'default' key (enforced by schema validat
 import type { ScenaristScenario } from '@scenarist/express-adapter';
 
 // ✅ RECOMMENDED - Happy path as default
-const defaultScenario: ScenaristScenario = {
+export const defaultScenario: ScenaristScenario = {
   id: 'default',
   name: 'Happy Path',
   description: 'All external APIs succeed with valid responses',
@@ -523,7 +632,7 @@ When you switch to a specialized scenario, Scenarist **automatically falls back 
 import type { ScenaristScenario } from '@scenarist/express-adapter';
 
 // Scenario that overrides ONLY Stripe - Auth0 and SendGrid fall back to default
-const paymentFailsScenario: ScenaristScenario = {
+export const paymentFailsScenario: ScenaristScenario = {
   id: 'payment-fails',
   name: 'Payment Declined',
   description: 'Stripe declines payment, everything else succeeds',
@@ -542,7 +651,7 @@ const paymentFailsScenario: ScenaristScenario = {
 };
 
 // Scenario that overrides ONLY Auth0 - Stripe and SendGrid fall back to default
-const authFailsScenario: ScenaristScenario = {
+export const authFailsScenario: ScenaristScenario = {
   id: 'auth-fails',
   name: 'Authentication Failed',
   description: 'Auth0 returns 401, everything else succeeds',
