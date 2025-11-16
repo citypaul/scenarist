@@ -20,12 +20,20 @@ export async function GET(request: NextRequest) {
     // Get user tier from request header (app-specific, not Scenarist infrastructure)
     const userTier = request.headers.get('x-user-tier') || 'standard';
 
+    // Extract campaign from query parameter for regex matching
+    const campaign = request.nextUrl.searchParams.get('campaign');
+
     // Fetch from json-server (external API)
     // Scenarist MSW will intercept this request and return mocked data based on scenario
-    const fetchHeaders = {
+    const fetchHeaders: Record<string, string> = {
       ...scenarist.getHeaders(request),  // ✅ Scenarist infrastructure headers (x-test-id)
-      'x-user-tier': userTier,                      // ✅ Application-specific header
+      'x-user-tier': userTier,           // ✅ Application-specific header
     };
+
+    // Add campaign header if present (enables regex matching on server-side fetch)
+    if (campaign) {
+      fetchHeaders['x-campaign'] = campaign;
+    }
 
     const response = await fetch('http://localhost:3001/products', {
       headers: fetchHeaders,
