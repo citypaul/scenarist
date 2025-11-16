@@ -21,13 +21,32 @@ export const ScenaristResponseSchema = z.object({
 export type ScenaristResponse = z.infer<typeof ScenaristResponseSchema>;
 
 /**
- * Match value can be either:
- * - A string for exact match
- * - A regex object for pattern matching
+ * Match value supports 5 matching strategies:
+ * - Plain string: exact match (backward compatible)
+ * - equals: explicit exact match
+ * - contains: substring match
+ * - startsWith: prefix match
+ * - endsWith: suffix match
+ * - regex: pattern match
+ *
+ * Exactly ONE strategy must be defined when using object form.
  */
 export const MatchValueSchema = z.union([
   z.string(),
-  z.object({ regex: SerializedRegexSchema }),
+  z.object({
+    equals: z.string().optional(),
+    contains: z.string().optional(),
+    startsWith: z.string().optional(),
+    endsWith: z.string().optional(),
+    regex: SerializedRegexSchema.optional(),
+  }).refine(
+    (obj) => {
+      const strategies = [obj.equals, obj.contains, obj.startsWith, obj.endsWith, obj.regex];
+      const defined = strategies.filter(s => s !== undefined);
+      return defined.length === 1;
+    },
+    { message: 'Exactly one matching strategy must be defined (equals, contains, startsWith, endsWith, or regex)' }
+  ),
 ]);
 export type MatchValue = z.infer<typeof MatchValueSchema>;
 
