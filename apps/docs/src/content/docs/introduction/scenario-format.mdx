@@ -7,7 +7,7 @@ description: Complete syntax and structure for writing Scenarist scenarios
 This page shows **how to write** scenarios. For feature explanations and use cases, see [Dynamic Capabilities →](/introduction/capabilities).
 :::
 
-Scenarist scenarios are **TypeScript objects** that define how external APIs behave during testing. Unlike traditional mocking where you write functions and closures, scenarios are **declarative, serializable data structures**.
+Scenarist scenarios are **declarative TypeScript objects** that compile to **JSON-serializable data structures**. This gives you type safety during development and portability at runtime - scenarios can be version controlled, sent over HTTP, or stored in databases.
 
 **What you can do with scenarios:**
 - Define once, use across all tests (shared scenario definitions)
