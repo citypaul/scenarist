@@ -67,11 +67,7 @@ Implement regex support for match criteria in Scenarist, enabling pattern matchi
 
 ## Blockers
 
-**CRITICAL: Documentation vs Implementation Mismatch**
-- ❌ `capabilities.mdx` documents `contains`, `startsWith`, `endsWith` that DON'T EXIST
-- Users will get Zod validation errors: "Unrecognized key(s) in object: 'contains'"
-- MatchValueSchema only supports: `string | { regex }` (NOT the other 3 strategies)
-- Issue #86 reopened to track completion
+None currently - ready to implement string matching functions
 
 ## PR Review Feedback
 
