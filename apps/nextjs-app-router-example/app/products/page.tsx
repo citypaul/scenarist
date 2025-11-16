@@ -28,6 +28,9 @@ async function fetchProducts(
   tier: string = 'standard',
   campaign?: string
 ): Promise<ProductsResponse> {
+  // Production: External API (Stripe) needs tier to return correct pricing
+  // Tests: Same code runs, MSW intercepts based on tier header
+
   // Create a mock Request object from the incoming headers
   // This allows us to use scenarist.getHeaders() method
   const headersList = await headers();
@@ -42,8 +45,8 @@ async function fetchProducts(
 
   const response = await fetch(url.toString(), {
     headers: {
-      ...scenarist.getHeaders(mockRequest),
-      'x-user-tier': tier, // Application-specific header for tier matching
+      ...scenarist.getHeaders(mockRequest), // Scenarist infrastructure (x-test-id)
+      'x-user-tier': tier, // Application context (external API needs this!)
     },
     cache: 'no-store', // Disable Next.js caching for demo
   });

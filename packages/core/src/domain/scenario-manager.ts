@@ -10,6 +10,7 @@ import type {
   ScenaristResult,
   ScenaristScenario,
 } from "../types/index.js";
+import { ScenaristScenarioSchema } from "../schemas/index.js";
 
 class ScenarioNotFoundError extends Error {
   constructor(scenarioId: string) {
@@ -22,6 +23,13 @@ class DuplicateScenarioError extends Error {
   constructor(scenarioId: string) {
     super(`Scenario '${scenarioId}' is already registered. Each scenario must have a unique ID.`);
     this.name = "DuplicateScenarioError";
+  }
+}
+
+class ScenarioValidationError extends Error {
+  constructor(message: string, public readonly validationErrors: string[]) {
+    super(message);
+    this.name = "ScenarioValidationError";
   }
 }
 
@@ -50,6 +58,20 @@ export const createScenarioManager = ({
 }): ScenarioManager => {
   return {
     registerScenario(definition: ScenaristScenario): void {
+      // Validate scenario definition at trust boundary
+      const validationResult = ScenaristScenarioSchema.safeParse(definition);
+
+      if (!validationResult.success) {
+        const errorMessages = validationResult.error.issues.map(
+          (err) => `${err.path.join('.')}: ${err.message}`
+        );
+        const scenarioId = (definition as any)?.id || '<unknown>';
+        throw new ScenarioValidationError(
+          `Invalid scenario definition for '${scenarioId}': ${errorMessages.join(', ')}`,
+          errorMessages
+        );
+      }
+
       const existing = registry.get(definition.id);
 
       // Allow re-registering the exact same scenario object (idempotent)

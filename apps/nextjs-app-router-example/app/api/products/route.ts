@@ -1,14 +1,12 @@
 /**
- * Products API Route Handler - Phase 8.2
+ * Products API Route Handler
  *
- * Fetches products from external API (json-server).
- * Demonstrates Scenarist intercepting the request and returning tier-based pricing
- * based on x-user-tier header matching.
+ * Fetches products from external API (json-server simulating Stripe/etc).
  *
- * With Scenarist enabled: Returns mocked tier-specific prices
- * With Scenarist disabled: Returns actual json-server data
+ * Production: External API needs user tier to return correct tier-based pricing
+ * Testing: Same code runs, MSW intercepts based on tier header, returns tier-specific mocks
  *
- * App Router Route Handler - Uses Web Request/Response API
+ * The tier header is production logic - external APIs often need user context!
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -17,20 +15,20 @@ import { scenarist } from '../../../lib/scenarist';
 
 export async function GET(request: NextRequest) {
   try {
-    // Get user tier from request header (app-specific, not Scenarist infrastructure)
+    // Get user tier from request header (application context)
     const userTier = request.headers.get('x-user-tier') || 'standard';
 
     // Extract campaign from query parameter for regex matching
     const campaign = request.nextUrl.searchParams.get('campaign');
 
-    // Fetch from json-server (external API)
-    // Scenarist MSW will intercept this request and return mocked data based on scenario
+    // Fetch from external API (json-server simulating Stripe)
+    // External API needs tier context to return correct pricing
     const fetchHeaders: Record<string, string> = {
-      ...scenarist.getHeaders(request),  // ✅ Scenarist infrastructure headers (x-test-id)
-      'x-user-tier': userTier,           // ✅ Application-specific header
+      ...scenarist.getHeaders(request),  // Scenarist infrastructure (x-test-id)
+      'x-user-tier': userTier,           // Application context (API needs this!)
     };
 
-    // Add campaign header if present (enables regex matching on server-side fetch)
+    // Add campaign header if present (external API uses for promotions)
     if (campaign) {
       fetchHeaders['x-campaign'] = campaign;
     }

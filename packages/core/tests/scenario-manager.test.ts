@@ -203,6 +203,173 @@ describe("ScenarioManager", () => {
       const registered = manager.getScenarioById("test");
       expect(registered).toEqual(definition);
     });
+
+    describe("validation", () => {
+      it("should reject scenario with unsafe ReDoS pattern in regex", () => {
+        const { manager } = createTestSetup();
+        const unsafeScenario: ScenarioDefinition = {
+          id: "unsafe-regex",
+          name: "Unsafe Regex",
+          description: "Scenario with ReDoS vulnerability",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/test",
+              match: {
+                headers: {
+                  "x-campaign": {
+                    regex: { source: "(a+)+b", flags: "" }, // Classic ReDoS pattern
+                  },
+                },
+              },
+              response: { status: 200, body: {} },
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(unsafeScenario);
+        }).toThrow(/unsafe/i);
+      });
+
+      it("should accept scenario with safe regex pattern", () => {
+        const { manager } = createTestSetup();
+        const safeScenario: ScenarioDefinition = {
+          id: "safe-regex",
+          name: "Safe Regex",
+          description: "Scenario with safe regex pattern",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/test",
+              match: {
+                headers: {
+                  "x-campaign": {
+                    regex: { source: "premium|vip", flags: "i" },
+                  },
+                },
+              },
+              response: { status: 200, body: {} },
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(safeScenario);
+        }).not.toThrow();
+
+        const registered = manager.getScenarioById("safe-regex");
+        expect(registered).toBeDefined();
+      });
+
+      it("should reject scenario with empty regex source", () => {
+        const { manager } = createTestSetup();
+        const emptySourceScenario: ScenarioDefinition = {
+          id: "empty-source",
+          name: "Empty Source",
+          description: "Scenario with empty regex source",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/test",
+              match: {
+                headers: {
+                  "x-campaign": {
+                    regex: { source: "", flags: "" },
+                  },
+                },
+              },
+              response: { status: 200, body: {} },
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(emptySourceScenario);
+        }).toThrow();
+      });
+
+      it("should reject scenario with invalid regex flags", () => {
+        const { manager } = createTestSetup();
+        const invalidFlagsScenario: ScenarioDefinition = {
+          id: "invalid-flags",
+          name: "Invalid Flags",
+          description: "Scenario with invalid regex flags",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/test",
+              match: {
+                headers: {
+                  "x-campaign": {
+                    regex: { source: "test", flags: "x" }, // 'x' is not a valid flag
+                  },
+                },
+              },
+              response: { status: 200, body: {} },
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(invalidFlagsScenario);
+        }).toThrow();
+      });
+
+      it("should validate multiple unsafe patterns in same scenario", () => {
+        const { manager } = createTestSetup();
+        const multipleUnsafeScenario: ScenarioDefinition = {
+          id: "multiple-unsafe",
+          name: "Multiple Unsafe",
+          description: "Scenario with multiple unsafe patterns",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/test1",
+              match: {
+                headers: {
+                  "x-pattern": {
+                    regex: { source: "(x+x+)+y", flags: "" }, // Exponential backtracking
+                  },
+                },
+              },
+              response: { status: 200, body: {} },
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(multipleUnsafeScenario);
+        }).toThrow(/unsafe/i);
+      });
+
+      it("should accept regex with safe complex pattern", () => {
+        const { manager } = createTestSetup();
+        const complexSafeScenario: ScenarioDefinition = {
+          id: "complex-safe",
+          name: "Complex Safe",
+          description: "Scenario with complex but safe pattern",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/test",
+              match: {
+                headers: {
+                  "x-campaign": {
+                    regex: { source: "^/api/(products|categories)/\\d+$", flags: "i" },
+                  },
+                },
+              },
+              response: { status: 200, body: {} },
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(complexSafeScenario);
+        }).not.toThrow();
+      });
+    });
   });
 
   describe("switchScenario", () => {

@@ -72,9 +72,9 @@ test.describe('Regex Pattern Matching (Server-Side)', () => {
     await page.goto('/?campaign=summer-sale');
 
     // Expected: Standard pricing (no regex match, fallback to default scenario)
-    await expect(page.getByText('£149.99')).toBeVisible(); // Standard price for Product A
-
     const firstProduct = page.locator('article').first();
+    // Use locator that targets price span specifically to avoid TierSelector text
+    await expect(firstProduct.locator('.text-2xl.font-bold.text-blue-600')).toHaveText('£149.99'); // Standard price for Product A
     await expect(firstProduct.getByText('standard', { exact: false })).toBeVisible();
   });
 
@@ -88,9 +88,9 @@ test.describe('Regex Pattern Matching (Server-Side)', () => {
     await page.goto('/');
 
     // Expected: Standard pricing (no x-campaign header = no match, fallback to default)
-    await expect(page.getByText('£149.99')).toBeVisible();
-
     const firstProduct = page.locator('article').first();
+    // Use locator that targets price span specifically to avoid TierSelector text
+    await expect(firstProduct.locator('.text-2xl.font-bold.text-blue-600')).toHaveText('£149.99');
     await expect(firstProduct.getByText('standard', { exact: false })).toBeVisible();
   });
 
