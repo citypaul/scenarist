@@ -125,6 +125,102 @@ const mock: ScenaristMock = {
 };
 ```
 
+### Combining Multiple Match Criteria with Different Strategies
+
+You can combine multiple match criteria across body, headers, and query parameters, with **each field using a different matching strategy**. ALL criteria must match (AND logic) for the mock to be selected.
+
+**Example with mixed strategies:**
+
+```typescript
+import type { ScenaristMock } from '@scenarist/core';
+
+const mock: ScenaristMock = {
+  method: 'POST',
+  url: '/api/checkout',
+  match: {
+    // Body: Different strategy per field
+    body: {
+      itemType: { contains: 'premium' },        // Contains substring
+      category: { startsWith: 'electronics' }   // Starts with prefix
+    },
+    // Headers: Mix of exact, regex, and pattern matching
+    headers: {
+      'x-user-tier': { equals: 'gold' },        // Exact match
+      'x-campaign': { regex: { source: 'summer|winter', flags: 'i' } },  // Regex
+      'referer': { endsWith: '/checkout' }      // Ends with suffix
+    },
+    // Query: Plain string and pattern matching
+    query: {
+      region: 'us',                             // Plain string (exact)
+      email: { contains: '@company.com' }       // Contains substring
+    }
+  },
+  response: { status: 200, body: { discount: 30 } }
+};
+```
+
+**This mock matches ONLY if ALL of the following are true:**
+- ✅ `body.itemType` contains 'premium' (e.g., 'premium-item', 'super-premium')
+- ✅ `body.category` starts with 'electronics' (e.g., 'electronics-phones')
+- ✅ `x-user-tier` header exactly equals 'gold'
+- ✅ `x-campaign` header matches 'summer' OR 'winter' (case-insensitive)
+- ✅ `referer` header ends with '/checkout'
+- ✅ `region` query param exactly equals 'us'
+- ✅ `email` query param contains '@company.com'
+
+**AND Logic:** All criteria must match. If ANY criterion fails, the mock is not selected.
+
+**Specificity Calculation:** Each matched field adds to the specificity score:
+- 2 body fields + 3 headers + 2 query params = **specificity of 7**
+- Higher specificity = more specific mock wins
+
+**OR Logic via Separate Mocks:**
+
+Since match criteria use AND logic, implement OR logic by creating multiple mocks:
+
+```typescript
+import type { ScenaristScenario } from '@scenarist/core';
+
+const scenario: ScenaristScenario = {
+  id: 'premium-or-vip',
+  mocks: [
+    // Mock 1: Premium users
+    {
+      method: 'GET',
+      url: '/api/products',
+      match: { headers: { 'x-tier': 'premium' } },
+      response: { status: 200, body: { pricing: 'discounted' } }
+    },
+    // Mock 2: VIP users (OR - separate mock)
+    {
+      method: 'GET',
+      url: '/api/products',
+      match: { headers: { 'x-tier': 'vip' } },
+      response: { status: 200, body: { pricing: 'discounted' } }
+    },
+    // Fallback: Standard users
+    {
+      method: 'GET',
+      url: '/api/products',
+      response: { status: 200, body: { pricing: 'standard' } }
+    }
+  ]
+};
+```
+
+**OR Logic via Regex:**
+
+For true OR logic within a single field, use regex patterns:
+
+```typescript
+match: {
+  headers: {
+    'x-tier': { regex: { source: '^(premium|vip|enterprise)$', flags: '' } }
+  }
+}
+// Matches x-tier='premium' OR 'vip' OR 'enterprise' in one mock
+```
+
 ### Pattern Matching with Regex
 
 For flexible pattern matching, use regex instead of exact values. This is useful for marketing campaigns, user agents, referer patterns, or any dynamic string matching.
