@@ -2073,3 +2073,138 @@ describe("ResponseSelector - Template Injection (Phase 3)", () => {
     }
   });
 });
+
+describe("ResponseSelector - Regex Matching", () => {
+  describe("Header regex matching", () => {
+    it("should match header with regex pattern", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/products",
+        headers: { "x-campaign": "summer-premium-sale" },
+        body: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "GET",
+          url: "/api/products",
+          match: {
+            headers: {
+              "x-campaign": { regex: { source: "premium|vip", flags: "i" } },
+            },
+          },
+          response: { status: 200, body: { tier: "premium" } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({ tier: "premium" });
+      }
+    });
+
+    it("should NOT match when regex does not match header value", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/products",
+        headers: { "x-campaign": "summer-sale" },
+        body: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "GET",
+          url: "/api/products",
+          match: {
+            headers: {
+              "x-campaign": { regex: { source: "premium|vip", flags: "i" } },
+            },
+          },
+          response: { status: 200, body: { tier: "premium" } },
+        },
+        {
+          method: "GET",
+          url: "/api/products",
+          response: { status: 200, body: { tier: "standard" } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({ tier: "standard" }); // Fallback
+      }
+    });
+
+    it("should handle case-insensitive regex matching", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/products",
+        headers: { "x-campaign": "early-VIP-access" },
+        body: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "GET",
+          url: "/api/products",
+          match: {
+            headers: {
+              "x-campaign": { regex: { source: "vip", flags: "i" } },
+            },
+          },
+          response: { status: 200, body: { tier: "premium" } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({ tier: "premium" });
+      }
+    });
+  });
+
+  describe("Query param regex matching", () => {
+    it("should match query param with regex pattern", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/search",
+        query: { category: "premium-electronics" },
+        headers: {},
+        body: {},
+      };
+
+      const mocks: ReadonlyArray<MockDefinition> = [
+        {
+          method: "GET",
+          url: "/api/search",
+          match: {
+            query: {
+              category: { regex: { source: "premium", flags: "" } },
+            },
+          },
+          response: { status: 200, body: { results: ["laptop", "phone"] } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({ results: ["laptop", "phone"] });
+      }
+    });
+  });
+});

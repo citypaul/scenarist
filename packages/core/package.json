@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "msw": "^2.12.1",
+    "redos-detector": "^6.1.2",
     "zod": "^4.1.12"
   },
   "devDependencies": {

@@ -113,6 +113,143 @@ Header and query parameter matching is **exact** for specified keys:
 }
 ```
 
+### Pattern Matching with Regex
+
+For flexible pattern matching, use regex instead of exact values. This is useful for marketing campaigns, user agents, referer patterns, or any dynamic string matching.
+
+#### String Matching Strategies
+
+Scenarist supports five matching strategies:
+
+```typescript
+{
+  method: 'GET',
+  url: '/api/products',
+  match: {
+    headers: {
+      // Exact match (default)
+      'x-api-version': 'v2',
+
+      // Contains substring
+      'user-agent': { contains: 'Mobile' },
+
+      // Starts with prefix
+      'referer': { startsWith: 'https://example.com' },
+
+      // Ends with suffix
+      'accept': { endsWith: 'json' },
+
+      // Regex pattern matching
+      'x-campaign': {
+        regex: { source: 'premium|vip', flags: 'i' }  // Case-insensitive
+      }
+    }
+  },
+  response: { status: 200, body: { /* ... */ } }
+}
+```
+
+#### Regex Examples
+
+**Marketing Campaigns:**
+
+```typescript
+{
+  method: 'GET',
+  url: '/api/products',
+  match: {
+    headers: {
+      'x-campaign': {
+        regex: { source: 'premium|vip|exclusive', flags: 'i' }
+      }
+    }
+  },
+  response: {
+    status: 200,
+    body: { pricing: 'premium', discount: 25 }
+  }
+}
+
+// Matches:
+// x-campaign: 'summer-premium-sale' ✓
+// x-campaign: 'early-VIP-access' ✓ (case-insensitive)
+// x-campaign: 'exclusive-members-2024' ✓
+// x-campaign: 'standard-sale' ✗ (falls back to default)
+```
+
+**Referer Patterns:**
+
+```typescript
+{
+  method: 'POST',
+  url: '/api/checkout',
+  match: {
+    headers: {
+      'referer': {
+        regex: { source: '/checkout/(confirm|review)', flags: '' }
+      }
+    }
+  },
+  response: { status: 200, body: { allowCheckout: true } }
+}
+
+// Matches:
+// referer: 'https://example.com/checkout/confirm' ✓
+// referer: 'https://example.com/checkout/review' ✓
+// referer: 'https://example.com/checkout/cart' ✗
+```
+
+**User Agent Detection:**
+
+```typescript
+{
+  method: 'GET',
+  url: '/api/config',
+  match: {
+    headers: {
+      'user-agent': {
+        regex: { source: '(iPhone|iPad|Android)', flags: 'i' }
+      }
+    }
+  },
+  response: {
+    status: 200,
+    body: { layout: 'mobile', features: ['touch', 'swipe'] }
+  }
+}
+```
+
+#### Security: ReDoS Protection
+
+Scenarist validates all regex patterns for **ReDoS (Regular Expression Denial of Service)** vulnerabilities:
+
+```typescript
+// ✅ SAFE - Simple alternation
+{ regex: { source: 'premium|vip', flags: 'i' } }
+
+// ✅ SAFE - Character classes
+{ regex: { source: '[A-Z]{3}-\\d{4}', flags: '' } }
+
+// ❌ REJECTED - Catastrophic backtracking risk
+{ regex: { source: '(a+)+b', flags: '' } }
+// Error: Regex pattern may cause ReDoS attack
+```
+
+Additionally, regex matching has a **100ms timeout** to prevent slow patterns from blocking tests.
+
+#### When to Use Regex
+
+**Use regex when:**
+- Matching campaign codes with variable formats
+- Detecting mobile vs desktop user agents
+- Validating referer patterns (checkout flows, auth redirects)
+- Matching version patterns (`v1.2.3`, `2024-01-15`)
+
+**Use exact/contains when:**
+- Simple substring matching is sufficient
+- Performance is critical (regex is slower)
+- Pattern is known exactly
+
 [Learn more about scenario format →](/introduction/scenario-format)
 
 ## Response Sequences

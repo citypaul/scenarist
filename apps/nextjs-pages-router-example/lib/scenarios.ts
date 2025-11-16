@@ -377,6 +377,43 @@ export const checkoutScenario: ScenaristScenario = {
 };
 
 /**
+ * Campaign Regex Scenario - Testing regex pattern matching (server-side)
+ *
+ * Demonstrates Scenarist's regex matching feature:
+ * - Intercepts server-side calls to localhost:3001/products
+ * - Matches x-campaign header against regex pattern /premium|vip/i
+ * - Returns premium pricing when campaign contains 'premium' or 'vip'
+ * - Falls back to default scenario (standard pricing) when no match
+ *
+ * Use case: Different pricing based on marketing campaign
+ * Server-side: getServerSideProps extracts campaign from query param, adds as header to fetch
+ */
+export const campaignRegexScenario: ScenaristScenario = {
+  id: "campaignRegex",
+  name: "Campaign Regex Matching",
+  description: "Premium pricing for premium/vip campaigns",
+  mocks: [
+    {
+      method: "GET",
+      url: "http://localhost:3001/products",
+      match: {
+        headers: {
+          "x-campaign": {
+            regex: { source: "premium|vip", flags: "i" },
+          },
+        },
+      },
+      response: {
+        status: 200,
+        body: {
+          products: buildProducts("premium"),
+        },
+      },
+    },
+  ],
+};
+
+/**
  * All scenarios for registration and type-safe access
  */
 export const scenarios = {
@@ -388,4 +425,5 @@ export const scenarios = {
   weatherCycle: weatherCycleScenario,
   paymentLimited: paymentLimitedScenario,
   checkout: checkoutScenario,
+  campaignRegex: campaignRegexScenario,
 } as const satisfies ScenaristScenarios;

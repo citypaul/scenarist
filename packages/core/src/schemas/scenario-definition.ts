@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SerializedRegexSchema } from './match-criteria.js';
 
 /**
  * Zod schemas for scenario definitions.
@@ -19,10 +20,21 @@ export const ScenaristResponseSchema = z.object({
 });
 export type ScenaristResponse = z.infer<typeof ScenaristResponseSchema>;
 
+/**
+ * Match value can be either:
+ * - A string for exact match
+ * - A regex object for pattern matching
+ */
+export const MatchValueSchema = z.union([
+  z.string(),
+  z.object({ regex: SerializedRegexSchema }),
+]);
+export type MatchValue = z.infer<typeof MatchValueSchema>;
+
 export const ScenaristMatchSchema = z.object({
   body: z.record(z.string(), z.unknown()).optional(),
-  headers: z.record(z.string(), z.string()).optional(),
-  query: z.record(z.string(), z.string()).optional(),
+  headers: z.record(z.string(), MatchValueSchema).optional(),
+  query: z.record(z.string(), MatchValueSchema).optional(),
 });
 export type ScenaristMatch = z.infer<typeof ScenaristMatchSchema>;
 

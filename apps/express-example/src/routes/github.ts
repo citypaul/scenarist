@@ -9,10 +9,17 @@ export const setupGitHubRoutes = (router: Router): void => {
 
     try {
       // Call external GitHub API (will be mocked by Scenarist)
-      // Forward custom headers for content matching
+      // Forward custom headers for content matching and regex matching
       const headers: HeadersInit = {};
       if (req.headers['x-user-tier']) {
         headers['x-user-tier'] = req.headers['x-user-tier'] as string;
+      }
+
+      // Extract campaign from query parameter and add as header
+      // This enables regex matching on server-side fetch calls
+      const campaign = req.query.campaign as string | undefined;
+      if (campaign) {
+        headers['x-campaign'] = campaign;
       }
 
       const response = await fetch(`https://api.github.com/users/${username}`, {
