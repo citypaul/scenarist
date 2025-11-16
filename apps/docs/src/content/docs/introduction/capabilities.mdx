@@ -129,10 +129,43 @@ const mock: ScenaristMock = {
 
 For flexible pattern matching, use regex instead of exact values. This is useful for marketing campaigns, user agents, referer patterns, or any dynamic string matching.
 
-#### String Matching Strategies
+#### Matching Strategies Reference
 
-Scenarist supports five matching strategies:
+Scenarist provides **6 matching strategies** that work across request body fields, headers, and query parameters:
 
+| Strategy | Syntax | Behavior | Use Case |
+|----------|--------|----------|----------|
+| **Plain String** | `'value'` | Exact match (backward compatible) | Simple exact matching |
+| **Equals** | `{ equals: 'value' }` | Explicit exact match | Same as plain string, more explicit |
+| **Contains** | `{ contains: 'substring' }` | Value contains substring | Partial matching (emails, campaigns) |
+| **Starts With** | `{ startsWith: 'prefix' }` | Value starts with prefix | API keys, URL paths, prefixes |
+| **Ends With** | `{ endsWith: 'suffix' }` | Value ends with suffix | File extensions, email domains |
+| **Regex** | `{ regex: { source: 'pattern', flags: 'i' } }` | Pattern matching with flags | Complex patterns, alternatives |
+
+**Where These Strategies Apply:**
+
+- ✅ **Request Body Fields** (`match.body`) - All 6 strategies supported
+- ✅ **Request Headers** (`match.headers`) - All 6 strategies supported
+- ✅ **Query Parameters** (`match.query`) - All 6 strategies supported
+- ❌ **URL Field** (`url`) - Only exact string matching (no strategies)
+
+:::note[URL Matching]
+The `url` field only supports exact string matching. Use query parameter matching for dynamic URL values:
+```typescript
+// ❌ Cannot use strategies on URL field
+url: { contains: '/api/users' }  // Not supported
+
+// ✅ Use query parameter matching instead
+url: '/api/users',
+match: {
+  query: { userId: { startsWith: 'usr_' } }
+}
+```
+:::
+
+#### Strategy Examples by Location
+
+**Headers:**
 ```typescript
 import type { ScenaristMock } from '@scenarist/core';
 
@@ -141,25 +174,57 @@ const mock: ScenaristMock = {
   url: '/api/products',
   match: {
     headers: {
-      // Exact match (default)
-      'x-api-version': 'v2',
-
-      // Contains substring
-      'user-agent': { contains: 'Mobile' },
-
-      // Starts with prefix
-      'referer': { startsWith: 'https://example.com' },
-
-      // Ends with suffix
-      'accept': { endsWith: 'json' },
-
-      // Regex pattern matching
-      'x-campaign': {
-        regex: { source: 'premium|vip', flags: 'i' }  // Case-insensitive
-      }
+      'x-api-version': 'v2',                              // Plain string (exact)
+      'x-tier': { equals: 'premium' },                    // Explicit exact
+      'user-agent': { contains: 'Mobile' },               // Contains
+      'referer': { startsWith: 'https://example.com' },   // Starts with
+      'accept': { endsWith: 'json' },                     // Ends with
+      'x-campaign': { regex: { source: 'premium|vip', flags: 'i' } }  // Regex
     }
   },
-  response: { status: 200, body: { /* ... */ } }
+  response: { status: 200, body: { matched: true } }
+};
+```
+
+**Query Parameters:**
+```typescript
+import type { ScenaristMock } from '@scenarist/core';
+
+const mock: ScenaristMock = {
+  method: 'GET',
+  url: '/api/search',
+  match: {
+    query: {
+      format: 'json',                                     // Plain string (exact)
+      tier: { equals: 'premium' },                        // Explicit exact
+      email: { contains: '@company.com' },                // Contains
+      userId: { startsWith: 'usr_' },                     // Starts with
+      file: { endsWith: '.pdf' },                         // Ends with
+      category: { regex: { source: '^(tech|science)$', flags: 'i' } }  // Regex
+    }
+  },
+  response: { status: 200, body: { matched: true } }
+};
+```
+
+**Body Fields:**
+```typescript
+import type { ScenaristMock } from '@scenarist/core';
+
+const mock: ScenaristMock = {
+  method: 'POST',
+  url: '/api/process',
+  match: {
+    body: {
+      action: 'create',                                   // Plain string (exact)
+      status: { equals: 'active' },                       // Explicit exact
+      email: { contains: '@example.com' },                // Contains
+      apiKey: { startsWith: 'sk_' },                      // Starts with
+      filename: { endsWith: '.json' },                    // Ends with
+      version: { regex: { source: '^\\d+\\.\\d+\\.\\d+$', flags: '' } }  // Regex (semver)
+    }
+  },
+  response: { status: 200, body: { processed: true } }
 };
 ```
 
@@ -287,6 +352,74 @@ Scenarist validates all regex patterns for **ReDoS (Regular Expression Denial of
 - Pattern validation using `redos-detector` before scenario registration
 - Unsafe patterns rejected immediately with clear error messages
 - No runtime regex compilation for invalid patterns
+
+#### Regex in Different Locations
+
+Regex patterns work identically in headers, query parameters, and body fields:
+
+**Headers:**
+```typescript
+import type { ScenaristMock } from '@scenarist/core';
+
+const mock: ScenaristMock = {
+  method: 'GET',
+  url: '/api/products',
+  match: {
+    headers: {
+      'user-agent': {
+        regex: { source: '(Chrome|Firefox|Safari)/', flags: 'i' }
+      }
+    }
+  },
+  response: { status: 200, body: { browser: 'supported' } }
+};
+```
+
+**Query Parameters:**
+```typescript
+import type { ScenaristMock } from '@scenarist/core';
+
+const mock: ScenaristMock = {
+  method: 'GET',
+  url: '/api/search',
+  match: {
+    query: {
+      email: {
+        regex: { source: '@(gmail|yahoo|outlook)\\.com$', flags: 'i' }
+      }
+    }
+  },
+  response: { status: 200, body: { provider: 'common-email' } }
+};
+
+// Matches:
+// /api/search?email=user@gmail.com ✓
+// /api/search?email=user@YAHOO.com ✓ (case-insensitive)
+// /api/search?email=user@hotmail.com ✗ (not in pattern)
+```
+
+**Body Fields:**
+```typescript
+import type { ScenaristMock } from '@scenarist/core';
+
+const mock: ScenaristMock = {
+  method: 'POST',
+  url: '/api/upload',
+  match: {
+    body: {
+      filename: {
+        regex: { source: '\\.(jpg|png|gif|webp)$', flags: 'i' }
+      }
+    }
+  },
+  response: { status: 200, body: { type: 'image', accepted: true } }
+};
+
+// Matches:
+// { filename: 'photo.jpg' } ✓
+// { filename: 'avatar.PNG' } ✓ (case-insensitive)
+// { filename: 'document.pdf' } ✗ (not an image)
+```
 
 #### When to Use Regex
 
