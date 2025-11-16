@@ -1,8 +1,8 @@
 # WIP: Regex Support Implementation (Issue #86)
 
 **Started**: 2025-11-16
-**Status**: In Progress
-**Current Step**: 1 of 4 (Phase 1 complete)
+**Status**: Phase 2.5.1 - IN PROGRESS
+**Current Step**: 3 of 5 (Phase 2 complete, Phase 2.5 planning complete)
 
 ## Goal
 
@@ -11,33 +11,54 @@ Implement regex support for match criteria in Scenarist, enabling pattern matchi
 ## Overall Plan
 
 1. ~~Phase 1: Schema Definition with ReDoS Protection~~ ✅
-2. Phase 2: String Matching Functions - 🔜 NEXT
-3. Phase 3: Regex Matching with Timeout Protection
-4. Phase 4: Integration and Documentation
+2. ~~Phase 2: String Matching Functions~~ ✅
+3. **Phase 2.5: URL Matching - 🔜 NEXT (Planning Complete)**
+4. Phase 3: Regex Matching with Timeout Protection
+5. Phase 4: Integration and Documentation
 
 ## Current Focus
 
-**Phase 2: String Matching Functions** - 🔜 NEXT
+**Phase 2.5: URL Matching** - 🔜 NEXT
 
-**Status**: Ready to start
+**Status**: PLANNING COMPLETE - All design decisions finalized, ready for implementation
 
-**Tests Passing**: ✅ 240/240 core tests (on main)
+**Tests Passing**: ✅ 265/265 core tests (Phase 2 complete)
 
-**Last PR**: #96 merged - Regex support with ReDoS protection
+**Last PR**: Phase 2 merged - String matching strategies for headers/query/body
 
-**Current Task**: Implement equals/contains/startsWith/endsWith string matching
+**Current Task**: Phase 2.5.1 - Schema & Type Updates (add url field to match criteria)
 
-**Note**: Timeout implementation deferred to after Phase 2 completion
+**Key Decisions Finalized:**
+1. Match against resolved URL (actual request like `/users/123`, not pattern like `/users/:id`)
+2. Support native RegExp (ADR-0016) - Better DX, MSW compatible
+3. url field required when match.url present (use `url: '*'` for global matching)
+4. Query string reconstructed for matching (pathname + '?' + querystring)
+5. URL encoding support (try decoded first, fallback to encoded)
+6. Hash fragments stripped before matching
+7. Specificity scoring: URL match adds +1 (consistent with other criteria)
 
-**What Was Completed:**
-- Created SerializedRegexSchema with ReDoS protection
-- Created StringMatchSchema with all 5 strategies
-- Created MatchCriteriaSchema (body, headers, query)
-- Added runtime validation in ScenarioManager.registerScenario()
-- Created ScenarioValidationError for detailed error messages
-- Added 6 comprehensive validation behavior tests
-- Minimized schema tests to 3 documentation tests
-- Fixed Zod API issue (error.issues not error.errors)
+**Phases Completed:**
+
+**Phase 1 (Schema Definition):**
+- SerializedRegexSchema with ReDoS protection
+- StringMatchSchema with all 5 strategies
+- MatchCriteriaSchema (body, headers, query)
+- Runtime validation at trust boundary
+- 6 validation behavior tests
+
+**Phase 2 (String Matching Functions):**
+- String matching helpers (equals, contains, startsWith, endsWith)
+- Integration into matchesCriteria() for headers, query, body
+- 53 unit tests + 12 integration tests
+- 265/265 tests passing, 100% coverage maintained
+
+**Phase 2.5 Planning (URL Matching Design):**
+- All 7 design decisions finalized
+- ADR-0016 created (native RegExp support)
+- ADR-0013 updated (cross-reference)
+- 5-phase implementation plan created
+- Test strategy defined (104-117 tests)
+- Effort estimate: 3.5-4 days
 
 ## Agent Checkpoints
 
@@ -49,25 +70,39 @@ Implement regex support for match criteria in Scenarist, enabling pattern matchi
 
 ## Next Steps
 
-1. **Start Phase 2:** Implement string matching functions
-   - Write failing tests for equals/contains/startsWith/endsWith
-   - Implement matching logic
-   - Verify against match criteria schemas
+**Phase 2.5.1: Schema & Type Updates (0.5 days, 12-15 tests)**
+1. Add native RegExp support to url field in ScenaristMockSchema
+2. Add url field to MatchCriteriaSchema (MatchValueSchema)
+3. Write schema validation tests (native RegExp, serialized, errors)
+4. Update type system (url: RegExp | string | MatchValueObject)
 
-2. **Before starting Phase 2:**
-   - Run refactor-scan on Phase 1 code
-   - Commit any improvements
-   - Review Phase 2 plan in detail
+**Phase 2.5.2: URL Matching Logic (1.5 days, 45-50 tests)**
+1. Implement `matchesUrl(actualUrl: string, matchValue: MatchValue): boolean`
+2. Query string reconstruction (pathname + '?' + querystring)
+3. URL encoding support (decoded first, fallback to encoded)
+4. Hash stripping (remove before matching)
+5. Unit tests for all strategies + edge cases
 
-3. **Add Timeout to matchesRegex()** - PR review requirement (DEFERRED)
-   - Write failing test for timeout scenario
-   - Implement timeout mechanism (default 100ms)
-   - Add warning log when timeout occurs
-   - Verify defense-in-depth with ReDoS protection
+**Phase 2.5.3: Integration Tests (1 day, 20-25 tests)**
+1. Test all routing patterns (exact, path params, glob, wildcard)
+2. Test resolved URL matching (actual request, not pattern)
+3. Test specificity scoring (url match adds +1)
+4. Test url field requirement enforcement
+
+**Phase 2.5.4: Example Apps & E2E (0.5 days, 27 tests)**
+1. Express: URL filtering scenarios (9 tests)
+2. Next.js App Router: URL filtering scenarios (9 tests)
+3. Next.js Pages Router: URL filtering scenarios (9 tests)
+
+**Phase 2.5.5: Documentation (0.5 days)**
+1. Update core-functionality.md with URL matching examples
+2. Update adapter READMEs
+3. Add migration guide for url field requirement
+4. Document resolved URL behavior
 
 ## Blockers
 
-None currently - ready to implement string matching functions
+None - All design decisions finalized, ready to begin Phase 2.5.1 implementation
 
 ## PR Review Feedback
 
@@ -105,26 +140,68 @@ None currently - ready to implement string matching functions
 
 ## Session Log
 
-### 2025-11-16 - Session 1
+### Session 1: Phase 1 - Schema Definition (2025-11-15)
+**Duration**: ~3 hours
+**Completed**:
+- SerializedRegexSchema with ReDoS protection
+- StringMatchSchema with all 5 strategies
+- MatchCriteriaSchema (body, headers, query)
+- Runtime validation at trust boundary
+- 6 validation behavior tests
+
+**Key Learnings**:
+- ReDoS protection via `redos-detector` package
+- Zod API: `error.issues` not `error.errors`
+- Schema tests should be minimal (documentation only)
+- Behavior tests belong at trust boundary
+
+### Session 2: Phase 2 - String Matching Functions (2025-11-16)
+**Duration**: ~4 hours
+**Completed**:
+- String matching helpers (equals, contains, startsWith, endsWith)
+- Integration into matchesCriteria()
+- 53 unit tests + 12 integration tests
+- All 265 tests passing, 100% coverage
+
+**Key Learnings**:
+- Case sensitivity matters for headers
+- URL encoding requires special handling
+- Native RegExp vs serialized form trade-offs
+- Specificity scoring must be consistent
+
+### Session 3: Phase 2.5 Planning - URL Matching Design (2025-11-16)
 **Duration**: ~2 hours
 **Completed**:
-- Phase 1: Schema definition with ReDoS protection ✅
-- Runtime validation at trust boundary ✅
-- 6 validation behavior tests ✅
-- Minimized schema tests to 3 ✅
-- Fixed Zod API issue ✅
+- ✅ Finalized all 7 design decisions
+- ✅ Created ADR-0016 (native RegExp support)
+- ✅ Updated ADR-0013 (cross-reference)
+- ✅ Documented element of least surprise principle
+- ✅ Created 5-phase implementation plan
+- ✅ Updated WIP.md with Phase 2.5 status
 
-**Learned**:
-- Schema tests should be minimal (documentation only)
-- Behavior tests belong at trust boundary (scenario-manager.test.ts)
-- Zod provides detailed validation errors via `.issues`
-- ReDoS protection can be enforced declaratively via schema refinements
+**Design Decisions Finalized**:
+1. URL format in context (pathname only)
+2. Path parameters (match against resolved URL)
+3. Hash fragments (stripped before matching)
+4. URL encoding (support both decoded/encoded)
+5. Specificity scoring (URL adds +1)
+6. url field requirement (always required when match.url present)
+7. Native RegExp support (both forms supported)
+
+**Key Insights**:
+- Resolved URL (not pattern) is element of least surprise
+- Enables powerful filtering use cases (numeric IDs, extensions, versions)
+- Consistent with MSW's `req.url.pathname` behavior
+- Native RegExp simplifies implementation (no conversion needed)
+
+**Ready for Implementation**:
+- Phase 2.5.1: Schema & Type Updates (0.5 days)
+- All design questions answered
+- Test strategy defined (104-117 tests)
+- Effort estimate: 3.5-4 days total
 
 **Next Session**:
-- Run refactor-scan on Phase 1 code
-- Start Phase 2: String matching functions
-- Write RED tests for equals/contains/startsWith/endsWith
-
-**Agent Actions Taken**:
-- ✅ tdd-guardian: Verified all tests written before implementation
-- ✅ ts-enforcer: Confirmed strict mode compliance, no any types
+- Begin Phase 2.5.1: Add url field to MatchCriteriaSchema
+- Add native RegExp support to ScenaristMockSchema
+- Write schema validation tests (12-15 tests)
+- Update type system

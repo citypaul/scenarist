@@ -29,7 +29,8 @@
       "Bash(pnpm --filter @scenarist/nextjs-pages-router-example test:playwright tests/playwright/string-matching.spec.ts)",
       "Bash(pnpm --filter @scenarist/nextjs-pages-router-example test:*)",
       "Bash(cat:*)",
-      "Bash(gh issue create:*)"
+      "Bash(gh issue create:*)",
+      "Bash(gh issue comment:*)"
     ],
     "deny": [],
     "ask": []
