@@ -24,7 +24,12 @@
       "Bash(gh pr comment:*)",
       "Bash(node test-schema.mjs:*)",
       "Bash(node test-scenario.mjs:*)",
-      "Bash(pnpm exec tsx:*)"
+      "Bash(pnpm exec tsx:*)",
+      "Bash(pnpm --filter @scenarist/express-example test:*)",
+      "Bash(pnpm --filter @scenarist/nextjs-pages-router-example test:playwright tests/playwright/string-matching.spec.ts)",
+      "Bash(pnpm --filter @scenarist/nextjs-pages-router-example test:*)",
+      "Bash(cat:*)",
+      "Bash(gh issue create:*)"
     ],
     "deny": [],
     "ask": []

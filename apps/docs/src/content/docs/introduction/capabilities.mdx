@@ -147,20 +147,30 @@ Scenarist provides **6 matching strategies** that work across request body field
 - ✅ **Request Body Fields** (`match.body`) - All 6 strategies supported
 - ✅ **Request Headers** (`match.headers`) - All 6 strategies supported
 - ✅ **Query Parameters** (`match.query`) - All 6 strategies supported
-- ❌ **URL Field** (`url`) - Only exact string matching (no strategies)
+- 🔜 **URL Field** (`match.url`) - **Coming in Phase 2.5** ([#99](https://github.com/citypaul/scenarist/issues/99))
 
-:::note[URL Matching]
-The `url` field only supports exact string matching. Use query parameter matching for dynamic URL values:
+:::note[URL Matching Coming Soon]
+URL matching with all MatchValue strategies is planned for Phase 2.5. Currently, the `url` field supports exact string matching, path parameters (`:id`), and glob patterns (`*`) for routing purposes.
+
+For now, use query parameter matching for dynamic URL filtering:
 ```typescript
-// ❌ Cannot use strategies on URL field
-url: { contains: '/api/users' }  // Not supported
-
-// ✅ Use query parameter matching instead
+// Current approach - Use query parameters
 url: '/api/users',
 match: {
   query: { userId: { startsWith: 'usr_' } }
 }
+
+// Phase 2.5 - URL matching will support (future)
+url: '/api/*',
+match: {
+  url: { contains: '/users/' }  // Coming soon!
+}
 ```
+
+**Phase 2 (Current):** String matching for headers, query params, and body fields
+**Phase 2.5 (Planned):** URL matching with all strategies + route param combinations
+
+See [Issue #99](https://github.com/citypaul/scenarist/issues/99) for details.
 :::
 
 #### Strategy Examples by Location

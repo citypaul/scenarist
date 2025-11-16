@@ -1,9 +1,13 @@
 # Implementation Plan: Regex Support for Match Criteria
 
-**Feature:** Extend match criteria to support regex pattern matching for headers, query params, and body fields
+**Feature:** Extend match criteria to support regex pattern matching for headers, query params, body fields, AND URLs
 **Priority:** P1 (High Value, Low Risk)
-**Status:** Phase 2 Complete - String Matching Strategies Implemented
+**Status:** Phase 2 Complete - Phase 2.5 (URL Matching) Deferred to Future Work
 **GitHub Issue:** #86
+
+**Phase 2 Complete:** String matching strategies (contains, startsWith, endsWith, equals) implemented for headers, query params, and body fields. All 265 tests passing, 100% coverage maintained.
+
+**Phase 2.5 Status:** URL matching deferred - requires extensive design and testing work (see details below).
 
 ---
 
@@ -964,14 +968,158 @@ http.get('/api/data', ({ request }) => {
 
 ---
 
-## Future Enhancements
+## Phase 2.5: URL Matching Strategies (Future Work)
+
+**Status:** NOT STARTED - Deferred from Phase 2
+**Priority:** P2 (Medium - requires significant design work)
+**Complexity:** HIGH (5-8 days estimated vs 1-2 days for other criteria)
+
+### Why URL Matching Is Complex
+
+URL matching has **two levels** of concern that must work together:
+
+1. **Routing (existing)** - The `url` field in mock definition:
+   - Exact match: `url: '/users'`
+   - Path params: `url: '/users/:id'` (extracts `id` from URL)
+   - Glob patterns: `url: '/api/*'` (matches any path starting with `/api/`)
+
+2. **Matching (proposed)** - The `match.url` field with MatchValue strategies:
+   - Contains: `match: { url: { contains: '/api/' } }`
+   - StartsWith: `match: { url: { startsWith: '/v2/' } }`
+   - EndsWith: `match: { url: { endsWith: '.json' } }`
+   - Regex: `match: { url: { regex: { source: '/api/v\\d+/' } } }`
+
+**CRITICAL:** These are SEPARATE concerns:
+- Routing determines IF a mock applies to a URL pattern
+- Matching adds ADDITIONAL conditions on top of routing
+
+### Examples Showing Complexity
+
+```typescript
+// Example 1: String literal + path param
+{
+  url: '/users/:id',  // Routing: Accepts /users/123, /users/456, etc.
+  match: {
+    url: { startsWith: '/users/' }  // Matching: Additional condition
+  }
+}
+// Question: Does this match /users/123? Yes (routing matches, matching passes)
+// Question: Does this match /users? No (routing fails - missing :id)
+
+// Example 2: Glob + regex
+{
+  url: '/api/*',  // Routing: Accepts /api/anything
+  match: {
+    url: { regex: { source: '/api/v2/.*' } }  // Matching: Only v2 endpoints
+  }
+}
+// Question: Does this match /api/v1/users? No (routing passes, but matching fails)
+// Question: Does this match /api/v2/users? Yes (both routing and matching pass)
+
+// Example 3: Path param + contains
+{
+  url: '/orders/:id',  // Routing: Accepts /orders/123
+  match: {
+    url: { contains: '/orders/' }
+  }
+}
+// Question: What value is matched against? Full path? Path params extracted?
+// Answer: TBD - needs design decision
+```
+
+### Required Design Decisions
+
+Before implementing Phase 2.5, these questions MUST be answered:
+
+1. **What value is matched against?**
+   - Option A: Full URL (protocol + host + port + path + query)
+   - Option B: Path only (excludes query string)
+   - Option C: Path + query string (excludes protocol/host/port)
+   - **Recommendation:** TBD (needs user feedback)
+
+2. **How does match.url interact with url routing patterns?**
+   - Does path param `:id` extraction happen before or after match.url check?
+   - Do glob patterns `*` affect what value is matched?
+   - Is match.url an AND condition on top of routing?
+
+3. **Should query string be included in match.url?**
+   - Pro: Enables matching on query params via URL pattern
+   - Con: Duplicates functionality of `match.query`
+   - **Recommendation:** TBD
+
+4. **Should match.url work WITHOUT url routing?**
+   - Can you have `match: { url: { contains: '/api/' } }` with no `url` field?
+   - Or is `url` field (routing) always required?
+   - **Recommendation:** TBD
+
+### Testing Strategy (53-75 tests estimated)
+
+URL matching must be tested with ALL combinations of routing patterns and matching strategies.
+
+**Test Matrix (minimum):**
+
+| Routing Pattern | Matching Strategy | Expected Behavior |
+|----------------|-------------------|-------------------|
+| Exact (`/users`) | `contains: '/users'` | Pass |
+| Exact (`/users`) | `startsWith: '/user'` | Pass |
+| Exact (`/users`) | `endsWith: 'sers'` | Pass |
+| Path param (`/users/:id`) | `contains: '/users/'` | TBD - depends on design |
+| Path param (`/users/:id`) | `startsWith: '/users/'` | TBD - depends on design |
+| Glob (`/api/*`) | `regex: { source: '/api/v2/.*' }` | TBD - depends on design |
+| Glob (`/api/*`) | `contains: '/v2/'` | TBD - depends on design |
+
+**Test Files Needed:**
+
+1. `packages/core/tests/match-criteria-url.test.ts` - Unit tests (20-30 tests)
+2. `packages/core/tests/match-criteria-url-routing.test.ts` - Integration tests (15-20 tests)
+3. `packages/msw-adapter/tests/dynamic-handler-url-matching.test.ts` - MSW integration (10-15 tests)
+4. `apps/nextjs-app-router-example/tests/playwright/url-matching.spec.ts` - E2E tests (8-10 tests)
+
+**Total: 53-75 tests** (vs 15-20 for other match criteria)
+
+### Schema Changes
+
+```typescript
+// packages/core/src/schemas/match-criteria.ts
+export const MatchCriteriaSchema = z.object({
+  url: MatchValueSchema.optional(),  // ✅ NEW: URL matching with same strategies
+  headers: z.record(z.string(), MatchValueSchema).optional(),
+  query: z.record(z.string(), MatchValueSchema).optional(),
+  body: z.record(z.string(), MatchValueSchema).optional(),
+});
+```
+
+**Impact:** Non-breaking change (optional field)
+
+**CRITICAL:** Schema is easy - implementation and testing is hard.
+
+### Implementation Effort Estimate
+
+- Planning: 1-2 days (design decisions, test planning)
+- Implementation: 3-5 days (TDD for 53-75 tests)
+- Documentation: 1 day
+- **Total: 5-8 days** (vs 1-2 days for other match criteria)
+
+### Why Deferred
+
+Phase 2.5 was deferred from Phase 2 because:
+- Complex design decisions required (4 major questions)
+- Extensive testing needed (53-75 tests vs 15-20)
+- Two-level matching (routing + matching) creates combinatorial explosion
+- Must not break existing MSW URL routing (path params, globs)
+- Requires user feedback to validate API design
+
+**Recommendation:** Complete Phase 3 (regex with timeout) first, then revisit Phase 2.5 with full context.
+
+---
+
+## Other Future Enhancements
 
 **Not in scope for initial implementation:**
 
-1. **Regex in URL patterns:** `url: { regex: { source: '/api/\\w+' } }`
-2. **Negation:** `{ not: { contains: '/admin' } }`
-3. **AND/OR combinators:** `{ or: [{ contains: 'foo' }, { contains: 'bar' }] }`
-4. **Custom matchers:** User-defined matching functions
+1. **Negation:** `{ not: { contains: '/admin' } }`
+2. **AND/OR combinators:** `{ or: [{ contains: 'foo' }, { contains: 'bar' }] }`
+3. **Custom matchers:** User-defined matching functions
 
 These can be considered in future iterations based on user feedback.
 
