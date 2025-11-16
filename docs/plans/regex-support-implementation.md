@@ -2,8 +2,8 @@
 
 **Feature:** Extend match criteria to support regex pattern matching for headers, query params, and body fields
 **Priority:** P1 (High Value, Low Risk)
-**Status:** Planned
-**GitHub Issue:** TBD
+**Status:** Phase 2 Complete - String Matching Strategies Implemented
+**GitHub Issue:** #86
 
 ---
 
@@ -446,18 +446,41 @@ describe('MatchValueSchema', () => {
 });
 ```
 
-### Phase 2: Matching Logic (TDD)
+### Phase 2: String Matching Strategies (TDD) - ✅ COMPLETE
 
-**Files to create/modify:**
-- `packages/core/src/domain/matching.ts` (NEW)
-- `packages/core/tests/domain/matching.test.ts` (NEW)
+**Status:** Complete (2025-01-16)
+**Commits:** b7ced12 (RED) → a8802ed (GREEN) → d971a91 (RED) → fd085a2 (GREEN) → 9cf85cd (GREEN)
+
+**Files created/modified:**
+- `packages/core/src/domain/matching.ts` - Implemented string matching functions
+- `packages/core/tests/matching.test.ts` - 13 unit tests covering all strategies
+- `packages/core/src/schemas/scenario.schemas.ts` - Extended MatchValueSchema
+- `apps/nextjs-app-router-example/tests/playwright/string-matching.spec.ts` - 9 ATDD tests
+
+**Implemented Strategies:**
+1. ✅ `contains` - Substring matching (case-sensitive)
+2. ✅ `startsWith` - Prefix matching
+3. ✅ `endsWith` - Suffix matching
+4. ✅ `equals` - Explicit exact match (alternative to plain string)
+
+**Test Results:**
+- Core package: 257/257 tests passing
+- Playwright ATDD: 9/9 tests passing
+- Coverage: 100% maintained
+
+**Key Implementation Details:**
+- All strategies work on headers, query params, and body fields
+- Type coercion: non-string values converted to strings before matching
+- Null/undefined values return false for all strategies
+- Backward compatibility: plain strings still work as exact match
+- Schema validation ensures only one strategy per match value
 
 **Steps:**
-1. ✅ Write tests for `matchesValue()` function
-2. ✅ Write tests for edge cases (null, undefined, non-strings)
-3. ✅ Write tests for ReDoS timeout protection
-4. ✅ Implement matching logic
-5. ✅ Verify all tests pass
+1. ✅ Write ATDD tests for string matching strategies (RED)
+2. ✅ Extend MatchValueSchema to support string strategies (GREEN)
+3. ✅ Write unit tests for matchesValue() function (RED)
+4. ✅ Implement string matching logic (GREEN)
+5. ✅ Verify all tests pass (GREEN)
 
 **Tests:**
 ```typescript
