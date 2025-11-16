@@ -11,7 +11,8 @@
       "Bash(gh pr edit:*)",
       "Bash(gh issue view:*)",
       "Bash(pnpm test:*)",
-      "Bash(pnpm exec playwright test:*)"
+      "Bash(pnpm exec playwright test:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

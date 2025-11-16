@@ -2207,4 +2207,457 @@ describe("ResponseSelector - Regex Matching", () => {
       }
     });
   });
+
+  describe("String matching strategies", () => {
+    describe("contains strategy", () => {
+      it("should match when header contains substring", () => {
+        const context: HttpRequestContext = {
+          method: "GET",
+          url: "/api/products",
+          headers: { "x-campaign": "summer-premium-sale" },
+          body: {},
+          query: {},
+        };
+
+        const mocks: ReadonlyArray<MockDefinition> = [
+          {
+            method: "GET",
+            url: "/api/products",
+            match: {
+              headers: {
+                "x-campaign": { contains: "premium" },
+              },
+            },
+            response: { status: 200, body: { tier: "premium" } },
+          },
+        ];
+
+        const selector = createResponseSelector();
+        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.body).toEqual({ tier: "premium" });
+        }
+      });
+
+      it("should match when header value is exact match (contains substring of itself)", () => {
+        const context: HttpRequestContext = {
+          method: "GET",
+          url: "/api/products",
+          headers: { "x-campaign": "premium" },
+          body: {},
+          query: {},
+        };
+
+        const mocks: ReadonlyArray<MockDefinition> = [
+          {
+            method: "GET",
+            url: "/api/products",
+            match: {
+              headers: {
+                "x-campaign": { contains: "premium" },
+              },
+            },
+            response: { status: 200, body: { tier: "premium" } },
+          },
+        ];
+
+        const selector = createResponseSelector();
+        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.body).toEqual({ tier: "premium" });
+        }
+      });
+
+      it("should NOT match when header does not contain substring", () => {
+        const context: HttpRequestContext = {
+          method: "GET",
+          url: "/api/products",
+          headers: { "x-campaign": "summer-sale" },
+          body: {},
+          query: {},
+        };
+
+        const mocks: ReadonlyArray<MockDefinition> = [
+          {
+            method: "GET",
+            url: "/api/products",
+            match: {
+              headers: {
+                "x-campaign": { contains: "premium" },
+              },
+            },
+            response: { status: 200, body: { tier: "premium" } },
+          },
+          {
+            method: "GET",
+            url: "/api/products",
+            response: { status: 200, body: { tier: "standard" } },
+          },
+        ];
+
+        const selector = createResponseSelector();
+        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.body).toEqual({ tier: "standard" }); // Fallback
+        }
+      });
+
+      it("should be case-sensitive", () => {
+        const context: HttpRequestContext = {
+          method: "GET",
+          url: "/api/products",
+          headers: { "x-campaign": "PREMIUM-sale" },
+          body: {},
+          query: {},
+        };
+
+        const mocks: ReadonlyArray<MockDefinition> = [
+          {
+            method: "GET",
+            url: "/api/products",
+            match: {
+              headers: {
+                "x-campaign": { contains: "premium" },
+              },
+            },
+            response: { status: 200, body: { tier: "premium" } },
+          },
+          {
+            method: "GET",
+            url: "/api/products",
+            response: { status: 200, body: { tier: "standard" } },
+          },
+        ];
+
+        const selector = createResponseSelector();
+        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.body).toEqual({ tier: "standard" }); // Fallback (case-sensitive)
+        }
+      });
+    });
+
+    describe("startsWith strategy", () => {
+      it("should match when header starts with prefix", () => {
+        const context: HttpRequestContext = {
+          method: "GET",
+          url: "/api/keys",
+          headers: { "x-api-key": "sk_test_12345" },
+          body: {},
+          query: {},
+        };
+
+        const mocks: ReadonlyArray<MockDefinition> = [
+          {
+            method: "GET",
+            url: "/api/keys",
+            match: {
+              headers: {
+                "x-api-key": { startsWith: "sk_" },
+              },
+            },
+            response: { status: 200, body: { keyType: "secret" } },
+          },
+        ];
+
+        const selector = createResponseSelector();
+        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.body).toEqual({ keyType: "secret" });
+        }
+      });
+
+      it("should NOT match when header does not start with prefix", () => {
+        const context: HttpRequestContext = {
+          method: "GET",
+          url: "/api/keys",
+          headers: { "x-api-key": "pk_test_12345" },
+          body: {},
+          query: {},
+        };
+
+        const mocks: ReadonlyArray<MockDefinition> = [
+          {
+            method: "GET",
+            url: "/api/keys",
+            match: {
+              headers: {
+                "x-api-key": { startsWith: "sk_" },
+              },
+            },
+            response: { status: 200, body: { keyType: "secret" } },
+          },
+          {
+            method: "GET",
+            url: "/api/keys",
+            response: { status: 200, body: { keyType: "public" } },
+          },
+        ];
+
+        const selector = createResponseSelector();
+        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.body).toEqual({ keyType: "public" }); // Fallback
+        }
+      });
+
+      it("should be case-sensitive", () => {
+        const context: HttpRequestContext = {
+          method: "GET",
+          url: "/api/keys",
+          headers: { "x-api-key": "SK_test_12345" },
+          body: {},
+          query: {},
+        };
+
+        const mocks: ReadonlyArray<MockDefinition> = [
+          {
+            method: "GET",
+            url: "/api/keys",
+            match: {
+              headers: {
+                "x-api-key": { startsWith: "sk_" },
+              },
+            },
+            response: { status: 200, body: { keyType: "secret" } },
+          },
+          {
+            method: "GET",
+            url: "/api/keys",
+            response: { status: 200, body: { keyType: "public" } },
+          },
+        ];
+
+        const selector = createResponseSelector();
+        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.body).toEqual({ keyType: "public" }); // Fallback (case-sensitive)
+        }
+      });
+    });
+
+    describe("endsWith strategy", () => {
+      it("should match when query param ends with suffix", () => {
+        const context: HttpRequestContext = {
+          method: "GET",
+          url: "/api/users",
+          query: { email: "john@company.com" },
+          headers: {},
+          body: {},
+        };
+
+        const mocks: ReadonlyArray<MockDefinition> = [
+          {
+            method: "GET",
+            url: "/api/users",
+            match: {
+              query: {
+                email: { endsWith: "@company.com" },
+              },
+            },
+            response: { status: 200, body: { access: "internal" } },
+          },
+        ];
+
+        const selector = createResponseSelector();
+        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.body).toEqual({ access: "internal" });
+        }
+      });
+
+      it("should NOT match when query param does not end with suffix", () => {
+        const context: HttpRequestContext = {
+          method: "GET",
+          url: "/api/users",
+          query: { email: "john@example.com" },
+          headers: {},
+          body: {},
+        };
+
+        const mocks: ReadonlyArray<MockDefinition> = [
+          {
+            method: "GET",
+            url: "/api/users",
+            match: {
+              query: {
+                email: { endsWith: "@company.com" },
+              },
+            },
+            response: { status: 200, body: { access: "internal" } },
+          },
+          {
+            method: "GET",
+            url: "/api/users",
+            response: { status: 200, body: { access: "external" } },
+          },
+        ];
+
+        const selector = createResponseSelector();
+        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.body).toEqual({ access: "external" }); // Fallback
+        }
+      });
+
+      it("should be case-sensitive", () => {
+        const context: HttpRequestContext = {
+          method: "GET",
+          url: "/api/users",
+          query: { email: "john@COMPANY.COM" },
+          headers: {},
+          body: {},
+        };
+
+        const mocks: ReadonlyArray<MockDefinition> = [
+          {
+            method: "GET",
+            url: "/api/users",
+            match: {
+              query: {
+                email: { endsWith: "@company.com" },
+              },
+            },
+            response: { status: 200, body: { access: "internal" } },
+          },
+          {
+            method: "GET",
+            url: "/api/users",
+            response: { status: 200, body: { access: "external" } },
+          },
+        ];
+
+        const selector = createResponseSelector();
+        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.body).toEqual({ access: "external" }); // Fallback (case-sensitive)
+        }
+      });
+    });
+
+    describe("equals strategy", () => {
+      it("should match when header exactly equals value", () => {
+        const context: HttpRequestContext = {
+          method: "GET",
+          url: "/api/status",
+          headers: { "x-exact": "exact-value" },
+          body: {},
+          query: {},
+        };
+
+        const mocks: ReadonlyArray<MockDefinition> = [
+          {
+            method: "GET",
+            url: "/api/status",
+            match: {
+              headers: {
+                "x-exact": { equals: "exact-value" },
+              },
+            },
+            response: { status: 200, body: { status: "ok" } },
+          },
+        ];
+
+        const selector = createResponseSelector();
+        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.body).toEqual({ status: "ok" });
+        }
+      });
+
+      it("should NOT match when header contains value but is not exact", () => {
+        const context: HttpRequestContext = {
+          method: "GET",
+          url: "/api/status",
+          headers: { "x-exact": "exact-value-plus" },
+          body: {},
+          query: {},
+        };
+
+        const mocks: ReadonlyArray<MockDefinition> = [
+          {
+            method: "GET",
+            url: "/api/status",
+            match: {
+              headers: {
+                "x-exact": { equals: "exact-value" },
+              },
+            },
+            response: { status: 200, body: { status: "ok" } },
+          },
+          {
+            method: "GET",
+            url: "/api/status",
+            response: { status: 200, body: { status: "error" } },
+          },
+        ];
+
+        const selector = createResponseSelector();
+        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.body).toEqual({ status: "error" }); // Fallback
+        }
+      });
+
+      it("should be case-sensitive", () => {
+        const context: HttpRequestContext = {
+          method: "GET",
+          url: "/api/status",
+          headers: { "x-exact": "EXACT-VALUE" },
+          body: {},
+          query: {},
+        };
+
+        const mocks: ReadonlyArray<MockDefinition> = [
+          {
+            method: "GET",
+            url: "/api/status",
+            match: {
+              headers: {
+                "x-exact": { equals: "exact-value" },
+              },
+            },
+            response: { status: 200, body: { status: "ok" } },
+          },
+          {
+            method: "GET",
+            url: "/api/status",
+            response: { status: 200, body: { status: "error" } },
+          },
+        ];
+
+        const selector = createResponseSelector();
+        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.body).toEqual({ status: "error" }); // Fallback (case-sensitive)
+        }
+      });
+    });
+  });
 });
