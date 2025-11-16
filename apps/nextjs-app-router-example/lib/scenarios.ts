@@ -535,6 +535,208 @@ export const stringMatchingScenario: ScenaristScenario = {
 };
 
 /**
+ * Scenario: URL Matching with Native RegExp and String Strategies
+ *
+ * Demonstrates URL matching capabilities:
+ * - Native RegExp patterns for numeric IDs
+ * - String strategies (contains, startsWith, endsWith) for URL filtering
+ * - Combined matching (URL + headers)
+ */
+export const urlMatchingScenario: ScenaristScenario = {
+  id: "urlMatching",
+  name: "URL Matching Strategies",
+  description: "Tests URL matching with RegExp, string strategies, and combined criteria",
+  mocks: [
+    // Test 1: Native RegExp - Match numeric user IDs
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/users/:username",
+      match: {
+        url: /\/users\/\d+$/, // Match URLs ending with numeric ID
+      },
+      response: {
+        status: 200,
+        body: {
+          login: "user-numeric-id",
+          id: 12345,
+          name: "Numeric ID User",
+          bio: "Matched by numeric ID pattern",
+          public_repos: 42,
+          followers: 500,
+          matchedBy: "regexNumericId",
+        },
+      },
+    },
+
+    // Test 2: Contains strategy - Match URLs containing specific city
+    {
+      method: "GET",
+      url: /http:\/\/localhost:3001\/api\/weather\/v\d+\/[^/]+$/,  // RegExp for any version
+      match: {
+        url: { contains: "/london" },  // Match specific city
+      },
+      response: {
+        status: 200,
+        body: {
+          city: "Weather Match City",
+          temperature: 22,
+          conditions: "Weather route matched",
+          humidity: 55,
+          matchedBy: "containsWeather",
+        },
+      },
+    },
+
+    // Test 3: StartsWith strategy - Match API versioning
+    {
+      method: "GET",
+      url: /http:\/\/localhost:3001\/api\/weather\/v\d+\/[^/]+$/,  // RegExp for any version
+      match: {
+        url: { startsWith: "http://localhost:3001/api/weather/v2" },
+      },
+      response: {
+        status: 200,
+        body: {
+          city: "Version 2 City",
+          temperature: 25,
+          conditions: "V2 API matched",
+          humidity: 60,
+          matchedBy: "startsWithV2",
+        },
+      },
+    },
+
+    // Test 4: EndsWith strategy - Match file extensions
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/files/:filename",
+      match: {
+        url: { endsWith: ".json" },
+      },
+      response: {
+        status: 200,
+        body: {
+          type: "file",
+          name: "data.json",
+          path: "config/data.json",
+          content: "eyJrZXkiOiJ2YWx1ZSJ9", // base64: {"key":"value"}
+          matchedBy: "endsWithJson",
+        },
+      },
+    },
+
+    // Test 5: Combined - URL pattern + header match
+    {
+      method: "POST",
+      url: "http://localhost:3001/api/charges",
+      match: {
+        url: /\/charges$/,
+        headers: {
+          "x-api-version": "2023-10-16",
+        },
+      },
+      response: {
+        status: 200,
+        body: {
+          id: "ch_combined123",
+          status: "succeeded",
+          amount: 2000,
+          currency: "usd",
+          matchedBy: "combinedUrlHeader",
+        },
+      },
+    },
+
+    // Test 6: Exact string match (backward compatible)
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/users/:username",
+      match: {
+        url: "http://localhost:3001/api/users/exactuser",
+      },
+      response: {
+        status: 200,
+        body: {
+          login: "exactuser",
+          id: 99999,
+          name: "Exact Match User",
+          bio: "Matched by exact URL",
+          public_repos: 10,
+          followers: 100,
+          matchedBy: "exactUrl",
+        },
+      },
+    },
+
+    // Fallback for users API
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/users/:username",
+      response: {
+        status: 200,
+        body: {
+          login: "fallback-user",
+          id: 0,
+          name: "Fallback User",
+          bio: "No URL match",
+          public_repos: 0,
+          followers: 50,
+          matchedBy: "fallback",
+        },
+      },
+    },
+
+    // Fallback for weather API
+    {
+      method: "GET",
+      url: /http:\/\/localhost:3001\/api\/weather\/v\d+\/[^/]+$/,  // RegExp for any version
+      response: {
+        status: 200,
+        body: {
+          city: "Fallback City",
+          temperature: 20,
+          conditions: "No URL match",
+          humidity: 50,
+          matchedBy: "fallback",
+        },
+      },
+    },
+
+    // Fallback for files API
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/files/:filename",
+      response: {
+        status: 200,
+        body: {
+          type: "file",
+          name: "unknown.txt",
+          path: "unknown.txt",
+          content: "",
+          matchedBy: "fallback",
+        },
+      },
+    },
+
+    // Fallback for charges API
+    {
+      method: "POST",
+      url: "http://localhost:3001/api/charges",
+      response: {
+        status: 200,
+        body: {
+          id: "ch_fallback123",
+          status: "succeeded",
+          amount: 1000,
+          currency: "usd",
+          matchedBy: "fallback",
+        },
+      },
+    },
+  ],
+};
+
+/**
  * All scenarios for registration and type-safe access
  */
 export const scenarios = {
@@ -548,4 +750,5 @@ export const scenarios = {
   checkout: checkoutScenario,
   campaignRegex: campaignRegexScenario,
   stringMatching: stringMatchingScenario,
+  urlMatching: urlMatchingScenario,
 } as const satisfies ScenaristScenarios;

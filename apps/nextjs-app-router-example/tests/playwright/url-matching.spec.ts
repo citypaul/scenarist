@@ -1,0 +1,224 @@
+/**
+ * URL Matching Strategies - ATDD Acceptance Tests
+ *
+ * These tests verify that URL matching strategies work end-to-end:
+ * - Native RegExp patterns for URL routing
+ * - String strategies (contains, startsWith, endsWith, equals) for URL matching
+ * - Combined matching (URL + headers)
+ * - Specificity-based selection
+ */
+
+import { test, expect } from "./fixtures";
+
+test.describe("URL Matching Strategies - ATDD", () => {
+  test.describe.configure({ mode: "serial" });
+
+  /**
+   * Test 1: Native RegExp - Numeric ID Filtering
+   *
+   * Scenario mock matches when URL ends with numeric ID:
+   * - Match: { url: /\/users\/\d+$/ }
+   *
+   * Should match:
+   * - '/api/users/123' (ends with digits)
+   *
+   * Should NOT match:
+   * - '/api/users/octocat' (ends with string, not numeric)
+   */
+  test("should match URL with numeric ID using native RegExp", async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, "urlMatching");
+
+    // Navigate with numeric user ID
+    await page.goto("/url-matching?test=numericId&userId=123");
+
+    // Verify numeric ID match
+    await expect(page.getByText("Matched By: regexNumericId")).toBeVisible();
+    await expect(page.getByText("Login: user-numeric-id")).toBeVisible();
+    await expect(page.getByText("Followers: 500")).toBeVisible();
+  });
+
+  test("should NOT match non-numeric ID (fallback)", async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, "urlMatching");
+
+    // Navigate with non-numeric user ID
+    await page.goto("/url-matching?test=numericId&userId=octocat");
+
+    // Should fall back
+    await expect(page.getByText("Matched By: fallback")).toBeVisible();
+    await expect(page.getByText("Login: fallback-user")).toBeVisible();
+  });
+
+  /**
+   * Test 2: Contains Strategy - URLs containing substring
+   *
+   * Scenario mock matches when URL contains '/london':
+   * - Match: { url: { contains: '/london' } }
+   *
+   * Should match:
+   * - URLs containing '/london'
+   *
+   * Should NOT match:
+   * - URLs without '/london' substring
+   */
+  test("should match URL containing substring using contains strategy", async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, "urlMatching");
+
+    // Navigate with city that matches contains pattern
+    await page.goto("/url-matching?test=contains&city=london");
+
+    // Verify contains match
+    await expect(page.getByText("Matched By: containsWeather")).toBeVisible();
+    await expect(page.getByText("City: Weather Match City")).toBeVisible();
+    await expect(page.getByText("Temperature: 22")).toBeVisible();
+  });
+
+  /**
+   * Test 3: StartsWith Strategy - API Versioning
+   *
+   * Scenario mock matches when URL starts with v2:
+   * - Match: { url: { startsWith: 'http://localhost:3001/api/weather/v2' } }
+   *
+   * Should match:
+   * - v2 API URLs
+   *
+   * Should NOT match:
+   * - v1 API URLs
+   */
+  test("should match v2 API URL using startsWith strategy", async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, "urlMatching");
+
+    // Navigate with v2 version
+    await page.goto("/url-matching?test=startsWith&version=v2&city=newyork");
+
+    // Verify v2 match
+    await expect(page.getByText("Matched By: startsWithV2")).toBeVisible();
+    await expect(page.getByText("City: Version 2 City")).toBeVisible();
+  });
+
+  test("should NOT match v1 API URL (fallback)", async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, "urlMatching");
+
+    // Navigate with v1 version
+    await page.goto("/url-matching?test=startsWith&version=v1&city=paris");
+
+    // Should fall back
+    await expect(page.getByText("Matched By: fallback")).toBeVisible();
+    await expect(page.getByText("City: Fallback City")).toBeVisible();
+  });
+
+  /**
+   * Test 4: EndsWith Strategy - File Extension Filtering
+   *
+   * Scenario mock matches when URL ends with '.json':
+   * - Match: { url: { endsWith: '.json' } }
+   *
+   * Should match:
+   * - URLs ending with .json
+   *
+   * Should NOT match:
+   * - URLs ending with .txt or other extensions
+   */
+  test("should match .json file extension using endsWith strategy", async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, "urlMatching");
+
+    // Navigate with .json file
+    await page.goto("/url-matching?test=endsWith&filename=data.json");
+
+    // Verify .json match
+    await expect(page.getByText("Matched By: endsWithJson")).toBeVisible();
+    await expect(page.getByText("Name: data.json")).toBeVisible();
+    await expect(page.getByText("Type: file")).toBeVisible();
+  });
+
+  test("should NOT match non-.json file (fallback)", async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, "urlMatching");
+
+    // Navigate with .txt file
+    await page.goto("/url-matching?test=endsWith&filename=readme.txt");
+
+    // Should fall back
+    await expect(page.getByText("Matched By: fallback")).toBeVisible();
+    await expect(page.getByText("Name: unknown.txt")).toBeVisible();
+  });
+
+  /**
+   * Test 5: Combined Matching - URL Pattern + Header
+   *
+   * Scenario mock matches when BOTH URL and header match:
+   * - Match: { url: /\/charges$/, headers: { 'x-api-version': '2023-10-16' } }
+   *
+   * Should match when both conditions met
+   * Should NOT match when only URL matches (header mismatch)
+   */
+  test("should match when both URL and header match", async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, "urlMatching");
+
+    // Navigate with matching header
+    await page.goto("/url-matching?test=combined&apiVersion=2023-10-16");
+
+    // Verify combined match
+    await expect(page.getByText("Matched By: combinedUrlHeader")).toBeVisible();
+    await expect(page.getByText("Amount: 2000")).toBeVisible();
+  });
+
+  test("should NOT match when header doesn't match (fallback)", async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, "urlMatching");
+
+    // Navigate with non-matching header
+    await page.goto("/url-matching?test=combined&apiVersion=2022-11-15");
+
+    // Should fall back
+    await expect(page.getByText("Matched By: fallback")).toBeVisible();
+    await expect(page.getByText("Amount: 1000")).toBeVisible();
+  });
+
+  /**
+   * Test 6: Exact URL Match (Backward Compatible)
+   *
+   * Scenario mock matches exact URL string:
+   * - Match: { url: 'http://localhost:3001/api/users/exactuser' }
+   *
+   * Should match only the exact URL
+   */
+  test("should match exact URL string", async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, "urlMatching");
+
+    // Navigate with exact user
+    await page.goto("/url-matching?test=exact&userId=exactuser");
+
+    // Verify exact match
+    await expect(page.getByText("Matched By: exactUrl")).toBeVisible();
+    await expect(page.getByText("Login: exactuser")).toBeVisible();
+    await expect(page.getByText("Followers: 100")).toBeVisible();
+  });
+});
