@@ -12,7 +12,12 @@
       "Bash(gh issue view:*)",
       "Bash(pnpm test:*)",
       "Bash(pnpm exec playwright test:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pkill:*)",
+      "Bash(xargs cat:*)",
+      "Bash(gh pr view:*)",
+      "Bash(pnpm exec vitest:*)"
     ],
     "deny": [],
     "ask": []

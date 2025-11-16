@@ -335,29 +335,18 @@ const matchesValue = (requestValue: string, criteriaValue: MatchValue): boolean 
 
   // Strategy object - check which strategy is defined
   // (Zod schema ensures exactly one strategy is present)
-
   if (criteriaValue.equals !== undefined) {
     return requestValue === criteriaValue.equals;
-  }
-
-  if (criteriaValue.contains !== undefined) {
+  } else if (criteriaValue.contains !== undefined) {
     return requestValue.includes(criteriaValue.contains);
-  }
-
-  if (criteriaValue.startsWith !== undefined) {
+  } else if (criteriaValue.startsWith !== undefined) {
     return requestValue.startsWith(criteriaValue.startsWith);
-  }
-
-  if (criteriaValue.endsWith !== undefined) {
+  } else if (criteriaValue.endsWith !== undefined) {
     return requestValue.endsWith(criteriaValue.endsWith);
+  } else {
+    // Must be regex (Zod ensures exactly one strategy is present)
+    return matchesRegex(requestValue, criteriaValue.regex!);
   }
-
-  if (criteriaValue.regex !== undefined) {
-    return matchesRegex(requestValue, criteriaValue.regex);
-  }
-
-  // Should never reach here due to Zod validation
-  return false;
 };
 
 const matchesHeaders = (
