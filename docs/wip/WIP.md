@@ -67,7 +67,11 @@ Implement regex support for match criteria in Scenarist, enabling pattern matchi
 
 ## Blockers
 
-None currently
+**CRITICAL: Documentation vs Implementation Mismatch**
+- ❌ `capabilities.mdx` documents `contains`, `startsWith`, `endsWith` that DON'T EXIST
+- Users will get Zod validation errors: "Unrecognized key(s) in object: 'contains'"
+- MatchValueSchema only supports: `string | { regex }` (NOT the other 3 strategies)
+- Issue #86 reopened to track completion
 
 ## PR Review Feedback
 
@@ -76,6 +80,7 @@ None currently
 - **Required:** Add timeout protection to prevent slow regex patterns from blocking tests
 - **Approach:** Implement timeout mechanism (default 100ms) with warning on timeout
 - **Note:** While ReDoS protection at trust boundary catches most issues, runtime timeout provides defense-in-depth
+- **Status:** DEFERRED - will add after string matching helpers implemented
 
 ## Technical Notes
 
