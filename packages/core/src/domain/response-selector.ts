@@ -315,20 +315,49 @@ const createNormalizedHeaderMap = (
 
 /**
  * Match a request value against a match criteria value.
- * Supports both exact string matching and regex pattern matching.
+ * Supports 5 matching strategies:
+ * - Plain string: exact match (backward compatible)
+ * - equals: explicit exact match
+ * - contains: substring match
+ * - startsWith: prefix match
+ * - endsWith: suffix match
+ * - regex: pattern match
  *
  * @param requestValue - The actual value from the request
- * @param criteriaValue - The expected value (string or regex pattern)
+ * @param criteriaValue - The expected value (string or strategy object)
  * @returns true if values match, false otherwise
  */
 const matchesValue = (requestValue: string, criteriaValue: MatchValue): boolean => {
-  // Exact string match
+  // Backward compatible: plain string = exact match
   if (typeof criteriaValue === "string") {
     return requestValue === criteriaValue;
   }
 
-  // Regex pattern match - exhaustive check (MatchValue is string | { regex })
-  return matchesRegex(requestValue, criteriaValue.regex);
+  // Strategy object - check which strategy is defined
+  // (Zod schema ensures exactly one strategy is present)
+
+  if (criteriaValue.equals !== undefined) {
+    return requestValue === criteriaValue.equals;
+  }
+
+  if (criteriaValue.contains !== undefined) {
+    return requestValue.includes(criteriaValue.contains);
+  }
+
+  if (criteriaValue.startsWith !== undefined) {
+    return requestValue.startsWith(criteriaValue.startsWith);
+  }
+
+  if (criteriaValue.endsWith !== undefined) {
+    return requestValue.endsWith(criteriaValue.endsWith);
+  }
+
+  if (criteriaValue.regex !== undefined) {
+    return matchesRegex(requestValue, criteriaValue.regex);
+  }
+
+  // Should never reach here due to Zod validation
+  return false;
 };
 
 const matchesHeaders = (
