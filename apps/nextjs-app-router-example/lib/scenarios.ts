@@ -448,7 +448,6 @@ export const stringMatchingScenario: ScenaristScenario = {
       url: "http://localhost:3001/products",
       match: {
         headers: {
-          // @ts-expect-error - Not implemented yet, will fail schema validation
           "x-campaign": { contains: "premium" },
         },
       },
@@ -467,7 +466,6 @@ export const stringMatchingScenario: ScenaristScenario = {
       url: "http://localhost:3001/api-keys",
       match: {
         headers: {
-          // @ts-expect-error - Not implemented yet, will fail schema validation
           "x-api-key": { startsWith: "sk_" },
         },
       },
@@ -487,7 +485,6 @@ export const stringMatchingScenario: ScenaristScenario = {
       url: "http://localhost:3001/users",
       match: {
         query: {
-          // @ts-expect-error - Not implemented yet, will fail schema validation
           email: { endsWith: "@company.com" },
         },
       },
@@ -509,7 +506,6 @@ export const stringMatchingScenario: ScenaristScenario = {
       url: "http://localhost:3001/status",
       match: {
         headers: {
-          // @ts-expect-error - Not implemented yet, will fail schema validation
           "x-exact": { equals: "exact-value" },
         },
       },

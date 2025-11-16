@@ -56,7 +56,7 @@ test.describe("String Matching Strategies - ATDD", () => {
     // Verify premium products are returned
     await expect(page.getByText("Matched By: contains")).toBeVisible();
     await expect(page.getByText("£99.99")).toBeVisible(); // Premium price
-    await expect(page.getByText("Tier: premium")).toBeVisible();
+    await expect(page.getByText("Tier: premium").first()).toBeVisible();
 
     // Verify it's the contains mock, not the fallback
     const rawResponse = page.locator("details summary");
@@ -77,7 +77,7 @@ test.describe("String Matching Strategies - ATDD", () => {
 
     // Should fall back to standard products (no match)
     await expect(page.getByText("Matched By: fallback")).toBeVisible();
-    await expect(page.getByText("Tier: standard")).toBeVisible();
+    await expect(page.getByText("Tier: standard").first()).toBeVisible();
   });
 
   /**
@@ -153,8 +153,8 @@ test.describe("String Matching Strategies - ATDD", () => {
 
     // Verify company users are returned
     await expect(page.getByText("Matched By: endsWith")).toBeVisible();
-    await expect(page.getByText("john@company.com")).toBeVisible();
-    await expect(page.getByText("jane@company.com")).toBeVisible();
+    await expect(page.getByText("john@company.com", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("jane@company.com", { exact: true }).first()).toBeVisible();
   });
 
   test("should NOT match when query param doesn't end with suffix", async ({
@@ -199,7 +199,7 @@ test.describe("String Matching Strategies - ATDD", () => {
     // Verify exact match response
     await expect(page.getByText("Matched By: equals")).toBeVisible();
     await expect(page.getByText("Status: ok")).toBeVisible();
-    await expect(page.getByText("Exact match successful")).toBeVisible();
+    await expect(page.getByText("Exact match successful").first()).toBeVisible();
   });
 
   test("should NOT match when header value is not exact", async ({

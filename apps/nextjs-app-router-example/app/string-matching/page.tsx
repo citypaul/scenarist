@@ -8,18 +8,27 @@
  * Expected to fail until Phase 2 implementation is complete.
  */
 
+import { headers } from "next/headers";
+import { scenarist } from "@/lib/scenarist";
+
 type Props = {
-  searchParams: {
+  searchParams: Promise<{
     strategy?: string;
     campaign?: string;
     apiKey?: string;
     email?: string;
     exact?: string;
-  };
+  }>;
 };
 
 export default async function StringMatchingPage({ searchParams }: Props) {
-  const { strategy, campaign, apiKey, email, exact } = searchParams;
+  const { strategy, campaign, apiKey, email, exact } = await searchParams;
+
+  // Get test ID headers for MSW scenario lookup
+  const headersList = await headers();
+  const mockRequest = new Request("http://localhost:3002", {
+    headers: headersList,
+  });
 
   let result: any = null;
   let error: string | null = null;
@@ -30,6 +39,7 @@ export default async function StringMatchingPage({ searchParams }: Props) {
         // Test contains strategy - header value contains 'premium'
         const response = await fetch("http://localhost:3001/products", {
           headers: {
+            ...scenarist.getHeaders(mockRequest),
             "x-campaign": campaign || "",
           },
         });
@@ -41,6 +51,7 @@ export default async function StringMatchingPage({ searchParams }: Props) {
         // Test startsWith strategy - header value starts with 'sk_'
         const response = await fetch("http://localhost:3001/api-keys", {
           headers: {
+            ...scenarist.getHeaders(mockRequest),
             "x-api-key": apiKey || "",
           },
         });
@@ -51,7 +62,10 @@ export default async function StringMatchingPage({ searchParams }: Props) {
       case "endsWith": {
         // Test endsWith strategy - query param ends with '@company.com'
         const response = await fetch(
-          `http://localhost:3001/users?email=${email || ""}`
+          `http://localhost:3001/users?email=${email || ""}`,
+          {
+            headers: scenarist.getHeaders(mockRequest),
+          }
         );
         result = await response.json();
         break;
@@ -61,6 +75,7 @@ export default async function StringMatchingPage({ searchParams }: Props) {
         // Test equals strategy - header value exactly matches
         const response = await fetch("http://localhost:3001/status", {
           headers: {
+            ...scenarist.getHeaders(mockRequest),
             "x-exact": exact || "",
           },
         });
