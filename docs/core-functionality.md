@@ -8,6 +8,8 @@ This document explains Scenarist's core domain logic, independent of any specifi
 - [Core Concepts](#core-concepts)
 - [Scenario Definitions](#scenario-definitions)
 - [Mock Definitions](#mock-definitions)
+  - [URL Patterns](#url-patterns)
+  - [Response Structure](#response-structure)
 - [Dynamic Response System](#dynamic-response-system)
   - [Request Content Matching](#request-content-matching)
   - [Specificity-Based Selection](#specificity-based-selection)
@@ -127,7 +129,16 @@ const paymentSuccess: ScenaristScenario = {
 
 ### URL Patterns
 
-Scenarist supports dynamic URL patterns using MSW syntax:
+**Status:** ✅ Implemented (Phase 2.5)
+
+Scenarist supports two types of URL handling:
+
+1. **Routing Patterns** - Define which URLs a mock can intercept
+2. **URL Matching** - Match specific URL characteristics for conditional responses
+
+#### Routing Patterns
+
+The `url` field supports dynamic URL patterns using MSW syntax for routing:
 
 ```typescript
 // Exact match
@@ -139,6 +150,121 @@ url: 'https://api.example.com/users/:userId/posts/:postId'
 
 // Wildcards
 url: 'https://api.example.com/users/*'
+
+// Native RegExp patterns (Phase 2.5)
+url: /\/users\/\d+/  // Matches /users/123, /users/456, etc.
+
+// Example: This RegExp would match all these requests:
+// - DELETE http://localhost:8080/posts/
+// - DELETE https://backend.dev/user/posts/
+url: /\/posts\//
+```
+
+**Key Point:** The `url` field determines **which requests** the mock can intercept (routing), not which requests it will actually respond to (that's what `match.url` is for).
+
+**Important:** Unlike paths, regular expressions use **weak comparison, supporting partial matches** (MSW behavior). All request URLs that match the expression will be captured, regardless of their origin. If you need origin-specific routing, use string patterns with full URLs.
+
+#### URL Matching (Phase 2.5)
+
+Once a routing pattern matches, you can use `match.url` to conditionally respond based on URL characteristics:
+
+**1. Native RegExp Matching:**
+```typescript
+{
+  method: 'GET',
+  url: 'https://api.example.com/users/:username',  // Routing: any username
+  match: {
+    url: /\/users\/\d+$/  // Matching: only numeric IDs get this response
+  },
+  response: { status: 200, body: { type: 'numeric-user' } }
+}
+```
+
+**2. String Matching Strategies:**
+```typescript
+// Contains - URL contains substring
+{
+  method: 'GET',
+  url: 'https://api.example.com/weather/:city',
+  match: {
+    url: { contains: '/london' }  // Matches any URL containing '/london'
+  },
+  response: { status: 200, body: { city: 'London' } }
+}
+
+// StartsWith - URL starts with prefix
+{
+  method: 'GET',
+  url: 'https://api.example.com/weather/:version/:city',
+  match: {
+    url: { startsWith: 'https://api.example.com/weather/v2' }  // Only v2 API
+  },
+  response: { status: 200, body: { version: 2 } }
+}
+
+// EndsWith - URL ends with suffix
+{
+  method: 'GET',
+  url: 'https://api.example.com/files/:filename',
+  match: {
+    url: { endsWith: '.json' }  // Only JSON files
+  },
+  response: { status: 200, body: { type: 'json-file' } }
+}
+
+// Equals - Exact string match (backward compatible)
+{
+  method: 'GET',
+  url: 'https://api.example.com/users/:username',
+  match: {
+    url: 'https://api.example.com/users/exactuser'  // Exact URL only
+  },
+  response: { status: 200, body: { user: 'exact' } }
+}
+```
+
+**Routing vs. Matching Example:**
+```typescript
+const mocks = [
+  // Routing: Intercepts ALL /users/:id requests
+  // Matching: Only responds when ID is numeric
+  {
+    method: 'GET',
+    url: 'https://api.example.com/users/:id',  // Routing pattern
+    match: {
+      url: /\/users\/\d+$/  // URL matching condition
+    },
+    response: { status: 200, body: { type: 'numeric' } }
+  },
+
+  // Fallback: Responds when routing matches but URL matching doesn't
+  {
+    method: 'GET',
+    url: 'https://api.example.com/users/:id',
+    response: { status: 200, body: { type: 'other' } }
+  }
+];
+
+// GET /users/123   → First mock (numeric ID matches regex)
+// GET /users/alice → Second mock (fallback, regex doesn't match)
+```
+
+**How the resolved URL works:**
+- For exact URLs: `match.url` compares against the literal URL string
+- For path params/wildcards: `match.url` compares against the **resolved URL** (path params replaced with actual values)
+
+Example:
+```typescript
+// Routing pattern: /users/:id
+// Request: GET /users/123
+// Resolved URL: /users/123  ← This is what match.url tests against
+
+{
+  url: 'https://api.example.com/users/:id',  // Routing: matches /users/123
+  match: {
+    url: /\/users\/\d+$/  // Matching: tests against resolved "/users/123"
+  }
+}
 ```
 
 ### Response Structure
