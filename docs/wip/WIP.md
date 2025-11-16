@@ -17,13 +17,17 @@ Implement regex support for match criteria in Scenarist, enabling pattern matchi
 
 ## Current Focus
 
-**Phase 1: Schema Definition with ReDoS Protection** - ✅ COMPLETE
+**Phase 2: String Matching Functions** - 🔜 NEXT
 
-**Status**: Complete
+**Status**: Ready to start
 
-**Tests Passing**: ✅ 239/239 core tests
+**Tests Passing**: ✅ 240/240 core tests (on main)
 
-**Last Commit**: Runtime validation at trust boundary
+**Last PR**: #96 merged - Regex support with ReDoS protection
+
+**Current Task**: Implement equals/contains/startsWith/endsWith string matching
+
+**Note**: Timeout implementation deferred to after Phase 2 completion
 
 **What Was Completed:**
 - Created SerializedRegexSchema with ReDoS protection
@@ -55,9 +59,24 @@ Implement regex support for match criteria in Scenarist, enabling pattern matchi
    - Commit any improvements
    - Review Phase 2 plan in detail
 
+3. **Add Timeout to matchesRegex()** - PR review requirement (DEFERRED)
+   - Write failing test for timeout scenario
+   - Implement timeout mechanism (default 100ms)
+   - Add warning log when timeout occurs
+   - Verify defense-in-depth with ReDoS protection
+
 ## Blockers
 
-None currently
+None currently - ready to implement string matching functions
+
+## PR Review Feedback
+
+**From PR #96 Review:**
+- ❌ No timeout implementation found in `matchesRegex()`
+- **Required:** Add timeout protection to prevent slow regex patterns from blocking tests
+- **Approach:** Implement timeout mechanism (default 100ms) with warning on timeout
+- **Note:** While ReDoS protection at trust boundary catches most issues, runtime timeout provides defense-in-depth
+- **Status:** DEFERRED - will add after string matching helpers implemented
 
 ## Technical Notes
 
