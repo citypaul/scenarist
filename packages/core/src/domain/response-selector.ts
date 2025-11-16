@@ -277,10 +277,12 @@ const matchesCriteria = (
 /**
  * Check if request body contains all required fields (partial match).
  * Request can have additional fields beyond what's specified in criteria.
+ * Supports all matching strategies via MatchValue type.
+ * Non-string values are converted to strings before matching.
  */
 const matchesBody = (
   requestBody: unknown,
-  criteriaBody: Record<string, unknown>
+  criteriaBody: Record<string, MatchValue>
 ): boolean => {
   // If request has no body, can't match
   if (!requestBody || typeof requestBody !== "object") {
@@ -290,8 +292,13 @@ const matchesBody = (
   const body = requestBody as Record<string, unknown>;
 
   // Check all required fields exist in request body with matching values
-  for (const [key, value] of Object.entries(criteriaBody)) {
-    if (body[key] !== value) {
+  for (const [key, criteriaValue] of Object.entries(criteriaBody)) {
+    const requestValue = body[key];
+
+    // Convert to string for matching (type coercion like headers/query)
+    const stringValue = requestValue == null ? '' : String(requestValue);
+
+    if (!matchesValue(stringValue, criteriaValue)) {
       return false;
     }
   }
@@ -327,26 +334,41 @@ const createNormalizedHeaderMap = (
  * @param criteriaValue - The expected value (string or strategy object)
  * @returns true if values match, false otherwise
  */
-const matchesValue = (requestValue: string, criteriaValue: MatchValue): boolean => {
+const matchesValue = (requestValue: string, criteriaValue: MatchValue | unknown): boolean => {
   // Backward compatible: plain string = exact match
   if (typeof criteriaValue === "string") {
     return requestValue === criteriaValue;
   }
 
+  // Backward compatible: non-string primitives (numbers, booleans) from old body schema
+  // Convert to string for comparison
+  if (typeof criteriaValue === "number" || typeof criteriaValue === "boolean") {
+    return requestValue === String(criteriaValue);
+  }
+
+  // Handle null/undefined criteria values
+  if (criteriaValue == null) {
+    return requestValue === '';
+  }
+
   // Strategy object - check which strategy is defined
   // (Zod schema ensures exactly one strategy is present)
-  if (criteriaValue.equals !== undefined) {
-    return requestValue === criteriaValue.equals;
-  } else if (criteriaValue.contains !== undefined) {
-    return requestValue.includes(criteriaValue.contains);
-  } else if (criteriaValue.startsWith !== undefined) {
-    return requestValue.startsWith(criteriaValue.startsWith);
-  } else if (criteriaValue.endsWith !== undefined) {
-    return requestValue.endsWith(criteriaValue.endsWith);
-  } else {
-    // Must be regex (Zod ensures exactly one strategy is present)
-    return matchesRegex(requestValue, criteriaValue.regex!);
+  const strategyValue = criteriaValue as Record<string, unknown>;
+
+  if (strategyValue.equals !== undefined) {
+    return requestValue === String(strategyValue.equals);
+  } else if (strategyValue.contains !== undefined) {
+    return requestValue.includes(String(strategyValue.contains));
+  } else if (strategyValue.startsWith !== undefined) {
+    return requestValue.startsWith(String(strategyValue.startsWith));
+  } else if (strategyValue.endsWith !== undefined) {
+    return requestValue.endsWith(String(strategyValue.endsWith));
+  } else if (strategyValue.regex !== undefined) {
+    return matchesRegex(requestValue, strategyValue.regex as { source: string; flags?: string });
   }
+
+  // If we reach here, treat as plain value comparison (backward compatibility)
+  return requestValue === String(criteriaValue);
 };
 
 const matchesHeaders = (

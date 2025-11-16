@@ -51,7 +51,7 @@ export const MatchValueSchema = z.union([
 export type MatchValue = z.infer<typeof MatchValueSchema>;
 
 export const ScenaristMatchSchema = z.object({
-  body: z.record(z.string(), z.unknown()).optional(),
+  body: z.record(z.string(), MatchValueSchema).optional(),
   headers: z.record(z.string(), MatchValueSchema).optional(),
   query: z.record(z.string(), MatchValueSchema).optional(),
 });

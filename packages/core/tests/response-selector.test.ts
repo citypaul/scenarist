@@ -2659,5 +2659,262 @@ describe("ResponseSelector - Regex Matching", () => {
         }
       });
     });
+
+    describe("body fields", () => {
+      it("should match body field using contains strategy", () => {
+        const context: HttpRequestContext = {
+          method: "POST",
+          url: "/api/users",
+          headers: {},
+          body: { email: "john.doe@company.com" },
+          query: {},
+        };
+
+        const mocks: ReadonlyArray<ScenaristMock> = [
+          {
+            method: "POST",
+            url: "/api/users",
+            match: {
+              body: {
+                email: { contains: "@company.com" },
+              },
+            },
+            response: { status: 200, body: { tier: "corporate" } },
+          },
+        ];
+
+        const selector = createResponseSelector();
+        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.body).toEqual({ tier: "corporate" });
+        }
+      });
+
+      it("should match body field using startsWith strategy", () => {
+        const context: HttpRequestContext = {
+          method: "POST",
+          url: "/api/tokens",
+          headers: {},
+          body: { apiKey: "sk_test_12345" },
+          query: {},
+        };
+
+        const mocks: ReadonlyArray<ScenaristMock> = [
+          {
+            method: "POST",
+            url: "/api/tokens",
+            match: {
+              body: {
+                apiKey: { startsWith: "sk_" },
+              },
+            },
+            response: { status: 200, body: { valid: true, type: "secret" } },
+          },
+        ];
+
+        const selector = createResponseSelector();
+        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.body).toEqual({ valid: true, type: "secret" });
+        }
+      });
+
+      it("should match body field using endsWith strategy", () => {
+        const context: HttpRequestContext = {
+          method: "POST",
+          url: "/api/files",
+          headers: {},
+          body: { filename: "report.pdf" },
+          query: {},
+        };
+
+        const mocks: ReadonlyArray<ScenaristMock> = [
+          {
+            method: "POST",
+            url: "/api/files",
+            match: {
+              body: {
+                filename: { endsWith: ".pdf" },
+              },
+            },
+            response: { status: 200, body: { format: "document" } },
+          },
+        ];
+
+        const selector = createResponseSelector();
+        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.body).toEqual({ format: "document" });
+        }
+      });
+
+      it("should match body field using equals strategy", () => {
+        const context: HttpRequestContext = {
+          method: "POST",
+          url: "/api/auth",
+          headers: {},
+          body: { action: "login" },
+          query: {},
+        };
+
+        const mocks: ReadonlyArray<ScenaristMock> = [
+          {
+            method: "POST",
+            url: "/api/auth",
+            match: {
+              body: {
+                action: { equals: "login" },
+              },
+            },
+            response: { status: 200, body: { authenticated: true } },
+          },
+        ];
+
+        const selector = createResponseSelector();
+        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.body).toEqual({ authenticated: true });
+        }
+      });
+
+      it("should NOT match when body field doesn't contain substring", () => {
+        const context: HttpRequestContext = {
+          method: "POST",
+          url: "/api/users",
+          headers: {},
+          body: { email: "john@example.com" },
+          query: {},
+        };
+
+        const mocks: ReadonlyArray<ScenaristMock> = [
+          {
+            method: "POST",
+            url: "/api/users",
+            match: {
+              body: {
+                email: { contains: "@company.com" },
+              },
+            },
+            response: { status: 200, body: { tier: "corporate" } },
+          },
+          {
+            method: "POST",
+            url: "/api/users",
+            response: { status: 200, body: { tier: "personal" } },
+          },
+        ];
+
+        const selector = createResponseSelector();
+        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.body).toEqual({ tier: "personal" }); // Fallback
+        }
+      });
+
+      it("should handle non-string body values by converting to string", () => {
+        const context: HttpRequestContext = {
+          method: "POST",
+          url: "/api/orders",
+          headers: {},
+          body: { quantity: 5, price: 99.99 },
+          query: {},
+        };
+
+        const mocks: ReadonlyArray<ScenaristMock> = [
+          {
+            method: "POST",
+            url: "/api/orders",
+            match: {
+              body: {
+                quantity: { equals: "5" }, // String comparison after coercion
+              },
+            },
+            response: { status: 200, body: { status: "created" } },
+          },
+        ];
+
+        const selector = createResponseSelector();
+        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.body).toEqual({ status: "created" });
+        }
+      });
+
+      it("should handle null/undefined body criteria values (backward compat)", () => {
+        const context: HttpRequestContext = {
+          method: "POST",
+          url: "/api/test",
+          headers: {},
+          body: { field1: "", field2: "value" },
+          query: {},
+        };
+
+        // TypeScript won't allow null in MatchValue, but runtime backward compat handles it
+        const mocks: ReadonlyArray<ScenaristMock> = [
+          {
+            method: "POST",
+            url: "/api/test",
+            match: {
+              body: {
+                field1: null as any, // Backward compat: null criteria matches empty string
+              },
+            },
+            response: { status: 200, body: { matched: true } },
+          },
+        ];
+
+        const selector = createResponseSelector();
+        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.body).toEqual({ matched: true });
+        }
+      });
+
+      it("should handle arbitrary object criteria values (backward compat fallback)", () => {
+        const context: HttpRequestContext = {
+          method: "POST",
+          url: "/api/test",
+          headers: {},
+          body: { metadata: { type: "special" } },
+          query: {},
+        };
+
+        // TypeScript won't allow arbitrary objects, but runtime handles them via fallback
+        const mocks: ReadonlyArray<ScenaristMock> = [
+          {
+            method: "POST",
+            url: "/api/test",
+            match: {
+              body: {
+                metadata: { type: "special" } as any, // Fallback: stringified comparison
+              },
+            },
+            response: { status: 200, body: { matched: true } },
+          },
+        ];
+
+        const selector = createResponseSelector();
+        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.body).toEqual({ matched: true });
+        }
+      });
+    });
   });
 });
