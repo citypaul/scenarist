@@ -53,24 +53,15 @@ type Charge = {
 
 type TestResult = User | Weather | FileInfo | Charge;
 
-export default async function URLMatchingPage({
-  searchParams,
-}: {
-  readonly searchParams: Promise<{ [key: string]: string | undefined }>;
-}) {
-  const params = await searchParams;
-  const test = params.test || "numericId";
+type FetchResult =
+  | { readonly success: true; readonly data: TestResult }
+  | { readonly success: false; readonly error: string };
 
-  // Get Scenarist headers for test ID propagation
-  const headersList = await headers();
-  const mockRequest = new Request("http://localhost:3001", {
-    headers: headersList,
-  });
-  const scenaristHeaders = scenarist.getHeaders(mockRequest);
-
-  let result: TestResult | null = null;
-  let error: string | null = null;
-
+const fetchTestData = async (
+  test: string,
+  params: Record<string, string | undefined>,
+  scenaristHeaders: Record<string, string>
+): Promise<FetchResult> => {
   try {
     switch (test) {
       case "numericId":
@@ -84,8 +75,8 @@ export default async function URLMatchingPage({
             cache: "no-store",
           }
         );
-        result = (await response.json()) as User;
-        break;
+        const data = (await response.json()) as User;
+        return { success: true, data };
       }
 
       case "contains": {
@@ -98,8 +89,8 @@ export default async function URLMatchingPage({
             cache: "no-store",
           }
         );
-        result = (await response.json()) as Weather;
-        break;
+        const data = (await response.json()) as Weather;
+        return { success: true, data };
       }
 
       case "startsWith": {
@@ -113,8 +104,8 @@ export default async function URLMatchingPage({
             cache: "no-store",
           }
         );
-        result = (await response.json()) as Weather;
-        break;
+        const data = (await response.json()) as Weather;
+        return { success: true, data };
       }
 
       case "endsWith": {
@@ -127,8 +118,8 @@ export default async function URLMatchingPage({
             cache: "no-store",
           }
         );
-        result = (await response.json()) as FileInfo;
-        break;
+        const data = (await response.json()) as FileInfo;
+        return { success: true, data };
       }
 
       case "combined": {
@@ -144,113 +135,134 @@ export default async function URLMatchingPage({
           body: JSON.stringify({}),
           cache: "no-store",
         });
-        result = (await response.json()) as Charge;
-        break;
+        const data = (await response.json()) as Charge;
+        return { success: true, data };
       }
 
       default:
-        error = `Unknown test type: ${test}`;
+        return { success: false, error: `Unknown test type: ${test}` };
     }
   } catch (err) {
-    error = err instanceof Error ? err.message : "Unknown error";
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Unknown error",
+    };
   }
+};
+
+export default async function URLMatchingPage({
+  searchParams,
+}: {
+  readonly searchParams: Promise<{ [key: string]: string | undefined }>;
+}) {
+  const params = await searchParams;
+  const test = params.test || "numericId";
+
+  // Get Scenarist headers for test ID propagation
+  const headersList = await headers();
+  const mockRequest = new Request("http://localhost:3001", {
+    headers: headersList,
+  });
+  const scenaristHeaders = scenarist.getHeaders(mockRequest);
+
+  const fetchResult = await fetchTestData(test, params, scenaristHeaders);
 
   return (
     <main className="p-4">
       <h1 className="text-2xl font-bold mb-4">URL Matching Test Page</h1>
       <p className="mb-4">Test: {test}</p>
 
-      {error && (
+      {!fetchResult.success && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          Error: {error}
+          Error: {fetchResult.error}
         </div>
       )}
 
-      {result && (
+      {fetchResult.success && (
         <div className="bg-white shadow rounded-lg p-6">
           <h2 className="text-xl font-semibold mb-4">Result</h2>
 
           {/* Common field: matchedBy */}
-          {"matchedBy" in result && (
+          {"matchedBy" in fetchResult.data && (
             <p className="mb-2">
-              <strong>Matched By:</strong> {result.matchedBy}
+              <strong>Matched By:</strong> {fetchResult.data.matchedBy}
             </p>
           )}
 
           {/* User fields */}
-          {"login" in result && (
+          {"login" in fetchResult.data && (
             <>
               <p className="mb-2">
-                <strong>Login:</strong> {result.login}
+                <strong>Login:</strong> {fetchResult.data.login}
               </p>
               <p className="mb-2">
-                <strong>ID:</strong> {result.id}
+                <strong>ID:</strong> {fetchResult.data.id}
               </p>
               <p className="mb-2">
-                <strong>Name:</strong> {result.name}
+                <strong>Name:</strong> {fetchResult.data.name}
               </p>
               <p className="mb-2">
-                <strong>Bio:</strong> {result.bio}
+                <strong>Bio:</strong> {fetchResult.data.bio}
               </p>
               <p className="mb-2">
-                <strong>Public Repos:</strong> {result.public_repos}
+                <strong>Public Repos:</strong> {fetchResult.data.public_repos}
               </p>
               <p className="mb-2">
-                <strong>Followers:</strong> {result.followers}
+                <strong>Followers:</strong> {fetchResult.data.followers}
               </p>
             </>
           )}
 
           {/* Weather fields */}
-          {"city" in result && (
+          {"city" in fetchResult.data && (
             <>
               <p className="mb-2">
-                <strong>City:</strong> {result.city}
+                <strong>City:</strong> {fetchResult.data.city}
               </p>
               <p className="mb-2">
-                <strong>Temperature:</strong> {result.temperature}
+                <strong>Temperature:</strong> {fetchResult.data.temperature}
               </p>
               <p className="mb-2">
-                <strong>Conditions:</strong> {result.conditions}
+                <strong>Conditions:</strong> {fetchResult.data.conditions}
               </p>
               <p className="mb-2">
-                <strong>Humidity:</strong> {result.humidity}
+                <strong>Humidity:</strong> {fetchResult.data.humidity}
               </p>
             </>
           )}
 
           {/* File fields */}
-          {"type" in result && (
+          {"type" in fetchResult.data && (
             <>
               <p className="mb-2">
-                <strong>Type:</strong> {result.type}
+                <strong>Type:</strong> {fetchResult.data.type}
               </p>
               <p className="mb-2">
-                <strong>Name:</strong> {result.name}
+                <strong>Name:</strong> {fetchResult.data.name}
               </p>
               <p className="mb-2">
-                <strong>Path:</strong> {result.path}
+                <strong>Path:</strong> {fetchResult.data.path}
               </p>
               <p className="mb-2">
-                <strong>Content:</strong> {result.content}
+                <strong>Content:</strong> {fetchResult.data.content}
               </p>
             </>
           )}
 
           {/* Charge fields */}
-          {"amount" in result && (
+          {"amount" in fetchResult.data && (
             <>
               <p className="mb-2">
-                <strong>ID:</strong> {result.id}
+                <strong>ID:</strong> {fetchResult.data.id}
               </p>
               <p className="mb-2">
-                <strong>Status:</strong> {result.status}
+                <strong>Status:</strong> {fetchResult.data.status}
               </p>
               <p className="mb-2">
-                <strong>Amount:</strong> {result.amount}
+                <strong>Amount:</strong> {fetchResult.data.amount}
               </p>
               <p className="mb-2">
-                <strong>Currency:</strong> {result.currency}
+                <strong>Currency:</strong> {fetchResult.data.currency}
               </p>
             </>
           )}
@@ -261,7 +273,7 @@ export default async function URLMatchingPage({
               Raw Response
             </summary>
             <pre className="mt-2 p-4 bg-gray-100 rounded text-sm overflow-auto">
-              {JSON.stringify(result, null, 2)}
+              {JSON.stringify(fetchResult.data, null, 2)}
             </pre>
           </details>
         </div>
