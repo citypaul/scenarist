@@ -277,9 +277,9 @@ You can combine multiple match criteria. **All** criteria must pass for the mock
 
 #### String Matching Strategies
 
-**Status:** ✅ Implemented (Phase 2 - PR #96)
+**Status:** ✅ Implemented (Phase 2 - PR #98)
 
-Scenarist supports **5 matching strategies** for headers, query params, and body fields. This enables flexible pattern matching without duplicating mocks.
+Scenarist supports **6 matching modes** for headers, query params, and body fields. This enables flexible pattern matching without duplicating mocks.
 
 **1. Exact Match (Default)**
 

@@ -322,16 +322,26 @@ const createNormalizedHeaderMap = (
 
 /**
  * Match a request value against a match criteria value.
- * Supports 5 matching strategies:
- * - Plain string: exact match (backward compatible)
- * - equals: explicit exact match
- * - contains: substring match
- * - startsWith: prefix match
- * - endsWith: suffix match
- * - regex: pattern match
  *
- * @param requestValue - The actual value from the request
- * @param criteriaValue - The expected value (string or strategy object)
+ * Supports 6 matching modes:
+ * 1. Plain string: exact match (backward compatible)
+ * 2. { equals: 'value' }: explicit exact match
+ * 3. { contains: 'substring' }: substring match
+ * 4. { startsWith: 'prefix' }: prefix match
+ * 5. { endsWith: 'suffix' }: suffix match
+ * 6. { regex: {...} }: pattern match
+ *
+ * Type Coercion Behavior:
+ * - Non-string criterion values (number, boolean) are converted to strings before matching
+ * - null/undefined criterion values are converted to empty string ''
+ * - Request value is always expected to be a string
+ * - Strategy values within objects are converted to strings (e.g., contains: 123 → '123')
+ *
+ * This allows backward compatibility with scenarios using non-string values
+ * in body matching (e.g., { quantity: 5 } matches body.quantity = 5 or "5")
+ *
+ * @param requestValue - The actual value from the request (string)
+ * @param criteriaValue - The expected value (string, number, boolean, null, or strategy object)
  * @returns true if values match, false otherwise
  */
 const matchesValue = (requestValue: string, criteriaValue: MatchValue | unknown): boolean => {

@@ -109,8 +109,9 @@ Scenarist provides 20+ powerful features for E2E testing. All capabilities are f
 - Match requests based on query string parameters
 - Enables different responses for filtered requests
 
-**4. String matching strategies (5 strategies)**
-- **Exact match** (`"value"` or `{ equals: "value" }`): Default behavior
+**4. String matching (6 modes)**
+- **Plain string** (`"value"`): Exact match (backward compatible)
+- **Equals** (`{ equals: "value" }`): Explicit exact match
 - **Contains** (`{ contains: "substring" }`): Substring matching
 - **Starts with** (`{ startsWith: "prefix" }`): Prefix matching
 - **Ends with** (`{ endsWith: "suffix" }`): Suffix matching
