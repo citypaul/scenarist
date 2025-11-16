@@ -213,6 +213,7 @@ const selectResponseFromMock = (
  * Higher score = more specific match.
  *
  * Scoring:
+ * - URL match = +1 point
  * - Each body field = +1 point
  * - Each header = +1 point
  * - Each query param = +1 point
@@ -220,11 +221,16 @@ const selectResponseFromMock = (
  * Example:
  * { body: { itemType: 'premium' } } = 1 point
  * { body: { itemType: 'premium', quantity: 5 }, headers: { 'x-tier': 'gold' } } = 3 points
+ * { url: '/api/products', body: { itemType: 'premium' } } = 2 points
  */
 const calculateSpecificity = (
   criteria: NonNullable<ScenaristMock["match"]>
 ): number => {
   let score = 0;
+
+  if (criteria.url) {
+    score += 1;
+  }
 
   if (criteria.body) {
     score += Object.keys(criteria.body).length;
@@ -249,6 +255,13 @@ const matchesCriteria = (
   context: HttpRequestContext,
   criteria: NonNullable<ScenaristMock["match"]>
 ): boolean => {
+  // Check URL match (exact match or pattern)
+  if (criteria.url) {
+    if (!matchesValue(context.url, criteria.url)) {
+      return false;
+    }
+  }
+
   // Check body match (partial match)
   if (criteria.body) {
     if (!matchesBody(context.body, criteria.body)) {
@@ -323,13 +336,14 @@ const createNormalizedHeaderMap = (
 /**
  * Match a request value against a match criteria value.
  *
- * Supports 6 matching modes:
+ * Supports 7 matching modes:
  * 1. Plain string: exact match (backward compatible)
- * 2. { equals: 'value' }: explicit exact match
- * 3. { contains: 'substring' }: substring match
- * 4. { startsWith: 'prefix' }: prefix match
- * 5. { endsWith: 'suffix' }: suffix match
- * 6. { regex: {...} }: pattern match
+ * 2. Native RegExp: pattern match (e.g., /\/users\/\d+/)
+ * 3. { equals: 'value' }: explicit exact match
+ * 4. { contains: 'substring' }: substring match
+ * 5. { startsWith: 'prefix' }: prefix match
+ * 6. { endsWith: 'suffix' }: suffix match
+ * 7. { regex: {...} }: pattern match (serialized form)
  *
  * Type Coercion Behavior:
  * - Non-string criterion values (number, boolean) are converted to strings before matching
@@ -341,12 +355,20 @@ const createNormalizedHeaderMap = (
  * in body matching (e.g., { quantity: 5 } matches body.quantity = 5 or "5")
  *
  * @param requestValue - The actual value from the request (string)
- * @param criteriaValue - The expected value (string, number, boolean, null, or strategy object)
+ * @param criteriaValue - The expected value (string, RegExp, number, boolean, null, or strategy object)
  * @returns true if values match, false otherwise
  */
 const matchesValue = (requestValue: string, criteriaValue: MatchValue | unknown): boolean => {
   if (typeof criteriaValue === "string") {
     return requestValue === criteriaValue;
+  }
+
+  // Native RegExp support (ADR-0016)
+  if (criteriaValue instanceof RegExp) {
+    return matchesRegex(requestValue, {
+      source: criteriaValue.source,
+      flags: criteriaValue.flags,
+    });
   }
 
   if (typeof criteriaValue === "number" || typeof criteriaValue === "boolean") {
