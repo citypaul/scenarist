@@ -427,6 +427,118 @@ export const campaignRegexScenario: ScenaristScenario = {
 };
 
 /**
+ * String Matching Strategies Scenario - Phase 2: ATDD
+ *
+ * Demonstrates all string matching strategies:
+ * - contains: Substring matching
+ * - startsWith: Prefix matching
+ * - endsWith: Suffix matching
+ * - equals: Explicit exact matching
+ *
+ * This scenario is designed to fail until Phase 2 implementation is complete.
+ */
+export const stringMatchingScenario: ScenaristScenario = {
+  id: "stringMatching",
+  name: "String Matching Strategies",
+  description: "Tests contains, startsWith, endsWith, and equals matching",
+  mocks: [
+    // Test 1: Contains strategy - campaign header containing 'premium'
+    {
+      method: "GET",
+      url: "http://localhost:3001/products",
+      match: {
+        headers: {
+          // @ts-expect-error - Not implemented yet, will fail schema validation
+          "x-campaign": { contains: "premium" },
+        },
+      },
+      response: {
+        status: 200,
+        body: {
+          products: buildProducts("premium"),
+          matchedBy: "contains",
+        },
+      },
+    },
+
+    // Test 2: StartsWith strategy - API key starting with 'sk_'
+    {
+      method: "GET",
+      url: "http://localhost:3001/api-keys",
+      match: {
+        headers: {
+          // @ts-expect-error - Not implemented yet, will fail schema validation
+          "x-api-key": { startsWith: "sk_" },
+        },
+      },
+      response: {
+        status: 200,
+        body: {
+          valid: true,
+          keyType: "secret",
+          matchedBy: "startsWith",
+        },
+      },
+    },
+
+    // Test 3: EndsWith strategy - email query param ending with '@company.com'
+    {
+      method: "GET",
+      url: "http://localhost:3001/users",
+      match: {
+        query: {
+          // @ts-expect-error - Not implemented yet, will fail schema validation
+          email: { endsWith: "@company.com" },
+        },
+      },
+      response: {
+        status: 200,
+        body: {
+          users: [
+            { id: 1, email: "john@company.com", role: "admin" },
+            { id: 2, email: "jane@company.com", role: "user" },
+          ],
+          matchedBy: "endsWith",
+        },
+      },
+    },
+
+    // Test 4: Equals strategy - explicit exact match
+    {
+      method: "GET",
+      url: "http://localhost:3001/status",
+      match: {
+        headers: {
+          // @ts-expect-error - Not implemented yet, will fail schema validation
+          "x-exact": { equals: "exact-value" },
+        },
+      },
+      response: {
+        status: 200,
+        body: {
+          status: "ok",
+          message: "Exact match successful",
+          matchedBy: "equals",
+        },
+      },
+    },
+
+    // Fallback: No match criteria - handles non-matching requests
+    {
+      method: "GET",
+      url: "http://localhost:3001/products",
+      response: {
+        status: 200,
+        body: {
+          products: buildProducts("standard"),
+          matchedBy: "fallback",
+        },
+      },
+    },
+  ],
+};
+
+/**
  * All scenarios for registration and type-safe access
  */
 export const scenarios = {
@@ -439,4 +551,5 @@ export const scenarios = {
   paymentLimited: paymentLimitedScenario,
   checkout: checkoutScenario,
   campaignRegex: campaignRegexScenario,
+  stringMatching: stringMatchingScenario,
 } as const satisfies ScenaristScenarios;

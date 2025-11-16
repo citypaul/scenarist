@@ -8,7 +8,10 @@
       "Bash(git push:*)",
       "Bash(gh pr create:*)",
       "Bash(git merge:*)",
-      "Bash(gh pr edit:*)"
+      "Bash(gh pr edit:*)",
+      "Bash(gh issue view:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm exec playwright test:*)"
     ],
     "deny": [],
     "ask": []
