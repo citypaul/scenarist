@@ -21,18 +21,20 @@ export const ScenaristResponseSchema = z.object({
 export type ScenaristResponse = z.infer<typeof ScenaristResponseSchema>;
 
 /**
- * Match value supports 5 matching strategies:
+ * Match value supports 6 matching strategies:
  * - Plain string: exact match (backward compatible)
  * - equals: explicit exact match
  * - contains: substring match
  * - startsWith: prefix match
  * - endsWith: suffix match
- * - regex: pattern match
+ * - regex: pattern match (serialized form)
+ * - Native RegExp: pattern match (native JavaScript RegExp object)
  *
  * Exactly ONE strategy must be defined when using object form.
  */
 export const MatchValueSchema = z.union([
   z.string(),
+  z.instanceof(RegExp),
   z.object({
     equals: z.string().optional(),
     contains: z.string().optional(),
@@ -51,6 +53,7 @@ export const MatchValueSchema = z.union([
 export type MatchValue = z.infer<typeof MatchValueSchema>;
 
 export const ScenaristMatchSchema = z.object({
+  url: MatchValueSchema.optional(),
   body: z.record(z.string(), MatchValueSchema).optional(),
   headers: z.record(z.string(), MatchValueSchema).optional(),
   query: z.record(z.string(), MatchValueSchema).optional(),
@@ -69,9 +72,20 @@ export type ScenaristSequence = z.infer<typeof ScenaristSequenceSchema>;
 export const ScenaristCaptureConfigSchema = z.record(z.string(), z.string());
 export type ScenaristCaptureConfig = z.infer<typeof ScenaristCaptureConfigSchema>;
 
+/**
+ * URL pattern supports three forms:
+ * - String: exact match, path params (/users/:id), or glob (/api/*)
+ * - Native RegExp: pattern match (e.g., /\/users\/\d+/)
+ */
+export const UrlPatternSchema = z.union([
+  z.string().min(1),
+  z.instanceof(RegExp),
+]);
+export type UrlPattern = z.infer<typeof UrlPatternSchema>;
+
 export const ScenaristMockSchema = z.object({
   method: HttpMethodSchema,
-  url: z.string().min(1),
+  url: UrlPatternSchema,
   match: ScenaristMatchSchema.optional(),
   response: ScenaristResponseSchema.optional(),
   sequence: ScenaristSequenceSchema.optional(),
