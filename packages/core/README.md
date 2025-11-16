@@ -93,27 +93,40 @@ src/
 
 Scenarist provides 20+ powerful features for E2E testing. All capabilities are framework-agnostic and available via any adapter (Express, Next.js, etc.).
 
-### Request Matching (6 capabilities)
+### Request Matching (11 capabilities)
 
 **1. Body matching (partial match)**
 - Match requests based on request body fields
 - Additional fields in request are ignored
 - Perfect for testing different payload scenarios
 
-**2. Header matching (exact match, case-insensitive)**
+**2. Header matching (case-insensitive)**
 - Match requests based on header values
 - Header names are case-insensitive
 - Ideal for user tier testing (`x-user-tier: premium`)
 
-**3. Query parameter matching (exact match)**
+**3. Query parameter matching**
 - Match requests based on query string parameters
 - Enables different responses for filtered requests
 
-**4. Combined matching (all criteria together)**
+**4. String matching (6 modes)**
+- **Plain string** (`"value"`): Exact match (backward compatible)
+- **Equals** (`{ equals: "value" }`): Explicit exact match
+- **Contains** (`{ contains: "substring" }`): Substring matching
+- **Starts with** (`{ startsWith: "prefix" }`): Prefix matching
+- **Ends with** (`{ endsWith: "suffix" }`): Suffix matching
+- **Regex** (`{ regex: { source: "pattern", flags: "i" } }`): Pattern matching with ReDoS protection
+
+**5. ReDoS protection for regex matching**
+- Validates regex patterns before execution using `redos-detector`
+- Prevents catastrophic backtracking attacks
+- Rejects unsafe patterns at scenario registration
+
+**6. Combined matching (all criteria together)**
 - Combine body + headers + query parameters
 - ALL criteria must pass for mock to apply
 
-**5. Specificity-based selection**
+**7. Specificity-based selection**
 - Most specific mock wins regardless of position
 - Calculated score: body fields + headers + query params
 - No need to carefully order your mocks
@@ -122,11 +135,23 @@ Scenarist provides 20+ powerful features for E2E testing. All capabilities are f
   - Specificity = 0 (fallback mocks): Last match wins
 - Last fallback wins enables active scenario fallbacks to override default fallbacks
 
-**6. Fallback mocks**
+**8. Fallback mocks**
 - Mocks without match criteria act as catch-all
 - Specific mocks always take precedence
 - Perfect for default responses
 - When multiple fallbacks exist, last one wins (enables override pattern)
+
+**9. Number and boolean matching**
+- Automatically stringifies number/boolean criteria values
+- Enables matching against numeric query params and body fields
+
+**10. Null matching**
+- `null` criteria matches empty string (`""`)
+- Useful for optional fields
+
+**11. Type coercion**
+- All match values converted to strings before comparison
+- Consistent behavior across headers, query params, and body
 
 ### Case-Insensitive Header Matching (RFC 2616 Compliant)
 
@@ -344,6 +369,96 @@ if (result.success) {
   console.log('Scenario activated!');
 }
 ```
+
+### String Matching Strategies
+
+Scenarist supports 5 matching strategies for headers, query params, and body fields:
+
+```typescript
+const scenario: ScenaristScenario = {
+  id: 'string-matching-examples',
+  mocks: [
+    // 1. Exact match (default)
+    {
+      method: 'GET',
+      url: '/api/products',
+      match: {
+        headers: {
+          'x-user-tier': 'premium',  // Must match exactly
+        },
+      },
+      response: { status: 200, body: { products: [] } },
+    },
+
+    // 2. Explicit exact match (same as above)
+    {
+      method: 'GET',
+      url: '/api/products',
+      match: {
+        headers: {
+          'x-user-tier': { equals: 'premium' },
+        },
+      },
+      response: { status: 200, body: { products: [] } },
+    },
+
+    // 3. Contains (substring match)
+    {
+      method: 'GET',
+      url: '/api/products',
+      match: {
+        headers: {
+          'x-campaign': { contains: 'summer' },  // Matches 'summer-sale', 'mega-summer-event', etc.
+        },
+      },
+      response: { status: 200, body: { campaign: 'summer' } },
+    },
+
+    // 4. Starts with (prefix match)
+    {
+      method: 'GET',
+      url: '/api/keys',
+      match: {
+        headers: {
+          'x-api-key': { startsWith: 'sk_' },  // Matches 'sk_test_123', 'sk_live_456', etc.
+        },
+      },
+      response: { status: 200, body: { valid: true } },
+    },
+
+    // 5. Ends with (suffix match)
+    {
+      method: 'GET',
+      url: '/api/users',
+      match: {
+        query: {
+          email: { endsWith: '@company.com' },  // Matches 'john@company.com', 'admin@company.com', etc.
+        },
+      },
+      response: { status: 200, body: { users: [] } },
+    },
+
+    // 6. Regex (pattern match with ReDoS protection)
+    {
+      method: 'GET',
+      url: '/api/products',
+      match: {
+        headers: {
+          referer: {
+            regex: {
+              source: '/premium|/vip',  // Matches any referer containing '/premium' or '/vip'
+              flags: 'i',  // Case-insensitive
+            },
+          },
+        },
+      },
+      response: { status: 200, body: { tier: 'premium' } },
+    },
+  ],
+};
+```
+
+**Security Note:** Regex patterns are validated using `redos-detector` to prevent ReDoS (Regular Expression Denial of Service) attacks. Unsafe patterns are rejected at scenario registration.
 
 ### Key Principles
 

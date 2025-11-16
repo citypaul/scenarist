@@ -8,6 +8,7 @@ import { setupStripeRoutes } from "./routes/stripe.js";
 import { setupWeatherRoutes } from "./routes/weather.js";
 import { setupCartRoutes } from "./routes/cart.js";
 import { setupFormRoutes } from "./routes/form.js";
+import { setupStringMatchingRoutes } from "./routes/string-matching.js";
 import { scenarios } from "./scenarios.js";
 
 /**
@@ -36,6 +37,7 @@ export const createApp = (): { app: Express; scenarist: ExpressScenarist<typeof 
   setupStripeRoutes(router);
   setupCartRoutes(router);
   setupFormRoutes(router);
+  setupStringMatchingRoutes(router);
   app.use(router);
 
   // Health check endpoint

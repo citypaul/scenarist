@@ -275,6 +275,142 @@ You can combine multiple match criteria. **All** criteria must pass for the mock
 }
 ```
 
+#### String Matching Strategies
+
+**Status:** ✅ Implemented (Phase 2 - PR #98)
+
+Scenarist supports **6 matching modes** for headers, query params, and body fields. This enables flexible pattern matching without duplicating mocks.
+
+**1. Exact Match (Default)**
+
+Plain string or explicit `equals` strategy:
+
+```typescript
+{
+  match: {
+    headers: {
+      'x-user-tier': 'premium'  // Must match exactly
+    }
+  }
+}
+
+// Explicit form (same behavior):
+{
+  match: {
+    headers: {
+      'x-user-tier': { equals: 'premium' }
+    }
+  }
+}
+```
+
+**2. Contains (Substring Match)**
+
+Match when field value **contains** the substring:
+
+```typescript
+{
+  match: {
+    headers: {
+      'x-campaign': { contains: 'summer' }
+    }
+  }
+}
+
+// Matches:
+// ✅ 'summer-sale'
+// ✅ 'mega-summer-event'
+// ✅ 'SUMMER' (case-sensitive)
+// ❌ 'winter-sale'
+```
+
+**3. Starts With (Prefix Match)**
+
+Match when field value **starts with** the prefix:
+
+```typescript
+{
+  match: {
+    headers: {
+      'x-api-key': { startsWith: 'sk_' }
+    }
+  }
+}
+
+// Matches:
+// ✅ 'sk_test_12345'
+// ✅ 'sk_live_67890'
+// ❌ 'pk_test_12345'
+```
+
+**4. Ends With (Suffix Match)**
+
+Match when field value **ends with** the suffix:
+
+```typescript
+{
+  match: {
+    query: {
+      email: { endsWith: '@company.com' }
+    }
+  }
+}
+
+// Matches:
+// ✅ 'john@company.com'
+// ✅ 'admin@company.com'
+// ❌ 'john@example.com'
+```
+
+**5. Regex (Pattern Match)**
+
+Match when field value **matches** the regex pattern:
+
+```typescript
+{
+  match: {
+    headers: {
+      referer: {
+        regex: {
+          source: '/premium|/vip',  // Pattern (alternation)
+          flags: 'i'  // Optional flags (case-insensitive)
+        }
+      }
+    }
+  }
+}
+
+// Matches:
+// ✅ 'https://example.com/premium/checkout'
+// ✅ 'https://example.com/vip-lounge'
+// ✅ 'https://example.com/PREMIUM' (case-insensitive with 'i' flag)
+// ❌ 'https://example.com/standard'
+```
+
+**Security:** Regex patterns are validated using `redos-detector` to prevent ReDoS attacks. Unsafe patterns are rejected at scenario registration.
+
+**Supported Flags:**
+- `i` - Case-insensitive
+- `g` - Global (allowed but has no effect in matching)
+- `m` - Multiline
+- `s` - Dot matches newline
+- `u` - Unicode
+- `v` - Unicode sets
+- `y` - Sticky (allowed but has no effect in matching)
+
+**Type Coercion:**
+All values are converted to strings before matching. This allows matching against numeric query params and body fields:
+
+```typescript
+{
+  match: {
+    query: {
+      page: { equals: '1' }  // Matches ?page=1 (number coerced to string)
+    }
+  }
+}
+```
+
 ### Specificity-Based Selection
 
 **Status:** ✅ Implemented (Phase 1)

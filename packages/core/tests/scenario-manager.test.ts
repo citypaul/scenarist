@@ -383,6 +383,118 @@ describe("ScenarioManager", () => {
           manager.registerScenario(invalidScenario);
         }).toThrow(/Invalid scenario definition for '<unknown>'/);
       });
+
+      it("should accept scenario with contains string matching strategy", () => {
+        const { manager } = createTestSetup();
+        const containsScenario: ScenarioDefinition = {
+          id: "contains-strategy",
+          name: "Contains Strategy",
+          description: "Scenario with contains matching",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/products",
+              match: {
+                headers: {
+                  "x-campaign": { contains: "premium" },
+                },
+              },
+              response: { status: 200, body: {} },
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(containsScenario);
+        }).not.toThrow();
+
+        const registered = manager.getScenarioById("contains-strategy");
+        expect(registered).toBeDefined();
+      });
+
+      it("should accept scenario with startsWith string matching strategy", () => {
+        const { manager } = createTestSetup();
+        const startsWithScenario: ScenarioDefinition = {
+          id: "startsWith-strategy",
+          name: "StartsWith Strategy",
+          description: "Scenario with startsWith matching",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/keys",
+              match: {
+                headers: {
+                  "x-api-key": { startsWith: "sk_" },
+                },
+              },
+              response: { status: 200, body: {} },
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(startsWithScenario);
+        }).not.toThrow();
+
+        const registered = manager.getScenarioById("startsWith-strategy");
+        expect(registered).toBeDefined();
+      });
+
+      it("should accept scenario with endsWith string matching strategy", () => {
+        const { manager } = createTestSetup();
+        const endsWithScenario: ScenarioDefinition = {
+          id: "endsWith-strategy",
+          name: "EndsWith Strategy",
+          description: "Scenario with endsWith matching",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/users",
+              match: {
+                query: {
+                  email: { endsWith: "@company.com" },
+                },
+              },
+              response: { status: 200, body: {} },
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(endsWithScenario);
+        }).not.toThrow();
+
+        const registered = manager.getScenarioById("endsWith-strategy");
+        expect(registered).toBeDefined();
+      });
+
+      it("should accept scenario with equals string matching strategy", () => {
+        const { manager } = createTestSetup();
+        const equalsScenario: ScenarioDefinition = {
+          id: "equals-strategy",
+          name: "Equals Strategy",
+          description: "Scenario with equals matching",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/status",
+              match: {
+                headers: {
+                  "x-exact": { equals: "exact-value" },
+                },
+              },
+              response: { status: 200, body: {} },
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(equalsScenario);
+        }).not.toThrow();
+
+        const registered = manager.getScenarioById("equals-strategy");
+        expect(registered).toBeDefined();
+      });
     });
   });
 

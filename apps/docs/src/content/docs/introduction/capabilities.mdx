@@ -18,7 +18,9 @@ Return different responses based on request content. Multiple mocks can exist fo
 Match on request body, headers, or query parameters:
 
 ```typescript
-{
+import type { ScenaristMock } from '@scenarist/core';
+
+const mock: ScenaristMock = {
   method: 'POST',
   url: '/api/checkout',
   match: {
@@ -27,7 +29,7 @@ Match on request body, headers, or query parameters:
     query: { detailed: 'true' }
   },
   response: { status: 200, body: { discount: 20 } }
-}
+};
 ```
 
 ### Specificity-Based Selection
@@ -41,7 +43,9 @@ When multiple mocks match the same URL, Scenarist uses specificity scoring:
 **Example:**
 
 ```typescript
-const premiumScenario = {
+import type { ScenaristScenario } from '@scenarist/core';
+
+const premiumScenario: ScenaristScenario = {
   id: 'premium',
   mocks: [
     // Specificity: 2 (body.tier + body.category)
@@ -86,14 +90,16 @@ const premiumScenario = {
 Body matching is **partial** - only the specified fields must match:
 
 ```typescript
-{
+import type { ScenaristMock } from '@scenarist/core';
+
+const mock: ScenaristMock = {
   method: 'POST',
   url: '/api/create-order',
   match: {
     body: { itemType: 'premium' }  // Only checks itemType field
   },
   response: { status: 201, body: { orderId: 'premium-order-123' } }
-}
+};
 
 // Matches requests with itemType='premium', regardless of other fields:
 // { itemType: 'premium', quantity: 5, color: 'red' } ✓
@@ -106,7 +112,9 @@ Body matching is **partial** - only the specified fields must match:
 Header and query parameter matching is **exact** for specified keys:
 
 ```typescript
-{
+import type { ScenaristMock } from '@scenarist/core';
+
+const mock: ScenaristMock = {
   method: 'GET',
   url: '/api/data',
   match: {
@@ -114,43 +122,216 @@ Header and query parameter matching is **exact** for specified keys:
     query: { format: 'json' }          // Exact match
   },
   response: { status: 200, body: { detailed: true } }
+};
+```
+
+### Combining Multiple Match Criteria with Different Strategies
+
+You can combine multiple match criteria across body, headers, and query parameters, with **each field using a different matching strategy**. ALL criteria must match (AND logic) for the mock to be selected.
+
+**Example with mixed strategies:**
+
+```typescript
+import type { ScenaristMock } from '@scenarist/core';
+
+const mock: ScenaristMock = {
+  method: 'POST',
+  url: '/api/checkout',
+  match: {
+    // Body: Different strategy per field
+    body: {
+      itemType: { contains: 'premium' },        // Contains substring
+      category: { startsWith: 'electronics' }   // Starts with prefix
+    },
+    // Headers: Mix of exact, regex, and pattern matching
+    headers: {
+      'x-user-tier': { equals: 'gold' },        // Exact match
+      'x-campaign': { regex: { source: 'summer|winter', flags: 'i' } },  // Regex
+      'referer': { endsWith: '/checkout' }      // Ends with suffix
+    },
+    // Query: Plain string and pattern matching
+    query: {
+      region: 'us',                             // Plain string (exact)
+      email: { contains: '@company.com' }       // Contains substring
+    }
+  },
+  response: { status: 200, body: { discount: 30 } }
+};
+```
+
+**This mock matches ONLY if ALL of the following are true:**
+- ✅ `body.itemType` contains 'premium' (e.g., 'premium-item', 'super-premium')
+- ✅ `body.category` starts with 'electronics' (e.g., 'electronics-phones')
+- ✅ `x-user-tier` header exactly equals 'gold'
+- ✅ `x-campaign` header matches 'summer' OR 'winter' (case-insensitive)
+- ✅ `referer` header ends with '/checkout'
+- ✅ `region` query param exactly equals 'us'
+- ✅ `email` query param contains '@company.com'
+
+**AND Logic:** All criteria must match. If ANY criterion fails, the mock is not selected.
+
+**Specificity Calculation:** Each matched field adds to the specificity score:
+- 2 body fields + 3 headers + 2 query params = **specificity of 7**
+- Higher specificity = more specific mock wins
+
+**OR Logic via Separate Mocks:**
+
+Since match criteria use AND logic, implement OR logic by creating multiple mocks:
+
+```typescript
+import type { ScenaristScenario } from '@scenarist/core';
+
+const scenario: ScenaristScenario = {
+  id: 'premium-or-vip',
+  mocks: [
+    // Mock 1: Premium users
+    {
+      method: 'GET',
+      url: '/api/products',
+      match: { headers: { 'x-tier': 'premium' } },
+      response: { status: 200, body: { pricing: 'discounted' } }
+    },
+    // Mock 2: VIP users (OR - separate mock)
+    {
+      method: 'GET',
+      url: '/api/products',
+      match: { headers: { 'x-tier': 'vip' } },
+      response: { status: 200, body: { pricing: 'discounted' } }
+    },
+    // Fallback: Standard users
+    {
+      method: 'GET',
+      url: '/api/products',
+      response: { status: 200, body: { pricing: 'standard' } }
+    }
+  ]
+};
+```
+
+**OR Logic via Regex:**
+
+For true OR logic within a single field, use regex patterns:
+
+```typescript
+match: {
+  headers: {
+    'x-tier': { regex: { source: '^(premium|vip|enterprise)$', flags: '' } }
+  }
 }
+// Matches x-tier='premium' OR 'vip' OR 'enterprise' in one mock
 ```
 
 ### Pattern Matching with Regex
 
 For flexible pattern matching, use regex instead of exact values. This is useful for marketing campaigns, user agents, referer patterns, or any dynamic string matching.
 
-#### String Matching Strategies
+#### Matching Strategies Reference
 
-Scenarist supports five matching strategies:
+Scenarist provides **6 matching strategies** that work across request body fields, headers, and query parameters:
 
+| Strategy | Syntax | Behavior | Use Case |
+|----------|--------|----------|----------|
+| **Plain String** | `'value'` | Exact match (backward compatible) | Simple exact matching |
+| **Equals** | `{ equals: 'value' }` | Explicit exact match | Same as plain string, more explicit |
+| **Contains** | `{ contains: 'substring' }` | Value contains substring | Partial matching (emails, campaigns) |
+| **Starts With** | `{ startsWith: 'prefix' }` | Value starts with prefix | API keys, URL paths, prefixes |
+| **Ends With** | `{ endsWith: 'suffix' }` | Value ends with suffix | File extensions, email domains |
+| **Regex** | `{ regex: { source: 'pattern', flags: 'i' } }` | Pattern matching with flags | Complex patterns, alternatives |
+
+**Where These Strategies Apply:**
+
+- ✅ **Request Body Fields** (`match.body`) - All 6 strategies supported
+- ✅ **Request Headers** (`match.headers`) - All 6 strategies supported
+- ✅ **Query Parameters** (`match.query`) - All 6 strategies supported
+- 🔜 **URL Field** (`match.url`) - **Coming in Phase 2.5** ([#99](https://github.com/citypaul/scenarist/issues/99))
+
+:::note[URL Matching Coming Soon]
+URL matching with all MatchValue strategies is planned for Phase 2.5. Currently, the `url` field supports exact string matching, path parameters (`:id`), and glob patterns (`*`) for routing purposes.
+
+For now, use query parameter matching for dynamic URL filtering:
 ```typescript
-{
+// Current approach - Use query parameters
+url: '/api/users',
+match: {
+  query: { userId: { startsWith: 'usr_' } }
+}
+
+// Phase 2.5 - URL matching will support (future)
+url: '/api/*',
+match: {
+  url: { contains: '/users/' }  // Coming soon!
+}
+```
+
+**Phase 2 (Current):** String matching for headers, query params, and body fields
+**Phase 2.5 (Planned):** URL matching with all strategies + route param combinations
+
+See [Issue #99](https://github.com/citypaul/scenarist/issues/99) for details.
+:::
+
+#### Strategy Examples by Location
+
+**Headers:**
+```typescript
+import type { ScenaristMock } from '@scenarist/core';
+
+const mock: ScenaristMock = {
   method: 'GET',
   url: '/api/products',
   match: {
     headers: {
-      // Exact match (default)
-      'x-api-version': 'v2',
-
-      // Contains substring
-      'user-agent': { contains: 'Mobile' },
-
-      // Starts with prefix
-      'referer': { startsWith: 'https://example.com' },
-
-      // Ends with suffix
-      'accept': { endsWith: 'json' },
-
-      // Regex pattern matching
-      'x-campaign': {
-        regex: { source: 'premium|vip', flags: 'i' }  // Case-insensitive
-      }
+      'x-api-version': 'v2',                              // Plain string (exact)
+      'x-tier': { equals: 'premium' },                    // Explicit exact
+      'user-agent': { contains: 'Mobile' },               // Contains
+      'referer': { startsWith: 'https://example.com' },   // Starts with
+      'accept': { endsWith: 'json' },                     // Ends with
+      'x-campaign': { regex: { source: 'premium|vip', flags: 'i' } }  // Regex
     }
   },
-  response: { status: 200, body: { /* ... */ } }
-}
+  response: { status: 200, body: { matched: true } }
+};
+```
+
+**Query Parameters:**
+```typescript
+import type { ScenaristMock } from '@scenarist/core';
+
+const mock: ScenaristMock = {
+  method: 'GET',
+  url: '/api/search',
+  match: {
+    query: {
+      format: 'json',                                     // Plain string (exact)
+      tier: { equals: 'premium' },                        // Explicit exact
+      email: { contains: '@company.com' },                // Contains
+      userId: { startsWith: 'usr_' },                     // Starts with
+      file: { endsWith: '.pdf' },                         // Ends with
+      category: { regex: { source: '^(tech|science)$', flags: 'i' } }  // Regex
+    }
+  },
+  response: { status: 200, body: { matched: true } }
+};
+```
+
+**Body Fields:**
+```typescript
+import type { ScenaristMock } from '@scenarist/core';
+
+const mock: ScenaristMock = {
+  method: 'POST',
+  url: '/api/process',
+  match: {
+    body: {
+      action: 'create',                                   // Plain string (exact)
+      status: { equals: 'active' },                       // Explicit exact
+      email: { contains: '@example.com' },                // Contains
+      apiKey: { startsWith: 'sk_' },                      // Starts with
+      filename: { endsWith: '.json' },                    // Ends with
+      version: { regex: { source: '^\\d+\\.\\d+\\.\\d+$', flags: '' } }  // Regex (semver)
+    }
+  },
+  response: { status: 200, body: { processed: true } }
+};
 ```
 
 #### Regex Examples
@@ -158,7 +339,9 @@ Scenarist supports five matching strategies:
 **Marketing Campaigns:**
 
 ```typescript
-{
+import type { ScenaristMock } from '@scenarist/core';
+
+const mock: ScenaristMock = {
   method: 'GET',
   url: '/api/products',
   match: {
@@ -172,7 +355,7 @@ Scenarist supports five matching strategies:
     status: 200,
     body: { pricing: 'premium', discount: 25 }
   }
-}
+};
 
 // Matches:
 // x-campaign: 'summer-premium-sale' ✓
@@ -184,7 +367,9 @@ Scenarist supports five matching strategies:
 **Referer Patterns:**
 
 ```typescript
-{
+import type { ScenaristMock } from '@scenarist/core';
+
+const mock: ScenaristMock = {
   method: 'POST',
   url: '/api/checkout',
   match: {
@@ -195,7 +380,7 @@ Scenarist supports five matching strategies:
     }
   },
   response: { status: 200, body: { allowCheckout: true } }
-}
+};
 
 // Matches:
 // referer: 'https://example.com/checkout/confirm' ✓
@@ -206,7 +391,9 @@ Scenarist supports five matching strategies:
 **User Agent Detection:**
 
 ```typescript
-{
+import type { ScenaristMock } from '@scenarist/core';
+
+const mock: ScenaristMock = {
   method: 'GET',
   url: '/api/config',
   match: {
@@ -220,7 +407,35 @@ Scenarist supports five matching strategies:
     status: 200,
     body: { layout: 'mobile', features: ['touch', 'swipe'] }
   }
-}
+};
+```
+
+#### Supported Regex Flags
+
+Scenarist supports all standard JavaScript regex flags:
+
+- `i` - **Case-insensitive matching** (most common)
+- `m` - **Multiline mode** (^ and $ match line boundaries)
+- `s` - **Dotall mode** (. matches newlines)
+- `u` - **Unicode mode** (enables Unicode features)
+- `v` - **Unicode sets mode** (enhanced Unicode support)
+- `g` - **Global matching** (allowed but has no effect in Scenarist)
+- `y` - **Sticky matching** (allowed but has no effect in Scenarist)
+
+**Examples:**
+
+```typescript
+// Case-insensitive campaign matching
+{ regex: { source: 'premium|vip', flags: 'i' } }
+
+// Multiline referer matching
+{ regex: { source: '^/checkout', flags: 'm' } }
+
+// Unicode emoji detection
+{ regex: { source: '[😀-😿]', flags: 'u' } }
+
+// Multiple flags combined
+{ regex: { source: '/api/v\\d+/', flags: 'im' } }
 ```
 
 #### Security: ReDoS Protection
@@ -239,7 +454,78 @@ Scenarist validates all regex patterns for **ReDoS (Regular Expression Denial of
 // Error: Regex pattern may cause ReDoS attack
 ```
 
-Additionally, regex matching has a **100ms timeout** to prevent slow patterns from blocking tests.
+**Protection mechanisms:**
+- Pattern validation using `redos-detector` before scenario registration
+- Unsafe patterns rejected immediately with clear error messages
+- No runtime regex compilation for invalid patterns
+
+#### Regex in Different Locations
+
+Regex patterns work identically in headers, query parameters, and body fields:
+
+**Headers:**
+```typescript
+import type { ScenaristMock } from '@scenarist/core';
+
+const mock: ScenaristMock = {
+  method: 'GET',
+  url: '/api/products',
+  match: {
+    headers: {
+      'user-agent': {
+        regex: { source: '(Chrome|Firefox|Safari)/', flags: 'i' }
+      }
+    }
+  },
+  response: { status: 200, body: { browser: 'supported' } }
+};
+```
+
+**Query Parameters:**
+```typescript
+import type { ScenaristMock } from '@scenarist/core';
+
+const mock: ScenaristMock = {
+  method: 'GET',
+  url: '/api/search',
+  match: {
+    query: {
+      email: {
+        regex: { source: '@(gmail|yahoo|outlook)\\.com$', flags: 'i' }
+      }
+    }
+  },
+  response: { status: 200, body: { provider: 'common-email' } }
+};
+
+// Matches:
+// /api/search?email=user@gmail.com ✓
+// /api/search?email=user@YAHOO.com ✓ (case-insensitive)
+// /api/search?email=user@hotmail.com ✗ (not in pattern)
+```
+
+**Body Fields:**
+```typescript
+import type { ScenaristMock } from '@scenarist/core';
+
+const mock: ScenaristMock = {
+  method: 'POST',
+  url: '/api/upload',
+  match: {
+    body: {
+      filename: {
+        regex: { source: '\\.(jpg|png|gif|webp)$', flags: 'i' }
+      }
+    }
+  },
+  response: { status: 200, body: { type: 'image', accepted: true } }
+};
+
+// Matches:
+// { filename: 'photo.jpg' } ✓
+// { filename: 'avatar.PNG' } ✓ (case-insensitive)
+// { filename: 'document.pdf' } ✗ (not an image)
+```
 
 #### When to Use Regex
 
@@ -263,7 +549,9 @@ Simulate multi-step processes like polling, where each request advances through 
 ### Basic Sequence
 
 ```typescript
-{
+import type { ScenaristMock } from '@scenarist/core';
+
+const mock: ScenaristMock = {
   method: 'GET',
   url: '/api/job/status',
   sequence: {
@@ -274,7 +562,7 @@ Simulate multi-step processes like polling, where each request advances through 
     ],
     repeat: 'last'  // Options: 'last' | 'cycle' | 'none'
   }
-}
+};
 ```
 
 **Behavior:**
@@ -321,7 +609,10 @@ sequence: {
 **`repeat: 'none'`** - After sequence exhausts, fall through to next mock
 
 ```typescript
-{
+import type { ScenaristScenario } from '@scenarist/core';
+
+const scenario: ScenaristScenario = {
+  id: 'payment-sequence',
   mocks: [
     {
       method: 'POST',
@@ -341,7 +632,7 @@ sequence: {
       response: { status: 429, body: { error: 'Rate limit exceeded' } }
     }
   ]
-}
+};
 // Request 1-3: Sequence responses
 // Request 4+: Rate limit error (sequence exhausted, falls through to next mock)
 ```
@@ -351,7 +642,9 @@ sequence: {
 Sequences can be combined with match criteria:
 
 ```typescript
-{
+import type { ScenaristMock } from '@scenarist/core';
+
+const mock: ScenaristMock = {
   method: 'GET',
   url: '/api/onboarding/step',
   match: {
@@ -365,7 +658,7 @@ Sequences can be combined with match criteria:
     ],
     repeat: 'last'
   }
-}
+};
 ```
 
 **Important:** Only matching requests advance the sequence. Non-matching requests don't affect sequence position.
@@ -377,7 +670,10 @@ Capture data from requests and inject it into subsequent responses, enabling sta
 ### Basic State Capture and Injection
 
 ```typescript
-{
+import type { ScenaristScenario } from '@scenarist/core';
+
+const scenario: ScenaristScenario = {
+  id: 'cart-state',
   mocks: [
     // Capture state from POST request
     {
@@ -400,7 +696,7 @@ Capture data from requests and inject it into subsequent responses, enabling sta
       }
     }
   ]
-}
+};
 ```
 
 **How it works:**
@@ -414,14 +710,16 @@ Capture data from requests and inject it into subsequent responses, enabling sta
 Use `stateKey[]` to append values to an array:
 
 ```typescript
-{
+import type { ScenaristMock } from '@scenarist/core';
+
+const mock: ScenaristMock = {
   method: 'POST',
   url: '/api/cart/add',
   captureState: {
     'cartItems[]': { from: 'body', path: 'productId' }  // Note the [] suffix
   },
   response: { status: 201 }
-}
+};
 ```
 
 **Behavior:**
@@ -442,14 +740,16 @@ Use `stateKey[]` to append values to an array:
 Capture deeply nested values using dot notation:
 
 ```typescript
-{
+import type { ScenaristMock } from '@scenarist/core';
+
+const mock: ScenaristMock = {
   method: 'POST',
   url: '/api/profile/update',
   captureState: {
     userName: { from: 'body', path: 'user.profile.name' }
   },
   response: { status: 200 }
-}
+};
 
 // Request body:
 // {
@@ -469,7 +769,9 @@ Capture deeply nested values using dot notation:
 Use `{{state.key}}` syntax to inject captured state into responses:
 
 ```typescript
-{
+import type { ScenaristMock } from '@scenarist/core';
+
+const mock: ScenaristMock = {
   method: 'GET',
   url: '/api/profile',
   response: {
@@ -480,7 +782,7 @@ Use `{{state.key}}` syntax to inject captured state into responses:
       itemCount: '{{state.cartItems.length}}'  // Can access array length
     }
   }
-}
+};
 ```
 
 ### State Isolation Per Test ID
@@ -522,7 +824,10 @@ test('cart workflow', async ({ page, switchScenario }) => {
 The power comes from combining request matching, sequences, and state together:
 
 ```typescript
-{
+import type { ScenaristScenario } from '@scenarist/core';
+
+const scenario: ScenaristScenario = {
+  id: 'premium-onboarding',
   mocks: [
     // Match premium users, advance through onboarding sequence, capture profile
     {
@@ -556,7 +861,7 @@ The power comes from combining request matching, sequences, and state together:
       }
     }
   ]
-}
+};
 ```
 
 **This enables:**

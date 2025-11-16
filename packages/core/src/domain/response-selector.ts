@@ -277,10 +277,12 @@ const matchesCriteria = (
 /**
  * Check if request body contains all required fields (partial match).
  * Request can have additional fields beyond what's specified in criteria.
+ * Supports all matching strategies via MatchValue type.
+ * Non-string values are converted to strings before matching.
  */
 const matchesBody = (
   requestBody: unknown,
-  criteriaBody: Record<string, unknown>
+  criteriaBody: Record<string, MatchValue>
 ): boolean => {
   // If request has no body, can't match
   if (!requestBody || typeof requestBody !== "object") {
@@ -290,8 +292,13 @@ const matchesBody = (
   const body = requestBody as Record<string, unknown>;
 
   // Check all required fields exist in request body with matching values
-  for (const [key, value] of Object.entries(criteriaBody)) {
-    if (body[key] !== value) {
+  for (const [key, criteriaValue] of Object.entries(criteriaBody)) {
+    const requestValue = body[key];
+
+    // Convert to string for matching (type coercion like headers/query)
+    const stringValue = requestValue == null ? '' : String(requestValue);
+
+    if (!matchesValue(stringValue, criteriaValue)) {
       return false;
     }
   }
@@ -315,20 +322,64 @@ const createNormalizedHeaderMap = (
 
 /**
  * Match a request value against a match criteria value.
- * Supports both exact string matching and regex pattern matching.
  *
- * @param requestValue - The actual value from the request
- * @param criteriaValue - The expected value (string or regex pattern)
+ * Supports 6 matching modes:
+ * 1. Plain string: exact match (backward compatible)
+ * 2. { equals: 'value' }: explicit exact match
+ * 3. { contains: 'substring' }: substring match
+ * 4. { startsWith: 'prefix' }: prefix match
+ * 5. { endsWith: 'suffix' }: suffix match
+ * 6. { regex: {...} }: pattern match
+ *
+ * Type Coercion Behavior:
+ * - Non-string criterion values (number, boolean) are converted to strings before matching
+ * - null/undefined criterion values are converted to empty string ''
+ * - Request value is always expected to be a string
+ * - Strategy values within objects are converted to strings (e.g., contains: 123 → '123')
+ *
+ * This allows backward compatibility with scenarios using non-string values
+ * in body matching (e.g., { quantity: 5 } matches body.quantity = 5 or "5")
+ *
+ * @param requestValue - The actual value from the request (string)
+ * @param criteriaValue - The expected value (string, number, boolean, null, or strategy object)
  * @returns true if values match, false otherwise
  */
-const matchesValue = (requestValue: string, criteriaValue: MatchValue): boolean => {
-  // Exact string match
+const matchesValue = (requestValue: string, criteriaValue: MatchValue | unknown): boolean => {
   if (typeof criteriaValue === "string") {
     return requestValue === criteriaValue;
   }
 
-  // Regex pattern match - exhaustive check (MatchValue is string | { regex })
-  return matchesRegex(requestValue, criteriaValue.regex);
+  if (typeof criteriaValue === "number" || typeof criteriaValue === "boolean") {
+    return requestValue === String(criteriaValue);
+  }
+
+  if (criteriaValue == null) {
+    return requestValue === '';
+  }
+
+  const strategyValue = criteriaValue as Record<string, unknown>;
+
+  if (strategyValue.equals !== undefined) {
+    return requestValue === String(strategyValue.equals);
+  }
+
+  if (strategyValue.contains !== undefined) {
+    return requestValue.includes(String(strategyValue.contains));
+  }
+
+  if (strategyValue.startsWith !== undefined) {
+    return requestValue.startsWith(String(strategyValue.startsWith));
+  }
+
+  if (strategyValue.endsWith !== undefined) {
+    return requestValue.endsWith(String(strategyValue.endsWith));
+  }
+
+  if (strategyValue.regex !== undefined) {
+    return matchesRegex(requestValue, strategyValue.regex as { source: string; flags?: string });
+  }
+
+  return false;
 };
 
 const matchesHeaders = (
