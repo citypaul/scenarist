@@ -327,12 +327,8 @@ const matchesValue = (requestValue: string, criteriaValue: MatchValue): boolean 
     return requestValue === criteriaValue;
   }
 
-  // Regex pattern match
-  if ("regex" in criteriaValue) {
-    return matchesRegex(requestValue, criteriaValue.regex);
-  }
-
-  return false;
+  // Regex pattern match - exhaustive check (MatchValue is string | { regex })
+  return matchesRegex(requestValue, criteriaValue.regex);
 };
 
 const matchesHeaders = (

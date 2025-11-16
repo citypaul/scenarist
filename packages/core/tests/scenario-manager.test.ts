@@ -369,6 +369,20 @@ describe("ScenarioManager", () => {
           manager.registerScenario(complexSafeScenario);
         }).not.toThrow();
       });
+
+      it('should show <unknown> in error message when scenario has no id', () => {
+        const { manager } = createTestSetup();
+        // Pass definition without id field (will fail validation)
+        const invalidScenario = {
+          name: 'Test',
+          description: 'Test',
+          mocks: [],
+        } as any;
+
+        expect(() => {
+          manager.registerScenario(invalidScenario);
+        }).toThrow(/Invalid scenario definition for '<unknown>'/);
+      });
     });
   });
 
