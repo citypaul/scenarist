@@ -17,7 +17,14 @@
       "Bash(pkill:*)",
       "Bash(xargs cat:*)",
       "Bash(gh pr view:*)",
-      "Bash(pnpm exec vitest:*)"
+      "Bash(pnpm exec vitest:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(git restore:*)",
+      "Bash(gh pr comment:*)",
+      "Bash(node test-schema.mjs:*)",
+      "Bash(node test-scenario.mjs:*)",
+      "Bash(pnpm exec tsx:*)"
     ],
     "deny": [],
     "ask": []

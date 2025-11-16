@@ -2883,38 +2883,6 @@ describe("ResponseSelector - Regex Matching", () => {
           expect(result.data.body).toEqual({ matched: true });
         }
       });
-
-      it("should handle arbitrary object criteria values (backward compat fallback)", () => {
-        const context: HttpRequestContext = {
-          method: "POST",
-          url: "/api/test",
-          headers: {},
-          body: { metadata: { type: "special" } },
-          query: {},
-        };
-
-        // TypeScript won't allow arbitrary objects, but runtime handles them via fallback
-        const mocks: ReadonlyArray<ScenaristMock> = [
-          {
-            method: "POST",
-            url: "/api/test",
-            match: {
-              body: {
-                metadata: { type: "special" } as any, // Fallback: stringified comparison
-              },
-            },
-            response: { status: 200, body: { matched: true } },
-          },
-        ];
-
-        const selector = createResponseSelector();
-        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
-
-        expect(result.success).toBe(true);
-        if (result.success) {
-          expect(result.data.body).toEqual({ matched: true });
-        }
-      });
     });
   });
 });

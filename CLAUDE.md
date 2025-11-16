@@ -1333,11 +1333,18 @@ During Phase 2 initial implementation, `reset()` was added speculatively without
 - ✅ Core functionality documentation
 - ✅ 281 tests passing across all packages (100% coverage in core)
 
+**String Matching Strategies:**
+- ✅ **Regex Support for Match Criteria** (PR #96 - Completed 2025-11-16)
+  - 5 matching strategies: equals, contains, startsWith, endsWith, regex
+  - ReDoS protection with validation using `redos-detector`
+  - Test parity achieved across all 3 example apps (App Router, Pages Router, Express)
+  - 27 total string matching tests (9 per app)
+  - 291 total tests passing (264 core + 27 string matching)
+  - Documentation updated: core README, core-functionality.md, external docs (capabilities.mdx)
+  - Code refactored following CLAUDE.md principles (functional composition, data-driven config)
+  - Supported regex flags documented: i, m, s, u, v, g, y
+
 **Future Enhancements:**
-- 🔜 **Regex Support for Match Criteria** ([Issue #86](https://github.com/citypaul/scenarist/issues/86))
-  - Pattern matching for headers, body, query params
-  - ReDoS protection with validation and timeouts
-  - See `docs/plans/regex-support-implementation.md`
 - 🔜 **Template Helper Registry** ([Issue #87](https://github.com/citypaul/scenarist/issues/87))
   - Dynamic value generation (UUID, timestamps, hashes)
   - Predefined helpers with type safety

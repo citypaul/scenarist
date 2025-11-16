@@ -736,6 +736,125 @@ export const campaignRegexScenario: ScenaristScenario = {
 };
 
 /**
+ * String Matching Scenario - Testing string matching strategies
+ *
+ * Demonstrates Scenarist's string matching strategies:
+ * - contains: Substring matching (campaign header)
+ * - startsWith: Prefix matching (API key)
+ * - endsWith: Suffix matching (email domain)
+ * - equals: Explicit exact matching
+ *
+ * Use case: Flexible request matching without regex complexity
+ */
+export const stringMatchingScenario: ScenaristScenario = {
+  id: 'stringMatching',
+  name: 'String Matching Strategies',
+  description: 'Tests contains, startsWith, endsWith, and equals matching',
+  mocks: [
+    // Test 1: Contains strategy - campaign header containing 'premium'
+    {
+      method: 'GET',
+      url: 'https://api.github.com/users/:username',
+      match: {
+        headers: {
+          'x-campaign': { contains: 'premium' },
+        },
+      },
+      response: {
+        status: 200,
+        body: {
+          login: 'premium-user',
+          id: 888,
+          name: 'Premium User',
+          bio: 'Premium campaign access',
+          public_repos: 150,
+          followers: 8000,
+          matchedBy: 'contains',
+        },
+      },
+    },
+
+    // Test 2: StartsWith strategy - API key starting with 'sk_'
+    {
+      method: 'GET',
+      url: 'https://api.stripe.com/v1/api-keys',
+      match: {
+        headers: {
+          'x-api-key': { startsWith: 'sk_' },
+        },
+      },
+      response: {
+        status: 200,
+        body: {
+          valid: true,
+          keyType: 'secret',
+          matchedBy: 'startsWith',
+        },
+      },
+    },
+
+    // Test 3: EndsWith strategy - email query param ending with '@company.com'
+    // Using GitHub repos endpoint as it's a known working domain
+    {
+      method: 'GET',
+      url: 'https://api.github.com/users/:username/repos',
+      match: {
+        query: {
+          email: { endsWith: '@company.com' },
+        },
+      },
+      response: {
+        status: 200,
+        body: {
+          users: [
+            { id: 1, email: 'john@company.com', role: 'admin' },
+            { id: 2, email: 'jane@company.com', role: 'user' },
+          ],
+          matchedBy: 'endsWith',
+        },
+      },
+    },
+
+    // Test 4: Equals strategy - explicit exact match
+    {
+      method: 'GET',
+      url: 'https://api.status.com/status',
+      match: {
+        headers: {
+          'x-exact': { equals: 'exact-value' },
+        },
+      },
+      response: {
+        status: 200,
+        body: {
+          status: 'ok',
+          message: 'Exact match successful',
+          matchedBy: 'equals',
+        },
+      },
+    },
+
+    // Fallback: No match criteria - handles non-matching requests
+    {
+      method: 'GET',
+      url: 'https://api.github.com/users/:username',
+      response: {
+        status: 200,
+        body: {
+          login: 'standard-user',
+          id: 111,
+          name: 'Standard User',
+          bio: 'Standard access',
+          public_repos: 25,
+          followers: 200,
+          matchedBy: 'fallback',
+        },
+      },
+    },
+  ],
+};
+
+/**
  * Scenarios organized as typed object for easy access in tests.
  *
  * Use this to get type-safe access to scenario IDs with autocomplete:
@@ -764,5 +883,6 @@ export const scenarios = {
   sharedPolling: sharedPollingScenario,
   tempCapture: tempCaptureScenario,
   campaignRegex: campaignRegexScenario,
+  stringMatching: stringMatchingScenario,
 } as const satisfies ScenaristScenarios;
 

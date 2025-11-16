@@ -223,6 +223,34 @@ Scenarist supports five matching strategies:
 }
 ```
 
+#### Supported Regex Flags
+
+Scenarist supports all standard JavaScript regex flags:
+
+- `i` - **Case-insensitive matching** (most common)
+- `m` - **Multiline mode** (^ and $ match line boundaries)
+- `s` - **Dotall mode** (. matches newlines)
+- `u` - **Unicode mode** (enables Unicode features)
+- `v` - **Unicode sets mode** (enhanced Unicode support)
+- `g` - **Global matching** (allowed but has no effect in Scenarist)
+- `y` - **Sticky matching** (allowed but has no effect in Scenarist)
+
+**Examples:**
+
+```typescript
+// Case-insensitive campaign matching
+{ regex: { source: 'premium|vip', flags: 'i' } }
+
+// Multiline referer matching
+{ regex: { source: '^/checkout', flags: 'm' } }
+
+// Unicode emoji detection
+{ regex: { source: '[😀-😿]', flags: 'u' } }
+
+// Multiple flags combined
+{ regex: { source: '/api/v\\d+/', flags: 'im' } }
+```
+
 #### Security: ReDoS Protection
 
 Scenarist validates all regex patterns for **ReDoS (Regular Expression Denial of Service)** vulnerabilities:
@@ -239,7 +267,10 @@ Scenarist validates all regex patterns for **ReDoS (Regular Expression Denial of
 // Error: Regex pattern may cause ReDoS attack
 ```
 
-Additionally, regex matching has a **100ms timeout** to prevent slow patterns from blocking tests.
+**Protection mechanisms:**
+- Pattern validation using `redos-detector` before scenario registration
+- Unsafe patterns rejected immediately with clear error messages
+- No runtime regex compilation for invalid patterns
 
 #### When to Use Regex
 

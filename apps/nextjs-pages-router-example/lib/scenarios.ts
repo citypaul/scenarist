@@ -414,6 +414,114 @@ export const campaignRegexScenario: ScenaristScenario = {
 };
 
 /**
+ * String Matching Scenario - Testing string matching strategies
+ *
+ * Demonstrates Scenarist's string matching strategies:
+ * - contains: Substring matching (campaign header)
+ * - startsWith: Prefix matching (API key)
+ * - endsWith: Suffix matching (email domain)
+ * - equals: Explicit exact matching
+ *
+ * Use case: Flexible request matching without regex complexity
+ */
+export const stringMatchingScenario: ScenaristScenario = {
+  id: "stringMatching",
+  name: "String Matching Strategies",
+  description: "Tests contains, startsWith, endsWith, and equals matching",
+  mocks: [
+    // Test 1: Contains strategy - campaign header containing 'premium'
+    {
+      method: "GET",
+      url: "http://localhost:3001/products",
+      match: {
+        headers: {
+          "x-campaign": { contains: "premium" },
+        },
+      },
+      response: {
+        status: 200,
+        body: {
+          products: buildProducts("premium"),
+          matchedBy: "contains",
+        },
+      },
+    },
+
+    // Test 2: StartsWith strategy - API key starting with 'sk_'
+    {
+      method: "GET",
+      url: "http://localhost:3001/api-keys",
+      match: {
+        headers: {
+          "x-api-key": { startsWith: "sk_" },
+        },
+      },
+      response: {
+        status: 200,
+        body: {
+          valid: true,
+          keyType: "secret",
+          matchedBy: "startsWith",
+        },
+      },
+    },
+
+    // Test 3: EndsWith strategy - email query param ending with '@company.com'
+    {
+      method: "GET",
+      url: "http://localhost:3001/users",
+      match: {
+        query: {
+          email: { endsWith: "@company.com" },
+        },
+      },
+      response: {
+        status: 200,
+        body: {
+          users: [
+            { id: 1, email: "john@company.com", role: "admin" },
+            { id: 2, email: "jane@company.com", role: "user" },
+          ],
+          matchedBy: "endsWith",
+        },
+      },
+    },
+
+    // Test 4: Equals strategy - explicit exact match
+    {
+      method: "GET",
+      url: "http://localhost:3001/status",
+      match: {
+        headers: {
+          "x-exact": { equals: "exact-value" },
+        },
+      },
+      response: {
+        status: 200,
+        body: {
+          status: "ok",
+          message: "Exact match successful",
+          matchedBy: "equals",
+        },
+      },
+    },
+
+    // Fallback: No match criteria - handles non-matching requests
+    {
+      method: "GET",
+      url: "http://localhost:3001/products",
+      response: {
+        status: 200,
+        body: {
+          products: buildProducts("standard"),
+          matchedBy: "fallback",
+        },
+      },
+    },
+  ],
+};
+
+/**
  * All scenarios for registration and type-safe access
  */
 export const scenarios = {
@@ -426,4 +534,5 @@ export const scenarios = {
   paymentLimited: paymentLimitedScenario,
   checkout: checkoutScenario,
   campaignRegex: campaignRegexScenario,
+  stringMatching: stringMatchingScenario,
 } as const satisfies ScenaristScenarios;

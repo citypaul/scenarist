@@ -335,40 +335,41 @@ const createNormalizedHeaderMap = (
  * @returns true if values match, false otherwise
  */
 const matchesValue = (requestValue: string, criteriaValue: MatchValue | unknown): boolean => {
-  // Backward compatible: plain string = exact match
   if (typeof criteriaValue === "string") {
     return requestValue === criteriaValue;
   }
 
-  // Backward compatible: non-string primitives (numbers, booleans) from old body schema
-  // Convert to string for comparison
   if (typeof criteriaValue === "number" || typeof criteriaValue === "boolean") {
     return requestValue === String(criteriaValue);
   }
 
-  // Handle null/undefined criteria values
   if (criteriaValue == null) {
     return requestValue === '';
   }
 
-  // Strategy object - check which strategy is defined
-  // (Zod schema ensures exactly one strategy is present)
   const strategyValue = criteriaValue as Record<string, unknown>;
 
   if (strategyValue.equals !== undefined) {
     return requestValue === String(strategyValue.equals);
-  } else if (strategyValue.contains !== undefined) {
+  }
+
+  if (strategyValue.contains !== undefined) {
     return requestValue.includes(String(strategyValue.contains));
-  } else if (strategyValue.startsWith !== undefined) {
+  }
+
+  if (strategyValue.startsWith !== undefined) {
     return requestValue.startsWith(String(strategyValue.startsWith));
-  } else if (strategyValue.endsWith !== undefined) {
+  }
+
+  if (strategyValue.endsWith !== undefined) {
     return requestValue.endsWith(String(strategyValue.endsWith));
-  } else if (strategyValue.regex !== undefined) {
+  }
+
+  if (strategyValue.regex !== undefined) {
     return matchesRegex(requestValue, strategyValue.regex as { source: string; flags?: string });
   }
 
-  // If we reach here, treat as plain value comparison (backward compatibility)
-  return requestValue === String(criteriaValue);
+  return false;
 };
 
 const matchesHeaders = (
