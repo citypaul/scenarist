@@ -64,9 +64,14 @@ const matchesGlobPattern = (pattern: string, requestUrl: string): boolean => {
 };
 
 export const matchesUrl = (
-  pattern: string,
+  pattern: string | RegExp,
   requestUrl: string
 ): UrlMatchResult => {
+  // Handle native RegExp patterns (ADR-0016)
+  if (pattern instanceof RegExp) {
+    return { matches: pattern.test(requestUrl) };
+  }
+
   if (matchesExactString(pattern, requestUrl)) {
     return { matches: true };
   }

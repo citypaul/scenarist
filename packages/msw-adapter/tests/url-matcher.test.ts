@@ -105,4 +105,56 @@ describe('URL Matcher', () => {
       expect(result.params).toEqual({ id: '123' });
     });
   });
+
+  describe('Native RegExp patterns', () => {
+    it('should match URL with native RegExp', () => {
+      const result = matchesUrl(
+        /\/api\/users\/\d+/,
+        'https://api.example.com/api/users/123'
+      );
+
+      expect(result.matches).toBe(true);
+      expect(result.params).toBeUndefined();
+    });
+
+    it('should match URL with native RegExp and flags (case-insensitive)', () => {
+      const result = matchesUrl(
+        /\/API\/USERS\/\d+/i,
+        'https://api.example.com/api/users/123'
+      );
+
+      expect(result.matches).toBe(true);
+      expect(result.params).toBeUndefined();
+    });
+
+    it('should not match when RegExp does not match', () => {
+      const result = matchesUrl(
+        /\/api\/products\/\d+/,
+        'https://api.example.com/api/users/123'
+      );
+
+      expect(result.matches).toBe(false);
+      expect(result.params).toBeUndefined();
+    });
+
+    it('should match pathname-only URLs with native RegExp', () => {
+      const result = matchesUrl(
+        /^\/users\/\d+$/,
+        '/users/123'
+      );
+
+      expect(result.matches).toBe(true);
+      expect(result.params).toBeUndefined();
+    });
+
+    it('should match full URL patterns with protocol', () => {
+      const result = matchesUrl(
+        /^https:\/\/api\.example\.com\/users\/\d+$/,
+        'https://api.example.com/users/456'
+      );
+
+      expect(result.matches).toBe(true);
+      expect(result.params).toBeUndefined();
+    });
+  });
 });
