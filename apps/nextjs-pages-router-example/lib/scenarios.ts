@@ -725,6 +725,138 @@ export const urlMatchingScenario: ScenaristScenario = {
 };
 
 /**
+ * Hostname Matching Demonstration Scenario
+ *
+ * Demonstrates the three URL pattern types and their hostname matching behavior:
+ *
+ * 1. PATHNAME-ONLY patterns (/api/data) - Origin-agnostic (match ANY hostname)
+ * 2. FULL URL patterns (http://localhost:3001/api/data) - Hostname-specific (must match exactly)
+ * 3. REGEXP patterns (/\/api\/data/) - Origin-agnostic (MSW weak comparison)
+ */
+export const hostnameMatchingScenario: ScenaristScenario = {
+  id: "hostnameMatching",
+  name: "Hostname Matching Demonstration",
+  description: "Shows pathname vs full URL vs RegExp pattern behaviors",
+  mocks: [
+    // Example 1: Pathname-only pattern - matches ANY hostname
+    {
+      method: "GET",
+      url: "/api/origin-agnostic",
+      response: {
+        status: 200,
+        body: {
+          patternType: "pathname-only",
+          behavior: "origin-agnostic",
+          message: "This matches requests to ANY hostname",
+          examples: [
+            "http://localhost:3001/api/origin-agnostic",
+            "https://api.example.com/api/origin-agnostic",
+            "http://staging.test.io/api/origin-agnostic",
+          ],
+        },
+      },
+    },
+
+    // Example 2: Full URL pattern with localhost - hostname-specific
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/localhost-only",
+      response: {
+        status: 200,
+        body: {
+          patternType: "full-url",
+          hostname: "localhost:3001",
+          behavior: "hostname-specific",
+          message: "This ONLY matches localhost:3001 requests",
+          willMatch: "http://localhost:3001/api/localhost-only",
+          wontMatch: [
+            "https://api.example.com/api/localhost-only",
+            "http://staging.test.io/api/localhost-only",
+          ],
+        },
+      },
+    },
+
+    // Example 3: Full URL pattern with production hostname
+    {
+      method: "GET",
+      url: "https://api.example.com/api/production-only",
+      response: {
+        status: 200,
+        body: {
+          patternType: "full-url",
+          hostname: "api.example.com",
+          behavior: "hostname-specific",
+          message: "This ONLY matches api.example.com requests",
+          willMatch: "https://api.example.com/api/production-only",
+          wontMatch: [
+            "http://localhost:3001/api/production-only",
+            "http://staging.test.io/api/production-only",
+          ],
+        },
+      },
+    },
+
+    // Example 4: Native RegExp pattern - origin-agnostic
+    {
+      method: "GET",
+      url: /\/api\/regex-pattern$/,
+      response: {
+        status: 200,
+        body: {
+          patternType: "native-regexp",
+          behavior: "origin-agnostic (MSW weak comparison)",
+          message: "This matches the pathname pattern at ANY hostname",
+          examples: [
+            "http://localhost:3001/api/regex-pattern",
+            "https://api.example.com/api/regex-pattern",
+            "http://staging.test.io/api/regex-pattern",
+          ],
+        },
+      },
+    },
+
+    // Example 5: Pathname with path parameters - origin-agnostic + param extraction
+    {
+      method: "GET",
+      url: "/api/users/:userId/posts/:postId",
+      response: {
+        status: 200,
+        body: {
+          patternType: "pathname-only with params",
+          behavior: "origin-agnostic + param extraction",
+          message: "Extracts params and matches ANY hostname",
+          userId: "{{params.userId}}",
+          postId: "{{params.postId}}",
+          examples: [
+            "http://localhost:3001/api/users/123/posts/456",
+            "https://api.example.com/api/users/123/posts/456",
+          ],
+        },
+      },
+    },
+
+    // Example 6: Full URL with path parameters - hostname-specific + param extraction
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/local-users/:userId",
+      response: {
+        status: 200,
+        body: {
+          patternType: "full-url with params",
+          hostname: "localhost:3001",
+          behavior: "hostname-specific + param extraction",
+          message: "Extracts params but ONLY matches localhost:3001",
+          userId: "{{params.userId}}",
+          willMatch: "http://localhost:3001/api/local-users/123",
+          wontMatch: "https://api.example.com/api/local-users/123",
+        },
+      },
+    },
+  ],
+};
+
+/**
  * All scenarios for registration and type-safe access
  */
 export const scenarios = {
@@ -739,4 +871,5 @@ export const scenarios = {
   campaignRegex: campaignRegexScenario,
   stringMatching: stringMatchingScenario,
   urlMatching: urlMatchingScenario,
+  hostnameMatching: hostnameMatchingScenario,
 } as const satisfies ScenaristScenarios;

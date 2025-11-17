@@ -1057,6 +1057,138 @@ export const urlMatchingScenario: ScenaristScenario = {
 };
 
 /**
+ * Hostname Matching Demonstration Scenario
+ *
+ * Demonstrates the three URL pattern types and their hostname matching behavior:
+ *
+ * 1. PATHNAME-ONLY patterns (/api/data) - Origin-agnostic (match ANY hostname)
+ * 2. FULL URL patterns (https://api.github.com/api/data) - Hostname-specific (must match exactly)
+ * 3. REGEXP patterns (/\/api\/data/) - Origin-agnostic (MSW weak comparison)
+ */
+export const hostnameMatchingScenario: ScenaristScenario = {
+  id: 'hostnameMatching',
+  name: 'Hostname Matching Demonstration',
+  description: 'Shows pathname vs full URL vs RegExp pattern behaviors',
+  mocks: [
+    // Example 1: Pathname-only pattern - matches ANY hostname
+    {
+      method: 'GET',
+      url: '/api/origin-agnostic',
+      response: {
+        status: 200,
+        body: {
+          patternType: 'pathname-only',
+          behavior: 'origin-agnostic',
+          message: 'This matches requests to ANY hostname',
+          examples: [
+            'http://localhost:3000/api/origin-agnostic',
+            'https://api.github.com/api/origin-agnostic',
+            'https://api.stripe.com/api/origin-agnostic',
+          ],
+        },
+      },
+    },
+
+    // Example 2: Full URL pattern with GitHub - hostname-specific
+    {
+      method: 'GET',
+      url: 'https://api.github.com/api/github-only',
+      response: {
+        status: 200,
+        body: {
+          patternType: 'full-url',
+          hostname: 'api.github.com',
+          behavior: 'hostname-specific',
+          message: 'This ONLY matches api.github.com requests',
+          willMatch: 'https://api.github.com/api/github-only',
+          wontMatch: [
+            'https://api.stripe.com/api/github-only',
+            'http://localhost:3000/api/github-only',
+          ],
+        },
+      },
+    },
+
+    // Example 3: Full URL pattern with Stripe - hostname-specific
+    {
+      method: 'GET',
+      url: 'https://api.stripe.com/api/stripe-only',
+      response: {
+        status: 200,
+        body: {
+          patternType: 'full-url',
+          hostname: 'api.stripe.com',
+          behavior: 'hostname-specific',
+          message: 'This ONLY matches api.stripe.com requests',
+          willMatch: 'https://api.stripe.com/api/stripe-only',
+          wontMatch: [
+            'https://api.github.com/api/stripe-only',
+            'http://localhost:3000/api/stripe-only',
+          ],
+        },
+      },
+    },
+
+    // Example 4: Native RegExp pattern - origin-agnostic
+    {
+      method: 'GET',
+      url: /\/api\/regex-pattern$/,
+      response: {
+        status: 200,
+        body: {
+          patternType: 'native-regexp',
+          behavior: 'origin-agnostic (MSW weak comparison)',
+          message: 'This matches the pathname pattern at ANY hostname',
+          examples: [
+            'http://localhost:3000/api/regex-pattern',
+            'https://api.github.com/api/regex-pattern',
+            'https://api.stripe.com/api/regex-pattern',
+          ],
+        },
+      },
+    },
+
+    // Example 5: Pathname with path parameters - origin-agnostic + param extraction
+    {
+      method: 'GET',
+      url: '/api/users/:userId/posts/:postId',
+      response: {
+        status: 200,
+        body: {
+          patternType: 'pathname-only with params',
+          behavior: 'origin-agnostic + param extraction',
+          message: 'Extracts params and matches ANY hostname',
+          userId: '{{params.userId}}',
+          postId: '{{params.postId}}',
+          examples: [
+            'http://localhost:3000/api/users/123/posts/456',
+            'https://api.github.com/api/users/123/posts/456',
+          ],
+        },
+      },
+    },
+
+    // Example 6: Full URL with path parameters - hostname-specific + param extraction
+    {
+      method: 'GET',
+      url: 'https://api.github.com/api/github-users/:userId',
+      response: {
+        status: 200,
+        body: {
+          patternType: 'full-url with params',
+          hostname: 'api.github.com',
+          behavior: 'hostname-specific + param extraction',
+          message: 'Extracts params but ONLY matches api.github.com',
+          userId: '{{params.userId}}',
+          willMatch: 'https://api.github.com/api/github-users/123',
+          wontMatch: 'https://api.stripe.com/api/github-users/123',
+        },
+      },
+    },
+  ],
+};
+
+/**
  * Scenarios organized as typed object for easy access in tests.
  *
  * Use this to get type-safe access to scenario IDs with autocomplete:
@@ -1087,5 +1219,6 @@ export const scenarios = {
   campaignRegex: campaignRegexScenario,
   stringMatching: stringMatchingScenario,
   urlMatching: urlMatchingScenario,
+  hostnameMatching: hostnameMatchingScenario,
 } as const satisfies ScenaristScenarios;
 
