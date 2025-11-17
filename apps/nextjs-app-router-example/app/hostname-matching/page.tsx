@@ -18,7 +18,7 @@
 
 // CRITICAL: Import scenarist to ensure MSW starts before fetch calls
 import { scenarist } from "@/lib/scenarist";
-import { headers } from "next/headers";
+import { headers, type ReadonlyHeaders } from "next/headers";
 
 type HostnameMatchingResponse = {
   readonly patternType: string;
@@ -48,14 +48,19 @@ const fetchTestData = async (
   testType: string,
   userId: string,
   postId: string,
-  scenaristHeaders: Record<string, string>
+  headersList: ReadonlyHeaders
 ): Promise<FetchResult> => {
+  // Create Request object to use with scenarist.getHeaders()
+  const request = new Request("http://localhost", { headers: headersList });
+
   try {
     switch (testType) {
       case "pathnameOnly": {
         // Test 1: Pathname-only pattern - should match ANY hostname
         const response = await fetch("http://localhost:3001/api/origin-agnostic", {
-          headers: scenaristHeaders,
+          headers: {
+            ...scenarist.getHeaders(request),
+          },
           cache: "no-store",
         });
         const data = await response.json();
@@ -65,7 +70,9 @@ const fetchTestData = async (
       case "localhostFull": {
         // Test 2: Full URL with localhost - hostname-specific
         const response = await fetch("http://localhost:3001/api/localhost-only", {
-          headers: scenaristHeaders,
+          headers: {
+            ...scenarist.getHeaders(request),
+          },
           cache: "no-store",
         });
         const data = await response.json();
@@ -75,7 +82,9 @@ const fetchTestData = async (
       case "externalFull": {
         // Test 3: Full URL with external domain - hostname-specific
         const response = await fetch("https://api.example.com/api/production-only", {
-          headers: scenaristHeaders,
+          headers: {
+            ...scenarist.getHeaders(request),
+          },
           cache: "no-store",
         });
         const data = await response.json();
@@ -85,7 +94,9 @@ const fetchTestData = async (
       case "regexp": {
         // Test 4: Native RegExp pattern - origin-agnostic
         const response = await fetch("http://localhost:3001/api/regex-pattern", {
-          headers: scenaristHeaders,
+          headers: {
+            ...scenarist.getHeaders(request),
+          },
           cache: "no-store",
         });
         const data = await response.json();
@@ -95,7 +106,9 @@ const fetchTestData = async (
       case "pathnameParams": {
         // Test 5: Pathname with path parameters - origin-agnostic + param extraction
         const response = await fetch(`http://localhost:3001/api/users/${userId}/posts/${postId}`, {
-          headers: scenaristHeaders,
+          headers: {
+            ...scenarist.getHeaders(request),
+          },
           cache: "no-store",
         });
         const data = await response.json();
@@ -105,7 +118,9 @@ const fetchTestData = async (
       case "fullUrlParams": {
         // Test 6: Full URL with path parameters - hostname-specific + param extraction
         const response = await fetch(`http://localhost:3001/api/local-users/${userId}`, {
-          headers: scenaristHeaders,
+          headers: {
+            ...scenarist.getHeaders(request),
+          },
           cache: "no-store",
         });
         const data = await response.json();
@@ -129,15 +144,11 @@ export default async function HostnameMatchingPage({ searchParams }: PageProps) 
   const userId = params.userId || "123";
   const postId = params.postId || "456";
 
-  // Get Scenarist headers for test ID propagation
+  // Get headers for test ID propagation
   const headersList = await headers();
-  const mockRequest = new Request("http://localhost:3001", {
-    headers: headersList,
-  });
-  const scenaristHeaders = scenarist.getHeaders(mockRequest);
-  const testId = headersList.get("x-test-id") || "no-test-id";
+  const testId = headersList.get(scenarist.config.headers.testId) || "default-test";
 
-  const fetchResult = await fetchTestData(testType, userId, postId, scenaristHeaders);
+  const fetchResult = await fetchTestData(testType, userId, postId, headersList);
 
   return (
     <div style={{ padding: "20px", fontFamily: "monospace" }}>
