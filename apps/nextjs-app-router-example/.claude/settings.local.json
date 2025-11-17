@@ -31,7 +31,13 @@
       "Bash(cat:*)",
       "Bash(gh issue create:*)",
       "Bash(gh issue comment:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh run list:*)",
+      "Bash(pnpm --filter=@scenarist/msw-adapter exec vitest run:*)",
+      "Bash(pnpm --filter=@scenarist/msw-adapter test msw-parity.test.ts)",
+      "Bash(gh api:*)"
     ],
     "deny": [],
     "ask": []

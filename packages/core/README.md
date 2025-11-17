@@ -39,7 +39,7 @@ await switchScenario('test-2', 'success'); // Test 2 sees success (parallel!)
 **True Parallel Testing**
 - 100+ tests run concurrently with different scenarios
 - Each test ID has isolated scenario state
-- No conflicts, no serialization needed
+- No conflicts between tests
 
 **Reusable Scenarios**
 - Define scenarios once, use across all tests
@@ -54,7 +54,7 @@ await switchScenario('test-2', 'success'); // Test 2 sees success (parallel!)
 **Type-Safe & Tested**
 - TypeScript strict mode throughout
 - 100% test coverage
-- Immutable, serializable data structures
+- Immutable, declarative data structures
 
 ## Architecture
 
@@ -75,7 +75,8 @@ src/
 **Types (Data Structures):**
 - Defined with `type` keyword
 - All properties are `readonly` for immutability
-- Must be serializable (no functions, closures, or class instances)
+- Use declarative patterns (no imperative functions, closures, or hidden logic)
+- Native RegExp allowed for pattern matching (ADR-0016)
 - Examples: `ScenaristScenario`, `ScenaristConfig`, `ActiveScenario`, `ScenaristMock`
 
 **Ports (Behavior Contracts):**
@@ -307,7 +308,7 @@ import {
   type ScenaristScenario,
 } from '@scenarist/core';
 
-// 1. Define scenarios (serializable definitions)
+// 1. Define scenarios (declarative patterns)
 const defaultScenario: ScenaristScenario = {
   id: 'default',
   name: 'Default Scenario',
@@ -341,7 +342,7 @@ const happyPathScenario: ScenaristScenario = {
   ],
 };
 
-// 2. Build configuration (all properties serializable)
+// 2. Build configuration (declarative plain data)
 const config = buildConfig({
   enabled: process.env.NODE_ENV !== 'production', // Evaluated first!
   defaultScenario: defaultScenario, // REQUIRED - fallback for unmocked requests
@@ -462,10 +463,11 @@ const scenario: ScenaristScenario = {
 
 ### Key Principles
 
-- **Serialization**: All types must be JSON-serializable (no functions!)
+- **Declarative Patterns**: All types use explicit patterns, no imperative functions (ADR-0016)
 - **Dependency Injection**: Ports are injected, never created internally
 - **Immutability**: All data structures use `readonly`
 - **Factory Pattern**: Use `createScenarioManager()`, not classes
+- **Side Benefit**: Most scenarios CAN be JSON-serializable (when not using native RegExp)
 
 ## Adapter Contract
 

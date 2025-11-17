@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Current Status**: All core packages implemented and tested! The hexagonal architecture is complete with:
 
 **Core Package** (`packages/core`)
-- ✅ All types and ports defined (serializable, immutable)
+- ✅ All types and ports defined (declarative, immutable)
 - ✅ Domain logic implemented (`createScenarioManager`, `buildConfig`, `ResponseSelector`)
 - ✅ Default adapters (`InMemoryScenarioRegistry`, `InMemoryScenarioStore`, `InMemoryStateManager`, `InMemorySequenceTracker`)
 - ✅ Dynamic Response System: Phase 1-3 complete (request matching, sequences, stateful mocks)
@@ -726,11 +726,12 @@ const createPayment = (amount: number, currency: string, cardId: string): Paymen
 
 Scenarist is built on **MSW (Mock Service Worker) v2.x**:
 
-- Scenarios are serializable definitions (not MSW handlers directly)
+- Scenarios are declarative definitions (not MSW handlers directly)
 - `ScenaristMock` types are converted to MSW `HttpHandler` at runtime
 - Handlers are applied dynamically based on active scenario
 - Test ID isolation allows different handlers per test
 - Mocks can be enabled/disabled per request via `x-mock-enabled` header
+- Native RegExp supported for pattern matching (ADR-0016)
 
 ## Package Dependencies
 
@@ -881,49 +882,51 @@ The `noUnusedParameters` rule caught that `config` wasn't being used in `Scenari
 - ❌ Deep function nesting (max 2 levels)
 - ❌ Any use of `any` type
 
-## Critical Architectural Insight: Serialization
+## Critical Architectural Insight: Declarative Patterns Over Imperative Functions
 
-**CRITICAL LEARNING**: When designing ports that abstract storage/persistence, ensure the data types are actually serializable. Otherwise, the ports become "architectural theater"—interfaces that can only ever have one implementation.
+**CRITICAL LEARNING**: When designing scenario definitions, enforce **declarative patterns** over imperative functions. This forces explicit, inspectable, composable scenarios that are easier to reason about and maintain.
+
+**Note**: This section previously emphasized "serialization" as the primary constraint. **ADR-0016** refined this understanding: the real constraint is **declarative patterns**, not JSON serializability. Native RegExp is now supported because it's declarative pattern matching, even though it's not JSON-serializable.
 
 ### The Problem We Discovered
 
 Initial design had `Scenario` containing MSW's `HttpHandler`:
 
 ```typescript
-// ❌ NOT SERIALIZABLE - Contains functions, closures, regex
+// ❌ IMPERATIVE - Contains functions, closures, hidden logic
 type Scenario = {
   readonly name: string;
   readonly mocks: ReadonlyArray<HttpHandler>; // MSW type with functions
 };
 ```
 
-**This broke the entire port architecture:**
-- `ScenarioRegistry` port? **Useless** - only in-memory implementation possible
-- `ScenarioStore` port? **Useless** - only in-memory implementation possible
-- Redis adapter? **Impossible** - can't serialize functions
-- File-based scenarios? **Impossible** - can't JSON.stringify functions
-- Remote API? **Impossible** - can't send functions over HTTP
+**This broke the architectural goals:**
+- Scenarios contained **imperative functions** with hidden logic
+- Behavior was **not inspectable** without execution
+- Patterns were **not composable** (function closures)
+- Tests couldn't **validate scenarios** without running them
+- No way to **visualize** or **analyze** scenario behavior
 
-The ports were **architectural theater** - pretty interfaces that could never have multiple implementations.
+The scenarios were **imperative black boxes** - no way to understand what they did without executing them.
 
-### The Solution: Serializable Definitions
+### The Solution: Declarative Definitions
 
-Separate **serializable definitions** (data) from **runtime handlers** (behavior):
+Separate **declarative definitions** (data patterns) from **runtime handlers** (behavior):
 
 ```typescript
-// ✅ SERIALIZABLE - Pure JSON data
+// ✅ DECLARATIVE - Explicit patterns, no hidden logic
 type ScenaristScenario = {
   readonly id: string;
   readonly name: string;
-  readonly mocks: ReadonlyArray<ScenaristMock>; // Plain data
+  readonly mocks: ReadonlyArray<ScenaristMock>; // Declarative patterns
 };
 
 type ScenaristMock = {
   readonly method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-  readonly url: string; // String, not regex
+  readonly url: string | RegExp; // String OR native RegExp (ADR-0016)
   readonly response: {
     readonly status: number;
-    readonly body?: unknown; // Must be JSON-serializable
+    readonly body?: unknown; // Plain data or template strings
     readonly headers?: Record<string, string>;
     readonly delay?: number;
   };
@@ -946,58 +949,60 @@ const toMSWHandler = (def: ScenaristMock): HttpHandler => {
 
 ### Benefits Unlocked
 
-Now the ports are **genuinely useful**:
+Now the scenarios are **genuinely useful**:
 
-- ✅ `InMemoryScenarioRegistry` - Fast, for single process
-- ✅ `RedisScenarioRegistry` - Distributed testing across processes
-- ✅ `FileSystemScenarioRegistry` - Version control scenarios as JSON/YAML
-- ✅ `RemoteScenarioRegistry` - Fetch scenarios from REST API
-- ✅ `DatabaseScenarioRegistry` - Store in PostgreSQL/MongoDB
+- ✅ **Explicit** - Match criteria visible in scenario definition
+- ✅ **Inspectable** - Can analyze scenarios without executing them
+- ✅ **Composable** - Combine match + sequence + state transparently
+- ✅ **Testable** - Validate scenario structure before running tests
+- ✅ **Maintainable** - Clear what each scenario does
+- ✅ **Side benefit**: Most scenarios CAN be stored as JSON (when not using native RegExp)
 
 ### The General Principle
 
-**When designing abstraction ports:**
+**When designing scenario APIs:**
 
-1. **Ask**: "Can this data be sent over a network?"
-2. **If no**: You can only ever have one implementation (in-memory)
-3. **If yes**: Multiple implementations are possible (Redis, files, remote, DB)
+1. **Ask**: "Is this declarative (WHAT to do) or imperative (HOW to do it)?"
+2. **Declarative patterns** → Allowed (strings, RegExp, objects, arrays)
+3. **Imperative functions** → Not allowed (closures, hidden logic, side effects)
 
-**Serializable means:**
+**Declarative patterns (ALLOWED):**
 - ✅ Primitives (string, number, boolean, null)
 - ✅ Plain objects and arrays
-- ✅ JSON-serializable data
-- ❌ Functions, closures, or methods
-- ❌ Regular expressions (convert to strings)
+- ✅ Native RegExp (declarative pattern matching - ADR-0016)
+- ✅ Template strings (`{{state.value}}`)
+- ✅ Match criteria objects (`{ headers: { 'x-tier': 'premium' } }`)
+
+**Imperative functions (NOT ALLOWED):**
+- ❌ Functions with closures
+- ❌ Arrow functions with logic
 - ❌ Class instances with methods
-- ❌ Symbols, undefined, or circular references
+- ❌ Callbacks that capture external scope
+- ❌ Any code with hidden side effects
 
-**This applies to all port-based architectures, not just Scenarist.**
+**This applies to all declarative API design, not just Scenarist.**
 
-### Config Must Also Be Serializable
+### Config Must Also Be Declarative
 
-**CRITICAL**: The same serialization principle applies to `ScenaristConfig`. Config must be serializable so it can be:
-- ✅ Stored in files (JSON/YAML configuration)
-- ✅ Sent over network (remote config service)
-- ✅ Stored in databases or Redis
-- ✅ Passed between processes
+**CRITICAL**: The same declarative principle applies to `ScenaristConfig`. Config should be plain data, not functions.
 
-**Initial mistake:** Config had `enabled: boolean | (() => boolean)` which violated serialization.
+**Initial mistake:** Config had `enabled: boolean | (() => boolean)` which violated the declarative pattern.
 
 ```typescript
-// ❌ WRONG - Function in config (not serializable)
+// ❌ WRONG - Function in config (imperative, not inspectable)
 type ScenaristConfig = {
-  readonly enabled: boolean | (() => boolean);  // Can't JSON.stringify!
+  readonly enabled: boolean | (() => boolean);  // Hidden logic!
 };
 
 const config = buildConfig({
-  enabled: () => process.env.NODE_ENV !== 'production'  // Function!
+  enabled: () => process.env.NODE_ENV !== 'production'  // Function closure!
 });
 ```
 
-**The fix:** Config must only contain serializable data. Evaluate functions BEFORE creating config.
+**The fix:** Config must only contain plain data. Evaluate expressions BEFORE creating config.
 
 ```typescript
-// ✅ CORRECT - Only boolean (serializable)
+// ✅ CORRECT - Plain boolean (declarative, inspectable)
 type ScenaristConfig = {
   readonly enabled: boolean;
 };
@@ -1008,20 +1013,20 @@ const config = buildConfig({
 ```
 
 **Why this matters:**
-- Config can now be stored in `.scenaristrc.json` files
-- Config can be fetched from remote config service
-- Config can be stored per-environment in a database
-- Without serialization, config could only exist in-memory
+- Config is **inspectable** (can see all values without execution)
+- Config is **explicit** (no hidden behavior in functions)
+- Config is **testable** (can validate structure before use)
+- **Side benefit**: Config CAN be stored in `.scenaristrc.json` files if needed
 
-**The principle:** ALL data structures in ports and domain must be serializable. No exceptions.
+**The principle:** ALL data structures in ports and domain should use declarative patterns. Prefer plain data over functions.
 
 ### The Real Value: Constraints Force Better Design
 
-**CRITICAL REFRAMING**: The serialization constraint's primary value is NOT enabling Redis/storage adapters. It's that the constraint **forces declarative API design**, which leads to clearer, more composable, more maintainable scenarios.
+**CRITICAL REFRAMING**: The declarative constraint's primary value is NOT enabling JSON storage (though that's a nice side benefit). It's that the constraint **forces explicit, inspectable, composable API design**, which leads to clearer, more maintainable scenarios.
 
 **The Initial Justification (Incomplete):**
 
-When we first enforced JSON serializability, we justified it as enabling multiple storage implementations:
+When we first enforced the constraint, we framed it as "JSON serializability" and justified it as enabling storage:
 - Redis for distributed testing
 - File system for version control
 - Remote APIs for centralized scenarios
@@ -1029,28 +1034,28 @@ When we first enforced JSON serializability, we justified it as enabling multipl
 
 **The Challenge:**
 
-During design review, a simple question exposed the flaw: "Is there another way we could solve the load balancing problem with cookies though?"
+During design review, a simple question exposed the incomplete reasoning: "Is there another way we could solve the load balancing problem with cookies though?"
 
-Answer: Yes. Cookies can solve session stickiness without Redis. The Redis justification was over-engineered.
+Answer: Yes. Cookies can solve session stickiness without Redis. The storage justification was over-engineered.
 
-**The Deeper Insight:**
+**The Deeper Insight (ADR-0016):**
 
-The serialization constraint is valuable **because it forces you toward declarative patterns**, not because of storage flexibility.
+The real constraint is **declarative patterns**, not JSON serializability. This became clear when we needed to support native RegExp (not JSON-serializable, but perfectly declarative).
 
-**How Constraints Drove Better Patterns:**
+**How Declarative Constraint Drove Better Patterns:**
 
-Each phase of development hit the serialization constraint and was forced to find declarative solutions:
+Each phase of development hit the declarative constraint and was forced to find better solutions:
 
 **Phase 1 - Request Content Matching:**
 ```typescript
-// ❌ CAN'T DO (not serializable) - Imperative function
+// ❌ IMPERATIVE - Hidden logic in function
 {
   method: 'GET',
   url: '/api/products',
   shouldMatch: (request) => request.headers['x-user-tier'] === 'premium'  // Function!
 }
 
-// ✅ FORCED TO DO (serializable) - Declarative criteria
+// ✅ DECLARATIVE - Explicit pattern
 {
   method: 'GET',
   url: '/api/products',
@@ -1069,7 +1074,7 @@ Each phase of development hit the serialization constraint and was forced to fin
 
 **Phase 2 - Response Sequences:**
 ```typescript
-// ❌ CAN'T DO (not serializable) - Imperative state check
+// ❌ IMPERATIVE - Hidden state management
 {
   method: 'GET',
   url: '/api/status',
@@ -1085,7 +1090,7 @@ Each phase of development hit the serialization constraint and was forced to fin
   }
 }
 
-// ✅ FORCED TO DO (serializable) - Declarative sequence
+// ✅ DECLARATIVE - Explicit sequence
 {
   method: 'GET',
   url: '/api/status',
@@ -1109,7 +1114,7 @@ Each phase of development hit the serialization constraint and was forced to fin
 
 **Phase 3 - Stateful Mocks:**
 ```typescript
-// ❌ CAN'T DO (not serializable) - Imperative concatenation
+// ❌ IMPERATIVE - Hidden state access
 {
   method: 'GET',
   url: '/api/cart',
@@ -1125,7 +1130,7 @@ Each phase of development hit the serialization constraint and was forced to fin
   }
 }
 
-// ✅ FORCED TO DO (serializable) - Declarative templates
+// ✅ DECLARATIVE - Explicit templates
 {
   method: 'GET',
   url: '/api/cart',
@@ -1174,10 +1179,10 @@ function Counter() {
 - Enables composition and reusability
 
 **Same principle applies to Scenarist:**
-- Not because functions are impossible
-- Because declarative scenarios are clearer
+- Not because imperative functions are impossible to implement
+- Because declarative scenarios are clearer and more maintainable
 - Easier to reason about request → response relationship
-- Enables composition (match + sequence + state)
+- Enables composition (match + sequence + state + RegExp patterns)
 
 **The Lesson:**
 
@@ -1185,35 +1190,39 @@ When you encounter a constraint that feels limiting:
 
 1. **Don't immediately fight it** - explore what it forces you toward
 2. **Look for patterns** - constraints often guide toward better abstractions
-3. **Question initial justifications** - the real value might be different than you think
-4. **Embrace declarative over imperative** - if serialization forces it, that's good!
+3. **Question initial justifications** - the real value might be different than you think (we thought it was "JSON serializability" but it's actually "declarative patterns")
+4. **Embrace declarative over imperative** - explicit patterns beat hidden logic
 
 **False Justification Danger:**
 
-We initially over-engineered the Redis justification:
+We initially over-engineered the storage justification:
 - "Need distributed testing across load-balanced servers"
-- "Must store scenarios in Redis for session stickiness"
-- Complex solution for hypothetical problem
+- "Must store scenarios in Redis/databases"
+- Complex solution for hypothetical problem (most users never need this)
 
 **Simple question exposed this:**
 - "Could we use cookies for session stickiness?"
 - Answer: Yes, cookies solve it simply
-- Redis justification crumbled
+- Storage justification crumbled
 
 **But the constraint was still valuable:**
-- Not for Redis capabilities
-- For declarative design patterns
-- The "why" was wrong, but the "what" was right
+- Not for storage capabilities (side benefit, not the goal)
+- For declarative design patterns (the real value)
+- The "why" (storage) was wrong, but the "what" (declarative) was right
+- **ADR-0016 refined this**: The real constraint is declarative patterns, not JSON serializability
 
-**Important:** Revisit your assumptions when challenged. The real value of a decision might be different than your initial reasoning.
+**Important:** Revisit your assumptions when challenged. The real value of a decision might be different than your initial reasoning. We thought we wanted "JSON serializability" but we actually wanted "declarative patterns".
 
 **This applies beyond Scenarist:**
 - Type systems constrain but force clearer code
 - Immutability constraints force functional patterns
 - Pure functions force explicit dependencies
+- Declarative UI (React) forces explicit state → UI mappings
 - Constraints guide toward better architectures
 
 **The principle:** Constraints aren't just limitations. They're **design guides** that push you toward clearer, more maintainable patterns. When a constraint feels painful, ask "What pattern is this forcing me toward?" The answer is often better than what you would have built without it.
+
+**For Scenarist specifically:** The declarative constraint (no imperative functions) is the real principle. JSON serializability was a proxy for this, but ADR-0016 refined it: declarative patterns (including native RegExp) are what matters, not storage capabilities.
 
 ### Sequence Reset on Scenario Switch - Idempotency Fix
 
@@ -2393,7 +2402,7 @@ export const onlineJourneyLoginScenarios = createScenario((variant) => ({
 - Easier to modify without affecting others
 - Yes, more duplication, but **clarity > DRY**
 
-**3. Serialization Constraints Enable Better Architecture**
+**3. Declarative Patterns Enable Better Architecture**
 
 Acquisition.Web allows arbitrary functions in mocks:
 ```typescript
@@ -2404,15 +2413,16 @@ http.post('/applications/:id/proofs', ({ request, params }) => {
 });
 ```
 
-**Problem:** Cannot serialize to JSON/YAML/database → only in-memory scenarios possible
+**Problem:** Imperative functions hide logic, not inspectable, not composable
 
 Scenarist constraints:
-- ✅ Scenarios are JSON-serializable
-- ✅ Can store in files, Redis, databases
-- ✅ Can fetch from remote APIs
-- ✅ Can version control as JSON/YAML
+- ✅ Scenarios use declarative patterns (explicit, inspectable)
+- ✅ Match criteria visible in scenario definition
+- ✅ Templates show state dependencies
+- ✅ RegExp patterns for URL matching (ADR-0016)
+- ✅ Side benefit: Most scenarios CAN be stored as JSON (when not using native RegExp)
 
-**Trade-off accepted:** Less dynamic mock logic, but **portability > flexibility**
+**Trade-off accepted:** Less dynamic mock logic, but **clarity > flexibility**
 
 ### Analysis Document
 
@@ -2677,9 +2687,10 @@ Tests care about:
 
 1. **Explicit > Implicit:** Explicit scenario switching beats implicit routing hacks
 2. **Clarity > DRY:** Separate scenarios beat variant system for readability
-3. **Portability > Flexibility:** JSON-serializable scenarios beat arbitrary functions
+3. **Declarative > Imperative:** Declarative patterns (ADR-0016) beat arbitrary functions - clearer, inspectable, composable
 4. **Security First:** Validate regex patterns, no eval, timeout protection
 5. **Type Safety:** Zod schemas at trust boundaries, TypeScript strict mode throughout
+6. **Side Benefit (Not Goal):** Most scenarios CAN be JSON-serializable when not using native RegExp - enables storage but that's not why we enforce declarative patterns
 
 **This analysis validates Scenarist's architectural decisions while identifying two legitimate feature gaps that will be addressed in upcoming releases.**
 

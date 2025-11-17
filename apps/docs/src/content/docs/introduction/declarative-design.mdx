@@ -1,9 +1,11 @@
 ---
 title: Declarative Design Philosophy
-description: Why Scenarist enforces JSON serializability and how constraint leads to better patterns
+description: Why Scenarist enforces declarative patterns and how this constraint leads to better test scenarios
 ---
 
-Scenarist scenarios are **pure data structures** (JSON-serializable objects), not executable code. This constraint isn't primarily about storage—it's about **enforcing declarative API design patterns** that lead to clearer, more maintainable tests.
+Scenarist scenarios are **declarative patterns** (explicit data structures, not imperative functions). This constraint isn't about JSON storage—it's about **enforcing explicit, inspectable, composable API design** that leads to clearer, more maintainable tests.
+
+**Note:** ADR-0016 refined this constraint to allow native RegExp (declarative pattern matching) while still preventing imperative functions.
 
 ## Quick Navigation
 

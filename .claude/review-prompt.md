@@ -27,36 +27,38 @@ import { FastifyRequest } from 'fastify';  // Never in core!
 - [ ] Adapters are in separate packages
 - [ ] No adapter depends on another adapter
 
-### 2. Serializable Scenario Definitions
+### 2. Declarative Scenario Definitions
 
-**CRITICAL:** Scenarios must be serializable to enable distributed testing.
+**CRITICAL:** Scenarios must use declarative patterns (no imperative functions).
 
 ```typescript
-// ❌ WRONG - Non-serializable (contains functions)
+// ❌ WRONG - Imperative function-based (hidden logic)
 type Scenario = {
-  readonly mocks: ReadonlyArray<HttpHandler>;  // Functions!
+  readonly mocks: ReadonlyArray<HttpHandler>;  // Functions with closures!
+  readonly shouldMatch: (request: Request) => boolean;  // Imperative logic!
 };
 
-// ✅ CORRECT - Serializable (pure JSON)
+// ✅ CORRECT - Declarative data structures
 type ScenaristScenario = {
-  readonly mocks: ReadonlyArray<ScenaristMock>;  // Plain data
+  readonly mocks: ReadonlyArray<ScenaristMock>;  // Declarative patterns
 };
 
 type ScenaristMock = {
   readonly method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-  readonly url: string;
+  readonly url: string | RegExp;  // ✅ RegExp is declarative (pattern matching)
+  readonly match?: MatchCriteria;  // ✅ Declarative criteria (not functions)
   readonly response: {
     readonly status: number;
-    readonly body?: unknown;  // Must be JSON-serializable
+    readonly body?: unknown;
   };
 };
 ```
 
 **Review checklist:**
-- [ ] No functions, closures, or methods in scenario types
-- [ ] No regex patterns (use string patterns)
-- [ ] No class instances with methods
-- [ ] All data is JSON-serializable
+- [ ] No functions, closures, or methods in scenario types (declarative patterns only)
+- [ ] Native RegExp is ALLOWED (declarative pattern matching) per ADR-0016
+- [ ] Match criteria use data structures, not functions
+- [ ] No class instances with imperative methods
 - [ ] ActiveScenario stores only references (scenarioId + variantName)
 
 ### 3. Dependency Injection

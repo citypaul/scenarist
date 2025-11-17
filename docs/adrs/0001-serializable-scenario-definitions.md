@@ -1,8 +1,10 @@
 # ADR-0001: Serializable Scenario Definitions
 
-**Status**: Accepted
+**Status**: Accepted (Refined by ADR-0013 and ADR-0016)
 **Date**: 2025-10-20
 **Authors**: Claude Code
+
+> **Note**: This ADR established the foundational principle of using data definitions instead of runtime functions. ADR-0013 (2025-11-14) refined this to emphasize declarative patterns over strict JSON serializability. ADR-0016 (2025-01-16) further refined this by allowing native RegExp objects, recognizing that declarative patterns (not JSON serializability) is the true architectural constraint.
 
 ## Context
 

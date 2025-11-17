@@ -38,9 +38,9 @@ A **Scenario** is a complete set of mock API responses representing a specific a
 - "Premium Tier User" - APIs return responses for premium features
 
 **Key characteristics:**
-- Scenarios are **serializable** (pure JSON, no functions)
+- Scenarios use **declarative patterns** (explicit, inspectable, no hidden logic)
 - Scenarios can be stored in version control
-- Scenarios can be loaded from files, databases, or Redis
+- Most scenarios CAN be stored as JSON (when not using native RegExp)
 - One scenario is active per test ID at a time
 
 ### Test ID
@@ -65,13 +65,13 @@ Each test ID has its own:
 
 ### Mock Definition
 
-A **Mock Definition** is a serializable description of how to respond to HTTP requests. Unlike MSW handlers (which contain functions), mock definitions are pure data that can be serialized to JSON.
+A **Mock Definition** is a declarative description of how to respond to HTTP requests. Unlike MSW handlers (which contain functions), mock definitions use explicit patterns that are inspectable and composable.
 
 **Basic mock:**
 ```typescript
 {
   method: 'GET',
-  url: 'https://api.stripe.com/charges/:id',
+  url: 'https://api.stripe.com/charges/:id',  // String or native RegExp (ADR-0016)
   response: {
     status: 200,
     body: { id: 'ch_123', amount: 1000, status: 'succeeded' }
@@ -79,11 +79,11 @@ A **Mock Definition** is a serializable description of how to respond to HTTP re
 }
 ```
 
-**Why serializable?**
-- Store in Redis for distributed testing
-- Save to files for version control
-- Fetch from remote APIs
-- Works across process boundaries
+**Why declarative patterns?**
+- Explicit and inspectable (visible in scenario definition)
+- Composable with other features (match + sequence + state)
+- Type-safe and validatable
+- Side benefit: Most mocks CAN be stored as JSON (when not using native RegExp)
 
 ## Scenario Definitions
 
@@ -340,7 +340,7 @@ Example:
 ```typescript
 response: {
   status: 200,              // HTTP status code
-  body: { ... },            // Response body (JSON-serializable)
+  body: { ... },            // Response body (plain data or template strings)
   headers?: {               // Optional response headers
     'x-custom': 'value'
   },
