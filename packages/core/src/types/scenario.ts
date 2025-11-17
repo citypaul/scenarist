@@ -11,6 +11,35 @@ export type HttpRequestContext = {
   readonly body?: unknown; // Request body (JSON-parsed)
   readonly headers: Readonly<Record<string, string>>;
   readonly query: Readonly<Record<string, string>>;
+  /**
+   * Path parameters extracted from URL pattern matching.
+   *
+   * MSW compatibility:
+   * - Simple params (:id) → string
+   * - Repeating params (:path+) → ReadonlyArray<string>
+   * - Absent optional params (:id?) → key omitted from object
+   */
+  readonly params?: Readonly<Record<string, string | ReadonlyArray<string>>>;
+};
+
+/**
+ * Mock paired with its extracted URL path parameters.
+ * Used to pass both the mock definition and its params through the pipeline.
+ *
+ * When URL matching succeeds, params are extracted from the URL pattern.
+ * After ResponseSelector chooses a mock, those params are added to HttpRequestContext
+ * so template replacement can use them via {{params.key}} syntax.
+ *
+ * Example:
+ * ```typescript
+ * // Mock with pattern: '/users/:id'
+ * // Request URL: '/users/123'
+ * // Result: { mock: {...}, params: { id: '123' } }
+ * ```
+ */
+export type ScenaristMockWithParams = {
+  readonly mock: import('../schemas/index.js').ScenaristMock;
+  readonly params?: Readonly<Record<string, string | ReadonlyArray<string>>>;
 };
 
 /**

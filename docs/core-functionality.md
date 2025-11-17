@@ -8,6 +8,8 @@ This document explains Scenarist's core domain logic, independent of any specifi
 - [Core Concepts](#core-concepts)
 - [Scenario Definitions](#scenario-definitions)
 - [Mock Definitions](#mock-definitions)
+  - [URL Patterns](#url-patterns)
+  - [Response Structure](#response-structure)
 - [Dynamic Response System](#dynamic-response-system)
   - [Request Content Matching](#request-content-matching)
   - [Specificity-Based Selection](#specificity-based-selection)
@@ -36,9 +38,9 @@ A **Scenario** is a complete set of mock API responses representing a specific a
 - "Premium Tier User" - APIs return responses for premium features
 
 **Key characteristics:**
-- Scenarios are **serializable** (pure JSON, no functions)
+- Scenarios use **declarative patterns** (explicit, inspectable, no hidden logic)
 - Scenarios can be stored in version control
-- Scenarios can be loaded from files, databases, or Redis
+- Most scenarios CAN be stored as JSON (when not using native RegExp)
 - One scenario is active per test ID at a time
 
 ### Test ID
@@ -63,13 +65,13 @@ Each test ID has its own:
 
 ### Mock Definition
 
-A **Mock Definition** is a serializable description of how to respond to HTTP requests. Unlike MSW handlers (which contain functions), mock definitions are pure data that can be serialized to JSON.
+A **Mock Definition** is a declarative description of how to respond to HTTP requests. Unlike MSW handlers (which contain functions), mock definitions use explicit patterns that are inspectable and composable.
 
 **Basic mock:**
 ```typescript
 {
   method: 'GET',
-  url: 'https://api.stripe.com/charges/:id',
+  url: 'https://api.stripe.com/charges/:id',  // String or native RegExp (ADR-0016)
   response: {
     status: 200,
     body: { id: 'ch_123', amount: 1000, status: 'succeeded' }
@@ -77,11 +79,11 @@ A **Mock Definition** is a serializable description of how to respond to HTTP re
 }
 ```
 
-**Why serializable?**
-- Store in Redis for distributed testing
-- Save to files for version control
-- Fetch from remote APIs
-- Works across process boundaries
+**Why declarative patterns?**
+- Explicit and inspectable (visible in scenario definition)
+- Composable with other features (match + sequence + state)
+- Type-safe and validatable
+- Side benefit: Most mocks CAN be stored as JSON (when not using native RegExp)
 
 ## Scenario Definitions
 
@@ -127,18 +129,250 @@ const paymentSuccess: ScenaristScenario = {
 
 ### URL Patterns
 
-Scenarist supports dynamic URL patterns using MSW syntax:
+**Status:** ✅ Implemented (Phase 2.5)
+
+Scenarist supports two types of URL handling:
+
+1. **Routing Patterns** - Define which URLs a mock can intercept
+2. **URL Matching** - Match specific URL characteristics for conditional responses
+
+#### Routing Patterns
+
+The `url` field supports three pattern types with different hostname matching behaviors:
+
+**1. Pathname-only patterns** (origin-agnostic)
+```typescript
+url: '/api/users'          // Exact pathname
+url: '/api/users/:id'      // Path parameters
+url: '/api/users/*'        // Wildcards
+```
+- **Matches ANY hostname** - works across localhost, staging, production
+- Best for environment-agnostic mocks
+- Example: `/api/users/123` matches:
+  - `http://localhost:3000/api/users/123` ✅
+  - `https://staging.example.com/api/users/123` ✅
+  - `https://api.production.com/api/users/123` ✅
+
+**2. Full URL patterns** (hostname-specific)
+```typescript
+url: 'https://api.example.com/users'           // Exact match with hostname
+url: 'https://api.example.com/users/:id'       // Path parameters with hostname
+url: 'https://api.example.com/users/*'         // Wildcards with hostname
+```
+- **Matches ONLY the specified hostname** (protocol + host must match exactly)
+- Best for environment-specific mocks
+- Example: `https://api.example.com/users/:id` matches:
+  - `https://api.example.com/users/123` ✅
+  - `http://api.example.com/users/123` ❌ (different protocol)
+  - `https://api.staging.com/users/123` ❌ (different hostname)
+
+**3. Native RegExp patterns** (origin-agnostic, weak comparison)
+```typescript
+url: /\/users\/\d+/        // Matches /users/123, /users/456, etc.
+url: /\/posts\//           // Matches any URL containing /posts/
+```
+- **Matches ANY hostname** - substring matching (MSW weak comparison)
+- Best for flexible pattern matching across environments
+- Example: `/\/posts\//` matches:
+  - `DELETE http://localhost:8080/posts/` ✅
+  - `DELETE https://backend.dev/user/posts/` ✅
+  - Any URL containing `/posts/` ✅
+
+**Choosing the right pattern type:**
 
 ```typescript
-// Exact match
-url: 'https://api.example.com/users'
+// ✅ Pathname pattern - environment-agnostic (recommended for most mocks)
+{
+  url: '/api/products',
+  response: { status: 200, body: { products: [] } }
+}
 
-// Path parameters
-url: 'https://api.example.com/users/:id'
-url: 'https://api.example.com/users/:userId/posts/:postId'
+// ✅ Full URL pattern - hostname-specific (when environment matters)
+{
+  url: 'https://api.production.com/admin',
+  response: { status: 403, body: { error: 'Admin disabled in production' } }
+}
 
-// Wildcards
-url: 'https://api.example.com/users/*'
+// ✅ RegExp pattern - flexible matching across environments
+{
+  url: /\/api\/v\d+\/users/,  // Matches /api/v1/users, /api/v2/users, etc.
+  response: { status: 200, body: { users: [] } }
+}
+```
+
+**IMPORTANT:** If you specify a hostname explicitly in a full URL pattern, it WILL be matched. Choose pathname patterns for flexibility, full URL patterns for control.
+
+**Key Point:** The `url` field determines **which requests** the mock can intercept (routing), not which requests it will actually respond to (that's what `match.url` is for).
+
+#### URL Matching (Phase 2.5)
+
+Once a routing pattern matches, you can use `match.url` to conditionally respond based on URL characteristics:
+
+**1. Native RegExp Matching:**
+```typescript
+{
+  method: 'GET',
+  url: 'https://api.example.com/users/:username',  // Routing: any username
+  match: {
+    url: /\/users\/\d+$/  // Matching: only numeric IDs get this response
+  },
+  response: { status: 200, body: { type: 'numeric-user' } }
+}
+```
+
+**2. String Matching Strategies:**
+```typescript
+// Contains - URL contains substring
+{
+  method: 'GET',
+  url: 'https://api.example.com/weather/:city',
+  match: {
+    url: { contains: '/london' }  // Matches any URL containing '/london'
+  },
+  response: { status: 200, body: { city: 'London' } }
+}
+
+// StartsWith - URL starts with prefix
+{
+  method: 'GET',
+  url: 'https://api.example.com/weather/:version/:city',
+  match: {
+    url: { startsWith: 'https://api.example.com/weather/v2' }  // Only v2 API
+  },
+  response: { status: 200, body: { version: 2 } }
+}
+
+// EndsWith - URL ends with suffix
+{
+  method: 'GET',
+  url: 'https://api.example.com/files/:filename',
+  match: {
+    url: { endsWith: '.json' }  // Only JSON files
+  },
+  response: { status: 200, body: { type: 'json-file' } }
+}
+
+// Equals - Exact string match (backward compatible)
+{
+  method: 'GET',
+  url: 'https://api.example.com/users/:username',
+  match: {
+    url: 'https://api.example.com/users/exactuser'  // Exact URL only
+  },
+  response: { status: 200, body: { user: 'exact' } }
+}
+```
+
+**3. MSW Weak Comparison (RegExp):**
+
+RegExp patterns use **weak comparison** - they match anywhere in the URL (substring matching), regardless of origin. This is MSW-compatible behavior.
+
+```typescript
+// Example: Match users endpoints across any origin
+{
+  method: 'GET',
+  url: '*',  // Route all GET requests
+  match: {
+    url: /\/users\/\d+/  // Match only URLs containing /users/{numeric-id}
+  },
+  response: { status: 200, body: { matched: true } }
+}
+```
+
+**This matches:**
+- ✅ `https://api.example.com/users/123`
+- ✅ `http://localhost/v1/users/456/profile`
+- ✅ `https://backend.dev/api/users/789/settings`
+
+**This does NOT match:**
+- ❌ `https://api.example.com/posts/123` (pattern not found)
+
+**Weak Comparison Use Cases:**
+
+**Cross-Origin API Calls:**
+```typescript
+{
+  match: {
+    url: /\/api\/v\d+\//  // Matches v1, v2, v3, etc.
+  }
+}
+// Works for: localhost, staging, production, any API version
+```
+
+**Query Parameter Matching:**
+```typescript
+{
+  match: {
+    url: /\/search\?/  // Matches any URL with query params
+  }
+}
+// Matches: '/search?q=test', 'https://example.com/v1/search?filter=active'
+```
+
+**Case-Insensitive Matching:**
+```typescript
+{
+  match: {
+    url: /\/API\/USERS/i  // 'i' flag = case-insensitive
+  }
+}
+// Matches: '/api/users', '/API/USERS', '/Api/Users'
+```
+
+**Weak vs. Strong Comparison:**
+
+| Pattern Type | Comparison | Origin-Agnostic? | Example |
+|--------------|------------|------------------|---------|
+| String literal | Strong (exact) | ❌ No | `url: '/api/users/123'` |
+| `{ contains }` | Strong (substring) | ❌ No | `url: { contains: '/users/' }` |
+| `{ startsWith }` | Strong (prefix) | ❌ No | `url: { startsWith: '/api/' }` |
+| `{ endsWith }` | Strong (suffix) | ❌ No | `url: { endsWith: '.json' }` |
+| RegExp | Weak (substring) | ✅ Yes | `url: /\/users\/\d+/` |
+
+**Key Difference:** Only RegExp patterns match across different origins. String strategies require the full URL to match exactly.
+
+**Routing vs. Matching Example:**
+```typescript
+const mocks = [
+  // Routing: Intercepts ALL /users/:id requests
+  // Matching: Only responds when ID is numeric
+  {
+    method: 'GET',
+    url: 'https://api.example.com/users/:id',  // Routing pattern
+    match: {
+      url: /\/users\/\d+$/  // URL matching condition
+    },
+    response: { status: 200, body: { type: 'numeric' } }
+  },
+
+  // Fallback: Responds when routing matches but URL matching doesn't
+  {
+    method: 'GET',
+    url: 'https://api.example.com/users/:id',
+    response: { status: 200, body: { type: 'other' } }
+  }
+];
+
+// GET /users/123   → First mock (numeric ID matches regex)
+// GET /users/alice → Second mock (fallback, regex doesn't match)
+```
+
+**How the resolved URL works:**
+- For exact URLs: `match.url` compares against the literal URL string
+- For path params/wildcards: `match.url` compares against the **resolved URL** (path params replaced with actual values)
+
+Example:
+```typescript
+// Routing pattern: /users/:id
+// Request: GET /users/123
+// Resolved URL: /users/123  ← This is what match.url tests against
+
+{
+  url: 'https://api.example.com/users/:id',  // Routing: matches /users/123
+  match: {
+    url: /\/users\/\d+$/  // Matching: tests against resolved "/users/123"
+  }
+}
 ```
 
 ### Response Structure
@@ -146,7 +380,7 @@ url: 'https://api.example.com/users/*'
 ```typescript
 response: {
   status: 200,              // HTTP status code
-  body: { ... },            // Response body (JSON-serializable)
+  body: { ... },            // Response body (plain data or template strings)
   headers?: {               // Optional response headers
     'x-custom': 'value'
   },
@@ -364,9 +598,19 @@ Match when field value **ends with** the suffix:
 
 **5. Regex (Pattern Match)**
 
-Match when field value **matches** the regex pattern:
+Match when field value **matches** the regex pattern. You can use either native JavaScript RegExp or the serialized form:
 
 ```typescript
+// Native RegExp (recommended for readability)
+{
+  match: {
+    headers: {
+      referer: /\/premium|\/vip/i  // Case-insensitive pattern
+    }
+  }
+}
+
+// Serialized form (equivalent to above)
 {
   match: {
     headers: {
@@ -387,7 +631,52 @@ Match when field value **matches** the regex pattern:
 // ❌ 'https://example.com/standard'
 ```
 
-**Security:** Regex patterns are validated using `redos-detector` to prevent ReDoS attacks. Unsafe patterns are rejected at scenario registration.
+**Common Pattern Examples:**
+
+```typescript
+// API versioning - match any version number
+{ referer: /\/api\/v\d+\// }
+// Matches: /api/v1/, /api/v2/, /api/v10/
+
+// Email domain restriction
+{ email: /@company\.com$/i }
+// Matches: john@company.com, admin@COMPANY.COM
+
+// API key format validation
+{ 'x-api-key': /^sk_(test|live)_[a-zA-Z0-9]{24}$/ }
+// Matches: sk_test_abcd1234..., sk_live_wxyz5678...
+
+// Multiple values with alternation
+{ campaign: /summer|winter|spring|fall/i }
+// Matches: summer-sale, WINTER-promo, Spring-event
+
+// Numeric ID format
+{ userId: /^\d{6,10}$/ }
+// Matches: 123456, 9876543210
+// Rejects: abc123, 12345 (too short)
+```
+
+**Security: ReDoS Protection**
+
+⚠️ **IMPORTANT**: Both serialized and native RegExp patterns are validated using `redos-detector` to prevent ReDoS (Regular Expression Denial of Service) attacks.
+
+**Unsafe patterns are automatically rejected at scenario registration:**
+
+```typescript
+// ❌ REJECTED - Catastrophic backtracking
+{ referer: /(a+)+b/ }
+// Error: Unsafe regex pattern detected
+
+// ❌ REJECTED - Exponential time complexity
+{ email: /(x+x+)+@/ }
+// Error: Unsafe regex pattern detected
+
+// ✅ SAFE - Linear time complexity
+{ referer: /\/api\/[^/]+\/users/ }
+// Matches safely with bounded backtracking
+```
+
+Scenarist validates patterns before execution to protect your tests from denial-of-service attacks caused by malicious or poorly designed regex patterns.
 
 **Supported Flags:**
 - `i` - Case-insensitive
@@ -906,67 +1195,6 @@ const scenarioManager = createScenarioManager({
 - Supports distributed testing
 - True hexagonal architecture
 - Follows dependency inversion principle
-
-## Future Features
-
-### Response Sequences (Phase 2)
-
-Enable ordered sequences of responses for polling scenarios:
-
-```typescript
-{
-  method: 'GET',
-  url: '/api/job/:id',
-  sequence: {
-    responses: [
-      { status: 200, body: { status: 'pending' } },
-      { status: 200, body: { status: 'processing' } },
-      { status: 200, body: { status: 'complete' } }
-    ],
-    repeat: 'last'  // After sequence ends, repeat last response
-  }
-}
-```
-
-**Use cases:**
-- Polling APIs that return different status over time
-- Progressive multi-step processes
-- Time-dependent behaviors
-
-### Stateful Mocks (Phase 3)
-
-Enable capturing data from requests and injecting it into responses:
-
-```typescript
-// Capture from POST request
-{
-  method: 'POST',
-  url: '/api/cart/items',
-  captureState: {
-    'cartItems[]': 'body.item'  // Append to array
-  },
-  response: { status: 200, body: { success: true } }
-}
-
-// Inject into GET response
-{
-  method: 'GET',
-  url: '/api/cart',
-  response: {
-    status: 200,
-    body: {
-      items: '{{state.cartItems}}',  // Template replacement
-      count: '{{state.cartItems.length}}'
-    }
-  }
-}
-```
-
-**Use cases:**
-- Shopping cart flows
-- Multi-step forms
-- User profile updates
-- Any scenario where later responses depend on earlier requests
 
 ## Related Documentation
 

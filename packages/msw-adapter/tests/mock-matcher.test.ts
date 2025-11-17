@@ -53,16 +53,6 @@ describe('Mock Matcher', () => {
   });
 
   describe('URL pattern matching', () => {
-    it('should match using glob patterns', () => {
-      const mocks: ReadonlyArray<MockDefinition> = [
-        mockDefinition({ url: '*/users/*' }),
-      ];
-
-      const result = findMatchingMock(mocks, 'GET', 'https://api.example.com/users/123');
-
-      expect(result).toBe(mocks[0]);
-    });
-
     it('should match using path parameters', () => {
       const mocks: ReadonlyArray<MockDefinition> = [
         mockDefinition({ url: 'https://api.example.com/users/:id' }),

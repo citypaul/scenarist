@@ -5,20 +5,21 @@
  * Phase 2: Request matching for tier-based pricing
  */
 
-import type { ScenaristScenario, ScenaristScenarios } from "@scenarist/nextjs-adapter/pages";
+import type { ScenaristScenario, ScenaristScenarios } from "@scenarist/nextjs-adapter/app";
 import { buildProducts } from "../data/products";
 
 /**
- * Default scenario - baseline behavior
- * Provides fallback mocks for all endpoints
- * This ensures getServerSideProps works when Next.js server starts (no test-id yet)
+ * Default scenario - baseline behavior with happy path mocks
+ *
+ * These mocks provide fallback responses when active scenario mocks don't match.
+ * They represent the most common/expected behavior for each API.
  */
 export const defaultScenario: ScenaristScenario = {
   id: "default",
   name: "Default Scenario",
-  description: "Default baseline behavior with standard fallbacks",
+  description: "Default baseline behavior with happy path mocks",
   mocks: [
-    // Products endpoint - fallback with standard pricing
+    // Products API - standard tier pricing (most common case)
     {
       method: "GET",
       url: "http://localhost:3001/products",
@@ -29,7 +30,7 @@ export const defaultScenario: ScenaristScenario = {
         },
       },
     },
-    // Cart endpoint - empty cart (fallback)
+    // Cart API - empty cart (initial state)
     {
       method: "GET",
       url: "http://localhost:3001/cart",
@@ -37,6 +38,18 @@ export const defaultScenario: ScenaristScenario = {
         status: 200,
         body: {
           items: [],
+        },
+      },
+    },
+    // Cart add - successful addition
+    {
+      method: "POST",
+      url: "http://localhost:3001/cart/add",
+      response: {
+        status: 200,
+        body: {
+          success: true,
+          message: "Item added to cart",
         },
       },
     },
@@ -48,16 +61,17 @@ export const defaultScenario: ScenaristScenario = {
  *
  * Demonstrates Scenarist's request matching feature:
  * - Intercepts calls to localhost:3001/products (json-server)
- * - Matches on x-user-tier: premium header for specific pricing
- * - Automatic default fallback provides standard pricing for non-matching requests
+ * - Matches on x-user-tier: premium header
+ * - Returns premium pricing (£99.99)
+ *
+ * When request doesn't match (e.g., x-user-tier: standard), automatically
+ * falls back to default scenario's mock (standard pricing).
  */
 export const premiumUserScenario: ScenaristScenario = {
   id: "premiumUser",
   name: "Premium User",
   description: "Premium tier pricing (£99.99)",
   mocks: [
-    // Specific match: premium tier header gets premium pricing
-    // Fallback handled automatically by default scenario
     {
       method: "GET",
       url: "http://localhost:3001/products",
@@ -80,15 +94,13 @@ export const premiumUserScenario: ScenaristScenario = {
  * Demonstrates Scenarist's request matching feature:
  * - Intercepts calls to localhost:3001/products (json-server)
  * - Matches on x-user-tier: standard header
- * - Automatic default fallback provides standard pricing for non-matching requests
+ * - Returns standard pricing (£149.99)
  */
 export const standardUserScenario: ScenaristScenario = {
   id: "standardUser",
   name: "Standard User",
   description: "Standard tier pricing (£149.99)",
   mocks: [
-    // Match with standard tier header
-    // Fallback handled automatically by default scenario
     {
       method: "GET",
       url: "http://localhost:3001/products",
@@ -135,28 +147,29 @@ export const cartWithStateScenario: ScenaristScenario = {
         },
       },
     },
-    // POST /cart/add - Capture productId into cartItems array
+    // POST /cart/add - Capture productId into state
     {
       method: "POST",
       url: "http://localhost:3001/cart/add",
       captureState: {
-        "cartItems[]": "body.productId", // Append productId to cartItems array
+        "cartItems[]": "body.productId",
       },
       response: {
         status: 200,
         body: {
           success: true,
+          message: "Item added to cart",
         },
       },
     },
-    // GET /cart - Inject cart items from state
+    // GET /cart - Inject cartItems from state
     {
       method: "GET",
       url: "http://localhost:3001/cart",
       response: {
         status: 200,
         body: {
-          items: "{{state.cartItems}}", // Inject captured cart items
+          items: "{{state.cartItems}}",
         },
       },
     },
@@ -386,7 +399,7 @@ export const checkoutScenario: ScenaristScenario = {
  * - Falls back to default scenario (standard pricing) when no match
  *
  * Use case: Different pricing based on marketing campaign
- * Server-side: getServerSideProps extracts campaign from query param, adds as header to fetch
+ * Server-side: API route extracts campaign from query param, adds as header to fetch
  */
 export const campaignRegexScenario: ScenaristScenario = {
   id: "campaignRegex",
@@ -414,15 +427,15 @@ export const campaignRegexScenario: ScenaristScenario = {
 };
 
 /**
- * String Matching Scenario - Testing string matching strategies
+ * String Matching Strategies Scenario - Phase 2: ATDD
  *
- * Demonstrates Scenarist's string matching strategies:
- * - contains: Substring matching (campaign header)
- * - startsWith: Prefix matching (API key)
- * - endsWith: Suffix matching (email domain)
+ * Demonstrates all string matching strategies:
+ * - contains: Substring matching
+ * - startsWith: Prefix matching
+ * - endsWith: Suffix matching
  * - equals: Explicit exact matching
  *
- * Use case: Flexible request matching without regex complexity
+ * This scenario is designed to fail until Phase 2 implementation is complete.
  */
 export const stringMatchingScenario: ScenaristScenario = {
   id: "stringMatching",
@@ -522,13 +535,12 @@ export const stringMatchingScenario: ScenaristScenario = {
 };
 
 /**
- * URL Matching Scenario - Testing native RegExp and string matching strategies
+ * Scenario: URL Matching with Native RegExp and String Strategies
  *
  * Demonstrates URL matching capabilities:
  * - Native RegExp patterns for numeric IDs
- * - String strategies (contains, startsWith, endsWith, equals) for URL filtering
+ * - String strategies (contains, startsWith, endsWith) for URL filtering
  * - Combined matching (URL + headers)
- * - Specificity-based selection
  */
 export const urlMatchingScenario: ScenaristScenario = {
   id: "urlMatching",
@@ -721,135 +733,119 @@ export const urlMatchingScenario: ScenaristScenario = {
         },
       },
     },
-  ],
-};
 
-/**
- * Hostname Matching Demonstration Scenario
- *
- * Demonstrates the three URL pattern types and their hostname matching behavior:
- *
- * 1. PATHNAME-ONLY patterns (/api/data) - Origin-agnostic (match ANY hostname)
- * 2. FULL URL patterns (http://localhost:3001/api/data) - Hostname-specific (must match exactly)
- * 3. REGEXP patterns (/\/api\/data/) - Origin-agnostic (MSW weak comparison)
- */
-export const hostnameMatchingScenario: ScenaristScenario = {
-  id: "hostnameMatching",
-  name: "Hostname Matching Demonstration",
-  description: "Shows pathname vs full URL vs RegExp pattern behaviors",
-  mocks: [
-    // Example 1: Pathname-only pattern - matches ANY hostname
+    // Test 7: Path Parameter - Simple :id extraction
+    // This should extract the user ID from the URL and use it in the response
+    // Using /api/user-param/:id to avoid conflict with regex numeric ID mock
     {
       method: "GET",
-      url: "/api/origin-agnostic",
+      url: "http://localhost:3001/api/user-param/:id",
       response: {
         status: 200,
         body: {
-          patternType: "pathname-only",
-          behavior: "origin-agnostic",
-          message: "This matches requests to ANY hostname",
-          examples: [
-            "http://localhost:3001/api/origin-agnostic",
-            "https://api.example.com/api/origin-agnostic",
-            "http://staging.test.io/api/origin-agnostic",
-          ],
+          userId: "{{params.id}}",  // Should be extracted from URL
+          login: "user-{{params.id}}",
+          name: "User {{params.id}}",
+          bio: "User with ID from path parameter",
+          matchedBy: "pathParam",
         },
       },
     },
 
-    // Example 2: Full URL pattern with localhost - hostname-specific
+    // Test 8: Multiple Path Parameters - :userId and :postId
     {
       method: "GET",
-      url: "http://localhost:3001/api/localhost-only",
+      url: "http://localhost:3001/api/users/:userId/posts/:postId",
       response: {
         status: 200,
         body: {
-          patternType: "full-url",
-          hostname: "localhost:3001",
-          behavior: "hostname-specific",
-          message: "This ONLY matches localhost:3001 requests",
-          willMatch: "http://localhost:3001/api/localhost-only",
-          wontMatch: [
-            "https://api.example.com/api/localhost-only",
-            "http://staging.test.io/api/localhost-only",
-          ],
-        },
-      },
-    },
-
-    // Example 3: Full URL pattern with production hostname
-    {
-      method: "GET",
-      url: "https://api.example.com/api/production-only",
-      response: {
-        status: 200,
-        body: {
-          patternType: "full-url",
-          hostname: "api.example.com",
-          behavior: "hostname-specific",
-          message: "This ONLY matches api.example.com requests",
-          willMatch: "https://api.example.com/api/production-only",
-          wontMatch: [
-            "http://localhost:3001/api/production-only",
-            "http://staging.test.io/api/production-only",
-          ],
-        },
-      },
-    },
-
-    // Example 4: Native RegExp pattern - origin-agnostic
-    {
-      method: "GET",
-      url: /\/api\/regex-pattern$/,
-      response: {
-        status: 200,
-        body: {
-          patternType: "native-regexp",
-          behavior: "origin-agnostic (MSW weak comparison)",
-          message: "This matches the pathname pattern at ANY hostname",
-          examples: [
-            "http://localhost:3001/api/regex-pattern",
-            "https://api.example.com/api/regex-pattern",
-            "http://staging.test.io/api/regex-pattern",
-          ],
-        },
-      },
-    },
-
-    // Example 5: Pathname with path parameters - origin-agnostic + param extraction
-    {
-      method: "GET",
-      url: "/api/users/:userId/posts/:postId",
-      response: {
-        status: 200,
-        body: {
-          patternType: "pathname-only with params",
-          behavior: "origin-agnostic + param extraction",
-          message: "Extracts params and matches ANY hostname",
           userId: "{{params.userId}}",
           postId: "{{params.postId}}",
-          examples: [
-            "http://localhost:3001/api/users/123/posts/456",
-            "https://api.example.com/api/users/123/posts/456",
-          ],
+          title: "Post {{params.postId}} by {{params.userId}}",
+          content: "Content for post {{params.postId}}",
+          author: "{{params.userId}}",
+          matchedBy: "multipleParams",
         },
       },
     },
 
-    // Example 6: Full URL with path parameters - hostname-specific + param extraction
+    // Test 9a: Optional Parameter - When filename is present
+    // More specific mock (uses template to inject param)
     {
       method: "GET",
-      url: "http://localhost:3001/api/local-users/:userId",
+      url: "http://localhost:3001/api/file-optional/:filename",  // Without ? - requires param
       response: {
         status: 200,
         body: {
-          patternType: "full-url with params",
-          hostname: "localhost:3001",
-          behavior: "hostname-specific + param extraction",
-          message: "Extracts params but ONLY matches localhost:3001",
-          userId: "{{params.userId}}",
-          willMatch: "http://localhost:3001/api/local-users/123",
-          wontMatch: "https://api.example.com/api/local-users/123",
+          filename: "{{params.filename}}",
+          path: "/file-optional/{{params.filename}}",
+          exists: true,
+          matchedBy: "optional",
+        },
+      },
+    },
+
+    // Test 9b: Optional Parameter - When filename is absent
+    // Fallback mock (static defaults)
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/file-optional",  // Exact match, no param
+      response: {
+        status: 200,
+        body: {
+          filename: "default.txt",
+          path: "/file-optional/default.txt",
+          exists: true,
+          matchedBy: "optional",
+        },
+      },
+    },
+
+    // Test 10: Repeating Path Parameter - :path+
+    // Changed from /api/files/:path+ to /api/paths/:path+ to avoid conflict with /api/files/:filename
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/paths/:path+",
+      response: {
+        status: 200,
+        body: {
+          path: "{{params.path}}",  // Should be array joined
+          segments: "{{params.path.length}}",  // Array length
+          fullPath: "/paths/{{params.path}}",
+          matchedBy: "repeating",
+        },
+      },
+    },
+
+    // Fallback for orders endpoint (when custom regex doesn't match)
+    // IMPORTANT: Must come BEFORE custom regex due to "last match wins" rule
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/orders/:orderId",
+      response: {
+        status: 200,
+        body: {
+          orderId: "{{params.orderId}}",
+          status: "unknown",
+          total: 0,
+          matchedBy: "fallback",
+        },
+      },
+    },
+
+    // Test 11: Custom Regex Parameter - :orderId(\d+)
+    // Should only match numeric order IDs
+    // IMPORTANT: Comes AFTER fallback so it wins when both match (last match wins)
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/orders/:orderId(\\d+)",
+      response: {
+        status: 200,
+        body: {
+          orderId: "{{params.orderId}}",
+          status: "processing",
+          total: 99.99,
+          matchedBy: "customRegex",
         },
       },
     },
@@ -871,5 +867,4 @@ export const scenarios = {
   campaignRegex: campaignRegexScenario,
   stringMatching: stringMatchingScenario,
   urlMatching: urlMatchingScenario,
-  hostnameMatching: hostnameMatchingScenario,
 } as const satisfies ScenaristScenarios;

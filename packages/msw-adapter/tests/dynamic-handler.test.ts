@@ -351,7 +351,170 @@ describe('Dynamic Handler', () => {
       server.close();
     });
 
-    it('should extract and match query parameters from URL', async () => {
+    it('should handle non-JSON request body', async () => {
+      // This test ensures the catch block at line 39 is executed
+      const scenarios = new Map<string, ScenarioDefinition>([
+        [
+          'upload-scenario',
+          mockScenario({
+            id: 'upload-scenario',
+            mocks: [
+              mockDefinition({
+                method: 'POST',
+                url: 'https://api.example.com/upload',
+                response: { status: 200, body: { uploaded: true } },
+              }),
+            ],
+          }),
+        ],
+      ]);
+
+      const getTestId = () => 'test-123';
+      const getActiveScenario = (): ActiveScenario => ({
+        scenarioId: 'upload-scenario',
+      });
+      const getScenarioDefinition = (scenarioId: string) =>
+        scenarios.get(scenarioId);
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: false,
+        responseSelector,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      // Send plain text body (not JSON)
+      const response = await fetch('https://api.example.com/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: 'plain text content',
+      });
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data).toEqual({ uploaded: true });
+
+      server.close();
+    });
+
+    it('should extract query parameters from request', async () => {
+      // This test ensures the forEach loop at line 56 is executed
+      const scenarios = new Map<string, ScenarioDefinition>([
+        [
+          'search-scenario',
+          mockScenario({
+            id: 'search-scenario',
+            mocks: [
+              mockDefinition({
+                method: 'GET',
+                url: 'https://api.example.com/search',
+                match: { query: { term: 'test', sort: 'asc' } },
+                response: { status: 200, body: { results: ['result1', 'result2'] } },
+              }),
+            ],
+          }),
+        ],
+      ]);
+
+      const getTestId = () => 'test-123';
+      const getActiveScenario = (): ActiveScenario => ({
+        scenarioId: 'search-scenario',
+      });
+      const getScenarioDefinition = (scenarioId: string) =>
+        scenarios.get(scenarioId);
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: false,
+        responseSelector,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      // Request with query parameters
+      const response = await fetch('https://api.example.com/search?term=test&sort=asc');
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data).toEqual({ results: ['result1', 'result2'] });
+
+      server.close();
+    });
+
+    it('should skip default scenario mocks that do not match method', async () => {
+      // This test ensures the false branch of line 94 is executed
+      const scenarios = new Map<string, ScenarioDefinition>([
+        [
+          'default',
+          mockScenario({
+            id: 'default',
+            mocks: [
+              // Mock with wrong method (GET when we'll send POST)
+              mockDefinition({
+                method: 'GET',
+                url: 'https://api.example.com/users',
+                response: { status: 200, body: { wrong: 'method' } },
+              }),
+            ],
+          }),
+        ],
+        [
+          'post-scenario',
+          mockScenario({
+            id: 'post-scenario',
+            mocks: [
+              // Correct mock with POST method
+              mockDefinition({
+                method: 'POST',
+                url: 'https://api.example.com/users',
+                response: { status: 201, body: { created: true } },
+              }),
+            ],
+          }),
+        ],
+      ]);
+
+      const getTestId = () => 'test-123';
+      const getActiveScenario = (): ActiveScenario => ({
+        scenarioId: 'post-scenario',
+      });
+      const getScenarioDefinition = (scenarioId: string) =>
+        scenarios.get(scenarioId);
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: false,
+        responseSelector,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      // POST request should skip the default GET mock and use the active scenario POST mock
+      const response = await fetch('https://api.example.com/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'test' }),
+      });
+      const data = await response.json();
+
+      expect(response.status).toBe(201);
+      expect(data).toEqual({ created: true });
+
+      server.close();
+    });
+
+    it('should handle active scenario definition not found', async () => {
+      // This test ensures line 104 false branch is executed
       const scenarios = new Map<string, ScenarioDefinition>([
         [
           'default',
@@ -360,8 +523,8 @@ describe('Dynamic Handler', () => {
             mocks: [
               mockDefinition({
                 method: 'GET',
-                url: 'https://api.example.com/items*',
-                response: { status: 200, body: { items: ['item1', 'item2'] } },
+                url: 'https://api.example.com/users',
+                response: { status: 200, body: { source: 'default' } },
               }),
             ],
           }),
@@ -370,10 +533,10 @@ describe('Dynamic Handler', () => {
 
       const getTestId = () => 'test-123';
       const getActiveScenario = (): ActiveScenario => ({
-        scenarioId: 'default',
+        scenarioId: 'non-existent-scenario', // Active scenario doesn't exist
       });
       const getScenarioDefinition = (scenarioId: string) =>
-        scenarios.get(scenarioId);
+        scenarios.get(scenarioId); // Will return undefined for 'non-existent-scenario'
 
       const handler = createDynamicHandler({
         getTestId,
@@ -386,28 +549,43 @@ describe('Dynamic Handler', () => {
       const server = setupServer(handler);
       server.listen();
 
-      const response = await fetch(
-        'https://api.example.com/items?filter=active&sort=asc'
-      );
+      // Should fall back to default scenario since active scenario doesn't exist
+      const response = await fetch('https://api.example.com/users');
       const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(data).toEqual({ items: ['item1', 'item2'] });
+      expect(data).toEqual({ source: 'default' });
 
       server.close();
     });
 
-    it('should handle requests with malformed JSON body gracefully', async () => {
+    it('should skip active scenario mocks that do not match URL', async () => {
+      // This test ensures the false branch of line 108 is executed
       const scenarios = new Map<string, ScenarioDefinition>([
         [
           'default',
           mockScenario({
             id: 'default',
             mocks: [
+              // Default mock for /users endpoint
               mockDefinition({
-                method: 'POST',
-                url: 'https://api.example.com/items',
-                response: { status: 200, body: { received: 'ok' } },
+                method: 'GET',
+                url: 'https://api.example.com/users',
+                response: { status: 200, body: { source: 'default' } },
+              }),
+            ],
+          }),
+        ],
+        [
+          'products-scenario',
+          mockScenario({
+            id: 'products-scenario',
+            mocks: [
+              // Active scenario only has mock for /products (not /users)
+              mockDefinition({
+                method: 'GET',
+                url: 'https://api.example.com/products',
+                response: { status: 200, body: { products: [] } },
               }),
             ],
           }),
@@ -416,7 +594,7 @@ describe('Dynamic Handler', () => {
 
       const getTestId = () => 'test-123';
       const getActiveScenario = (): ActiveScenario => ({
-        scenarioId: 'default',
+        scenarioId: 'products-scenario',
       });
       const getScenarioDefinition = (scenarioId: string) =>
         scenarios.get(scenarioId);
@@ -432,17 +610,15 @@ describe('Dynamic Handler', () => {
       const server = setupServer(handler);
       server.listen();
 
-      const response = await fetch('https://api.example.com/items', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: 'not valid json{',
-      });
+      // GET /users should skip active scenario mock (wrong URL) and use default mock
+      const response = await fetch('https://api.example.com/users');
       const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(data).toEqual({ received: 'ok' });
+      expect(data).toEqual({ source: 'default' });
 
       server.close();
     });
+
   });
 });

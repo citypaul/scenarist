@@ -1,5 +1,6 @@
 import type {
   ScenaristMock,
+  ScenaristMockWithParams,
   ScenaristResponse,
   HttpRequestContext,
   ScenaristResult,
@@ -46,10 +47,10 @@ export const createResponseSelector = (
       testId: string,
       scenarioId: string,
       context: HttpRequestContext,
-      mocks: ReadonlyArray<ScenaristMock>
+      mocks: ReadonlyArray<ScenaristMockWithParams>
     ): ScenaristResult<ScenaristResponse, ResponseSelectionError> {
       let bestMatch: {
-        mock: ScenaristMock;
+        mockWithParams: ScenaristMockWithParams;
         mockIndex: number;
         specificity: number;
       } | null = null;
@@ -57,7 +58,8 @@ export const createResponseSelector = (
       // Find all matching mocks and score them by specificity
       for (let mockIndex = 0; mockIndex < mocks.length; mockIndex++) {
         // Index is guaranteed in bounds by loop condition (0 <= mockIndex < length)
-        const mock = mocks[mockIndex]!;
+        const mockWithParams = mocks[mockIndex]!;
+        const mock = mockWithParams.mock;
 
         // Skip exhausted sequences (repeat: 'none' that have been exhausted)
         if (mock.sequence && sequenceTracker) {
@@ -82,7 +84,7 @@ export const createResponseSelector = (
             // Keep this mock if it's more specific than current best
             // (or if no best match yet)
             if (!bestMatch || specificity > bestMatch.specificity) {
-              bestMatch = { mock, mockIndex, specificity };
+              bestMatch = { mockWithParams, mockIndex, specificity };
             }
           }
           // If match criteria exists but doesn't match, skip to next mock
@@ -100,18 +102,21 @@ export const createResponseSelector = (
           // For equal specificity fallbacks, last wins
           // This allows active scenario mocks to override default mocks
           // Applies to both simple fallbacks (0) and sequence fallbacks (1)
-          bestMatch = { mock, mockIndex, specificity: fallbackSpecificity };
+          bestMatch = { mockWithParams, mockIndex, specificity: fallbackSpecificity };
         }
       }
 
       // Return the best matching mock
       if (bestMatch) {
+        const { mockWithParams, mockIndex } = bestMatch;
+        const mock = mockWithParams.mock;
+
         // Select response (either single or from sequence)
         const response = selectResponseFromMock(
           testId,
           scenarioId,
-          bestMatch.mockIndex,
-          bestMatch.mock,
+          mockIndex,
+          mock,
           sequenceTracker
         );
 
@@ -125,15 +130,21 @@ export const createResponseSelector = (
         }
 
         // Phase 3: Capture state from request if configured
-        if (bestMatch.mock.captureState && stateManager) {
-          captureState(testId, context, bestMatch.mock.captureState, stateManager);
+        if (mock.captureState && stateManager) {
+          captureState(testId, context, mock.captureState, stateManager);
         }
 
-        // Phase 3: Apply state templates to response if state manager available
+        // Apply templates to response (both state AND params)
         let finalResponse = response;
-        if (stateManager) {
-          const currentState = stateManager.getAll(testId);
-          finalResponse = applyTemplates(response, currentState) as ScenaristResponse;
+        if (stateManager || mockWithParams.params) {
+          const currentState = stateManager ? stateManager.getAll(testId) : {};
+          // Merge state and params for template replacement
+          // params take precedence over state for the same key
+          const templateData = {
+            state: currentState,
+            params: mockWithParams.params || {},
+          };
+          finalResponse = applyTemplates(response, templateData) as ScenaristResponse;
         }
 
         return { success: true, data: finalResponse };
@@ -213,6 +224,7 @@ const selectResponseFromMock = (
  * Higher score = more specific match.
  *
  * Scoring:
+ * - URL match = +1 point
  * - Each body field = +1 point
  * - Each header = +1 point
  * - Each query param = +1 point
@@ -220,11 +232,16 @@ const selectResponseFromMock = (
  * Example:
  * { body: { itemType: 'premium' } } = 1 point
  * { body: { itemType: 'premium', quantity: 5 }, headers: { 'x-tier': 'gold' } } = 3 points
+ * { url: '/api/products', body: { itemType: 'premium' } } = 2 points
  */
 const calculateSpecificity = (
   criteria: NonNullable<ScenaristMock["match"]>
 ): number => {
   let score = 0;
+
+  if (criteria.url) {
+    score += 1;
+  }
 
   if (criteria.body) {
     score += Object.keys(criteria.body).length;
@@ -249,6 +266,13 @@ const matchesCriteria = (
   context: HttpRequestContext,
   criteria: NonNullable<ScenaristMock["match"]>
 ): boolean => {
+  // Check URL match (exact match or pattern)
+  if (criteria.url) {
+    if (!matchesValue(context.url, criteria.url)) {
+      return false;
+    }
+  }
+
   // Check body match (partial match)
   if (criteria.body) {
     if (!matchesBody(context.body, criteria.body)) {
@@ -323,13 +347,14 @@ const createNormalizedHeaderMap = (
 /**
  * Match a request value against a match criteria value.
  *
- * Supports 6 matching modes:
+ * Supports 7 matching modes:
  * 1. Plain string: exact match (backward compatible)
- * 2. { equals: 'value' }: explicit exact match
- * 3. { contains: 'substring' }: substring match
- * 4. { startsWith: 'prefix' }: prefix match
- * 5. { endsWith: 'suffix' }: suffix match
- * 6. { regex: {...} }: pattern match
+ * 2. Native RegExp: pattern match (e.g., /\/users\/\d+/)
+ * 3. { equals: 'value' }: explicit exact match
+ * 4. { contains: 'substring' }: substring match
+ * 5. { startsWith: 'prefix' }: prefix match
+ * 6. { endsWith: 'suffix' }: suffix match
+ * 7. { regex: {...} }: pattern match (serialized form)
  *
  * Type Coercion Behavior:
  * - Non-string criterion values (number, boolean) are converted to strings before matching
@@ -341,12 +366,20 @@ const createNormalizedHeaderMap = (
  * in body matching (e.g., { quantity: 5 } matches body.quantity = 5 or "5")
  *
  * @param requestValue - The actual value from the request (string)
- * @param criteriaValue - The expected value (string, number, boolean, null, or strategy object)
+ * @param criteriaValue - The expected value (string, RegExp, number, boolean, null, or strategy object)
  * @returns true if values match, false otherwise
  */
 const matchesValue = (requestValue: string, criteriaValue: MatchValue | unknown): boolean => {
   if (typeof criteriaValue === "string") {
     return requestValue === criteriaValue;
+  }
+
+  // Native RegExp support (ADR-0016)
+  if (criteriaValue instanceof RegExp) {
+    return matchesRegex(requestValue, {
+      source: criteriaValue.source,
+      flags: criteriaValue.flags,
+    });
   }
 
   if (typeof criteriaValue === "number" || typeof criteriaValue === "boolean") {

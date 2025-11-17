@@ -2,12 +2,12 @@
 
 **Feature:** Extend match criteria to support regex pattern matching for headers, query params, body fields, AND URLs
 **Priority:** P1 (High Value, Low Risk)
-**Status:** Phase 2 Complete - Phase 2.5 (URL Matching) Deferred to Future Work
+**Status:** Phase 2.5.1 - IN PROGRESS (URL Matching)
 **GitHub Issue:** #86
 
 **Phase 2 Complete:** String matching strategies (contains, startsWith, endsWith, equals) implemented for headers, query params, and body fields. All 265 tests passing, 100% coverage maintained.
 
-**Phase 2.5 Status:** URL matching deferred - requires extensive design and testing work (see details below).
+**Phase 2.5 Status:** PLANNING COMPLETE - All design decisions finalized, ready for implementation. See Session 3 log below for details.
 
 ---
 
@@ -968,11 +968,86 @@ http.get('/api/data', ({ request }) => {
 
 ---
 
-## Phase 2.5: URL Matching Strategies (Future Work)
+## Phase 2.5: URL Matching Strategies (READY FOR IMPLEMENTATION)
 
-**Status:** NOT STARTED - Deferred from Phase 2
-**Priority:** P2 (Medium - requires significant design work)
-**Complexity:** HIGH (5-8 days estimated vs 1-2 days for other criteria)
+**Status:** PLANNING COMPLETE - All Design Decisions Finalized
+**Priority:** P1 (High Value - Critical for Server-Side Scenarios)
+**Complexity:** MEDIUM (3.5-4 days with native RegExp support)
+
+### Design Decisions FINALIZED (Session 3 - 2025-11-16)
+
+All critical design questions have been answered and documented:
+
+**Decision 1: URL Format in Context**
+- ✅ **FINALIZED:** `context.url` contains pathname only (no query, no hash)
+- Query string reconstructed when matching: `pathname + '?' + querystring`
+- Rationale: Clean separation, query already parsed in `context.query`
+
+**Decision 2: Path Parameters (CRITICAL - Element of Least Surprise)**
+- ✅ **FINALIZED:** Match against RESOLVED URL (actual request like `/users/123`)
+- NOT against pattern (like `/users/:id`)
+- Rationale: Enables filtering by numeric IDs, file extensions, API versions
+- Use cases: Numeric ID filtering, file extension filtering, API versioning
+- Reference: MSW's `req.url.pathname` behavior
+
+**Decision 3: Hash Fragments**
+- ✅ **FINALIZED:** Stripped before matching
+- Rationale: Hash never sent to server (HTTP reality)
+
+**Decision 4: URL Encoding**
+- ✅ **FINALIZED:** Support both decoded and encoded
+- Implementation: Try decoded first, fallback to encoded
+- Example: `/files/document%20name.pdf` matches both `contains: 'document name'` and `contains: '%20'`
+
+**Decision 5: Specificity Scoring**
+- ✅ **FINALIZED:** URL matching adds +1 to specificity score
+- Rationale: Consistent with body/headers/query scoring
+- Example: `{ url: /pattern/, headers: { 'x-tier': 'premium' } }` = 102 (100 base + 1 url + 1 header)
+
+**Decision 6: url Field Requirement**
+- ✅ **FINALIZED:** url field ALWAYS required when match.url is present
+- Workaround: Use `url: '*'` for global matching
+- Enforcement: Schema validation with clear error message
+
+**Decision 7: Native RegExp Support (ADR-0016)**
+- ✅ **FINALIZED:** Support BOTH native RegExp AND serialized form
+- Rationale: Better DX, MSW compatibility, still declarative
+- Documentation: ADR-0016 created, ADR-0013 updated
+- Example: `url: /\/users\/\d+/` (native) or `url: { regex: { source: '/users/\\d+' } }` (serialized)
+
+### Why Resolved URL Pattern (Element of Least Surprise)
+
+Matching against the actual request URL (resolved path params) instead of the pattern template is crucial for:
+
+**Use Case 1: Numeric ID Filtering**
+```typescript
+{
+  url: '/users/:id',
+  match: { url: /\/users\/\d+/ }  // Matches /users/123, NOT /users/admin
+}
+```
+
+**Use Case 2: File Extension Filtering**
+```typescript
+{
+  url: '/files/:filename',
+  match: { url: { endsWith: '.pdf' } }  // Matches /files/doc.pdf, NOT /files/img.png
+}
+```
+
+**Use Case 3: API Versioning**
+```typescript
+{
+  url: '/api/:version/users',
+  match: { url: { startsWith: '/api/v2/' } }  // Matches /api/v2/users, NOT /api/v1/users
+}
+```
+
+**Architectural Rationale:**
+- Consistent with MSW's `req.url.pathname` (actual request URL)
+- Pattern matching already handled at routing level (MSW integration)
+- Enables powerful filtering capabilities beyond routing
+- Users expect to match against what they see in browser/logs
 
 ### Why URL Matching Is Complex
 
@@ -1027,89 +1102,83 @@ URL matching has **two levels** of concern that must work together:
 // Answer: TBD - needs design decision
 ```
 
-### Required Design Decisions
+### Implementation Plan (5 Phases)
 
-Before implementing Phase 2.5, these questions MUST be answered:
+All design decisions finalized - ready for TDD implementation:
 
-1. **What value is matched against?**
-   - Option A: Full URL (protocol + host + port + path + query)
-   - Option B: Path only (excludes query string)
-   - Option C: Path + query string (excludes protocol/host/port)
-   - **Recommendation:** TBD (needs user feedback)
+**Phase 2.5.1: Schema & Type Updates (0.5 days, 12-15 tests)**
+- Add native RegExp support to url field in ScenaristMockSchema
+- Add url field to MatchCriteriaSchema (MatchValueSchema)
+- Schema validation tests (native RegExp, serialized form, validation errors)
+- Type system updates (url: RegExp | string | MatchValueObject)
 
-2. **How does match.url interact with url routing patterns?**
-   - Does path param `:id` extraction happen before or after match.url check?
-   - Do glob patterns `*` affect what value is matched?
-   - Is match.url an AND condition on top of routing?
+**Phase 2.5.2: URL Matching Logic (1.5 days, 45-50 tests)**
+- Implement `matchesUrl(actualUrl: string, matchValue: MatchValue): boolean`
+- Handle query string reconstruction (pathname + '?' + querystring)
+- Handle URL encoding (decoded first, fallback to encoded)
+- Handle hash stripping (remove before matching)
+- Unit tests for all matching strategies + edge cases
 
-3. **Should query string be included in match.url?**
-   - Pro: Enables matching on query params via URL pattern
-   - Con: Duplicates functionality of `match.query`
-   - **Recommendation:** TBD
+**Phase 2.5.3: Integration Tests (1 day, 20-25 tests)**
+- Test all routing combinations (exact, path params, glob, wildcard)
+- Test resolved URL matching (actual request URL, not pattern)
+- Test specificity scoring (url match adds +1)
+- Test url field requirement enforcement
 
-4. **Should match.url work WITHOUT url routing?**
-   - Can you have `match: { url: { contains: '/api/' } }` with no `url` field?
-   - Or is `url` field (routing) always required?
-   - **Recommendation:** TBD
+**Phase 2.5.4: Example Apps & E2E (0.5 days, 27 tests)**
+- Express example: URL filtering scenarios (9 tests)
+- Next.js App Router: URL filtering scenarios (9 tests)
+- Next.js Pages Router: URL filtering scenarios (9 tests)
 
-### Testing Strategy (53-75 tests estimated)
+**Phase 2.5.5: Documentation (0.5 days)**
+- Update core-functionality.md with URL matching examples
+- Update adapter READMEs with URL matching usage
+- Add migration guide for url field requirement
+- Document resolved URL behavior (element of least surprise)
 
-URL matching must be tested with ALL combinations of routing patterns and matching strategies.
+**Total Effort:** 3.5-4 days
+**Total Tests:** 104-117 tests (reduced from 53-75 due to native RegExp simplification)
 
-**Test Matrix (minimum):**
+### Test Coverage Strategy
 
-| Routing Pattern | Matching Strategy | Expected Behavior |
-|----------------|-------------------|-------------------|
-| Exact (`/users`) | `contains: '/users'` | Pass |
-| Exact (`/users`) | `startsWith: '/user'` | Pass |
-| Exact (`/users`) | `endsWith: 'sers'` | Pass |
-| Path param (`/users/:id`) | `contains: '/users/'` | TBD - depends on design |
-| Path param (`/users/:id`) | `startsWith: '/users/'` | TBD - depends on design |
-| Glob (`/api/*`) | `regex: { source: '/api/v2/.*' }` | TBD - depends on design |
-| Glob (`/api/*`) | `contains: '/v2/'` | TBD - depends on design |
+**Test Files:**
 
-**Test Files Needed:**
+1. `packages/core/tests/match-criteria-url.test.ts` - URL matching logic (45-50 tests)
+   - Query string reconstruction
+   - URL encoding support (decoded/encoded)
+   - Hash fragment stripping
+   - All matching strategies (equals, contains, startsWith, endsWith, regex)
+   - Native RegExp vs serialized form
 
-1. `packages/core/tests/match-criteria-url.test.ts` - Unit tests (20-30 tests)
-2. `packages/core/tests/match-criteria-url-routing.test.ts` - Integration tests (15-20 tests)
-3. `packages/msw-adapter/tests/dynamic-handler-url-matching.test.ts` - MSW integration (10-15 tests)
-4. `apps/nextjs-app-router-example/tests/playwright/url-matching.spec.ts` - E2E tests (8-10 tests)
+2. `packages/core/tests/response-selector-url.test.ts` - Integration (20-25 tests)
+   - Routing patterns (exact, path params, glob, wildcard)
+   - Resolved URL matching (actual request, not pattern)
+   - Specificity scoring with URL matches
+   - url field requirement enforcement
 
-**Total: 53-75 tests** (vs 15-20 for other match criteria)
+3. `packages/msw-adapter/tests/dynamic-handler-url.test.ts` - MSW integration (12-15 tests)
+   - All routing pattern combinations
+   - Real MSW request context
+   - URL reconstruction from pathname + query
 
-### Schema Changes
+4. Example apps E2E tests (27 tests, 9 per app)
+   - Express: Numeric ID filtering, file extensions, API versioning
+   - Next.js App Router: Same scenarios
+   - Next.js Pages Router: Same scenarios
 
-```typescript
-// packages/core/src/schemas/match-criteria.ts
-export const MatchCriteriaSchema = z.object({
-  url: MatchValueSchema.optional(),  // ✅ NEW: URL matching with same strategies
-  headers: z.record(z.string(), MatchValueSchema).optional(),
-  query: z.record(z.string(), MatchValueSchema).optional(),
-  body: z.record(z.string(), MatchValueSchema).optional(),
-});
-```
+### Why Previously Deferred (Now Resolved)
 
-**Impact:** Non-breaking change (optional field)
+Phase 2.5 was initially deferred because:
+- ❌ Complex design decisions required (4 major questions)
+- ❌ Extensive testing needed (53-75 tests)
+- ❌ Two-level matching (routing + matching) unclear
 
-**CRITICAL:** Schema is easy - implementation and testing is hard.
-
-### Implementation Effort Estimate
-
-- Planning: 1-2 days (design decisions, test planning)
-- Implementation: 3-5 days (TDD for 53-75 tests)
-- Documentation: 1 day
-- **Total: 5-8 days** (vs 1-2 days for other match criteria)
-
-### Why Deferred
-
-Phase 2.5 was deferred from Phase 2 because:
-- Complex design decisions required (4 major questions)
-- Extensive testing needed (53-75 tests vs 15-20)
-- Two-level matching (routing + matching) creates combinatorial explosion
-- Must not break existing MSW URL routing (path params, globs)
-- Requires user feedback to validate API design
-
-**Recommendation:** Complete Phase 3 (regex with timeout) first, then revisit Phase 2.5 with full context.
+**What Changed:**
+- ✅ All 7 design decisions finalized (Session 3)
+- ✅ ADR-0016 created (native RegExp support)
+- ✅ Element of least surprise principle (resolved URL)
+- ✅ Test count reduced (104-117) due to native RegExp
+- ✅ Implementation effort reduced (3.5-4 days from 5-8 days)
 
 ---
 
@@ -1122,6 +1191,72 @@ Phase 2.5 was deferred from Phase 2 because:
 3. **Custom matchers:** User-defined matching functions
 
 These can be considered in future iterations based on user feedback.
+
+---
+
+## Session Log
+
+### Session 1: Phase 1 - Schema Definition (2025-11-15)
+
+**Duration:** ~3 hours
+**Completed:**
+- SerializedRegexSchema with ReDoS protection
+- StringMatchSchema with all 5 strategies
+- MatchCriteriaSchema (body, headers, query)
+- Runtime validation at trust boundary
+- 6 validation behavior tests
+
+**Key Learnings:**
+- ReDoS protection via `redos-detector` package
+- Zod API: `error.issues` not `error.errors`
+- Schema tests should be minimal (documentation only)
+- Behavior tests belong at trust boundary
+
+### Session 2: Phase 2 - String Matching Functions (2025-11-16)
+
+**Duration:** ~4 hours
+**Completed:**
+- String matching helpers (equals, contains, startsWith, endsWith)
+- Integration into matchesCriteria()
+- 53 unit tests + 12 integration tests
+- All 265 tests passing, 100% coverage
+
+**Key Learnings:**
+- Case sensitivity matters for headers
+- URL encoding requires special handling
+- Native RegExp vs serialized form trade-offs
+- Specificity scoring must be consistent
+
+### Session 3: Phase 2.5 Planning - URL Matching Design (2025-11-16)
+
+**Duration:** ~2 hours
+**Completed:**
+- ✅ Finalized all 7 design decisions
+- ✅ Created ADR-0016 (native RegExp support)
+- ✅ Updated ADR-0013 (cross-reference)
+- ✅ Documented element of least surprise principle
+- ✅ Created 5-phase implementation plan
+
+**Design Decisions Finalized:**
+1. URL format in context (pathname only)
+2. Path parameters (match against resolved URL)
+3. Hash fragments (stripped before matching)
+4. URL encoding (support both decoded/encoded)
+5. Specificity scoring (URL adds +1)
+6. url field requirement (always required when match.url present)
+7. Native RegExp support (both forms supported)
+
+**Key Insights:**
+- Resolved URL (not pattern) is element of least surprise
+- Enables powerful filtering use cases (numeric IDs, extensions, versions)
+- Consistent with MSW's `req.url.pathname` behavior
+- Native RegExp simplifies implementation (no conversion needed)
+
+**Ready for Implementation:**
+- Phase 2.5.1: Schema & Type Updates (0.5 days)
+- All design questions answered
+- Test strategy defined (104-117 tests)
+- Effort estimate reduced to 3.5-4 days
 
 ---
 

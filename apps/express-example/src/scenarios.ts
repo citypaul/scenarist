@@ -855,6 +855,340 @@ export const stringMatchingScenario: ScenaristScenario = {
 };
 
 /**
+ * Scenario: URL Matching with Native RegExp
+ *
+ * Demonstrates URL matching capabilities:
+ * - Native RegExp patterns for numeric IDs
+ * - String strategies (contains, startsWith, endsWith) for URL filtering
+ * - Combined matching (URL + headers/query)
+ */
+export const urlMatchingScenario: ScenaristScenario = {
+  id: 'urlMatching',
+  name: 'URL Matching Strategies',
+  description: 'Tests URL matching with RegExp, string strategies, and combined criteria',
+  mocks: [
+    // Test 1: Native RegExp - Match numeric user IDs
+    {
+      method: 'GET',
+      url: 'https://api.github.com/users/:username',
+      match: {
+        url: /\/users\/\d+$/, // Match URLs ending with numeric ID
+      },
+      response: {
+        status: 200,
+        body: {
+          login: 'user-numeric-id',
+          id: 12345,
+          name: 'Numeric ID User',
+          bio: 'Matched by numeric ID pattern',
+          public_repos: 42,
+          followers: 500,
+          matchedBy: 'regexNumericId',
+        },
+      },
+    },
+
+    // Test 2: Contains strategy - Match URLs containing '/london'
+    {
+      method: 'GET',
+      url: /https:\/\/api\.weather\.com\/v\d+\/weather\/[^/]+$/,  // RegExp for any version
+      match: {
+        url: { contains: '/london' },  // Match specific city
+      },
+      response: {
+        status: 200,
+        body: {
+          city: 'Weather Match City',
+          temperature: 22,
+          conditions: 'Weather route matched',
+          humidity: 55,
+          matchedBy: 'containsWeather',
+        },
+      },
+    },
+
+    // Test 3: StartsWith strategy - Match API versioning
+    {
+      method: 'GET',
+      url: /https:\/\/api\.weather\.com\/v\d+\/weather\/[^/]+$/,  // RegExp for any version
+      match: {
+        url: { startsWith: 'https://api.weather.com/v2' },
+      },
+      response: {
+        status: 200,
+        body: {
+          city: 'Version 2 City',
+          temperature: 25,
+          conditions: 'V2 API matched',
+          humidity: 60,
+          matchedBy: 'startsWithV2',
+        },
+      },
+    },
+
+    // Test 4: EndsWith strategy - Match file extensions
+    {
+      method: 'GET',
+      url: 'https://api.github.com/repos/:owner/:repo/contents/:path',
+      match: {
+        url: { endsWith: '.json' },
+      },
+      response: {
+        status: 200,
+        body: {
+          type: 'file',
+          name: 'data.json',
+          path: 'config/data.json',
+          content: 'eyJrZXkiOiJ2YWx1ZSJ9', // base64: {"key":"value"}
+          matchedBy: 'endsWithJson',
+        },
+      },
+    },
+
+    // Test 5: Combined - URL pattern + header match
+    {
+      method: 'GET',
+      url: 'https://api.stripe.com/v1/charges',
+      match: {
+        url: /\/v1\/charges$/,
+        headers: {
+          'x-api-version': '2023-10-16',
+        },
+      },
+      response: {
+        status: 200,
+        body: {
+          id: 'ch_combined123',
+          status: 'succeeded',
+          amount: 2000,
+          currency: 'usd',
+          matchedBy: 'combinedUrlHeader',
+        },
+      },
+    },
+
+    // Test 6: Exact string match (backward compatible)
+    {
+      method: 'GET',
+      url: 'https://api.github.com/users/:username',
+      match: {
+        url: 'https://api.github.com/users/exactuser',
+      },
+      response: {
+        status: 200,
+        body: {
+          login: 'exactuser',
+          id: 99999,
+          name: 'Exact Match User',
+          bio: 'Matched by exact URL',
+          public_repos: 10,
+          followers: 100,
+          matchedBy: 'exactUrl',
+        },
+      },
+    },
+
+    // Fallback response (no match criteria)
+    {
+      method: 'GET',
+      url: 'https://api.github.com/users/:username',
+      response: {
+        status: 200,
+        body: {
+          login: 'fallback-user',
+          id: 1,
+          name: 'Fallback User',
+          bio: 'Default response when no URL match',
+          public_repos: 5,
+          followers: 50,
+          matchedBy: 'fallback',
+        },
+      },
+    },
+
+    // Fallback for weather API
+    {
+      method: 'GET',
+      url: /https:\/\/api\.weather\.com\/v\d+\/weather\/[^/]+$/,  // RegExp for any version
+      response: {
+        status: 200,
+        body: {
+          city: 'Fallback City',
+          temperature: 20,
+          conditions: 'No URL match',
+          humidity: 50,
+          matchedBy: 'fallback',
+        },
+      },
+    },
+
+    // Fallback for file contents
+    {
+      method: 'GET',
+      url: 'https://api.github.com/repos/:owner/:repo/contents/:path',
+      response: {
+        status: 200,
+        body: {
+          type: 'file',
+          name: 'unknown.txt',
+          path: 'unknown.txt',
+          content: 'ZGVmYXVsdA==', // base64: "default"
+          matchedBy: 'fallback',
+        },
+      },
+    },
+
+    // Fallback for stripe
+    {
+      method: 'GET',
+      url: 'https://api.stripe.com/v1/charges',
+      response: {
+        status: 200,
+        body: {
+          id: 'ch_fallback123',
+          status: 'pending',
+          amount: 1000,
+          currency: 'usd',
+          matchedBy: 'fallback',
+        },
+      },
+    },
+  ],
+};
+
+/**
+ * Hostname Matching Demonstration Scenario
+ *
+ * Demonstrates the three URL pattern types and their hostname matching behavior:
+ *
+ * 1. PATHNAME-ONLY patterns (/api/data) - Origin-agnostic (match ANY hostname)
+ * 2. FULL URL patterns (https://api.github.com/api/data) - Hostname-specific (must match exactly)
+ * 3. REGEXP patterns (/\/api\/data/) - Origin-agnostic (MSW weak comparison)
+ */
+export const hostnameMatchingScenario: ScenaristScenario = {
+  id: 'hostnameMatching',
+  name: 'Hostname Matching Demonstration',
+  description: 'Shows pathname vs full URL vs RegExp pattern behaviors',
+  mocks: [
+    // Example 1: Pathname-only pattern - matches ANY hostname
+    {
+      method: 'GET',
+      url: '/api/origin-agnostic',
+      response: {
+        status: 200,
+        body: {
+          patternType: 'pathname-only',
+          behavior: 'origin-agnostic',
+          message: 'This matches requests to ANY hostname',
+          examples: [
+            'http://localhost:3000/api/origin-agnostic',
+            'https://api.github.com/api/origin-agnostic',
+            'https://api.stripe.com/api/origin-agnostic',
+          ],
+        },
+      },
+    },
+
+    // Example 2: Full URL pattern with GitHub - hostname-specific
+    {
+      method: 'GET',
+      url: 'https://api.github.com/api/github-only',
+      response: {
+        status: 200,
+        body: {
+          patternType: 'full-url',
+          hostname: 'api.github.com',
+          behavior: 'hostname-specific',
+          message: 'This ONLY matches api.github.com requests',
+          willMatch: 'https://api.github.com/api/github-only',
+          wontMatch: [
+            'https://api.stripe.com/api/github-only',
+            'http://localhost:3000/api/github-only',
+          ],
+        },
+      },
+    },
+
+    // Example 3: Full URL pattern with Stripe - hostname-specific
+    {
+      method: 'GET',
+      url: 'https://api.stripe.com/api/stripe-only',
+      response: {
+        status: 200,
+        body: {
+          patternType: 'full-url',
+          hostname: 'api.stripe.com',
+          behavior: 'hostname-specific',
+          message: 'This ONLY matches api.stripe.com requests',
+          willMatch: 'https://api.stripe.com/api/stripe-only',
+          wontMatch: [
+            'https://api.github.com/api/stripe-only',
+            'http://localhost:3000/api/stripe-only',
+          ],
+        },
+      },
+    },
+
+    // Example 4: Native RegExp pattern - origin-agnostic
+    {
+      method: 'GET',
+      url: /\/api\/regex-pattern$/,
+      response: {
+        status: 200,
+        body: {
+          patternType: 'native-regexp',
+          behavior: 'origin-agnostic (MSW weak comparison)',
+          message: 'This matches the pathname pattern at ANY hostname',
+          examples: [
+            'http://localhost:3000/api/regex-pattern',
+            'https://api.github.com/api/regex-pattern',
+            'https://api.stripe.com/api/regex-pattern',
+          ],
+        },
+      },
+    },
+
+    // Example 5: Pathname with path parameters - origin-agnostic + param extraction
+    {
+      method: 'GET',
+      url: '/api/users/:userId/posts/:postId',
+      response: {
+        status: 200,
+        body: {
+          patternType: 'pathname-only with params',
+          behavior: 'origin-agnostic + param extraction',
+          message: 'Extracts params and matches ANY hostname',
+          userId: '{{params.userId}}',
+          postId: '{{params.postId}}',
+          examples: [
+            'http://localhost:3000/api/users/123/posts/456',
+            'https://api.github.com/api/users/123/posts/456',
+          ],
+        },
+      },
+    },
+
+    // Example 6: Full URL with path parameters - hostname-specific + param extraction
+    {
+      method: 'GET',
+      url: 'https://api.github.com/api/github-users/:userId',
+      response: {
+        status: 200,
+        body: {
+          patternType: 'full-url with params',
+          hostname: 'api.github.com',
+          behavior: 'hostname-specific + param extraction',
+          message: 'Extracts params but ONLY matches api.github.com',
+          userId: '{{params.userId}}',
+          willMatch: 'https://api.github.com/api/github-users/123',
+          wontMatch: 'https://api.stripe.com/api/github-users/123',
+        },
+      },
+    },
+  ],
+};
+
+/**
  * Scenarios organized as typed object for easy access in tests.
  *
  * Use this to get type-safe access to scenario IDs with autocomplete:
@@ -884,5 +1218,7 @@ export const scenarios = {
   tempCapture: tempCaptureScenario,
   campaignRegex: campaignRegexScenario,
   stringMatching: stringMatchingScenario,
+  urlMatching: urlMatchingScenario,
+  hostnameMatching: hostnameMatchingScenario,
 } as const satisfies ScenaristScenarios;
 

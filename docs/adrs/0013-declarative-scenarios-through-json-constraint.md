@@ -1,8 +1,10 @@
 # ADR-0013: Declarative Scenarios Through JSON Serializability Constraint
 
-**Status**: Accepted
+**Status**: Accepted (Refined by ADR-0016)
 **Date**: 2025-11-14
 **Authors**: Claude Code
+
+> **Note**: ADR-0016 refines this constraint from "JSON-serializable" to "declarative patterns". Native RegExp is now supported (as of 2025-01-16) as it satisfies the declarative principle. The core insight remains: we enforce declarative > imperative, and RegExp is declarative.
 
 ## Context
 

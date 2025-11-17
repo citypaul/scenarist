@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Current Status**: All core packages implemented and tested! The hexagonal architecture is complete with:
 
 **Core Package** (`packages/core`)
-- ✅ All types and ports defined (serializable, immutable)
+- ✅ All types and ports defined (declarative, immutable)
 - ✅ Domain logic implemented (`createScenarioManager`, `buildConfig`, `ResponseSelector`)
 - ✅ Default adapters (`InMemoryScenarioRegistry`, `InMemoryScenarioStore`, `InMemoryStateManager`, `InMemorySequenceTracker`)
 - ✅ Dynamic Response System: Phase 1-3 complete (request matching, sequences, stateful mocks)
@@ -726,11 +726,12 @@ const createPayment = (amount: number, currency: string, cardId: string): Paymen
 
 Scenarist is built on **MSW (Mock Service Worker) v2.x**:
 
-- Scenarios are serializable definitions (not MSW handlers directly)
+- Scenarios are declarative definitions (not MSW handlers directly)
 - `ScenaristMock` types are converted to MSW `HttpHandler` at runtime
 - Handlers are applied dynamically based on active scenario
 - Test ID isolation allows different handlers per test
 - Mocks can be enabled/disabled per request via `x-mock-enabled` header
+- Native RegExp supported for pattern matching (ADR-0016)
 
 ## Package Dependencies
 
@@ -881,49 +882,51 @@ The `noUnusedParameters` rule caught that `config` wasn't being used in `Scenari
 - ❌ Deep function nesting (max 2 levels)
 - ❌ Any use of `any` type
 
-## Critical Architectural Insight: Serialization
+## Critical Architectural Insight: Declarative Patterns Over Imperative Functions
 
-**CRITICAL LEARNING**: When designing ports that abstract storage/persistence, ensure the data types are actually serializable. Otherwise, the ports become "architectural theater"—interfaces that can only ever have one implementation.
+**CRITICAL LEARNING**: When designing scenario definitions, enforce **declarative patterns** over imperative functions. This forces explicit, inspectable, composable scenarios that are easier to reason about and maintain.
+
+**Note**: This section previously emphasized "serialization" as the primary constraint. **ADR-0016** refined this understanding: the real constraint is **declarative patterns**, not JSON serializability. Native RegExp is now supported because it's declarative pattern matching, even though it's not JSON-serializable.
 
 ### The Problem We Discovered
 
 Initial design had `Scenario` containing MSW's `HttpHandler`:
 
 ```typescript
-// ❌ NOT SERIALIZABLE - Contains functions, closures, regex
+// ❌ IMPERATIVE - Contains functions, closures, hidden logic
 type Scenario = {
   readonly name: string;
   readonly mocks: ReadonlyArray<HttpHandler>; // MSW type with functions
 };
 ```
 
-**This broke the entire port architecture:**
-- `ScenarioRegistry` port? **Useless** - only in-memory implementation possible
-- `ScenarioStore` port? **Useless** - only in-memory implementation possible
-- Redis adapter? **Impossible** - can't serialize functions
-- File-based scenarios? **Impossible** - can't JSON.stringify functions
-- Remote API? **Impossible** - can't send functions over HTTP
+**This broke the architectural goals:**
+- Scenarios contained **imperative functions** with hidden logic
+- Behavior was **not inspectable** without execution
+- Patterns were **not composable** (function closures)
+- Tests couldn't **validate scenarios** without running them
+- No way to **visualize** or **analyze** scenario behavior
 
-The ports were **architectural theater** - pretty interfaces that could never have multiple implementations.
+The scenarios were **imperative black boxes** - no way to understand what they did without executing them.
 
-### The Solution: Serializable Definitions
+### The Solution: Declarative Definitions
 
-Separate **serializable definitions** (data) from **runtime handlers** (behavior):
+Separate **declarative definitions** (data patterns) from **runtime handlers** (behavior):
 
 ```typescript
-// ✅ SERIALIZABLE - Pure JSON data
+// ✅ DECLARATIVE - Explicit patterns, no hidden logic
 type ScenaristScenario = {
   readonly id: string;
   readonly name: string;
-  readonly mocks: ReadonlyArray<ScenaristMock>; // Plain data
+  readonly mocks: ReadonlyArray<ScenaristMock>; // Declarative patterns
 };
 
 type ScenaristMock = {
   readonly method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-  readonly url: string; // String, not regex
+  readonly url: string | RegExp; // String OR native RegExp (ADR-0016)
   readonly response: {
     readonly status: number;
-    readonly body?: unknown; // Must be JSON-serializable
+    readonly body?: unknown; // Plain data or template strings
     readonly headers?: Record<string, string>;
     readonly delay?: number;
   };
@@ -946,58 +949,60 @@ const toMSWHandler = (def: ScenaristMock): HttpHandler => {
 
 ### Benefits Unlocked
 
-Now the ports are **genuinely useful**:
+Now the scenarios are **genuinely useful**:
 
-- ✅ `InMemoryScenarioRegistry` - Fast, for single process
-- ✅ `RedisScenarioRegistry` - Distributed testing across processes
-- ✅ `FileSystemScenarioRegistry` - Version control scenarios as JSON/YAML
-- ✅ `RemoteScenarioRegistry` - Fetch scenarios from REST API
-- ✅ `DatabaseScenarioRegistry` - Store in PostgreSQL/MongoDB
+- ✅ **Explicit** - Match criteria visible in scenario definition
+- ✅ **Inspectable** - Can analyze scenarios without executing them
+- ✅ **Composable** - Combine match + sequence + state transparently
+- ✅ **Testable** - Validate scenario structure before running tests
+- ✅ **Maintainable** - Clear what each scenario does
+- ✅ **Side benefit**: Most scenarios CAN be stored as JSON (when not using native RegExp)
 
 ### The General Principle
 
-**When designing abstraction ports:**
+**When designing scenario APIs:**
 
-1. **Ask**: "Can this data be sent over a network?"
-2. **If no**: You can only ever have one implementation (in-memory)
-3. **If yes**: Multiple implementations are possible (Redis, files, remote, DB)
+1. **Ask**: "Is this declarative (WHAT to do) or imperative (HOW to do it)?"
+2. **Declarative patterns** → Allowed (strings, RegExp, objects, arrays)
+3. **Imperative functions** → Not allowed (closures, hidden logic, side effects)
 
-**Serializable means:**
+**Declarative patterns (ALLOWED):**
 - ✅ Primitives (string, number, boolean, null)
 - ✅ Plain objects and arrays
-- ✅ JSON-serializable data
-- ❌ Functions, closures, or methods
-- ❌ Regular expressions (convert to strings)
+- ✅ Native RegExp (declarative pattern matching - ADR-0016)
+- ✅ Template strings (`{{state.value}}`)
+- ✅ Match criteria objects (`{ headers: { 'x-tier': 'premium' } }`)
+
+**Imperative functions (NOT ALLOWED):**
+- ❌ Functions with closures
+- ❌ Arrow functions with logic
 - ❌ Class instances with methods
-- ❌ Symbols, undefined, or circular references
+- ❌ Callbacks that capture external scope
+- ❌ Any code with hidden side effects
 
-**This applies to all port-based architectures, not just Scenarist.**
+**This applies to all declarative API design, not just Scenarist.**
 
-### Config Must Also Be Serializable
+### Config Must Also Be Declarative
 
-**CRITICAL**: The same serialization principle applies to `ScenaristConfig`. Config must be serializable so it can be:
-- ✅ Stored in files (JSON/YAML configuration)
-- ✅ Sent over network (remote config service)
-- ✅ Stored in databases or Redis
-- ✅ Passed between processes
+**CRITICAL**: The same declarative principle applies to `ScenaristConfig`. Config should be plain data, not functions.
 
-**Initial mistake:** Config had `enabled: boolean | (() => boolean)` which violated serialization.
+**Initial mistake:** Config had `enabled: boolean | (() => boolean)` which violated the declarative pattern.
 
 ```typescript
-// ❌ WRONG - Function in config (not serializable)
+// ❌ WRONG - Function in config (imperative, not inspectable)
 type ScenaristConfig = {
-  readonly enabled: boolean | (() => boolean);  // Can't JSON.stringify!
+  readonly enabled: boolean | (() => boolean);  // Hidden logic!
 };
 
 const config = buildConfig({
-  enabled: () => process.env.NODE_ENV !== 'production'  // Function!
+  enabled: () => process.env.NODE_ENV !== 'production'  // Function closure!
 });
 ```
 
-**The fix:** Config must only contain serializable data. Evaluate functions BEFORE creating config.
+**The fix:** Config must only contain plain data. Evaluate expressions BEFORE creating config.
 
 ```typescript
-// ✅ CORRECT - Only boolean (serializable)
+// ✅ CORRECT - Plain boolean (declarative, inspectable)
 type ScenaristConfig = {
   readonly enabled: boolean;
 };
@@ -1008,20 +1013,20 @@ const config = buildConfig({
 ```
 
 **Why this matters:**
-- Config can now be stored in `.scenaristrc.json` files
-- Config can be fetched from remote config service
-- Config can be stored per-environment in a database
-- Without serialization, config could only exist in-memory
+- Config is **inspectable** (can see all values without execution)
+- Config is **explicit** (no hidden behavior in functions)
+- Config is **testable** (can validate structure before use)
+- **Side benefit**: Config CAN be stored in `.scenaristrc.json` files if needed
 
-**The principle:** ALL data structures in ports and domain must be serializable. No exceptions.
+**The principle:** ALL data structures in ports and domain should use declarative patterns. Prefer plain data over functions.
 
 ### The Real Value: Constraints Force Better Design
 
-**CRITICAL REFRAMING**: The serialization constraint's primary value is NOT enabling Redis/storage adapters. It's that the constraint **forces declarative API design**, which leads to clearer, more composable, more maintainable scenarios.
+**CRITICAL REFRAMING**: The declarative constraint's primary value is NOT enabling JSON storage (though that's a nice side benefit). It's that the constraint **forces explicit, inspectable, composable API design**, which leads to clearer, more maintainable scenarios.
 
 **The Initial Justification (Incomplete):**
 
-When we first enforced JSON serializability, we justified it as enabling multiple storage implementations:
+When we first enforced the constraint, we framed it as "JSON serializability" and justified it as enabling storage:
 - Redis for distributed testing
 - File system for version control
 - Remote APIs for centralized scenarios
@@ -1029,28 +1034,28 @@ When we first enforced JSON serializability, we justified it as enabling multipl
 
 **The Challenge:**
 
-During design review, a simple question exposed the flaw: "Is there another way we could solve the load balancing problem with cookies though?"
+During design review, a simple question exposed the incomplete reasoning: "Is there another way we could solve the load balancing problem with cookies though?"
 
-Answer: Yes. Cookies can solve session stickiness without Redis. The Redis justification was over-engineered.
+Answer: Yes. Cookies can solve session stickiness without Redis. The storage justification was over-engineered.
 
-**The Deeper Insight:**
+**The Deeper Insight (ADR-0016):**
 
-The serialization constraint is valuable **because it forces you toward declarative patterns**, not because of storage flexibility.
+The real constraint is **declarative patterns**, not JSON serializability. This became clear when we needed to support native RegExp (not JSON-serializable, but perfectly declarative).
 
-**How Constraints Drove Better Patterns:**
+**How Declarative Constraint Drove Better Patterns:**
 
-Each phase of development hit the serialization constraint and was forced to find declarative solutions:
+Each phase of development hit the declarative constraint and was forced to find better solutions:
 
 **Phase 1 - Request Content Matching:**
 ```typescript
-// ❌ CAN'T DO (not serializable) - Imperative function
+// ❌ IMPERATIVE - Hidden logic in function
 {
   method: 'GET',
   url: '/api/products',
   shouldMatch: (request) => request.headers['x-user-tier'] === 'premium'  // Function!
 }
 
-// ✅ FORCED TO DO (serializable) - Declarative criteria
+// ✅ DECLARATIVE - Explicit pattern
 {
   method: 'GET',
   url: '/api/products',
@@ -1069,7 +1074,7 @@ Each phase of development hit the serialization constraint and was forced to fin
 
 **Phase 2 - Response Sequences:**
 ```typescript
-// ❌ CAN'T DO (not serializable) - Imperative state check
+// ❌ IMPERATIVE - Hidden state management
 {
   method: 'GET',
   url: '/api/status',
@@ -1085,7 +1090,7 @@ Each phase of development hit the serialization constraint and was forced to fin
   }
 }
 
-// ✅ FORCED TO DO (serializable) - Declarative sequence
+// ✅ DECLARATIVE - Explicit sequence
 {
   method: 'GET',
   url: '/api/status',
@@ -1109,7 +1114,7 @@ Each phase of development hit the serialization constraint and was forced to fin
 
 **Phase 3 - Stateful Mocks:**
 ```typescript
-// ❌ CAN'T DO (not serializable) - Imperative concatenation
+// ❌ IMPERATIVE - Hidden state access
 {
   method: 'GET',
   url: '/api/cart',
@@ -1125,7 +1130,7 @@ Each phase of development hit the serialization constraint and was forced to fin
   }
 }
 
-// ✅ FORCED TO DO (serializable) - Declarative templates
+// ✅ DECLARATIVE - Explicit templates
 {
   method: 'GET',
   url: '/api/cart',
@@ -1174,10 +1179,10 @@ function Counter() {
 - Enables composition and reusability
 
 **Same principle applies to Scenarist:**
-- Not because functions are impossible
-- Because declarative scenarios are clearer
+- Not because imperative functions are impossible to implement
+- Because declarative scenarios are clearer and more maintainable
 - Easier to reason about request → response relationship
-- Enables composition (match + sequence + state)
+- Enables composition (match + sequence + state + RegExp patterns)
 
 **The Lesson:**
 
@@ -1185,35 +1190,39 @@ When you encounter a constraint that feels limiting:
 
 1. **Don't immediately fight it** - explore what it forces you toward
 2. **Look for patterns** - constraints often guide toward better abstractions
-3. **Question initial justifications** - the real value might be different than you think
-4. **Embrace declarative over imperative** - if serialization forces it, that's good!
+3. **Question initial justifications** - the real value might be different than you think (we thought it was "JSON serializability" but it's actually "declarative patterns")
+4. **Embrace declarative over imperative** - explicit patterns beat hidden logic
 
 **False Justification Danger:**
 
-We initially over-engineered the Redis justification:
+We initially over-engineered the storage justification:
 - "Need distributed testing across load-balanced servers"
-- "Must store scenarios in Redis for session stickiness"
-- Complex solution for hypothetical problem
+- "Must store scenarios in Redis/databases"
+- Complex solution for hypothetical problem (most users never need this)
 
 **Simple question exposed this:**
 - "Could we use cookies for session stickiness?"
 - Answer: Yes, cookies solve it simply
-- Redis justification crumbled
+- Storage justification crumbled
 
 **But the constraint was still valuable:**
-- Not for Redis capabilities
-- For declarative design patterns
-- The "why" was wrong, but the "what" was right
+- Not for storage capabilities (side benefit, not the goal)
+- For declarative design patterns (the real value)
+- The "why" (storage) was wrong, but the "what" (declarative) was right
+- **ADR-0016 refined this**: The real constraint is declarative patterns, not JSON serializability
 
-**Important:** Revisit your assumptions when challenged. The real value of a decision might be different than your initial reasoning.
+**Important:** Revisit your assumptions when challenged. The real value of a decision might be different than your initial reasoning. We thought we wanted "JSON serializability" but we actually wanted "declarative patterns".
 
 **This applies beyond Scenarist:**
 - Type systems constrain but force clearer code
 - Immutability constraints force functional patterns
 - Pure functions force explicit dependencies
+- Declarative UI (React) forces explicit state → UI mappings
 - Constraints guide toward better architectures
 
 **The principle:** Constraints aren't just limitations. They're **design guides** that push you toward clearer, more maintainable patterns. When a constraint feels painful, ask "What pattern is this forcing me toward?" The answer is often better than what you would have built without it.
+
+**For Scenarist specifically:** The declarative constraint (no imperative functions) is the real principle. JSON serializability was a proxy for this, but ADR-0016 refined it: declarative patterns (including native RegExp) are what matters, not storage capabilities.
 
 ### Sequence Reset on Scenario Switch - Idempotency Fix
 
@@ -1343,6 +1352,22 @@ During Phase 2 initial implementation, `reset()` was added speculatively without
   - Documentation updated: core README, core-functionality.md, external docs (capabilities.mdx)
   - Code refactored following CLAUDE.md principles (functional composition, data-driven config)
   - Supported regex flags documented: i, m, s, u, v, g, y
+
+**URL Matching Phase 2.5: Path Parameters**
+- ✅ **MSW path-to-regexp Compatibility** (Completed 2025-11-17)
+  - Delegates to path-to-regexp v6 (same library as MSW 2.x)
+  - Automatic MSW parity for parameter extraction
+  - Support for all path-to-regexp patterns:
+    - Simple parameters: `/users/:id` → `{id: '123'}`
+    - Multiple parameters: `/users/:userId/posts/:postId` → `{userId: 'alice', postId: '42'}`
+    - Optional parameters: `/files/:filename?` matches `/files` or `/files/doc.txt`
+    - Repeating parameters: `/files/:path+` → `{path: ['folder','subfolder','file.txt']}`
+    - Custom regex: `/orders/:id(\\d+)` matches numeric IDs only
+  - Template support: `{{params.userId}}` injects extracted parameters
+  - 17 integration tests passing (10 URL matching + 7 path parameters)
+  - 306 core tests passing (85 url-matcher unit tests)
+  - Critical fix: Manual URL parsing preserves path-to-regexp syntax (`?`, `+`, etc.)
+  - Pattern conflicts resolved using "last match wins" rule
 
 **Future Enhancements:**
 - 🔜 **Template Helper Registry** ([Issue #87](https://github.com/citypaul/scenarist/issues/87))
@@ -2377,7 +2402,7 @@ export const onlineJourneyLoginScenarios = createScenario((variant) => ({
 - Easier to modify without affecting others
 - Yes, more duplication, but **clarity > DRY**
 
-**3. Serialization Constraints Enable Better Architecture**
+**3. Declarative Patterns Enable Better Architecture**
 
 Acquisition.Web allows arbitrary functions in mocks:
 ```typescript
@@ -2388,15 +2413,16 @@ http.post('/applications/:id/proofs', ({ request, params }) => {
 });
 ```
 
-**Problem:** Cannot serialize to JSON/YAML/database → only in-memory scenarios possible
+**Problem:** Imperative functions hide logic, not inspectable, not composable
 
 Scenarist constraints:
-- ✅ Scenarios are JSON-serializable
-- ✅ Can store in files, Redis, databases
-- ✅ Can fetch from remote APIs
-- ✅ Can version control as JSON/YAML
+- ✅ Scenarios use declarative patterns (explicit, inspectable)
+- ✅ Match criteria visible in scenario definition
+- ✅ Templates show state dependencies
+- ✅ RegExp patterns for URL matching (ADR-0016)
+- ✅ Side benefit: Most scenarios CAN be stored as JSON (when not using native RegExp)
 
-**Trade-off accepted:** Less dynamic mock logic, but **portability > flexibility**
+**Trade-off accepted:** Less dynamic mock logic, but **clarity > flexibility**
 
 ### Analysis Document
 
@@ -2661,9 +2687,10 @@ Tests care about:
 
 1. **Explicit > Implicit:** Explicit scenario switching beats implicit routing hacks
 2. **Clarity > DRY:** Separate scenarios beat variant system for readability
-3. **Portability > Flexibility:** JSON-serializable scenarios beat arbitrary functions
+3. **Declarative > Imperative:** Declarative patterns (ADR-0016) beat arbitrary functions - clearer, inspectable, composable
 4. **Security First:** Validate regex patterns, no eval, timeout protection
 5. **Type Safety:** Zod schemas at trust boundaries, TypeScript strict mode throughout
+6. **Side Benefit (Not Goal):** Most scenarios CAN be JSON-serializable when not using native RegExp - enables storage but that's not why we enforce declarative patterns
 
 **This analysis validates Scenarist's architectural decisions while identifying two legitimate feature gaps that will be addressed in upcoming releases.**
 
@@ -3193,6 +3220,309 @@ This is the SAME violation documented in Phase 2 (PR #26):
 - Having to retrofit tests after implementation
 
 **The lesson keeps repeating: TDD is non-negotiable. No shortcuts, no exceptions.**
+
+## URL Matching Phase 2.5: Path Parameters - Critical Learnings
+
+**Completed:** 2025-11-17
+**Status:** All tests passing (17 integration + 306 core)
+**Context:** Implementing MSW path-to-regexp compatibility for parameter extraction
+
+### User Feedback: Backward Compatibility is NOT a Concern
+
+**CRITICAL GUIDANCE:** During this work, the user provided explicit feedback:
+
+> "Backward compatability is NOT a thing for us - we care about having a clean and consistent API, but we have NO REAL USERS yet, so we don't need backwards compatability with anything. We are free to change our API as much as we want at the moment (so long as it remains declarative as per our project rules)"
+
+**Key Principles:**
+- ✅ Focus on clean, declarative API design
+- ✅ Make breaking changes if they improve the API
+- ✅ Prioritize consistency over backward compatibility
+- ❌ Don't constrain design to maintain compatibility with non-existent users
+- ❌ Don't add complexity for backward compatibility
+
+**This applies to ALL future work** - we're pre-1.0, optimizing for the best possible API.
+
+### Critical Bug #1: URL Constructor Corrupts path-to-regexp Syntax
+
+**Problem:** The `new URL()` constructor treats special characters as URL components, corrupting path-to-regexp patterns.
+
+**Example:**
+```typescript
+// Input pattern
+const pattern = 'http://localhost:3001/api/files/:filename?';
+
+// Using URL constructor (WRONG)
+const url = new URL(pattern);
+url.pathname;  // '/api/files/:filename' ❌ (lost the ?)
+
+// Manual regex parsing (CORRECT)
+const match = /^https?:\/\/[^/]+(\/.*)?$/.exec(pattern);
+const pathname = match[1];  // '/api/files/:filename?' ✅ (preserved ?)
+```
+
+**Why It Matters:**
+- `?` in path-to-regexp means "optional parameter"
+- URL constructor treats `?` as query string delimiter
+- Result: Optional parameters break entirely
+
+**The Fix:**
+```typescript
+/**
+ * Extract pathname from URL string, or return as-is if not a valid URL.
+ *
+ * CRITICAL: Handles path-to-regexp syntax (`:param`, `?`, `+`, `(regex)`)
+ * The URL constructor treats `?` as query string delimiter, which breaks optional params.
+ */
+const extractPathnameOrReturnAsIs = (url: string): string => {
+  const urlPattern = /^https?:\/\/[^/]+(\/.*)?$/;
+  const match = urlPattern.exec(url);
+
+  if (match) {
+    return match[1] || '/';
+  }
+
+  return url;  // Already a pathname
+};
+```
+
+**Affected Patterns:**
+- `:filename?` → Optional parameters
+- `:path+` → Repeating parameters
+- `:id(\\d+)` → Custom regex parameters
+
+**Files Changed:**
+- `packages/msw-adapter/src/matching/url-matcher.ts:26-39`
+
+**Tests Proving Fix:**
+- All 85 url-matcher unit tests pass
+- All 7 path parameter integration tests pass
+
+### Critical Bug #2: Pattern Conflicts with Repeating Parameters
+
+**Problem:** The repeating parameter pattern `:path+` matches BOTH single segments AND multiple segments, causing conflicts with simple parameter patterns.
+
+**Example:**
+```typescript
+// Two mocks for /api/files/
+const mocks = [
+  {
+    method: 'GET',
+    url: '/api/files/:filename',  // Simple parameter
+    response: { /* fallback */ }
+  },
+  {
+    method: 'GET',
+    url: '/api/files/:path+',  // Repeating parameter
+    response: { /* nested paths */ }
+  }
+];
+
+// Request: /api/files/readme.txt
+// Both patterns match!
+// ':filename' → {filename: 'readme.txt'}
+// ':path+' → {path: ['readme.txt']}  (single-element array)
+
+// Due to "last match wins" → repeating mock wins
+// Result: Wrong mock selected for single-segment files
+```
+
+**Why path-to-regexp Works This Way:**
+- `:path+` means "one or MORE segments"
+- Single segment = valid match (one segment satisfies "one or more")
+- No distinction between single and multiple segments in pattern
+
+**The Fix:** Use different URL endpoints to avoid conflicts
+```typescript
+// Before (conflict)
+{
+  url: '/api/files/:filename',  // Fallback
+},
+{
+  url: '/api/files/:path+',  // Repeating - conflicts!
+}
+
+// After (no conflict)
+{
+  url: '/api/files/:filename',  // Fallback for single files
+},
+{
+  url: '/api/paths/:path+',  // Different endpoint for nested paths
+}
+```
+
+**Files Changed:**
+- `apps/nextjs-app-router-example/lib/scenarios.ts:805-818`
+- `apps/nextjs-app-router-example/app/url-matching/page.tsx:227`
+
+**Test Results:**
+- Before: 6/17 URL matching tests passing (endsWith fallback failing)
+- After: 17/17 URL matching tests passing ✅
+
+### Pattern: "Last Match Wins" for Equal Specificity
+
+**Rule:** When multiple mocks have equal specificity (both 0, both 1, etc.), the LAST mock in the array wins.
+
+**Why This Matters:**
+```typescript
+// Fallback should come BEFORE more specific mocks
+const mocks = [
+  // Fallback (specificity = 0)
+  {
+    method: 'GET',
+    url: '/api/orders/:orderId',
+    response: { status: 'unknown' }
+  },
+  // Custom regex (specificity = 0, but more selective pattern)
+  {
+    method: 'GET',
+    url: '/api/orders/:orderId(\\d+)',
+    response: { status: 'processing' }
+  }
+];
+
+// Request: /api/orders/12345
+// Both match (numeric ID), both have specificity = 0
+// Last match wins → custom regex response returned ✅
+```
+
+**Counter-Example (Wrong Order):**
+```typescript
+const mocks = [
+  // Custom regex FIRST (wrong!)
+  {
+    method: 'GET',
+    url: '/api/orders/:orderId(\\d+)',
+    response: { status: 'processing' }
+  },
+  // Fallback LAST (overwrites custom regex)
+  {
+    method: 'GET',
+    url: '/api/orders/:orderId',
+    response: { status: 'unknown' }
+  }
+];
+
+// Request: /api/orders/12345
+// Both match, both specificity = 0
+// Last match wins → fallback response returned ❌ (wrong!)
+```
+
+**Best Practice:** Order mocks from general → specific
+1. Fallback mocks (no conditions)
+2. Conditional mocks (match criteria)
+3. Mocks with narrow patterns (custom regex, etc.)
+
+### Optional Parameter Handling: Two-Mock Approach
+
+**Problem:** Template replacement returns `undefined` when parameter is absent, which gets omitted from JSON. Cannot conditionally inject static defaults.
+
+**Original Attempt (Doesn't Work):**
+```typescript
+{
+  method: 'GET',
+  url: '/api/files/:filename?',  // Optional
+  response: {
+    body: {
+      filename: '{{params.filename}}',  // undefined when absent
+      path: '/files/{{params.filename}}',  // undefined when absent
+      exists: true
+    }
+  }
+}
+
+// Request: /api/file-optional (no filename)
+// Result: {exists: true} ❌ (filename and path omitted)
+```
+
+**Solution: Split Into Two Mocks**
+```typescript
+// Mock 1: When parameter is present (more specific)
+{
+  method: 'GET',
+  url: '/api/file-optional/:filename',  // WITHOUT ? - requires param
+  response: {
+    body: {
+      filename: '{{params.filename}}',  // Injected
+      path: '/file-optional/{{params.filename}}',
+      exists: true
+    }
+  }
+},
+
+// Mock 2: When parameter is absent (fallback)
+{
+  method: 'GET',
+  url: '/api/file-optional',  // Exact match, no param
+  response: {
+    body: {
+      filename: 'default.txt',  // Static default
+      path: '/file-optional/default.txt',
+      exists: true
+    }
+  }
+}
+
+// Request: /api/file-optional/document.txt
+// Matches Mock 1 → {filename: 'document.txt', path: '/file-optional/document.txt', exists: true} ✅
+
+// Request: /api/file-optional
+// Matches Mock 2 → {filename: 'default.txt', path: '/file-optional/default.txt', exists: true} ✅
+```
+
+**Why This Works:**
+- Mock 1 requires parameter (no `?`), only matches when present
+- Mock 2 is exact match, only matches when absent
+- No overlap, no "last match wins" needed
+- Templates work correctly (parameter guaranteed present in Mock 1)
+
+### Key Architectural Insights
+
+1. **Delegate to Canonical Libraries**
+   - Using path-to-regexp v6 (same as MSW 2.x)
+   - Automatic MSW parity without manual sync
+   - Bug fixes in upstream benefit us automatically
+
+2. **Preserve Input Fidelity**
+   - Don't transform user input (URL parsing)
+   - Preserve special characters exactly as written
+   - Manual parsing when standard library corrupts data
+
+3. **URL Pattern Conflicts Are Inevitable**
+   - Multiple patterns can match same URL
+   - Order matters for equal specificity
+   - Clear documentation prevents user confusion
+
+4. **Template Limitations Require Workarounds**
+   - Cannot conditionally inject defaults
+   - Two-mock pattern is acceptable trade-off
+   - Still maintains declarative API
+
+### Files Modified
+
+**Core Package:**
+- `packages/msw-adapter/src/matching/url-matcher.ts` - Manual URL parsing fix
+
+**Example App:**
+- `apps/nextjs-app-router-example/lib/scenarios.ts` - URL pattern fixes
+- `apps/nextjs-app-router-example/app/url-matching/page.tsx` - Rendering fixes
+- `apps/nextjs-app-router-example/tests/playwright/url-matching.spec.ts` - Integration tests
+
+**Documentation:**
+- `CLAUDE.md` - This section
+
+### Test Results
+
+**Before:**
+- Path parameter tests: 0/7 passing (all failing)
+- URL matching tests: 6/17 passing
+- Core tests: 306/306 passing
+
+**After:**
+- Path parameter tests: 7/7 passing ✅
+- URL matching tests: 17/17 passing ✅
+- Core tests: 306/306 passing ✅
+
+**Total:** 323 tests passing (17 integration + 306 core)
 
 ## Automatic Default Fallback - Critical Learnings
 

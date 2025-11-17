@@ -25,9 +25,10 @@ Converts Scenarist's serializable `ScenaristMock` data into MSW `HttpHandler` in
 - Zero framework dependencies (except MSW types)
 - Build custom adapters for any framework
 
-**Serializable Mocks**
-- Mock definitions are pure JSON (no functions)
-- Store in Redis for distributed testing
+**Declarative Mocks**
+- Mock definitions use declarative patterns (no imperative functions)
+- Most mocks CAN be stored as JSON (when not using native RegExp)
+- Store in Redis for distributed testing (using serialized regex form)
 - Version control scenarios as files
 - Share scenarios across teams
 
@@ -78,10 +79,11 @@ This adapter implements all 25 Scenarist capabilities:
 - **State isolation** - Per test ID isolation
 - **State reset** - Fresh state on scenario switch
 
-### URL Patterns (3 capabilities)
+### URL Patterns (4 capabilities)
 - **Exact matches** - `https://api.example.com/users`
 - **Wildcards** - `*/api/*`, `https://*/users`
 - **Path parameters** - `/users/:id`, `/posts/:postId/comments/:commentId`
+- **Native RegExp** - `/\/api\/v\d+\//`, `/\/users\/\d+$/` (weak comparison per MSW behavior)
 
 ### MSW Integration (6 capabilities)
 - **Dynamic handler generation** - Single handler routes at runtime
@@ -127,10 +129,23 @@ matchesUrl('https://api.stripe.com/v1/charges', 'POST', '*/v1/charges');
 // Returns: { matches: true, params: {} }
 ```
 
-**Supported patterns:**
-- Exact: `https://api.example.com/users`
-- Wildcards: `*/api/*`, `https://*/users`
+**Supported patterns (three types with different hostname matching):**
+
+**1. Pathname-only patterns** (origin-agnostic - match ANY hostname)
 - Path params: `/users/:id`, `/posts/:postId/comments/:commentId`
+- Exact: `/api/users`
+- Wildcards: `/api/*`, `*/users/*`
+
+**2. Full URL patterns** (hostname-specific - match ONLY specified hostname)
+- Exact: `https://api.example.com/users`
+- Path params: `https://api.example.com/users/:id`
+- Wildcards: `https://*/users`, `https://api.example.com/*`
+
+**3. Native RegExp** (origin-agnostic - MSW weak comparison)
+- `/\/api\/v\d+\//` (matches /api/v1/, /api/v2/, etc.)
+- `/\/users\/\d+$/` (matches /users/123 at any origin)
+
+**IMPORTANT:** If you specify a hostname in a full URL pattern, it WILL be matched. Choose pathname patterns for environment-agnostic mocks, full URL patterns when hostname matters.
 
 ### 2. Mock Matching
 

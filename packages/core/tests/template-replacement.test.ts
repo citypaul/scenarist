@@ -210,5 +210,56 @@ describe('Template Replacement', () => {
         total: 15.99,
       });
     });
+
+    it('should leave templates unchanged when referencing unsupported prefix', () => {
+      // Templates only support 'state' and 'params' prefixes
+      // Other prefixes like 'config' are left as-is
+      const value = {
+        apiKey: '{{config.apiKey}}', // Unsupported prefix
+        userId: '{{state.userId}}', // Supported prefix
+      };
+      const templateData = {
+        state: { userId: 'user-123' },
+        params: { id: '456' },
+      };
+
+      const result = applyTemplates(value, templateData);
+
+      // Unsupported prefixes are left as literals
+      expect(result).toEqual({
+        apiKey: '{{config.apiKey}}',
+        userId: 'user-123',
+      });
+    });
+
+    it('should return undefined for pure template when prefix is null', () => {
+      const value = {
+        userId: '{{state.userId}}', // Pure template
+      };
+      const templateData = {
+        state: null as any, // Prefix exists but is null
+        params: {},
+      };
+
+      const result = applyTemplates(value, templateData);
+
+      // Pure template with null prefix returns undefined (removed)
+      expect(result).toEqual({});
+    });
+
+    it('should return undefined for pure template when prefix is not an object', () => {
+      const value = {
+        userId: '{{state.userId}}', // Pure template
+      };
+      const templateData = {
+        state: "not-an-object" as any, // Prefix exists but is not an object
+        params: {},
+      };
+
+      const result = applyTemplates(value, templateData);
+
+      // Pure template with non-object prefix returns undefined (removed)
+      expect(result).toEqual({});
+    });
   });
 });

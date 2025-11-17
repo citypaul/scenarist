@@ -417,7 +417,7 @@ npm install @scenarist/express-adapter msw express
 
 **1. Create your scenarios**
 
-Scenarios are defined as serializable JSON objects (not MSW handlers):
+Scenarios are defined as declarative patterns (not MSW handlers with imperative functions):
 
 ```typescript
 // scenarios/default.ts

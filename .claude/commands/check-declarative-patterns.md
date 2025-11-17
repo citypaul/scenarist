@@ -1,12 +1,12 @@
 ---
-description: Verify scenario definitions are serializable (no functions, closures, or classes)
+description: Verify scenario definitions use declarative patterns (no imperative functions)
 ---
 
-Check that all scenario-related types are serializable to enable distributed testing.
+Check that all scenario-related types use declarative patterns instead of imperative functions.
 
 ## Critical Rule
 
-Per ADR-0001, scenarios must be **pure JSON** - no functions, closures, regex, or class instances.
+Per ADR-0013 and ADR-0016, scenarios must use **declarative patterns** - no imperative functions or closures. Native RegExp is ALLOWED (it's declarative pattern matching).
 
 ## What to Check
 
@@ -16,9 +16,9 @@ Per ADR-0001, scenarios must be **pure JSON** - no functions, closures, regex, o
    - No function types, no `() => T`, no methods
 
 2. **ScenaristMock type:**
-   - Uses plain strings for URLs (not regex)
+   - Uses `string | RegExp` for URLs (RegExp is declarative per ADR-0016)
    - Uses union types for HTTP methods (not enums with methods)
-   - Response body is `unknown` (must be JSON-serializable at runtime)
+   - Match criteria use declarative patterns (not functions)
 
 3. **ActiveScenario type:**
    - Stores only references: `scenarioId` and `variantName`
@@ -32,11 +32,11 @@ Per ADR-0001, scenarios must be **pure JSON** - no functions, closures, regex, o
 ## Checks to Run
 
 ```bash
-# Search for non-serializable patterns
-grep -r "HttpHandler" packages/core/src/types/ && echo "❌ Found HttpHandler in types (not serializable)"
+# Search for imperative function patterns
+grep -r "HttpHandler" packages/core/src/types/ && echo "❌ Found HttpHandler in types (imperative functions)"
 grep -r "() =>" packages/core/src/types/ && echo "❌ Found function types in types"
 grep -r "Function" packages/core/src/types/ && echo "❌ Found Function type"
-grep -r "RegExp" packages/core/src/types/ && echo "❌ Found RegExp in types"
+# NOTE: RegExp is ALLOWED - it's declarative pattern matching (ADR-0016)
 
 # Verify ScenaristMock exists and is used
 grep -r "ScenaristMock" packages/core/src/types/scenario.ts || echo "❌ ScenaristMock not found"
@@ -45,24 +45,26 @@ grep -r "ScenaristMock" packages/core/src/types/scenario.ts || echo "❌ Scenari
 grep "scenario:" packages/core/src/types/scenario.ts && echo "❌ ActiveScenario stores full scenario (should be reference only)"
 ```
 
-## What Makes Data Serializable?
+## What Makes Patterns Declarative?
 
-✅ **Serializable:**
+✅ **Declarative (ALLOWED):**
 - Primitives: `string`, `number`, `boolean`, `null`
 - Plain objects: `{ key: value }`
 - Arrays: `ReadonlyArray<T>`
 - Union types: `'GET' | 'POST'`
-- `unknown` (runtime validation required)
+- Native RegExp: `/pattern/flags` (ADR-0016 - declarative pattern matching)
+- Serialized regex: `{ regex: { source, flags } }`
+- Match criteria: `{ headers: { 'x-tier': 'premium' } }`
 
-❌ **NOT Serializable:**
+❌ **Imperative (NOT ALLOWED):**
 - Functions: `() => void`, `(x: T) => U`
-- Closures: functions capturing variables
+- Closures: functions capturing external variables
+- Imperative logic: `(req) => req.header === 'premium'`
 - Classes: instances with methods
-- Regex: `/pattern/`
 - Symbols, undefined, circular references
 
-Report any non-serializable types found with:
+Report any imperative patterns found with:
 - File path
 - Type name
 - Specific violation
-- Recommended fix (reference ADR-0001)
+- Recommended fix (reference ADR-0013 and ADR-0016)

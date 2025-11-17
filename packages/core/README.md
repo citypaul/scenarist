@@ -39,7 +39,7 @@ await switchScenario('test-2', 'success'); // Test 2 sees success (parallel!)
 **True Parallel Testing**
 - 100+ tests run concurrently with different scenarios
 - Each test ID has isolated scenario state
-- No conflicts, no serialization needed
+- No conflicts between tests
 
 **Reusable Scenarios**
 - Define scenarios once, use across all tests
@@ -54,7 +54,7 @@ await switchScenario('test-2', 'success'); // Test 2 sees success (parallel!)
 **Type-Safe & Tested**
 - TypeScript strict mode throughout
 - 100% test coverage
-- Immutable, serializable data structures
+- Immutable, declarative data structures
 
 ## Architecture
 
@@ -75,7 +75,8 @@ src/
 **Types (Data Structures):**
 - Defined with `type` keyword
 - All properties are `readonly` for immutability
-- Must be serializable (no functions, closures, or class instances)
+- Use declarative patterns (no imperative functions, closures, or hidden logic)
+- Native RegExp allowed for pattern matching (ADR-0016)
 - Examples: `ScenaristScenario`, `ScenaristConfig`, `ActiveScenario`, `ScenaristMock`
 
 **Ports (Behavior Contracts):**
@@ -307,7 +308,7 @@ import {
   type ScenaristScenario,
 } from '@scenarist/core';
 
-// 1. Define scenarios (serializable definitions)
+// 1. Define scenarios (declarative patterns)
 const defaultScenario: ScenaristScenario = {
   id: 'default',
   name: 'Default Scenario',
@@ -341,7 +342,7 @@ const happyPathScenario: ScenaristScenario = {
   ],
 };
 
-// 2. Build configuration (all properties serializable)
+// 2. Build configuration (declarative plain data)
 const config = buildConfig({
   enabled: process.env.NODE_ENV !== 'production', // Evaluated first!
   defaultScenario: defaultScenario, // REQUIRED - fallback for unmocked requests
@@ -458,14 +459,195 @@ const scenario: ScenaristScenario = {
 };
 ```
 
-**Security Note:** Regex patterns are validated using `redos-detector` to prevent ReDoS (Regular Expression Denial of Service) attacks. Unsafe patterns are rejected at scenario registration.
+### Native RegExp Support
+
+You can use native JavaScript RegExp objects directly instead of the serialized form:
+
+```typescript
+const scenario: ScenaristScenario = {
+  id: 'native-regex-examples',
+  mocks: [
+    // Native RegExp in URL matching
+    {
+      method: 'GET',
+      url: /\/api\/v\d+\/products/,  // Matches /api/v1/products, /api/v2/products, etc.
+      response: { status: 200, body: { products: [] } },
+    },
+
+    // Native RegExp in header matching
+    {
+      method: 'GET',
+      url: '/api/products',
+      match: {
+        headers: {
+          referer: /\/premium|\/vip/i,  // Case-insensitive pattern
+        },
+      },
+      response: { status: 200, body: { tier: 'premium' } },
+    },
+
+    // Both forms are equivalent and have same ReDoS protection
+    {
+      method: 'GET',
+      url: '/api/data',
+      match: {
+        query: {
+          filter: /^\w+$/,  // Native RegExp
+          // Same as: { regex: { source: '^\\w+$', flags: '' } }
+        },
+      },
+      response: { status: 200, body: { data: [] } },
+    },
+  ],
+};
+```
+
+**Both serialized and native RegExp patterns receive the same security validation.**
+
+### URL Pattern Matching Rules
+
+Scenarist supports three pattern types with different hostname matching behaviors:
+
+**1. Pathname-only patterns** (origin-agnostic)
+```typescript
+{ url: '/api/users/:id' }
+```
+- **Matches ANY hostname** - environment-agnostic
+- Best for mocks that should work across localhost, staging, production
+- Example: `/api/users/123` matches requests to:
+  - `http://localhost:3000/api/users/123` ✅
+  - `https://staging.example.com/api/users/123` ✅
+  - `https://api.production.com/api/users/123` ✅
+
+**2. Full URL patterns** (hostname-specific)
+```typescript
+{ url: 'http://api.example.com/users/:id' }
+```
+- **Matches ONLY the specified hostname** - environment-specific
+- Best for mocks that should only apply to specific domains
+- Example: `http://api.example.com/users/:id` matches:
+  - `http://api.example.com/users/123` ✅
+  - `http://localhost:3000/users/123` ❌ (different hostname)
+  - `https://api.example.com/users/123` ❌ (different protocol)
+
+**3. Native RegExp patterns** (origin-agnostic)
+```typescript
+{ url: /\/users\/\d+/ }
+```
+- **Matches ANY hostname** - substring matching (MSW weak comparison)
+- Best for flexible pattern matching across environments
+- Example: `/\/users\/\d+/` matches:
+  - `http://localhost:3000/users/123` ✅
+  - `https://api.example.com/api/v1/users/456` ✅
+  - Any URL containing `/users/` followed by digits ✅
+
+**Choosing the right pattern type:**
+
+```typescript
+// ✅ Use pathname patterns for environment-agnostic mocks
+const defaultScenario = {
+  mocks: [
+    {
+      url: '/api/products',  // Works in dev, staging, prod
+      response: { status: 200, body: { products: [] } }
+    }
+  ]
+};
+
+// ✅ Use full URL patterns when hostname matters
+const productionOnlyScenario = {
+  mocks: [
+    {
+      url: 'https://api.production.com/admin',  // Only matches production
+      response: { status: 403, body: { error: 'Admin disabled in prod' } }
+    }
+  ]
+};
+
+// ✅ Use RegExp for flexible pattern matching
+const versionAgnosticScenario = {
+  mocks: [
+    {
+      url: /\/api\/v\d+\/users/,  // Matches /api/v1/users, /api/v2/users, etc.
+      response: { status: 200, body: { users: [] } }
+    }
+  ]
+};
+```
+
+**IMPORTANT:** If you specify a hostname explicitly, it WILL be matched. Choose pathname patterns for flexibility, full URL patterns for control.
+
+### Common URL Pattern Examples
+
+Here are helpful regex patterns for common use cases:
+
+```typescript
+// API versioning - match any version number
+{ url: /\/api\/v\d+\// }
+// Matches: /api/v1/, /api/v2/, /api/v10/, etc.
+
+// Numeric IDs only (reject non-numeric)
+{ url: /\/users\/\d+$/ }
+// Matches: /users/123 ✅
+// Rejects: /users/abc ❌
+
+// File extensions
+{ url: /\.json$/ }
+// Matches: /data.json, /api/users.json ✅
+// Rejects: /data.xml, /users ❌
+
+// Optional trailing slash
+{ url: /\/products\/?$/ }
+// Matches: /products ✅ and /products/ ✅
+
+// Multiple extensions
+{ url: /\.(jpg|png|gif)$/i }
+// Matches: image.jpg, photo.PNG, avatar.gif ✅
+
+// UUID format (simplified)
+{ url: /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i }
+// Matches: /550e8400-e29b-41d4-a716-446655440000 ✅
+
+// Subdomain matching
+{
+  match: {
+    headers: {
+      host: /^(api|cdn)\.example\.com$/
+    }
+  }
+}
+// Matches: api.example.com, cdn.example.com ✅
+```
+
+### Security: ReDoS Protection
+
+⚠️ **IMPORTANT**: Both serialized and native RegExp patterns are validated using `redos-detector` to prevent ReDoS (Regular Expression Denial of Service) attacks.
+
+**Unsafe patterns are automatically rejected at scenario registration:**
+
+```typescript
+// ❌ REJECTED - Catastrophic backtracking
+{ url: /(a+)+b/ }
+// Error: Unsafe regex pattern detected
+
+// ❌ REJECTED - Exponential time complexity
+{ match: { headers: { referer: { regex: { source: '(x+x+)+y' } } } } }
+// Error: Unsafe regex pattern detected
+
+// ✅ SAFE - Linear time complexity
+{ url: /\/api\/[^/]+\/users/ }
+// Matches safely with bounded backtracking
+```
+
+Scenarist validates patterns before execution to protect your tests from denial-of-service attacks caused by malicious or poorly designed regex patterns.
 
 ### Key Principles
 
-- **Serialization**: All types must be JSON-serializable (no functions!)
+- **Declarative Patterns**: All types use explicit patterns, no imperative functions (ADR-0016)
 - **Dependency Injection**: Ports are injected, never created internally
 - **Immutability**: All data structures use `readonly`
 - **Factory Pattern**: Use `createScenarioManager()`, not classes
+- **Side Benefit**: Most scenarios CAN be JSON-serializable (when not using native RegExp)
 
 ## Adapter Contract
 

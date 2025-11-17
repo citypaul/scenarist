@@ -1,5 +1,5 @@
 import type {
-  ScenaristMock,
+  ScenaristMockWithParams,
   ScenaristResponse,
   HttpRequestContext,
   ScenaristResult,
@@ -36,13 +36,13 @@ export interface ResponseSelector {
    * @param testId - Test ID for sequence/state tracking
    * @param scenarioId - Scenario ID for sequence/state tracking
    * @param context - Request context (method, url, body, headers, query)
-   * @param mocks - Candidate mocks from active scenario (already filtered by URL/method)
+   * @param mocks - Candidate mocks with extracted params (already filtered by URL/method)
    * @returns ScenaristResult with selected ScenaristResponse or error if no match found
    */
   selectResponse(
     testId: string,
     scenarioId: string,
     context: HttpRequestContext,
-    mocks: ReadonlyArray<ScenaristMock>
+    mocks: ReadonlyArray<ScenaristMockWithParams>
   ): ScenaristResult<ScenaristResponse, ResponseSelectionError>;
 }

@@ -14,6 +14,7 @@ export type {
 // Export types that remain in scenario.ts (not validated by schemas)
 export type {
   HttpRequestContext,
+  ScenaristMockWithParams,
   ActiveScenario,
   ScenaristResult,
   ScenaristScenarios,

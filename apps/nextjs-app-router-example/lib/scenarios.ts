@@ -535,6 +535,458 @@ export const stringMatchingScenario: ScenaristScenario = {
 };
 
 /**
+ * Scenario: URL Matching with Native RegExp and String Strategies
+ *
+ * Demonstrates URL matching capabilities:
+ * - Native RegExp patterns for numeric IDs
+ * - String strategies (contains, startsWith, endsWith) for URL filtering
+ * - Combined matching (URL + headers)
+ */
+export const urlMatchingScenario: ScenaristScenario = {
+  id: "urlMatching",
+  name: "URL Matching Strategies",
+  description: "Tests URL matching with RegExp, string strategies, and combined criteria",
+  mocks: [
+    // Test 1: Native RegExp - Match numeric user IDs
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/users/:username",
+      match: {
+        url: /\/users\/\d+$/, // Match URLs ending with numeric ID
+      },
+      response: {
+        status: 200,
+        body: {
+          login: "user-numeric-id",
+          id: 12345,
+          name: "Numeric ID User",
+          bio: "Matched by numeric ID pattern",
+          public_repos: 42,
+          followers: 500,
+          matchedBy: "regexNumericId",
+        },
+      },
+    },
+
+    // Test 2: Contains strategy - Match URLs containing specific city
+    {
+      method: "GET",
+      url: /http:\/\/localhost:3001\/api\/weather\/v\d+\/[^/]+$/,  // RegExp for any version
+      match: {
+        url: { contains: "/london" },  // Match specific city
+      },
+      response: {
+        status: 200,
+        body: {
+          city: "Weather Match City",
+          temperature: 22,
+          conditions: "Weather route matched",
+          humidity: 55,
+          matchedBy: "containsWeather",
+        },
+      },
+    },
+
+    // Test 3: StartsWith strategy - Match API versioning
+    {
+      method: "GET",
+      url: /http:\/\/localhost:3001\/api\/weather\/v\d+\/[^/]+$/,  // RegExp for any version
+      match: {
+        url: { startsWith: "http://localhost:3001/api/weather/v2" },
+      },
+      response: {
+        status: 200,
+        body: {
+          city: "Version 2 City",
+          temperature: 25,
+          conditions: "V2 API matched",
+          humidity: 60,
+          matchedBy: "startsWithV2",
+        },
+      },
+    },
+
+    // Test 4: EndsWith strategy - Match file extensions
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/files/:filename",
+      match: {
+        url: { endsWith: ".json" },
+      },
+      response: {
+        status: 200,
+        body: {
+          type: "file",
+          name: "data.json",
+          path: "config/data.json",
+          content: "eyJrZXkiOiJ2YWx1ZSJ9", // base64: {"key":"value"}
+          matchedBy: "endsWithJson",
+        },
+      },
+    },
+
+    // Test 5: Combined - URL pattern + header match
+    {
+      method: "POST",
+      url: "http://localhost:3001/api/charges",
+      match: {
+        url: /\/charges$/,
+        headers: {
+          "x-api-version": "2023-10-16",
+        },
+      },
+      response: {
+        status: 200,
+        body: {
+          id: "ch_combined123",
+          status: "succeeded",
+          amount: 2000,
+          currency: "usd",
+          matchedBy: "combinedUrlHeader",
+        },
+      },
+    },
+
+    // Test 6: Exact string match (backward compatible)
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/users/:username",
+      match: {
+        url: "http://localhost:3001/api/users/exactuser",
+      },
+      response: {
+        status: 200,
+        body: {
+          login: "exactuser",
+          id: 99999,
+          name: "Exact Match User",
+          bio: "Matched by exact URL",
+          public_repos: 10,
+          followers: 100,
+          matchedBy: "exactUrl",
+        },
+      },
+    },
+
+    // Fallback for users API
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/users/:username",
+      response: {
+        status: 200,
+        body: {
+          login: "fallback-user",
+          id: 0,
+          name: "Fallback User",
+          bio: "No URL match",
+          public_repos: 0,
+          followers: 50,
+          matchedBy: "fallback",
+        },
+      },
+    },
+
+    // Fallback for weather API
+    {
+      method: "GET",
+      url: /http:\/\/localhost:3001\/api\/weather\/v\d+\/[^/]+$/,  // RegExp for any version
+      response: {
+        status: 200,
+        body: {
+          city: "Fallback City",
+          temperature: 20,
+          conditions: "No URL match",
+          humidity: 50,
+          matchedBy: "fallback",
+        },
+      },
+    },
+
+    // Fallback for files API
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/files/:filename",
+      response: {
+        status: 200,
+        body: {
+          type: "file",
+          name: "unknown.txt",
+          path: "unknown.txt",
+          content: "",
+          matchedBy: "fallback",
+        },
+      },
+    },
+
+    // Fallback for charges API
+    {
+      method: "POST",
+      url: "http://localhost:3001/api/charges",
+      response: {
+        status: 200,
+        body: {
+          id: "ch_fallback123",
+          status: "succeeded",
+          amount: 1000,
+          currency: "usd",
+          matchedBy: "fallback",
+        },
+      },
+    },
+
+    // Test 7: Path Parameter - Simple :id extraction
+    // This should extract the user ID from the URL and use it in the response
+    // Using /api/user-param/:id to avoid conflict with regex numeric ID mock
+    {
+      method: "GET",
+      url: "/api/user-param/:id",
+      response: {
+        status: 200,
+        body: {
+          userId: "{{params.id}}",  // Should be extracted from URL
+          login: "user-{{params.id}}",
+          name: "User {{params.id}}",
+          bio: "User with ID from path parameter",
+          matchedBy: "pathParam",
+        },
+      },
+    },
+
+    // Test 8: Multiple Path Parameters - :userId and :postId
+    {
+      method: "GET",
+      url: "/api/users/:userId/posts/:postId",
+      response: {
+        status: 200,
+        body: {
+          userId: "{{params.userId}}",
+          postId: "{{params.postId}}",
+          title: "Post {{params.postId}} by {{params.userId}}",
+          content: "Content for post {{params.postId}}",
+          author: "{{params.userId}}",
+          matchedBy: "multipleParams",
+        },
+      },
+    },
+
+    // Test 9a: Optional Parameter - When filename is present
+    // More specific mock (uses template to inject param)
+    {
+      method: "GET",
+      url: "/api/file-optional/:filename",  // Without ? - requires param
+      response: {
+        status: 200,
+        body: {
+          filename: "{{params.filename}}",
+          path: "/file-optional/{{params.filename}}",
+          exists: true,
+          matchedBy: "optional",
+        },
+      },
+    },
+
+    // Test 9b: Optional Parameter - When filename is absent
+    // Fallback mock (static defaults)
+    {
+      method: "GET",
+      url: "/api/file-optional",  // Exact match, no param
+      response: {
+        status: 200,
+        body: {
+          filename: "default.txt",
+          path: "/file-optional/default.txt",
+          exists: true,
+          matchedBy: "optional",
+        },
+      },
+    },
+
+    // Test 10: Repeating Path Parameter - :path+
+    // Changed from /api/files/:path+ to /api/paths/:path+ to avoid conflict with /api/files/:filename
+    {
+      method: "GET",
+      url: "/api/paths/:path+",
+      response: {
+        status: 200,
+        body: {
+          path: "{{params.path}}",  // Should be array joined
+          segments: "{{params.path.length}}",  // Array length
+          fullPath: "/paths/{{params.path}}",
+          matchedBy: "repeating",
+        },
+      },
+    },
+
+    // Fallback for orders endpoint (when custom regex doesn't match)
+    // IMPORTANT: Must come BEFORE custom regex due to "last match wins" rule
+    {
+      method: "GET",
+      url: "/api/orders/:orderId",
+      response: {
+        status: 200,
+        body: {
+          orderId: "{{params.orderId}}",
+          status: "unknown",
+          total: 0,
+          matchedBy: "fallback",
+        },
+      },
+    },
+
+    // Test 11: Custom Regex Parameter - :orderId(\d+)
+    // Should only match numeric order IDs
+    // IMPORTANT: Comes AFTER fallback so it wins when both match (last match wins)
+    {
+      method: "GET",
+      url: "/api/orders/:orderId(\\d+)",
+      response: {
+        status: 200,
+        body: {
+          orderId: "{{params.orderId}}",
+          status: "processing",
+          total: 99.99,
+          matchedBy: "customRegex",
+        },
+      },
+    },
+  ],
+};
+
+/**
+ * Hostname Matching Demonstration Scenario
+ *
+ * Demonstrates the three URL pattern types and their hostname matching behavior:
+ *
+ * 1. PATHNAME-ONLY patterns (/api/data) - Origin-agnostic (match ANY hostname)
+ * 2. FULL URL patterns (http://localhost:3001/api/data) - Hostname-specific (must match exactly)
+ * 3. REGEXP patterns (/\/api\/data/) - Origin-agnostic (MSW weak comparison)
+ *
+ * Use case: Understanding how different pattern types behave with hostnames
+ */
+export const hostnameMatchingScenario: ScenaristScenario = {
+  id: "hostnameMatching",
+  name: "Hostname Matching Demonstration",
+  description: "Shows pathname vs full URL vs RegExp pattern behaviors",
+  mocks: [
+    // Example 1: Pathname-only pattern - matches ANY hostname
+    {
+      method: "GET",
+      url: "/api/origin-agnostic",
+      response: {
+        status: 200,
+        body: {
+          patternType: "pathname-only",
+          behavior: "origin-agnostic",
+          message: "This matches requests to ANY hostname",
+          examples: [
+            "http://localhost:3002/api/origin-agnostic",
+            "https://api.example.com/api/origin-agnostic",
+            "http://staging.test.io/api/origin-agnostic",
+          ],
+        },
+      },
+    },
+
+    // Example 2: Full URL pattern with localhost - hostname-specific
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/localhost-only",
+      response: {
+        status: 200,
+        body: {
+          patternType: "full-url",
+          hostname: "localhost:3001",
+          behavior: "hostname-specific",
+          message: "This ONLY matches localhost:3001 requests",
+          willMatch: "http://localhost:3001/api/localhost-only",
+          wontMatch: [
+            "https://api.example.com/api/localhost-only",
+            "http://staging.test.io/api/localhost-only",
+          ],
+        },
+      },
+    },
+
+    // Example 3: Full URL pattern with production hostname - hostname-specific
+    {
+      method: "GET",
+      url: "https://api.example.com/api/production-only",
+      response: {
+        status: 200,
+        body: {
+          patternType: "full-url",
+          hostname: "api.example.com",
+          behavior: "hostname-specific",
+          message: "This ONLY matches api.example.com requests",
+          willMatch: "https://api.example.com/api/production-only",
+          wontMatch: [
+            "http://localhost:3001/api/production-only",
+            "http://staging.test.io/api/production-only",
+          ],
+        },
+      },
+    },
+
+    // Example 4: Native RegExp pattern - origin-agnostic (weak comparison)
+    {
+      method: "GET",
+      url: /\/api\/regex-pattern$/,
+      response: {
+        status: 200,
+        body: {
+          patternType: "native-regexp",
+          behavior: "origin-agnostic (MSW weak comparison)",
+          message: "This matches the pattern at ANY origin",
+          examples: [
+            "http://localhost:3002/api/regex-pattern",
+            "https://api.example.com/api/regex-pattern",
+            "http://staging.test.io/v1/api/regex-pattern",
+          ],
+        },
+      },
+    },
+
+    // Example 5: Pathname with path parameters - origin-agnostic
+    {
+      method: "GET",
+      url: "/api/users/:userId/posts/:postId",
+      response: {
+        status: 200,
+        body: {
+          patternType: "pathname-only with params",
+          behavior: "origin-agnostic + param extraction",
+          message: "Extracts params and matches ANY hostname",
+          userId: "{{params.userId}}",
+          postId: "{{params.postId}}",
+          examples: [
+            "http://localhost:3002/api/users/123/posts/456",
+            "https://api.example.com/api/users/123/posts/456",
+          ],
+        },
+      },
+    },
+
+    // Example 6: Full URL with path parameters - hostname-specific
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/local-users/:userId",
+      response: {
+        status: 200,
+        body: {
+          patternType: "full-url with params",
+          hostname: "localhost:3001",
+          behavior: "hostname-specific + param extraction",
+          message: "Extracts params but ONLY from localhost:3001",
+          userId: "{{params.userId}}",
+          willMatch: "http://localhost:3001/api/local-users/123",
+          wontMatch: "https://api.example.com/api/local-users/123",
+        },
+      },
+    },
+  ],
+};
+
+/**
  * All scenarios for registration and type-safe access
  */
 export const scenarios = {
@@ -548,4 +1000,6 @@ export const scenarios = {
   checkout: checkoutScenario,
   campaignRegex: campaignRegexScenario,
   stringMatching: stringMatchingScenario,
+  urlMatching: urlMatchingScenario,
+  hostnameMatching: hostnameMatchingScenario,
 } as const satisfies ScenaristScenarios;
