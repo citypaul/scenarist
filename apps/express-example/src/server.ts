@@ -10,6 +10,7 @@ import { setupCartRoutes } from "./routes/cart.js";
 import { setupFormRoutes } from "./routes/form.js";
 import { setupStringMatchingRoutes } from "./routes/string-matching.js";
 import { setupUrlMatchingRoutes } from "./routes/url-matching.js";
+import { setupHostnameMatchingRoutes } from "./routes/hostname-matching.js";
 import { scenarios } from "./scenarios.js";
 
 /**
@@ -40,6 +41,7 @@ export const createApp = (): { app: Express; scenarist: ExpressScenarist<typeof 
   setupFormRoutes(router);
   setupStringMatchingRoutes(router);
   setupUrlMatchingRoutes(router);
+  setupHostnameMatchingRoutes(router);
   app.use(router);
 
   // Health check endpoint
