@@ -18,7 +18,7 @@
 
 // CRITICAL: Import scenarist to ensure MSW starts before fetch calls
 import { scenarist } from "@/lib/scenarist";
-import { headers, type ReadonlyHeaders } from "next/headers";
+import { headers } from "next/headers";
 
 type HostnameMatchingResponse = {
   readonly patternType: string;
@@ -48,7 +48,7 @@ const fetchTestData = async (
   testType: string,
   userId: string,
   postId: string,
-  headersList: ReadonlyHeaders
+  headersList: Awaited<ReturnType<typeof headers>>
 ): Promise<FetchResult> => {
   // TEMPORARY WORKAROUND: Create mock Request to use scenarist.getHeaders()
   // Server Components only have ReadonlyHeaders (from headers()), not Request object
