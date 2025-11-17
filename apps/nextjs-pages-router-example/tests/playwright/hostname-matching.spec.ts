@@ -207,8 +207,9 @@ test.describe("Hostname Matching - ATDD", () => {
     await expect(
       page.getByText("Will Match: http://localhost:3001/api/local-users/123")
     ).toBeVisible();
+    await expect(page.getByText("Won't Match:")).toBeVisible();
     await expect(
-      page.getByText("Won't Match: https://api.example.com/api/local-users/123")
+      page.getByText("https://api.example.com/api/local-users/123")
     ).toBeVisible();
   });
 });

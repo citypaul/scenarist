@@ -13,6 +13,7 @@
  */
 
 import type { GetServerSideProps } from "next";
+import { scenarist } from "../lib/scenarist";
 
 type HostnameMatchingResponse = {
   readonly patternType: string;
@@ -95,10 +96,14 @@ export default function HostnameMatchingPage({ testType, result, error }: PagePr
   );
 }
 
-export const getServerSideProps: GetServerSideProps<PageProps> = async ({ query }) => {
+export const getServerSideProps: GetServerSideProps<PageProps> = async (context) => {
+  const { query } = context;
   const testType = (query.test as string) || "unknown";
   const userId = (query.userId as string) || "123";
   const postId = (query.postId as string) || "456";
+
+  // Get Scenarist headers for test ID propagation
+  const scenaristHeaders = scenarist.getHeaders(context.req);
 
   let result: HostnameMatchingResponse | null = null;
   let error: string | null = null;
@@ -107,42 +112,54 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async ({ query 
     switch (testType) {
       case "pathnameOnly": {
         // Test 1: Pathname-only pattern - should match ANY hostname
-        const response = await fetch("http://localhost:3001/api/origin-agnostic");
+        const response = await fetch("http://localhost:3001/api/origin-agnostic", {
+          headers: scenaristHeaders,
+        });
         result = await response.json();
         break;
       }
 
       case "localhostFull": {
         // Test 2: Full URL with localhost - hostname-specific
-        const response = await fetch("http://localhost:3001/api/localhost-only");
+        const response = await fetch("http://localhost:3001/api/localhost-only", {
+          headers: scenaristHeaders,
+        });
         result = await response.json();
         break;
       }
 
       case "externalFull": {
         // Test 3: Full URL with external domain - hostname-specific
-        const response = await fetch("https://api.example.com/api/production-only");
+        const response = await fetch("https://api.example.com/api/production-only", {
+          headers: scenaristHeaders,
+        });
         result = await response.json();
         break;
       }
 
       case "regexp": {
         // Test 4: Native RegExp pattern - origin-agnostic
-        const response = await fetch("http://localhost:3001/api/regex-pattern");
+        const response = await fetch("http://localhost:3001/api/regex-pattern", {
+          headers: scenaristHeaders,
+        });
         result = await response.json();
         break;
       }
 
       case "pathnameParams": {
         // Test 5: Pathname with path parameters - origin-agnostic + param extraction
-        const response = await fetch(`http://localhost:3001/api/users/${userId}/posts/${postId}`);
+        const response = await fetch(`http://localhost:3001/api/users/${userId}/posts/${postId}`, {
+          headers: scenaristHeaders,
+        });
         result = await response.json();
         break;
       }
 
       case "fullUrlParams": {
         // Test 6: Full URL with path parameters - hostname-specific + param extraction
-        const response = await fetch(`http://localhost:3001/api/local-users/${userId}`);
+        const response = await fetch(`http://localhost:3001/api/local-users/${userId}`, {
+          headers: scenaristHeaders,
+        });
         result = await response.json();
         break;
       }
