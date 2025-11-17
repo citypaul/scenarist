@@ -216,3 +216,64 @@ describe('URL Matcher', () => {
     });
   });
 });
+
+  describe('Pathname-only patterns (MSW compatibility)', () => {
+    it('should match pathname pattern against full URL request (mixed usage)', () => {
+      // Real-world use case: scenario defines "/api/users/:id" (pathname-only)
+      // Application makes request to "http://localhost:3001/api/users/123" (full URL)
+      const result = matchesUrl(
+        '/api/users/:id',
+        'http://localhost:3001/api/users/123'
+      );
+
+      expect(result.matches).toBe(true);
+      expect(result.params).toEqual({ id: '123' });
+    });
+
+    it('should match pathname pattern with multiple params against full URL', () => {
+      const result = matchesUrl(
+        '/api/users/:userId/posts/:postId',
+        'http://localhost:3001/api/users/alice/posts/42'
+      );
+
+      expect(result.matches).toBe(true);
+      expect(result.params).toEqual({ userId: 'alice', postId: '42' });
+    });
+
+    it('should match pathname pattern with custom regex against full URL', () => {
+      const result = matchesUrl(
+        '/api/orders/:orderId(\\d+)',
+        'http://localhost:3001/api/orders/12345'
+      );
+
+      expect(result.matches).toBe(true);
+      expect(result.params).toEqual({ orderId: '12345' });
+    });
+
+    it('should NOT match pathname pattern when path differs', () => {
+      const result = matchesUrl(
+        '/api/users/:id',
+        'http://localhost:3001/api/products/123'
+      );
+
+      expect(result.matches).toBe(false);
+    });
+
+    it('should match pathname pattern across different origins', () => {
+      const pattern = '/api/users/:id';
+
+      // Same pathname pattern should match different hosts
+      const result1 = matchesUrl(pattern, 'http://localhost:3001/api/users/123');
+      const result2 = matchesUrl(pattern, 'https://api.example.com/api/users/456');
+      const result3 = matchesUrl(pattern, 'http://staging.test.io/api/users/789');
+
+      expect(result1.matches).toBe(true);
+      expect(result1.params).toEqual({ id: '123' });
+
+      expect(result2.matches).toBe(true);
+      expect(result2.params).toEqual({ id: '456' });
+
+      expect(result3.matches).toBe(true);
+      expect(result3.params).toEqual({ id: '789' });
+    });
+  });

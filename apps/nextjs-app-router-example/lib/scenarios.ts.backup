@@ -739,7 +739,7 @@ export const urlMatchingScenario: ScenaristScenario = {
     // Using /api/user-param/:id to avoid conflict with regex numeric ID mock
     {
       method: "GET",
-      url: "/api/user-param/:id",
+      url: "http://localhost:3001/api/user-param/:id",
       response: {
         status: 200,
         body: {
@@ -755,7 +755,7 @@ export const urlMatchingScenario: ScenaristScenario = {
     // Test 8: Multiple Path Parameters - :userId and :postId
     {
       method: "GET",
-      url: "/api/users/:userId/posts/:postId",
+      url: "http://localhost:3001/api/users/:userId/posts/:postId",
       response: {
         status: 200,
         body: {
@@ -773,7 +773,7 @@ export const urlMatchingScenario: ScenaristScenario = {
     // More specific mock (uses template to inject param)
     {
       method: "GET",
-      url: "/api/file-optional/:filename",  // Without ? - requires param
+      url: "http://localhost:3001/api/file-optional/:filename",  // Without ? - requires param
       response: {
         status: 200,
         body: {
@@ -789,7 +789,7 @@ export const urlMatchingScenario: ScenaristScenario = {
     // Fallback mock (static defaults)
     {
       method: "GET",
-      url: "/api/file-optional",  // Exact match, no param
+      url: "http://localhost:3001/api/file-optional",  // Exact match, no param
       response: {
         status: 200,
         body: {
@@ -805,7 +805,7 @@ export const urlMatchingScenario: ScenaristScenario = {
     // Changed from /api/files/:path+ to /api/paths/:path+ to avoid conflict with /api/files/:filename
     {
       method: "GET",
-      url: "/api/paths/:path+",
+      url: "http://localhost:3001/api/paths/:path+",
       response: {
         status: 200,
         body: {
@@ -821,7 +821,7 @@ export const urlMatchingScenario: ScenaristScenario = {
     // IMPORTANT: Must come BEFORE custom regex due to "last match wins" rule
     {
       method: "GET",
-      url: "/api/orders/:orderId",
+      url: "http://localhost:3001/api/orders/:orderId",
       response: {
         status: 200,
         body: {
@@ -838,7 +838,7 @@ export const urlMatchingScenario: ScenaristScenario = {
     // IMPORTANT: Comes AFTER fallback so it wins when both match (last match wins)
     {
       method: "GET",
-      url: "/api/orders/:orderId(\\d+)",
+      url: "http://localhost:3001/api/orders/:orderId(\\d+)",
       response: {
         status: 200,
         body: {

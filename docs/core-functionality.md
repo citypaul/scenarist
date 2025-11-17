@@ -558,9 +558,19 @@ Match when field value **ends with** the suffix:
 
 **5. Regex (Pattern Match)**
 
-Match when field value **matches** the regex pattern:
+Match when field value **matches** the regex pattern. You can use either native JavaScript RegExp or the serialized form:
 
 ```typescript
+// Native RegExp (recommended for readability)
+{
+  match: {
+    headers: {
+      referer: /\/premium|\/vip/i  // Case-insensitive pattern
+    }
+  }
+}
+
+// Serialized form (equivalent to above)
 {
   match: {
     headers: {
@@ -581,7 +591,52 @@ Match when field value **matches** the regex pattern:
 // ❌ 'https://example.com/standard'
 ```
 
-**Security:** Regex patterns are validated using `redos-detector` to prevent ReDoS attacks. Unsafe patterns are rejected at scenario registration.
+**Common Pattern Examples:**
+
+```typescript
+// API versioning - match any version number
+{ referer: /\/api\/v\d+\// }
+// Matches: /api/v1/, /api/v2/, /api/v10/
+
+// Email domain restriction
+{ email: /@company\.com$/i }
+// Matches: john@company.com, admin@COMPANY.COM
+
+// API key format validation
+{ 'x-api-key': /^sk_(test|live)_[a-zA-Z0-9]{24}$/ }
+// Matches: sk_test_abcd1234..., sk_live_wxyz5678...
+
+// Multiple values with alternation
+{ campaign: /summer|winter|spring|fall/i }
+// Matches: summer-sale, WINTER-promo, Spring-event
+
+// Numeric ID format
+{ userId: /^\d{6,10}$/ }
+// Matches: 123456, 9876543210
+// Rejects: abc123, 12345 (too short)
+```
+
+**Security: ReDoS Protection**
+
+⚠️ **IMPORTANT**: Both serialized and native RegExp patterns are validated using `redos-detector` to prevent ReDoS (Regular Expression Denial of Service) attacks.
+
+**Unsafe patterns are automatically rejected at scenario registration:**
+
+```typescript
+// ❌ REJECTED - Catastrophic backtracking
+{ referer: /(a+)+b/ }
+// Error: Unsafe regex pattern detected
+
+// ❌ REJECTED - Exponential time complexity
+{ email: /(x+x+)+@/ }
+// Error: Unsafe regex pattern detected
+
+// ✅ SAFE - Linear time complexity
+{ referer: /\/api\/[^/]+\/users/ }
+// Matches safely with bounded backtracking
+```
+
+Scenarist validates patterns before execution to protect your tests from denial-of-service attacks caused by malicious or poorly designed regex patterns.
 
 **Supported Flags:**
 - `i` - Case-insensitive
@@ -1100,67 +1155,6 @@ const scenarioManager = createScenarioManager({
 - Supports distributed testing
 - True hexagonal architecture
 - Follows dependency inversion principle
-
-## Future Features
-
-### Response Sequences (Phase 2)
-
-Enable ordered sequences of responses for polling scenarios:
-
-```typescript
-{
-  method: 'GET',
-  url: '/api/job/:id',
-  sequence: {
-    responses: [
-      { status: 200, body: { status: 'pending' } },
-      { status: 200, body: { status: 'processing' } },
-      { status: 200, body: { status: 'complete' } }
-    ],
-    repeat: 'last'  // After sequence ends, repeat last response
-  }
-}
-```
-
-**Use cases:**
-- Polling APIs that return different status over time
-- Progressive multi-step processes
-- Time-dependent behaviors
-
-### Stateful Mocks (Phase 3)
-
-Enable capturing data from requests and injecting it into responses:
-
-```typescript
-// Capture from POST request
-{
-  method: 'POST',
-  url: '/api/cart/items',
-  captureState: {
-    'cartItems[]': 'body.item'  // Append to array
-  },
-  response: { status: 200, body: { success: true } }
-}
-
-// Inject into GET response
-{
-  method: 'GET',
-  url: '/api/cart',
-  response: {
-    status: 200,
-    body: {
-      items: '{{state.cartItems}}',  // Template replacement
-      count: '{{state.cartItems.length}}'
-    }
-  }
-}
-```
-
-**Use cases:**
-- Shopping cart flows
-- Multi-step forms
-- User profile updates
-- Any scenario where later responses depend on earlier requests
 
 ## Related Documentation
 

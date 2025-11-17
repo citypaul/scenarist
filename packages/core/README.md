@@ -459,7 +459,114 @@ const scenario: ScenaristScenario = {
 };
 ```
 
-**Security Note:** Regex patterns are validated using `redos-detector` to prevent ReDoS (Regular Expression Denial of Service) attacks. Unsafe patterns are rejected at scenario registration.
+### Native RegExp Support
+
+You can use native JavaScript RegExp objects directly instead of the serialized form:
+
+```typescript
+const scenario: ScenaristScenario = {
+  id: 'native-regex-examples',
+  mocks: [
+    // Native RegExp in URL matching
+    {
+      method: 'GET',
+      url: /\/api\/v\d+\/products/,  // Matches /api/v1/products, /api/v2/products, etc.
+      response: { status: 200, body: { products: [] } },
+    },
+
+    // Native RegExp in header matching
+    {
+      method: 'GET',
+      url: '/api/products',
+      match: {
+        headers: {
+          referer: /\/premium|\/vip/i,  // Case-insensitive pattern
+        },
+      },
+      response: { status: 200, body: { tier: 'premium' } },
+    },
+
+    // Both forms are equivalent and have same ReDoS protection
+    {
+      method: 'GET',
+      url: '/api/data',
+      match: {
+        query: {
+          filter: /^\w+$/,  // Native RegExp
+          // Same as: { regex: { source: '^\\w+$', flags: '' } }
+        },
+      },
+      response: { status: 200, body: { data: [] } },
+    },
+  ],
+};
+```
+
+**Both serialized and native RegExp patterns receive the same security validation.**
+
+### Common URL Pattern Examples
+
+Here are helpful regex patterns for common use cases:
+
+```typescript
+// API versioning - match any version number
+{ url: /\/api\/v\d+\// }
+// Matches: /api/v1/, /api/v2/, /api/v10/, etc.
+
+// Numeric IDs only (reject non-numeric)
+{ url: /\/users\/\d+$/ }
+// Matches: /users/123 ✅
+// Rejects: /users/abc ❌
+
+// File extensions
+{ url: /\.json$/ }
+// Matches: /data.json, /api/users.json ✅
+// Rejects: /data.xml, /users ❌
+
+// Optional trailing slash
+{ url: /\/products\/?$/ }
+// Matches: /products ✅ and /products/ ✅
+
+// Multiple extensions
+{ url: /\.(jpg|png|gif)$/i }
+// Matches: image.jpg, photo.PNG, avatar.gif ✅
+
+// UUID format (simplified)
+{ url: /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i }
+// Matches: /550e8400-e29b-41d4-a716-446655440000 ✅
+
+// Subdomain matching
+{
+  match: {
+    headers: {
+      host: /^(api|cdn)\.example\.com$/
+    }
+  }
+}
+// Matches: api.example.com, cdn.example.com ✅
+```
+
+### Security: ReDoS Protection
+
+⚠️ **IMPORTANT**: Both serialized and native RegExp patterns are validated using `redos-detector` to prevent ReDoS (Regular Expression Denial of Service) attacks.
+
+**Unsafe patterns are automatically rejected at scenario registration:**
+
+```typescript
+// ❌ REJECTED - Catastrophic backtracking
+{ url: /(a+)+b/ }
+// Error: Unsafe regex pattern detected
+
+// ❌ REJECTED - Exponential time complexity
+{ match: { headers: { referer: { regex: { source: '(x+x+)+y' } } } } }
+// Error: Unsafe regex pattern detected
+
+// ✅ SAFE - Linear time complexity
+{ url: /\/api\/[^/]+\/users/ }
+// Matches safely with bounded backtracking
+```
+
+Scenarist validates patterns before execution to protect your tests from denial-of-service attacks caused by malicious or poorly designed regex patterns.
 
 ### Key Principles
 

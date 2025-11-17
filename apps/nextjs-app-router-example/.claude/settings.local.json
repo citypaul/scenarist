@@ -37,7 +37,11 @@
       "Bash(gh run list:*)",
       "Bash(pnpm --filter=@scenarist/msw-adapter exec vitest run:*)",
       "Bash(pnpm --filter=@scenarist/msw-adapter test msw-parity.test.ts)",
-      "Bash(gh api:*)"
+      "Bash(gh api:*)",
+      "Bash(xargs kill -9)",
+      "Bash(pnpm --filter=@scenarist/express-example test:*)",
+      "Bash(pnpm --filter=@scenarist/nextjs-pages-router-example exec playwright test tests/playwright/url-matching.spec.ts)",
+      "Bash(git mv:*)"
     ],
     "deny": [],
     "ask": []

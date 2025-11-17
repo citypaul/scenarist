@@ -1,616 +1,360 @@
-# WIP: Regex Support for Match Criteria
+# WIP: Path Parameter Extraction Feature
 
-**Started**: 2025-01-16
-**Status**: In Progress - Phase 2 Complete, URL Matching Requirement Identified
-**Current Step**: Planning Phase 2.5 - URL Matching Strategies
+**Started**: 2025-11-17
+**Status**: ✅ COMPLETE - Implementation Already Exists
+**Current Step**: Documentation & Verification
 
 ## Goal
 
-Extend match criteria to support flexible pattern matching (string strategies and regex) for headers, query params, body fields, AND URLs. This enables powerful scenario selection based on request patterns without hardcoded values.
+Enable `{{params.id}}` template injection for URL path parameters extracted from request URLs. This allows responses to echo back parameters from the URL pattern.
 
-## Overall Plan
+## Discovery: Feature Already Implemented
 
-1. ~~Phase 1: Schema definition with ReDoS protection~~ ✅ (Deferred - not needed for Phase 2)
-2. ~~Phase 2: String matching strategies (contains, startsWith, endsWith, equals)~~ ✅ **COMPLETE**
-3. **Phase 2.5: URL matching strategies** (Future Work - See details below)
-4. Phase 3: Regex matching with timeout protection (Future)
-5. Phase 4: Integration and documentation (Future)
+Upon investigation, this feature is **already fully implemented** across all packages. The implementation was completed as part of the URL matching work.
 
-## Phase 2 Status: COMPLETE ✅
+## Overall Implementation Status
 
-**Completed**: 2025-01-16
-**Status**: Phase 2 fully implemented and tested
+✅ **Phase 1: URL Pattern Matching with Parameter Extraction** - COMPLETE
+- `packages/msw-adapter/src/matching/url-matcher.ts` uses `path-to-regexp`
+- Extracts params from URL patterns (`:id`, `:id?`, `:path+`, `:id(\d+)`)
+- Returns `UrlMatchResult` with `params` field
 
-**What Was Delivered:**
-- ✅ String matching strategies (contains, startsWith, endsWith, equals)
-- ✅ Works on headers, query params, and body fields
-- ✅ Backward compatibility maintained (string literals still work)
-- ✅ All tests passing: 265/265 (100% coverage)
-- ✅ Documentation complete with comprehensive reference
+✅ **Phase 2: Type Definitions** - COMPLETE
+- `HttpRequestContext` has `params?: Readonly<Record<string, string | ReadonlyArray<string>>>`
+- `ScenaristMockWithParams` pairs mocks with extracted params
+- MSW-compatible types (string for simple params, string[] for repeating)
 
-**Important:** String literals (e.g., `'summer-sale'`) are still supported for backward compatibility - they perform exact match as before.
+✅ **Phase 3: Pipeline Integration** - COMPLETE
+- `dynamic-handler.ts:79-115` calls `matchesUrl()` which returns params
+- Params flow through `ScenaristMockWithParams` type
+- `response-selector.ts:139-148` merges params with state for template replacement
 
-**Test Coverage:**
-- Unit tests: 257/257 core tests
-- Integration tests: All adapters tested
-- E2E tests: 9/9 Playwright ATDD tests
-- Coverage maintained at 100% across all packages
+✅ **Phase 4: Template Replacement** - COMPLETE
+- `template-replacement.ts` supports `{{params.x}}` syntax
+- Works alongside existing `{{state.x}}` syntax
+- Handles nested paths: `{{params.user.id}}`
+- Preserves types for pure templates (returns raw value, not string)
 
-**Last Commit**: ccbdf98 - Added comprehensive matching strategies reference
+✅ **Phase 5: Testing** - COMPLETE
+- All 74 tests passing in express-example
+- Includes path parameter tests (Tests 7-11)
+- E2E tests verify full pipeline
 
-## Critical Architectural Insight: Declarative > Serializable
+## Current Status: All Tests Passing
 
-**Date**: 2025-01-16
-**Decision**: Support BOTH native RegExp objects AND serialized form in schemas
-
-### The Realization
-
-During Phase 2.5 planning, we realized our "serialization constraint" was actually about **declarative patterns vs imperative functions**, not JSON serializability itself.
-
-**The Real Rule:**
-- ✅ Declarative patterns (RegExp, string patterns) - Allowed
-- ❌ Imperative functions (closures, callbacks) - Not allowed
-
-### Why This Change
-
-**RegExp is declarative:**
-- Describes WHAT to match, not HOW
-- No closures or hidden behavior
-- No side effects
-- Inspectable and analyzable
-- Matches MSW v1 API exactly (better DX)
-
-**Functions are imperative:**
-- Hidden behavior in closures
-- Cannot inspect or serialize
-- Side effects possible
-- Breaks architectural guarantees
-
-### The Trade-off
-
-**Before (strict JSON):**
-```typescript
-// Only serialized form allowed
-{ url: { regex: { source: '/users/\\d+', flags: '' } } }
+```bash
+cd apps/express-example && pnpm test
+# Result: 74 passed (74)
 ```
 
-**After (declarative):**
+## Architecture Verification
+
+### 1. URL Matching with Param Extraction
+
+**File**: `packages/msw-adapter/src/matching/url-matcher.ts`
+
 ```typescript
-// BOTH forms allowed
-{ url: /\/users\/\d+/ }  // ✅ Native RegExp (better DX)
-{ url: { regex: { source: '/users/\\d+' } } }  // ✅ Serialized form (for JSON storage)
+export const matchesUrl = (
+  pattern: string | RegExp,
+  requestUrl: string
+): UrlMatchResult => {
+  // ... handles RegExp patterns ...
+  
+  const patternPath = extractPathnameOrReturnAsIs(pattern);
+  const requestPath = extractPathnameOrReturnAsIs(requestUrl);
+  
+  const matcher = match(patternPath, { decode: decodeURIComponent });
+  const result = matcher(requestPath);
+  
+  if (result) {
+    const params = extractParams(result.params);  // ✅ Extracts params
+    return { matches: true, params };
+  }
+  
+  return { matches: false };
+};
 ```
 
-### Why This Is Better
+**Capabilities:**
+- ✅ Simple params: `/users/:id` → `{id: '123'}`
+- ✅ Multiple params: `/users/:userId/posts/:postId` → `{userId: 'alice', postId: '42'}`
+- ✅ Optional params: `/files/:name?` matches `/files` or `/files/doc.txt`
+- ✅ Repeating params: `/files/:path+` → `{path: ['a','b','c']}`
+- ✅ Custom regex: `/orders/:id(\d+)` matches digits only
 
-1. **95% Use Case**: Most users don't need JSON storage
-   - They write scenarios in TypeScript
-   - Native RegExp is more readable
-   - Matches MSW v1 API exactly
-   - Less verbose, better autocomplete
+### 2. Dynamic Handler Integration
 
-2. **5% Use Case**: Those who need JSON storage can still use serialized form
-   - File-based scenarios: Use serialized form
-   - Database scenarios: Use serialized form
-   - API scenarios: Use serialized form
-   - **We support both**, not just one
+**File**: `packages/msw-adapter/src/handlers/dynamic-handler.ts:79-115`
 
-3. **ReDoS Protection Still Works**:
-   - Same validation logic applies to both forms
-   - Native RegExp converted to serialized internally
-   - Timeout protection identical
-   - Security guarantees maintained
-
-### What Doesn't Change
-
-- ❌ Still NO arbitrary functions: `url: (req) => req.pathname.startsWith('/api/')`
-- ❌ Still NO closures with hidden state
-- ❌ Still NO imperative logic in mocks
-- ✅ Still maintain architectural guarantees
-- ✅ Still JSON-serializable (serialized form available)
-
-### Implementation Impact
-
-**Schema accepts either:**
 ```typescript
-const UrlPatternSchema = z.union([
-  z.string(),           // Exact match
-  z.instanceof(RegExp), // Native RegExp (NEW)
-  z.object({            // Serialized form (existing)
-    regex: SerializedRegexSchema
-  })
-]);
+const getMocksFromScenarios = (
+  activeScenario: ActiveScenario | undefined,
+  getScenarioDefinition: (scenarioId: string) => ScenaristScenario | undefined,
+  method: string,
+  url: string
+): ReadonlyArray<ScenaristMockWithParams> => {
+  const mocksWithParams: Array<ScenaristMockWithParams> = [];
+
+  // Default scenario mocks
+  const defaultScenario = getScenarioDefinition('default');
+  if (defaultScenario) {
+    defaultScenario.mocks.forEach((mock) => {
+      const methodMatches = mock.method.toUpperCase() === method.toUpperCase();
+      const urlMatch = matchesUrl(mock.url, url);  // ✅ Extracts params
+      if (methodMatches && urlMatch.matches) {
+        mocksWithParams.push({ mock, params: urlMatch.params });  // ✅ Pairs mock with params
+      }
+    });
+  }
+
+  // Active scenario mocks (same pattern)
+  // ...
+  
+  return mocksWithParams;
+};
 ```
 
-**Internally normalized to serialized form for validation and matching.**
+**Flow:**
+1. URL matching extracts params from pattern
+2. Params paired with mock via `ScenaristMockWithParams`
+3. Passed to ResponseSelector for template replacement
 
-### Lesson Learned
+### 3. Template Replacement
 
-**Constraints should enforce INTENT, not FORM.**
-
-- Intent: Declarative patterns (inspectable, no side effects)
-- Form: JSON-serializable (implementation detail)
-
-RegExp satisfies the intent (declarative) even if not directly JSON-serializable. The serialized form exists for those who need it, but native RegExp provides better DX for the majority.
-
-**This is the right architectural decision: optimize for the common case (95%) while supporting the edge case (5%).**
-
----
-
-## Current Focus
-
-**Phase 2.5**: URL Matching Strategies (In Progress)
-
-**Status**: Planning Complete - Ready for Implementation
-
-**Tests Passing**: 265/265 ✅ (Phase 2 complete)
-
-## Phase 2.5: URL Matching - Simplified Approach
-
-**Context:** URL matching extends Phase 2 string strategies to URL patterns, with native RegExp support for MSW v1 compatibility.
-
-### Design Decisions (Finalized)
-
-**Decision 1: URL Format = Pathname**
-- Match against pathname only (no query string in `url` field itself)
-- Query string IS reconstructed for matching (to support `match.url` with query patterns)
-- Examples:
-  - Request: `GET /api/users?page=2`
-  - `url` field value: `/api/users` (pathname only)
-  - `match.url` matches against: `/api/users?page=2` (pathname + query for flexibility)
-
-**Decision 2: Hash Fragments Stripped**
-- Hash fragments (`#section`) never sent to server (HTTP reality)
-- Stripped before matching
-- Example: `/page#section` → match against `/page`
-
-**Decision 3: URL Encoding**
-- Support both decoded and encoded forms
-- Match against actual request value (as-is)
-- Example: Request `/users/john%20doe` → match against `/users/john%20doe`
-
-**Decision 4: `url` Field Always Required**
-- Every mock MUST have a `url` field
-- Use `'*'` for global/catch-all matching
-- Prevents ambiguity about what's being matched
-
-**Decision 5: Match Against Resolved URLs**
-- Match against actual request values, not patterns
-- Path params already extracted by MSW
-- Example: Pattern `/users/:id` + Request `/users/123` → match against `/users/123`
-
-**Decision 6: Native RegExp Support (NEW)**
-- `url` field accepts: `string | RegExp`
-- `match.url` accepts: `MatchValue` (including RegExp)
-- ReDoS protection applies to both forms
-- Examples:
-  ```typescript
-  // Native RegExp (better DX)
-  { url: /\/users\/\d+/ }
-
-  // Serialized form (JSON storage)
-  { url: { regex: { source: '/users/\\d+' } } }
-  ```
-
-### Current State
-
-**The `url` field in mock definition:**
-- String patterns: `url: '/users'` (exact match)
-- Path params: `url: '/users/:id'` (MSW pattern)
-- Glob patterns: `url: '/api/*'` (MSW wildcard)
-- RegExp (NEW): `url: /\/api\/v\d+\//` (native)
-- RegExp serialized (NEW): `url: { regex: { source: '/api/v\\d+/' } }`
-
-**The `match.url` field (NEW):**
-- All Phase 2 strategies: contains, startsWith, endsWith, equals
-- Regex support: Native RegExp OR serialized form
-- Matches against pathname (with query reconstructed)
-
-### Use Cases (Simplified Examples)
+**File**: `packages/core/src/domain/response-selector.ts:139-148`
 
 ```typescript
-// Match any URL containing '/api/'
+// Apply templates to response (both state AND params)
+let finalResponse = response;
+if (stateManager || mockWithParams.params) {
+  const currentState = stateManager ? stateManager.getAll(testId) : {};
+  // Merge state and params for template replacement
+  const templateData = {
+    state: currentState,
+    params: mockWithParams.params || {},  // ✅ Params available for templates
+  };
+  finalResponse = applyTemplates(response, templateData) as ScenaristResponse;
+}
+```
+
+**File**: `packages/core/src/domain/template-replacement.ts`
+
+```typescript
+export const applyTemplates = (value: unknown, templateData: Record<string, unknown>): unknown => {
+  // Backward compatibility wrapper
+  const normalizedData = (templateData.state !== undefined || templateData.params !== undefined)
+    ? templateData
+    : { state: templateData, params: {} };
+    
+  if (typeof value === 'string') {
+    // Pure template: {{params.id}} or {{state.key}}
+    const pureTemplateMatch = /^\{\{(state|params)\.([^}]+)\}\}$/.exec(value);
+    if (pureTemplateMatch) {
+      const prefix = pureTemplateMatch[1]!;  // 'state' or 'params'
+      const path = pureTemplateMatch[2]!;
+      return resolveTemplatePath(normalizedData, prefix, path);  // ✅ Resolves params
+    }
+    
+    // Mixed template: "User {{params.id}}"
+    return value.replace(/\{\{(state|params)\.([^}]+)\}\}/g, (match, prefix, path) => {
+      const resolvedValue = resolveTemplatePath(normalizedData, prefix, path);
+      return resolvedValue === undefined ? match : String(resolvedValue);
+    });
+  }
+  // ... handles arrays, objects recursively ...
+};
+```
+
+**Capabilities:**
+- ✅ Pure templates: `userId: "{{params.id}}"` → `userId: "123"` (preserves type)
+- ✅ Mixed templates: `message: "User {{params.id}}"` → `message: "User 123"`
+- ✅ Nested paths: `{{params.user.profile.name}}`
+- ✅ Array properties: `{{params.path.length}}` (for repeating params)
+
+## Example Usage
+
+**Scenario Definition:**
+
+```typescript
 {
   method: 'GET',
-  match: { url: { contains: '/api/' } },
-  response: { status: 200, body: { source: 'api' } }
-}
-
-// Match URLs starting with a specific path
-{
-  method: 'POST',
-  match: { url: { startsWith: '/v2/' } },
-  response: { status: 200, body: { version: 'v2' } }
-}
-
-// Match URLs ending with file extension
-{
-  method: 'GET',
-  match: { url: { endsWith: '.json' } },
-  response: { status: 200, body: { type: 'json' } }
-}
-```
-
-## What Needs to Change (Phase 2.5)
-
-### Implementation Phases
-
-**Phase 2.5.1: Schema Updates (Support RegExp Type)**
-- Update `ScenaristMockSchema` to accept `url: string | RegExp | SerializedRegex`
-- Add `MatchValueSchema` with RegExp support
-- Add ReDoS validation for RegExp patterns
-- Update type definitions to match schema
-
-**Phase 2.5.2: URL Matching Logic**
-- Extend `matchesCriteria` to accept `url` in context
-- Add `match.url` matching with all Phase 2 strategies
-- Normalize RegExp to serialized form for validation
-- Add specificity calculation for URL matches
-
-**Phase 2.5.3: Integration Tests**
-- Test all URL routing patterns (exact, path params, glob, RegExp)
-- Test all matching strategies on URLs
-- Test combinations of routing + matching
-- Verify MSW compatibility
-
-**Phase 2.5.4: Example Apps**
-- Add URL matching examples to Next.js example
-- Add RegExp patterns to scenarios
-- Update Bruno tests with URL matching scenarios
-
-**Phase 2.5.5: Documentation**
-- Update matching strategies reference
-- Add RegExp pattern examples
-- Document native vs serialized forms
-- Update migration guide
-
-### Schema and Type Updates
-
-**1. Update `ScenaristMockSchema` to accept RegExp in `url` field:**
-```typescript
-// packages/core/src/schemas/scenarist-mock.ts
-export const ScenaristMockSchema = z.object({
-  method: z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']),
-  url: z.union([
-    z.string(),           // Exact string
-    z.instanceof(RegExp), // Native RegExp (NEW)
-    z.object({            // Serialized RegExp
-      regex: SerializedRegexSchema
-    })
-  ]),
-  // ... rest of schema
-});
-```
-
-**2. Add `url` field to `MatchCriteriaSchema`:**
-```typescript
-// packages/core/src/schemas/match-criteria.ts
-export const MatchCriteriaSchema = z.object({
-  url: MatchValueSchema.optional(),  // ✅ NEW: URL matching
-  headers: z.record(z.string(), MatchValueSchema).optional(),
-  query: z.record(z.string(), MatchValueSchema).optional(),
-  body: z.record(z.string(), MatchValueSchema).optional(),
-});
-```
-
-**3. Extend `MatchValueSchema` to support RegExp:**
-```typescript
-// packages/core/src/schemas/match-value.ts
-export const MatchValueSchema = z.union([
-  z.string(),  // Exact match (backward compatible)
-  z.object({
-    equals: z.string(),
-  }),
-  z.object({
-    contains: z.string(),
-  }),
-  z.object({
-    startsWith: z.string(),
-  }),
-  z.object({
-    endsWith: z.string(),
-  }),
-  z.object({
-    regex: z.union([
-      z.instanceof(RegExp),        // Native RegExp (NEW)
-      SerializedRegexSchema        // Serialized form
-    ])
-  }),
-]);
-```
-
-**Impact:** Non-breaking changes (optional fields, existing schemas valid)
-
-### Implementation Updates
-
-**Update `matchesCriteria` to support URL matching:**
-```typescript
-// packages/core/src/domain/match-criteria.ts
-export const matchesCriteria = (
-  context: {
-    url: string;  // ✅ NEW: Add URL to context
-    headers: Record<string, string>;
-    query: Record<string, string>;
-    body?: unknown;
-  },
-  criteria: MatchCriteria,
-): boolean => {
-  // Check URL matching first (if criteria.url defined)
-  if (criteria.url !== undefined) {
-    if (!matchesValue(context.url, criteria.url)) {
-      return false;  // Early exit if URL doesn't match
+  url: '/api/user-param/:id',  // Pattern with :id parameter
+  response: {
+    status: 200,
+    body: {
+      userId: '{{params.id}}',  // Template injection
+      message: 'User {{params.id}} found'
     }
   }
-
-  // Existing header/query/body checks
-  // ...
-};
+}
 ```
 
-**Extend `matchesValue` to handle RegExp:**
+**Request:**
+```
+GET /api/user-param/123
+```
+
+**Response:**
+```json
+{
+  "userId": "123",
+  "message": "User 123 found"
+}
+```
+
+## Files Involved
+
+**Core Package:**
+- ✅ `packages/core/src/types/scenario.ts` - Type definitions (HttpRequestContext, ScenaristMockWithParams)
+- ✅ `packages/core/src/domain/template-replacement.ts` - Template replacement with params support
+- ✅ `packages/core/src/domain/response-selector.ts` - Merges params with state for templates
+
+**MSW Adapter:**
+- ✅ `packages/msw-adapter/src/matching/url-matcher.ts` - URL pattern matching with param extraction
+- ✅ `packages/msw-adapter/src/handlers/dynamic-handler.ts` - Pairs mocks with params
+
+**Tests:**
+- ✅ `apps/express-example/tests/integration/*.test.ts` - All 74 tests passing
+
+## Key Architectural Decisions
+
+### 1. MSW Parity via path-to-regexp
+
+**Decision:** Use same library as MSW (path-to-regexp v6) for URL matching
+
+**Rationale:**
+- Automatic MSW behavior compatibility
+- No custom parsing logic needed
+- Same param extraction semantics as MSW
+- Supports all MSW path patterns
+
+**Result:** Perfect MSW alignment for path parameters
+
+### 2. Params Paired with Mocks (Not Added to Context)
+
+**Decision:** Store params in `ScenaristMockWithParams`, not `HttpRequestContext`
+
+**Rationale:**
+- Different mocks for same URL can extract different params
+- URL `/users/:id` and `/users/:userId` would conflict in single context
+- Each mock gets its own extracted params
+- Chosen mock's params used for template replacement
+
+**Implementation:**
 ```typescript
-// packages/core/src/domain/match-value.ts
-export const matchesValue = (actual: string, expected: MatchValue): boolean => {
-  // String literal = exact match (backward compatible)
-  if (typeof expected === 'string') {
-    return actual === expected;
-  }
-
-  // Native RegExp (NEW)
-  if (expected instanceof RegExp) {
-    return expected.test(actual);
-  }
-
-  // Discriminated union handling
-  if ('equals' in expected) {
-    return actual === expected.equals;
-  }
-  if ('contains' in expected) {
-    return actual.includes(expected.contains);
-  }
-  if ('startsWith' in expected) {
-    return actual.startsWith(expected.startsWith);
-  }
-  if ('endsWith' in expected) {
-    return actual.endsWith(expected.endsWith);
-  }
-  if ('regex' in expected) {
-    // Normalize to RegExp
-    const regex = expected.regex instanceof RegExp
-      ? expected.regex
-      : new RegExp(expected.regex.source, expected.regex.flags);
-    return regex.test(actual);
-  }
-
-  return false;
+type ScenaristMockWithParams = {
+  readonly mock: ScenaristMock;
+  readonly params?: Readonly<Record<string, string | ReadonlyArray<string>>>;
 };
 ```
 
-### Testing Strategy (Simplified)
+### 3. Template Syntax: `{{params.x}}` Not `{{x}}`
 
-**Phase 2.5 follows same pattern as Phase 2 (string matching strategies).**
+**Decision:** Explicit `params.` prefix required
 
-With design decisions finalized, URL matching is straightforward:
-- Match against pathname (with query reconstructed for `match.url`)
-- Native RegExp support (convert to serialized internally)
-- ReDoS protection applies to all RegExp forms
-
-**Test Files:**
-
-1. **Unit Tests** (`packages/core/tests/match-criteria-url.test.ts`)
-   - URL exact match (string literal)
-   - URL contains substring
-   - URL starts with prefix
-   - URL ends with suffix
-   - URL regex match (native RegExp)
-   - URL regex match (serialized form)
-   - URL matching combined with header/query/body
-   - Specificity calculation with URL matches
-   - Edge cases: encoded URLs, special characters, query strings
-
-2. **Integration Tests** (`packages/core/tests/response-selector-url.test.ts`)
-   - String patterns in `url` field
-   - Native RegExp in `url` field
-   - Serialized RegExp in `url` field
-   - `match.url` with all strategies
-   - Combinations of `url` + `match.url`
-
-3. **MSW Adapter Tests** (`packages/msw-adapter/tests/url-matching.test.ts`)
-   - MSW with RegExp URL patterns
-   - Scenarist URL matching on top of MSW routing
-   - Verify pathname extraction works correctly
-
-4. **E2E Tests** (`apps/nextjs-app-router-example/tests/playwright/url-matching-atdd.spec.ts`)
-   - Real-world URL matching scenarios
-   - RegExp patterns in practice
-   - Verify MSW v1 compatibility
-
-**Estimated Test Count:**
-- Unit tests: ~25 tests (URL matching strategies)
-- Integration tests: ~20 tests (response selection)
-- MSW adapter: ~15 tests (routing integration)
-- E2E tests: ~8 tests (ATDD scenarios)
-- **Total: ~68 tests** (bringing total from 265 → ~333)
-
-**Why Simplified (vs original 53-75 estimate):**
-- Design decisions eliminate ambiguity
-- No complex routing interaction testing needed
-- Match against resolved URLs (not patterns)
-- Native RegExp support reduces duplication
-
-### 5. Documentation
-
-**Files to update:**
-- `apps/docs/src/content/docs/capabilities/matching-strategies.mdx` - Add URL matching examples
-- `docs/plans/regex-support-implementation.md` - Move URL matching from "Future" to Phase 2.5
-- `packages/core/README.md` - Update match criteria examples
-- `CLAUDE.md` - Document URL matching learnings (after implementation)
-
-### 6. Integration Updates
-
-**MSW Adapter:** No changes needed (passes full request context to matchesCriteria)
-
-**Express Adapter:** Ensure request context includes URL
-- Check `packages/express-adapter/src/context/request-context.ts`
-- Likely already includes URL from `req.url`
-
-**Next.js Adapter:** Ensure request context includes URL
-- Check `packages/nextjs-adapter/src/app/context.ts` and `pages/context.ts`
-- Likely already includes URL from Request object
-
-## Next Steps (Phase 2.5 - Ready to Implement)
-
-**Planning Complete** ✅ - Design decisions finalized, architecture simplified
-
-**Implementation Steps:**
-
-**Phase 2.5.1: Schema Updates (TDD)**
-1. Write failing tests for RegExp in `url` field
-2. Update `ScenaristMockSchema` to accept `string | RegExp | SerializedRegex`
-3. Update `MatchValueSchema` to support native RegExp
-4. Add ReDoS validation
-5. Verify tests pass
-
-**Phase 2.5.2: URL Matching Logic (TDD)**
-1. Write failing tests for `match.url` strategies
-2. Extend `matchesCriteria` to accept `url` in context
-3. Update `matchesValue` to handle RegExp
-4. Add specificity calculation for URL matches
-5. Verify tests pass
-
-**Phase 2.5.3: Integration Tests (TDD)**
-1. Write failing tests for routing + matching combinations
-2. Test all URL patterns (exact, path params, glob, RegExp)
-3. Test MSW compatibility
-4. Verify adapters pass URL correctly
-5. Verify tests pass
-
-**Phase 2.5.4: Example Apps**
-1. Add URL matching scenarios to Next.js example
-2. Add RegExp patterns to scenarios
-3. Update Bruno tests with URL matching
-4. Verify E2E tests pass
-
-**Phase 2.5.5: Documentation**
-1. Update matching strategies reference
-2. Add RegExp pattern examples
-3. Document native vs serialized forms
-4. Update migration guide
-5. Update CLAUDE.md learnings
-
-**Estimated Effort:**
-- Schema updates: 0.5 days (~25 tests)
-- URL matching logic: 1 day (~20 tests)
-- Integration tests: 1 day (~15 tests)
-- Example apps + E2E: 0.5 days (~8 tests)
-- Documentation: 0.5 days
-- **Total: 3.5 days** (simplified from 5-8 days)
-
-## Agent Checkpoints
-
-- [x] tdd-guardian: Phase 2 verified TDD compliance ✅
-- [ ] **→ Invoke tdd-guardian** before committing Phase 2.5
-- [x] ts-enforcer: No `any` types in Phase 2 ✅
-- [ ] **→ Invoke ts-enforcer** after schema changes
-- [x] refactor-scan: Phase 2 assessed ✅
-- [ ] **→ Invoke refactor-scan** after GREEN phase
-- [ ] learn: Document URL matching patterns after completion
-- [ ] docs-guardian: Update all documentation after completion
-
-## Blockers
-
-None currently
-
-## Technical Notes
-
-**URL Matching Considerations:**
-- URLs can be absolute (`http://example.com/api/users`) or relative (`/api/users`)
-- Need to decide: match against full URL or path only?
-- MSW already handles URL patterns - we're adding match criteria on top
-- Specificity: URL match adds to specificity score (same as header/query/body)
-
-**Decision Point:** Should we match against:
-1. Full URL (includes protocol, host, port, path, query string)
-2. Path only (excludes query string)
-3. Path + query string (excludes protocol/host)
-
-**Recommendation:** Match against **path + query string** (option 3)
-- Consistent with how MSW url patterns work
-- Protocol/host already handled by MSW url field
-- Query string is part of resource identifier
+**Rationale:**
+- Clear distinction between state and params
+- Avoids naming conflicts (what if state.userId and params.userId both exist?)
+- Consistent with `{{state.x}}` syntax
+- Self-documenting in response definitions
 
 **Example:**
 ```typescript
-// URL: http://localhost:3000/api/users?page=2
-
-// Mock definition
 {
-  method: 'GET',
-  url: 'http://localhost:3000/api/users',  // MSW pattern (exact)
-  match: {
-    url: { contains: '/api/' }  // ✅ Matches "/api/users?page=2"
-  }
+  userId: '{{params.id}}',      // From URL path
+  cartTotal: '{{state.total}}'  // From captured state
 }
 ```
 
-## Session Log
+### 4. Backward Compatibility in applyTemplates()
 
-### 2025-01-16 - Session 1
-**Duration**: 2 hours
-**Completed**:
-- Phase 2 complete: String matching strategies (contains, startsWith, endsWith, equals)
-- 265 tests passing, 100% coverage
-- Documentation updated with comprehensive reference
-- Commit ccbdf98: Added matching strategies table and examples
+**Decision:** Support both old flat object and new `{state, params}` structure
 
-**Learned**:
-- String matching strategies are universally applicable (headers, query, body, URL)
-- TypeScript discriminated unions provide excellent type safety
-- Documentation-driven examples help clarify complex features
+**Implementation:**
+```typescript
+const normalizedData = (templateData.state !== undefined || templateData.params !== undefined)
+  ? templateData
+  : { state: templateData, params: {} };
+```
 
-**Next Session**:
-- Investigate current URL context in adapters
-- Start Phase 2.5: URL matching strategies
-- Follow same TDD pattern as Phase 2 (RED → GREEN → REFACTOR)
+**Rationale:**
+- Existing code using `applyTemplates(value, stateObject)` continues to work
+- New code can use `applyTemplates(value, {state: {...}, params: {...}})`
+- No breaking changes to public API
 
-**Agent Actions Taken**:
-- ✅ tdd-guardian: Verified strict TDD adherence for Phase 2
-- ✅ ts-enforcer: No `any` types, strict mode passing
-- ✅ refactor-scan: Code quality assessed after GREEN
-- ⏳ learn: Will document URL matching patterns after Phase 2.5
+## Completion Verification
 
-### 2025-01-16 - Session 2
-**Duration**: 1 hour
-**Completed**:
-- **CRITICAL ARCHITECTURAL DECISION**: Declarative > Serializable
-- Support BOTH native RegExp AND serialized form
-- Planning complete for Phase 2.5 (URL matching)
-- Design decisions finalized (6 key decisions documented)
-- Implementation plan simplified (3.5 days, ~68 tests)
+✅ **All Tests Passing:**
+```bash
+cd apps/express-example && pnpm test
+# Test Files: 10 passed (10)
+# Tests: 74 passed (74)
+```
 
-**Key Insight**:
-The "serialization constraint" was actually about **declarative patterns** vs **imperative functions**, not JSON serializability itself. RegExp is declarative (describes WHAT to match, no closures/side effects), so it's allowed. Functions are imperative (hidden behavior), so they're not.
+✅ **Path Parameter Tests (Tests 7-11) Included:**
+- Simple param extraction (`:id`)
+- Multiple params (`:userId/:postId`)
+- Optional params (`:name?`)
+- Repeating params (`:path+`)
+- Custom regex params (`:id(\d+)`)
 
-**Trade-off Accepted**:
-- 95% use case: Native RegExp (better DX, matches MSW v1 API)
-- 5% use case: Serialized form still supported (for JSON storage)
-- Both forms supported, not either/or
+✅ **Type Safety:**
+- TypeScript strict mode passing
+- No `any` types
+- Immutable data structures throughout
 
-**Design Decisions Made**:
-1. URL format = pathname (query reconstructed for matching)
-2. Hash fragments stripped (HTTP reality)
-3. URL encoding supported (both decoded and encoded)
-4. `url` field always required (use `'*'` for global)
-5. Match against resolved URLs (not patterns)
-6. Native RegExp support (NEW - architectural shift)
+✅ **Architecture:**
+- Hexagonal architecture maintained
+- MSW adapter handles URL matching
+- Core handles template replacement
+- Clean separation of concerns
 
-**Next Session**:
-- Start Phase 2.5.1: Schema updates with RegExp support
-- Follow strict TDD (RED → GREEN → REFACTOR)
-- Target: ~25 tests for schema validation
+## Next Steps
 
-**Architectural Learnings**:
-- Constraints should enforce INTENT (declarative), not FORM (JSON)
-- Optimize for common case (95%) while supporting edge case (5%)
-- RegExp satisfies declarative intent even if not directly JSON-serializable
-- The serialized form exists for those who need it
+This feature is **COMPLETE**. No implementation needed.
+
+**Recommended actions:**
+
+1. ✅ Verify all tests passing (DONE - 74/74 passing)
+2. ✅ Document architecture decisions (DONE - in this WIP)
+3. 🔲 Update user-facing documentation (if not already done)
+4. 🔲 Add examples to docs site showing `{{params.x}}` usage
+5. 🔲 Delete this WIP (feature complete, not in progress)
+
+## Architectural Validation
+
+**This implementation validates key architectural principles:**
+
+✅ **Serialization Preserved** - Params extracted at runtime, not stored in mocks
+✅ **Type Safety** - MSW-compatible param types (string | string[])
+✅ **Dependency Injection** - path-to-regexp used via url-matcher (not hardcoded)
+✅ **Single Responsibility** - URL matching separate from template replacement
+✅ **Immutability** - All data structures readonly
+✅ **Test Coverage** - 74/74 tests passing including path param tests
+
+**Pattern Recognition:**
+
+This follows the same pattern as state templates:
+- **State**: Captured from requests → stored → injected via `{{state.x}}`
+- **Params**: Extracted from URLs → paired with mocks → injected via `{{params.x}}`
+
+Both use the same template replacement infrastructure, demonstrating excellent code reuse and compositional design.
+
+## Conclusion
+
+**Status:** ✅ FEATURE COMPLETE
+
+The path parameter extraction feature was already fully implemented. All infrastructure is in place:
+- URL matching extracts params
+- Params flow through pipeline
+- Template replacement handles `{{params.x}}`
+- All tests passing
+
+**No coding work required.** This WIP documents the existing implementation for future reference.
+
+**Completed**: 2025-11-17
+**Duration**: Investigation only (feature already existed)
+
+---
+
+**Action Required:** Delete this WIP and close the feature request as "Already Implemented".
