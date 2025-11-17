@@ -41,7 +41,14 @@
       "Bash(xargs kill -9)",
       "Bash(pnpm --filter=@scenarist/express-example test:*)",
       "Bash(pnpm --filter=@scenarist/nextjs-pages-router-example exec playwright test tests/playwright/url-matching.spec.ts)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(node /tmp/test-msw-hostname-matching.mjs:*)",
+      "Bash(node test-msw-hostname.mjs:*)",
+      "Bash(node /Users/paulhammond/personal/scenarist/packages/msw-adapter/test-msw-hostname.mjs:*)",
+      "Bash(xargs:*)",
+      "Bash(curl:*)",
+      "Bash(for test in \"pathname-only\" \"localhost\" \"external\" \"RegExp\" \"pathname pattern\" \"full URL pattern\")",
+      "Bash(do echo \"=== Testing: $test ===\" pnpm exec playwright test tests/playwright/hostname-matching.spec.ts --grep \"$test\" --reporter=line --retries=0)"
     ],
     "deny": [],
     "ask": []

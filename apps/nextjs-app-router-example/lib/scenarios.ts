@@ -879,7 +879,7 @@ export const hostnameMatchingScenario: ScenaristScenario = {
           behavior: "origin-agnostic",
           message: "This matches requests to ANY hostname",
           examples: [
-            "http://localhost:3001/api/origin-agnostic",
+            "http://localhost:3002/api/origin-agnostic",
             "https://api.example.com/api/origin-agnostic",
             "http://staging.test.io/api/origin-agnostic",
           ],
@@ -938,7 +938,7 @@ export const hostnameMatchingScenario: ScenaristScenario = {
           behavior: "origin-agnostic (MSW weak comparison)",
           message: "This matches the pattern at ANY origin",
           examples: [
-            "http://localhost:3001/api/regex-pattern",
+            "http://localhost:3002/api/regex-pattern",
             "https://api.example.com/api/regex-pattern",
             "http://staging.test.io/v1/api/regex-pattern",
           ],
@@ -958,6 +958,10 @@ export const hostnameMatchingScenario: ScenaristScenario = {
           message: "Extracts params and matches ANY hostname",
           userId: "{{params.userId}}",
           postId: "{{params.postId}}",
+          examples: [
+            "http://localhost:3002/api/users/123/posts/456",
+            "https://api.example.com/api/users/123/posts/456",
+          ],
         },
       },
     },
