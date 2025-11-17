@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterEach, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { matchesUrl } from '../src/matching/url-matcher.js';
@@ -26,32 +26,23 @@ import { matchesUrl } from '../src/matching/url-matcher.js';
  * - We use the same path-to-regexp v6 library as MSW 2.x
  */
 
-describe('MSW Parity: Path Parameter Extraction', () => {
-  let server: ReturnType<typeof setupServer>;
-  let capturedMSWParams: any;
+type MSWParams = Readonly<Record<string, string | readonly string[]>>;
 
-  beforeAll(() => {
-    server = setupServer();
-    server.listen({ onUnhandledRequest: 'bypass' });
-  });
-
-  afterEach(() => {
-    server.resetHandlers();
-    capturedMSWParams = undefined;
-  });
-
-  afterAll(() => {
-    server.close();
-  });
+/**
+ * Factory function for test setup - creates fresh MSW server and test helper
+ */
+const createTestSetup = () => {
+  const server = setupServer();
 
   /**
-   * Test our params against MSW's params for a given pattern and request
+   * Test our params against MSW's params for a given pattern and request.
+   * Returns the params captured by MSW for verification.
    */
   const testParamParity = async (
     pattern: string,
     requestPath: string,
     description?: string
-  ) => {
+  ): Promise<MSWParams> => {
     // MSW in Node.js requires FULL URLs (not pathname-only patterns)
     // Match the full URL that fetch will request
     const fullUrl = requestPath.startsWith('http')
@@ -63,26 +54,48 @@ describe('MSW Parity: Path Parameter Extraction', () => {
       ? pattern
       : `https://api.example.com${pattern}`;
 
-    server.use(
-      http.get(mswPattern, ({ params, request }) => {
-        console.log(`[MSW HANDLER] pattern=${mswPattern}, url=${request.url}, params=`, params);
-        capturedMSWParams = params;
-        return HttpResponse.json({ ok: true });
-      })
-    );
+    // Capture MSW params in closure (no mutation)
+    const capturedParams = await new Promise<MSWParams>((resolve) => {
+      server.use(
+        http.get(mswPattern, ({ params, request }) => {
+          console.log(`[MSW HANDLER] pattern=${mswPattern}, url=${request.url}, params=`, params);
+          resolve(params);
+          return HttpResponse.json({ ok: true });
+        })
+      );
 
-    console.log(`[TEST] Fetching ${fullUrl}`);
-    const response = await fetch(fullUrl);
-    console.log(`[TEST] Response status: ${response.status}`);
-    console.log(`[TEST] MSW captured:`, capturedMSWParams);
+      console.log(`[TEST] Fetching ${fullUrl}`);
+      fetch(fullUrl);
+    });
+
+    console.log(`[TEST] MSW captured:`, capturedParams);
 
     // Extract with our implementation (using pathname pattern)
     const ourResult = matchesUrl(pattern, requestPath);
     console.log(`[TEST] Our result:`, ourResult.params);
 
     // PROOF: Our params must match MSW's params EXACTLY
-    expect(ourResult.params).toEqual(capturedMSWParams);
+    expect(ourResult.params).toEqual(capturedParams);
+
+    // Reset handlers for next test
+    server.resetHandlers();
+
+    return capturedParams;
   };
+
+  return { server, testParamParity };
+};
+
+describe('MSW Parity: Path Parameter Extraction', () => {
+  const { server, testParamParity } = createTestSetup();
+
+  beforeAll(() => {
+    server.listen({ onUnhandledRequest: 'bypass' });
+  });
+
+  afterAll(() => {
+    server.close();
+  });
 
   describe('Simple Parameters', () => {
     it('should extract single param :id identically to MSW', async () => {
@@ -131,11 +144,11 @@ describe('MSW Parity: Path Parameter Extraction', () => {
     });
 
     it('should omit optional param when absent (NOT undefined)', async () => {
-      await testParamParity('/users/:id?', '/users');
+      const mswParams = await testParamParity('/users/:id?', '/users');
 
       // MSW omits the key entirely when param is absent
-      expect(capturedMSWParams).not.toHaveProperty('id');
-      expect(capturedMSWParams?.id).toBeUndefined();
+      expect(mswParams).not.toHaveProperty('id');
+      expect(mswParams?.id).toBeUndefined();
     });
 
     it('should handle multiple optional params - all present', async () => {
@@ -168,27 +181,29 @@ describe('MSW Parity: Path Parameter Extraction', () => {
 
   describe('Repeating Parameters (:param+, :param*)', () => {
     it('should extract :path+ with single segment as array', async () => {
-      await testParamParity('/files/:path+', '/files/document.txt');
+      const mswParams = await testParamParity('/files/:path+', '/files/document.txt');
 
       // MSW returns array even for single segment
-      expect(Array.isArray(capturedMSWParams?.path)).toBe(true);
-      expect(capturedMSWParams?.path).toHaveLength(1);
+      expect(Array.isArray(mswParams?.path)).toBe(true);
+      expect(mswParams?.path).toHaveLength(1);
     });
 
     it('should extract :path+ with multiple segments as array', async () => {
-      await testParamParity(
+      const mswParams = await testParamParity(
         '/files/:path+',
         '/files/folder/subfolder/document.txt'
       );
 
-      expect(Array.isArray(capturedMSWParams?.path)).toBe(true);
-      expect(capturedMSWParams?.path?.length).toBeGreaterThan(1);
+      expect(Array.isArray(mswParams?.path)).toBe(true);
+      if (Array.isArray(mswParams?.path)) {
+        expect(mswParams.path.length).toBeGreaterThan(1);
+      }
     });
 
     it('should preserve segment order in :path+ array', async () => {
-      await testParamParity('/files/:path+', '/files/a/b/c/d');
+      const mswParams = await testParamParity('/files/:path+', '/files/a/b/c/d');
 
-      expect(capturedMSWParams?.path).toEqual(['a', 'b', 'c', 'd']);
+      expect(mswParams?.path).toEqual(['a', 'b', 'c', 'd']);
     });
 
     it('should handle :path* with zero segments', async () => {
@@ -196,29 +211,29 @@ describe('MSW Parity: Path Parameter Extraction', () => {
     });
 
     it('should handle :path* with multiple segments', async () => {
-      await testParamParity('/files/:path*', '/files/folder/file.txt');
+      const mswParams = await testParamParity('/files/:path*', '/files/folder/file.txt');
 
-      expect(Array.isArray(capturedMSWParams?.path)).toBe(true);
+      expect(Array.isArray(mswParams?.path)).toBe(true);
     });
 
     it('should handle multiple repeating params', async () => {
-      await testParamParity(
+      const mswParams = await testParamParity(
         '/api/:version+/resources/:path+',
         '/api/v1/v2/resources/users/123'
       );
 
-      expect(Array.isArray(capturedMSWParams?.version)).toBe(true);
-      expect(Array.isArray(capturedMSWParams?.path)).toBe(true);
+      expect(Array.isArray(mswParams?.version)).toBe(true);
+      expect(Array.isArray(mswParams?.path)).toBe(true);
     });
 
     it('should decode each segment in :path+ separately', async () => {
-      await testParamParity(
+      const mswParams = await testParamParity(
         '/files/:path+',
         '/files/hello%20world/foo%2Fbar'
       );
 
-      expect(capturedMSWParams?.path).toContain('hello world');
-      expect(capturedMSWParams?.path).toContain('foo/bar');
+      expect(mswParams?.path).toContain('hello world');
+      expect(mswParams?.path).toContain('foo/bar');
     });
 
     it('should handle :path+ with special characters', async () => {
@@ -235,27 +250,29 @@ describe('MSW Parity: Path Parameter Extraction', () => {
     });
 
     it('should NOT match :id(\\d+) with non-numeric value', async () => {
-      // Set up handler with full URL
-      server.use(
-        http.get('https://api.example.com/users/:id(\\d+)', ({ params }) => {
-          capturedMSWParams = params;
-          return HttpResponse.json({ ok: true });
-        })
-      );
+      // Capture whether MSW handler was called
+      const handlerCalled = await new Promise<boolean>((resolve) => {
+        server.use(
+          http.get('https://api.example.com/users/:id(\\d+)', ({ params }) => {
+            resolve(true); // Handler called
+            return HttpResponse.json({ ok: true });
+          })
+        );
 
-      // Make request that shouldn't match the regex pattern
-      // MSW will passthrough because pattern doesn't match, fetch will fail
-      try {
-        await fetch('https://api.example.com/users/alice');
-      } catch (error) {
-        // Expected: MSW passthrough to non-existent endpoint
-      }
+        // Make request that shouldn't match the regex pattern
+        // MSW will passthrough because pattern doesn't match
+        fetch('https://api.example.com/users/alice')
+          .catch(() => {
+            // Expected: MSW passthrough to non-existent endpoint
+            resolve(false); // Handler not called
+          });
+      });
 
       // Our implementation should also not match
       const ourResult = matchesUrl('/users/:id(\\d+)', '/users/alice');
 
       expect(ourResult.matches).toBe(false);
-      expect(capturedMSWParams).toBeUndefined(); // MSW didn't call handler
+      expect(handlerCalled).toBe(false); // MSW didn't call handler
     });
 
     it('should extract :year(\\d{4}) for 4-digit year', async () => {
@@ -277,32 +294,32 @@ describe('MSW Parity: Path Parameter Extraction', () => {
     });
 
     it('should handle repeating param with custom regex', async () => {
-      await testParamParity('/numbers/:id(\\d+)+', '/numbers/1/22/333');
+      const mswParams = await testParamParity('/numbers/:id(\\d+)+', '/numbers/1/22/333');
 
-      expect(Array.isArray(capturedMSWParams?.id)).toBe(true);
+      expect(Array.isArray(mswParams?.id)).toBe(true);
     });
   });
 
   describe('URL Encoding', () => {
     it('should decode %20 to space identically', async () => {
-      await testParamParity('/search/:query', '/search/hello%20world');
+      const mswParams = await testParamParity('/search/:query', '/search/hello%20world');
 
-      expect(capturedMSWParams?.query).toBe('hello world');
+      expect(mswParams?.query).toBe('hello world');
     });
 
     it('should decode %2F to forward slash identically', async () => {
-      await testParamParity('/files/:path', '/files/folder%2Ffile.txt');
+      const mswParams = await testParamParity('/files/:path', '/files/folder%2Ffile.txt');
 
-      expect(capturedMSWParams?.path).toBe('folder/file.txt');
+      expect(mswParams?.path).toBe('folder/file.txt');
     });
 
     it('should decode Unicode characters identically', async () => {
-      await testParamParity(
+      const mswParams = await testParamParity(
         '/users/:name',
         '/users/%E4%BD%A0%E5%A5%BD' // "你好"
       );
 
-      expect(capturedMSWParams?.name).toBe('你好');
+      expect(mswParams?.name).toBe('你好');
     });
 
     it('should handle plus signs in params', async () => {
@@ -327,76 +344,76 @@ describe('MSW Parity: Path Parameter Extraction', () => {
 
   describe('Query Parameter Handling', () => {
     it('should extract params ignoring single query parameter', async () => {
-      await testParamParity(
+      const mswParams = await testParamParity(
         'https://api.example.com/users/:id',
         'https://api.example.com/users/123?foo=bar'
       );
 
-      expect(capturedMSWParams?.id).toBe('123');
+      expect(mswParams?.id).toBe('123');
     });
 
     it('should extract params ignoring multiple query parameters', async () => {
-      await testParamParity(
+      const mswParams = await testParamParity(
         'https://api.example.com/posts/:year/:month',
         'https://api.example.com/posts/2024/11?tag=tech&author=alice'
       );
 
-      expect(capturedMSWParams).toEqual({ year: '2024', month: '11' });
+      expect(mswParams).toEqual({ year: '2024', month: '11' });
     });
 
     it('should handle query params with special characters', async () => {
-      await testParamParity(
+      const mswParams = await testParamParity(
         'https://api.example.com/search/:query',
         'https://api.example.com/search/test?filter=name%3Dalice&sort=asc'
       );
 
-      expect(capturedMSWParams?.query).toBe('test');
+      expect(mswParams?.query).toBe('test');
     });
 
     it('should extract optional params with query string present', async () => {
-      await testParamParity(
+      const mswParams = await testParamParity(
         'https://api.example.com/users/:id?',
         'https://api.example.com/users/123?role=admin'
       );
 
-      expect(capturedMSWParams?.id).toBe('123');
+      expect(mswParams?.id).toBe('123');
     });
 
     it('should extract repeating params with query string', async () => {
-      await testParamParity(
+      const mswParams = await testParamParity(
         'https://api.example.com/files/:path+',
         'https://api.example.com/files/folder/doc.txt?version=2&download=true'
       );
 
-      expect(capturedMSWParams?.path).toEqual(['folder', 'doc.txt']);
+      expect(mswParams?.path).toEqual(['folder', 'doc.txt']);
     });
 
     it('should handle empty query string', async () => {
-      await testParamParity(
+      const mswParams = await testParamParity(
         'https://api.example.com/users/:id',
         'https://api.example.com/users/123?'
       );
 
-      expect(capturedMSWParams?.id).toBe('123');
+      expect(mswParams?.id).toBe('123');
     });
 
     it('should handle query string with equals but no value', async () => {
-      await testParamParity(
+      const mswParams = await testParamParity(
         'https://api.example.com/users/:id',
         'https://api.example.com/users/123?foo='
       );
 
-      expect(capturedMSWParams?.id).toBe('123');
+      expect(mswParams?.id).toBe('123');
     });
 
     it('should handle URL with root path and query params', async () => {
-      await testParamParity(
+      const mswParams = await testParamParity(
         'https://api.example.com/',
         'https://api.example.com/?key=value'
       );
 
       // Root path with query params should match root pattern
-      expect(capturedMSWParams).toEqual({});
+      expect(mswParams).toEqual({});
     });
   });
 
@@ -405,43 +422,47 @@ describe('MSW Parity: Path Parameter Extraction', () => {
       const fullUrl = 'https://api.example.com/upload';
       const pattern = 'https://api.example.com/upload';
 
-      server.use(
-        http.post(pattern, ({ params, request }) => {
-          capturedMSWParams = params;
-          return HttpResponse.json({ ok: true });
-        })
-      );
+      const mswParams = await new Promise<MSWParams>((resolve) => {
+        server.use(
+          http.post(pattern, ({ params, request }) => {
+            resolve(params);
+            return HttpResponse.json({ ok: true });
+          })
+        );
 
-      // Send POST with plain text body (not JSON)
-      await fetch(fullUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: 'plain text content',
+        // Send POST with plain text body (not JSON)
+        fetch(fullUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: 'plain text content',
+        });
       });
 
       const ourResult = matchesUrl(pattern, fullUrl);
-      expect(ourResult.params).toEqual(capturedMSWParams);
+      expect(ourResult.params).toEqual(mswParams);
+
+      server.resetHandlers();
     });
 
     it('should handle URL without query params (no searchParams)', async () => {
-      await testParamParity(
+      const mswParams = await testParamParity(
         'https://api.example.com/users',
         'https://api.example.com/users'
       );
 
       // Should match with empty params
-      expect(capturedMSWParams).toEqual({});
+      expect(mswParams).toEqual({});
     });
 
     it('should handle URL with host but no path', async () => {
       // This test ensures url-matcher line 34 (|| '/') is executed
-      await testParamParity(
+      const mswParams = await testParamParity(
         'https://api.example.com/',
         'https://api.example.com'
       );
 
       // Root path should match with empty params
-      expect(capturedMSWParams).toEqual({});
+      expect(mswParams).toEqual({});
     });
   });
 
