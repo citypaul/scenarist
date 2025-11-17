@@ -30,7 +30,8 @@
       "Bash(pnpm --filter @scenarist/nextjs-pages-router-example test:*)",
       "Bash(cat:*)",
       "Bash(gh issue create:*)",
-      "Bash(gh issue comment:*)"
+      "Bash(gh issue comment:*)",
+      "Bash(git stash:*)"
     ],
     "deny": [],
     "ask": []

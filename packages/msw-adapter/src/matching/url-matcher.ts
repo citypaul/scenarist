@@ -114,9 +114,19 @@ export const matchesUrl = (
    * - Unnamed groups filtering
    *
    * By using the same library as MSW, we automatically get MSW-compatible behavior.
+   *
+   * CRITICAL: Strip query parameters from request URL before matching.
+   * path-to-regexp matches against pathname only, not query string.
+   * Example: '/users/123?role=admin' should match pattern '/users/:id'
    */
   const patternPath = extractPathnameOrReturnAsIs(pattern);
-  const requestPath = extractPathnameOrReturnAsIs(requestUrl);
+  let requestPath = extractPathnameOrReturnAsIs(requestUrl);
+
+  // Strip query parameters from request path
+  const queryIndex = requestPath.indexOf('?');
+  if (queryIndex !== -1) {
+    requestPath = requestPath.substring(0, queryIndex);
+  }
 
   const matcher = match(patternPath, { decode: decodeURIComponent });
   const result = matcher(requestPath);
