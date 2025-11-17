@@ -50,7 +50,10 @@ const fetchTestData = async (
   postId: string,
   headersList: ReadonlyHeaders
 ): Promise<FetchResult> => {
-  // Create Request object to use with scenarist.getHeaders()
+  // TEMPORARY WORKAROUND: Create mock Request to use scenarist.getHeaders()
+  // Server Components only have ReadonlyHeaders (from headers()), not Request object
+  // TODO: Add helper for ReadonlyHeaders in Next.js adapter
+  // See: https://github.com/citypaul/scenarist/issues/102
   const request = new Request("http://localhost", { headers: headersList });
 
   try {
