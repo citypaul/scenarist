@@ -230,6 +230,29 @@ describe('URL Matcher', () => {
       expect(result.params).toEqual({ id: '123' });
     });
 
+    it('should NOT match full URL pattern with different hostname', () => {
+      // Full URL patterns are hostname-specific
+      // Pattern host (example.com) ≠ request host (localhost) → no match
+      const result = matchesUrl(
+        'http://example.com/api/users/:id',  // Pattern host: example.com
+        'http://localhost:3001/api/users/123'  // Request host: localhost:3001
+      );
+
+      expect(result.matches).toBe(false);
+      // Hostname mismatch prevents match - this gives users control
+    });
+
+    it('should match full URL pattern with SAME hostname', () => {
+      // Full URL patterns match when hostname is identical
+      const result = matchesUrl(
+        'http://localhost:3001/api/users/:id',  // Pattern host: localhost:3001
+        'http://localhost:3001/api/users/123'  // Request host: localhost:3001
+      );
+
+      expect(result.matches).toBe(true);
+      expect(result.params).toEqual({ id: '123' });
+    });
+
     it('should match pathname pattern with multiple params against full URL', () => {
       const result = matchesUrl(
         '/api/users/:userId/posts/:postId',

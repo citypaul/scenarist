@@ -64,14 +64,28 @@ const extractParams = (
 };
 
 /**
+ * Extract hostname from URL, or return undefined if not a full URL.
+ */
+const extractHostname = (url: string): string | undefined => {
+  const urlPattern = /^https?:\/\/([^/]+)/;
+  const match = urlPattern.exec(url);
+  return match ? match[1] : undefined;
+};
+
+/**
  * Match URL patterns using MSW-compatible matching logic.
  *
  * Delegates to path-to-regexp v6 (same as MSW 2.x) for all string patterns.
  * This ensures automatic MSW parity for path parameter extraction.
  *
  * Matching strategies:
- * 1. RegExp patterns: MSW weak comparison (substring matching)
- * 2. String patterns: path-to-regexp (exact, path params, optional, repeating, custom regex)
+ * 1. RegExp patterns: MSW weak comparison (substring matching, origin-agnostic)
+ * 2. Pathname-only patterns: Origin-agnostic (match any hostname)
+ * 3. Full URL patterns: Hostname-specific (must match exactly)
+ *
+ * Pattern type examples:
+ * - Pathname: '/users/:id' matches 'http://localhost/users/123' AND 'https://api.com/users/123'
+ * - Full URL: 'http://api.com/users/:id' matches 'http://api.com/users/123' ONLY
  *
  * Path parameter examples (all handled by path-to-regexp):
  * - Exact: '/users/123' matches '/users/123'
@@ -103,7 +117,27 @@ export const matchesUrl = (
   }
 
   /**
-   * String patterns: Delegate to path-to-regexp v6 (same as MSW 2.x)
+   * String patterns: Hostname-aware matching
+   *
+   * If pattern is a full URL (has hostname), hostname must match.
+   * If pattern is pathname-only, any hostname matches (origin-agnostic).
+   *
+   * This gives users choice:
+   * - Use pathname patterns for environment-agnostic mocks
+   * - Use full URL patterns when hostname matters
+   */
+  const patternHostname = extractHostname(pattern);
+  const requestHostname = extractHostname(requestUrl);
+
+  // If pattern has hostname, it must match request hostname
+  if (patternHostname !== undefined && requestHostname !== undefined) {
+    if (patternHostname !== requestHostname) {
+      return { matches: false };
+    }
+  }
+
+  /**
+   * Pathname matching using path-to-regexp v6 (same as MSW 2.x)
    *
    * path-to-regexp handles:
    * - Exact string matches

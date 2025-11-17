@@ -480,4 +480,12 @@ describe("MSW Parity: Path Parameter Extraction", () => {
   // with full URLs. MSW doesn't match these patterns, so we don't test them.
   // Our url-matcher implementation uses the same path-to-regexp library as MSW,
   // but MSW may have additional filtering or different behavior with full URLs.
+
+  // NOTE: MSW in Node.js does NOT support pathname-only patterns - requires full URLs.
+  // Scenarist's dynamic handler uses http.all('*') to catch everything, then internally
+  // matches patterns, allowing it to support BOTH pathname-only AND full URL patterns:
+  // - Pathname-only (/users/:id) → origin-agnostic (matches any hostname)
+  // - Full URL (http://api.com/users/:id) → hostname-specific (must match exactly)
+  //
+  // This makes Scenarist more flexible than MSW Node.js while maintaining param extraction parity.
 });
