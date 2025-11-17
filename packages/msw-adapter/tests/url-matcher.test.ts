@@ -157,4 +157,93 @@ describe('URL Matcher', () => {
       expect(result.params).toBeUndefined();
     });
   });
+
+  describe('MSW Weak Comparison Compatibility', () => {
+    /**
+     * MSW documentation states:
+     * "Unlike paths, regular expressions use weak comparison, supporting partial matches.
+     * When provided a regular expression, all request URLs that match that expression
+     * will be captured, regardless of their origin."
+     *
+     * Example from MSW docs:
+     * rest.delete(/\/posts\//, responseResolver)
+     * // Matches:
+     * // - DELETE http://localhost:8080/posts/
+     * // - DELETE https://backend.dev/user/posts/
+     */
+
+    it('should match /\\/posts\\// across different origins (weak comparison)', () => {
+      const pattern = /\/posts\//;
+
+      // Different origins, same path pattern - all should match (MSW behavior)
+      const result1 = matchesUrl(pattern, 'http://localhost:8080/posts/');
+      const result2 = matchesUrl(pattern, 'https://backend.dev/user/posts/');
+      const result3 = matchesUrl(pattern, 'https://api.example.com/posts/123');
+
+      expect(result1.matches).toBe(true);
+      expect(result2.matches).toBe(true);
+      expect(result3.matches).toBe(true);
+    });
+
+    it('should match partial paths regardless of protocol', () => {
+      const pattern = /\/api\/v\d+\//;
+
+      // Pattern matches substring, not full URL - origin-agnostic
+      const result1 = matchesUrl(pattern, 'http://localhost/api/v1/users');
+      const result2 = matchesUrl(pattern, 'https://prod.example.com/api/v2/posts');
+      const result3 = matchesUrl(pattern, 'http://staging.test.io/api/v3/data/123');
+
+      expect(result1.matches).toBe(true);
+      expect(result2.matches).toBe(true);
+      expect(result3.matches).toBe(true);
+    });
+
+    it('should match substring patterns in any part of URL', () => {
+      const pattern = /\/users\/\d+/;
+
+      // Pattern can match anywhere in the URL path
+      const result1 = matchesUrl(pattern, 'https://api.example.com/users/123');
+      const result2 = matchesUrl(pattern, 'http://localhost/v1/users/456/profile');
+      const result3 = matchesUrl(pattern, 'https://backend.dev/api/users/789/settings');
+
+      expect(result1.matches).toBe(true);
+      expect(result2.matches).toBe(true);
+      expect(result3.matches).toBe(true);
+    });
+
+    it('should NOT match when pattern is not found in URL', () => {
+      const pattern = /\/products\/\d+/;
+
+      // Pattern must exist somewhere in the URL
+      const result1 = matchesUrl(pattern, 'https://api.example.com/users/123');
+      const result2 = matchesUrl(pattern, 'http://localhost/posts/456');
+
+      expect(result1.matches).toBe(false);
+      expect(result2.matches).toBe(false);
+    });
+
+    it('should support weak comparison with query parameters', () => {
+      const pattern = /\/search\?/;
+
+      // Pattern matches URLs with query params, any origin
+      const result1 = matchesUrl(pattern, 'http://localhost:3000/search?q=test');
+      const result2 = matchesUrl(pattern, 'https://api.example.com/v1/search?filter=active');
+
+      expect(result1.matches).toBe(true);
+      expect(result2.matches).toBe(true);
+    });
+
+    it('should match case-insensitively when flag is set (weak + case-insensitive)', () => {
+      const pattern = /\/API\/USERS/i;
+
+      // Weak comparison + case-insensitive flag
+      const result1 = matchesUrl(pattern, 'http://localhost/api/users/123');
+      const result2 = matchesUrl(pattern, 'https://prod.example.com/v1/API/USERS');
+      const result3 = matchesUrl(pattern, 'https://backend.dev/Api/Users/data');
+
+      expect(result1.matches).toBe(true);
+      expect(result2.matches).toBe(true);
+      expect(result3.matches).toBe(true);
+    });
+  });
 });

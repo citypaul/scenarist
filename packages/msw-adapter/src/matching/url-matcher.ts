@@ -67,7 +67,27 @@ export const matchesUrl = (
   pattern: string | RegExp,
   requestUrl: string
 ): UrlMatchResult => {
-  // Handle native RegExp patterns (ADR-0016)
+  /**
+   * MSW Weak Comparison Semantics (ADR-0016)
+   *
+   * RegExp patterns use "weak comparison" - substring matching that's origin-agnostic.
+   * This matches MSW's documented behavior for regular expressions.
+   *
+   * From MSW docs:
+   * "Unlike paths, regular expressions use weak comparison, supporting partial matches.
+   * When provided a regular expression, all request URLs that match that expression
+   * will be captured, regardless of their origin."
+   *
+   * Example:
+   *   pattern: /\/posts\//
+   *   Matches: 'http://localhost:8080/posts/'          ✅ (different origin)
+   *   Matches: 'https://backend.dev/user/posts/'       ✅ (different origin)
+   *   Matches: 'https://api.example.com/posts/123'     ✅ (additional segments)
+   *   Does NOT match: 'https://api.example.com/users/123'  ❌ (pattern not found)
+   *
+   * RegExp.test() performs substring matching by default (unless pattern uses anchors like ^, $),
+   * so this implementation correctly supports MSW's weak comparison semantics.
+   */
   if (pattern instanceof RegExp) {
     return { matches: pattern.test(requestUrl) };
   }

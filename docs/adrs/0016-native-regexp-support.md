@@ -274,6 +274,163 @@ export const matchesRegex = (
 
 **Key insight**: Native RegExp objects get the SAME validation and protection as serialized form.
 
+## MSW Weak Comparison Semantics
+
+MSW documentation explicitly states that **regular expressions use weak comparison, supporting partial matches**:
+
+> "Unlike paths, regular expressions use weak comparison, supporting partial matches. When provided a regular expression, all request URLs that match that expression will be captured, regardless of their origin."
+
+### What is Weak Comparison?
+
+**Weak comparison** means RegExp patterns match **anywhere in the URL** (substring matching), not just exact matches:
+
+```typescript
+// MSW example from official docs:
+rest.delete(/\/posts\//, responseResolver)
+
+// Matches ALL of these (different origins, same path pattern):
+// - DELETE http://localhost:8080/posts/
+// - DELETE https://backend.dev/user/posts/
+// - DELETE https://api.example.com/posts/123
+```
+
+**Key characteristics:**
+1. **Origin-agnostic**: Pattern matches regardless of protocol, domain, or port
+2. **Substring matching**: Pattern matches anywhere in the URL path
+3. **Partial matches**: Pattern doesn't need to match entire URL
+
+### Scenarist's Weak Comparison Support
+
+Scenarist implements **identical weak comparison semantics** for MSW compatibility:
+
+```typescript
+// Example: Match users endpoints across any origin
+{
+  method: 'GET',
+  url: '*',  // Route all GET requests
+  match: {
+    url: /\/users\/\d+/  // Match only URLs containing /users/{numeric-id}
+  },
+  response: { status: 200, body: { matched: true } }
+}
+
+// This matches:
+// ✅ https://api.example.com/users/123
+// ✅ http://localhost/v1/users/456/profile
+// ✅ https://backend.dev/api/users/789/settings
+
+// This does NOT match:
+// ❌ https://api.example.com/posts/123 (pattern not found)
+```
+
+### Weak vs Strong Comparison
+
+**Strong comparison** (exact string matching):
+```typescript
+{
+  url: '/api/users/123',  // String literal
+  match: {
+    url: '/api/users/123'  // Exact match only
+  }
+}
+// Matches: '/api/users/123'
+// Does NOT match: 'https://example.com/api/users/123' (different origin)
+```
+
+**Weak comparison** (RegExp substring matching):
+```typescript
+{
+  url: '*',
+  match: {
+    url: /\/api\/users\/\d+/  // RegExp pattern
+  }
+}
+// Matches: 'https://example.com/api/users/123' ✅ (partial match)
+// Matches: 'http://localhost/api/users/456' ✅ (different origin)
+// Matches: '/api/users/789/profile' ✅ (additional path segments)
+```
+
+### Use Cases Enabled by Weak Comparison
+
+**1. Cross-Origin API Calls**
+```typescript
+// Match API calls to any domain
+{
+  match: {
+    url: /\/api\/v\d+\//  // Matches v1, v2, v3, etc.
+  }
+}
+// Works for: localhost, staging, production, any API version
+```
+
+**2. Query Parameter Matching**
+```typescript
+// Match search endpoints with query params
+{
+  match: {
+    url: /\/search\?/
+  }
+}
+// Matches: '/search?q=test', 'https://example.com/v1/search?filter=active'
+```
+
+**3. Case-Insensitive Matching**
+```typescript
+// Match regardless of casing
+{
+  match: {
+    url: /\/API\/USERS/i  // 'i' flag = case-insensitive
+  }
+}
+// Matches: '/api/users', '/API/USERS', '/Api/Users'
+```
+
+### Implementation Notes
+
+**URL matching implementation** (`packages/msw-adapter/src/matching/url-matcher.ts`):
+
+```typescript
+// Handle native RegExp patterns
+if (pattern instanceof RegExp) {
+  // RegExp.test() performs substring matching by default (weak comparison)
+  return { matches: pattern.test(requestUrl) };
+}
+```
+
+**This implementation is correct** because JavaScript's `RegExp.test()` naturally performs substring matching unless the pattern uses anchors (`^`, `$`).
+
+### Testing Coverage
+
+Scenarist includes comprehensive tests proving MSW weak comparison compatibility:
+
+**MSW Adapter tests** (`packages/msw-adapter/tests/url-matcher.test.ts`):
+- Cross-origin matching (same pattern, different domains)
+- Partial path matching (substring in any position)
+- Query parameter support
+- Case-insensitive + weak comparison
+
+**Core integration tests** (`packages/core/tests/url-matching.test.ts`):
+- Response selector with weak comparison
+- Specificity-based selection with weak patterns
+- Combined match criteria (weak URL + headers)
+
+**Playwright E2E tests** (example apps):
+- Real-world scenarios using weak comparison patterns
+- Cross-origin mocking verification
+- MSW compatibility validation
+
+### MSW Compatibility Matrix
+
+| Pattern Type | MSW v1 | Scenarist | Weak Comparison |
+|--------------|--------|-----------|-----------------|
+| String literal | ✅ | ✅ | ❌ (exact match) |
+| Path params (`/users/:id`) | ✅ | ✅ | ❌ (exact match) |
+| Glob (`/api/*`) | ✅ | ✅ | ❌ (exact match) |
+| Native RegExp | ✅ | ✅ | ✅ (substring) |
+| Serialized regex | ❌ | ✅ | ✅ (substring) |
+
+**Key insight**: Only RegExp patterns (native or serialized) use weak comparison. All other pattern types use strong (exact) matching.
+
 ## Rationale
 
 ### Why This Doesn't Violate ADR-0013's Principles

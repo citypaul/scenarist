@@ -223,6 +223,74 @@ Once a routing pattern matches, you can use `match.url` to conditionally respond
 }
 ```
 
+**3. MSW Weak Comparison (RegExp):**
+
+RegExp patterns use **weak comparison** - they match anywhere in the URL (substring matching), regardless of origin. This is MSW-compatible behavior.
+
+```typescript
+// Example: Match users endpoints across any origin
+{
+  method: 'GET',
+  url: '*',  // Route all GET requests
+  match: {
+    url: /\/users\/\d+/  // Match only URLs containing /users/{numeric-id}
+  },
+  response: { status: 200, body: { matched: true } }
+}
+```
+
+**This matches:**
+- ✅ `https://api.example.com/users/123`
+- ✅ `http://localhost/v1/users/456/profile`
+- ✅ `https://backend.dev/api/users/789/settings`
+
+**This does NOT match:**
+- ❌ `https://api.example.com/posts/123` (pattern not found)
+
+**Weak Comparison Use Cases:**
+
+**Cross-Origin API Calls:**
+```typescript
+{
+  match: {
+    url: /\/api\/v\d+\//  // Matches v1, v2, v3, etc.
+  }
+}
+// Works for: localhost, staging, production, any API version
+```
+
+**Query Parameter Matching:**
+```typescript
+{
+  match: {
+    url: /\/search\?/  // Matches any URL with query params
+  }
+}
+// Matches: '/search?q=test', 'https://example.com/v1/search?filter=active'
+```
+
+**Case-Insensitive Matching:**
+```typescript
+{
+  match: {
+    url: /\/API\/USERS/i  // 'i' flag = case-insensitive
+  }
+}
+// Matches: '/api/users', '/API/USERS', '/Api/Users'
+```
+
+**Weak vs. Strong Comparison:**
+
+| Pattern Type | Comparison | Origin-Agnostic? | Example |
+|--------------|------------|------------------|---------|
+| String literal | Strong (exact) | ❌ No | `url: '/api/users/123'` |
+| `{ contains }` | Strong (substring) | ❌ No | `url: { contains: '/users/' }` |
+| `{ startsWith }` | Strong (prefix) | ❌ No | `url: { startsWith: '/api/' }` |
+| `{ endsWith }` | Strong (suffix) | ❌ No | `url: { endsWith: '.json' }` |
+| RegExp | Weak (substring) | ✅ Yes | `url: /\/users\/\d+/` |
+
+**Key Difference:** Only RegExp patterns match across different origins. String strategies require the full URL to match exactly.
+
 **Routing vs. Matching Example:**
 ```typescript
 const mocks = [
