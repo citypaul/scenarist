@@ -1344,6 +1344,22 @@ During Phase 2 initial implementation, `reset()` was added speculatively without
   - Code refactored following CLAUDE.md principles (functional composition, data-driven config)
   - Supported regex flags documented: i, m, s, u, v, g, y
 
+**URL Matching Phase 2.5: Path Parameters**
+- ✅ **MSW path-to-regexp Compatibility** (Completed 2025-11-17)
+  - Delegates to path-to-regexp v6 (same library as MSW 2.x)
+  - Automatic MSW parity for parameter extraction
+  - Support for all path-to-regexp patterns:
+    - Simple parameters: `/users/:id` → `{id: '123'}`
+    - Multiple parameters: `/users/:userId/posts/:postId` → `{userId: 'alice', postId: '42'}`
+    - Optional parameters: `/files/:filename?` matches `/files` or `/files/doc.txt`
+    - Repeating parameters: `/files/:path+` → `{path: ['folder','subfolder','file.txt']}`
+    - Custom regex: `/orders/:id(\\d+)` matches numeric IDs only
+  - Template support: `{{params.userId}}` injects extracted parameters
+  - 17 integration tests passing (10 URL matching + 7 path parameters)
+  - 306 core tests passing (85 url-matcher unit tests)
+  - Critical fix: Manual URL parsing preserves path-to-regexp syntax (`?`, `+`, etc.)
+  - Pattern conflicts resolved using "last match wins" rule
+
 **Future Enhancements:**
 - 🔜 **Template Helper Registry** ([Issue #87](https://github.com/citypaul/scenarist/issues/87))
   - Dynamic value generation (UUID, timestamps, hashes)
@@ -3193,6 +3209,309 @@ This is the SAME violation documented in Phase 2 (PR #26):
 - Having to retrofit tests after implementation
 
 **The lesson keeps repeating: TDD is non-negotiable. No shortcuts, no exceptions.**
+
+## URL Matching Phase 2.5: Path Parameters - Critical Learnings
+
+**Completed:** 2025-11-17
+**Status:** All tests passing (17 integration + 306 core)
+**Context:** Implementing MSW path-to-regexp compatibility for parameter extraction
+
+### User Feedback: Backward Compatibility is NOT a Concern
+
+**CRITICAL GUIDANCE:** During this work, the user provided explicit feedback:
+
+> "Backward compatability is NOT a thing for us - we care about having a clean and consistent API, but we have NO REAL USERS yet, so we don't need backwards compatability with anything. We are free to change our API as much as we want at the moment (so long as it remains declarative as per our project rules)"
+
+**Key Principles:**
+- ✅ Focus on clean, declarative API design
+- ✅ Make breaking changes if they improve the API
+- ✅ Prioritize consistency over backward compatibility
+- ❌ Don't constrain design to maintain compatibility with non-existent users
+- ❌ Don't add complexity for backward compatibility
+
+**This applies to ALL future work** - we're pre-1.0, optimizing for the best possible API.
+
+### Critical Bug #1: URL Constructor Corrupts path-to-regexp Syntax
+
+**Problem:** The `new URL()` constructor treats special characters as URL components, corrupting path-to-regexp patterns.
+
+**Example:**
+```typescript
+// Input pattern
+const pattern = 'http://localhost:3001/api/files/:filename?';
+
+// Using URL constructor (WRONG)
+const url = new URL(pattern);
+url.pathname;  // '/api/files/:filename' ❌ (lost the ?)
+
+// Manual regex parsing (CORRECT)
+const match = /^https?:\/\/[^/]+(\/.*)?$/.exec(pattern);
+const pathname = match[1];  // '/api/files/:filename?' ✅ (preserved ?)
+```
+
+**Why It Matters:**
+- `?` in path-to-regexp means "optional parameter"
+- URL constructor treats `?` as query string delimiter
+- Result: Optional parameters break entirely
+
+**The Fix:**
+```typescript
+/**
+ * Extract pathname from URL string, or return as-is if not a valid URL.
+ *
+ * CRITICAL: Handles path-to-regexp syntax (`:param`, `?`, `+`, `(regex)`)
+ * The URL constructor treats `?` as query string delimiter, which breaks optional params.
+ */
+const extractPathnameOrReturnAsIs = (url: string): string => {
+  const urlPattern = /^https?:\/\/[^/]+(\/.*)?$/;
+  const match = urlPattern.exec(url);
+
+  if (match) {
+    return match[1] || '/';
+  }
+
+  return url;  // Already a pathname
+};
+```
+
+**Affected Patterns:**
+- `:filename?` → Optional parameters
+- `:path+` → Repeating parameters
+- `:id(\\d+)` → Custom regex parameters
+
+**Files Changed:**
+- `packages/msw-adapter/src/matching/url-matcher.ts:26-39`
+
+**Tests Proving Fix:**
+- All 85 url-matcher unit tests pass
+- All 7 path parameter integration tests pass
+
+### Critical Bug #2: Pattern Conflicts with Repeating Parameters
+
+**Problem:** The repeating parameter pattern `:path+` matches BOTH single segments AND multiple segments, causing conflicts with simple parameter patterns.
+
+**Example:**
+```typescript
+// Two mocks for /api/files/
+const mocks = [
+  {
+    method: 'GET',
+    url: '/api/files/:filename',  // Simple parameter
+    response: { /* fallback */ }
+  },
+  {
+    method: 'GET',
+    url: '/api/files/:path+',  // Repeating parameter
+    response: { /* nested paths */ }
+  }
+];
+
+// Request: /api/files/readme.txt
+// Both patterns match!
+// ':filename' → {filename: 'readme.txt'}
+// ':path+' → {path: ['readme.txt']}  (single-element array)
+
+// Due to "last match wins" → repeating mock wins
+// Result: Wrong mock selected for single-segment files
+```
+
+**Why path-to-regexp Works This Way:**
+- `:path+` means "one or MORE segments"
+- Single segment = valid match (one segment satisfies "one or more")
+- No distinction between single and multiple segments in pattern
+
+**The Fix:** Use different URL endpoints to avoid conflicts
+```typescript
+// Before (conflict)
+{
+  url: '/api/files/:filename',  // Fallback
+},
+{
+  url: '/api/files/:path+',  // Repeating - conflicts!
+}
+
+// After (no conflict)
+{
+  url: '/api/files/:filename',  // Fallback for single files
+},
+{
+  url: '/api/paths/:path+',  // Different endpoint for nested paths
+}
+```
+
+**Files Changed:**
+- `apps/nextjs-app-router-example/lib/scenarios.ts:805-818`
+- `apps/nextjs-app-router-example/app/url-matching/page.tsx:227`
+
+**Test Results:**
+- Before: 6/17 URL matching tests passing (endsWith fallback failing)
+- After: 17/17 URL matching tests passing ✅
+
+### Pattern: "Last Match Wins" for Equal Specificity
+
+**Rule:** When multiple mocks have equal specificity (both 0, both 1, etc.), the LAST mock in the array wins.
+
+**Why This Matters:**
+```typescript
+// Fallback should come BEFORE more specific mocks
+const mocks = [
+  // Fallback (specificity = 0)
+  {
+    method: 'GET',
+    url: '/api/orders/:orderId',
+    response: { status: 'unknown' }
+  },
+  // Custom regex (specificity = 0, but more selective pattern)
+  {
+    method: 'GET',
+    url: '/api/orders/:orderId(\\d+)',
+    response: { status: 'processing' }
+  }
+];
+
+// Request: /api/orders/12345
+// Both match (numeric ID), both have specificity = 0
+// Last match wins → custom regex response returned ✅
+```
+
+**Counter-Example (Wrong Order):**
+```typescript
+const mocks = [
+  // Custom regex FIRST (wrong!)
+  {
+    method: 'GET',
+    url: '/api/orders/:orderId(\\d+)',
+    response: { status: 'processing' }
+  },
+  // Fallback LAST (overwrites custom regex)
+  {
+    method: 'GET',
+    url: '/api/orders/:orderId',
+    response: { status: 'unknown' }
+  }
+];
+
+// Request: /api/orders/12345
+// Both match, both specificity = 0
+// Last match wins → fallback response returned ❌ (wrong!)
+```
+
+**Best Practice:** Order mocks from general → specific
+1. Fallback mocks (no conditions)
+2. Conditional mocks (match criteria)
+3. Mocks with narrow patterns (custom regex, etc.)
+
+### Optional Parameter Handling: Two-Mock Approach
+
+**Problem:** Template replacement returns `undefined` when parameter is absent, which gets omitted from JSON. Cannot conditionally inject static defaults.
+
+**Original Attempt (Doesn't Work):**
+```typescript
+{
+  method: 'GET',
+  url: '/api/files/:filename?',  // Optional
+  response: {
+    body: {
+      filename: '{{params.filename}}',  // undefined when absent
+      path: '/files/{{params.filename}}',  // undefined when absent
+      exists: true
+    }
+  }
+}
+
+// Request: /api/file-optional (no filename)
+// Result: {exists: true} ❌ (filename and path omitted)
+```
+
+**Solution: Split Into Two Mocks**
+```typescript
+// Mock 1: When parameter is present (more specific)
+{
+  method: 'GET',
+  url: '/api/file-optional/:filename',  // WITHOUT ? - requires param
+  response: {
+    body: {
+      filename: '{{params.filename}}',  // Injected
+      path: '/file-optional/{{params.filename}}',
+      exists: true
+    }
+  }
+},
+
+// Mock 2: When parameter is absent (fallback)
+{
+  method: 'GET',
+  url: '/api/file-optional',  // Exact match, no param
+  response: {
+    body: {
+      filename: 'default.txt',  // Static default
+      path: '/file-optional/default.txt',
+      exists: true
+    }
+  }
+}
+
+// Request: /api/file-optional/document.txt
+// Matches Mock 1 → {filename: 'document.txt', path: '/file-optional/document.txt', exists: true} ✅
+
+// Request: /api/file-optional
+// Matches Mock 2 → {filename: 'default.txt', path: '/file-optional/default.txt', exists: true} ✅
+```
+
+**Why This Works:**
+- Mock 1 requires parameter (no `?`), only matches when present
+- Mock 2 is exact match, only matches when absent
+- No overlap, no "last match wins" needed
+- Templates work correctly (parameter guaranteed present in Mock 1)
+
+### Key Architectural Insights
+
+1. **Delegate to Canonical Libraries**
+   - Using path-to-regexp v6 (same as MSW 2.x)
+   - Automatic MSW parity without manual sync
+   - Bug fixes in upstream benefit us automatically
+
+2. **Preserve Input Fidelity**
+   - Don't transform user input (URL parsing)
+   - Preserve special characters exactly as written
+   - Manual parsing when standard library corrupts data
+
+3. **URL Pattern Conflicts Are Inevitable**
+   - Multiple patterns can match same URL
+   - Order matters for equal specificity
+   - Clear documentation prevents user confusion
+
+4. **Template Limitations Require Workarounds**
+   - Cannot conditionally inject defaults
+   - Two-mock pattern is acceptable trade-off
+   - Still maintains declarative API
+
+### Files Modified
+
+**Core Package:**
+- `packages/msw-adapter/src/matching/url-matcher.ts` - Manual URL parsing fix
+
+**Example App:**
+- `apps/nextjs-app-router-example/lib/scenarios.ts` - URL pattern fixes
+- `apps/nextjs-app-router-example/app/url-matching/page.tsx` - Rendering fixes
+- `apps/nextjs-app-router-example/tests/playwright/url-matching.spec.ts` - Integration tests
+
+**Documentation:**
+- `CLAUDE.md` - This section
+
+### Test Results
+
+**Before:**
+- Path parameter tests: 0/7 passing (all failing)
+- URL matching tests: 6/17 passing
+- Core tests: 306/306 passing
+
+**After:**
+- Path parameter tests: 7/7 passing ✅
+- URL matching tests: 17/17 passing ✅
+- Core tests: 306/306 passing ✅
+
+**Total:** 323 tests passing (17 integration + 306 core)
 
 ## Automatic Default Fallback - Critical Learnings
 

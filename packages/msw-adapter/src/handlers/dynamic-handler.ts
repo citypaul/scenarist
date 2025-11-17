@@ -3,6 +3,7 @@ import type { HttpHandler } from 'msw';
 import type {
   ActiveScenario,
   ScenaristScenario,
+  ScenaristMockWithParams,
   HttpRequestContext,
   HttpMethod,
   ResponseSelector,
@@ -66,19 +67,22 @@ const extractHttpRequestContext = async (
 
 /**
  * Get mocks from active scenario, with default scenario mocks as fallback.
- * Returns URL-matching mocks for ResponseSelector to evaluate.
+ * Returns URL-matching mocks with their extracted params for ResponseSelector to evaluate.
  *
  * Default mocks are ALWAYS included (if they match URL+method).
  * Active scenario mocks are added after defaults, allowing them to override
  * based on specificity (mocks with match criteria have higher specificity).
+ *
+ * Each mock is paired with params extracted from its URL pattern.
+ * After ResponseSelector chooses a mock, we use THAT mock's params.
  */
 const getMocksFromScenarios = (
   activeScenario: ActiveScenario | undefined,
   getScenarioDefinition: (scenarioId: string) => ScenaristScenario | undefined,
   method: string,
   url: string
-): ReadonlyArray<import('@scenarist/core').ScenaristMock> => {
-  const mocks: Array<import('@scenarist/core').ScenaristMock> = [];
+): ReadonlyArray<ScenaristMockWithParams> => {
+  const mocksWithParams: Array<ScenaristMockWithParams> = [];
 
   // Step 1: ALWAYS include default scenario mocks first
   // These act as fallback when active scenario mocks don't match
@@ -88,7 +92,7 @@ const getMocksFromScenarios = (
       const methodMatches = mock.method.toUpperCase() === method.toUpperCase();
       const urlMatch = matchesUrl(mock.url, url);
       if (methodMatches && urlMatch.matches) {
-        mocks.push(mock);
+        mocksWithParams.push({ mock, params: urlMatch.params });
       }
     });
   }
@@ -102,13 +106,13 @@ const getMocksFromScenarios = (
         const methodMatches = mock.method.toUpperCase() === method.toUpperCase();
         const urlMatch = matchesUrl(mock.url, url);
         if (methodMatches && urlMatch.matches) {
-          mocks.push(mock);
+          mocksWithParams.push({ mock, params: urlMatch.params });
         }
       });
     }
   }
 
-  return mocks;
+  return mocksWithParams;
 };
 
 export const createDynamicHandler = (

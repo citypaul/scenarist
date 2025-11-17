@@ -1,8 +1,16 @@
 import { describe, expect, it } from "vitest";
-import type { MockDefinition, HttpRequestContext } from "../src/types/index.js";
+import type { ScenaristMock, ScenaristMockWithParams, HttpRequestContext } from "../src/types/index.js";
 import { createResponseSelector } from "../src/domain/response-selector.js";
 import { createInMemorySequenceTracker } from "../src/adapters/in-memory-sequence-tracker.js";
 import { createInMemoryStateManager } from "../src/adapters/in-memory-state-manager.js";
+
+/**
+ * Helper to wrap mocks in ScenaristMockWithParams for backward compatibility.
+ * Tests don't extract params, so we just wrap with empty params.
+ */
+const wrapMocks = (mocks: ReadonlyArray<ScenaristMock>): ReadonlyArray<ScenaristMockWithParams> => {
+  return mocks.map(mock => ({ mock, params: {} }));
+};
 
 describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
   describe("Match on Request Body (Partial Match)", () => {
@@ -15,7 +23,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "POST",
           url: "/api/items",
@@ -25,7 +33,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -43,7 +51,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "POST",
           url: "/api/items",
@@ -53,7 +61,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(false);
     });
@@ -67,7 +75,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "POST",
           url: "/api/items",
@@ -77,7 +85,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(false);
     });
@@ -91,7 +99,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "POST",
           url: "/api/items",
@@ -101,7 +109,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(false);
     });
@@ -115,7 +123,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "POST",
           url: "/api/items",
@@ -125,7 +133,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(false);
     });
@@ -139,7 +147,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "POST",
           url: "/api/items",
@@ -149,7 +157,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -168,7 +176,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "GET",
           url: "/api/data",
@@ -178,7 +186,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -195,7 +203,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "GET",
           url: "/api/data",
@@ -205,7 +213,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(false);
     });
@@ -219,7 +227,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "GET",
           url: "/api/data",
@@ -229,7 +237,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(false);
     });
@@ -245,7 +253,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "GET",
           url: "/api/data",
@@ -255,7 +263,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -272,7 +280,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "GET",
           url: "/api/data",
@@ -282,7 +290,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -303,7 +311,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "POST",
           url: "/api/submit",
@@ -319,7 +327,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -337,7 +345,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "GET",
           url: "/api/data",
@@ -347,7 +355,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(false); // Values are case-sensitive
     });
@@ -363,7 +371,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "GET",
           url: "/api/data",
@@ -373,7 +381,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -392,7 +400,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: { filter: "active", sort: "name" },
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "GET",
           url: "/api/search",
@@ -402,7 +410,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -419,7 +427,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: { filter: "inactive" },
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "GET",
           url: "/api/search",
@@ -429,7 +437,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(false);
     });
@@ -443,7 +451,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "GET",
           url: "/api/search",
@@ -453,7 +461,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(false);
     });
@@ -469,7 +477,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "POST",
           url: "/api/items",
@@ -485,7 +493,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -530,7 +538,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocksWithLessSpecificFirst);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocksWithLessSpecificFirst));
 
       // The more specific mock (discount: 20) wins even though it appears second
       expect(result.success).toBe(true);
@@ -567,7 +575,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocksWithEqualSpecificity);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocksWithEqualSpecificity));
 
       // First mock wins as tiebreaker (both have specificity of 1)
       expect(result.success).toBe(true);
@@ -587,7 +595,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "POST",
           url: "/api/items",
@@ -603,7 +611,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -620,7 +628,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "POST",
           url: "/api/items",
@@ -630,7 +638,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -650,7 +658,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "POST",
           url: "/api/items",
@@ -672,7 +680,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -693,7 +701,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "GET",
           url: "/api/status",
@@ -722,7 +730,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
 
       const sequenceTracker = createInMemorySequenceTracker();
       const selector = createResponseSelector({ sequenceTracker });
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -743,7 +751,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "POST",
           url: "/api/items",
@@ -760,7 +768,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -788,7 +796,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         // Default scenario fallback (collected first in automatic default fallback)
         {
           method: "GET",
@@ -804,7 +812,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "active-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "active-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -831,7 +839,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         // First mock with match criteria (specificity: 101 = 100 base + 1 header)
         {
           method: "GET",
@@ -849,7 +857,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "active-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "active-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -871,7 +879,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "POST",
           url: "/api/items",
@@ -884,7 +892,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -901,7 +909,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "POST",
           url: "/api/items",
@@ -914,7 +922,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(false);
     });
@@ -930,7 +938,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "GET",
           url: "/api/job/:id",
@@ -950,21 +958,21 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       });
 
       // First call
-      const result1 = selector.selectResponse("test-1", "job-scenario", context, mocks);
+      const result1 = selector.selectResponse("test-1", "job-scenario", context, wrapMocks(mocks));
       expect(result1.success).toBe(true);
       if (result1.success) {
         expect(result1.data.body).toEqual({ status: "pending" });
       }
 
       // Second call
-      const result2 = selector.selectResponse("test-1", "job-scenario", context, mocks);
+      const result2 = selector.selectResponse("test-1", "job-scenario", context, wrapMocks(mocks));
       expect(result2.success).toBe(true);
       if (result2.success) {
         expect(result2.data.body).toEqual({ status: "processing" });
       }
 
       // Third call
-      const result3 = selector.selectResponse("test-1", "job-scenario", context, mocks);
+      const result3 = selector.selectResponse("test-1", "job-scenario", context, wrapMocks(mocks));
       expect(result3.success).toBe(true);
       if (result3.success) {
         expect(result3.data.body).toEqual({ status: "complete" });
@@ -976,7 +984,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         sequenceTracker: createInMemorySequenceTracker(),
       });
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "GET",
           url: "/api/status",
@@ -999,35 +1007,20 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       };
 
       // First two calls go through sequence
-      const result1 = selector.selectResponse(
-        "test-default",
-        "default-scenario",
-        context,
-        mocks
-      );
+      const result1 = selector.selectResponse("test-default", "default-scenario", context, wrapMocks(mocks));
       expect(result1.success).toBe(true);
       if (result1.success) {
         expect((result1.data.body as { attempt: number }).attempt).toBe(1);
       }
 
-      const result2 = selector.selectResponse(
-        "test-default",
-        "default-scenario",
-        context,
-        mocks
-      );
+      const result2 = selector.selectResponse("test-default", "default-scenario", context, wrapMocks(mocks));
       expect(result2.success).toBe(true);
       if (result2.success) {
         expect((result2.data.body as { attempt: number }).attempt).toBe(2);
       }
 
       // Third call should repeat last response (default behavior)
-      const result3 = selector.selectResponse(
-        "test-default",
-        "default-scenario",
-        context,
-        mocks
-      );
+      const result3 = selector.selectResponse("test-default", "default-scenario", context, wrapMocks(mocks));
       expect(result3.success).toBe(true);
       if (result3.success) {
         expect((result3.data.body as { attempt: number }).attempt).toBe(2);
@@ -1043,7 +1036,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "GET",
           url: "/api/poll",
@@ -1062,17 +1055,17 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       });
 
       // Exhaust the sequence
-      selector.selectResponse("test-2", "poll-scenario", context, mocks);
-      selector.selectResponse("test-2", "poll-scenario", context, mocks);
+      selector.selectResponse("test-2", "poll-scenario", context, wrapMocks(mocks));
+      selector.selectResponse("test-2", "poll-scenario", context, wrapMocks(mocks));
 
       // Calls beyond the sequence should repeat the last response
-      const result3 = selector.selectResponse("test-2", "poll-scenario", context, mocks);
+      const result3 = selector.selectResponse("test-2", "poll-scenario", context, wrapMocks(mocks));
       expect(result3.success).toBe(true);
       if (result3.success) {
         expect(result3.data.body).toEqual({ value: 2 });
       }
 
-      const result4 = selector.selectResponse("test-2", "poll-scenario", context, mocks);
+      const result4 = selector.selectResponse("test-2", "poll-scenario", context, wrapMocks(mocks));
       expect(result4.success).toBe(true);
       if (result4.success) {
         expect(result4.data.body).toEqual({ value: 2 });
@@ -1088,7 +1081,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "GET",
           url: "/api/toggle",
@@ -1107,26 +1100,26 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       });
 
       // First cycle
-      const result1 = selector.selectResponse("test-3", "toggle-scenario", context, mocks);
+      const result1 = selector.selectResponse("test-3", "toggle-scenario", context, wrapMocks(mocks));
       expect(result1.success).toBe(true);
       if (result1.success) {
         expect(result1.data.body).toEqual({ state: "on" });
       }
 
-      const result2 = selector.selectResponse("test-3", "toggle-scenario", context, mocks);
+      const result2 = selector.selectResponse("test-3", "toggle-scenario", context, wrapMocks(mocks));
       expect(result2.success).toBe(true);
       if (result2.success) {
         expect(result2.data.body).toEqual({ state: "off" });
       }
 
       // Should cycle back to first
-      const result3 = selector.selectResponse("test-3", "toggle-scenario", context, mocks);
+      const result3 = selector.selectResponse("test-3", "toggle-scenario", context, wrapMocks(mocks));
       expect(result3.success).toBe(true);
       if (result3.success) {
         expect(result3.data.body).toEqual({ state: "on" });
       }
 
-      const result4 = selector.selectResponse("test-3", "toggle-scenario", context, mocks);
+      const result4 = selector.selectResponse("test-3", "toggle-scenario", context, wrapMocks(mocks));
       expect(result4.success).toBe(true);
       if (result4.success) {
         expect(result4.data.body).toEqual({ state: "off" });
@@ -1145,7 +1138,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         // Fallback mock - comes first but has lower priority than sequence (next)
         {
           method: "GET",
@@ -1171,20 +1164,20 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       });
 
       // First two calls go through sequence (sequence is last = wins as fallback)
-      const result1 = selector.selectResponse("test-4", "limited-scenario", context, mocks);
+      const result1 = selector.selectResponse("test-4", "limited-scenario", context, wrapMocks(mocks));
       expect(result1.success).toBe(true);
       if (result1.success) {
         expect(result1.data.body).toEqual({ attempt: 1 });
       }
 
-      const result2 = selector.selectResponse("test-4", "limited-scenario", context, mocks);
+      const result2 = selector.selectResponse("test-4", "limited-scenario", context, wrapMocks(mocks));
       expect(result2.success).toBe(true);
       if (result2.success) {
         expect(result2.data.body).toEqual({ attempt: 2 });
       }
 
       // Third call: sequence exhausted and skipped, fallback mock selected
-      const result3 = selector.selectResponse("test-4", "limited-scenario", context, mocks);
+      const result3 = selector.selectResponse("test-4", "limited-scenario", context, wrapMocks(mocks));
       expect(result3.success).toBe(true);
       if (result3.success) {
         expect(result3.data.status).toBe(410);
@@ -1198,7 +1191,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         sequenceTracker: createInMemorySequenceTracker(),
       });
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "GET",
           url: "/api/status",
@@ -1222,48 +1215,28 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       };
 
       // Test ID "test-a" makes first call
-      const result1 = selector.selectResponse(
-        "test-a",
-        "status-scenario",
-        context,
-        mocks
-      );
+      const result1 = selector.selectResponse("test-a", "status-scenario", context, wrapMocks(mocks));
       expect(result1.success).toBe(true);
       if (result1.success) {
         expect((result1.data.body as { step: number }).step).toBe(1);
       }
 
       // Test ID "test-b" makes first call (should also get step 1)
-      const result2 = selector.selectResponse(
-        "test-b",
-        "status-scenario",
-        context,
-        mocks
-      );
+      const result2 = selector.selectResponse("test-b", "status-scenario", context, wrapMocks(mocks));
       expect(result2.success).toBe(true);
       if (result2.success) {
         expect((result2.data.body as { step: number }).step).toBe(1);
       }
 
       // Test ID "test-a" makes second call (should get step 2)
-      const result3 = selector.selectResponse(
-        "test-a",
-        "status-scenario",
-        context,
-        mocks
-      );
+      const result3 = selector.selectResponse("test-a", "status-scenario", context, wrapMocks(mocks));
       expect(result3.success).toBe(true);
       if (result3.success) {
         expect((result3.data.body as { step: number }).step).toBe(2);
       }
 
       // Test ID "test-b" makes second call (should also get step 2, not step 3)
-      const result4 = selector.selectResponse(
-        "test-b",
-        "status-scenario",
-        context,
-        mocks
-      );
+      const result4 = selector.selectResponse("test-b", "status-scenario", context, wrapMocks(mocks));
       expect(result4.success).toBe(true);
       if (result4.success) {
         expect((result4.data.body as { step: number }).step).toBe(2);
@@ -1275,7 +1248,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         sequenceTracker: createInMemorySequenceTracker(),
       });
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         // Generic sequence (no match criteria)
         {
           method: "POST",
@@ -1326,7 +1299,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         "test-match",
         "process-scenario",
         genericContext,
-        mocks
+        wrapMocks(mocks)
       );
       expect(result1.success).toBe(true);
       if (result1.success) {
@@ -1340,7 +1313,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         "test-match",
         "process-scenario",
         premiumContext,
-        mocks
+        wrapMocks(mocks)
       );
       expect(result2.success).toBe(true);
       if (result2.success) {
@@ -1354,7 +1327,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         "test-match",
         "process-scenario",
         genericContext,
-        mocks
+        wrapMocks(mocks)
       );
       expect(result3.success).toBe(true);
       if (result3.success) {
@@ -1368,7 +1341,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         "test-match",
         "process-scenario",
         premiumContext,
-        mocks
+        wrapMocks(mocks)
       );
       expect(result4.success).toBe(true);
       if (result4.success) {
@@ -1383,7 +1356,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         sequenceTracker: createInMemorySequenceTracker(),
       });
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         // Sequence with match criteria (premium only)
         {
           method: "POST",
@@ -1429,7 +1402,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         "test-no-advance",
         "action-scenario",
         premiumContext,
-        mocks
+        wrapMocks(mocks)
       );
       expect(result1.success).toBe(true);
       if (result1.success) {
@@ -1444,7 +1417,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         "test-no-advance",
         "action-scenario",
         standardContext,
-        mocks
+        wrapMocks(mocks)
       );
       expect(result2.success).toBe(true);
       if (result2.success) {
@@ -1459,7 +1432,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         "test-no-advance",
         "action-scenario",
         premiumContext,
-        mocks
+        wrapMocks(mocks)
       );
       expect(result3.success).toBe(true);
       if (result3.success) {
@@ -1474,7 +1447,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         "test-no-advance",
         "action-scenario",
         standardContext,
-        mocks
+        wrapMocks(mocks)
       );
       expect(result4.success).toBe(true);
       if (result4.success) {
@@ -1489,7 +1462,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         "test-no-advance",
         "action-scenario",
         premiumContext,
-        mocks
+        wrapMocks(mocks)
       );
       expect(result5.success).toBe(true);
       if (result5.success) {
@@ -1511,7 +1484,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
     };
 
     it("should return error for mock with neither response nor sequence", () => {
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "GET",
           url: "/api/test",
@@ -1519,12 +1492,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         } as MockDefinition,
       ];
 
-      const result = selector.selectResponse(
-        "test-invalid",
-        "scenario-invalid",
-        context,
-        mocks
-      );
+      const result = selector.selectResponse("test-invalid", "scenario-invalid", context, wrapMocks(mocks));
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -1535,7 +1503,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
     });
 
     it("should return error for sequence with empty responses array", () => {
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "GET",
           url: "/api/test",
@@ -1546,12 +1514,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
         },
       ];
 
-      const result = selector.selectResponse(
-        "test-empty",
-        "scenario-empty",
-        context,
-        mocks
-      );
+      const result = selector.selectResponse("test-empty", "scenario-empty", context, wrapMocks(mocks));
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -1576,7 +1539,7 @@ describe("ResponseSelector - State Capture (Phase 3)", () => {
       query: {},
     };
 
-    const mocks: ReadonlyArray<MockDefinition> = [
+    const mocks: ReadonlyArray<ScenaristMock> = [
       {
         method: "POST",
         url: "/api/test",
@@ -1585,7 +1548,7 @@ describe("ResponseSelector - State Capture (Phase 3)", () => {
       },
     ];
 
-    selector.selectResponse("test-1", "scenario-1", context, mocks);
+    selector.selectResponse("test-1", "scenario-1", context, wrapMocks(mocks));
 
     expect(stateManager.get("test-1", "userId")).toBe("user-123");
   });
@@ -1601,7 +1564,7 @@ describe("ResponseSelector - State Capture (Phase 3)", () => {
       query: {},
     };
 
-    const mocks: ReadonlyArray<MockDefinition> = [
+    const mocks: ReadonlyArray<ScenaristMock> = [
       {
         method: "GET",
         url: "/api/test",
@@ -1610,7 +1573,7 @@ describe("ResponseSelector - State Capture (Phase 3)", () => {
       },
     ];
 
-    selector.selectResponse("test-1", "scenario-1", context, mocks);
+    selector.selectResponse("test-1", "scenario-1", context, wrapMocks(mocks));
 
     expect(stateManager.get("test-1", "sessionId")).toBe("session-456");
   });
@@ -1626,7 +1589,7 @@ describe("ResponseSelector - State Capture (Phase 3)", () => {
       query: { page: "2" },
     };
 
-    const mocks: ReadonlyArray<MockDefinition> = [
+    const mocks: ReadonlyArray<ScenaristMock> = [
       {
         method: "GET",
         url: "/api/test",
@@ -1635,7 +1598,7 @@ describe("ResponseSelector - State Capture (Phase 3)", () => {
       },
     ];
 
-    selector.selectResponse("test-1", "scenario-1", context, mocks);
+    selector.selectResponse("test-1", "scenario-1", context, wrapMocks(mocks));
 
     expect(stateManager.get("test-1", "currentPage")).toBe("2");
   });
@@ -1644,7 +1607,7 @@ describe("ResponseSelector - State Capture (Phase 3)", () => {
     const stateManager = createInMemoryStateManager();
     const selector = createResponseSelector({ stateManager });
 
-    const mocks: ReadonlyArray<MockDefinition> = [
+    const mocks: ReadonlyArray<ScenaristMock> = [
       {
         method: "POST",
         url: "/api/cart/add",
@@ -1661,7 +1624,7 @@ describe("ResponseSelector - State Capture (Phase 3)", () => {
       headers: {},
       query: {},
     };
-    selector.selectResponse("test-1", "scenario-1", context1, mocks);
+    selector.selectResponse("test-1", "scenario-1", context1, wrapMocks(mocks));
 
     // Second request
     const context2: HttpRequestContext = {
@@ -1671,7 +1634,7 @@ describe("ResponseSelector - State Capture (Phase 3)", () => {
       headers: {},
       query: {},
     };
-    selector.selectResponse("test-1", "scenario-1", context2, mocks);
+    selector.selectResponse("test-1", "scenario-1", context2, wrapMocks(mocks));
 
     expect(stateManager.get("test-1", "items")).toEqual(["Widget", "Gadget"]);
   });
@@ -1688,7 +1651,7 @@ describe("ResponseSelector - State Capture (Phase 3)", () => {
       query: {},
     };
 
-    const mocks: ReadonlyArray<MockDefinition> = [
+    const mocks: ReadonlyArray<ScenaristMock> = [
       {
         method: "POST",
         url: "/api/test",
@@ -1701,7 +1664,7 @@ describe("ResponseSelector - State Capture (Phase 3)", () => {
       },
     ];
 
-    selector.selectResponse("test-1", "scenario-1", context, mocks);
+    selector.selectResponse("test-1", "scenario-1", context, wrapMocks(mocks));
 
     expect(stateManager.get("test-1", "userId")).toBe("user-123");
     expect(stateManager.get("test-1", "action")).toBe("login");
@@ -1712,7 +1675,7 @@ describe("ResponseSelector - State Capture (Phase 3)", () => {
     const stateManager = createInMemoryStateManager();
     const selector = createResponseSelector({ stateManager });
 
-    const mocks: ReadonlyArray<MockDefinition> = [
+    const mocks: ReadonlyArray<ScenaristMock> = [
       {
         method: "POST",
         url: "/api/test",
@@ -1728,7 +1691,7 @@ describe("ResponseSelector - State Capture (Phase 3)", () => {
       headers: {},
       query: {},
     };
-    selector.selectResponse("test-1", "scenario-1", context1, mocks);
+    selector.selectResponse("test-1", "scenario-1", context1, wrapMocks(mocks));
 
     const context2: HttpRequestContext = {
       method: "POST",
@@ -1737,7 +1700,7 @@ describe("ResponseSelector - State Capture (Phase 3)", () => {
       headers: {},
       query: {},
     };
-    selector.selectResponse("test-2", "scenario-1", context2, mocks);
+    selector.selectResponse("test-2", "scenario-1", context2, wrapMocks(mocks));
 
     expect(stateManager.get("test-1", "count")).toBe(5);
     expect(stateManager.get("test-2", "count")).toBe(10);
@@ -1755,7 +1718,7 @@ describe("ResponseSelector - State Capture (Phase 3)", () => {
       query: {},
     };
 
-    const mocks: ReadonlyArray<MockDefinition> = [
+    const mocks: ReadonlyArray<ScenaristMock> = [
       {
         method: "POST",
         url: "/api/test",
@@ -1764,7 +1727,7 @@ describe("ResponseSelector - State Capture (Phase 3)", () => {
       },
     ];
 
-    selector.selectResponse("test-1", "scenario-1", context, mocks);
+    selector.selectResponse("test-1", "scenario-1", context, wrapMocks(mocks));
 
     expect(stateManager.get("test-1", "missing")).toBeUndefined();
   });
@@ -1781,7 +1744,7 @@ describe("ResponseSelector - State Capture (Phase 3)", () => {
       query: {},
     };
 
-    const mocks: ReadonlyArray<MockDefinition> = [
+    const mocks: ReadonlyArray<ScenaristMock> = [
       {
         method: "POST",
         url: "/api/test",
@@ -1796,7 +1759,7 @@ describe("ResponseSelector - State Capture (Phase 3)", () => {
       },
     ];
 
-    selector.selectResponse("test-1", "scenario-1", context, mocks);
+    selector.selectResponse("test-1", "scenario-1", context, wrapMocks(mocks));
 
     expect(stateManager.get("test-1", "userId")).toBe("user-123");
   });
@@ -1817,7 +1780,7 @@ describe("ResponseSelector - Template Injection (Phase 3)", () => {
       query: {},
     };
 
-    const mocks: ReadonlyArray<MockDefinition> = [
+    const mocks: ReadonlyArray<ScenaristMock> = [
       {
         method: "GET",
         url: "/api/status",
@@ -1830,7 +1793,7 @@ describe("ResponseSelector - Template Injection (Phase 3)", () => {
       },
     ];
 
-    const result = selector.selectResponse("test-1", "scenario-1", context, mocks);
+    const result = selector.selectResponse("test-1", "scenario-1", context, wrapMocks(mocks));
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -1858,7 +1821,7 @@ describe("ResponseSelector - Template Injection (Phase 3)", () => {
       query: {},
     };
 
-    const mocks: ReadonlyArray<MockDefinition> = [
+    const mocks: ReadonlyArray<ScenaristMock> = [
       {
         method: "GET",
         url: "/api/profile",
@@ -1872,7 +1835,7 @@ describe("ResponseSelector - Template Injection (Phase 3)", () => {
       },
     ];
 
-    const result = selector.selectResponse("test-1", "scenario-1", context, mocks);
+    const result = selector.selectResponse("test-1", "scenario-1", context, wrapMocks(mocks));
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -1896,7 +1859,7 @@ describe("ResponseSelector - Template Injection (Phase 3)", () => {
       query: {},
     };
 
-    const mocks: ReadonlyArray<MockDefinition> = [
+    const mocks: ReadonlyArray<ScenaristMock> = [
       {
         method: "GET",
         url: "/api/cart",
@@ -1909,7 +1872,7 @@ describe("ResponseSelector - Template Injection (Phase 3)", () => {
       },
     ];
 
-    const result = selector.selectResponse("test-1", "scenario-1", context, mocks);
+    const result = selector.selectResponse("test-1", "scenario-1", context, wrapMocks(mocks));
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -1931,7 +1894,7 @@ describe("ResponseSelector - Template Injection (Phase 3)", () => {
       query: {},
     };
 
-    const mocks: ReadonlyArray<MockDefinition> = [
+    const mocks: ReadonlyArray<ScenaristMock> = [
       {
         method: "GET",
         url: "/api/test",
@@ -1944,7 +1907,7 @@ describe("ResponseSelector - Template Injection (Phase 3)", () => {
       },
     ];
 
-    const result = selector.selectResponse("test-1", "scenario-1", context, mocks);
+    const result = selector.selectResponse("test-1", "scenario-1", context, wrapMocks(mocks));
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -1966,7 +1929,7 @@ describe("ResponseSelector - Template Injection (Phase 3)", () => {
       query: {},
     };
 
-    const mocks: ReadonlyArray<MockDefinition> = [
+    const mocks: ReadonlyArray<ScenaristMock> = [
       {
         method: "POST",
         url: "/api/echo",
@@ -1980,7 +1943,7 @@ describe("ResponseSelector - Template Injection (Phase 3)", () => {
       },
     ];
 
-    const result = selector.selectResponse("test-1", "scenario-1", context, mocks);
+    const result = selector.selectResponse("test-1", "scenario-1", context, wrapMocks(mocks));
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -2000,7 +1963,7 @@ describe("ResponseSelector - Template Injection (Phase 3)", () => {
       query: {},
     };
 
-    const mocks: ReadonlyArray<MockDefinition> = [
+    const mocks: ReadonlyArray<ScenaristMock> = [
       {
         method: "GET",
         url: "/api/test",
@@ -2013,7 +1976,7 @@ describe("ResponseSelector - Template Injection (Phase 3)", () => {
       },
     ];
 
-    const result = selector.selectResponse("test-1", "scenario-1", context, mocks);
+    const result = selector.selectResponse("test-1", "scenario-1", context, wrapMocks(mocks));
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -2038,7 +2001,7 @@ describe("ResponseSelector - Template Injection (Phase 3)", () => {
       query: {},
     };
 
-    const mocks: ReadonlyArray<MockDefinition> = [
+    const mocks: ReadonlyArray<ScenaristMock> = [
       {
         method: "GET",
         url: "/api/job/status",
@@ -2053,7 +2016,7 @@ describe("ResponseSelector - Template Injection (Phase 3)", () => {
     ];
 
     // First call - pending
-    const result1 = selector.selectResponse("test-1", "scenario-1", context, mocks);
+    const result1 = selector.selectResponse("test-1", "scenario-1", context, wrapMocks(mocks));
     expect(result1.success).toBe(true);
     if (result1.success) {
       expect(result1.data.body).toEqual({
@@ -2063,7 +2026,7 @@ describe("ResponseSelector - Template Injection (Phase 3)", () => {
     }
 
     // Second call - complete
-    const result2 = selector.selectResponse("test-1", "scenario-1", context, mocks);
+    const result2 = selector.selectResponse("test-1", "scenario-1", context, wrapMocks(mocks));
     expect(result2.success).toBe(true);
     if (result2.success) {
       expect(result2.data.body).toEqual({
@@ -2085,7 +2048,7 @@ describe("ResponseSelector - Regex Matching", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "GET",
           url: "/api/products",
@@ -2099,7 +2062,7 @@ describe("ResponseSelector - Regex Matching", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -2116,7 +2079,7 @@ describe("ResponseSelector - Regex Matching", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "GET",
           url: "/api/products",
@@ -2135,7 +2098,7 @@ describe("ResponseSelector - Regex Matching", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -2152,7 +2115,7 @@ describe("ResponseSelector - Regex Matching", () => {
         query: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "GET",
           url: "/api/products",
@@ -2166,7 +2129,7 @@ describe("ResponseSelector - Regex Matching", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -2185,7 +2148,7 @@ describe("ResponseSelector - Regex Matching", () => {
         body: {},
       };
 
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         {
           method: "GET",
           url: "/api/search",
@@ -2199,7 +2162,7 @@ describe("ResponseSelector - Regex Matching", () => {
       ];
 
       const selector = createResponseSelector();
-      const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+      const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -2219,7 +2182,7 @@ describe("ResponseSelector - Regex Matching", () => {
           query: {},
         };
 
-        const mocks: ReadonlyArray<MockDefinition> = [
+        const mocks: ReadonlyArray<ScenaristMock> = [
           {
             method: "GET",
             url: "/api/products",
@@ -2233,7 +2196,7 @@ describe("ResponseSelector - Regex Matching", () => {
         ];
 
         const selector = createResponseSelector();
-        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+        const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -2250,7 +2213,7 @@ describe("ResponseSelector - Regex Matching", () => {
           query: {},
         };
 
-        const mocks: ReadonlyArray<MockDefinition> = [
+        const mocks: ReadonlyArray<ScenaristMock> = [
           {
             method: "GET",
             url: "/api/products",
@@ -2264,7 +2227,7 @@ describe("ResponseSelector - Regex Matching", () => {
         ];
 
         const selector = createResponseSelector();
-        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+        const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -2281,7 +2244,7 @@ describe("ResponseSelector - Regex Matching", () => {
           query: {},
         };
 
-        const mocks: ReadonlyArray<MockDefinition> = [
+        const mocks: ReadonlyArray<ScenaristMock> = [
           {
             method: "GET",
             url: "/api/products",
@@ -2300,7 +2263,7 @@ describe("ResponseSelector - Regex Matching", () => {
         ];
 
         const selector = createResponseSelector();
-        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+        const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -2317,7 +2280,7 @@ describe("ResponseSelector - Regex Matching", () => {
           query: {},
         };
 
-        const mocks: ReadonlyArray<MockDefinition> = [
+        const mocks: ReadonlyArray<ScenaristMock> = [
           {
             method: "GET",
             url: "/api/products",
@@ -2336,7 +2299,7 @@ describe("ResponseSelector - Regex Matching", () => {
         ];
 
         const selector = createResponseSelector();
-        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+        const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -2355,7 +2318,7 @@ describe("ResponseSelector - Regex Matching", () => {
           query: {},
         };
 
-        const mocks: ReadonlyArray<MockDefinition> = [
+        const mocks: ReadonlyArray<ScenaristMock> = [
           {
             method: "GET",
             url: "/api/keys",
@@ -2369,7 +2332,7 @@ describe("ResponseSelector - Regex Matching", () => {
         ];
 
         const selector = createResponseSelector();
-        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+        const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -2386,7 +2349,7 @@ describe("ResponseSelector - Regex Matching", () => {
           query: {},
         };
 
-        const mocks: ReadonlyArray<MockDefinition> = [
+        const mocks: ReadonlyArray<ScenaristMock> = [
           {
             method: "GET",
             url: "/api/keys",
@@ -2405,7 +2368,7 @@ describe("ResponseSelector - Regex Matching", () => {
         ];
 
         const selector = createResponseSelector();
-        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+        const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -2422,7 +2385,7 @@ describe("ResponseSelector - Regex Matching", () => {
           query: {},
         };
 
-        const mocks: ReadonlyArray<MockDefinition> = [
+        const mocks: ReadonlyArray<ScenaristMock> = [
           {
             method: "GET",
             url: "/api/keys",
@@ -2441,7 +2404,7 @@ describe("ResponseSelector - Regex Matching", () => {
         ];
 
         const selector = createResponseSelector();
-        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+        const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -2460,7 +2423,7 @@ describe("ResponseSelector - Regex Matching", () => {
           body: {},
         };
 
-        const mocks: ReadonlyArray<MockDefinition> = [
+        const mocks: ReadonlyArray<ScenaristMock> = [
           {
             method: "GET",
             url: "/api/users",
@@ -2474,7 +2437,7 @@ describe("ResponseSelector - Regex Matching", () => {
         ];
 
         const selector = createResponseSelector();
-        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+        const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -2491,7 +2454,7 @@ describe("ResponseSelector - Regex Matching", () => {
           body: {},
         };
 
-        const mocks: ReadonlyArray<MockDefinition> = [
+        const mocks: ReadonlyArray<ScenaristMock> = [
           {
             method: "GET",
             url: "/api/users",
@@ -2510,7 +2473,7 @@ describe("ResponseSelector - Regex Matching", () => {
         ];
 
         const selector = createResponseSelector();
-        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+        const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -2527,7 +2490,7 @@ describe("ResponseSelector - Regex Matching", () => {
           body: {},
         };
 
-        const mocks: ReadonlyArray<MockDefinition> = [
+        const mocks: ReadonlyArray<ScenaristMock> = [
           {
             method: "GET",
             url: "/api/users",
@@ -2546,7 +2509,7 @@ describe("ResponseSelector - Regex Matching", () => {
         ];
 
         const selector = createResponseSelector();
-        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+        const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -2565,7 +2528,7 @@ describe("ResponseSelector - Regex Matching", () => {
           query: {},
         };
 
-        const mocks: ReadonlyArray<MockDefinition> = [
+        const mocks: ReadonlyArray<ScenaristMock> = [
           {
             method: "GET",
             url: "/api/status",
@@ -2579,7 +2542,7 @@ describe("ResponseSelector - Regex Matching", () => {
         ];
 
         const selector = createResponseSelector();
-        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+        const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -2596,7 +2559,7 @@ describe("ResponseSelector - Regex Matching", () => {
           query: {},
         };
 
-        const mocks: ReadonlyArray<MockDefinition> = [
+        const mocks: ReadonlyArray<ScenaristMock> = [
           {
             method: "GET",
             url: "/api/status",
@@ -2615,7 +2578,7 @@ describe("ResponseSelector - Regex Matching", () => {
         ];
 
         const selector = createResponseSelector();
-        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+        const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -2632,7 +2595,7 @@ describe("ResponseSelector - Regex Matching", () => {
           query: {},
         };
 
-        const mocks: ReadonlyArray<MockDefinition> = [
+        const mocks: ReadonlyArray<ScenaristMock> = [
           {
             method: "GET",
             url: "/api/status",
@@ -2651,7 +2614,7 @@ describe("ResponseSelector - Regex Matching", () => {
         ];
 
         const selector = createResponseSelector();
-        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+        const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -2684,7 +2647,7 @@ describe("ResponseSelector - Regex Matching", () => {
         ];
 
         const selector = createResponseSelector();
-        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+        const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -2715,7 +2678,7 @@ describe("ResponseSelector - Regex Matching", () => {
         ];
 
         const selector = createResponseSelector();
-        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+        const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -2746,7 +2709,7 @@ describe("ResponseSelector - Regex Matching", () => {
         ];
 
         const selector = createResponseSelector();
-        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+        const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -2777,7 +2740,7 @@ describe("ResponseSelector - Regex Matching", () => {
         ];
 
         const selector = createResponseSelector();
-        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+        const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -2813,7 +2776,7 @@ describe("ResponseSelector - Regex Matching", () => {
         ];
 
         const selector = createResponseSelector();
-        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+        const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -2844,7 +2807,7 @@ describe("ResponseSelector - Regex Matching", () => {
         ];
 
         const selector = createResponseSelector();
-        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+        const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -2876,7 +2839,7 @@ describe("ResponseSelector - Regex Matching", () => {
         ];
 
         const selector = createResponseSelector();
-        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+        const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
         expect(result.success).toBe(true);
         if (result.success) {
@@ -2912,7 +2875,7 @@ describe("ResponseSelector - Regex Matching", () => {
         ];
 
         const selector = createResponseSelector();
-        const result = selector.selectResponse("test-1", "default-scenario", context, mocks);
+        const result = selector.selectResponse("test-1", "default-scenario", context, wrapMocks(mocks));
 
         expect(result.success).toBe(true);
         if (result.success) {

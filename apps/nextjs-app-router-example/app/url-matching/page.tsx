@@ -51,7 +51,45 @@ type Charge = {
   readonly matchedBy: string;
 };
 
-type TestResult = User | Weather | FileInfo | Charge;
+type PathParamUser = {
+  readonly userId: string;
+  readonly login: string;
+  readonly name: string;
+  readonly bio: string;
+  readonly matchedBy: string;
+};
+
+type MultipleParams = {
+  readonly userId: string;
+  readonly postId: string;
+  readonly title: string;
+  readonly content: string;
+  readonly author: string;
+  readonly matchedBy: string;
+};
+
+type OptionalFile = {
+  readonly filename: string;
+  readonly path: string;
+  readonly exists: boolean;
+  readonly matchedBy: string;
+};
+
+type RepeatingPath = {
+  readonly path: string | readonly string[];
+  readonly segments: number | string;
+  readonly fullPath: string;
+  readonly matchedBy: string;
+};
+
+type CustomRegexOrder = {
+  readonly orderId: string;
+  readonly status: string;
+  readonly total: number;
+  readonly matchedBy: string;
+};
+
+type TestResult = User | Weather | FileInfo | Charge | PathParamUser | MultipleParams | OptionalFile | RepeatingPath | CustomRegexOrder;
 
 type FetchResult =
   | { readonly success: true; readonly data: TestResult }
@@ -139,6 +177,77 @@ const fetchTestData = async (
         return { success: true, data };
       }
 
+      case "pathParam": {
+        // Test 7: Simple path parameter extraction
+        const userId = params.userId || "123";
+        const response = await fetch(
+          `http://localhost:3001/api/user-param/${userId}`,
+          {
+            headers: scenaristHeaders,
+            cache: "no-store",
+          }
+        );
+        const data = (await response.json()) as PathParamUser;
+        return { success: true, data };
+      }
+
+      case "multipleParams": {
+        // Test 8: Multiple path parameters
+        const userId = params.userId || "alice";
+        const postId = params.postId || "42";
+        const response = await fetch(
+          `http://localhost:3001/api/users/${userId}/posts/${postId}`,
+          {
+            headers: scenaristHeaders,
+            cache: "no-store",
+          }
+        );
+        const data = (await response.json()) as MultipleParams;
+        return { success: true, data };
+      }
+
+      case "optional": {
+        // Test 9: Optional path parameter
+        const filename = params.filename || "";
+        const url = filename
+          ? `http://localhost:3001/api/file-optional/${filename}`
+          : `http://localhost:3001/api/file-optional`;
+        const response = await fetch(url, {
+          headers: scenaristHeaders,
+          cache: "no-store",
+        });
+        const data = (await response.json()) as OptionalFile;
+        return { success: true, data };
+      }
+
+      case "repeating": {
+        // Test 10: Repeating path parameter (array)
+        const path = params.path || "folder/subfolder/file.txt";
+        const response = await fetch(
+          `http://localhost:3001/api/paths/${path}`,
+          {
+            headers: scenaristHeaders,
+            cache: "no-store",
+          }
+        );
+        const data = (await response.json()) as RepeatingPath;
+        return { success: true, data };
+      }
+
+      case "customRegex": {
+        // Test 11: Custom regex parameter (numeric only)
+        const orderId = params.orderId || "12345";
+        const response = await fetch(
+          `http://localhost:3001/api/orders/${orderId}`,
+          {
+            headers: scenaristHeaders,
+            cache: "no-store",
+          }
+        );
+        const data = (await response.json()) as CustomRegexOrder;
+        return { success: true, data };
+      }
+
       default:
         return { success: false, error: `Unknown test type: ${test}` };
     }
@@ -195,21 +304,32 @@ export default async function URLMatchingPage({
               <p className="mb-2">
                 <strong>Login:</strong> {fetchResult.data.login}
               </p>
-              <p className="mb-2">
-                <strong>ID:</strong> {fetchResult.data.id}
-              </p>
+              {"id" in fetchResult.data && (
+                <p className="mb-2">
+                  <strong>ID:</strong> {fetchResult.data.id}
+                </p>
+              )}
+              {"userId" in fetchResult.data && (
+                <p className="mb-2">
+                  <strong>User ID:</strong> {fetchResult.data.userId}
+                </p>
+              )}
               <p className="mb-2">
                 <strong>Name:</strong> {fetchResult.data.name}
               </p>
               <p className="mb-2">
                 <strong>Bio:</strong> {fetchResult.data.bio}
               </p>
-              <p className="mb-2">
-                <strong>Public Repos:</strong> {fetchResult.data.public_repos}
-              </p>
-              <p className="mb-2">
-                <strong>Followers:</strong> {fetchResult.data.followers}
-              </p>
+              {"public_repos" in fetchResult.data && (
+                <p className="mb-2">
+                  <strong>Public Repos:</strong> {fetchResult.data.public_repos}
+                </p>
+              )}
+              {"followers" in fetchResult.data && (
+                <p className="mb-2">
+                  <strong>Followers:</strong> {fetchResult.data.followers}
+                </p>
+              )}
             </>
           )}
 
@@ -263,6 +383,92 @@ export default async function URLMatchingPage({
               </p>
               <p className="mb-2">
                 <strong>Currency:</strong> {fetchResult.data.currency}
+              </p>
+            </>
+          )}
+
+          {/* Path Parameter User fields */}
+          {"userId" in fetchResult.data && !("postId" in fetchResult.data) && (
+            <>
+              <p className="mb-2">
+                <strong>User ID:</strong> {fetchResult.data.userId}
+              </p>
+              <p className="mb-2">
+                <strong>Login:</strong> {fetchResult.data.login}
+              </p>
+              <p className="mb-2">
+                <strong>Name:</strong> {fetchResult.data.name}
+              </p>
+              <p className="mb-2">
+                <strong>Bio:</strong> {fetchResult.data.bio}
+              </p>
+            </>
+          )}
+
+          {/* Multiple Params fields */}
+          {"postId" in fetchResult.data && (
+            <>
+              <p className="mb-2">
+                <strong>User ID:</strong> {fetchResult.data.userId}
+              </p>
+              <p className="mb-2">
+                <strong>Post ID:</strong> {fetchResult.data.postId}
+              </p>
+              <p className="mb-2">
+                <strong>Title:</strong> {fetchResult.data.title}
+              </p>
+              <p className="mb-2">
+                <strong>Content:</strong> {fetchResult.data.content}
+              </p>
+              <p className="mb-2">
+                <strong>Author:</strong> {fetchResult.data.author}
+              </p>
+            </>
+          )}
+
+          {/* Optional File fields */}
+          {"filename" in fetchResult.data && (
+            <>
+              <p className="mb-2">
+                <strong>Filename:</strong> {fetchResult.data.filename || "default.txt"}
+              </p>
+              <p className="mb-2">
+                <strong>Path:</strong> {fetchResult.data.path || "/file-optional/default.txt"}
+              </p>
+              <p className="mb-2">
+                <strong>Exists:</strong> {fetchResult.data.exists ? "Yes" : "No"}
+              </p>
+            </>
+          )}
+
+          {/* Repeating Path fields */}
+          {"segments" in fetchResult.data && (
+            <>
+              <p className="mb-2">
+                <strong>Path:</strong> {Array.isArray(fetchResult.data.path)
+                  ? fetchResult.data.path.join("/")
+                  : fetchResult.data.path}
+              </p>
+              <p className="mb-2">
+                <strong>Segments:</strong> {fetchResult.data.segments}
+              </p>
+              <p className="mb-2">
+                <strong>Full Path:</strong> {fetchResult.data.fullPath}
+              </p>
+            </>
+          )}
+
+          {/* Custom Regex Order fields */}
+          {"orderId" in fetchResult.data && (
+            <>
+              <p className="mb-2">
+                <strong>Order ID:</strong> {fetchResult.data.orderId}
+              </p>
+              <p className="mb-2">
+                <strong>Status:</strong> {fetchResult.data.status}
+              </p>
+              <p className="mb-2">
+                <strong>Total:</strong> ${fetchResult.data.total}
               </p>
             </>
           )}

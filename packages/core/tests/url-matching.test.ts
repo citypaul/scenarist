@@ -1,6 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createResponseSelector } from '../src/domain/response-selector.js';
-import type { HttpRequestContext, ScenaristMock } from '../src/types/index.js';
+import type { HttpRequestContext, ScenaristMock, ScenaristMockWithParams } from '../src/types/index.js';
+
+/**
+ * Helper to wrap mocks in ScenaristMockWithParams for backward compatibility.
+ * Tests don't extract params, so we just wrap with empty params.
+ */
+const wrapMocks = (mocks: ReadonlyArray<ScenaristMock>): ReadonlyArray<ScenaristMockWithParams> => {
+  return mocks.map(mock => ({ mock, params: {} }));
+};
 
 describe('URL Matching in Response Selector', () => {
   let selector: ReturnType<typeof createResponseSelector>;
@@ -35,7 +43,7 @@ describe('URL Matching in Response Selector', () => {
         },
       ];
 
-      const result = selector.selectResponse('test-1', 'default', context, mocks);
+      const result = selector.selectResponse('test-1', 'default', context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -63,7 +71,7 @@ describe('URL Matching in Response Selector', () => {
       const result = selector.selectResponse('test-1', 'default', {
         ...context,
         url: '/api/users',
-      }, mocks);
+      }, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -86,7 +94,7 @@ describe('URL Matching in Response Selector', () => {
         },
       ];
 
-      const result = selector.selectResponse('test-1', 'default', context, mocks);
+      const result = selector.selectResponse('test-1', 'default', context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -106,7 +114,7 @@ describe('URL Matching in Response Selector', () => {
         },
       ];
 
-      const result = selector.selectResponse('test-1', 'default', context, mocks);
+      const result = selector.selectResponse('test-1', 'default', context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -126,7 +134,7 @@ describe('URL Matching in Response Selector', () => {
         },
       ];
 
-      const result = selector.selectResponse('test-1', 'default', context, mocks);
+      const result = selector.selectResponse('test-1', 'default', context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -148,7 +156,7 @@ describe('URL Matching in Response Selector', () => {
         },
       ];
 
-      const result = selector.selectResponse('test-1', 'default', context, mocks);
+      const result = selector.selectResponse('test-1', 'default', context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -168,7 +176,7 @@ describe('URL Matching in Response Selector', () => {
         },
       ];
 
-      const result = selector.selectResponse('test-1', 'default', context, mocks);
+      const result = selector.selectResponse('test-1', 'default', context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -193,7 +201,7 @@ describe('URL Matching in Response Selector', () => {
         },
       ];
 
-      const result = selector.selectResponse('test-1', 'default', context, mocks);
+      const result = selector.selectResponse('test-1', 'default', context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -215,7 +223,7 @@ describe('URL Matching in Response Selector', () => {
         },
       ];
 
-      const result = selector.selectResponse('test-1', 'default', context, mocks);
+      const result = selector.selectResponse('test-1', 'default', context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -235,7 +243,7 @@ describe('URL Matching in Response Selector', () => {
         },
       ];
 
-      const result = selector.selectResponse('test-1', 'default', context, mocks);
+      const result = selector.selectResponse('test-1', 'default', context, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -270,7 +278,7 @@ describe('URL Matching in Response Selector', () => {
       const result = selector.selectResponse('test-1', 'default', {
         ...context,
         headers: { 'x-user-tier': 'premium' },
-      }, mocks);
+      }, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -305,7 +313,7 @@ describe('URL Matching in Response Selector', () => {
         body: { tier: 'premium' },
         headers: {},
         query: {},
-      }, mocks);
+      }, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -331,7 +339,7 @@ describe('URL Matching in Response Selector', () => {
       const result = selector.selectResponse('test-1', 'default', {
         ...context,
         headers: { 'x-user-tier': 'premium' },
-      }, mocks);
+      }, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -360,7 +368,7 @@ describe('URL Matching in Response Selector', () => {
       const result = selector.selectResponse('test-1', 'default', {
         ...context,
         headers: { 'x-user-tier': 'standard' },
-      }, mocks);
+      }, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -389,7 +397,7 @@ describe('URL Matching in Response Selector', () => {
       const result = selector.selectResponse('test-1', 'default', {
         ...context,
         headers: { 'x-user-tier': 'premium' },
-      }, mocks);
+      }, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -453,7 +461,7 @@ describe('URL Matching in Response Selector', () => {
       ];
 
       contexts.forEach(ctx => {
-        const result = selector.selectResponse('test-1', 'default', ctx, mocks);
+        const result = selector.selectResponse('test-1', 'default', ctx, wrapMocks(mocks));
         expect(result.success).toBe(true);
         if (result.success) {
           expect(result.data.body).toEqual({ matched: true });
@@ -499,7 +507,7 @@ describe('URL Matching in Response Selector', () => {
       ];
 
       contexts.forEach(ctx => {
-        const result = selector.selectResponse('test-1', 'default', ctx, mocks);
+        const result = selector.selectResponse('test-1', 'default', ctx, wrapMocks(mocks));
         expect(result.success).toBe(true);
         if (result.success) {
           expect(result.data.body).toEqual({ versioned: true });
@@ -545,7 +553,7 @@ describe('URL Matching in Response Selector', () => {
       ];
 
       contexts.forEach(ctx => {
-        const result = selector.selectResponse('test-1', 'default', ctx, mocks);
+        const result = selector.selectResponse('test-1', 'default', ctx, wrapMocks(mocks));
         expect(result.success).toBe(true);
         if (result.success) {
           expect(result.data.body).toEqual({ userPattern: true });
@@ -589,7 +597,7 @@ describe('URL Matching in Response Selector', () => {
       ];
 
       contexts.forEach(ctx => {
-        const result = selector.selectResponse('test-1', 'default', ctx, mocks);
+        const result = selector.selectResponse('test-1', 'default', ctx, wrapMocks(mocks));
         expect(result.success).toBe(true);
         if (result.success) {
           expect(result.data.body).toEqual({ fallback: true });
@@ -628,7 +636,7 @@ describe('URL Matching in Response Selector', () => {
       ];
 
       contexts.forEach(ctx => {
-        const result = selector.selectResponse('test-1', 'default', ctx, mocks);
+        const result = selector.selectResponse('test-1', 'default', ctx, wrapMocks(mocks));
         expect(result.success).toBe(true);
         if (result.success) {
           expect(result.data.body).toEqual({ searchPattern: true });
@@ -674,7 +682,7 @@ describe('URL Matching in Response Selector', () => {
       ];
 
       contexts.forEach(ctx => {
-        const result = selector.selectResponse('test-1', 'default', ctx, mocks);
+        const result = selector.selectResponse('test-1', 'default', ctx, wrapMocks(mocks));
         expect(result.success).toBe(true);
         if (result.success) {
           expect(result.data.body).toEqual({ caseInsensitiveWeak: true });
@@ -710,7 +718,7 @@ describe('URL Matching in Response Selector', () => {
         body: undefined,
         headers: { 'x-user-tier': 'premium' },
         query: {},
-      }, mocks);
+      }, wrapMocks(mocks));
 
       expect(result.success).toBe(true);
       if (result.success) {

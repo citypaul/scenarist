@@ -733,6 +733,122 @@ export const urlMatchingScenario: ScenaristScenario = {
         },
       },
     },
+
+    // Test 7: Path Parameter - Simple :id extraction
+    // This should extract the user ID from the URL and use it in the response
+    // Using /api/user-param/:id to avoid conflict with regex numeric ID mock
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/user-param/:id",
+      response: {
+        status: 200,
+        body: {
+          userId: "{{params.id}}",  // Should be extracted from URL
+          login: "user-{{params.id}}",
+          name: "User {{params.id}}",
+          bio: "User with ID from path parameter",
+          matchedBy: "pathParam",
+        },
+      },
+    },
+
+    // Test 8: Multiple Path Parameters - :userId and :postId
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/users/:userId/posts/:postId",
+      response: {
+        status: 200,
+        body: {
+          userId: "{{params.userId}}",
+          postId: "{{params.postId}}",
+          title: "Post {{params.postId}} by {{params.userId}}",
+          content: "Content for post {{params.postId}}",
+          author: "{{params.userId}}",
+          matchedBy: "multipleParams",
+        },
+      },
+    },
+
+    // Test 9a: Optional Parameter - When filename is present
+    // More specific mock (uses template to inject param)
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/file-optional/:filename",  // Without ? - requires param
+      response: {
+        status: 200,
+        body: {
+          filename: "{{params.filename}}",
+          path: "/file-optional/{{params.filename}}",
+          exists: true,
+          matchedBy: "optional",
+        },
+      },
+    },
+
+    // Test 9b: Optional Parameter - When filename is absent
+    // Fallback mock (static defaults)
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/file-optional",  // Exact match, no param
+      response: {
+        status: 200,
+        body: {
+          filename: "default.txt",
+          path: "/file-optional/default.txt",
+          exists: true,
+          matchedBy: "optional",
+        },
+      },
+    },
+
+    // Test 10: Repeating Path Parameter - :path+
+    // Changed from /api/files/:path+ to /api/paths/:path+ to avoid conflict with /api/files/:filename
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/paths/:path+",
+      response: {
+        status: 200,
+        body: {
+          path: "{{params.path}}",  // Should be array joined
+          segments: "{{params.path.length}}",  // Array length
+          fullPath: "/paths/{{params.path}}",
+          matchedBy: "repeating",
+        },
+      },
+    },
+
+    // Fallback for orders endpoint (when custom regex doesn't match)
+    // IMPORTANT: Must come BEFORE custom regex due to "last match wins" rule
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/orders/:orderId",
+      response: {
+        status: 200,
+        body: {
+          orderId: "{{params.orderId}}",
+          status: "unknown",
+          total: 0,
+          matchedBy: "fallback",
+        },
+      },
+    },
+
+    // Test 11: Custom Regex Parameter - :orderId(\d+)
+    // Should only match numeric order IDs
+    // IMPORTANT: Comes AFTER fallback so it wins when both match (last match wins)
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/orders/:orderId(\\d+)",
+      response: {
+        status: 200,
+        body: {
+          orderId: "{{params.orderId}}",
+          status: "processing",
+          total: 99.99,
+          matchedBy: "customRegex",
+        },
+      },
+    },
   ],
 };
 
