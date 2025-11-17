@@ -325,6 +325,126 @@ describe('MSW Parity: Path Parameter Extraction', () => {
     });
   });
 
+  describe('Query Parameter Handling', () => {
+    it('should extract params ignoring single query parameter', async () => {
+      await testParamParity(
+        'https://api.example.com/users/:id',
+        'https://api.example.com/users/123?foo=bar'
+      );
+
+      expect(capturedMSWParams?.id).toBe('123');
+    });
+
+    it('should extract params ignoring multiple query parameters', async () => {
+      await testParamParity(
+        'https://api.example.com/posts/:year/:month',
+        'https://api.example.com/posts/2024/11?tag=tech&author=alice'
+      );
+
+      expect(capturedMSWParams).toEqual({ year: '2024', month: '11' });
+    });
+
+    it('should handle query params with special characters', async () => {
+      await testParamParity(
+        'https://api.example.com/search/:query',
+        'https://api.example.com/search/test?filter=name%3Dalice&sort=asc'
+      );
+
+      expect(capturedMSWParams?.query).toBe('test');
+    });
+
+    it('should extract optional params with query string present', async () => {
+      await testParamParity(
+        'https://api.example.com/users/:id?',
+        'https://api.example.com/users/123?role=admin'
+      );
+
+      expect(capturedMSWParams?.id).toBe('123');
+    });
+
+    it('should extract repeating params with query string', async () => {
+      await testParamParity(
+        'https://api.example.com/files/:path+',
+        'https://api.example.com/files/folder/doc.txt?version=2&download=true'
+      );
+
+      expect(capturedMSWParams?.path).toEqual(['folder', 'doc.txt']);
+    });
+
+    it('should handle empty query string', async () => {
+      await testParamParity(
+        'https://api.example.com/users/:id',
+        'https://api.example.com/users/123?'
+      );
+
+      expect(capturedMSWParams?.id).toBe('123');
+    });
+
+    it('should handle query string with equals but no value', async () => {
+      await testParamParity(
+        'https://api.example.com/users/:id',
+        'https://api.example.com/users/123?foo='
+      );
+
+      expect(capturedMSWParams?.id).toBe('123');
+    });
+
+    it('should handle URL with root path and query params', async () => {
+      await testParamParity(
+        'https://api.example.com/',
+        'https://api.example.com/?key=value'
+      );
+
+      // Root path with query params should match root pattern
+      expect(capturedMSWParams).toEqual({});
+    });
+  });
+
+  describe('Edge Cases', () => {
+    it('should handle POST with non-JSON body', async () => {
+      const fullUrl = 'https://api.example.com/upload';
+      const pattern = 'https://api.example.com/upload';
+
+      server.use(
+        http.post(pattern, ({ params, request }) => {
+          capturedMSWParams = params;
+          return HttpResponse.json({ ok: true });
+        })
+      );
+
+      // Send POST with plain text body (not JSON)
+      await fetch(fullUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: 'plain text content',
+      });
+
+      const ourResult = matchesUrl(pattern, fullUrl);
+      expect(ourResult.params).toEqual(capturedMSWParams);
+    });
+
+    it('should handle URL without query params (no searchParams)', async () => {
+      await testParamParity(
+        'https://api.example.com/users',
+        'https://api.example.com/users'
+      );
+
+      // Should match with empty params
+      expect(capturedMSWParams).toEqual({});
+    });
+
+    it('should handle URL with host but no path', async () => {
+      // This test ensures url-matcher line 34 (|| '/') is executed
+      await testParamParity(
+        'https://api.example.com/',
+        'https://api.example.com'
+      );
+
+      // Root path should match with empty params
+      expect(capturedMSWParams).toEqual({});
+    });
+  });
+
   // NOTE: Unnamed groups like /(user|u)/:id are NOT supported by MSW in Node.js
   // with full URLs. MSW doesn't match these patterns, so we don't test them.
   // Our url-matcher implementation uses the same path-to-regexp library as MSW,
