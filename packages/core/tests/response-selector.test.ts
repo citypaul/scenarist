@@ -2884,4 +2884,214 @@ describe("ResponseSelector - Regex Matching", () => {
       });
     });
   });
+
+  describe("Path Parameter Template Injection", () => {
+    it("should inject path parameters into response templates without stateManager", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/users/123",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const mocksWithParams: ReadonlyArray<ScenaristMockWithParams> = [
+        {
+          mock: {
+            method: "GET",
+            url: "/api/users/:userId",
+            response: {
+              status: 200,
+              body: {
+                message: "User ID is {{params.userId}}",
+                userId: "{{params.userId}}",
+              },
+            },
+          },
+          params: { userId: "123" }, // Extracted from URL by matcher
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocksWithParams);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({
+          message: "User ID is 123",
+          userId: "123",
+        });
+      }
+    });
+
+    it("should handle template referencing non-existent params prefix", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/items",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const mocksWithParams: ReadonlyArray<ScenaristMockWithParams> = [
+        {
+          mock: {
+            method: "GET",
+            url: "/api/items",
+            response: {
+              status: 200,
+              body: {
+                // Template references params but no params extracted
+                itemId: "{{params.id}}",
+                fallback: "default",
+              },
+            },
+          },
+          params: {}, // No params extracted
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocksWithParams);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        // When params prefix doesn't exist, template returns undefined
+        // which gets removed from the final object
+        expect(result.data.body).toEqual({
+          fallback: "default",
+        });
+      }
+    });
+
+    it("should not inject params templates when params is undefined", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/items",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const mocksWithParams: ReadonlyArray<ScenaristMockWithParams> = [
+        {
+          mock: {
+            method: "GET",
+            url: "/api/items",
+            response: {
+              status: 200,
+              body: {
+                // Template references params but params is undefined
+                itemId: "{{params.id}}",
+                fallback: "default",
+              },
+            },
+          },
+          // params is undefined (not provided)
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocksWithParams);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        // When params is undefined and no stateManager, templates are not replaced
+        // and remain as literal strings in the response
+        expect(result.data.body).toEqual({
+          itemId: "{{params.id}}",
+          fallback: "default",
+        });
+      }
+    });
+
+    it("should use empty params fallback when stateManager exists but params is undefined", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/items",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const stateManager = createInMemoryStateManager();
+      stateManager.set("test-1", "itemId", "item-from-state");
+
+      const mocksWithParams: ReadonlyArray<ScenaristMockWithParams> = [
+        {
+          mock: {
+            method: "GET",
+            url: "/api/items",
+            response: {
+              status: 200,
+              body: {
+                // Templates can reference both state and params
+                stateValue: "{{state.itemId}}",
+                paramsValue: "{{params.id}}",
+              },
+            },
+          },
+          // params is undefined - should use {} fallback
+        },
+      ];
+
+      const selector = createResponseSelector({ stateManager });
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocksWithParams);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        // State template works, params template returns undefined (removed from object)
+        expect(result.data.body).toEqual({
+          stateValue: "item-from-state",
+        });
+      }
+    });
+
+    it("should merge state and params with params taking precedence", () => {
+      const context: HttpRequestContext = {
+        method: "POST",
+        url: "/api/orders/456",
+        body: { customerId: "cust-789" },
+        headers: {},
+        query: {},
+      };
+
+      const stateManager = createInMemoryStateManager();
+      stateManager.set("test-1", "orderId", "order-123");
+      stateManager.set("test-1", "customerId", "cust-from-state");
+
+      const mocksWithParams: ReadonlyArray<ScenaristMockWithParams> = [
+        {
+          mock: {
+            method: "POST",
+            url: "/api/orders/:orderId",
+            response: {
+              status: 200,
+              body: {
+                orderId: "{{params.orderId}}", // From URL params
+                customerId: "{{params.customerId}}", // Should take precedence over state
+                stateValue: "{{state.orderId}}", // From state
+              },
+            },
+          },
+          params: {
+            orderId: "456",
+            customerId: "cust-from-params",
+          },
+        },
+      ];
+
+      const selector = createResponseSelector({ stateManager });
+      const result = selector.selectResponse("test-1", "default-scenario", context, mocksWithParams);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({
+          orderId: "456", // From params
+          customerId: "cust-from-params", // Params take precedence
+          stateValue: "order-123", // From state
+        });
+      }
+    });
+  });
 });
