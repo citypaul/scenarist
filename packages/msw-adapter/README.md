@@ -129,11 +129,23 @@ matchesUrl('https://api.stripe.com/v1/charges', 'POST', '*/v1/charges');
 // Returns: { matches: true, params: {} }
 ```
 
-**Supported patterns:**
-- Exact: `https://api.example.com/users`
-- Wildcards: `*/api/*`, `https://*/users`
+**Supported patterns (three types with different hostname matching):**
+
+**1. Pathname-only patterns** (origin-agnostic - match ANY hostname)
 - Path params: `/users/:id`, `/posts/:postId/comments/:commentId`
-- Native RegExp: `/\/api\/v\d+\//` (matches /api/v1/, /api/v2/, etc.)
+- Exact: `/api/users`
+- Wildcards: `/api/*`, `*/users/*`
+
+**2. Full URL patterns** (hostname-specific - match ONLY specified hostname)
+- Exact: `https://api.example.com/users`
+- Path params: `https://api.example.com/users/:id`
+- Wildcards: `https://*/users`, `https://api.example.com/*`
+
+**3. Native RegExp** (origin-agnostic - MSW weak comparison)
+- `/\/api\/v\d+\//` (matches /api/v1/, /api/v2/, etc.)
+- `/\/users\/\d+$/` (matches /users/123 at any origin)
+
+**IMPORTANT:** If you specify a hostname in a full URL pattern, it WILL be matched. Choose pathname patterns for environment-agnostic mocks, full URL patterns when hostname matters.
 
 ### 2. Mock Matching
 

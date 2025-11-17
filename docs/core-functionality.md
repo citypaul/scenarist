@@ -138,31 +138,71 @@ Scenarist supports two types of URL handling:
 
 #### Routing Patterns
 
-The `url` field supports dynamic URL patterns using MSW syntax for routing:
+The `url` field supports three pattern types with different hostname matching behaviors:
+
+**1. Pathname-only patterns** (origin-agnostic)
+```typescript
+url: '/api/users'          // Exact pathname
+url: '/api/users/:id'      // Path parameters
+url: '/api/users/*'        // Wildcards
+```
+- **Matches ANY hostname** - works across localhost, staging, production
+- Best for environment-agnostic mocks
+- Example: `/api/users/123` matches:
+  - `http://localhost:3000/api/users/123` ✅
+  - `https://staging.example.com/api/users/123` ✅
+  - `https://api.production.com/api/users/123` ✅
+
+**2. Full URL patterns** (hostname-specific)
+```typescript
+url: 'https://api.example.com/users'           // Exact match with hostname
+url: 'https://api.example.com/users/:id'       // Path parameters with hostname
+url: 'https://api.example.com/users/*'         // Wildcards with hostname
+```
+- **Matches ONLY the specified hostname** (protocol + host must match exactly)
+- Best for environment-specific mocks
+- Example: `https://api.example.com/users/:id` matches:
+  - `https://api.example.com/users/123` ✅
+  - `http://api.example.com/users/123` ❌ (different protocol)
+  - `https://api.staging.com/users/123` ❌ (different hostname)
+
+**3. Native RegExp patterns** (origin-agnostic, weak comparison)
+```typescript
+url: /\/users\/\d+/        // Matches /users/123, /users/456, etc.
+url: /\/posts\//           // Matches any URL containing /posts/
+```
+- **Matches ANY hostname** - substring matching (MSW weak comparison)
+- Best for flexible pattern matching across environments
+- Example: `/\/posts\//` matches:
+  - `DELETE http://localhost:8080/posts/` ✅
+  - `DELETE https://backend.dev/user/posts/` ✅
+  - Any URL containing `/posts/` ✅
+
+**Choosing the right pattern type:**
 
 ```typescript
-// Exact match
-url: 'https://api.example.com/users'
+// ✅ Pathname pattern - environment-agnostic (recommended for most mocks)
+{
+  url: '/api/products',
+  response: { status: 200, body: { products: [] } }
+}
 
-// Path parameters
-url: 'https://api.example.com/users/:id'
-url: 'https://api.example.com/users/:userId/posts/:postId'
+// ✅ Full URL pattern - hostname-specific (when environment matters)
+{
+  url: 'https://api.production.com/admin',
+  response: { status: 403, body: { error: 'Admin disabled in production' } }
+}
 
-// Wildcards
-url: 'https://api.example.com/users/*'
-
-// Native RegExp patterns (Phase 2.5)
-url: /\/users\/\d+/  // Matches /users/123, /users/456, etc.
-
-// Example: This RegExp would match all these requests:
-// - DELETE http://localhost:8080/posts/
-// - DELETE https://backend.dev/user/posts/
-url: /\/posts\//
+// ✅ RegExp pattern - flexible matching across environments
+{
+  url: /\/api\/v\d+\/users/,  // Matches /api/v1/users, /api/v2/users, etc.
+  response: { status: 200, body: { users: [] } }
+}
 ```
 
-**Key Point:** The `url` field determines **which requests** the mock can intercept (routing), not which requests it will actually respond to (that's what `match.url` is for).
+**IMPORTANT:** If you specify a hostname explicitly in a full URL pattern, it WILL be matched. Choose pathname patterns for flexibility, full URL patterns for control.
 
-**Important:** Unlike paths, regular expressions use **weak comparison, supporting partial matches** (MSW behavior). All request URLs that match the expression will be captured, regardless of their origin. If you need origin-specific routing, use string patterns with full URLs.
+**Key Point:** The `url` field determines **which requests** the mock can intercept (routing), not which requests it will actually respond to (that's what `match.url` is for).
 
 #### URL Matching (Phase 2.5)
 

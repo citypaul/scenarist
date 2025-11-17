@@ -504,6 +504,79 @@ const scenario: ScenaristScenario = {
 
 **Both serialized and native RegExp patterns receive the same security validation.**
 
+### URL Pattern Matching Rules
+
+Scenarist supports three pattern types with different hostname matching behaviors:
+
+**1. Pathname-only patterns** (origin-agnostic)
+```typescript
+{ url: '/api/users/:id' }
+```
+- **Matches ANY hostname** - environment-agnostic
+- Best for mocks that should work across localhost, staging, production
+- Example: `/api/users/123` matches requests to:
+  - `http://localhost:3000/api/users/123` ✅
+  - `https://staging.example.com/api/users/123` ✅
+  - `https://api.production.com/api/users/123` ✅
+
+**2. Full URL patterns** (hostname-specific)
+```typescript
+{ url: 'http://api.example.com/users/:id' }
+```
+- **Matches ONLY the specified hostname** - environment-specific
+- Best for mocks that should only apply to specific domains
+- Example: `http://api.example.com/users/:id` matches:
+  - `http://api.example.com/users/123` ✅
+  - `http://localhost:3000/users/123` ❌ (different hostname)
+  - `https://api.example.com/users/123` ❌ (different protocol)
+
+**3. Native RegExp patterns** (origin-agnostic)
+```typescript
+{ url: /\/users\/\d+/ }
+```
+- **Matches ANY hostname** - substring matching (MSW weak comparison)
+- Best for flexible pattern matching across environments
+- Example: `/\/users\/\d+/` matches:
+  - `http://localhost:3000/users/123` ✅
+  - `https://api.example.com/api/v1/users/456` ✅
+  - Any URL containing `/users/` followed by digits ✅
+
+**Choosing the right pattern type:**
+
+```typescript
+// ✅ Use pathname patterns for environment-agnostic mocks
+const defaultScenario = {
+  mocks: [
+    {
+      url: '/api/products',  // Works in dev, staging, prod
+      response: { status: 200, body: { products: [] } }
+    }
+  ]
+};
+
+// ✅ Use full URL patterns when hostname matters
+const productionOnlyScenario = {
+  mocks: [
+    {
+      url: 'https://api.production.com/admin',  // Only matches production
+      response: { status: 403, body: { error: 'Admin disabled in prod' } }
+    }
+  ]
+};
+
+// ✅ Use RegExp for flexible pattern matching
+const versionAgnosticScenario = {
+  mocks: [
+    {
+      url: /\/api\/v\d+\/users/,  // Matches /api/v1/users, /api/v2/users, etc.
+      response: { status: 200, body: { users: [] } }
+    }
+  ]
+};
+```
+
+**IMPORTANT:** If you specify a hostname explicitly, it WILL be matched. Choose pathname patterns for flexibility, full URL patterns for control.
+
 ### Common URL Pattern Examples
 
 Here are helpful regex patterns for common use cases:
