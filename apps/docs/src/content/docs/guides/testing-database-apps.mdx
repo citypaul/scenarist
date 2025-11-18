@@ -171,28 +171,98 @@ test('should show out of stock message', async ({ page, switchScenario }) => {
 ```mermaid
 graph TD
     A[Does your Next.js app use direct database access?] -->|No - Uses HTTP APIs| B[✅ Use Scenarist directly]
-    A -->|Yes| C[Can you add API route wrappers?]
-    C -->|Yes| D[✅ Use API Route Abstraction pattern]
-    C -->|No - Database required for auth/middleware| E[Use database seeding + E2E tests]
+    A -->|Yes| C[Want to test actual database queries?]
+    C -->|Yes| D[Have external API dependencies?]
+    D -->|Yes| E[✅ Hybrid: Testcontainers + Scenarist]
+    D -->|No| F[Use Testcontainers only]
+    C -->|No| G[Can you add API route wrappers?]
+    G -->|Yes| H[✅ Use API Route Abstraction + Scenarist]
+    G -->|No| I[Use database seeding]
 
-    D --> F[Benefits:<br/>- Test backend state variations<br/>- No database setup in CI<br/>- Fast parallel tests]
-    E --> G[Trade-offs:<br/>- Slower tests<br/>- Complex database seeding<br/>- Cannot run tests in parallel]
+    E --> J[Benefits:<br/>- Test real DB queries<br/>- Mock external APIs<br/>- No code changes]
+    H --> K[Benefits:<br/>- Fast parallel tests<br/>- No database setup<br/>- Instant scenario switching]
 ```
 
-### Use API Route Abstraction When:
+## Approach 1: API Route Abstraction + Scenarist
+
+**What it is:** Add thin HTTP layer between Server Components and database, mock everything via Scenarist.
+
+### Use When:
 
 - ✅ You want to test **different backend states** (success, errors, edge cases)
-- ✅ You want **fast tests** without database setup
+- ✅ You want **fast tests** without database setup (instant scenario switching)
 - ✅ You want to **run tests in parallel** with different data
 - ✅ Your database calls are in **data fetching** logic (not authentication)
 - ✅ You can add thin API wrappers without major refactoring
 
-### Don't Use API Route Abstraction When:
+### Don't Use When:
 
 - ❌ Database is required for **authentication/authorization** middleware (see "Special Case" section below)
 - ❌ You're testing **database-specific behavior** (transactions, constraints)
 - ❌ Adding API routes would be a **major architectural change**
 - ❌ You need to test **Server Actions** that mutate database state directly
+
+## Approach 2: Hybrid (Testcontainers + Scenarist)
+
+**What it is:** Use [Testcontainers](https://testcontainers.com/) to spin up real database containers with seeded scenarios. Use Scenarist to mock external API dependencies. No code changes needed.
+
+**Example architecture:**
+
+```typescript
+// Server Component (unchanged - no API routes needed!)
+export default async function CheckoutPage() {
+  // Database call - testcontainer provides real PostgreSQL with seeded data
+  const user = await db.user.findUnique({ where: { id: userId } });
+
+  // External API - Scenarist intercepts and mocks
+  const payment = await fetch('https://api.stripe.com/v1/charges', {
+    method: 'POST',
+    headers: scenarist.getHeaders(request),
+    body: JSON.stringify({ amount: user.cartTotal }),
+  });
+
+  return <CheckoutForm user={user} payment={payment} />;
+}
+```
+
+**Test setup:**
+
+```typescript
+import { PostgreSqlContainer } from '@testcontainers/postgresql';
+
+test('premium user with successful payment', async ({ page, switchScenario }) => {
+  // Testcontainer seeded with premium user (tier='premium', cartTotal=500)
+  const container = await new PostgreSqlContainer().start();
+  await seedPremiumUser(container);
+
+  // Scenarist mocks Stripe success
+  await switchScenario(page, 'stripeSuccess');
+
+  await page.goto('/checkout');
+
+  // Test sees:
+  // - Premium user from real database
+  // - Successful payment from Scenarist mock
+  await expect(page.getByText('Payment successful')).toBeVisible();
+});
+```
+
+### Use When:
+
+- ✅ You want to test **actual database queries and migrations**
+- ✅ You have **external API dependencies** to mock
+- ✅ You **cannot/don't want to add API routes**
+- ✅ Test startup time (5-30s) is acceptable
+- ✅ You need **realistic integration testing**
+
+### Trade-offs:
+
+- ⚠️ **Slower tests** - Container startup takes 5-30 seconds
+- ⚠️ **Docker required** - CI/CD must support Docker
+- ⚠️ **Database seeding scripts** - Must maintain seed data
+- ⚠️ **Harder to parallelize** - Shared database state between tests
+
+**Learn more:** [Testcontainers Documentation](https://testcontainers.com/)
 
 ## Special Case: Database-Based Authentication in Middleware
 
