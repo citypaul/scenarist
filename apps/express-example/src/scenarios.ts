@@ -867,12 +867,13 @@ export const urlMatchingScenario: ScenaristScenario = {
   name: 'URL Matching Strategies',
   description: 'Tests URL matching with RegExp, string strategies, and combined criteria',
   mocks: [
-    // Test 1: Native RegExp - Match numeric user IDs
+    // Test 1: Native RegExp - Match specific numeric user ID (octocat=1)
+    // Uses more specific pattern to avoid conflicting with path param tests
     {
       method: 'GET',
       url: 'https://api.github.com/users/:username',
       match: {
-        url: /\/users\/\d+$/, // Match URLs ending with numeric ID
+        url: /\/users\/1$/,  // Match URLs ending with exactly "1" (octocat's ID)
       },
       response: {
         status: 200,
@@ -1050,6 +1051,39 @@ export const urlMatchingScenario: ScenaristScenario = {
           amount: 1000,
           currency: 'usd',
           matchedBy: 'fallback',
+        },
+      },
+    },
+
+    // Test 7: Simple path parameter - extract :username and return user-specific data
+    {
+      method: 'GET',
+      url: 'https://api.github.com/users/:username',
+      response: {
+        status: 200,
+        body: {
+          id: '{{params.username}}',
+          login: 'user-{{params.username}}',
+          name: 'User {{params.username}}',
+          bio: 'Test user with dynamic ID',
+          public_repos: 10,
+          followers: 100,
+        },
+      },
+    },
+
+    // Test 8: Multiple path parameters - extract :userId and :postId
+    {
+      method: 'GET',
+      url: 'https://api.blog.com/users/:userId/posts/:postId',
+      response: {
+        status: 200,
+        body: {
+          userId: '{{params.userId}}',
+          postId: '{{params.postId}}',
+          title: 'Post {{params.postId}} by {{params.userId}}',
+          content: 'Test post content',
+          author: '{{params.userId}}',
         },
       },
     },

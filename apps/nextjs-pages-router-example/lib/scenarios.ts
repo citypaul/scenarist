@@ -535,12 +535,13 @@ export const urlMatchingScenario: ScenaristScenario = {
   name: "URL Matching Strategies",
   description: "Tests URL matching with RegExp, string strategies, and combined criteria",
   mocks: [
-    // Test 1: Native RegExp - Match numeric user IDs
+    // Test 1: Native RegExp - Match specific numeric user ID (1)
+    // Uses more specific pattern to avoid conflicting with path param tests
     {
       method: "GET",
       url: "http://localhost:3001/api/users/:username",
       match: {
-        url: /\/users\/\d+$/, // Match URLs ending with numeric ID
+        url: /\/users\/1$/,  // Match URLs ending with exactly "1"
       },
       response: {
         status: 200,
@@ -718,6 +719,105 @@ export const urlMatchingScenario: ScenaristScenario = {
           amount: 1000,
           currency: "usd",
           matchedBy: "fallback",
+        },
+      },
+    },
+
+    // Test 7: Simple path parameter - extract :id and return user-specific data
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/users/:id",
+      response: {
+        status: 200,
+        body: {
+          id: "{{params.id}}",
+          login: "user-{{params.id}}",
+          name: "User {{params.id}}",
+          bio: "Test user with dynamic ID",
+          public_repos: 10,
+          followers: 100,
+        },
+      },
+    },
+
+    // Test 8: Multiple path parameters - extract :userId and :postId
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/users/:userId/posts/:postId",
+      response: {
+        status: 200,
+        body: {
+          userId: "{{params.userId}}",
+          postId: "{{params.postId}}",
+          title: "Post {{params.postId}} by {{params.userId}}",
+          content: "Test post content",
+          author: "{{params.userId}}",
+        },
+      },
+    },
+
+    // Test 9: Optional path parameter - extract :filename? (with filename present)
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/optional-files/:filename",
+      response: {
+        status: 200,
+        body: {
+          filename: "{{params.filename}}",
+          exists: true,
+        },
+      },
+    },
+
+    // Test 9b: Optional path parameter - extract :filename? (without filename)
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/optional-files",
+      response: {
+        status: 200,
+        body: {
+          filename: "default.txt",
+          exists: false,
+        },
+      },
+    },
+
+    // Test 10: Repeating path parameter - extract :path+
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/nested-files/:path+",
+      response: {
+        status: 200,
+        body: {
+          path: "folder/subfolder/file.txt",
+          segments: 3,
+        },
+      },
+    },
+
+    // Fallback for non-numeric order IDs (defined first, lower priority)
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/orders/:orderId",
+      response: {
+        status: 404,
+        body: {
+          error: "Order not found",
+          matchedBy: "fallback",
+        },
+      },
+    },
+
+    // Test 11: Custom regex parameter - extract :orderId(\d+) (defined last, higher priority)
+    {
+      method: "GET",
+      url: "http://localhost:3001/api/orders/:orderId(\\d+)",
+      response: {
+        status: 200,
+        body: {
+          orderId: "{{params.orderId}}",
+          status: "processing",
+          items: [],
         },
       },
     },

@@ -129,6 +129,57 @@ const fetchTestData = async (
         return { success: true, data };
       }
 
+      case "pathParam": {
+        const userId = getString(query.userId) || "123";
+        const response = await fetch(
+          `http://localhost:3001/api/users/${userId}`,
+          { headers: scenaristHeaders }
+        );
+        const data = (await response.json()) as User;
+        return { success: true, data };
+      }
+
+      case "multipleParams": {
+        const userId = getString(query.userId) || "alice";
+        const postId = getString(query.postId) || "42";
+        const response = await fetch(
+          `http://localhost:3001/api/users/${userId}/posts/${postId}`,
+          { headers: scenaristHeaders }
+        );
+        const data = (await response.json()) as any;
+        return { success: true, data };
+      }
+
+      case "optional": {
+        const filename = getString(query.filename);
+        const url = filename
+          ? `http://localhost:3001/api/optional-files/${filename}`
+          : "http://localhost:3001/api/optional-files";
+        const response = await fetch(url, { headers: scenaristHeaders });
+        const data = (await response.json()) as any;
+        return { success: true, data };
+      }
+
+      case "repeating": {
+        const path = getString(query.path) || "folder/subfolder/file.txt";
+        const response = await fetch(
+          `http://localhost:3001/api/nested-files/${path}`,
+          { headers: scenaristHeaders }
+        );
+        const data = (await response.json()) as any;
+        return { success: true, data };
+      }
+
+      case "customRegex": {
+        const orderId = getString(query.orderId) || "12345";
+        const response = await fetch(
+          `http://localhost:3001/api/orders/${orderId}`,
+          { headers: scenaristHeaders }
+        );
+        const data = (await response.json()) as any;
+        return { success: true, data };
+      }
+
       default:
         return { success: false, error: `Unknown test type: ${test}` };
     }
@@ -243,6 +294,58 @@ export default function URLMatchingPage({ test, result }: PageProps) {
                 <p className="mb-2">
                   <strong>Currency:</strong> {result.data.currency}
                 </p>
+              </>
+            )}
+
+            {/* Path parameter fields (userId/postId/title) */}
+            {"userId" in result.data && (
+              <>
+                <p className="mb-2">
+                  <strong>User ID:</strong> {result.data.userId}
+                </p>
+                {"postId" in result.data && (
+                  <p className="mb-2">
+                    <strong>Post ID:</strong> {result.data.postId}
+                  </p>
+                )}
+                {"title" in result.data && (
+                  <p className="mb-2">
+                    <strong>Title:</strong> {result.data.title}
+                  </p>
+                )}
+              </>
+            )}
+
+            {/* Path parameter fields (filename) */}
+            {"filename" in result.data && !("type" in result.data) && (
+              <p className="mb-2">
+                <strong>Filename:</strong> {result.data.filename}
+              </p>
+            )}
+
+            {/* Path parameter fields (path segments) */}
+            {"segments" in result.data && (
+              <>
+                <p className="mb-2">
+                  <strong>Path:</strong> {result.data.path}
+                </p>
+                <p className="mb-2">
+                  <strong>Segments:</strong> {result.data.segments}
+                </p>
+              </>
+            )}
+
+            {/* Path parameter fields (orderId) */}
+            {"orderId" in result.data && (
+              <>
+                <p className="mb-2">
+                  <strong>Order ID:</strong> {result.data.orderId}
+                </p>
+                {"status" in result.data && !("amount" in result.data) && (
+                  <p className="mb-2">
+                    <strong>Status:</strong> {result.data.status}
+                  </p>
+                )}
               </>
             )}
 
