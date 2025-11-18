@@ -367,10 +367,10 @@ test.describe('Checkout flow with database', () => {
 - You need realistic integration testing
 
 **❌ Don't use when:**
-- You want instant scenario switching (use [API route abstraction](./api-route-abstraction))
 - You don't have Docker available (CI/CD constraint)
 - Test speed is critical (hundreds of tests)
 - Parallel test execution is important
+- Your app only uses external HTTP APIs (use Scenarist directly)
 
 ## Trade-offs
 
@@ -414,17 +414,6 @@ test.describe('Checkout flow with database', () => {
 - Need multiple containers for parallelization
 - Resource-intensive (CPU, memory)
 
-## Comparison with API Route Abstraction
-
-| Aspect | Testcontainers Hybrid | API Route Abstraction |
-|--------|----------------------|---------------------|
-| Code changes | None | Add API routes |
-| Test speed | Slow (5-30s startup) | Fast (instant) |
-| Database testing | Real queries | Mocked responses |
-| Parallel tests | Difficult | Easy |
-| CI/CD requirements | Docker | None |
-| Production overhead | None | ~10ms per request |
-
 ## Performance Optimization Tips
 
 **Reuse containers across tests:**
@@ -460,61 +449,8 @@ test.beforeEach(async () => {
 docker pull postgres:16
 ```
 
-## Combining Both Approaches
-
-You can use **both** API route abstraction AND testcontainers in the same project:
-
-**Use API route abstraction for:**
-- Fast, parallel UI integration tests
-- Testing many data permutations
-- CI/CD pipelines (fast feedback)
-
-**Use testcontainers hybrid for:**
-- Database migration testing
-- Complex transaction testing
-- Comprehensive E2E scenarios
-
-```typescript
-// Fast tests: API route abstraction
-test.describe('Product listing @fast', () => {
-  test('shows premium pricing', async ({ page, switchScenario }) => {
-    await switchScenario(page, 'premiumProducts');
-    await page.goto('/products');
-    // ... assertions
-  });
-});
-
-// Comprehensive tests: Testcontainers
-test.describe('Checkout flow @e2e', () => {
-  let container: StartedPostgreSqlContainer;
-
-  test.beforeAll(async () => {
-    container = await new PostgreSqlContainer('postgres:16').start();
-    // ... setup
-  });
-
-  test('complete purchase flow', async ({ page, switchScenario }) => {
-    await seedPremiumUser(container);
-    await switchScenario(page, 'stripeSuccess');
-    // ... full checkout flow
-  });
-});
-```
-
-**Run fast tests frequently, comprehensive tests less often:**
-```bash
-# Development: Fast tests only
-pnpm test --grep @fast
-
-# CI: All tests
-pnpm test
-
-# Nightly: E2E only
-pnpm test --grep @e2e
-```
-
 ## Next Steps
 
-- [API Route Abstraction →](./api-route-abstraction) - Alternative for faster tests
 - [Testcontainers Documentation](https://testcontainers.com/) - Learn more about Testcontainers
 - [Next.js Testing Overview](../) - Back to database testing overview
+- [Next.js App Router Getting Started](/frameworks/nextjs-app-router/getting-started) - Set up Scenarist for App Router

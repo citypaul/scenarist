@@ -5,7 +5,11 @@ description: How to test Next.js applications that use direct database access wi
 
 import { Aside } from '@astrojs/starlight/components';
 
-Most production Next.js applications fetch data from databases (PostgreSQL, MongoDB, etc.) rather than external HTTP APIs. Since Scenarist intercepts HTTP requests via MSW, it cannot directly mock database calls. This guide shows you how to make database-heavy Next.js apps testable with Scenarist.
+<Aside type="note" title="Scenarist's Scope">
+
+**Scenarist excels at mocking external HTTP APIs.** For apps that also access databases directly, this guide shows the recommended testing strategy combining Scenarist with database testing tools.
+
+</Aside>
 
 ## The Problem
 
@@ -42,31 +46,9 @@ Scenarist intercepts HTTP requests only. It cannot mock:
 - Direct function calls or imports
 </Aside>
 
-## Two Approaches
+## Recommended Approach: Testcontainers + Scenarist Hybrid
 
-You have two options for testing database-heavy Next.js apps with Scenarist:
-
-### Approach 1: API Route Abstraction + Scenarist
-
-**Best for:** Teams willing to add thin HTTP layer for fast, parallel tests
-
-Add API routes between Server Components and database. Mock the HTTP layer with Scenarist. This gives you instant scenario switching and parallel test execution without database setup.
-
-**Key benefits:**
-- ✅ Fast tests (instant scenario switching)
-- ✅ No database setup required
-- ✅ Run tests in parallel with different data
-- ✅ Mock both database data AND external APIs
-
-**Trade-offs:**
-- ⚠️ Requires code changes (adding API routes)
-- ⚠️ Doesn't test actual database queries
-
-[Learn more about API Route Abstraction →](./api-route-abstraction)
-
-### Approach 2: Testcontainers + Scenarist Hybrid
-
-**Best for:** Teams that cannot/won't refactor to use API routes
+**Best for:** Apps that use both databases AND external HTTP APIs
 
 Use Testcontainers to spin up real database containers with seeded scenarios. Use Scenarist to mock external APIs. No code changes needed.
 
@@ -88,42 +70,24 @@ Use Testcontainers to spin up real database containers with seeded scenarios. Us
 ```mermaid
 graph TD
     A[Does your Next.js app use direct database access?] -->|No - Uses HTTP APIs| B[✅ Use Scenarist directly]
-    A -->|Yes| C[Want to test actual database queries?]
-    C -->|Yes| D[Have external API dependencies?]
-    D -->|Yes| E[✅ Hybrid: Testcontainers + Scenarist]
-    D -->|No| F[Use Testcontainers only]
-    C -->|No| G[Can you add API route wrappers?]
-    G -->|Yes| H[✅ API Route Abstraction + Scenarist]
-    G -->|No| I[Use database seeding]
+    A -->|Yes| C[Have external API dependencies?]
+    C -->|Yes| D[✅ Hybrid: Testcontainers + Scenarist]
+    C -->|No| E[Use Testcontainers only]
 
-    E --> J[Benefits:<br/>- Test real DB queries<br/>- Mock external APIs<br/>- No code changes]
-    H --> K[Benefits:<br/>- Fast parallel tests<br/>- No database setup<br/>- Instant scenario switching]
+    D --> F[Benefits:<br/>- Test real DB queries<br/>- Mock external APIs<br/>- No code changes]
+    B --> G[Benefits:<br/>- Fast parallel tests<br/>- No database setup<br/>- Instant scenario switching]
 ```
 
-## Which Approach Should You Choose?
+## When to Use Each Tool
 
-**Choose API Route Abstraction if:**
-- You want fast tests with instant scenario switching
-- You can add thin API route wrappers
-- You don't need to test database-specific behavior (transactions, constraints)
-- Parallel test execution is important
-
-**Choose Testcontainers Hybrid if:**
-- You cannot or won't refactor to add API routes
-- You need to test actual database queries and migrations
-- Your team prefers realistic database integration testing
-- Test startup time (5-30s) is acceptable
-
-**Use both approaches together if:**
-- Some parts of your app can use API routes (fast tests)
-- Other parts require database testing (comprehensive coverage)
-- You want maximum flexibility in your test strategy
+| What You're Testing | Tool to Use |
+|---------------------|-------------|
+| External HTTP APIs (Stripe, SendGrid) | **Scenarist** |
+| Database queries | **Testcontainers** or real test database |
+| File system operations | **Mock fs** or real files |
 
 ## Next Steps
 
-Choose your approach and dive into the detailed implementation guide:
-
-- [API Route Abstraction →](./api-route-abstraction) - Step-by-step guide to adding API routes and mocking with Scenarist
 - [Testcontainers Hybrid →](./testcontainers-hybrid) - Complete guide to using Testcontainers with Scenarist
-
-Both approaches work with App Router and Pages Router.
+- [Next.js App Router Getting Started](/frameworks/nextjs-app-router/getting-started)
+- [Next.js Pages Router Getting Started](/frameworks/nextjs-pages-router/getting-started)
