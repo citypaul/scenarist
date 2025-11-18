@@ -189,10 +189,176 @@ graph TD
 
 ### Don't Use API Route Abstraction When:
 
-- ❌ Database is required for **authentication/authorization** middleware
+- ❌ Database is required for **authentication/authorization** middleware ([see workarounds below](#auth-middleware-workarounds))
 - ❌ You're testing **database-specific behavior** (transactions, constraints)
 - ❌ Adding API routes would be a **major architectural change**
 - ❌ You need to test **Server Actions** that mutate database state directly
+
+## Special Case: Database-Based Authentication in Middleware {#auth-middleware-workarounds}
+
+If your Next.js middleware validates sessions via database, you cannot use fetch() to the same app (causes infinite loop):
+
+```typescript
+// middleware.ts - BLOCKS API route abstraction
+export async function middleware(request: NextRequest) {
+  const session = request.cookies.get('session');
+
+  // ❌ Database query in middleware
+  const user = await db.users.findUnique({
+    where: { sessionId: session?.value }
+  });
+
+  if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  return NextResponse.next();
+}
+```
+
+**Why this blocks the pattern:**
+- Middleware runs FIRST (before any Server Component)
+- Middleware CANNOT call fetch() to same app (infinite loop)
+- Auth decision gates ALL routes
+
+**You have three workarounds:**
+
+### Workaround 1: JWT/Stateless Auth (Recommended)
+
+Switch to stateless authentication where middleware doesn't need database:
+
+```typescript
+// middleware.ts - NO DATABASE ✅
+import { verifyJWT } from '@/lib/jwt';
+
+export async function middleware(request: NextRequest) {
+  const token = request.cookies.get('auth-token');
+
+  // ✅ Cryptographic verification only - no database!
+  const payload = verifyJWT(token?.value);
+
+  if (!payload && request.nextUrl.pathname.startsWith('/dashboard')) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  return NextResponse.next();
+}
+```
+
+**Now you can use API route abstraction for all data fetching:**
+
+```typescript
+test('premium user sees premium dashboard', async ({ page, switchScenario }) => {
+  // Set JWT with premium tier
+  const premiumJWT = signJWT({ userId: '123', tier: 'premium' });
+  await page.context().addCookies([{
+    name: 'auth-token',
+    value: premiumJWT,
+    domain: 'localhost',
+    path: '/',
+  }]);
+
+  // Mock dashboard data API
+  await switchScenario(page, 'premiumDashboard');
+
+  await page.goto('/dashboard');
+
+  // ✅ Middleware validates JWT (no database)
+  // ✅ Server Component fetches from API route (mocked by Scenarist)
+  await expect(page.getByText('Premium Dashboard')).toBeVisible();
+});
+```
+
+**Benefits:**
+- ✅ Middleware has no database dependency
+- ✅ Full API route abstraction works
+- ✅ Fast tests with scenario switching
+- ✅ Matches modern auth best practices
+
+### Workaround 2: Hybrid Approach
+
+Use real database for auth, Scenarist for data fetching:
+
+```typescript
+// tests/setup.ts
+import { db } from '@/lib/db';
+
+beforeAll(async () => {
+  // Seed test user in database
+  await db.users.create({
+    data: {
+      id: '123',
+      sessionId: 'test-session-premium',
+      email: 'premium@example.com',
+      tier: 'premium',
+    },
+  });
+});
+
+afterAll(async () => {
+  await db.users.deleteMany({ where: { id: '123' } });
+});
+
+// tests/dashboard.spec.ts
+test('premium user sees premium dashboard', async ({ page, switchScenario }) => {
+  // Set session cookie - middleware validates via real database
+  await page.context().addCookies([{
+    name: 'session',
+    value: 'test-session-premium', // Matches seeded user
+    domain: 'localhost',
+    path: '/',
+  }]);
+
+  // Scenarist mocks dashboard data API
+  await switchScenario(page, 'premiumDashboard');
+
+  await page.goto('/dashboard');
+
+  // ✅ Middleware validates session via database (real)
+  // ✅ Server Component fetches from API route (mocked)
+  await expect(page.getByText('Premium Dashboard')).toBeVisible();
+});
+```
+
+**Trade-offs:**
+- ✅ Auth closest to production (real database)
+- ✅ Data fetching is fast and flexible (Scenarist mocks)
+- ⚠️ Requires database setup/cleanup
+- ⚠️ Cannot run auth tests in complete isolation
+- ⚠️ Slower than pure mocking
+
+### Workaround 3: Traditional Database Seeding
+
+Accept that the entire app needs a real database. Skip API route abstraction:
+
+```typescript
+beforeAll(async () => {
+  // Seed ALL test data in database
+  await db.users.create({ ... });
+  await db.products.createMany({ ... });
+  await db.orders.createMany({ ... });
+});
+
+test('user can view their orders', async ({ page }) => {
+  await page.context().addCookies([{ name: 'session', value: 'test-session' }]);
+  await page.goto('/orders');
+
+  // All data comes from real database
+  await expect(page.getByText('Order #123')).toBeVisible();
+});
+```
+
+**When to use this:**
+- You need to test database transactions
+- You need to test database constraints
+- Authentication AND data fetching both require database
+- You prefer production-like testing over test speed
+
+<Aside type="tip" title="Recommendation: JWT for New Apps">
+
+If you're building a new Next.js app, use JWT/stateless auth from the start. This eliminates the auth/middleware blocker and lets you use Scenarist for all HTTP mocking. Libraries like [next-auth](https://next-auth.js.org/) with JWT sessions make this easy.
+
+</Aside>
 
 <Aside type="note">
 **Why not always use database seeding?**
