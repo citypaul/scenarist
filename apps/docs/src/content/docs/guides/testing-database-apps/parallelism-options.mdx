@@ -51,7 +51,6 @@ Without isolation, parallel tests corrupt each other's data.
 |----------|-------------|-----------------|-------------------|--------------|------------|
 | Sequential execution | ❌ | ✅ | ✅ | ✅ | Low |
 | Multiple containers | ✅ | ✅ | ✅ | ✅ | Medium |
-| Test ID columns | ✅ | ❌ | ❌ | ❌ | High |
 | PostgreSQL RLS | ✅ | ✅ | ❌ | ❌ | High |
 | Schema per test | ✅ | ✅ | ✅ | ✅ | Very High |
 
@@ -133,70 +132,7 @@ npx playwright test --shard=4/4
 - ❌ Complex CI/CD setup
 - ❌ Slower container startup (multiplied by shard count)
 
-## Option 3: Test ID Columns + ORM Adapter
-
-Add `test_id` column to every table, filter automatically via ORM extension.
-
-```sql
--- Migration: Add test_id to all tables
-ALTER TABLE users ADD COLUMN test_id TEXT;
-ALTER TABLE orders ADD COLUMN test_id TEXT;
-ALTER TABLE products ADD COLUMN test_id TEXT;
-
--- Index for performance
-CREATE INDEX idx_users_test_id ON users(test_id);
-```
-
-```typescript
-// Prisma extension example
-import { PrismaClient } from '@prisma/client';
-import { AsyncLocalStorage } from 'async_hooks';
-
-const testIdStorage = new AsyncLocalStorage<string>();
-
-const prisma = new PrismaClient().$extends({
-  query: {
-    $allModels: {
-      async findMany({ args, query }) {
-        const testId = testIdStorage.getStore();
-        if (testId) {
-          args.where = { ...args.where, test_id: testId };
-        }
-        return query(args);
-      },
-      async create({ args, query }) {
-        const testId = testIdStorage.getStore();
-        if (testId) {
-          args.data = { ...args.data, test_id: testId };
-        }
-        return query(args);
-      },
-      // ... other operations
-    },
-  },
-});
-
-// Middleware sets test ID from header
-app.use((req, res, next) => {
-  const testId = req.headers['x-test-id'];
-  testIdStorage.run(testId, () => next());
-});
-```
-
-**Best for:**
-- Teams committed to a single ORM
-- Applications where schema changes are acceptable
-- Need true row-level isolation
-
-**Trade-offs:**
-- ✅ True parallelism
-- ✅ Row-level isolation
-- ❌ Schema changes required (every table)
-- ❌ ORM-specific (need different adapter per ORM)
-- ❌ Complex to implement correctly (JOINs, subqueries)
-- ❌ Performance overhead (additional WHERE clause)
-
-## Option 4: PostgreSQL Row-Level Security (RLS)
+## Option 3: PostgreSQL Row-Level Security (RLS)
 
 Use PostgreSQL's built-in RLS to isolate by test ID without application code changes.
 
@@ -235,7 +171,7 @@ app.use(async (req, res, next) => {
 - ❌ Complex to debug
 - ❌ Performance overhead
 
-## Option 5: Schema Per Test
+## Option 4: Schema Per Test
 
 Create a database schema for each test, complete isolation.
 
@@ -278,9 +214,9 @@ Most teams don't have hundreds of database tests. The simplicity of sequential e
 If you have 100+ database tests and CI/CD time matters, run 4-8 containers in parallel via Playwright sharding. Requires good infrastructure but no code changes.
 
 ### Priority: True Isolation
-**Choose: Test ID Columns or PostgreSQL RLS**
+**Choose: PostgreSQL RLS**
 
-If you need row-level isolation (e.g., testing multi-tenant applications), accept the schema changes and implementation complexity.
+If you need row-level isolation (e.g., testing multi-tenant applications), accept the schema changes and complexity. Note this is PostgreSQL-only.
 
 ### Priority: Everything
 **Not possible.** Pick your top priority and accept the trade-offs.
