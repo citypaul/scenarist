@@ -558,15 +558,6 @@ If your feature tests database-specific behavior:
 
 **Use instead:** [Testcontainers Hybrid](./testcontainers-hybrid) to test against real database
 
-### ❌ Your App Has <5 Scenarios
-
-If your test coverage is minimal:
-- Only testing happy path + one error case
-- Limited edge cases to cover
-- Simple CRUD operations only
-
-**Use instead:** Traditional database seeding may be simpler (less abstraction overhead)
-
 ### ❌ Database Logic in Middleware
 
 If your Next.js middleware performs database queries:
