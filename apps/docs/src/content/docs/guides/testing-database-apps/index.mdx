@@ -50,39 +50,33 @@ Scenarist intercepts HTTP requests only. It cannot mock:
 
 Many techniques work for database testing—real test databases, in-memory databases, container-based solutions, or application-level abstractions. Choose what fits your team's workflow.
 
-### Start Simple: Sequential Execution
+### Recommended: Repository Pattern
 
-For most teams, **start with sequential execution**. It's the simplest approach:
-- Run database tests sequentially
-- Run HTTP tests in parallel (Scenarist handles isolation)
-- No code changes required
+For most teams that want scalable, parallel testing of real server-side code through browser-based tests, the **repository pattern** is the best approach:
 
-This works well until your database test suite grows large enough that speed becomes a concern.
-
-[See all parallelism options →](./parallelism-options)
-
-### When You Need Parallelism
-
-If sequential execution becomes too slow, you have several options depending on your priorities:
-
-**Repository Pattern** - Best for test-level parallelism
 - Provides same test ID isolation model as Scenarist
-- Requires abstracting database access behind interfaces
-- Best for teams who value clean architecture
+- True test-level parallelism (not just shard-level)
+- Architectural benefits extend beyond testing (clean separation, infrastructure flexibility)
+- Test repository implementations with Testcontainers for real database behavior
 
 [Learn about the Repository Pattern →](./repository-pattern)
 
-**Testcontainers** - Best for testing real database behavior
-- Tests actual SQL queries, constraints, transactions
+### Other Options
+
+**Sequential Execution** - Simplest but doesn't scale
+- Run database tests sequentially, HTTP tests in parallel
 - No code changes required
-- Sequential test execution (database state is shared)
+- CI time grows linearly with test count—only suitable for small test suites or prototypes
 
-[Learn about Testcontainers Hybrid →](./testcontainers-hybrid)
-
-**Sharding** - Best for parallelism without code changes
+**Sharding** - Parallelism without code changes
 - One database container per Playwright shard
-- Shard-level parallelism (not test-level)
+- Tests within each shard still run sequentially
 - Requires good CI/CD infrastructure
+
+**Testcontainers** - For testing real database behavior
+- Tests actual SQL queries, constraints, transactions
+- Best used alongside repository pattern to validate implementations
+- Sequential test execution when used standalone
 
 [See all parallelism options →](./parallelism-options)
 

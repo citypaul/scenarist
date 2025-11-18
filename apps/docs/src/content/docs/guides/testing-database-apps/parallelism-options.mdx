@@ -50,7 +50,7 @@ Without isolation, parallel tests corrupt each other's data.
 | Approach | Parallelism | No Code Changes | No Schema Changes | ORM Agnostic | Complexity |
 |----------|-------------|-----------------|-------------------|--------------|------------|
 | Sequential execution | ❌ | ✅ | ✅ | ✅ | Low |
-| Repository pattern | ✅ | ❌ | ✅ | ✅ | Medium |
+| ⭐ Repository pattern | ✅ | ❌ | ✅ | ✅ | Medium |
 | Sharding (container per shard) | ✅ | ✅ | ✅ | ✅ | Medium |
 | PostgreSQL RLS | ✅ | ✅ | ❌ | ❌ | High |
 | Schema per test | ✅ | ✅ | ✅ | ✅ | Very High |
@@ -80,18 +80,18 @@ export default defineConfig({
 ```
 
 **Best for:**
-- Small test suites (tens of tests, not hundreds)
-- Teams prioritizing simplicity over speed
 - Quick prototypes where test speed doesn't matter yet
+- Teams who know their test suite will remain small
+- Temporary solution while planning migration to repository pattern
 
 **Trade-offs:**
 - ✅ No code changes
 - ✅ No schema changes
 - ✅ Works with any ORM
-- ❌ Slower for large test suites
-- ❌ Doesn't scale as codebase grows
+- ❌ Doesn't scale—CI time grows linearly with test count
+- ❌ Limits your ability to run comprehensive test suites
 
-## Option 2: Repository Pattern
+## Option 2: Repository Pattern (Recommended)
 
 Abstract database access behind interfaces and inject test implementations.
 
@@ -209,10 +209,10 @@ npx playwright test --shard=4/4
 **Best for:**
 - CI/CD with good parallelization support
 - Teams with container orchestration experience
-- Large test suites where speed is critical
+- Teams who want parallelism without code changes
 
 **Trade-offs:**
-- ✅ Shard-level parallelism (4 shards = 4x faster)
+- ✅ Shard-level parallelism
 - ✅ No code or schema changes
 - ❌ Not test-level parallelism (tests within shard still sequential)
 - ❌ Resource-intensive (CPU, memory, disk)
@@ -290,17 +290,17 @@ await prisma.$executeRaw`DROP SCHEMA test_${testId} CASCADE`;
 
 ## Decision Guide
 
-### Start Here: Sequential Execution
+### Recommended: Repository Pattern
 
-For most teams starting out, sequential execution is the right choice. It's simple, requires no code changes, and works well until your test suite grows large.
+For most teams that want scalable, parallel testing of real server-side code through browser-based tests, the repository pattern is the best approach. It provides true test-level parallelism with the same test ID isolation model as Scenarist, and the architectural benefits (clean separation, infrastructure flexibility) extend well beyond testing.
 
-### When to Choose Repository Pattern
+### When to Choose Sequential Execution
 
-If you need true test-level parallelism and you value clean architecture. Best for teams who are comfortable with dependency injection and interface abstractions. The architectural benefits extend beyond testing.
+If you're building a quick prototype, or you're certain your application and test suite will remain small. Be aware that this approach doesn't scale—you'll need to migrate later if your test suite grows.
 
 ### When to Choose Sharding
 
-If you have 100+ database tests and CI/CD time is critical, but you don't want to change your application code. Requires good infrastructure and Docker orchestration.
+If CI/CD time is critical but you don't want to change your application code. Requires good infrastructure and Docker orchestration. Note that tests within each shard still run sequentially.
 
 ### When to Choose PostgreSQL RLS
 
@@ -310,16 +310,15 @@ If you need row-level isolation (e.g., testing multi-tenant applications) and yo
 
 Rarely. Only if you need complete isolation and can tolerate very slow test execution.
 
-## Common Strategy
+## Recommended Strategy
 
-A pragmatic approach for most teams:
+A scalable approach for teams building comprehensive test suites:
 
 1. **Use Scenarist for HTTP mocking** - External APIs (Stripe, Auth0, SendGrid)
-2. **Start with sequential database tests** - Simple, no code changes
-3. **Add parallelism when needed** - Choose based on your priorities and constraints
-4. **Test real database behavior when critical** - Use Testcontainers for queries, constraints, transactions
+2. **Use the repository pattern for database access** - True test-level parallelism with test ID isolation
+3. **Test repository implementations with Testcontainers** - Verify real database behavior (queries, constraints, transactions)
 
-As your test suite grows, evaluate whether the investment in parallelism (repository pattern or sharding) is worth the trade-offs for your team.
+This gives you the best of both worlds: fast parallel tests for most scenarios, plus real database validation where it matters.
 
 ## Next Steps
 

@@ -94,7 +94,7 @@ const products = await fetch('http://localhost:3000/api/products');
 - **File system operations** - no HTTP request
 - **WebSocket connections** - different protocol
 
-**If your app uses direct database access:** See [Testing Database Apps](/guides/testing-database-apps) for strategies ranging from simple sequential execution to full parallel testing with test ID isolation.
+**If your app uses direct database access:** See [Testing Database Apps](/guides/testing-database-apps) for strategies. We recommend the [Repository Pattern](/guides/testing-database-apps/repository-pattern) for scalable parallel testing with the same test ID isolation model as Scenarist.
 
 [Learn how it works →](/introduction/overview)
 
@@ -164,7 +164,7 @@ Scenarist tests HTTP-level backend behavior, not complete user workflows. Browse
 
 **HTTP only**: Scenarist intercepts HTTP requests only. It cannot mock database calls, file system operations, or WebSocket connections. For apps with direct database access, see [Testing Database Apps](/guides/testing-database-apps) for recommended strategies.
 
-**Database parallelism**: While Scenarist enables parallel HTTP tests via test ID isolation, database testing requires different strategies. Database connections have no equivalent to HTTP headers for carrying test IDs, so parallel database tests need infrastructure-level solutions (multiple containers, PostgreSQL RLS, schema-per-test). See [Parallelism Options](/guides/testing-database-apps/parallelism-options) for detailed trade-offs.
+**Database parallelism**: While Scenarist enables parallel HTTP tests via test ID isolation, database testing requires different strategies. We recommend the [Repository Pattern](/guides/testing-database-apps/repository-pattern), which provides the same test ID isolation model for database access. See [Parallelism Options](/guides/testing-database-apps/parallelism-options) for all approaches and trade-offs.
 
 **Single-server deployment**: Scenarist stores test ID to scenario mappings in memory. This works well for local development and single-instance CI environments. Load-balanced deployments would require additional state management.
 
