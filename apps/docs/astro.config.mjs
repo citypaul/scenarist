@@ -90,6 +90,7 @@ export default defineConfig({
               items: [
                 { label: "Overview", slug: "guides/testing-database-apps" },
                 { label: "Testcontainers Hybrid", slug: "guides/testing-database-apps/testcontainers-hybrid" },
+                { label: "Parallelism Options", slug: "guides/testing-database-apps/parallelism-options" },
               ],
             },
           ],

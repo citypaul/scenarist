@@ -1,0 +1,321 @@
+---
+title: Database Testing Parallelism Options
+description: Compare strategies for parallel database testing—trade-offs between code changes, schema changes, complexity, and speed
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside type="note" title="Why This Page Exists">
+
+The [Testcontainers Hybrid approach](./testcontainers-hybrid) requires sequential test execution. This page explores alternatives if you need parallelism, with honest analysis of what each approach costs.
+
+</Aside>
+
+## Why Parallel Database Testing Is Hard
+
+**HTTP mocking has a universal interception point.** MSW intercepts `fetch()` calls in both browser and Node.js. Every HTTP library eventually calls the same underlying APIs.
+
+**Databases have no equivalent.** Each ORM and driver is a different API surface:
+
+- Prisma: `prisma.user.findMany()`
+- Drizzle: `db.select().from(users)`
+- TypeORM: `userRepository.find()`
+- Knex: `knex('users').select()`
+- Raw SQL: `pg.query('SELECT * FROM users')`
+
+There's no single place to intercept all database queries and inject test isolation.
+
+### The Core Problem
+
+Scenarist isolates tests via **test ID in HTTP headers**:
+
+```typescript
+// Test ID flows automatically through HTTP
+fetch('/api/products', {
+  headers: { 'x-test-id': 'test-123' }  // Automatic isolation
+});
+```
+
+Databases have no equivalent mechanism:
+
+```typescript
+// No "test ID header" in database protocol
+await prisma.user.findMany();  // Which test's data?
+```
+
+Without isolation, parallel tests corrupt each other's data.
+
+## Options Comparison
+
+| Approach | Parallelism | No Code Changes | No Schema Changes | ORM Agnostic | Complexity |
+|----------|-------------|-----------------|-------------------|--------------|------------|
+| Sequential execution | ❌ | ✅ | ✅ | ✅ | Low |
+| Multiple containers | ✅ | ✅ | ✅ | ✅ | Medium |
+| Test ID columns | ✅ | ❌ | ❌ | ❌ | High |
+| PostgreSQL RLS | ✅ | ✅ | ❌ | ❌ | High |
+| Schema per test | ✅ | ✅ | ✅ | ✅ | Very High |
+
+**No option gives you everything.** Choose based on your priorities.
+
+## Option 1: Sequential Execution (Recommended Default)
+
+**Accept the limitation.** Run database tests sequentially, HTTP tests in parallel.
+
+```typescript
+// playwright.config.ts
+export default defineConfig({
+  projects: [
+    {
+      name: 'database-tests',
+      testMatch: '**/db-*.spec.ts',
+      fullyParallel: false,  // Sequential
+    },
+    {
+      name: 'api-tests',
+      testMatch: '**/api-*.spec.ts',
+      fullyParallel: true,   // Parallel (Scenarist handles isolation)
+    },
+  ],
+});
+```
+
+**Best for:**
+- Most teams
+- Focused database test suites (tens of tests, not hundreds)
+- Teams prioritizing simplicity over speed
+
+**Trade-offs:**
+- ✅ No code changes
+- ✅ No schema changes
+- ✅ Works with any ORM
+- ❌ Slower for large test suites
+
+## Option 2: Multiple Containers (Playwright Sharding)
+
+Run multiple PostgreSQL containers, one per Playwright shard.
+
+```typescript
+// playwright.config.ts
+export default defineConfig({
+  workers: 4,  // 4 parallel workers
+});
+
+// globalSetup.ts
+export default async function globalSetup() {
+  const workerId = process.env.TEST_WORKER_INDEX || '0';
+
+  // Each worker gets its own container
+  const container = await new PostgreSqlContainer()
+    .withDatabase(`test_${workerId}`)
+    .start();
+
+  process.env.DATABASE_URL = container.getConnectionUrl();
+}
+```
+
+Run with sharding:
+```bash
+npx playwright test --shard=1/4
+npx playwright test --shard=2/4
+npx playwright test --shard=3/4
+npx playwright test --shard=4/4
+```
+
+**Best for:**
+- CI/CD with good parallelization support
+- Teams with container orchestration experience
+- Large test suites where speed is critical
+
+**Trade-offs:**
+- ✅ True parallelism
+- ✅ No code or schema changes
+- ❌ Resource-intensive (CPU, memory, disk)
+- ❌ Complex CI/CD setup
+- ❌ Slower container startup (multiplied by shard count)
+
+## Option 3: Test ID Columns + ORM Adapter
+
+Add `test_id` column to every table, filter automatically via ORM extension.
+
+```sql
+-- Migration: Add test_id to all tables
+ALTER TABLE users ADD COLUMN test_id TEXT;
+ALTER TABLE orders ADD COLUMN test_id TEXT;
+ALTER TABLE products ADD COLUMN test_id TEXT;
+
+-- Index for performance
+CREATE INDEX idx_users_test_id ON users(test_id);
+```
+
+```typescript
+// Prisma extension example
+import { PrismaClient } from '@prisma/client';
+import { AsyncLocalStorage } from 'async_hooks';
+
+const testIdStorage = new AsyncLocalStorage<string>();
+
+const prisma = new PrismaClient().$extends({
+  query: {
+    $allModels: {
+      async findMany({ args, query }) {
+        const testId = testIdStorage.getStore();
+        if (testId) {
+          args.where = { ...args.where, test_id: testId };
+        }
+        return query(args);
+      },
+      async create({ args, query }) {
+        const testId = testIdStorage.getStore();
+        if (testId) {
+          args.data = { ...args.data, test_id: testId };
+        }
+        return query(args);
+      },
+      // ... other operations
+    },
+  },
+});
+
+// Middleware sets test ID from header
+app.use((req, res, next) => {
+  const testId = req.headers['x-test-id'];
+  testIdStorage.run(testId, () => next());
+});
+```
+
+**Best for:**
+- Teams committed to a single ORM
+- Applications where schema changes are acceptable
+- Need true row-level isolation
+
+**Trade-offs:**
+- ✅ True parallelism
+- ✅ Row-level isolation
+- ❌ Schema changes required (every table)
+- ❌ ORM-specific (need different adapter per ORM)
+- ❌ Complex to implement correctly (JOINs, subqueries)
+- ❌ Performance overhead (additional WHERE clause)
+
+## Option 4: PostgreSQL Row-Level Security (RLS)
+
+Use PostgreSQL's built-in RLS to isolate by test ID without application code changes.
+
+```sql
+-- Add test_id to tables
+ALTER TABLE users ADD COLUMN test_id TEXT;
+
+-- Create policy
+CREATE POLICY test_isolation ON users
+  USING (test_id = current_setting('app.test_id', true));
+
+-- Enable RLS
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+```
+
+```typescript
+// Set session variable per request
+app.use(async (req, res, next) => {
+  const testId = req.headers['x-test-id'];
+  await prisma.$executeRaw`SELECT set_config('app.test_id', ${testId}, true)`;
+  next();
+});
+```
+
+**Best for:**
+- PostgreSQL users only
+- Teams comfortable with database-level security
+- Applications where RLS is already used
+
+**Trade-offs:**
+- ✅ True parallelism
+- ✅ No application code changes (after setup)
+- ✅ Database handles isolation
+- ❌ PostgreSQL only (not portable)
+- ❌ Schema changes required
+- ❌ Complex to debug
+- ❌ Performance overhead
+
+## Option 5: Schema Per Test
+
+Create a database schema for each test, complete isolation.
+
+```typescript
+// Before each test
+const testId = generateTestId();
+await prisma.$executeRaw`CREATE SCHEMA test_${testId}`;
+await prisma.$executeRaw`SET search_path TO test_${testId}`;
+
+// Run migrations in new schema
+execSync('npx prisma migrate deploy');
+
+// After test
+await prisma.$executeRaw`DROP SCHEMA test_${testId} CASCADE`;
+```
+
+**Best for:**
+- Complete isolation requirements
+- Teams with existing schema management tooling
+- Debugging complex test failures
+
+**Trade-offs:**
+- ✅ Complete isolation
+- ✅ No code changes
+- ✅ Works with any ORM
+- ❌ Very slow (migrations per test)
+- ❌ Complex connection management
+- ❌ High resource usage
+
+## Decision Guide
+
+### Priority: Simplicity
+**Choose: Sequential Execution**
+
+Most teams don't have hundreds of database tests. The simplicity of sequential execution outweighs the speed benefit of parallelism.
+
+### Priority: Speed (CI/CD)
+**Choose: Multiple Containers**
+
+If you have 100+ database tests and CI/CD time matters, run 4-8 containers in parallel via Playwright sharding. Requires good infrastructure but no code changes.
+
+### Priority: True Isolation
+**Choose: Test ID Columns or PostgreSQL RLS**
+
+If you need row-level isolation (e.g., testing multi-tenant applications), accept the schema changes and implementation complexity.
+
+### Priority: Everything
+**Not possible.** Pick your top priority and accept the trade-offs.
+
+## Why Scenarist Focuses on HTTP
+
+Scenarist provides a clean, universal solution for HTTP mocking because:
+
+1. **Single interception point** - MSW intercepts all fetch/XHR
+2. **Stateless protocol** - Each request carries its own context (test ID header)
+3. **Framework agnostic** - Same approach works for Express, Next.js, Remix, etc.
+
+Database testing has none of these properties:
+- Multiple ORMs with different APIs
+- Stateful connections
+- No header equivalent in database protocols
+
+Rather than provide a partial solution that only works for some ORMs, we focus on what we can do well and recommend established tools (Testcontainers) for database testing.
+
+## Recommended Strategy
+
+For most teams, we recommend:
+
+1. **Use Scenarist for HTTP mocking** - External APIs (Stripe, Auth0, SendGrid)
+2. **Use Testcontainers for databases** - Real PostgreSQL/MySQL in containers
+3. **Accept sequential execution for database tests** - Keep test count manageable
+4. **Run HTTP tests in parallel** - Scenarist handles isolation automatically
+
+If you have hundreds of database tests and need parallelism:
+- Evaluate multiple containers first (no code changes)
+- Consider test ID columns if you need row-level isolation
+- Accept the complexity and maintenance burden
+
+## Next Steps
+
+- [Testcontainers Hybrid Guide](./testcontainers-hybrid) - Implement the recommended approach
+- [Testcontainers Documentation](https://testcontainers.com/) - Learn container management
+- [PostgreSQL RLS Documentation](https://www.postgresql.org/docs/current/ddl-rowsecurity.html) - Understand RLS if choosing that option
