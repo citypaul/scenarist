@@ -7,6 +7,7 @@
 
 import type { ScenaristScenario, ScenaristScenarios } from "@scenarist/nextjs-adapter/app";
 import { buildProducts } from "../data/products";
+import { checkoutScenarios } from "./scenarios-checkout";
 
 /**
  * Default scenario - baseline behavior with happy path mocks
@@ -1002,4 +1003,5 @@ export const scenarios = {
   stringMatching: stringMatchingScenario,
   urlMatching: urlMatchingScenario,
   hostnameMatching: hostnameMatchingScenario,
+  ...checkoutScenarios,
 } as const satisfies ScenaristScenarios;
