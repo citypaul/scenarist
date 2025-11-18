@@ -50,39 +50,41 @@ Scenarist intercepts HTTP requests only. It cannot mock:
 
 Many techniques work for database testing—real test databases, in-memory databases, container-based solutions, or application-level abstractions. Choose what fits your team's workflow.
 
-### Our Recommendation: Repository Pattern + Scenarist
+### Start Simple: Sequential Execution
 
-For apps that use both databases AND external HTTP APIs, we recommend the **repository pattern**:
-- **Repository pattern** for database access (abstractions with test ID isolation)
-- **Scenarist** for mocking external APIs (Stripe, Auth0, SendGrid)
+For most teams, **start with sequential execution**. It's the simplest approach:
+- Run database tests sequentially
+- Run HTTP tests in parallel (Scenarist handles isolation)
+- No code changes required
 
-**Key benefits:**
-- ✅ True test parallelism with test ID isolation
-- ✅ Fast in-memory test execution
-- ✅ Infrastructure flexibility (swap databases, ORMs, architectures)
-- ✅ Follows SOLID principles and clean architecture
-- ✅ Mock external APIs with Scenarist
+This works well until your database test suite grows large enough that speed becomes a concern.
 
-**The investment:**
+[See all parallelism options →](./parallelism-options)
+
+### When You Need Parallelism
+
+If sequential execution becomes too slow, you have several options depending on your priorities:
+
+**Repository Pattern** - Best for test-level parallelism
+- Provides same test ID isolation model as Scenarist
 - Requires abstracting database access behind interfaces
-- Separate tests needed for real database behavior (repository implementation tests)
+- Best for teams who value clean architecture
 
-**The biggest win:** This pattern enables your entire server codebase—business logic, middleware, route handlers—to be tested in parallel with full isolation. That's powerful. Just complement with repository implementation tests for database-specific concerns.
+[Learn about the Repository Pattern →](./repository-pattern)
 
-[Learn more about the Repository Pattern →](./repository-pattern)
+**Testcontainers** - Best for testing real database behavior
+- Tests actual SQL queries, constraints, transactions
+- No code changes required
+- Sequential test execution (database state is shared)
 
-### Alternative: Testcontainers
+[Learn about Testcontainers Hybrid →](./testcontainers-hybrid)
 
-If you need to test actual database behavior (queries, constraints, transactions), combine Testcontainers with Scenarist:
-- **Testcontainers** for real PostgreSQL/MySQL in Docker containers
-- **Scenarist** for mocking external APIs
+**Sharding** - Best for parallelism without code changes
+- One database container per Playwright shard
+- Shard-level parallelism (not test-level)
+- Requires good CI/CD infrastructure
 
-**Trade-offs:**
-- ⚠️ Sequential test execution (database state is shared)
-- ⚠️ Container startup overhead
-- ⚠️ Docker required in CI/CD
-
-[Learn more about Testcontainers Hybrid →](./testcontainers-hybrid)
+[See all parallelism options →](./parallelism-options)
 
 ### Other Approaches
 

@@ -50,12 +50,10 @@ Without isolation, parallel tests corrupt each other's data.
 | Approach | Parallelism | No Code Changes | No Schema Changes | ORM Agnostic | Complexity |
 |----------|-------------|-----------------|-------------------|--------------|------------|
 | Sequential execution | ❌ | ✅ | ✅ | ✅ | Low |
-| Repository pattern ⭐ | ✅ | ❌ | ✅ | ✅ | Medium |
+| Repository pattern | ✅ | ❌ | ✅ | ✅ | Medium |
 | Sharding (container per shard) | ✅ | ✅ | ✅ | ✅ | Medium |
 | PostgreSQL RLS | ✅ | ✅ | ❌ | ❌ | High |
 | Schema per test | ✅ | ✅ | ✅ | ✅ | Very High |
-
-⭐ **Recommended** - enables test-level parallelism with full isolation
 
 **No option gives you everything.** Choose based on your priorities.
 
@@ -93,7 +91,7 @@ export default defineConfig({
 - ❌ Slower for large test suites
 - ❌ Doesn't scale as codebase grows
 
-## Option 2: Repository Pattern (Recommended)
+## Option 2: Repository Pattern
 
 Abstract database access behind interfaces and inject test implementations.
 
@@ -292,17 +290,17 @@ await prisma.$executeRaw`DROP SCHEMA test_${testId} CASCADE`;
 
 ## Decision Guide
 
-### Default Choice: Repository Pattern
+### Start Here: Sequential Execution
 
-For most teams, the repository pattern is the best investment. It provides true test-level parallelism with full isolation, and the architectural benefits pay dividends beyond just testing.
+For most teams starting out, sequential execution is the right choice. It's simple, requires no code changes, and works well until your test suite grows large.
 
-### When to Choose Sequential Execution
+### When to Choose Repository Pattern
 
-If you have a small test suite (tens of tests) and want to get started quickly without any code changes. Consider migrating to the repository pattern as your codebase grows.
+If you need true test-level parallelism and you value clean architecture. Best for teams who are comfortable with dependency injection and interface abstractions. The architectural benefits extend beyond testing.
 
 ### When to Choose Sharding
 
-If you have 100+ database tests and CI/CD time is critical, but you can't refactor to use repositories. Requires good infrastructure and Docker orchestration.
+If you have 100+ database tests and CI/CD time is critical, but you don't want to change your application code. Requires good infrastructure and Docker orchestration.
 
 ### When to Choose PostgreSQL RLS
 
@@ -312,22 +310,20 @@ If you need row-level isolation (e.g., testing multi-tenant applications) and yo
 
 Rarely. Only if you need complete isolation and can tolerate very slow test execution.
 
-## Recommended Strategy
+## Common Strategy
 
-For most teams, we recommend:
+A pragmatic approach for most teams:
 
 1. **Use Scenarist for HTTP mocking** - External APIs (Stripe, Auth0, SendGrid)
-2. **Adopt the repository pattern** - Abstractions with test ID isolation for parallelism
-3. **Complement with Testcontainers** - For critical paths that need real database validation
-4. **Run all tests in parallel** - Both HTTP and database tests benefit from test ID isolation
+2. **Start with sequential database tests** - Simple, no code changes
+3. **Add parallelism when needed** - Choose based on your priorities and constraints
+4. **Test real database behavior when critical** - Use Testcontainers for queries, constraints, transactions
 
-The repository pattern provides the same isolation model as Scenarist's HTTP mocking, giving you fast parallel tests while following clean architecture principles.
-
-If you need to test actual database behavior (query performance, constraints, transactions), use Testcontainers for those specific tests while running the majority of tests with in-memory repositories.
+As your test suite grows, evaluate whether the investment in parallelism (repository pattern or sharding) is worth the trade-offs for your team.
 
 ## Next Steps
 
-- [Repository Pattern Guide](./repository-pattern) - Implement the recommended approach for parallelism
-- [Testcontainers Hybrid Guide](./testcontainers-hybrid) - Test real database behavior when needed
+- [Repository Pattern Guide](./repository-pattern) - Test-level parallelism with clean architecture
+- [Testcontainers Hybrid Guide](./testcontainers-hybrid) - Test real database behavior
 - [Testcontainers Documentation](https://testcontainers.com/) - Learn container management
-- [PostgreSQL RLS Documentation](https://www.postgresql.org/docs/current/ddl-rowsecurity.html) - Understand RLS if choosing that option
+- [PostgreSQL RLS Documentation](https://www.postgresql.org/docs/current/ddl-rowsecurity.html) - Understand RLS
