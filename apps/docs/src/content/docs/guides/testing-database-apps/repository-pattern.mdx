@@ -394,31 +394,40 @@ The in-memory implementation doesn't execute actual SQL. Potential issues you mi
 
 ```typescript
 // tests/repositories/prisma-user-repository.test.ts
-import { PostgreSqlContainer } from '@testcontainers/postgresql';
+import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { PrismaClient } from '@prisma/client';
 import { PrismaUserRepository } from '../../src/repositories/prisma-user-repository';
 
+const createTestContext = async () => {
+  const container = await new PostgreSqlContainer().start();
+  const prisma = new PrismaClient({
+    datasources: { db: { url: container.getConnectionUri() } }
+  });
+  await prisma.$executeRaw`CREATE TABLE users (...)`; // Run migrations
+  const repository = new PrismaUserRepository(prisma);
+
+  return {
+    container,
+    prisma,
+    repository,
+    cleanup: async () => {
+      await prisma.$disconnect();
+      await container.stop();
+    },
+  };
+};
+
 describe('PrismaUserRepository', () => {
-  let container: StartedPostgreSqlContainer;
-  let prisma: PrismaClient;
-  let repository: PrismaUserRepository;
-
-  beforeAll(async () => {
-    container = await new PostgreSqlContainer().start();
-    prisma = new PrismaClient({ datasources: { db: { url: container.getConnectionUri() } } });
-    await prisma.$executeRaw`CREATE TABLE users (...)`; // Run migrations
-    repository = new PrismaUserRepository(prisma);
-  });
-
-  afterAll(async () => {
-    await prisma.$disconnect();
-    await container.stop();
-  });
-
   it('should enforce unique email constraint', async () => {
-    await repository.create({ email: 'test@example.com', name: 'User 1' });
-    await expect(repository.create({ email: 'test@example.com', name: 'User 2' }))
-      .rejects.toThrow(/unique constraint/i);
+    const { repository, cleanup } = await createTestContext();
+
+    try {
+      await repository.create({ email: 'test@example.com', name: 'User 1' });
+      await expect(repository.create({ email: 'test@example.com', name: 'User 2' }))
+        .rejects.toThrow(/unique constraint/i);
+    } finally {
+      await cleanup();
+    }
   });
 });
 ```
