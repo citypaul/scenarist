@@ -50,6 +50,7 @@ Without isolation, parallel tests corrupt each other's data.
 | Approach | Parallelism | No Code Changes | No Schema Changes | ORM Agnostic | Complexity |
 |----------|-------------|-----------------|-------------------|--------------|------------|
 | Sequential execution | ❌ | ✅ | ✅ | ✅ | Low |
+| Repository pattern | ✅ | ❌ | ✅ | ✅ | Medium |
 | Multiple containers | ✅ | ✅ | ✅ | ✅ | Medium |
 | PostgreSQL RLS | ✅ | ✅ | ❌ | ❌ | High |
 | Schema per test | ✅ | ✅ | ✅ | ✅ | Very High |
@@ -89,7 +90,89 @@ export default defineConfig({
 - ✅ Works with any ORM
 - ❌ Slower for large test suites
 
-## Option 2: Multiple Containers (Playwright Sharding)
+## Option 2: Repository Pattern
+
+Abstract database access behind interfaces and inject test implementations.
+
+```typescript
+// Define repository interface
+interface UserRepository {
+  findById(id: string): Promise<User | null>;
+  create(user: User): Promise<User>;
+  findByEmail(email: string): Promise<User | null>;
+}
+
+// Production implementation
+class PrismaUserRepository implements UserRepository {
+  constructor(private prisma: PrismaClient) {}
+
+  async findById(id: string) {
+    return this.prisma.user.findUnique({ where: { id } });
+  }
+
+  async create(user: User) {
+    return this.prisma.user.create({ data: user });
+  }
+
+  async findByEmail(email: string) {
+    return this.prisma.user.findFirst({ where: { email } });
+  }
+}
+
+// Test implementation with test ID isolation
+class InMemoryUserRepository implements UserRepository {
+  private store = new Map<string, Map<string, User>>();
+
+  constructor(private getTestId: () => string) {}
+
+  private getTestStore() {
+    const testId = this.getTestId();
+    if (!this.store.has(testId)) {
+      this.store.set(testId, new Map());
+    }
+    return this.store.get(testId)!;
+  }
+
+  async findById(id: string) {
+    return this.getTestStore().get(id) ?? null;
+  }
+
+  async create(user: User) {
+    this.getTestStore().set(user.id, user);
+    return user;
+  }
+
+  async findByEmail(email: string) {
+    for (const user of this.getTestStore().values()) {
+      if (user.email === email) return user;
+    }
+    return null;
+  }
+}
+```
+
+```typescript
+// Inject based on environment
+const userRepository = process.env.NODE_ENV === 'test'
+  ? new InMemoryUserRepository(() => getTestIdFromHeader())
+  : new PrismaUserRepository(prisma);
+```
+
+**Best for:**
+- Teams already using hexagonal/clean architecture
+- Applications where dependency injection is established
+- Need full parallelism with complete isolation
+
+**Trade-offs:**
+- ✅ True parallelism with test ID isolation
+- ✅ No schema changes
+- ✅ ORM agnostic (swap implementations freely)
+- ✅ In-memory tests are fast
+- ❌ Requires abstracting all database access
+- ❌ Must maintain two implementations (production + test)
+- ❌ Test implementation may not catch real database issues
+
+## Option 3: Multiple Containers (Playwright Sharding)
 
 Run multiple PostgreSQL containers, one per Playwright shard.
 
@@ -132,7 +215,7 @@ npx playwright test --shard=4/4
 - ❌ Complex CI/CD setup
 - ❌ Slower container startup (multiplied by shard count)
 
-## Option 3: PostgreSQL Row-Level Security (RLS)
+## Option 4: PostgreSQL Row-Level Security (RLS)
 
 Use PostgreSQL's built-in RLS to isolate by test ID without application code changes.
 
@@ -171,7 +254,7 @@ app.use(async (req, res, next) => {
 - ❌ Complex to debug
 - ❌ Performance overhead
 
-## Option 4: Schema Per Test
+## Option 5: Schema Per Test
 
 Create a database schema for each test, complete isolation.
 
@@ -213,6 +296,11 @@ Most teams don't have hundreds of database tests. The simplicity of sequential e
 
 If you have 100+ database tests and CI/CD time matters, run 4-8 containers in parallel via Playwright sharding. Requires good infrastructure but no code changes.
 
+### Priority: Architecture
+**Choose: Repository Pattern**
+
+If your team already uses hexagonal/clean architecture with dependency injection, the repository pattern provides true parallelism with test ID isolation. Requires abstracting database access behind interfaces but gives you in-memory speed and full isolation.
+
 ### Priority: True Isolation
 **Choose: PostgreSQL RLS**
 
@@ -226,17 +314,17 @@ If you need row-level isolation (e.g., testing multi-tenant applications), accep
 For most teams, we recommend:
 
 1. **Use Scenarist for HTTP mocking** - External APIs (Stripe, Auth0, SendGrid)
-2. **Use Testcontainers for databases** - Real PostgreSQL/MySQL in containers
-3. **Accept sequential execution for database tests** - Keep test count manageable
-4. **Run HTTP tests in parallel** - Scenarist handles isolation automatically
+2. **Adopt the repository pattern** - Abstractions with test ID isolation for parallelism
+3. **Complement with Testcontainers** - For critical paths that need real database validation
+4. **Run all tests in parallel** - Both HTTP and database tests benefit from test ID isolation
 
-If you have hundreds of database tests and need parallelism:
-- Evaluate multiple containers first (no code changes)
-- Consider PostgreSQL RLS if you need row-level isolation
-- Accept the complexity and maintenance burden
+The repository pattern provides the same isolation model as Scenarist's HTTP mocking, giving you fast parallel tests while following clean architecture principles.
+
+If you need to test actual database behavior (query performance, constraints, transactions), use Testcontainers for those specific tests while running the majority of tests with in-memory repositories.
 
 ## Next Steps
 
-- [Testcontainers Hybrid Guide](./testcontainers-hybrid) - Implement the recommended approach
+- [Repository Pattern Guide](./repository-pattern) - Implement the recommended approach for parallelism
+- [Testcontainers Hybrid Guide](./testcontainers-hybrid) - Test real database behavior when needed
 - [Testcontainers Documentation](https://testcontainers.com/) - Learn container management
 - [PostgreSQL RLS Documentation](https://www.postgresql.org/docs/current/ddl-rowsecurity.html) - Understand RLS if choosing that option

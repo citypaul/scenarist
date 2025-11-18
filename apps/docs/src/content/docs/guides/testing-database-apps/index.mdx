@@ -48,29 +48,42 @@ Scenarist intercepts HTTP requests only. It cannot mock:
 
 ## Testing Approaches
 
-Many techniques work for database testing—real test databases, in-memory databases (SQLite), seeding scripts, or container-based solutions like Testcontainers. Choose what fits your team's workflow.
+Many techniques work for database testing—real test databases, in-memory databases, container-based solutions, or application-level abstractions. Choose what fits your team's workflow.
 
-### Our Recommendation: Testcontainers + Scenarist
+### Our Recommendation: Repository Pattern + Scenarist
 
-For apps that use both databases AND external HTTP APIs, we recommend combining:
-- **Testcontainers** for database testing (real PostgreSQL/MySQL in Docker containers)
+For apps that use both databases AND external HTTP APIs, we recommend the **repository pattern**:
+- **Repository pattern** for database access (abstractions with test ID isolation)
 - **Scenarist** for mocking external APIs (Stripe, Auth0, SendGrid)
 
 **Key benefits:**
-- ✅ No code changes required
-- ✅ Tests actual database queries and migrations
+- ✅ True test parallelism with test ID isolation
+- ✅ Fast in-memory test execution
+- ✅ Infrastructure flexibility (swap databases, ORMs, architectures)
+- ✅ Follows SOLID principles and clean architecture
 - ✅ Mock external APIs with Scenarist
-- ✅ Realistic integration testing
 
 **Trade-offs:**
-- ⚠️ Sequential test execution (database state is shared, unlike HTTP mocks)
+- ⚠️ Requires abstracting database access behind interfaces
+- ⚠️ Two implementations to maintain (production + test)
+- ⚠️ Test implementation doesn't catch real database issues
+
+[Learn more about the Repository Pattern →](./repository-pattern)
+
+### Alternative: Testcontainers
+
+If you need to test actual database behavior (queries, constraints, transactions), combine Testcontainers with Scenarist:
+- **Testcontainers** for real PostgreSQL/MySQL in Docker containers
+- **Scenarist** for mocking external APIs
+
+**Trade-offs:**
+- ⚠️ Sequential test execution (database state is shared)
 - ⚠️ Container startup overhead
 - ⚠️ Docker required in CI/CD
-- ⚠️ Must maintain database seeding scripts
 
 [Learn more about Testcontainers Hybrid →](./testcontainers-hybrid)
 
-### Alternative Approaches
+### Other Approaches
 
 Other valid database testing strategies include:
 - **Real test database** with seeding scripts
@@ -83,13 +96,17 @@ Use whatever approach fits your team. Scenarist handles the external API mocking
 
 ```mermaid
 graph TD
-    A[Does your Next.js app use direct database access?] -->|No - Uses HTTP APIs| B[✅ Use Scenarist directly]
+    A[Does your app use direct database access?] -->|No - Uses HTTP APIs| B[✅ Use Scenarist directly]
     A -->|Yes| C[Have external API dependencies?]
-    C -->|Yes| D[✅ Hybrid: Testcontainers + Scenarist]
-    C -->|No| E[Use Testcontainers only]
+    C -->|Yes| D{Need to test real DB behavior?}
+    C -->|No| E[Use Repository Pattern or Testcontainers]
 
-    D --> F[Benefits:<br/>- Test real DB queries<br/>- Mock external APIs<br/>- No code changes]
-    B --> G[Benefits:<br/>- Fast parallel tests<br/>- No database setup<br/>- Instant scenario switching]
+    D -->|Yes - queries, constraints| F[✅ Testcontainers + Scenarist]
+    D -->|No - business logic focus| G[✅ Repository Pattern + Scenarist]
+
+    G --> H[Benefits:<br/>- True parallelism<br/>- Fast in-memory tests<br/>- Infrastructure flexibility]
+    F --> I[Benefits:<br/>- Real DB queries<br/>- Test constraints<br/>- No code changes]
+    B --> J[Benefits:<br/>- Fast parallel tests<br/>- No database setup<br/>- Instant scenario switching]
 ```
 
 ## When to Use Each Tool
