@@ -17,6 +17,33 @@ The [repository pattern](https://martinfowler.com/eaaCatalog/repository.html) cr
 
 Beyond testing, the repository pattern is a well-established architectural practice that provides [significant additional benefits](#beyond-testing-why-the-repository-pattern-is-good-practice) including infrastructure flexibility, better separation of concerns, and alignment with SOLID principles.
 
+## How It Works
+
+The repository pattern separates *what* your code does from *how* data is persisted. Your business logic depends on an interface (the "what"), while concrete implementations handle the database details (the "how").
+
+**The key insight:** You can swap implementations based on environment:
+
+- **Production:** Real implementation that executes actual database queries (Prisma, Drizzle, TypeORM)
+- **Tests:** In-memory implementation that stores data in JavaScript Maps, partitioned by test ID
+
+This gives you the same isolation model as Scenarist's HTTP mocking:
+
+| Scenarist (HTTP) | Repository Pattern (Database) |
+|------------------|-------------------------------|
+| `x-test-id` header identifies test | `x-test-id` header identifies test |
+| MSW returns scenario-specific responses | Repository returns test-specific data |
+| Each test gets isolated mock state | Each test gets isolated data store |
+
+**The flow:**
+
+1. Test sends request with `x-test-id: abc-123`
+2. Middleware extracts test ID and stores it in `AsyncLocalStorage`
+3. Repository retrieves test ID and uses it as partition key
+4. Data operations only affect that test's partition
+5. Parallel tests have completely isolated data stores
+
+Because the interface is the same, your business logic doesn't know or care which implementation is running—it just calls `userRepository.findById()`. The test isolation happens transparently.
+
 ## Example Implementation (Express)
 
 <Aside type="note" title="Adapt for Your Framework">
@@ -363,7 +390,43 @@ The in-memory implementation doesn't execute actual SQL. Potential issues you mi
 
 <Aside type="caution" title="Mitigation Strategy">
 
-Complement in-memory tests with a smaller suite of integration tests against a real database using [Testcontainers](./testcontainers-hybrid). Run the fast in-memory tests in parallel for most coverage, then run sequential database tests for critical paths.
+**Test the repository implementation itself in isolation.** Create a separate test suite that runs your production repository (e.g., `PrismaUserRepository`) against a real database using [Testcontainers](./testcontainers-hybrid):
+
+```typescript
+// tests/repositories/prisma-user-repository.test.ts
+import { PostgreSqlContainer } from '@testcontainers/postgresql';
+import { PrismaClient } from '@prisma/client';
+import { PrismaUserRepository } from '../../src/repositories/prisma-user-repository';
+
+describe('PrismaUserRepository', () => {
+  let container: StartedPostgreSqlContainer;
+  let prisma: PrismaClient;
+  let repository: PrismaUserRepository;
+
+  beforeAll(async () => {
+    container = await new PostgreSqlContainer().start();
+    prisma = new PrismaClient({ datasources: { db: { url: container.getConnectionUri() } } });
+    await prisma.$executeRaw`CREATE TABLE users (...)`; // Run migrations
+    repository = new PrismaUserRepository(prisma);
+  });
+
+  afterAll(async () => {
+    await prisma.$disconnect();
+    await container.stop();
+  });
+
+  it('should enforce unique email constraint', async () => {
+    await repository.create({ email: 'test@example.com', name: 'User 1' });
+    await expect(repository.create({ email: 'test@example.com', name: 'User 2' }))
+      .rejects.toThrow(/unique constraint/i);
+  });
+});
+```
+
+This gives you:
+- **Fast parallel tests** for business logic (in-memory repositories)
+- **Confidence in SQL correctness** (repository implementation tests against real database)
+- **Clear separation** between "does my business logic work?" and "does my SQL work?"
 
 </Aside>
 
