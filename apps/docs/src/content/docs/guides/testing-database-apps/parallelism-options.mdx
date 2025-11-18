@@ -7,7 +7,7 @@ import { Aside } from '@astrojs/starlight/components';
 
 <Aside type="note" title="Why This Page Exists">
 
-The [Testcontainers Hybrid approach](./testcontainers-hybrid) requires sequential test execution. This page explores alternatives if you need parallelism, with honest analysis of what each approach costs.
+Database testing requires choosing between different parallelism strategies. This page compares all options with honest analysis of what each approach costs, so you can make the right choice for your team.
 
 </Aside>
 
@@ -50,14 +50,16 @@ Without isolation, parallel tests corrupt each other's data.
 | Approach | Parallelism | No Code Changes | No Schema Changes | ORM Agnostic | Complexity |
 |----------|-------------|-----------------|-------------------|--------------|------------|
 | Sequential execution | ❌ | ✅ | ✅ | ✅ | Low |
-| Repository pattern | ✅ | ❌ | ✅ | ✅ | Medium |
-| Multiple containers | ✅ | ✅ | ✅ | ✅ | Medium |
+| Repository pattern ⭐ | ✅ | ❌ | ✅ | ✅ | Medium |
+| Sharding (container per shard) | ✅ | ✅ | ✅ | ✅ | Medium |
 | PostgreSQL RLS | ✅ | ✅ | ❌ | ❌ | High |
 | Schema per test | ✅ | ✅ | ✅ | ✅ | Very High |
 
+⭐ **Recommended** - enables test-level parallelism with full isolation
+
 **No option gives you everything.** Choose based on your priorities.
 
-## Option 1: Sequential Execution (Recommended Default)
+## Option 1: Sequential Execution
 
 **Accept the limitation.** Run database tests sequentially, HTTP tests in parallel.
 
@@ -80,17 +82,18 @@ export default defineConfig({
 ```
 
 **Best for:**
-- Most teams
-- Focused database test suites (tens of tests, not hundreds)
+- Small test suites (tens of tests, not hundreds)
 - Teams prioritizing simplicity over speed
+- Quick prototypes where test speed doesn't matter yet
 
 **Trade-offs:**
 - ✅ No code changes
 - ✅ No schema changes
 - ✅ Works with any ORM
 - ❌ Slower for large test suites
+- ❌ Doesn't scale as codebase grows
 
-## Option 2: Repository Pattern
+## Option 2: Repository Pattern (Recommended)
 
 Abstract database access behind interfaces and inject test implementations.
 
@@ -159,22 +162,24 @@ const userRepository = process.env.NODE_ENV === 'test'
 ```
 
 **Best for:**
-- Teams already using hexagonal/clean architecture
-- Applications where dependency injection is established
-- Need full parallelism with complete isolation
+- Teams wanting true test-level parallelism
+- Growing codebases that need scalable testing
+- Teams valuing clean architecture and infrastructure flexibility
 
 **Trade-offs:**
 - ✅ True parallelism with test ID isolation
 - ✅ No schema changes
 - ✅ ORM agnostic (swap implementations freely)
 - ✅ In-memory tests are fast
-- ❌ Requires abstracting all database access
-- ❌ Must maintain two implementations (production + test)
-- ❌ Test implementation may not catch real database issues
+- ✅ Infrastructure flexibility (change databases/ORMs later)
+- Requires abstracting database access behind interfaces
+- Separate tests needed for real database behavior
 
-## Option 3: Multiple Containers (Playwright Sharding)
+[**Learn more about the Repository Pattern →**](./repository-pattern)
 
-Run multiple PostgreSQL containers, one per Playwright shard.
+## Option 3: Sharding (Container per Shard)
+
+Run multiple PostgreSQL containers, one per Playwright shard. This provides parallelism at the shard level (not test level)—tests within each shard still run sequentially against their container.
 
 ```typescript
 // playwright.config.ts
@@ -209,8 +214,9 @@ npx playwright test --shard=4/4
 - Large test suites where speed is critical
 
 **Trade-offs:**
-- ✅ True parallelism
+- ✅ Shard-level parallelism (4 shards = 4x faster)
 - ✅ No code or schema changes
+- ❌ Not test-level parallelism (tests within shard still sequential)
 - ❌ Resource-intensive (CPU, memory, disk)
 - ❌ Complex CI/CD setup
 - ❌ Slower container startup (multiplied by shard count)
@@ -286,28 +292,25 @@ await prisma.$executeRaw`DROP SCHEMA test_${testId} CASCADE`;
 
 ## Decision Guide
 
-### Priority: Simplicity
-**Choose: Sequential Execution**
+### Default Choice: Repository Pattern
 
-Most teams don't have hundreds of database tests. The simplicity of sequential execution outweighs the speed benefit of parallelism.
+For most teams, the repository pattern is the best investment. It provides true test-level parallelism with full isolation, and the architectural benefits pay dividends beyond just testing.
 
-### Priority: Speed (CI/CD)
-**Choose: Multiple Containers**
+### When to Choose Sequential Execution
 
-If you have 100+ database tests and CI/CD time matters, run 4-8 containers in parallel via Playwright sharding. Requires good infrastructure but no code changes.
+If you have a small test suite (tens of tests) and want to get started quickly without any code changes. Consider migrating to the repository pattern as your codebase grows.
 
-### Priority: Architecture
-**Choose: Repository Pattern**
+### When to Choose Sharding
 
-If your team already uses hexagonal/clean architecture with dependency injection, the repository pattern provides true parallelism with test ID isolation. Requires abstracting database access behind interfaces but gives you in-memory speed and full isolation.
+If you have 100+ database tests and CI/CD time is critical, but you can't refactor to use repositories. Requires good infrastructure and Docker orchestration.
 
-### Priority: True Isolation
-**Choose: PostgreSQL RLS**
+### When to Choose PostgreSQL RLS
 
-If you need row-level isolation (e.g., testing multi-tenant applications), accept the schema changes and complexity. Note this is PostgreSQL-only.
+If you need row-level isolation (e.g., testing multi-tenant applications) and you're already using PostgreSQL. Accept the schema changes and complexity.
 
-### Priority: Everything
-**Not possible.** Pick your top priority and accept the trade-offs.
+### When to Choose Schema Per Test
+
+Rarely. Only if you need complete isolation and can tolerate very slow test execution.
 
 ## Recommended Strategy
 
