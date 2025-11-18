@@ -7,6 +7,12 @@ import { Aside } from '@astrojs/starlight/components';
 
 This guide shows you how to add API routes between Server Components and your database to make Next.js apps testable with Scenarist. This approach gives you fast, parallel tests without database setup.
 
+<Aside type="note">
+**What Scenarist Can and Cannot Mock**
+
+Scenarist intercepts HTTP/HTTPS requests only. It cannot mock database calls, file system operations, or WebSockets. For a complete list of limitations, see [What Scenarist Intercepts](/introduction/why-scenarist#what-scenarist-intercepts).
+</Aside>
+
 ## Overview
 
 The pattern is straightforward:
@@ -296,6 +302,15 @@ const response = await fetch('http://localhost:3000/api/products', {
 
 ## Performance Impact
 
+### Quick Summary
+
+**Performance:** ~5-10ms overhead per request (acceptable for most apps)
+**Trade-off:** Fast, parallel tests vs. slight production latency
+**Best for:** CRUD apps, moderate traffic, non-latency-critical paths
+**Consider alternatives:** High-scale apps (1000+ req/s) or streaming-heavy workloads
+
+---
+
 **Short answer: No, most RSC advantages are preserved, with ~5-10ms added latency.**
 
 ### What React Server Components Give You:
@@ -527,6 +542,61 @@ With API route abstraction, you test:
 - You're testing database-specific behavior (transactions, constraints)
 - Adding API routes would be a major architectural change
 - You need to test Server Actions that mutate database state directly
+
+## When NOT to Use API Route Abstraction
+
+While this pattern works for many apps, it's explicitly **not recommended** for these scenarios:
+
+### ❌ Database Logic IS the Feature
+
+If your feature tests database-specific behavior:
+- Testing transaction rollbacks
+- Validating foreign key constraints
+- Testing database triggers or stored procedures
+- Verifying row-level security policies
+- Testing complex JOIN queries or aggregations
+
+**Use instead:** [Testcontainers Hybrid](./testcontainers-hybrid) to test against real database
+
+### ❌ Your App Has <5 Scenarios
+
+If your test coverage is minimal:
+- Only testing happy path + one error case
+- Limited edge cases to cover
+- Simple CRUD operations only
+
+**Use instead:** Traditional database seeding may be simpler (less abstraction overhead)
+
+### ❌ Database Logic in Middleware
+
+If your Next.js middleware performs database queries:
+- Session validation from database
+- User permission checks via database
+- Rate limiting stored in database
+
+**Why it blocks:** Middleware cannot call `fetch()` to same app (infinite loop). See [Special Case: Authentication in Middleware](#special-case-authentication-in-middleware) section.
+
+### ❌ Team Lacks TypeScript/Testing Experience
+
+If your team is new to:
+- TypeScript type safety
+- Playwright/E2E testing
+- Hexagonal architecture patterns
+- Scenario-based testing
+
+**Why it matters:** Learning curve includes: scenarios + API routes + type safety + test isolation
+
+**Use instead:** Start with simpler tools, adopt incrementally
+
+### ❌ Architectural Refactoring Not Feasible
+
+If adding API routes requires:
+- Major codebase restructuring
+- Breaking existing contracts
+- Rewriting Server Components
+- Team approval/buy-in not secured
+
+**Use instead:** [Testcontainers Hybrid](./testcontainers-hybrid) requires no code changes
 
 ## Summary
 
