@@ -49,7 +49,7 @@ Scenarist intercepts **HTTP/HTTPS requests** made via fetch, axios, or other HTT
 - WebSocket connections
 - Non-HTTP protocols
 
-**If your app uses direct database access:** You have two options: (1) add thin API routes to make database calls testable via HTTP, or (2) use Testcontainers to spin up real database containers with seeded scenarios, combined with Scenarist to mock external APIs. The hybrid approach requires no code changes.
+**If your app uses direct database access:** You have two options: (1) add thin API routes to make database calls testable via HTTP, or (2) use Testcontainers to spin up real database containers with seeded scenarios, combined with Scenarist to mock external APIs. The Testcontainers approach requires no code changes.
 
 [Database testing guide →](/guides/testing-database-apps)
 
