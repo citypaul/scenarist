@@ -41,17 +41,43 @@ This creates a testing challenge:
 
 ## What Scenarist Intercepts
 
-Scenarist intercepts **HTTP/HTTPS requests** made via fetch, axios, or other HTTP clients to external services (Stripe, Auth0, SendGrid, REST APIs).
+Scenarist uses MSW (Mock Service Worker) to intercept HTTP requests at the network level. This means **only requests that actually traverse the network** can be intercepted.
 
-**It does not intercept:**
-- Direct database access (PostgreSQL, MongoDB, Prisma)
-- File system operations
-- WebSocket connections
-- Non-HTTP protocols
+### Can Intercept ✅
 
-**If your app uses direct database access:** You have two options: (1) add thin API routes to make database calls testable via HTTP, or (2) use Testcontainers to spin up real database containers with seeded scenarios, combined with Scenarist to mock external APIs. The Testcontainers approach requires no code changes.
+- **External APIs** on different hosts: `fetch('https://api.stripe.com/...')`
+- **Cross-origin requests**: `fetch('https://api.example.com/...')`
+- **Different ports on localhost**: `fetch('http://localhost:3001/...')` from app on port 3000
 
-[Database testing guide →](/guides/testing-database-apps)
+### Cannot Intercept ❌
+
+- **Internal API routes** from Server Components or getServerSideProps:
+  ```typescript
+  // ❌ This CANNOT be intercepted
+  // Server Component calling internal API route
+  const res = await fetch('http://localhost:3000/api/products');
+  ```
+  **Why:** Next.js routes these internally without making network requests. MSW only sees requests that go through the network stack.
+
+- **Direct database access** (PostgreSQL, MongoDB, Prisma)
+- **File system operations**
+- **WebSocket connections**
+- **Non-HTTP protocols**
+
+### The Key Distinction
+
+```typescript
+// ✅ WORKS - External API (different host)
+const stripe = await fetch('https://api.stripe.com/v1/products');
+
+// ✅ WORKS - Different port (network request)
+const products = await fetch('http://localhost:3001/products');
+
+// ❌ DOES NOT WORK - Same host/port (internal routing)
+const products = await fetch('http://localhost:3000/api/products');
+```
+
+**If your app calls internal API routes:** Refactor to call external APIs directly, or use [Testcontainers](/guides/testing-database-apps/testcontainers-hybrid) to test with a real database.
 
 [Learn how it works →](/introduction/overview)
 
