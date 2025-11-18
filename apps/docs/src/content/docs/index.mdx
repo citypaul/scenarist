@@ -29,6 +29,30 @@ import { Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
 **Real execution + Controlled scenarios + Runtime switching = Comprehensive backend testing**
 :::
 
+## What Scenarist Does (and Doesn't)
+
+<CardGrid>
+  <Card title="✅ What Scenarist Mocks" icon="approve-check">
+    - **External HTTP APIs** - Third-party services (Stripe, SendGrid, Auth0)
+    - **Microservice calls** - REST APIs, GraphQL endpoints
+    - **Any outgoing HTTP request** - fetch(), axios, node-fetch
+  </Card>
+
+  <Card title="❌ What Scenarist Does NOT Mock" icon="warning">
+    - **Databases** - Use [Testcontainers](https://testcontainers.com/), Prisma mocks, or real test DBs
+    - **Internal functions** - Only intercepts HTTP requests leaving your app
+    - **File system** - Not HTTP-based
+  </Card>
+</CardGrid>
+
+:::note[Complete Testing Strategy]
+Most Next.js apps need **both** database queries AND external API calls.
+
+**Best practice:** Combine Scenarist (external APIs) + Testcontainers (databases) for complete Server Component testing.
+
+See our [Hybrid Testing guide](/guides/testing-database-apps/hybrid-testing-strategy) for the complete pattern.
+:::
+
 **What executes for real:**
 - ✅ Server Components render with actual data fetching
 - ✅ Remix loaders execute with real session handling
@@ -36,8 +60,8 @@ import { Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
 - ✅ API routes run validation and business rules
 - ✅ Authentication flows work with real cookies/headers
 
-**What's mocked:**
-- Only external APIs (Stripe, SendGrid, Auth0) via MSW
+**What's controlled:**
+- External APIs return predictable responses via MSW
 - No framework mocking, no Request object mocks, no brittle internal mocks
 
 **The magic:**
