@@ -537,24 +537,119 @@ Even with API route abstraction, Scenarist has fundamental limitations:
 
 ## Architecture Considerations
 
-### Production vs. Testing Layers
+### Performance Impact: Does This Remove RSC Advantages?
 
-**In Production:**
+**Short answer: No. Most RSC advantages are preserved, with ~5-10ms added latency.**
+
+#### What React Server Components Give You:
+
+1. **Server-side rendering** (no client JavaScript)
+2. **Direct backend access** (database in same process)
+3. **Zero client bundle size**
+4. **Streaming** (show data as it arrives)
+5. **Reduced round trips** (server makes backend calls without browser involvement)
+
+#### With API Route Abstraction:
+
+**✅ PRESERVED:**
+- Server-side rendering (component still runs on server, not client)
+- Zero client bundle (still no client JavaScript)
+- No browser round trips (fetch() happens server-side)
+- Parallel data fetching (can still make multiple fetches in parallel on server)
+
+**❌ LOST:**
+- **Streaming for large datasets** - Biggest loss
+  - Direct DB: Can stream results as they arrive (~10ms for first results)
+  - API route: Must wait for complete JSON response (~100ms for full payload)
+- **Direct connection efficiency** - Extra network stack traversal
+- **~5-10ms latency per request** - Typical overhead
+
+#### Performance Breakdown:
+
+**Direct Database Access (RSC as designed):**
 ```typescript
-// Server Component → Database directly
-// ✅ Fewer network hops = faster
-// ✅ No HTTP overhead
+// Server Component queries database directly
+const products = await db.products.findMany();
+// Latency: ~2-5ms (same process, TCP socket)
 ```
 
-**In Testing:**
+**API Route Abstraction:**
 ```typescript
-// Server Component → API Route → Database
-// ✅ Testable with Scenarist
-// ✅ Can mock API route responses
-// ⚠️ Extra HTTP hop (acceptable in tests)
+// Server Component → HTTP → API route → Database
+const response = await fetch('http://localhost:3000/api/products');
+const products = await response.json();
+// Latency: ~7-15ms total
+//   - HTTP round trip (localhost): ~2-3ms
+//   - Database query: ~2-5ms
+//   - JSON serialize/deserialize: ~2-5ms
+//   - Route matching: ~1ms
 ```
 
-The API route wrapper adds a small performance cost in production, but enables comprehensive testing without complex database setup. For many applications, this trade-off is worthwhile.
+**Added overhead: ~5-10ms for typical requests** (3-5x slower than direct access)
+
+#### Is 10ms Negligible?
+
+**For most apps: YES**
+- Typical page load: 200-500ms
+- Network latency to user: 50-200ms
+- 10ms = ~2-5% of total page load time
+- Users won't notice
+
+**For high-scale apps: MAYBE NOT**
+- At 1000+ req/s, every millisecond counts
+- Streaming large datasets is valuable
+- Consider traditional E2E with database seeding
+
+#### Next.js Caching Can Eliminate Overhead:
+
+```typescript
+// Production: Cache responses for 60 seconds
+const response = await fetch('http://localhost:3000/api/products', {
+  next: { revalidate: 60 }, // Cached!
+});
+// First request: ~10ms
+// Subsequent requests: ~0ms (served from cache)
+// Can be FASTER than direct DB calls!
+
+// Tests: Disable cache for fresh data
+const response = await fetch('http://localhost:3000/api/products', {
+  cache: 'no-store', // Every test gets fresh mock data
+});
+```
+
+#### When Does This Matter?
+
+**✅ Use API Route Abstraction (10ms is fine):**
+- Small datasets (< 100 records)
+- Moderate traffic (< 100 req/s)
+- Non-latency-critical pages (> 500ms acceptable)
+- Most CRUD applications
+- **Testing scenarios** (this is the whole point!)
+
+**⚠️ Consider Alternatives:**
+- Large datasets needing streaming (1000+ records)
+- High-frequency requests (1000s per second)
+- Latency-critical paths (sub-100ms requirements)
+- Production at massive scale
+
+<Aside type="caution" title="Important: This Affects Production">
+
+The API route abstraction runs in **both production and tests**. There's no way to avoid the overhead in production without branching logic (which defeats E2E testing).
+
+**The trade-off:** ~10ms production overhead for fast, parallelizable tests. For most apps, development velocity >> marginal performance.
+
+</Aside>
+
+### What You're Actually Testing
+
+With API route abstraction, you test:
+- ✅ UI renders correctly with different data
+- ✅ Error states display properly
+- ✅ Loading states work
+- ✅ User interactions work
+- ❌ NOT testing: database queries, transactions, constraints
+
+**This is integration testing of the UI layer**, not true E2E testing of the entire stack. If you need to test database behavior, use database seeding.
 
 ### When API Routes Are Already Present
 
