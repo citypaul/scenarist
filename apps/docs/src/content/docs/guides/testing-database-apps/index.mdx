@@ -1,121 +1,69 @@
 ---
-title: Testing Next.js Apps with Database Access
-description: How to test Next.js applications that use direct database access with Scenarist
+title: Testing Apps with Database Access
+description: How to test applications that use direct database access with Scenarist
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
-<Aside type="note" title="Scenarist's Scope">
+## Use the Repository Pattern
 
-**Scenarist excels at mocking external HTTP APIs.** For apps that also access databases directly, this guide shows the recommended testing strategy combining Scenarist with database testing tools.
+**Abstract database access behind interfaces and inject test implementations with test ID isolation.** This gives you:
 
+- True test-level parallelism (not just shard-level)
+- Same test ID isolation model as Scenarist's HTTP mocking
+- Fast in-memory execution
+- Architectural benefits that extend beyond testing
+
+[Implement the Repository Pattern →](./repository-pattern)
+
+<Aside type="tip">
+**Not ready to refactor?** Use [sharding](./parallelism-options#option-3-sharding-container-per-shard) for parallelism without code changes, or [sequential execution](./parallelism-options#option-1-sequential-execution) for small test suites.
 </Aside>
 
-## The Problem
+---
 
-**Next.js apps with direct database access are not directly testable with Scenarist:**
+## Why This Matters
+
+Scenarist intercepts HTTP requests via MSW. Database calls are not HTTP requests—they use direct TCP connections that MSW cannot intercept.
 
 ```typescript
 // ❌ Scenarist CANNOT mock this - no HTTP request
-// app/lib/data.ts
-import { db } from './db';
-
 export async function fetchProducts() {
-  return await db.products.findMany();
-}
-
-// app/products/page.tsx - Server Component
-export default async function ProductsPage() {
-  const products = await fetchProducts(); // Direct database call
-  return <ProductList products={products} />;
+  return await db.products.findMany();  // Direct database call
 }
 ```
 
-**Why this doesn't work:**
-- `db.products.findMany()` is a direct function call to the database driver
-- No HTTP request is made
-- MSW (which Scenarist uses) only intercepts `fetch()` calls
-- Database connections use TCP sockets, not HTTP
+Without the repository pattern, you have two bad options:
+- **Sequential execution**: Doesn't scale—CI time grows linearly with test count
+- **Sharding**: Only shard-level parallelism—tests within each shard still run sequentially
 
-<Aside type="caution">
-Scenarist intercepts HTTP requests only. It cannot mock:
-- Database calls (PostgreSQL, MongoDB, MySQL, etc.)
-- File system operations (`fs.readFile`, `fs.writeFile`)
-- WebSocket connections
-- gRPC calls
-- Direct function calls or imports
-</Aside>
+The repository pattern solves this by letting you inject in-memory implementations that partition data by test ID, just like Scenarist does for HTTP.
 
-## Testing Approaches
+---
 
-Many techniques work for database testing—real test databases, in-memory databases, container-based solutions, or application-level abstractions. Choose what fits your team's workflow.
+## Quick Decision Guide
 
-### Recommended: Repository Pattern
+| Your Situation | Use This |
+|----------------|----------|
+| Want scalable parallel tests | [Repository Pattern](./repository-pattern) |
+| Need to test actual SQL queries | Repository Pattern + [Testcontainers](./testcontainers-hybrid) |
+| Can't change code right now | [Sharding](./parallelism-options#option-3-sharding-container-per-shard) |
+| Small test suite, prototyping | [Sequential Execution](./parallelism-options#option-1-sequential-execution) |
 
-For most teams that want scalable, parallel testing of real server-side code through browser-based tests, the **repository pattern** is the best approach:
+---
 
-- Provides same test ID isolation model as Scenarist
-- True test-level parallelism (not just shard-level)
-- Architectural benefits extend beyond testing (clean separation, infrastructure flexibility)
-- Test repository implementations with Testcontainers for real database behavior
+## What Scenarist Handles
 
-[Learn about the Repository Pattern →](./repository-pattern)
+| What You're Testing | Tool |
+|---------------------|------|
+| External HTTP APIs (Stripe, Auth0, SendGrid) | **Scenarist** |
+| Database queries and constraints | **Repository Pattern** + Testcontainers |
+| Business logic with database state | **Repository Pattern** |
 
-### Other Options
-
-**Sequential Execution** - Simplest but doesn't scale
-- Run database tests sequentially, HTTP tests in parallel
-- No code changes required
-- CI time grows linearly with test count—only suitable for small test suites or prototypes
-
-**Sharding** - Parallelism without code changes
-- One database container per Playwright shard
-- Tests within each shard still run sequentially
-- Requires good CI/CD infrastructure
-
-**Testcontainers** - For testing real database behavior
-- Tests actual SQL queries, constraints, transactions
-- Best used alongside repository pattern to validate implementations
-- Sequential test execution when used standalone
-
-[See all parallelism options →](./parallelism-options)
-
-### Other Approaches
-
-Other valid database testing strategies include:
-- **Real test database** with seeding scripts
-- **In-memory database** (SQLite for development, real DB in CI)
-- **Database mocking** at the ORM level (Prisma mock, etc.)
-
-Use whatever approach fits your team. Scenarist handles the external API mocking regardless of how you test your database layer.
-
-## Decision Tree
-
-```mermaid
-graph TD
-    A[Does your app use direct database access?] -->|No - Uses HTTP APIs| B[✅ Use Scenarist directly]
-    A -->|Yes| C[Have external API dependencies?]
-    C -->|Yes| D{Need to test real DB behavior?}
-    C -->|No| E[Use Repository Pattern or Testcontainers]
-
-    D -->|Yes - queries, constraints| F[✅ Testcontainers + Scenarist]
-    D -->|No - business logic focus| G[✅ Repository Pattern + Scenarist]
-
-    G --> H[Benefits:<br/>- True parallelism<br/>- Fast in-memory tests<br/>- Infrastructure flexibility]
-    F --> I[Benefits:<br/>- Real DB queries<br/>- Test constraints<br/>- No code changes]
-    B --> J[Benefits:<br/>- Fast parallel tests<br/>- No database setup<br/>- Instant scenario switching]
-```
-
-## When to Use Each Tool
-
-| What You're Testing | Tool to Use |
-|---------------------|-------------|
-| External HTTP APIs (Stripe, SendGrid) | **Scenarist** |
-| Database queries | **Testcontainers** or real test database |
-| File system operations | **Mock fs** or real files |
+---
 
 ## Next Steps
 
-- [Testcontainers Hybrid →](./testcontainers-hybrid) - Complete guide to using Testcontainers with Scenarist
-- [Next.js App Router Getting Started](/frameworks/nextjs-app-router/getting-started)
-- [Next.js Pages Router Getting Started](/frameworks/nextjs-pages-router/getting-started)
+- [Repository Pattern Guide](./repository-pattern) — Implementation walkthrough
+- [Testcontainers Hybrid](./testcontainers-hybrid) — Testing real database behavior
+- [All Parallelism Options](./parallelism-options) — Detailed comparison of approaches

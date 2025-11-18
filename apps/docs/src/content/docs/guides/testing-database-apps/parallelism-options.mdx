@@ -5,45 +5,11 @@ description: Compare strategies for parallel database testing—trade-offs betwe
 
 import { Aside } from '@astrojs/starlight/components';
 
-<Aside type="note" title="Why This Page Exists">
+## The Core Problem
 
-Database testing requires choosing between different parallelism strategies. This page compares all options with honest analysis of what each approach costs, so you can make the right choice for your team.
+Databases have no equivalent to HTTP's test ID header. Without isolation, parallel tests corrupt each other's data.
 
-</Aside>
-
-## Why Parallel Database Testing Is Hard
-
-**HTTP mocking has a universal interception point.** MSW intercepts `fetch()` calls in both browser and Node.js. Every HTTP library eventually calls the same underlying APIs.
-
-**Databases have no equivalent.** Each ORM and driver is a different API surface:
-
-- Prisma: `prisma.user.findMany()`
-- Drizzle: `db.select().from(users)`
-- TypeORM: `userRepository.find()`
-- Knex: `knex('users').select()`
-- Raw SQL: `pg.query('SELECT * FROM users')`
-
-There's no single place to intercept all database queries and inject test isolation.
-
-### The Core Problem
-
-Scenarist isolates tests via **test ID in HTTP headers**:
-
-```typescript
-// Test ID flows automatically through HTTP
-fetch('/api/products', {
-  headers: { 'x-test-id': 'test-123' }  // Automatic isolation
-});
-```
-
-Databases have no equivalent mechanism:
-
-```typescript
-// No "test ID header" in database protocol
-await prisma.user.findMany();  // Which test's data?
-```
-
-Without isolation, parallel tests corrupt each other's data.
+[We recommend the repository pattern](/guides/testing-database-apps) for most teams. This page compares all options.
 
 ## Options Comparison
 
