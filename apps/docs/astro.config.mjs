@@ -83,6 +83,12 @@ export default defineConfig({
           ],
         },
         {
+          label: "Guides",
+          items: [
+            { label: "Testing Database Apps", slug: "guides/testing-database-apps" },
+          ],
+        },
+        {
           label: "Concepts",
           collapsed: true,
           items: [
