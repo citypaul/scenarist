@@ -1,0 +1,520 @@
+---
+title: Testcontainers + Scenarist Hybrid
+description: Test database-heavy Next.js apps without code changes using Testcontainers and Scenarist together
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+This guide shows how to test Next.js apps that use direct database access by combining [Testcontainers](https://testcontainers.com/) for real database testing with Scenarist for mocking external APIs. **No code changes required.**
+
+## What is Testcontainers?
+
+[Testcontainers](https://testcontainers.com/) is a library that provides lightweight, throwaway Docker containers for testing. It spins up real database instances (PostgreSQL, MySQL, MongoDB) as Docker containers during your tests, pre-configured with your schema and seed data. Each test suite gets a fresh database instance that's automatically destroyed after tests complete. This enables testing against actual database queries, migrations, transactions, and constraints without maintaining a shared test database or complex cleanup scripts.
+
+**Learn more:** [Testcontainers Documentation](https://testcontainers.com/getting-started/)
+
+## Overview
+
+The hybrid approach uses two complementary tools:
+- **Testcontainers:** Spins up real Docker database containers with seeded scenarios
+- **Scenarist:** Mocks external API dependencies (Stripe, Auth0, SendGrid)
+
+Together, you get:
+- ✅ Real database queries and migrations tested
+- ✅ External APIs mocked for different scenarios
+- ✅ No code changes to your application
+- ✅ Realistic integration testing
+
+**Best for:** Teams that cannot/won't refactor to add API routes
+
+## Architecture
+
+```typescript
+// Server Component (unchanged - no API routes needed!)
+export default async function CheckoutPage() {
+  // Database call - testcontainer provides real PostgreSQL with seeded data
+  const user = await db.user.findUnique({ where: { id: userId } });
+
+  // External API - Scenarist intercepts and mocks
+  const payment = await fetch('https://api.stripe.com/v1/charges', {
+    method: 'POST',
+    headers: scenarist.getHeaders(request),
+    body: JSON.stringify({ amount: user.cartTotal }),
+  });
+
+  return <CheckoutForm user={user} payment={payment} />;
+}
+```
+
+**What each tool handles:**
+- **Testcontainers:** User data, products, cart items (real PostgreSQL)
+- **Scenarist:** Stripe payment responses, Auth0 tokens, SendGrid emails (mocked)
+
+## Installation
+
+Install Testcontainers for your database:
+
+```bash
+# For PostgreSQL
+npm install -D @testcontainers/postgresql
+
+# For MySQL
+npm install -D @testcontainers/mysql
+
+# For MongoDB
+npm install -D @testcontainers/mongodb
+```
+
+Scenarist is already installed from [Getting Started](/introduction/installation).
+
+## Step-by-Step Implementation
+
+### Step 1: Create Database Seeding Functions
+
+Create functions to seed test data into database containers:
+
+```typescript
+// tests/helpers/seed-database.ts
+import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import { PrismaClient } from '@prisma/client';
+
+export async function seedPremiumUser(container: StartedPostgreSqlContainer) {
+  const connectionString = container.getConnectionUrl();
+  const prisma = new PrismaClient({
+    datasources: { db: { url: connectionString } },
+  });
+
+  await prisma.user.create({
+    data: {
+      id: 'user-premium-123',
+      email: 'premium@example.com',
+      tier: 'premium',
+      cartTotal: 500,
+    },
+  });
+
+  await prisma.$disconnect();
+}
+
+export async function seedStandardUser(container: StartedPostgreSqlContainer) {
+  const connectionString = container.getConnectionUrl();
+  const prisma = new PrismaClient({
+    datasources: { db: { url: connectionString } },
+  });
+
+  await prisma.user.create({
+    data: {
+      id: 'user-standard-456',
+      email: 'standard@example.com',
+      tier: 'standard',
+      cartTotal: 200,
+    },
+  });
+
+  await prisma.$disconnect();
+}
+```
+
+### Step 2: Set Up Container in Tests
+
+Create a container setup function and use it in tests:
+
+```typescript
+// tests/helpers/setup-container.ts
+import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import { execSync } from 'child_process';
+
+export async function createTestContainer(): Promise<StartedPostgreSqlContainer> {
+  // Start PostgreSQL container (takes 5-30 seconds)
+  const container = await new PostgreSqlContainer('postgres:16').start();
+
+  // Set DATABASE_URL for Next.js app
+  process.env.DATABASE_URL = container.getConnectionUrl();
+
+  // Run migrations
+  execSync('npx prisma migrate deploy', { env: process.env });
+
+  return container;
+}
+
+// tests/checkout.spec.ts
+import { test, expect } from '@playwright/test';
+import { createTestContainer } from './helpers/setup-container';
+import { seedPremiumUser, seedStandardUser } from './helpers/seed-database';
+
+test.describe('Checkout flow', () => {
+  const setup = test.beforeAll(async () => {
+    const container = await createTestContainer();
+    return { container };
+  });
+
+  test.afterAll(async () => {
+    const { container } = await setup;
+    await container.stop();
+  });
+
+  // Tests use container from setup
+});
+```
+
+### Step 3: Write Tests with Database + API Mocking
+
+Combine database seeding with Scenarist scenario switching:
+
+```typescript
+test.describe('Checkout flow', () => {
+  const setup = test.beforeAll(async () => {
+    const container = await createTestContainer();
+    return { container };
+  });
+
+  test.afterAll(async () => {
+    const { container } = await setup;
+    await container.stop();
+  });
+
+  test('premium user with successful payment', async ({ page, switchScenario }) => {
+    const { container } = await setup;
+
+    // Testcontainer: Seed premium user in real database
+    await seedPremiumUser(container);
+
+    // Scenarist: Mock Stripe success
+    await switchScenario(page, 'stripeSuccess');
+
+    await page.goto('/checkout');
+
+    // Test sees:
+    // - Premium user from real database (tier='premium', cartTotal=500)
+    // - Successful payment from Scenarist mock
+    await expect(page.getByText('Payment successful')).toBeVisible();
+    await expect(page.getByText('£500.00')).toBeVisible();
+  });
+
+  test('standard user with declined payment', async ({ page, switchScenario }) => {
+    const { container } = await setup;
+
+    // Testcontainer: Seed standard user in real database
+    await seedStandardUser(container);
+
+    // Scenarist: Mock Stripe decline
+    await switchScenario(page, 'stripeDeclined');
+
+    await page.goto('/checkout');
+
+    // Test sees:
+    // - Standard user from real database (tier='standard', cartTotal=200)
+    // - Declined payment from Scenarist mock
+    await expect(page.getByText('Payment declined')).toBeVisible();
+    await expect(page.getByText('£200.00')).toBeVisible();
+  });
+});
+```
+
+### Step 4: Define Scenarist Scenarios
+
+Mock external APIs (Stripe, Auth0, SendGrid):
+
+```typescript
+// lib/scenarios.ts
+export const stripeSuccessScenario: ScenaristScenario = {
+  id: 'stripeSuccess',
+  name: 'Stripe Payment Success',
+  mocks: [
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      response: {
+        status: 200,
+        body: {
+          id: 'ch_123',
+          status: 'succeeded',
+          amount: 50000, // $500.00
+        },
+      },
+    },
+  ],
+};
+
+export const stripeDeclinedScenario: ScenaristScenario = {
+  id: 'stripeDeclined',
+  name: 'Stripe Payment Declined',
+  mocks: [
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      response: {
+        status: 402,
+        body: {
+          error: {
+            code: 'card_declined',
+            message: 'Your card was declined',
+          },
+        },
+      },
+    },
+  ],
+};
+```
+
+## Complete Example
+
+Here's a full test showing database setup, seeding, and API mocking using functional patterns:
+
+```typescript
+import { test, expect } from '@playwright/test';
+import { PostgreSqlContainer } from '@testcontainers/postgresql';
+import { PrismaClient } from '@prisma/client';
+import { scenaristFixtures } from '@scenarist/playwright-helpers';
+import { execSync } from 'child_process';
+
+const { switchScenario } = scenaristFixtures({
+  testIdHeader: 'x-test-id',
+  scenarioEndpoint: 'http://localhost:3000/__scenario__',
+});
+
+test.use({ ...switchScenario });
+
+test.describe('Checkout flow with database', () => {
+  const setup = test.beforeAll(async () => {
+    // Start database container
+    const container = await new PostgreSqlContainer('postgres:16')
+      .withDatabase('testdb')
+      .withUsername('testuser')
+      .withPassword('testpass')
+      .start();
+
+    // Configure Next.js to use container database
+    process.env.DATABASE_URL = container.getConnectionUrl();
+
+    // Initialize Prisma client
+    const prisma = new PrismaClient({
+      datasources: { db: { url: process.env.DATABASE_URL } },
+    });
+
+    // Run migrations
+    execSync('npx prisma migrate deploy', { env: process.env });
+
+    return { container, prisma };
+  });
+
+  test.afterAll(async () => {
+    const { prisma, container } = await setup;
+    await prisma.$disconnect();
+    await container.stop();
+  });
+
+  test.beforeEach(async () => {
+    const { prisma } = await setup;
+    // Clean database before each test
+    await prisma.user.deleteMany();
+    await prisma.order.deleteMany();
+  });
+
+  test('premium user can checkout with valid payment', async ({ page, switchScenario }) => {
+    const { prisma } = await setup;
+
+    // Seed database: premium user
+    await prisma.user.create({
+      data: {
+        id: 'user-123',
+        email: 'premium@example.com',
+        tier: 'premium',
+        cart: {
+          create: {
+            items: [
+              { productId: 'prod-1', quantity: 2, price: 150 },
+              { productId: 'prod-2', quantity: 1, price: 200 },
+            ],
+          },
+        },
+      },
+    });
+
+    // Mock external API: Stripe success
+    await switchScenario(page, 'stripeSuccess');
+
+    // Test flow
+    await page.goto('/cart');
+    await page.getByRole('button', { name: 'Checkout' }).click();
+
+    // Fill payment form
+    await page.getByLabel('Card Number').fill('4242424242424242');
+    await page.getByLabel('Expiry').fill('12/25');
+    await page.getByLabel('CVC').fill('123');
+    await page.getByRole('button', { name: 'Pay £500' }).click();
+
+    // Verify success
+    await expect(page.getByText('Payment successful')).toBeVisible();
+    await expect(page.getByText('Order #')).toBeVisible();
+
+    // Verify database updated
+    const order = await prisma.order.findFirst({
+      where: { userId: 'user-123' },
+    });
+    expect(order?.status).toBe('completed');
+  });
+});
+```
+
+## When to Use This Approach
+
+**✅ Use when:**
+- You want to test actual database queries and migrations
+- You have external API dependencies to mock
+- You cannot/don't want to add API routes
+- Test startup time (5-30s) is acceptable
+- You need realistic integration testing
+
+**❌ Don't use when:**
+- You want instant scenario switching (use [API route abstraction](./api-route-abstraction))
+- You don't have Docker available (CI/CD constraint)
+- Test speed is critical (hundreds of tests)
+- Parallel test execution is important
+
+## Trade-offs
+
+### Advantages
+
+**✅ No code changes required**
+- Server Components call database directly (as designed)
+- No API route layer needed
+- Production code unchanged
+
+**✅ Test real database behavior**
+- Actual SQL queries executed
+- Database constraints validated
+- Migrations tested
+- Transactions work correctly
+
+**✅ Realistic integration testing**
+- Database + external APIs together
+- Closest to production environment
+- Catches integration bugs
+
+### Disadvantages
+
+**⚠️ Slower tests**
+- Container startup: 5-30 seconds
+- Database seeding: 1-5 seconds per test
+- Total overhead: ~10-35 seconds
+
+**⚠️ Docker required**
+- CI/CD must support Docker
+- Developers need Docker installed
+- More complex local setup
+
+**⚠️ Database seeding complexity**
+- Must maintain seed data scripts
+- Schema changes break seeds
+- Cleanup between tests required
+
+**⚠️ Harder to parallelize**
+- Shared database state
+- Need multiple containers for parallelization
+- Resource-intensive (CPU, memory)
+
+## Comparison with API Route Abstraction
+
+| Aspect | Testcontainers Hybrid | API Route Abstraction |
+|--------|----------------------|---------------------|
+| Code changes | None | Add API routes |
+| Test speed | Slow (5-30s startup) | Fast (instant) |
+| Database testing | Real queries | Mocked responses |
+| Parallel tests | Difficult | Easy |
+| CI/CD requirements | Docker | None |
+| Production overhead | None | ~10ms per request |
+
+## Performance Optimization Tips
+
+**Reuse containers across tests:**
+```typescript
+test.beforeAll(async () => {
+  container = await new PostgreSqlContainer('postgres:16').start();
+});
+
+test.beforeEach(async () => {
+  // Only clean data, don't restart container
+  await prisma.user.deleteMany();
+});
+
+test.afterAll(async () => {
+  // Stop container once at end
+  await container.stop();
+});
+```
+
+**Use database transactions for cleanup:**
+```typescript
+test.beforeEach(async () => {
+  await prisma.$transaction([
+    prisma.order.deleteMany(),
+    prisma.user.deleteMany(),
+  ]);
+});
+```
+
+**Cache container image:**
+```bash
+# Pull image once before running tests
+docker pull postgres:16
+```
+
+## Combining Both Approaches
+
+You can use **both** API route abstraction AND testcontainers in the same project:
+
+**Use API route abstraction for:**
+- Fast, parallel UI integration tests
+- Testing many data permutations
+- CI/CD pipelines (fast feedback)
+
+**Use testcontainers hybrid for:**
+- Database migration testing
+- Complex transaction testing
+- Comprehensive E2E scenarios
+
+```typescript
+// Fast tests: API route abstraction
+test.describe('Product listing @fast', () => {
+  test('shows premium pricing', async ({ page, switchScenario }) => {
+    await switchScenario(page, 'premiumProducts');
+    await page.goto('/products');
+    // ... assertions
+  });
+});
+
+// Comprehensive tests: Testcontainers
+test.describe('Checkout flow @e2e', () => {
+  let container: StartedPostgreSqlContainer;
+
+  test.beforeAll(async () => {
+    container = await new PostgreSqlContainer('postgres:16').start();
+    // ... setup
+  });
+
+  test('complete purchase flow', async ({ page, switchScenario }) => {
+    await seedPremiumUser(container);
+    await switchScenario(page, 'stripeSuccess');
+    // ... full checkout flow
+  });
+});
+```
+
+**Run fast tests frequently, comprehensive tests less often:**
+```bash
+# Development: Fast tests only
+pnpm test --grep @fast
+
+# CI: All tests
+pnpm test
+
+# Nightly: E2E only
+pnpm test --grep @e2e
+```
+
+## Next Steps
+
+- [API Route Abstraction →](./api-route-abstraction) - Alternative for faster tests
+- [Testcontainers Documentation](https://testcontainers.com/) - Learn more about Testcontainers
+- [Next.js Testing Overview](../) - Back to database testing overview

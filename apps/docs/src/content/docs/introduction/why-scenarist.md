@@ -35,9 +35,23 @@ This creates a testing challenge:
 
 **Between these approaches lies a gap:** Testing server-side HTTP behavior with different external API responses, without browser overhead or extensive framework mocking.
 
-**Scenarist fills this gap** by testing your server-side HTTP layer with mocked external APIs. Your code—Server Components, loaders, middleware, business logic—executes normally. Only the external API calls are intercepted, returning scenario-defined responses based on test ID. This enables testing full user journeys through the browser using Playwright helpers, with each test isolated and running in parallel.
+**Scenarist fills this gap** by testing your server-side HTTP layer with mocked external APIs. Your code—Server Components, loaders, middleware, business logic—executes normally. Only HTTP requests (fetch, axios, etc.) are intercepted, returning scenario-defined responses based on test ID. This enables testing full user journeys through the browser using Playwright helpers, with each test isolated and running in parallel.
 
 **Test extensive external API scenarios in parallel** without expensive cloud API calls or complex test infrastructure.
+
+## What Scenarist Intercepts
+
+Scenarist intercepts **HTTP/HTTPS requests** made via fetch, axios, or other HTTP clients to external services (Stripe, Auth0, SendGrid, REST APIs).
+
+**It does not intercept:**
+- Direct database access (PostgreSQL, MongoDB, Prisma)
+- File system operations
+- WebSocket connections
+- Non-HTTP protocols
+
+**If your app uses direct database access:** You have two options: (1) add thin API routes to make database calls testable via HTTP, or (2) use Testcontainers to spin up real database containers with seeded scenarios, combined with Scenarist to mock external APIs. The Testcontainers approach requires no code changes.
+
+[Database testing guide →](/guides/testing-database-apps)
 
 [Learn how it works →](/introduction/overview)
 

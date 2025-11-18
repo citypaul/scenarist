@@ -1,0 +1,758 @@
+---
+title: Testing Next.js Apps with Database Access
+description: How to test Next.js applications that use direct database access with Scenarist
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Most production Next.js applications fetch data from databases (PostgreSQL, MongoDB, etc.) rather than external HTTP APIs. Since Scenarist intercepts HTTP requests via MSW, it cannot directly mock database calls. This guide shows you how to make database-heavy Next.js apps testable with Scenarist.
+
+## The Problem
+
+**Next.js apps with direct database access are not directly testable with Scenarist:**
+
+```typescript
+// ❌ Scenarist CANNOT mock this - no HTTP request
+// app/lib/data.ts
+import { db } from './db';
+
+export async function fetchProducts() {
+  return await db.products.findMany();
+}
+
+// app/products/page.tsx - Server Component
+export default async function ProductsPage() {
+  const products = await fetchProducts(); // Direct database call
+  return <ProductList products={products} />;
+}
+```
+
+**Why this doesn't work:**
+- `db.products.findMany()` is a direct function call to the database driver
+- No HTTP request is made
+- MSW (which Scenarist uses) only intercepts `fetch()` calls
+- Database connections use TCP sockets, not HTTP
+
+<Aside type="caution">
+Scenarist intercepts HTTP requests only. It cannot mock:
+- Database calls (PostgreSQL, MongoDB, MySQL, etc.)
+- File system operations (`fs.readFile`, `fs.writeFile`)
+- WebSocket connections
+- gRPC calls
+- Direct function calls or imports
+</Aside>
+
+## The Solution: API Route Abstraction
+
+**Add a thin HTTP layer between your Server Components and the database:**
+
+### Step 1: Create an API Route Wrapper
+
+```typescript
+// app/api/products/route.ts
+import { NextResponse } from 'next/server';
+import { fetchProducts } from '@/lib/data'; // Still uses database
+
+export async function GET(request: Request) {
+  try {
+    const products = await fetchProducts(); // Database call stays the same
+    return NextResponse.json(products);
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Failed to fetch products' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+### Step 2: Update Server Components to Call the API Route
+
+```typescript
+// app/products/page.tsx - Server Component
+import { scenarist } from '@/lib/scenarist';
+
+export default async function ProductsPage() {
+  // ✅ Now makes HTTP request that Scenarist can intercept
+  const response = await fetch('http://localhost:3000/api/products', {
+    headers: scenarist.getHeaders(request),
+    cache: 'no-store', // Ensure fresh data
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch products');
+  }
+
+  const products = await response.json();
+  return <ProductList products={products} />;
+}
+```
+
+<Aside type="tip">
+**Why `cache: 'no-store'`?**
+
+Next.js aggressively caches `fetch()` responses by default. Adding `cache: 'no-store'` ensures each test gets fresh mock data without stale cache interference.
+</Aside>
+
+### Step 3: Mock the API Route with Scenarist
+
+```typescript
+// lib/scenarios.ts
+export const defaultScenario: ScenaristScenario = {
+  id: 'default',
+  name: 'Happy Path Products',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3000/api/products',
+      response: {
+        status: 200,
+        body: [
+          { id: 1, name: 'Product A', price: 99.99 },
+          { id: 2, name: 'Product B', price: 149.99 },
+        ],
+      },
+    },
+  ],
+};
+
+export const outOfStockScenario: ScenaristScenario = {
+  id: 'outOfStock',
+  name: 'Out of Stock Products',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3000/api/products',
+      response: {
+        status: 200,
+        body: [
+          { id: 1, name: 'Product A', price: 99.99, stock: 0 },
+          { id: 2, name: 'Product B', price: 149.99, stock: 0 },
+        ],
+      },
+    },
+  ],
+};
+```
+
+### Step 4: Write Playwright Tests
+
+```typescript
+// tests/products.spec.ts
+import { test, expect } from '@playwright/test';
+import { scenaristFixtures } from '@scenarist/playwright-helpers';
+
+const { switchScenario } = scenaristFixtures({
+  testIdHeader: 'x-test-id',
+  scenarioEndpoint: 'http://localhost:3000/__scenario__',
+});
+
+test.use({ ...switchScenario });
+
+test('should show products with stock', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'default');
+  await page.goto('/products');
+
+  await expect(page.getByText('Product A')).toBeVisible();
+  await expect(page.getByText('Product B')).toBeVisible();
+  await expect(page.getByText('£99.99')).toBeVisible();
+});
+
+test('should show out of stock message', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'outOfStock');
+  await page.goto('/products');
+
+  await expect(page.getByText('Out of Stock')).toBeVisible({ count: 2 });
+});
+```
+
+## Decision Tree: When to Use This Pattern
+
+```mermaid
+graph TD
+    A[Does your Next.js app use direct database access?] -->|No - Uses HTTP APIs| B[✅ Use Scenarist directly]
+    A -->|Yes| C[Want to test actual database queries?]
+    C -->|Yes| D[Have external API dependencies?]
+    D -->|Yes| E[✅ Hybrid: Testcontainers + Scenarist]
+    D -->|No| F[Use Testcontainers only]
+    C -->|No| G[Can you add API route wrappers?]
+    G -->|Yes| H[✅ Use API Route Abstraction + Scenarist]
+    G -->|No| I[Use database seeding]
+
+    E --> J[Benefits:<br/>- Test real DB queries<br/>- Mock external APIs<br/>- No code changes]
+    H --> K[Benefits:<br/>- Fast parallel tests<br/>- No database setup<br/>- Instant scenario switching]
+```
+
+## Approach 1: API Route Abstraction + Scenarist
+
+**What it is:** Add thin HTTP layer between Server Components and database, mock everything via Scenarist.
+
+### Use When:
+
+- ✅ You want to test **different backend states** (success, errors, edge cases)
+- ✅ You want **fast tests** without database setup (instant scenario switching)
+- ✅ You want to **run tests in parallel** with different data
+- ✅ Your database calls are in **data fetching** logic (not authentication)
+- ✅ You can add thin API wrappers without major refactoring
+
+### Don't Use When:
+
+- ❌ Database is required for **authentication/authorization** middleware (see "Special Case" section below)
+- ❌ You're testing **database-specific behavior** (transactions, constraints)
+- ❌ Adding API routes would be a **major architectural change**
+- ❌ You need to test **Server Actions** that mutate database state directly
+
+## Approach 2: Hybrid (Testcontainers + Scenarist)
+
+**What it is:** Use [Testcontainers](https://testcontainers.com/) to spin up real database containers with seeded scenarios. Use Scenarist to mock external API dependencies. No code changes needed.
+
+**Example architecture:**
+
+```typescript
+// Server Component (unchanged - no API routes needed!)
+export default async function CheckoutPage() {
+  // Database call - testcontainer provides real PostgreSQL with seeded data
+  const user = await db.user.findUnique({ where: { id: userId } });
+
+  // External API - Scenarist intercepts and mocks
+  const payment = await fetch('https://api.stripe.com/v1/charges', {
+    method: 'POST',
+    headers: scenarist.getHeaders(request),
+    body: JSON.stringify({ amount: user.cartTotal }),
+  });
+
+  return <CheckoutForm user={user} payment={payment} />;
+}
+```
+
+**Test setup:**
+
+```typescript
+import { PostgreSqlContainer } from '@testcontainers/postgresql';
+
+test('premium user with successful payment', async ({ page, switchScenario }) => {
+  // Testcontainer seeded with premium user (tier='premium', cartTotal=500)
+  const container = await new PostgreSqlContainer().start();
+  await seedPremiumUser(container);
+
+  // Scenarist mocks Stripe success
+  await switchScenario(page, 'stripeSuccess');
+
+  await page.goto('/checkout');
+
+  // Test sees:
+  // - Premium user from real database
+  // - Successful payment from Scenarist mock
+  await expect(page.getByText('Payment successful')).toBeVisible();
+});
+```
+
+### Use When:
+
+- ✅ You want to test **actual database queries and migrations**
+- ✅ You have **external API dependencies** to mock
+- ✅ You **cannot/don't want to add API routes**
+- ✅ Test startup time (5-30s) is acceptable
+- ✅ You need **realistic integration testing**
+
+### Trade-offs:
+
+- ⚠️ **Slower tests** - Container startup takes 5-30 seconds
+- ⚠️ **Docker required** - CI/CD must support Docker
+- ⚠️ **Database seeding scripts** - Must maintain seed data
+- ⚠️ **Harder to parallelize** - Shared database state between tests
+
+**Learn more:** [Testcontainers Documentation](https://testcontainers.com/)
+
+## Special Case: Database-Based Authentication in Middleware
+
+If your Next.js middleware validates sessions via database, you cannot use fetch() to the same app (causes infinite loop):
+
+```typescript
+// middleware.ts - BLOCKS API route abstraction
+export async function middleware(request: NextRequest) {
+  const session = request.cookies.get('session');
+
+  // ❌ Database query in middleware
+  const user = await db.users.findUnique({
+    where: { sessionId: session?.value }
+  });
+
+  if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  return NextResponse.next();
+}
+```
+
+**Why this blocks the pattern:**
+- Middleware runs FIRST (before any Server Component)
+- Middleware CANNOT call fetch() to same app (infinite loop)
+- Auth decision gates ALL routes
+
+**You have three workarounds:**
+
+### Workaround 1: JWT/Stateless Auth (Recommended)
+
+Switch to stateless authentication where middleware doesn't need database:
+
+```typescript
+// middleware.ts - NO DATABASE ✅
+import { verifyJWT } from '@/lib/jwt';
+
+export async function middleware(request: NextRequest) {
+  const token = request.cookies.get('auth-token');
+
+  // ✅ Cryptographic verification only - no database!
+  const payload = verifyJWT(token?.value);
+
+  if (!payload && request.nextUrl.pathname.startsWith('/dashboard')) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  return NextResponse.next();
+}
+```
+
+**Now you can use API route abstraction for all data fetching:**
+
+```typescript
+test('premium user sees premium dashboard', async ({ page, switchScenario }) => {
+  // Set JWT with premium tier
+  const premiumJWT = signJWT({ userId: '123', tier: 'premium' });
+  await page.context().addCookies([{
+    name: 'auth-token',
+    value: premiumJWT,
+    domain: 'localhost',
+    path: '/',
+  }]);
+
+  // Mock dashboard data API
+  await switchScenario(page, 'premiumDashboard');
+
+  await page.goto('/dashboard');
+
+  // ✅ Middleware validates JWT (no database)
+  // ✅ Server Component fetches from API route (mocked by Scenarist)
+  await expect(page.getByText('Premium Dashboard')).toBeVisible();
+});
+```
+
+**Benefits:**
+- ✅ Middleware has no database dependency
+- ✅ Full API route abstraction works
+- ✅ Fast tests with scenario switching
+- ✅ Matches modern auth best practices
+
+### Workaround 2: Hybrid Approach
+
+Use real database for auth, Scenarist for data fetching:
+
+```typescript
+// tests/setup.ts
+import { db } from '@/lib/db';
+
+beforeAll(async () => {
+  // Seed test user in database
+  await db.users.create({
+    data: {
+      id: '123',
+      sessionId: 'test-session-premium',
+      email: 'premium@example.com',
+      tier: 'premium',
+    },
+  });
+});
+
+afterAll(async () => {
+  await db.users.deleteMany({ where: { id: '123' } });
+});
+
+// tests/dashboard.spec.ts
+test('premium user sees premium dashboard', async ({ page, switchScenario }) => {
+  // Set session cookie - middleware validates via real database
+  await page.context().addCookies([{
+    name: 'session',
+    value: 'test-session-premium', // Matches seeded user
+    domain: 'localhost',
+    path: '/',
+  }]);
+
+  // Scenarist mocks dashboard data API
+  await switchScenario(page, 'premiumDashboard');
+
+  await page.goto('/dashboard');
+
+  // ✅ Middleware validates session via database (real)
+  // ✅ Server Component fetches from API route (mocked)
+  await expect(page.getByText('Premium Dashboard')).toBeVisible();
+});
+```
+
+**Trade-offs:**
+- ✅ Auth closest to production (real database)
+- ✅ Data fetching is fast and flexible (Scenarist mocks)
+- ⚠️ Requires database setup/cleanup
+- ⚠️ Cannot run auth tests in complete isolation
+- ⚠️ Slower than pure mocking
+
+### Workaround 3: Traditional Database Seeding
+
+Accept that the entire app needs a real database. Skip API route abstraction:
+
+```typescript
+beforeAll(async () => {
+  // Seed ALL test data in database
+  await db.users.create({ ... });
+  await db.products.createMany({ ... });
+  await db.orders.createMany({ ... });
+});
+
+test('user can view their orders', async ({ page }) => {
+  await page.context().addCookies([{ name: 'session', value: 'test-session' }]);
+  await page.goto('/orders');
+
+  // All data comes from real database
+  await expect(page.getByText('Order #123')).toBeVisible();
+});
+```
+
+**When to use this:**
+- You need to test database transactions
+- You need to test database constraints
+- Authentication AND data fetching both require database
+- You prefer production-like testing over test speed
+
+<Aside type="tip" title="Recommendation: JWT for New Apps">
+
+If you're building a new Next.js app, use JWT/stateless auth from the start. This eliminates the auth/middleware blocker and lets you use Scenarist for all HTTP mocking. Libraries like [next-auth](https://next-auth.js.org/) with JWT sessions make this easy.
+
+</Aside>
+
+<Aside type="note">
+**Why not always use database seeding?**
+
+Database seeding (setting up test data in a real database before each test) works but has downsides:
+- Slow (need to wait for database connections and writes)
+- Complex (need to clean up between tests)
+- Serial (cannot run tests in parallel without database isolation)
+- Brittle (schema changes break test data setup)
+
+API route abstraction gives you the testing benefits of a real backend without the complexity and slowness of database management.
+</Aside>
+
+## Real-World Example: Next.js Learn Dashboard
+
+The [Next.js Learn tutorial dashboard](https://github.com/vercel/next-learn/tree/main/dashboard/final-example) uses direct PostgreSQL access:
+
+```typescript
+// Original code - NOT testable with Scenarist
+// app/lib/data.ts
+import postgres from 'postgres';
+const sql = postgres(process.env.POSTGRES_URL!);
+
+export async function fetchRevenue() {
+  const data = await sql<Revenue[]>`SELECT * FROM revenue`;
+  return data;
+}
+
+// app/dashboard/(overview)/page.tsx
+export default async function DashboardPage() {
+  const revenue = await fetchRevenue(); // Direct database call
+  return <RevenueChart data={revenue} />;
+}
+```
+
+**To make this testable with Scenarist:**
+
+```typescript
+// Step 1: Add API route
+// app/api/revenue/route.ts
+import { fetchRevenue } from '@/lib/data';
+
+export async function GET() {
+  const revenue = await fetchRevenue(); // Still uses database internally
+  return NextResponse.json(revenue);
+}
+
+// Step 2: Update Server Component
+// app/dashboard/(overview)/page.tsx
+import { scenarist } from '@/lib/scenarist';
+
+export default async function DashboardPage() {
+  const response = await fetch('http://localhost:3000/api/revenue', {
+    headers: scenarist.getHeaders(request),
+    cache: 'no-store',
+  });
+  const revenue = await response.json();
+  return <RevenueChart data={revenue} />;
+}
+
+// Step 3: Mock the API route
+// lib/scenarios.ts
+export const highRevenueScenario: ScenaristScenario = {
+  id: 'highRevenue',
+  mocks: [{
+    method: 'GET',
+    url: 'http://localhost:3000/api/revenue',
+    response: {
+      status: 200,
+      body: [
+        { month: 'Jan', revenue: 50000 },
+        { month: 'Feb', revenue: 75000 },
+        { month: 'Mar', revenue: 100000 },
+      ],
+    },
+  }],
+};
+
+export const lowRevenueScenario: ScenaristScenario = {
+  id: 'lowRevenue',
+  mocks: [{
+    method: 'GET',
+    url: 'http://localhost:3000/api/revenue',
+    response: {
+      status: 200,
+      body: [
+        { month: 'Jan', revenue: 5000 },
+        { month: 'Feb', revenue: 7500 },
+        { month: 'Mar', revenue: 10000 },
+      ],
+    },
+  }],
+};
+```
+
+**Now you can test both revenue scenarios without a database:**
+
+```typescript
+test('should show high revenue chart', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'highRevenue');
+  await page.goto('/dashboard');
+  await expect(page.getByText('£100,000')).toBeVisible();
+});
+
+test('should show low revenue chart', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'lowRevenue');
+  await page.goto('/dashboard');
+  await expect(page.getByText('£10,000')).toBeVisible();
+});
+```
+
+## Common Pitfalls
+
+### Pitfall 1: Forgetting `cache: 'no-store'`
+
+```typescript
+// ❌ WRONG - Next.js caches aggressively
+const response = await fetch('http://localhost:3000/api/products');
+
+// ✅ CORRECT - Disable cache for test scenarios
+const response = await fetch('http://localhost:3000/api/products', {
+  cache: 'no-store',
+});
+```
+
+### Pitfall 2: Using Relative URLs
+
+```typescript
+// ❌ WRONG - Relative URL won't work from Server Components
+const response = await fetch('/api/products');
+
+// ✅ CORRECT - Full URL with localhost
+const response = await fetch('http://localhost:3000/api/products', {
+  headers: scenarist.getHeaders(request),
+});
+```
+
+<Aside type="caution">
+Next.js Server Components run on the server, not the browser. Relative URLs like `/api/products` fail because there's no "current origin" context. Always use full URLs with `http://localhost:PORT`.
+</Aside>
+
+### Pitfall 3: Not Propagating Test ID Headers
+
+```typescript
+// ❌ WRONG - Scenarist won't know which test this belongs to
+const response = await fetch('http://localhost:3000/api/products');
+
+// ✅ CORRECT - Include scenarist headers
+const response = await fetch('http://localhost:3000/api/products', {
+  headers: scenarist.getHeaders(request),
+  cache: 'no-store',
+});
+```
+
+## What Scenarist CANNOT Mock
+
+Even with API route abstraction, Scenarist has fundamental limitations:
+
+### ❌ Cannot Mock:
+
+- **Direct database calls** (`db.query()`, `prisma.findMany()`, etc.)
+- **File system operations** (`fs.readFile`, `fs.writeFile`, etc.)
+- **WebSocket connections**
+- **gRPC calls**
+- **Server-side imports** (e.g., `import { config } from '@/lib/config'`)
+- **Environment variables** (`process.env.DATABASE_URL`)
+- **Next.js middleware** that reads from databases
+- **Server Actions** with direct database mutations (unless wrapped in API routes)
+
+### ✅ Can Mock (via HTTP):
+
+- **External HTTP APIs** (Stripe, Auth0, SendGrid, etc.)
+- **Internal API routes** (Next.js Route Handlers)
+- **Third-party services** with HTTP interfaces
+- **Microservice calls** over HTTP/REST
+
+## Architecture Considerations
+
+### Performance Impact: Does This Remove RSC Advantages?
+
+**Short answer: No. Most RSC advantages are preserved, with ~5-10ms added latency.**
+
+#### What React Server Components Give You:
+
+1. **Server-side rendering** (no client JavaScript)
+2. **Direct backend access** (database in same process)
+3. **Zero client bundle size**
+4. **Streaming** (show data as it arrives)
+5. **Reduced round trips** (server makes backend calls without browser involvement)
+
+#### With API Route Abstraction:
+
+**✅ PRESERVED:**
+- Server-side rendering (component still runs on server, not client)
+- Zero client bundle (still no client JavaScript)
+- No browser round trips (fetch() happens server-side)
+- Parallel data fetching (can still make multiple fetches in parallel on server)
+
+**❌ LOST:**
+- **Streaming for large datasets** - Biggest loss
+  - Direct DB: Can stream results as they arrive (~10ms for first results)
+  - API route: Must wait for complete JSON response (~100ms for full payload)
+- **Direct connection efficiency** - Extra network stack traversal
+- **~5-10ms latency per request** - Typical overhead
+
+#### Performance Breakdown:
+
+**Direct Database Access (RSC as designed):**
+```typescript
+// Server Component queries database directly
+const products = await db.products.findMany();
+// Latency: ~2-5ms (same process, TCP socket)
+```
+
+**API Route Abstraction:**
+```typescript
+// Server Component → HTTP → API route → Database
+const response = await fetch('http://localhost:3000/api/products');
+const products = await response.json();
+// Latency: ~7-15ms total
+//   - HTTP round trip (localhost): ~2-3ms
+//   - Database query: ~2-5ms
+//   - JSON serialize/deserialize: ~2-5ms
+//   - Route matching: ~1ms
+```
+
+**Added overhead: ~5-10ms for typical requests** (3-5x slower than direct access)
+
+#### Is 10ms Negligible?
+
+**For most apps: YES**
+- Typical page load: 200-500ms
+- Network latency to user: 50-200ms
+- 10ms = ~2-5% of total page load time
+- Users won't notice
+
+**For high-scale apps: MAYBE NOT**
+- At 1000+ req/s, every millisecond counts
+- Streaming large datasets is valuable
+- Consider traditional E2E with database seeding
+
+#### Next.js Caching Can Eliminate Overhead:
+
+```typescript
+// Production: Cache responses for 60 seconds
+const response = await fetch('http://localhost:3000/api/products', {
+  next: { revalidate: 60 }, // Cached!
+});
+// First request: ~10ms
+// Subsequent requests: ~0ms (served from cache)
+// Can be FASTER than direct DB calls!
+
+// Tests: Disable cache for fresh data
+const response = await fetch('http://localhost:3000/api/products', {
+  cache: 'no-store', // Every test gets fresh mock data
+});
+```
+
+#### When Does This Matter?
+
+**✅ Use API Route Abstraction (10ms is fine):**
+- Small datasets (< 100 records)
+- Moderate traffic (< 100 req/s)
+- Non-latency-critical pages (> 500ms acceptable)
+- Most CRUD applications
+- **Testing scenarios** (this is the whole point!)
+
+**⚠️ Consider Alternatives:**
+- Large datasets needing streaming (1000+ records)
+- High-frequency requests (1000s per second)
+- Latency-critical paths (sub-100ms requirements)
+- Production at massive scale
+
+<Aside type="caution" title="Important: This Affects Production">
+
+The API route abstraction runs in **both production and tests**. There's no way to avoid the overhead in production without branching logic (which defeats E2E testing).
+
+**The trade-off:** ~10ms production overhead for fast, parallelizable tests. For most apps, development velocity >> marginal performance.
+
+</Aside>
+
+### What You're Actually Testing
+
+With API route abstraction, you test:
+- ✅ UI renders correctly with different data
+- ✅ Error states display properly
+- ✅ Loading states work
+- ✅ User interactions work
+- ❌ NOT testing: database queries, transactions, constraints
+
+**This is integration testing of the UI layer**, not true E2E testing of the entire stack. If you need to test database behavior, use database seeding.
+
+### When API Routes Are Already Present
+
+If your Next.js app already uses API routes for data fetching, you're ready to use Scenarist immediately:
+
+```typescript
+// Already using API routes? Great! Just add mocks:
+export const scenarios = {
+  default: {
+    id: 'default',
+    mocks: [
+      { method: 'GET', url: 'http://localhost:3000/api/users', response: {...} },
+      { method: 'POST', url: 'http://localhost:3000/api/orders', response: {...} },
+    ],
+  },
+};
+```
+
+## Summary
+
+1. **Direct database access** is not mockable with Scenarist (no HTTP requests)
+2. **Add thin API route wrappers** to expose database operations over HTTP
+3. **Update Server Components** to call API routes instead of database directly
+4. **Mock the API routes** with Scenarist scenarios
+5. **Use full URLs** (`http://localhost:3000/api/...`) from Server Components
+6. **Disable Next.js fetch caching** with `cache: 'no-store'`
+7. **Propagate test ID headers** with `scenarist.getHeaders(request)`
+
+This pattern gives you the testing flexibility of a traditional API-driven architecture while maintaining the simplicity of Server Components in production.
+
+## Next Steps
+
+- [Next.js App Router Getting Started](/frameworks/nextjs-app-router/getting-started)
+- [Next.js Pages Router Getting Started](/frameworks/nextjs-pages-router/getting-started)
+- [Example App (App Router)](/frameworks/nextjs-app-router/example-app)
+- [Example App (Pages Router)](/frameworks/nextjs-pages-router/example-app)

@@ -14,6 +14,16 @@ npm install @scenarist/core @scenarist/nextjs-adapter
 npm install -D @playwright/test @scenarist/playwright-helpers
 ```
 
+<Aside type="note" title="Testing Apps with Database Access?">
+
+If your Next.js app uses **direct database access** (PostgreSQL, MongoDB, Prisma, etc.) instead of HTTP APIs, Scenarist cannot mock those calls directly. However, you can make your app testable by adding a thin API route layer.
+
+**[→ Read the Database Testing Guide](/guides/testing-database-apps)** to learn how to test database-heavy Next.js applications with Scenarist.
+
+**[→ See what Scenarist can and cannot mock](/introduction/why-scenarist#what-scenarist-intercepts)**
+
+</Aside>
+
 ## 1. Define Scenarios
 
 ```typescript
@@ -235,5 +245,6 @@ export default async function ProductsPage() {
 
 ## Next Steps
 
+- **[Testing Database Apps →](/guides/testing-database-apps)** - Learn how to test Next.js apps with database access using API route abstraction
 - **[Example App →](/frameworks/nextjs-app-router/example-app)** - See a complete working example with Server Components, sequences, and stateful mocks
 - **[Architecture →](/concepts/architecture)** - Learn how Scenarist works under the hood

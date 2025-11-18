@@ -83,6 +83,19 @@ export default defineConfig({
           ],
         },
         {
+          label: "Guides",
+          items: [
+            {
+              label: "Testing Database Apps",
+              items: [
+                { label: "Overview", slug: "guides/testing-database-apps" },
+                { label: "API Route Abstraction", slug: "guides/testing-database-apps/api-route-abstraction" },
+                { label: "Testcontainers Hybrid", slug: "guides/testing-database-apps/testcontainers-hybrid" },
+              ],
+            },
+          ],
+        },
+        {
           label: "Concepts",
           collapsed: true,
           items: [
