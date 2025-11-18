@@ -63,7 +63,8 @@ For apps that use both databases AND external HTTP APIs, we recommend combining:
 - ✅ Realistic integration testing
 
 **Trade-offs:**
-- ⚠️ Slower tests (container startup overhead)
+- ⚠️ Sequential test execution (database state is shared, unlike HTTP mocks)
+- ⚠️ Container startup overhead
 - ⚠️ Docker required in CI/CD
 - ⚠️ Must maintain database seeding scripts
 

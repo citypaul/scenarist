@@ -414,10 +414,11 @@ test.describe('Checkout flow with database', () => {
 - Schema changes break seeds
 - Cleanup between tests required
 
-**⚠️ Harder to parallelize**
-- Shared database state
-- Need multiple containers for parallelization
-- Resource-intensive (CPU, memory)
+**⚠️ Sequential test execution required**
+- Database state is shared (unlike HTTP mocks which are stateless)
+- Scenarist isolates via test ID in HTTP headers, but databases have no equivalent mechanism
+- Parallel tests would corrupt each other's data without application code changes
+- For parallelism, you'd need multiple containers (resource-intensive) or database-level isolation (schemas per test)
 
 ## Performance Optimization Tips
 
