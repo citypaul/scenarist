@@ -1,19 +1,18 @@
 /**
- * Checkout Page - API Route Abstraction Pattern
+ * Checkout Page - External API Proxy Pattern
  *
- * Demonstrates testing database-heavy Server Components by abstracting
- * database access behind API routes that Scenarist can mock.
+ * Demonstrates how Server Components can fetch from external APIs,
+ * which Scenarist can intercept via MSW.
  *
- * Pattern Benefits:
- * - Fast tests (~1 second each)
- * - No real database required
- * - Parallel test execution
- * - Easy scenario switching
+ * Pattern:
+ * - Server Component fetches from external API (localhost:3001 = mock external service)
+ * - MSW intercepts the HTTP request
+ * - Scenarist returns scenario-specific responses
  *
- * Trade-offs:
- * - Requires adding API routes (code changes)
- * - Doesn't test actual database queries
- * - ~5-10ms production overhead per request
+ * This is Scenarist's sweet spot:
+ * - ✅ External HTTP APIs
+ * - ✅ Fast parallel tests
+ * - ✅ No real backend needed
  */
 
 import { headers } from 'next/headers';
@@ -53,7 +52,7 @@ const PRODUCT_NAMES: Record<string, string> = {
   'prod-3': 'Mechanical Keyboard',
 };
 
-export default async function CheckoutApiPage({
+export default async function CheckoutExternalPage({
   searchParams,
 }: {
   searchParams: Promise<{ userId?: string }>;
@@ -66,30 +65,35 @@ export default async function CheckoutApiPage({
   const testId = headersList.get(scenarist.config.headers.testId) || scenarist.config.defaultTestId;
   const testHeaders = { [scenarist.config.headers.testId]: testId };
 
-  // Fetch user details from API route
-  const userResponse = await fetch(`http://localhost:3002/api/user/${userId}`, {
+  // ✅ Fetch from EXTERNAL service (localhost:3001)
+  // MSW intercepts this HTTP request
+  const userResponse = await fetch(`http://localhost:3001/api/user/${userId}`, {
     headers: testHeaders,
+    cache: 'no-store',
   });
   const { user }: { user: User } = await userResponse.json();
 
-  // Fetch cart items from API route
-  const cartResponse = await fetch(`http://localhost:3002/api/user/${userId}/cart`, {
+  // ✅ External service call - MSW intercepts
+  const cartResponse = await fetch(`http://localhost:3001/api/user/${userId}/cart`, {
     headers: testHeaders,
+    cache: 'no-store',
   });
   const { cartItems }: { cartItems: CartItem[] } = await cartResponse.json();
 
-  // Fetch order history from API route
-  const ordersResponse = await fetch(`http://localhost:3002/api/user/${userId}/orders`, {
+  // ✅ External service call - MSW intercepts
+  const ordersResponse = await fetch(`http://localhost:3001/api/user/${userId}/orders`, {
     headers: testHeaders,
+    cache: 'no-store',
   });
   const { orders }: { orders: Order[] } = await ordersResponse.json();
 
-  // Fetch recommendations from API route (wraps external API)
-  const recommendationsResponse = await fetch('http://localhost:3002/api/recommendations', {
+  // ✅ External service call with tier-based matching - MSW intercepts
+  const recommendationsResponse = await fetch('http://localhost:3001/api/recommendations', {
     headers: {
       ...testHeaders,
       'x-user-tier': user.tier,
     },
+    cache: 'no-store',
   });
   const { products }: { products: Recommendation[] } = await recommendationsResponse.json();
 
@@ -100,7 +104,7 @@ export default async function CheckoutApiPage({
 
   return (
     <div className="checkout-container max-w-4xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-8">Checkout - API Route Approach</h1>
+      <h1 className="text-3xl font-bold mb-8">Checkout - External API Pattern</h1>
 
       {/* User Info */}
       <section className="user-info mb-8 p-6 bg-gray-50 rounded-lg">

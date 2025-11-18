@@ -5,10 +5,10 @@ export const premiumUserCheckoutScenario: ScenaristScenario = {
   name: 'Premium User Checkout',
   description: 'Premium user with full cart and order history',
   mocks: [
-    // User API
+    // User API - path parameter for any user ID
     {
       method: 'GET',
-      url: 'http://localhost:3001/api/user/user-1',
+      url: 'http://localhost:3001/api/user/:userId',
       response: {
         status: 200,
         body: {
@@ -22,10 +22,10 @@ export const premiumUserCheckoutScenario: ScenaristScenario = {
         },
       },
     },
-    // Cart API
+    // Cart API - path parameter for any user ID
     {
       method: 'GET',
-      url: 'http://localhost:3001/api/user/user-1/cart',
+      url: 'http://localhost:3001/api/user/:userId/cart',
       response: {
         status: 200,
         body: {
@@ -37,10 +37,10 @@ export const premiumUserCheckoutScenario: ScenaristScenario = {
         },
       },
     },
-    // Orders API
+    // Orders API - path parameter for any user ID
     {
       method: 'GET',
-      url: 'http://localhost:3001/api/user/user-1/orders',
+      url: 'http://localhost:3001/api/user/:userId/orders',
       response: {
         status: 200,
         body: {
@@ -80,10 +80,10 @@ export const standardUserCheckoutScenario: ScenaristScenario = {
   name: 'Standard User Checkout (First-Time)',
   description: 'Standard user with minimal cart, no order history',
   mocks: [
-    // User API
+    // User API - path parameter for any user ID
     {
       method: 'GET',
-      url: 'http://localhost:3001/api/user/user-1',
+      url: 'http://localhost:3001/api/user/:userId',
       response: {
         status: 200,
         body: {
@@ -97,10 +97,10 @@ export const standardUserCheckoutScenario: ScenaristScenario = {
         },
       },
     },
-    // Cart API
+    // Cart API - path parameter for any user ID
     {
       method: 'GET',
-      url: 'http://localhost:3001/api/user/user-1/cart',
+      url: 'http://localhost:3001/api/user/:userId/cart',
       response: {
         status: 200,
         body: {
@@ -110,10 +110,10 @@ export const standardUserCheckoutScenario: ScenaristScenario = {
         },
       },
     },
-    // Orders API (empty)
+    // Orders API (empty) - path parameter for any user ID
     {
       method: 'GET',
-      url: 'http://localhost:3001/api/user/user-1/orders',
+      url: 'http://localhost:3001/api/user/:userId/orders',
       response: {
         status: 200,
         body: {
