@@ -63,10 +63,11 @@ For apps that use both databases AND external HTTP APIs, we recommend the **repo
 - ✅ Follows SOLID principles and clean architecture
 - ✅ Mock external APIs with Scenarist
 
-**Trade-offs:**
-- ⚠️ Requires abstracting database access behind interfaces
-- ⚠️ Two implementations to maintain (production + test)
-- ⚠️ Test implementation doesn't catch real database issues
+**The investment:**
+- Requires abstracting database access behind interfaces
+- Separate tests needed for real database behavior (repository implementation tests)
+
+**The biggest win:** This pattern enables your entire server codebase—business logic, middleware, route handlers—to be tested in parallel with full isolation. That's powerful. Just complement with repository implementation tests for database-specific concerns.
 
 [Learn more about the Repository Pattern →](./repository-pattern)
 
