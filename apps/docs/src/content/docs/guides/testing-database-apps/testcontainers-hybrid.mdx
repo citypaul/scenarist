@@ -7,6 +7,12 @@ import { Aside } from '@astrojs/starlight/components';
 
 This guide shows how to test Next.js apps that use direct database access by combining [Testcontainers](https://testcontainers.com/) for real database testing with Scenarist for mocking external APIs. **No code changes required.**
 
+## What is Testcontainers?
+
+[Testcontainers](https://testcontainers.com/) is a library that provides lightweight, throwaway Docker containers for testing. It spins up real database instances (PostgreSQL, MySQL, MongoDB) as Docker containers during your tests, pre-configured with your schema and seed data. Each test suite gets a fresh database instance that's automatically destroyed after tests complete. This enables testing against actual database queries, migrations, transactions, and constraints without maintaining a shared test database or complex cleanup scripts.
+
+**Learn more:** [Testcontainers Documentation](https://testcontainers.com/getting-started/)
+
 ## Overview
 
 The hybrid approach uses two complementary tools:
@@ -111,30 +117,43 @@ export async function seedStandardUser(container: StartedPostgreSqlContainer) {
 
 ### Step 2: Set Up Container in Tests
 
-Start database container and seed data:
+Create a container setup function and use it in tests:
 
 ```typescript
-// tests/checkout.spec.ts
-import { test, expect } from '@playwright/test';
-import { PostgreSqlContainer } from '@testcontainers/postgresql';
-import { seedPremiumUser, seedStandardUser } from './helpers/seed-database';
+// tests/helpers/setup-container.ts
+import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import { execSync } from 'child_process';
 
-let container: StartedPostgreSqlContainer;
-
-test.beforeAll(async () => {
+export async function createTestContainer(): Promise<StartedPostgreSqlContainer> {
   // Start PostgreSQL container (takes 5-30 seconds)
-  container = await new PostgreSqlContainer('postgres:16').start();
+  const container = await new PostgreSqlContainer('postgres:16').start();
 
   // Set DATABASE_URL for Next.js app
   process.env.DATABASE_URL = container.getConnectionUrl();
 
   // Run migrations
-  const { execSync } = require('child_process');
   execSync('npx prisma migrate deploy', { env: process.env });
-});
 
-test.afterAll(async () => {
-  await container.stop();
+  return container;
+}
+
+// tests/checkout.spec.ts
+import { test, expect } from '@playwright/test';
+import { createTestContainer } from './helpers/setup-container';
+import { seedPremiumUser, seedStandardUser } from './helpers/seed-database';
+
+test.describe('Checkout flow', () => {
+  const setup = test.beforeAll(async () => {
+    const container = await createTestContainer();
+    return { container };
+  });
+
+  test.afterAll(async () => {
+    const { container } = await setup;
+    await container.stop();
+  });
+
+  // Tests use container from setup
 });
 ```
 
@@ -143,36 +162,52 @@ test.afterAll(async () => {
 Combine database seeding with Scenarist scenario switching:
 
 ```typescript
-test('premium user with successful payment', async ({ page, switchScenario }) => {
-  // Testcontainer: Seed premium user in real database
-  await seedPremiumUser(container);
+test.describe('Checkout flow', () => {
+  const setup = test.beforeAll(async () => {
+    const container = await createTestContainer();
+    return { container };
+  });
 
-  // Scenarist: Mock Stripe success
-  await switchScenario(page, 'stripeSuccess');
+  test.afterAll(async () => {
+    const { container } = await setup;
+    await container.stop();
+  });
 
-  await page.goto('/checkout');
+  test('premium user with successful payment', async ({ page, switchScenario }) => {
+    const { container } = await setup;
 
-  // Test sees:
-  // - Premium user from real database (tier='premium', cartTotal=500)
-  // - Successful payment from Scenarist mock
-  await expect(page.getByText('Payment successful')).toBeVisible();
-  await expect(page.getByText('£500.00')).toBeVisible();
-});
+    // Testcontainer: Seed premium user in real database
+    await seedPremiumUser(container);
 
-test('standard user with declined payment', async ({ page, switchScenario }) => {
-  // Testcontainer: Seed standard user in real database
-  await seedStandardUser(container);
+    // Scenarist: Mock Stripe success
+    await switchScenario(page, 'stripeSuccess');
 
-  // Scenarist: Mock Stripe decline
-  await switchScenario(page, 'stripeDeclined');
+    await page.goto('/checkout');
 
-  await page.goto('/checkout');
+    // Test sees:
+    // - Premium user from real database (tier='premium', cartTotal=500)
+    // - Successful payment from Scenarist mock
+    await expect(page.getByText('Payment successful')).toBeVisible();
+    await expect(page.getByText('£500.00')).toBeVisible();
+  });
 
-  // Test sees:
-  // - Standard user from real database (tier='standard', cartTotal=200)
-  // - Declined payment from Scenarist mock
-  await expect(page.getByText('Payment declined')).toBeVisible();
-  await expect(page.getByText('£200.00')).toBeVisible();
+  test('standard user with declined payment', async ({ page, switchScenario }) => {
+    const { container } = await setup;
+
+    // Testcontainer: Seed standard user in real database
+    await seedStandardUser(container);
+
+    // Scenarist: Mock Stripe decline
+    await switchScenario(page, 'stripeDeclined');
+
+    await page.goto('/checkout');
+
+    // Test sees:
+    // - Standard user from real database (tier='standard', cartTotal=200)
+    // - Declined payment from Scenarist mock
+    await expect(page.getByText('Payment declined')).toBeVisible();
+    await expect(page.getByText('£200.00')).toBeVisible();
+  });
 });
 ```
 
@@ -224,13 +259,14 @@ export const stripeDeclinedScenario: ScenaristScenario = {
 
 ## Complete Example
 
-Here's a full test showing database setup, seeding, and API mocking:
+Here's a full test showing database setup, seeding, and API mocking using functional patterns:
 
 ```typescript
 import { test, expect } from '@playwright/test';
-import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import { PrismaClient } from '@prisma/client';
 import { scenaristFixtures } from '@scenarist/playwright-helpers';
+import { execSync } from 'child_process';
 
 const { switchScenario } = scenaristFixtures({
   testIdHeader: 'x-test-id',
@@ -239,81 +275,85 @@ const { switchScenario } = scenaristFixtures({
 
 test.use({ ...switchScenario });
 
-let container: StartedPostgreSqlContainer;
-let prisma: PrismaClient;
+test.describe('Checkout flow with database', () => {
+  const setup = test.beforeAll(async () => {
+    // Start database container
+    const container = await new PostgreSqlContainer('postgres:16')
+      .withDatabase('testdb')
+      .withUsername('testuser')
+      .withPassword('testpass')
+      .start();
 
-test.beforeAll(async () => {
-  // Start database container
-  container = await new PostgreSqlContainer('postgres:16')
-    .withDatabase('testdb')
-    .withUsername('testuser')
-    .withPassword('testpass')
-    .start();
+    // Configure Next.js to use container database
+    process.env.DATABASE_URL = container.getConnectionUrl();
 
-  // Configure Next.js to use container database
-  process.env.DATABASE_URL = container.getConnectionUrl();
+    // Initialize Prisma client
+    const prisma = new PrismaClient({
+      datasources: { db: { url: process.env.DATABASE_URL } },
+    });
 
-  // Initialize Prisma client
-  prisma = new PrismaClient({
-    datasources: { db: { url: process.env.DATABASE_URL } },
+    // Run migrations
+    execSync('npx prisma migrate deploy', { env: process.env });
+
+    return { container, prisma };
   });
 
-  // Run migrations
-  const { execSync } = require('child_process');
-  execSync('npx prisma migrate deploy', { env: process.env });
-});
+  test.afterAll(async () => {
+    const { prisma, container } = await setup;
+    await prisma.$disconnect();
+    await container.stop();
+  });
 
-test.afterAll(async () => {
-  await prisma.$disconnect();
-  await container.stop();
-});
+  test.beforeEach(async () => {
+    const { prisma } = await setup;
+    // Clean database before each test
+    await prisma.user.deleteMany();
+    await prisma.order.deleteMany();
+  });
 
-test.beforeEach(async () => {
-  // Clean database before each test
-  await prisma.user.deleteMany();
-  await prisma.order.deleteMany();
-});
+  test('premium user can checkout with valid payment', async ({ page, switchScenario }) => {
+    const { prisma } = await setup;
 
-test('premium user can checkout with valid payment', async ({ page, switchScenario }) => {
-  // Seed database: premium user
-  await prisma.user.create({
-    data: {
-      id: 'user-123',
-      email: 'premium@example.com',
-      tier: 'premium',
-      cart: {
-        create: {
-          items: [
-            { productId: 'prod-1', quantity: 2, price: 150 },
-            { productId: 'prod-2', quantity: 1, price: 200 },
-          ],
+    // Seed database: premium user
+    await prisma.user.create({
+      data: {
+        id: 'user-123',
+        email: 'premium@example.com',
+        tier: 'premium',
+        cart: {
+          create: {
+            items: [
+              { productId: 'prod-1', quantity: 2, price: 150 },
+              { productId: 'prod-2', quantity: 1, price: 200 },
+            ],
+          },
         },
       },
-    },
+    });
+
+    // Mock external API: Stripe success
+    await switchScenario(page, 'stripeSuccess');
+
+    // Test flow
+    await page.goto('/cart');
+    await page.getByRole('button', { name: 'Checkout' }).click();
+
+    // Fill payment form
+    await page.getByLabel('Card Number').fill('4242424242424242');
+    await page.getByLabel('Expiry').fill('12/25');
+    await page.getByLabel('CVC').fill('123');
+    await page.getByRole('button', { name: 'Pay £500' }).click();
+
+    // Verify success
+    await expect(page.getByText('Payment successful')).toBeVisible();
+    await expect(page.getByText('Order #')).toBeVisible();
+
+    // Verify database updated
+    const order = await prisma.order.findFirst({
+      where: { userId: 'user-123' },
+    });
+    expect(order?.status).toBe('completed');
   });
-
-  // Mock external API: Stripe success
-  await switchScenario(page, 'stripeSuccess');
-
-  // Test flow
-  await page.goto('/cart');
-  await page.getByRole('button', { name: 'Checkout' }).click();
-
-  // Fill payment form
-  await page.getByLabel('Card Number').fill('4242424242424242');
-  await page.getByLabel('Expiry').fill('12/25');
-  await page.getByLabel('CVC').fill('123');
-  await page.getByRole('button', { name: 'Pay £500' }).click();
-
-  // Verify success
-  await expect(page.getByText('Payment successful')).toBeVisible();
-  await expect(page.getByText('Order #')).toBeVisible();
-
-  // Verify database updated
-  const order = await prisma.order.findFirst({
-    where: { userId: 'user-123' },
-  });
-  expect(order?.status).toBe('completed');
 });
 ```
 
