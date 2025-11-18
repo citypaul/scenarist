@@ -1,13 +1,13 @@
 ---
 title: Testing Next.js Apps with Database Access
-description: The honest guide to testing Next.js apps that use databases and external APIs
+description: Testing strategy for Next.js apps that use both databases and external APIs
 ---
 
 import { Aside, Card, CardGrid } from '@astrojs/starlight/components';
 
-<Aside type="danger" title="Critical: Understanding Scenarist's Scope">
+<Aside type="note" title="Scenarist's Scope">
 
-**Scenarist mocks external HTTP APIs, not databases.** This guide explains what works, what doesn't, and the honest solution for testing Next.js apps with databases.
+**Scenarist excels at mocking external HTTP APIs.** For apps that also access databases directly, this guide shows the recommended testing strategy combining Scenarist with database testing tools.
 
 </Aside>
 
@@ -73,7 +73,7 @@ export const defaultScenario = {
 - The request never leaves the process boundary
 - MSW only sees requests that actually traverse the network stack
 
-## The Honest Solution: Hybrid Testing
+## Recommended Testing Strategy
 
 **Use the right tool for each job:**
 
@@ -253,7 +253,7 @@ export default async function DashboardPage({ params }) {
 
 ### Hybrid: Scenarist + Testcontainers
 
-**Use when:** Your app uses both databases AND external HTTP APIs (most real apps).
+**Use when:** Your app uses both databases AND external HTTP APIs.
 
 This is the **recommended approach for production applications**.
 
@@ -356,10 +356,10 @@ Testcontainers requires Docker. Ensure your CI environment supports it:
 2. **Scenarist cannot mock databases** - No HTTP request = nothing to intercept
 3. **Scenarist cannot mock internal API routes** - They don't traverse the network in Node.js
 4. **Use Testcontainers for databases** - Real PostgreSQL/MySQL in containers
-5. **Combine both for real apps** - Most apps need both databases AND external APIs
+5. **Combine both when needed** - Many apps use both databases AND external APIs
 6. **API routes that proxy external services work** - The external call is intercepted
 
-The honest approach: **Use Scenarist for what it's designed for (external APIs), and Testcontainers for what it's designed for (databases).**
+**Use Scenarist for what it's designed for (external APIs), and Testcontainers for what it's designed for (databases).**
 
 ## Next Steps
 
