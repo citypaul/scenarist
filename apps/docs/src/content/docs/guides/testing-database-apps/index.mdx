@@ -22,9 +22,17 @@ import { Aside } from '@astrojs/starlight/components';
 
 ---
 
-## Why This Matters
+## Why Database Testing Is Hard
 
-Scenarist intercepts HTTP requests via MSW. Database calls are not HTTP requests—they use direct TCP connections that MSW cannot intercept.
+Scenarist intercepts HTTP requests via MSW because every HTTP library eventually calls the same underlying APIs. **Databases have no equivalent universal interception point.**
+
+Each ORM and driver is a different API surface:
+- Prisma: `prisma.user.findMany()`
+- Drizzle: `db.select().from(users)`
+- TypeORM: `userRepository.find()`
+- Raw SQL: `pg.query('SELECT * FROM users')`
+
+There's no single place to intercept all database queries and inject test isolation.
 
 ```typescript
 // ❌ Scenarist CANNOT mock this - no HTTP request
@@ -33,9 +41,7 @@ export async function fetchProducts() {
 }
 ```
 
-Without the repository pattern, you have two bad options:
-- **Sequential execution**: Doesn't scale—CI time grows linearly with test count
-- **Sharding**: Only shard-level parallelism—tests within each shard still run sequentially
+**The core problem:** Scenarist isolates tests via test ID in HTTP headers. Databases have no equivalent mechanism—without isolation, parallel tests corrupt each other's data.
 
 The repository pattern solves this by letting you inject in-memory implementations that partition data by test ID, just like Scenarist does for HTTP.
 
@@ -46,7 +52,7 @@ The repository pattern solves this by letting you inject in-memory implementatio
 | Your Situation | Use This |
 |----------------|----------|
 | Want scalable parallel tests | [Repository Pattern](./repository-pattern) |
-| Need to test actual SQL queries | Repository Pattern + [Testcontainers](./testcontainers-hybrid) |
+| Need to test actual SQL queries, constraints | [Testcontainers](./testcontainers-hybrid) |
 | Can't change code right now | [Sharding](./parallelism-options#option-3-sharding-container-per-shard) |
 | Small test suite, prototyping | [Sequential Execution](./parallelism-options#option-1-sequential-execution) |
 
@@ -57,8 +63,8 @@ The repository pattern solves this by letting you inject in-memory implementatio
 | What You're Testing | Tool |
 |---------------------|------|
 | External HTTP APIs (Stripe, Auth0, SendGrid) | **Scenarist** |
-| Database queries and constraints | **Repository Pattern** + Testcontainers |
 | Business logic with database state | **Repository Pattern** |
+| Actual SQL queries, constraints, transactions | **Testcontainers** |
 
 ---
 
