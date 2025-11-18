@@ -162,6 +162,10 @@ Scenarist tests HTTP-level backend behavior, not complete user workflows. Browse
 
 ## Limitations and Trade-offs
 
+**HTTP only**: Scenarist intercepts HTTP requests only. It cannot mock database calls, file system operations, or WebSocket connections. For apps with direct database access, see [Testing Database Apps](/guides/testing-database-apps) for recommended strategies.
+
+**Database parallelism**: While Scenarist enables parallel HTTP tests via test ID isolation, database testing requires different strategies. Database connections have no equivalent to HTTP headers for carrying test IDs, so parallel database tests need infrastructure-level solutions (multiple containers, PostgreSQL RLS, schema-per-test). See [Parallelism Options](/guides/testing-database-apps/parallelism-options) for detailed trade-offs.
+
 **Single-server deployment**: Scenarist stores test ID to scenario mappings in memory. This works well for local development and single-instance CI environments. Load-balanced deployments would require additional state management.
 
 **Mock maintenance**: Scenario definitions need updates when external APIs change. Scenarist doesn't validate that mocks match real API contracts—this is a deliberate trade-off for test isolation and speed.
