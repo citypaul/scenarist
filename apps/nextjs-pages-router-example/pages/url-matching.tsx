@@ -51,7 +51,29 @@ type Charge = {
   readonly matchedBy: string;
 };
 
-type TestResult = User | Weather | FileInfo | Charge;
+type Post = {
+  readonly userId: string;
+  readonly postId: string;
+  readonly title: string;
+};
+
+type OptionalFile = {
+  readonly filename: string;
+  readonly exists: boolean;
+};
+
+type NestedPath = {
+  readonly path: string;
+  readonly segments: number;
+};
+
+type Order = {
+  readonly orderId: string;
+  readonly status: string;
+  readonly items: ReadonlyArray<unknown>;
+};
+
+type TestResult = User | Weather | FileInfo | Charge | Post | OptionalFile | NestedPath | Order;
 
 type FetchResult =
   | { readonly success: true; readonly data: TestResult }
