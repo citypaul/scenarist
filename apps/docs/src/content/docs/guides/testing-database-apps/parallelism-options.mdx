@@ -221,21 +221,6 @@ If you need row-level isolation (e.g., testing multi-tenant applications), accep
 ### Priority: Everything
 **Not possible.** Pick your top priority and accept the trade-offs.
 
-## Why Scenarist Focuses on HTTP
-
-Scenarist provides a clean, universal solution for HTTP mocking because:
-
-1. **Single interception point** - MSW intercepts all fetch/XHR
-2. **Stateless protocol** - Each request carries its own context (test ID header)
-3. **Framework agnostic** - Same approach works for Express, Next.js, Remix, etc.
-
-Database testing has none of these properties:
-- Multiple ORMs with different APIs
-- Stateful connections
-- No header equivalent in database protocols
-
-Rather than provide a partial solution that only works for some ORMs, we focus on what we can do well and recommend established tools (Testcontainers) for database testing.
-
 ## Recommended Strategy
 
 For most teams, we recommend:
@@ -247,7 +232,7 @@ For most teams, we recommend:
 
 If you have hundreds of database tests and need parallelism:
 - Evaluate multiple containers first (no code changes)
-- Consider test ID columns if you need row-level isolation
+- Consider PostgreSQL RLS if you need row-level isolation
 - Accept the complexity and maintenance burden
 
 ## Next Steps
