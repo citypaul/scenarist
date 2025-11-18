@@ -36,12 +36,17 @@ export default async function CheckoutPage() {
   const user = await db.user.findUnique({ where: { id: userId } });
 
   // External API - Scenarist intercepts and mocks
-  const payment = await fetch('https://api.stripe.com/v1/charges', {
+  const response = await fetch('https://api.stripe.com/v1/charges', {
     method: 'POST',
     headers: scenarist.getHeaders(request),
     body: JSON.stringify({ amount: user.cartTotal }),
   });
 
+  if (!response.ok) {
+    return <PaymentError status={response.status} />;
+  }
+
+  const payment = await response.json();
   return <CheckoutForm user={user} payment={payment} />;
 }
 ```
