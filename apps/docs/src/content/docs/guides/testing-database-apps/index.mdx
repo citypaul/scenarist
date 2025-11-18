@@ -5,19 +5,23 @@ description: How to test applications that use direct database access with Scena
 
 import { Aside } from '@astrojs/starlight/components';
 
-## Use the Repository Pattern
+## Our Recommendation: Repository Pattern
 
-**Abstract database access behind interfaces and inject test implementations with test ID isolation.** This gives you:
+For teams that want scalable parallel testing of real server-side code, we recommend the **repository pattern**. It abstracts database access behind interfaces and injects test implementations with test ID isolation—the same model Scenarist uses for HTTP mocking.
 
+**Benefits:**
 - True test-level parallelism (not just shard-level)
-- Same test ID isolation model as Scenarist's HTTP mocking
 - Fast in-memory execution
-- Architectural benefits that extend beyond testing
+- Architectural benefits that extend beyond testing (clean separation, infrastructure flexibility)
+
+**Trade-offs:**
+- Requires refactoring database access behind interfaces
+- In-memory tests don't catch real database issues (mitigate with Testcontainers)
 
 [Implement the Repository Pattern →](./repository-pattern)
 
-<Aside type="tip">
-**Not ready to refactor?** Use [sharding](./parallelism-options#option-3-sharding-container-per-shard) for parallelism without code changes, or [sequential execution](./parallelism-options#option-1-sequential-execution) for small test suites.
+<Aside type="note">
+**Different constraints?** [Sequential execution](./parallelism-options#option-1-sequential-execution) works for small test suites. [Sharding](./parallelism-options#option-3-sharding-container-per-shard) provides parallelism without code changes. See the [decision guide](#quick-decision-guide) below.
 </Aside>
 
 ---
