@@ -189,12 +189,12 @@ graph TD
 
 ### Don't Use API Route Abstraction When:
 
-- ❌ Database is required for **authentication/authorization** middleware ([see workarounds below](#auth-middleware-workarounds))
+- ❌ Database is required for **authentication/authorization** middleware (see "Special Case" section below)
 - ❌ You're testing **database-specific behavior** (transactions, constraints)
 - ❌ Adding API routes would be a **major architectural change**
 - ❌ You need to test **Server Actions** that mutate database state directly
 
-## Special Case: Database-Based Authentication in Middleware {#auth-middleware-workarounds}
+## Special Case: Database-Based Authentication in Middleware
 
 If your Next.js middleware validates sessions via database, you cannot use fetch() to the same app (causes infinite loop):
 
