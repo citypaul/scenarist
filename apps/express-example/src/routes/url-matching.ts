@@ -104,4 +104,30 @@ export const setupUrlMatchingRoutes = (router: Router): void => {
       res
     );
   });
+
+  // Test 7: Simple path parameter :id
+  router.get('/api/test-url-match/path-param/:userId', async (req: Request, res: Response) => {
+    return handleProxyRequest(
+      (req) => ({
+        url: `https://api.github.com/users/${req.params.userId}`,
+      }),
+      req,
+      res
+    );
+  });
+
+  // Test 8: Multiple path parameters :userId/:postId
+  router.get('/api/test-url-match/multiple-params/:userId/:postId', async (req: Request, res: Response) => {
+    return handleProxyRequest(
+      (req) => ({
+        url: `https://api.blog.com/users/${req.params.userId}/posts/${req.params.postId}`,
+      }),
+      req,
+      res
+    );
+  });
+
+  // NOTE: Advanced path parameter features (optional, repeating, custom regex)
+  // are not included in Express tests due to path-to-regexp v8 syntax differences
+  // Core functionality (simple and multiple parameters) is tested above
 };

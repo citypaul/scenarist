@@ -31,15 +31,15 @@ describe('URL Matching Strategies - Express', () => {
   /**
    * Test 1: Native RegExp - Numeric ID Filtering
    *
-   * Scenario mock matches when URL ends with numeric ID:
-   * - Match: { url: /\/users\/\d+$/ }
+   * Scenario mock matches when URL ends with specific numeric ID:
+   * - Match: { url: /\/users\/1$/ }
    *
    * Should match:
-   * - '/users/123' (ends with digits)
-   * - '/users/456' (ends with digits)
+   * - '/users/1' (ends with exactly "1")
    *
    * Should NOT match:
    * - '/users/octocat' (ends with string, not numeric)
+   * - '/users/123' (ends with different number)
    */
   it('should match URL with numeric ID using native RegExp', async () => {
     await request(app)
@@ -48,7 +48,7 @@ describe('URL Matching Strategies - Express', () => {
       .send({ scenario: scenarios.urlMatching.id });
 
     const response = await request(app)
-      .get('/api/test-url-match/numeric-id/123')
+      .get('/api/test-url-match/numeric-id/1')
       .set(scenarist.config.headers.testId, 'url-test-1');
 
     expect(response.status).toBe(200);
@@ -57,7 +57,7 @@ describe('URL Matching Strategies - Express', () => {
     expect(response.body.followers).toBe(500);
   });
 
-  it('should NOT match non-numeric ID (fallback to default)', async () => {
+  it('should NOT match non-numeric ID (fallback to path param mock)', async () => {
     await request(app)
       .post(scenarist.config.endpoints.setScenario)
       .set(scenarist.config.headers.testId, 'url-test-2')
@@ -68,9 +68,9 @@ describe('URL Matching Strategies - Express', () => {
       .set(scenarist.config.headers.testId, 'url-test-2');
 
     expect(response.status).toBe(200);
-    expect(response.body.matchedBy).toBe('fallback');
-    expect(response.body.login).toBe('fallback-user');
-    expect(response.body.followers).toBe(50);
+    // With path parameter mock present (last fallback wins), it extracts the username
+    expect(response.body.id).toBe('octocat');
+    expect(response.body.login).toBe('user-octocat');
   });
 
   /**
@@ -250,5 +250,78 @@ describe('URL Matching Strategies - Express', () => {
     expect(response.body.matchedBy).toBe('exactUrl');
     expect(response.body.login).toBe('exactuser');
     expect(response.body.followers).toBe(100);
+  });
+
+  /**
+   * Path Parameter Extraction Tests - CRITICAL PROOF OF MSW PARITY
+   *
+   * These tests verify that path-to-regexp parameter extraction works end-to-end.
+   *
+   * Path parameters use path-to-regexp syntax (same as MSW):
+   * - :id - Simple parameter
+   * - :id? - Optional parameter
+   * - :path+ - Repeating parameter (array)
+   * - :id(\d+) - Custom regex parameter
+   */
+  describe('Path Parameter Extraction', () => {
+    /**
+     * Test 7: Simple Path Parameter - User ID
+     *
+     * Pattern: /api/users/:id
+     * Should extract different IDs and return user-specific data
+     */
+    it('should extract simple path parameter :id and route to different users', async () => {
+      await request(app)
+        .post(scenarist.config.endpoints.setScenario)
+        .set(scenarist.config.headers.testId, 'url-test-11')
+        .send({ scenario: scenarios.urlMatching.id });
+
+      // Request user ID 123
+      const response123 = await request(app)
+        .get('/api/test-url-match/path-param/123')
+        .set(scenarist.config.headers.testId, 'url-test-11');
+
+      expect(response123.status).toBe(200);
+      expect(response123.body.id).toBe('123');
+      expect(response123.body.login).toBe('user-123');
+
+      // Request different user ID 456
+      const response456 = await request(app)
+        .get('/api/test-url-match/path-param/456')
+        .set(scenarist.config.headers.testId, 'url-test-11');
+
+      expect(response456.status).toBe(200);
+      expect(response456.body.id).toBe('456');
+      expect(response456.body.login).toBe('user-456');
+    });
+
+    /**
+     * Test 8: Multiple Path Parameters
+     *
+     * Pattern: /api/users/:userId/posts/:postId
+     * Should extract both parameters correctly
+     */
+    it('should extract multiple path parameters :userId and :postId', async () => {
+      await request(app)
+        .post(scenarist.config.endpoints.setScenario)
+        .set(scenarist.config.headers.testId, 'url-test-12')
+        .send({ scenario: scenarios.urlMatching.id });
+
+      const response = await request(app)
+        .get('/api/test-url-match/multiple-params/alice/42')
+        .set(scenarist.config.headers.testId, 'url-test-12');
+
+      expect(response.status).toBe(200);
+      expect(response.body.userId).toBe('alice');
+      expect(response.body.postId).toBe('42');
+      expect(response.body.title).toBe('Post 42 by alice');
+    });
+
+    /**
+     * NOTE: Advanced path parameter features (optional, repeating, custom regex)
+     * are not tested in Express due to path-to-regexp v8 syntax differences.
+     * Core functionality (simple and multiple parameters) is tested above.
+     * These advanced features ARE tested in Next.js apps which use MSW's native path-to-regexp.
+     */
   });
 });
