@@ -94,7 +94,7 @@ const products = await fetch('http://localhost:3000/api/products');
 - **File system operations** - no HTTP request
 - **WebSocket connections** - different protocol
 
-**If your app uses direct database access:** Use [Testcontainers](/guides/testing-database-apps/testcontainers-hybrid) to test with a real database alongside Scenarist for external APIs.
+**If your app uses direct database access:** Many testing approaches work here—real test databases, in-memory databases, seeding scripts, or container-based solutions. We recommend combining Scenarist for external API mocking with [Testcontainers](/guides/testing-database-apps/testcontainers-hybrid) for database testing, but use whatever fits your team's workflow.
 
 [Learn how it works →](/introduction/overview)
 

@@ -46,11 +46,15 @@ Scenarist intercepts HTTP requests only. It cannot mock:
 - Direct function calls or imports
 </Aside>
 
-## Recommended Approach: Testcontainers + Scenarist Hybrid
+## Testing Approaches
 
-**Best for:** Apps that use both databases AND external HTTP APIs
+Many techniques work for database testing—real test databases, in-memory databases (SQLite), seeding scripts, or container-based solutions like Testcontainers. Choose what fits your team's workflow.
 
-Use Testcontainers to spin up real database containers with seeded scenarios. Use Scenarist to mock external APIs. No code changes needed.
+### Our Recommendation: Testcontainers + Scenarist
+
+For apps that use both databases AND external HTTP APIs, we recommend combining:
+- **Testcontainers** for database testing (real PostgreSQL/MySQL in Docker containers)
+- **Scenarist** for mocking external APIs (Stripe, Auth0, SendGrid)
 
 **Key benefits:**
 - ✅ No code changes required
@@ -59,11 +63,20 @@ Use Testcontainers to spin up real database containers with seeded scenarios. Us
 - ✅ Realistic integration testing
 
 **Trade-offs:**
-- ⚠️ Slower tests (5-30s container startup)
+- ⚠️ Slower tests (container startup overhead)
 - ⚠️ Docker required in CI/CD
 - ⚠️ Must maintain database seeding scripts
 
 [Learn more about Testcontainers Hybrid →](./testcontainers-hybrid)
+
+### Alternative Approaches
+
+Other valid database testing strategies include:
+- **Real test database** with seeding scripts
+- **In-memory database** (SQLite for development, real DB in CI)
+- **Database mocking** at the ORM level (Prisma mock, etc.)
+
+Use whatever approach fits your team. Scenarist handles the external API mocking regardless of how you test your database layer.
 
 ## Decision Tree
 

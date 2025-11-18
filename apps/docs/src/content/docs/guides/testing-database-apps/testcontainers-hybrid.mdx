@@ -125,7 +125,7 @@ import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers
 import { execSync } from 'child_process';
 
 export async function createTestContainer(): Promise<StartedPostgreSqlContainer> {
-  // Start PostgreSQL container (takes 5-30 seconds)
+  // Start PostgreSQL container
   const container = await new PostgreSqlContainer('postgres:16').start();
 
   // Set DATABASE_URL for Next.js app
@@ -363,7 +363,7 @@ test.describe('Checkout flow with database', () => {
 - You want to test actual database queries and migrations
 - You have external API dependencies to mock
 - You cannot/don't want to add API routes
-- Test startup time (5-30s) is acceptable
+- Container startup overhead is acceptable for your workflow
 - You need realistic integration testing
 
 **❌ Don't use when:**
@@ -395,9 +395,9 @@ test.describe('Checkout flow with database', () => {
 ### Disadvantages
 
 **⚠️ Slower tests**
-- Container startup: 5-30 seconds
-- Database seeding: 1-5 seconds per test
-- Total overhead: ~10-35 seconds
+- Container startup overhead
+- Database seeding per test
+- Best suited for focused test suites rather than hundreds of tests
 
 **⚠️ Docker required**
 - CI/CD must support Docker
