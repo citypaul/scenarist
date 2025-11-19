@@ -15,14 +15,12 @@ import type { CreateUserInput } from './repositories';
 export const scenarioRepositoryData: Record<
   string,
   {
-    users?: ReadonlyArray<CreateUserInput & { id: string }>;
+    users?: ReadonlyArray<CreateUserInput>;
   }
 > = {
-  // Premium user scenario - seeds a premium tier user
   premiumUser: {
     users: [
       {
-        id: 'user-1',
         email: 'premium@example.com',
         name: 'Premium User',
         tier: 'premium',
@@ -30,17 +28,13 @@ export const scenarioRepositoryData: Record<
     ],
   },
 
-  // Default scenario - seeds a standard tier user
   default: {
     users: [
       {
-        id: 'user-1',
         email: 'standard@example.com',
         name: 'Standard User',
         tier: 'standard',
       },
     ],
   },
-
-  // Add more scenario data mappings as needed
 };

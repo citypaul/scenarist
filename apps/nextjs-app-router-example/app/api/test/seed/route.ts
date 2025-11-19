@@ -25,8 +25,13 @@ import { scenarioRepositoryData } from '@/lib/repository-data';
  */
 export async function POST(request: NextRequest) {
   const testId = request.headers.get('x-test-id') ?? 'default-test';
-  const body = (await request.json()) as { scenarioId: string };
-  const { scenarioId } = body;
+  const body: unknown = await request.json();
+
+  if (!body || typeof body !== 'object' || !('scenarioId' in body) || typeof (body as { scenarioId: unknown }).scenarioId !== 'string') {
+    return NextResponse.json({ error: 'scenarioId is required' }, { status: 400 });
+  }
+
+  const { scenarioId } = body as { scenarioId: string };
 
   console.log('[Seed] testId:', testId, 'scenarioId:', scenarioId);
 
