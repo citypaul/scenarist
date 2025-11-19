@@ -7,7 +7,7 @@
  * Scenarist mocks external HTTP APIs. For direct database access in your app,
  * you need a separate strategy like this repository pattern with test ID isolation.
  *
- * Learn more: https://scenarist.io/docs/patterns/repository-testing
+ * Learn more: https://scenarist.io/guides/testing-database-apps/repository-pattern
  */
 
 import { AsyncLocalStorage } from 'node:async_hooks';

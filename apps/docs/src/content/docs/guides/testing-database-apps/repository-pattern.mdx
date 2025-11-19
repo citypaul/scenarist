@@ -44,6 +44,30 @@ This gives you the same isolation model as Scenarist's HTTP mocking:
 
 Because the interface is the same, your business logic doesn't know or care which implementation is running—it just calls `userRepository.findById()`. The test isolation happens transparently.
 
+## Working Example: Next.js App Router
+
+<Aside type="tip" title="See It In Action">
+
+Our **Next.js App Router example app** includes a complete implementation of this pattern with:
+
+- Repository interface with test ID isolation
+- In-memory repository for tests
+- Playwright fixture that seeds repository on scenario switch
+- Integration with Scenarist's HTTP mocking
+
+Browse the code: [`apps/nextjs-app-router-example`](https://github.com/citypaul/scenarist/tree/main/apps/nextjs-app-router-example)
+
+Key files:
+- [`lib/repositories/`](https://github.com/citypaul/scenarist/tree/main/apps/nextjs-app-router-example/lib/repositories) - Repository interface and implementations
+- [`lib/container.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/lib/container.ts) - DI container with AsyncLocalStorage
+- [`lib/repository-data.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/lib/repository-data.ts) - Scenario-to-seed-data mapping
+- [`tests/playwright/fixtures.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/tests/playwright/fixtures.ts) - Custom fixture with repository seeding
+- [`tests/playwright/products-repo.spec.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/tests/playwright/products-repo.spec.ts) - Tests demonstrating the pattern
+
+This implementation extends Scenarist's `switchScenario` to also seed database state, keeping the same test ID isolation for both HTTP mocks and direct database queries.
+
+</Aside>
+
 ## Example Implementation (Express)
 
 <Aside type="note" title="Adapt for Your Framework">

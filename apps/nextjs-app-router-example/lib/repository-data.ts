@@ -7,7 +7,7 @@
  * When a scenario is switched, both HTTP mocks (Scenarist) and database state
  * (this seeding) are set up together, maintaining the pattern: switch → navigate → assert.
  *
- * Learn more: https://scenarist.io/docs/patterns/repository-testing
+ * Learn more: https://scenarist.io/guides/testing-database-apps/repository-pattern
  */
 
 import type { CreateUserInput } from './repositories';

@@ -8,7 +8,7 @@
  * NOTE: Repository seeding is NOT a Scenarist feature - it's a complementary
  * pattern you implement in your app for handling direct database access.
  *
- * Learn more: https://scenarist.io/docs/patterns/repository-testing
+ * Learn more: https://scenarist.io/guides/testing-database-apps/repository-pattern
  */
 
 import { test as base, expect } from '@playwright/test';

@@ -7,7 +7,7 @@
  * Called by the switchScenario fixture to set up both HTTP mocks (Scenarist)
  * and database state (this endpoint) together.
  *
- * Learn more: https://scenarist.io/docs/patterns/repository-testing
+ * Learn more: https://scenarist.io/guides/testing-database-apps/repository-pattern
  */
 
 import { NextRequest, NextResponse } from 'next/server';
