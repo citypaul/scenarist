@@ -12,8 +12,15 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import type { UserRepository } from './repositories/user-repository';
 import { InMemoryUserRepository } from './repositories/in-memory-user-repository';
 
+// Global declarations for Next.js module isolation workaround
+declare global {
+  var __test_id_storage: AsyncLocalStorage<string> | undefined;
+  var __user_repository_instance: UserRepository | undefined;
+}
+
 // AsyncLocalStorage carries test ID through async request lifecycle
-const testIdStorage = new AsyncLocalStorage<string>();
+// CRITICAL: Must use global to share across different Next.js code paths
+const testIdStorage = global.__test_id_storage ?? (global.__test_id_storage = new AsyncLocalStorage<string>());
 
 /**
  * Get the current test ID from AsyncLocalStorage.
@@ -31,11 +38,6 @@ export const runWithTestId = <T>(testId: string, fn: () => T): T => {
   return testIdStorage.run(testId, fn);
 };
 
-// Singleton instances for repositories
-// In test mode, use in-memory repository with test ID isolation
-// Note: In a real app, you'd also have production instances with Prisma
-let userRepositoryInstance: UserRepository | null = null;
-
 /**
  * Get or create the user repository instance.
  *
@@ -44,12 +46,12 @@ let userRepositoryInstance: UserRepository | null = null;
  * - In production: Would be PrismaUserRepository with real database
  */
 export const getUserRepository = (): UserRepository => {
-  if (!userRepositoryInstance) {
+  if (!global.__user_repository_instance) {
     // For this demo, always use in-memory repository
     // In a real app, you'd check NODE_ENV and use Prisma in production
-    userRepositoryInstance = new InMemoryUserRepository(getTestId);
+    global.__user_repository_instance = new InMemoryUserRepository(getTestId);
   }
-  return userRepositoryInstance;
+  return global.__user_repository_instance;
 };
 
 /**
@@ -67,5 +69,5 @@ export const createRepositories = (): { userRepository: UserRepository } => {
  * This allows resetting state between test runs.
  */
 export const clearRepositoryInstance = (): void => {
-  userRepositoryInstance = null;
+  global.__user_repository_instance = undefined;
 };

@@ -60,8 +60,7 @@ export default async function ProductsRepoPage({
 
   // Get test ID from request headers
   const headersList = await headers();
-  const testId =
-    headersList.get(scenarist.config.headers.testId) ?? 'default-test';
+  const testId = headersList.get(scenarist.config.headers.testId) ?? 'default-test';
 
   // 1. Get user from repository (in-memory with test ID isolation)
   const user = await fetchUserFromRepository(testId, userId);
