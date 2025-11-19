@@ -1,11 +1,12 @@
 # Hybrid Testing Strategy: Server Components with Databases and External APIs
 
-**Status:** In Progress
+**Status:** ✅ Complete
 **Created:** 2025-11-18
 **Branches:**
 - `demo/api-proxy-pattern` (PR #1) - ✅ Complete
 - `demo/database-testing-api-route-abstraction` (PR #2) - ✅ Complete (documentation)
-- `feature/repository-pattern-example` (PR #3) - Repository Pattern Implementation
+- `feature/repository-pattern-example` (PR #107) - ✅ Complete (Next.js App Router)
+- `feature/repository-pattern-pages-express` (PR #108) - ✅ Complete (Next.js Pages Router + Express)
 
 ### PR #3: Repository Pattern Implementation
 **What it demonstrates:** Test ID-isolated database testing using the repository pattern we recommend in documentation
@@ -988,16 +989,43 @@ All docs (internal and external) will be updated to:
 - [ ] Playwright tests passing with `[HYBRID]` labels
 - [ ] Documentation showing complete strategy
 
-### PR #3: Repository Pattern
-- [ ] Working `/products-repo` page
-- [ ] UserRepository interface defined
-- [ ] PrismaUserRepository production implementation
-- [ ] InMemoryUserRepository test implementation with test ID isolation
-- [ ] Container with dependency injection
-- [ ] API route for test data setup
-- [ ] Playwright tests passing with `[REPO]` labels
-- [ ] Tests demonstrate parallel execution without conflicts
-- [ ] Integration with Scenarist for HTTP mocking
+### PR #3: Repository Pattern (Completed in All Three Example Apps)
+
+**Next.js App Router (`apps/nextjs-app-router-example`):**
+- [x] Working `/products-repo` page
+- [x] UserRepository interface defined
+- [x] InMemoryUserRepository test implementation with test ID isolation
+- [x] Container with dependency injection (global singletons for Next.js module isolation)
+- [x] API route `/api/test/seed` for test data setup
+- [x] Playwright tests passing with `[REPO]` labels (5 tests)
+- [x] Tests demonstrate parallel execution without conflicts
+- [x] Integration with Scenarist for HTTP mocking
+
+**Next.js Pages Router (`apps/nextjs-pages-router-example`):**
+- [x] Working `/products-repo` page with getServerSideProps
+- [x] UserRepository interface defined
+- [x] InMemoryUserRepository test implementation with test ID isolation
+- [x] Container with dependency injection (global singletons for Next.js module isolation)
+- [x] API route `/api/test/seed` for test data setup
+- [x] Playwright tests passing with `[REPO]` labels (5 tests)
+- [x] Tests demonstrate parallel execution without conflicts
+- [x] Integration with Scenarist for HTTP mocking
+
+**Express (`apps/express-example`):**
+- [x] Working `/products-repo` endpoint
+- [x] UserRepository interface defined
+- [x] InMemoryUserRepository test implementation with test ID isolation
+- [x] Container with dependency injection (no globals needed - Express single process)
+- [x] Endpoint `/test/seed` for test data setup
+- [x] Vitest tests passing with `[REPO]` labels (5 tests)
+- [x] Tests demonstrate parallel execution without conflicts
+- [x] Integration with Scenarist for HTTP mocking
+
+**All implementations include:**
+- NOTE comments explaining this is NOT a Scenarist feature
+- Links to `https://scenarist.io/guides/testing-database-apps/repository-pattern`
+- Same test ID isolation pattern as Scenarist
+- Same products/pricing data for consistent documentation
 
 ### Documentation
 - [ ] Landing page has "What Scenarist Is (and Isn't)" section
@@ -1010,9 +1038,32 @@ All docs (internal and external) will be updated to:
 
 - **PR #1 (API Proxy):** ✅ Complete
 - **PR #2 (Hybrid):** ✅ Complete (documentation)
-- **PR #3 (Repository Pattern):** Current session - demonstrate the recommended pattern
+- **PR #107 (Repository Pattern - App Router):** ✅ Complete
+- **PR #108 (Repository Pattern - Pages Router + Express):** ✅ Complete
 - **Docs updates:** Complete with PR #1
 - **Issue update:** Complete with PR #1
+
+## Implementation Summary (2025-11-19)
+
+Repository pattern successfully implemented across all three example applications:
+
+| App | Tests | Framework |
+|-----|-------|-----------|
+| Next.js App Router | 5 Playwright tests | `@playwright/test` |
+| Next.js Pages Router | 5 Playwright tests | `@playwright/test` |
+| Express | 5 Vitest tests | `vitest` + `supertest` |
+
+**Total: 15 tests demonstrating repository pattern with test ID isolation**
+
+All tests demonstrate:
+1. Switch scenario (HTTP mocks)
+2. Seed repository (database state)
+3. Make request
+4. Assert on response
+
+Key pattern difference from App Router:
+- **Pages Router**: Uses `getServerSideProps` instead of Server Components
+- **Express**: Uses Vitest instead of Playwright, `scenarist.start()` in test setup
 
 ## Key Learnings to Document in CLAUDE.md
 

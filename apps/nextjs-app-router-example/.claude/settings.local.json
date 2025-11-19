@@ -50,7 +50,10 @@
       "Bash(for test in \"pathname-only\" \"localhost\" \"external\" \"RegExp\" \"pathname pattern\" \"full URL pattern\")",
       "Bash(do echo \"=== Testing: $test ===\" pnpm exec playwright test tests/playwright/hostname-matching.spec.ts --grep \"$test\" --reporter=line --retries=0)",
       "Bash(timeout 5 pnpm dev:*)",
-      "Bash(kill:*)"
+      "Bash(kill:*)",
+      "Bash(pnpm exec tsc:*)",
+      "Bash(/dev/null echo 'Waiting for port to clear...' sleep 3 echo 'Running test...' pnpm exec playwright test tests/playwright/products-repo.spec.ts --grep 'premium pricing for premium' --reporter=line)",
+      "Bash(pnpm add:*)"
     ],
     "deny": [],
     "ask": []

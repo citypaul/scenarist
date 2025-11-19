@@ -16,7 +16,8 @@
   },
   "dependencies": {
     "@scenarist/express-adapter": "workspace:*",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@scenarist/eslint-config": "workspace:*",
