@@ -39,19 +39,62 @@ This creates a testing challenge:
 
 **Test extensive external API scenarios in parallel** without expensive cloud API calls or complex test infrastructure.
 
-## What Scenarist Intercepts
+## What You Can Test
 
-Scenarist intercepts **HTTP/HTTPS requests** made via fetch, axios, or other HTTP clients to external services (Stripe, Auth0, SendGrid, REST APIs).
+**When your app calls external HTTP APIs, Scenarist gives you full control.** You can test complete user journeys—from browser interaction through Server Components, API routes, and middleware—with your real server-side code executing, while you control exactly what responses come back from external services.
 
-**It does not intercept:**
-- Direct database access (PostgreSQL, MongoDB, Prisma)
-- File system operations
-- WebSocket connections
-- Non-HTTP protocols
+### Perfect For
 
-**If your app uses direct database access:** You have two options: (1) add thin API routes to make database calls testable via HTTP, or (2) use Testcontainers to spin up real database containers with seeded scenarios, combined with Scenarist to mock external APIs. The Testcontainers approach requires no code changes.
+- **Server Components** fetching from external APIs (Stripe, Auth0, SendGrid)
+- **API routes** that call third-party services
+- **Middleware** that validates tokens or checks permissions
+- **Full user journeys** through real frontend + backend code
 
-[Database testing guide →](/guides/testing-database-apps)
+```typescript
+// Server Component - Your real code executes
+export default async function CheckoutPage() {
+  // ✅ This call is intercepted - you control the response
+  const payment = await fetch('https://api.stripe.com/v1/charges', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${process.env.STRIPE_KEY}` },
+    body: JSON.stringify({ amount: 5000 }),
+  });
+
+  // Your real rendering logic
+  const result = await payment.json();
+  return <PaymentConfirmation status={result.status} />;
+}
+```
+
+**Test any scenario:** Payment success, card declined, network timeout, rate limiting, webhook failures—all controlled by your test scenarios, running in parallel.
+
+### The Requirement: Network Requests
+
+Scenarist intercepts HTTP requests that traverse the network. This works because MSW (Mock Service Worker) operates at the fetch level.
+
+**What this means in practice:**
+
+```typescript
+// ✅ WORKS - External API
+const stripe = await fetch('https://api.stripe.com/v1/products');
+
+// ✅ WORKS - Different port on localhost
+const products = await fetch('http://localhost:3001/products');
+
+// ❌ Does NOT work - Same host/port internal route
+const products = await fetch('http://localhost:3000/api/products');
+```
+
+**Why internal routes don't work:** When a Server Component calls an API route on the same host/port, Next.js handles this internally without making a network request. MSW only sees requests that go through the network stack.
+
+### What Cannot Be Intercepted
+
+- **Direct database access** (PostgreSQL, MongoDB, Prisma) - no HTTP request
+- **Internal API routes** on the same host/port - Next.js internal routing
+- **File system operations** - no HTTP request
+- **WebSocket connections** - different protocol
+
+**If your app uses direct database access:** See [Testing Database Apps](/guides/testing-database-apps) for strategies. We recommend the [Repository Pattern](/guides/testing-database-apps/repository-pattern) for scalable parallel testing with the same test ID isolation model as Scenarist.
 
 [Learn how it works →](/introduction/overview)
 
@@ -118,6 +161,10 @@ Scenarist tests HTTP-level backend behavior, not complete user workflows. Browse
 :::
 
 ## Limitations and Trade-offs
+
+**HTTP only**: Scenarist intercepts HTTP requests only. It cannot mock database calls, file system operations, or WebSocket connections. For apps with direct database access, see [Testing Database Apps](/guides/testing-database-apps) for recommended strategies.
+
+**Database parallelism**: While Scenarist enables parallel HTTP tests via test ID isolation, database testing requires different strategies. We recommend the [Repository Pattern](/guides/testing-database-apps/repository-pattern), which provides the same test ID isolation model for database access. See [Parallelism Options](/guides/testing-database-apps/parallelism-options) for all approaches and trade-offs.
 
 **Single-server deployment**: Scenarist stores test ID to scenario mappings in memory. This works well for local development and single-instance CI environments. Load-balanced deployments would require additional state management.
 

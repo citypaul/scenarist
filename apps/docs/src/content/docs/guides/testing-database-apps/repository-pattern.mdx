@@ -1,0 +1,509 @@
+---
+title: Repository Pattern for Parallel Database Testing
+description: Use the repository pattern to achieve true test parallelism with test ID isolation—no schema changes, any ORM, fast in-memory execution
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## The Problem
+
+Scenarist isolates HTTP tests via test ID in headers. Each test gets a unique ID, and MSW uses that ID to return the correct mock responses.
+
+**Databases have no equivalent mechanism.** There's no "test ID header" in database protocols—so parallel tests corrupt each other's data.
+
+## The Solution
+
+The [repository pattern](https://martinfowler.com/eaaCatalog/repository.html) creates that mechanism at the application level. By abstracting database access behind interfaces, you can inject test implementations that partition data by test ID—giving you the same isolation model as Scenarist's HTTP mocking.
+
+Beyond testing, the repository pattern is a well-established architectural practice that provides [significant additional benefits](#beyond-testing-why-the-repository-pattern-is-good-practice) including infrastructure flexibility, better separation of concerns, and alignment with SOLID principles.
+
+## How It Works
+
+The repository pattern separates *what* your code does from *how* data is persisted. Your business logic depends on an interface (the "what"), while concrete implementations handle the database details (the "how").
+
+**The key insight:** You can swap implementations based on environment:
+
+- **Production:** Real implementation that executes actual database queries (Prisma, Drizzle, TypeORM)
+- **Tests:** In-memory implementation that stores data in JavaScript Maps, partitioned by test ID
+
+This gives you the same isolation model as Scenarist's HTTP mocking:
+
+| Scenarist (HTTP) | Repository Pattern (Database) |
+|------------------|-------------------------------|
+| `x-test-id` header identifies test | `x-test-id` header identifies test |
+| MSW returns scenario-specific responses | Repository returns test-specific data |
+| Each test gets isolated mock state | Each test gets isolated data store |
+
+**The flow:**
+
+1. Test sends request with `x-test-id: abc-123`
+2. Middleware extracts test ID and stores it in `AsyncLocalStorage`
+3. Repository retrieves test ID and uses it as partition key
+4. Data operations only affect that test's partition
+5. Parallel tests have completely isolated data stores
+
+Because the interface is the same, your business logic doesn't know or care which implementation is running—it just calls `userRepository.findById()`. The test isolation happens transparently.
+
+## Example Implementation (Express)
+
+<Aside type="note" title="Adapt for Your Framework">
+
+This example uses Express with AsyncLocalStorage to demonstrate the pattern. You'll need to adapt this for your specific framework (Next.js, Fastify, etc.) and ORM (Prisma, Drizzle, etc.). The core concepts—interface abstraction, test ID extraction, and data partitioning—apply regardless of technology choices.
+
+</Aside>
+
+Here's a complete working example showing how test ID flows from Playwright through Express to isolated in-memory repositories:
+
+### 1. Repository Interface
+
+```typescript
+// src/repositories/user-repository.ts
+export type User = {
+  id: string;
+  email: string;
+  name: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type CreateUserInput = {
+  email: string;
+  name: string;
+};
+
+export interface UserRepository {
+  findById(id: string): Promise<User | null>;
+  findByEmail(email: string): Promise<User | null>;
+  findAll(): Promise<User[]>;
+  create(data: CreateUserInput): Promise<User>;
+}
+```
+
+### 2. Production Implementation (Prisma)
+
+```typescript
+// src/repositories/prisma-user-repository.ts
+import { PrismaClient } from '@prisma/client';
+import type { UserRepository, User, CreateUserInput } from './user-repository';
+
+export class PrismaUserRepository implements UserRepository {
+  constructor(private prisma: PrismaClient) {}
+
+  async findById(id: string): Promise<User | null> {
+    return this.prisma.user.findUnique({ where: { id } });
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    return this.prisma.user.findFirst({ where: { email } });
+  }
+
+  async findAll(): Promise<User[]> {
+    return this.prisma.user.findMany();
+  }
+
+  async create(data: CreateUserInput): Promise<User> {
+    return this.prisma.user.create({ data });
+  }
+}
+```
+
+### 3. Test Implementation with Test ID Isolation
+
+This is where the magic happens. The test implementation partitions data by test ID:
+
+```typescript
+// src/repositories/in-memory-user-repository.ts
+import type { UserRepository, User, CreateUserInput } from './user-repository';
+
+export class InMemoryUserRepository implements UserRepository {
+  // Map<testId, Map<userId, User>>
+  private store = new Map<string, Map<string, User>>();
+  private idCounter = new Map<string, number>();
+
+  constructor(private getTestId: () => string) {}
+
+  private getTestStore(): Map<string, User> {
+    const testId = this.getTestId();
+    if (!this.store.has(testId)) {
+      this.store.set(testId, new Map());
+      this.idCounter.set(testId, 0);
+    }
+    return this.store.get(testId)!;
+  }
+
+  private generateId(): string {
+    const testId = this.getTestId();
+    const counter = (this.idCounter.get(testId) ?? 0) + 1;
+    this.idCounter.set(testId, counter);
+    return `user-${counter}`;
+  }
+
+  async findById(id: string): Promise<User | null> {
+    return this.getTestStore().get(id) ?? null;
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    for (const user of this.getTestStore().values()) {
+      if (user.email === email) return user;
+    }
+    return null;
+  }
+
+  async findAll(): Promise<User[]> {
+    return Array.from(this.getTestStore().values());
+  }
+
+  async create(data: CreateUserInput): Promise<User> {
+    const user: User = {
+      id: this.generateId(),
+      ...data,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.getTestStore().set(user.id, user);
+    return user;
+  }
+}
+```
+
+### 4. Dependency Injection Container
+
+```typescript
+// src/container.ts
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { PrismaClient } from '@prisma/client';
+import type { UserRepository } from './repositories/user-repository';
+import { PrismaUserRepository } from './repositories/prisma-user-repository';
+import { InMemoryUserRepository } from './repositories/in-memory-user-repository';
+
+// AsyncLocalStorage carries test ID through async request lifecycle
+const testIdStorage = new AsyncLocalStorage<string>();
+
+export const getTestId = (): string => {
+  return testIdStorage.getStore() ?? 'default-test';
+};
+
+export const runWithTestId = <T>(testId: string, fn: () => T): T => {
+  return testIdStorage.run(testId, fn);
+};
+
+// Create repositories based on environment
+const prisma = new PrismaClient();
+
+export const createRepositories = (): { userRepository: UserRepository } => {
+  const isTest = process.env.NODE_ENV === 'test';
+
+  const userRepository: UserRepository = isTest
+    ? new InMemoryUserRepository(getTestId)
+    : new PrismaUserRepository(prisma);
+
+  return { userRepository };
+};
+```
+
+### 5. Express Middleware to Extract Test ID
+
+```typescript
+// src/middleware/test-id-middleware.ts
+import type { Request, Response, NextFunction } from 'express';
+import { runWithTestId } from '../container';
+
+export const testIdMiddleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  const testId = (req.headers['x-test-id'] as string) ?? 'default-test';
+
+  runWithTestId(testId, () => {
+    next();
+  });
+};
+```
+
+### 6. Express App Setup
+
+```typescript
+// src/app.ts
+import express from 'express';
+import { testIdMiddleware } from './middleware/test-id-middleware';
+import { createRepositories } from './container';
+
+const app = express();
+const { userRepository } = createRepositories();
+
+app.use(express.json());
+app.use(testIdMiddleware);
+
+app.get('/users', async (req, res) => {
+  const users = await userRepository.findAll();
+  res.json({ users });
+});
+
+app.post('/users', async (req, res) => {
+  const { email, name } = req.body;
+
+  const existing = await userRepository.findByEmail(email);
+  if (existing) {
+    return res.status(400).json({ error: 'Email already registered' });
+  }
+
+  const user = await userRepository.create({ email, name });
+  res.status(201).json({ user });
+});
+
+export { app };
+```
+
+### 7. Playwright Tests
+
+```typescript
+// tests/user-registration.spec.ts
+import { test, expect } from '@playwright/test';
+
+test.describe('User Registration', () => {
+  test('should register new user', async ({ page, switchScenario }) => {
+    // Scenarist mocks external email API
+    await switchScenario(page, 'emailSuccess');
+
+    // Repository pattern isolates database by test ID
+    // (test ID automatically flows from x-test-id header set by Scenarist)
+
+    await page.goto('/register');
+    await page.fill('[name="email"]', 'test@example.com');
+    await page.fill('[name="name"]', 'Test User');
+    await page.click('button[type="submit"]');
+
+    await expect(page.getByText('Welcome, Test User')).toBeVisible();
+  });
+
+  test('should show error for duplicate email', async ({ page, switchScenario }) => {
+    await switchScenario(page, 'emailSuccess');
+
+    // First registration
+    await page.goto('/register');
+    await page.fill('[name="email"]', 'duplicate@example.com');
+    await page.fill('[name="name"]', 'First User');
+    await page.click('button[type="submit"]');
+
+    // Second registration with same email
+    await page.goto('/register');
+    await page.fill('[name="email"]', 'duplicate@example.com');
+    await page.fill('[name="name"]', 'Second User');
+    await page.click('button[type="submit"]');
+
+    await expect(page.getByText('Email already registered')).toBeVisible();
+  });
+});
+
+// These tests run in PARALLEL with full isolation:
+// - Test A (x-test-id: abc-123) → store['abc-123']
+// - Test B (x-test-id: def-456) → store['def-456']
+// - Same email in different tests → no conflict
+```
+
+## How the Test ID Flows
+
+1. **Playwright** sends request with `x-test-id` header (set automatically by Scenarist)
+2. **Express middleware** extracts the test ID and stores it in `AsyncLocalStorage`
+3. **Repository** calls `getTestId()` to retrieve the test ID from `AsyncLocalStorage`
+4. **Data partitioning** ensures each test ID maps to its own isolated data store
+
+This is the same pattern Scenarist uses internally—`AsyncLocalStorage` carries context through the async request lifecycle.
+
+## Why This Approach Excels
+
+### True Parallelism with Full Isolation
+
+Each test gets its own isolated data store, keyed by test ID. Tests run concurrently without interference—the same isolation model as Scenarist's HTTP mocking.
+
+### Fast Execution
+
+In-memory repositories are orders of magnitude faster than real databases:
+- No network round-trips
+- No disk I/O
+- No connection pool overhead
+- No query parsing/planning
+
+### Infrastructure Flexibility
+
+The repository pattern decouples your application from specific persistence technologies. Today you're using PostgreSQL with Prisma—tomorrow you might migrate to:
+- A different database (MySQL, MongoDB)
+- A different ORM (Drizzle, TypeORM)
+- A different architecture (microservices, event sourcing)
+
+Your business logic remains unchanged because it depends on interfaces, not implementations.
+
+### ORM Agnostic
+
+The interface is your contract. Swap between Prisma, Drizzle, TypeORM, Knex, or raw SQL without changing tests:
+
+```typescript
+// All these implement the same interface
+const prismaRepo = new PrismaUserRepository(prisma);
+const drizzleRepo = new DrizzleUserRepository(db);
+const knexRepo = new KnexUserRepository(knex);
+const testRepo = new InMemoryUserRepository(getTestId);
+```
+
+### No Schema Changes
+
+Unlike PostgreSQL RLS or test ID columns, the repository pattern requires no database schema modifications. Your production database remains clean.
+
+## Trade-offs to Consider
+
+### Requires Abstracting All Database Access
+
+Every database call must go through a repository interface. For existing codebases, this can be significant refactoring:
+
+```typescript
+// Before: Direct ORM calls scattered throughout code
+const user = await prisma.user.findUnique({ where: { id } });
+
+// After: All access through repositories
+const user = await userRepository.findById(id);
+```
+
+### Two Implementations to Maintain
+
+You must maintain both production and test implementations. When the interface changes, both must be updated:
+
+```typescript
+// Add new method to interface
+interface UserRepository {
+  // ... existing methods
+  findByRole(role: string): Promise<User[]>;  // NEW
+}
+
+// Must implement in BOTH:
+// - PrismaUserRepository
+// - InMemoryUserRepository
+```
+
+### Doesn't Test Real Database Behavior
+
+The in-memory implementation doesn't execute actual SQL. Potential issues you might miss:
+- Query performance problems
+- Database constraints (unique, foreign keys)
+- Transaction isolation issues
+- ORM-specific edge cases
+
+<Aside type="caution" title="Mitigation Strategy">
+
+**Test the repository implementation itself in isolation.** Create a separate test suite that runs your production repository (e.g., `PrismaUserRepository`) against a real database using [Testcontainers](./testcontainers-hybrid):
+
+```typescript
+// tests/repositories/prisma-user-repository.test.ts
+import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import { PrismaClient } from '@prisma/client';
+import { PrismaUserRepository } from '../../src/repositories/prisma-user-repository';
+
+const createTestContext = async () => {
+  const container = await new PostgreSqlContainer().start();
+  const prisma = new PrismaClient({
+    datasources: { db: { url: container.getConnectionUri() } }
+  });
+  await prisma.$executeRaw`CREATE TABLE users (...)`; // Run migrations
+  const repository = new PrismaUserRepository(prisma);
+
+  return {
+    container,
+    prisma,
+    repository,
+    cleanup: async () => {
+      await prisma.$disconnect();
+      await container.stop();
+    },
+  };
+};
+
+describe('PrismaUserRepository', () => {
+  it('should enforce unique email constraint', async () => {
+    const { repository, cleanup } = await createTestContext();
+
+    try {
+      await repository.create({ email: 'test@example.com', name: 'User 1' });
+      await expect(repository.create({ email: 'test@example.com', name: 'User 2' }))
+        .rejects.toThrow(/unique constraint/i);
+    } finally {
+      await cleanup();
+    }
+  });
+});
+```
+
+This gives you:
+- **Fast parallel tests** for business logic (in-memory repositories)
+- **Confidence in SQL correctness** (repository implementation tests against real database)
+- **Clear separation** between "does my business logic work?" and "does my SQL work?"
+
+</Aside>
+
+## When to Choose This Approach
+
+**The repository pattern is worth adopting if you value:**
+
+- **Test parallelism** - Run hundreds of database tests concurrently
+- **Infrastructure flexibility** - Ability to change databases, ORMs, or architectures without rewriting business logic
+- **Fast feedback loops** - In-memory tests complete in milliseconds
+- **Clean architecture** - Better separation of concerns between domain logic and persistence
+- **Long-term maintainability** - Codebase that's easier to understand, test, and evolve
+
+**The investment required:**
+
+- **Existing codebases:** Refactoring direct ORM calls to use repositories takes time. Start with new features and gradually migrate existing code.
+- **Two implementations:** You maintain production and test repositories. TypeScript ensures they stay in sync.
+- **Learning curve:** If your team is new to dependency injection, there's initial learning investment.
+
+**Consider simpler alternatives if:**
+
+- You have a small test suite where sequential execution is fast enough
+- You need to test specific database behavior (query performance, constraints, transactions)
+- The refactoring cost outweighs the parallelism benefit for your current project timeline
+
+<Aside type="tip" title="Incremental Adoption">
+
+You don't have to refactor everything at once. Start by adding repositories for new features. As you see the benefits—faster tests, cleaner code, easier mocking—you can incrementally migrate existing code.
+
+</Aside>
+
+## Beyond Testing: Why the Repository Pattern is Good Practice
+
+The repository pattern is widely adopted because it follows fundamental software design principles:
+
+### Separation of Concerns
+
+Your business logic focuses on *what* to do, not *how* to persist data. The `UserService` doesn't know or care whether data comes from PostgreSQL, MongoDB, or an API—it just calls `userRepository.findById()`.
+
+### Dependency Inversion
+
+High-level business logic depends on abstractions (interfaces), not concrete implementations. This is the "D" in SOLID principles. Your domain code depends on `UserRepository` (interface), not `PrismaUserRepository` (implementation).
+
+### Single Responsibility
+
+Each class has one job:
+- `PrismaUserRepository` → translates domain operations to Prisma queries
+- `UserService` → implements business rules
+- `UserController` → handles HTTP requests
+
+### Open/Closed Principle
+
+Add new persistence strategies without modifying existing code. Need to cache frequently accessed data? Create a `CachedUserRepository` that wraps the real one. Need to log all database access? Create a `LoggingUserRepository` decorator.
+
+### Type Safety
+
+TypeScript interfaces ensure your production and test implementations have matching signatures. If you add a method to the interface, both implementations must implement it.
+
+## Further Reading
+
+- [Repository Pattern](https://martinfowler.com/eaaCatalog/repository.html) - Martin Fowler's original definition
+- [Hexagonal Architecture](https://alistair.cockburn.us/hexagonal-architecture/) - Alistair Cockburn's ports and adapters
+- [Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html) - Uncle Bob's architectural principles
+- [Testing Without Mocks](https://www.jamesshore.com/v2/projects/testing-without-mocks/testing-without-mocks) - James Shore on "Nullable Infrastructure"
+- [Domain-Driven Design Reference](https://www.domainlanguage.com/ddd/reference/) - Eric Evans on repositories in DDD
+
+## Next Steps
+
+- [Parallelism Options Overview](./parallelism-options) - Compare all approaches
+- [Testcontainers Hybrid](./testcontainers-hybrid) - Test real database behavior when needed
+- [Scenarist Getting Started](/introduction/installation) - Set up HTTP mocking

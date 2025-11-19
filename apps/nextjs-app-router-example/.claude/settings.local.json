@@ -48,7 +48,9 @@
       "Bash(xargs:*)",
       "Bash(curl:*)",
       "Bash(for test in \"pathname-only\" \"localhost\" \"external\" \"RegExp\" \"pathname pattern\" \"full URL pattern\")",
-      "Bash(do echo \"=== Testing: $test ===\" pnpm exec playwright test tests/playwright/hostname-matching.spec.ts --grep \"$test\" --reporter=line --retries=0)"
+      "Bash(do echo \"=== Testing: $test ===\" pnpm exec playwright test tests/playwright/hostname-matching.spec.ts --grep \"$test\" --reporter=line --retries=0)",
+      "Bash(timeout 5 pnpm dev:*)",
+      "Bash(kill:*)"
     ],
     "deny": [],
     "ask": []

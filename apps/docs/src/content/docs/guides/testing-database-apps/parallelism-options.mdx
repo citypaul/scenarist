@@ -1,0 +1,294 @@
+---
+title: Database Testing Parallelism Options
+description: Compare strategies for parallel database testing—trade-offs between code changes, schema changes, complexity, and speed
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## The Core Problem
+
+Databases have no equivalent to HTTP's test ID header. Without isolation, parallel tests corrupt each other's data.
+
+[We recommend the repository pattern](/guides/testing-database-apps) for most teams. This page compares all options.
+
+## Options Comparison
+
+| Approach | Parallelism | No Code Changes | No Schema Changes | ORM Agnostic | Complexity |
+|----------|-------------|-----------------|-------------------|--------------|------------|
+| Sequential execution | ❌ | ✅ | ✅ | ✅ | Low |
+| ⭐ Repository pattern | ✅ | ❌ | ✅ | ✅ | Medium |
+| Sharding (container per shard) | ✅ | ✅ | ✅ | ✅ | Medium |
+| PostgreSQL RLS | ✅ | ✅ | ❌ | ❌ | High |
+| Schema per test | ✅ | ✅ | ✅ | ✅ | Very High |
+
+**No option gives you everything.** Choose based on your priorities.
+
+## Option 1: Sequential Execution
+
+**Accept the limitation.** Run database tests sequentially, HTTP tests in parallel.
+
+```typescript
+// playwright.config.ts
+export default defineConfig({
+  projects: [
+    {
+      name: 'database-tests',
+      testMatch: '**/db-*.spec.ts',
+      fullyParallel: false,  // Sequential
+    },
+    {
+      name: 'api-tests',
+      testMatch: '**/api-*.spec.ts',
+      fullyParallel: true,   // Parallel (Scenarist handles isolation)
+    },
+  ],
+});
+```
+
+**Best for:**
+- Quick prototypes where test speed doesn't matter yet
+- Teams who know their test suite will remain small
+- Temporary solution while planning migration to repository pattern
+
+**Trade-offs:**
+- ✅ No code changes
+- ✅ No schema changes
+- ✅ Works with any ORM
+- ❌ Doesn't scale—CI time grows linearly with test count
+- ❌ Limits your ability to run comprehensive test suites
+
+## Option 2: Repository Pattern (Recommended)
+
+Abstract database access behind interfaces and inject test implementations.
+
+```typescript
+// Define repository interface
+interface UserRepository {
+  findById(id: string): Promise<User | null>;
+  create(user: User): Promise<User>;
+  findByEmail(email: string): Promise<User | null>;
+}
+
+// Production implementation
+class PrismaUserRepository implements UserRepository {
+  constructor(private prisma: PrismaClient) {}
+
+  async findById(id: string) {
+    return this.prisma.user.findUnique({ where: { id } });
+  }
+
+  async create(user: User) {
+    return this.prisma.user.create({ data: user });
+  }
+
+  async findByEmail(email: string) {
+    return this.prisma.user.findFirst({ where: { email } });
+  }
+}
+
+// Test implementation with test ID isolation
+class InMemoryUserRepository implements UserRepository {
+  private store = new Map<string, Map<string, User>>();
+
+  constructor(private getTestId: () => string) {}
+
+  private getTestStore() {
+    const testId = this.getTestId();
+    if (!this.store.has(testId)) {
+      this.store.set(testId, new Map());
+    }
+    return this.store.get(testId)!;
+  }
+
+  async findById(id: string) {
+    return this.getTestStore().get(id) ?? null;
+  }
+
+  async create(user: User) {
+    this.getTestStore().set(user.id, user);
+    return user;
+  }
+
+  async findByEmail(email: string) {
+    for (const user of this.getTestStore().values()) {
+      if (user.email === email) return user;
+    }
+    return null;
+  }
+}
+```
+
+```typescript
+// Inject based on environment
+const userRepository = process.env.NODE_ENV === 'test'
+  ? new InMemoryUserRepository(() => getTestIdFromHeader())
+  : new PrismaUserRepository(prisma);
+```
+
+**Best for:**
+- Teams wanting true test-level parallelism
+- Growing codebases that need scalable testing
+- Teams valuing clean architecture and infrastructure flexibility
+
+**Trade-offs:**
+- ✅ True parallelism with test ID isolation
+- ✅ No schema changes
+- ✅ ORM agnostic (swap implementations freely)
+- ✅ In-memory tests are fast
+- ✅ Infrastructure flexibility (change databases/ORMs later)
+- Requires abstracting database access behind interfaces
+- Separate tests needed for real database behavior
+
+[**Learn more about the Repository Pattern →**](./repository-pattern)
+
+## Option 3: Sharding (Container per Shard)
+
+Run multiple PostgreSQL containers, one per Playwright shard. This provides parallelism at the shard level (not test level)—tests within each shard still run sequentially against their container.
+
+```typescript
+// playwright.config.ts
+export default defineConfig({
+  workers: 4,  // 4 parallel workers
+});
+
+// globalSetup.ts
+export default async function globalSetup() {
+  const workerId = process.env.TEST_WORKER_INDEX || '0';
+
+  // Each worker gets its own container
+  const container = await new PostgreSqlContainer()
+    .withDatabase(`test_${workerId}`)
+    .start();
+
+  process.env.DATABASE_URL = container.getConnectionUrl();
+}
+```
+
+Run with sharding:
+```bash
+npx playwright test --shard=1/4
+npx playwright test --shard=2/4
+npx playwright test --shard=3/4
+npx playwright test --shard=4/4
+```
+
+**Best for:**
+- CI/CD with good parallelization support
+- Teams with container orchestration experience
+- Teams who want parallelism without code changes
+
+**Trade-offs:**
+- ✅ Shard-level parallelism
+- ✅ No code or schema changes
+- ❌ Not test-level parallelism (tests within shard still sequential)
+- ❌ Resource-intensive (CPU, memory, disk)
+- ❌ Complex CI/CD setup
+- ❌ Slower container startup (multiplied by shard count)
+
+## Option 4: PostgreSQL Row-Level Security (RLS)
+
+Use PostgreSQL's built-in RLS to isolate by test ID without application code changes.
+
+```sql
+-- Add test_id to tables
+ALTER TABLE users ADD COLUMN test_id TEXT;
+
+-- Create policy
+CREATE POLICY test_isolation ON users
+  USING (test_id = current_setting('app.test_id', true));
+
+-- Enable RLS
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+```
+
+```typescript
+// Set session variable per request
+app.use(async (req, res, next) => {
+  const testId = req.headers['x-test-id'];
+  await prisma.$executeRaw`SELECT set_config('app.test_id', ${testId}, true)`;
+  next();
+});
+```
+
+**Best for:**
+- PostgreSQL users only
+- Teams comfortable with database-level security
+- Applications where RLS is already used
+
+**Trade-offs:**
+- ✅ True parallelism
+- ✅ No application code changes (after setup)
+- ✅ Database handles isolation
+- ❌ PostgreSQL only (not portable)
+- ❌ Schema changes required
+- ❌ Complex to debug
+- ❌ Performance overhead
+
+## Option 5: Schema Per Test
+
+Create a database schema for each test, complete isolation.
+
+```typescript
+// Before each test
+const testId = generateTestId();
+await prisma.$executeRaw`CREATE SCHEMA test_${testId}`;
+await prisma.$executeRaw`SET search_path TO test_${testId}`;
+
+// Run migrations in new schema
+execSync('npx prisma migrate deploy');
+
+// After test
+await prisma.$executeRaw`DROP SCHEMA test_${testId} CASCADE`;
+```
+
+**Best for:**
+- Complete isolation requirements
+- Teams with existing schema management tooling
+- Debugging complex test failures
+
+**Trade-offs:**
+- ✅ Complete isolation
+- ✅ No code changes
+- ✅ Works with any ORM
+- ❌ Very slow (migrations per test)
+- ❌ Complex connection management
+- ❌ High resource usage
+
+## Decision Guide
+
+### Recommended: Repository Pattern
+
+For most teams that want scalable, parallel testing of real server-side code through browser-based tests, the repository pattern is the best approach. It provides true test-level parallelism with the same test ID isolation model as Scenarist, and the architectural benefits (clean separation, infrastructure flexibility) extend well beyond testing.
+
+### When to Choose Sequential Execution
+
+If you're building a quick prototype, or you're certain your application and test suite will remain small. Be aware that this approach doesn't scale—you'll need to migrate later if your test suite grows.
+
+### When to Choose Sharding
+
+If CI/CD time is critical but you don't want to change your application code. Requires good infrastructure and Docker orchestration. Note that tests within each shard still run sequentially.
+
+### When to Choose PostgreSQL RLS
+
+If you need row-level isolation (e.g., testing multi-tenant applications) and you're already using PostgreSQL. Accept the schema changes and complexity.
+
+### When to Choose Schema Per Test
+
+Rarely. Only if you need complete isolation and can tolerate very slow test execution.
+
+## Recommended Strategy
+
+A scalable approach for teams building comprehensive test suites:
+
+1. **Use Scenarist for HTTP mocking** - External APIs (Stripe, Auth0, SendGrid)
+2. **Use the repository pattern for database access** - True test-level parallelism with test ID isolation
+3. **Test repository implementations with Testcontainers** - Verify real database behavior (queries, constraints, transactions)
+
+This gives you the best of both worlds: fast parallel tests for most scenarios, plus real database validation where it matters.
+
+## Next Steps
+
+- [Repository Pattern Guide](./repository-pattern) - Test-level parallelism with clean architecture
+- [Testcontainers Hybrid Guide](./testcontainers-hybrid) - Test real database behavior
+- [Testcontainers Documentation](https://testcontainers.com/) - Learn container management
+- [PostgreSQL RLS Documentation](https://www.postgresql.org/docs/current/ddl-rowsecurity.html) - Understand RLS

@@ -89,7 +89,8 @@ export default defineConfig({
               label: "Testing Database Apps",
               items: [
                 { label: "Overview", slug: "guides/testing-database-apps" },
-                { label: "API Route Abstraction", slug: "guides/testing-database-apps/api-route-abstraction" },
+                { label: "Parallelism Options", slug: "guides/testing-database-apps/parallelism-options" },
+                { label: "Repository Pattern", slug: "guides/testing-database-apps/repository-pattern" },
                 { label: "Testcontainers Hybrid", slug: "guides/testing-database-apps/testcontainers-hybrid" },
               ],
             },
