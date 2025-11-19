@@ -18,7 +18,6 @@
 
 import type { GetServerSideProps } from 'next';
 import type { ProductsResponse } from '@/types/product';
-import { scenarist } from '@/lib/scenarist';
 import { getUserRepository, runWithTestId } from '@/lib/container';
 import type { User } from '@/lib/repositories';
 
