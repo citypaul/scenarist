@@ -439,34 +439,6 @@ This gives you:
 
 </Aside>
 
-### Query Logic Duplication
-
-Complex queries must be reimplemented in the test repository:
-
-```typescript
-// Production: ORM handles the query
-async search(query: string) {
-  return this.prisma.user.findMany({
-    where: {
-      OR: [
-        { name: { contains: query, mode: 'insensitive' } },
-        { email: { contains: query, mode: 'insensitive' } },
-      ],
-    },
-  });
-}
-
-// Test: You reimplement the logic
-async search(query: string) {
-  const lowerQuery = query.toLowerCase();
-  return Array.from(this.getTestStore().values()).filter(
-    user =>
-      user.name.toLowerCase().includes(lowerQuery) ||
-      user.email.toLowerCase().includes(lowerQuery)
-  );
-}
-```
-
 ## When to Choose This Approach
 
 **The repository pattern is worth adopting if you value:**
