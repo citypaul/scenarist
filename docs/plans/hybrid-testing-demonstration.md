@@ -2,7 +2,21 @@
 
 **Status:** In Progress
 **Created:** 2025-11-18
-**Branch:** `demo/api-proxy-pattern` (PR #1), `demo/hybrid-testing` (PR #2)
+**Branches:**
+- `demo/api-proxy-pattern` (PR #1) - ✅ Complete
+- `demo/database-testing-api-route-abstraction` (PR #2) - ✅ Complete (documentation)
+- `feature/repository-pattern-example` (PR #3) - Repository Pattern Implementation
+
+### PR #3: Repository Pattern Implementation
+**What it demonstrates:** Test ID-isolated database testing using the repository pattern we recommend in documentation
+
+**Example scenario:** Product catalog with user-specific pricing that:
+- Abstracts database access behind repository interfaces
+- Injects in-memory test implementations with test ID isolation
+- Enables parallel test execution without database conflicts
+- Complements Scenarist's HTTP mocking
+
+**Value:** Proves the repository pattern works in practice and shows how it integrates with Scenarist
 
 ## Critical Realizations
 
@@ -448,6 +462,333 @@ test.describe('Checkout Page - Hybrid Testing', () => {
 ✅ **Honest approach:** Using the right tool for each job
 ✅ **Production-ready:** Matches how real apps are built
 
+## PR #3: Repository Pattern Implementation
+
+**Branch:** `feature/repository-pattern-example`
+**Goal:** Demonstrate the repository pattern we recommend in documentation, showing test ID isolation for database access
+
+### User Story
+
+> As a developer, I want to see a working implementation of the repository pattern that enables parallel database tests with test ID isolation.
+
+**Scope:** Repository interfaces, in-memory test implementations, and integration with Scenarist
+
+### Why Repository Pattern
+
+The repository pattern solves the fundamental database testing problem:
+
+**Problem:** Databases have no equivalent to HTTP's test ID header. Without isolation, parallel tests corrupt each other's data.
+
+**Solution:** Abstract database access behind interfaces and inject test implementations that partition data by test ID—the same isolation model as Scenarist's HTTP mocking.
+
+### Repository Interface
+
+```typescript
+// lib/repositories/user-repository.ts
+export type User = {
+  readonly id: string;
+  readonly email: string;
+  readonly name: string;
+  readonly tier: 'standard' | 'premium';
+};
+
+export interface UserRepository {
+  findById(id: string): Promise<User | null>;
+  findByEmail(email: string): Promise<User | null>;
+  create(user: Omit<User, 'id'>): Promise<User>;
+}
+```
+
+### Production Implementation
+
+```typescript
+// lib/repositories/prisma-user-repository.ts
+import { PrismaClient } from '@prisma/client';
+import type { UserRepository, User } from './user-repository';
+
+export class PrismaUserRepository implements UserRepository {
+  constructor(private prisma: PrismaClient) {}
+
+  async findById(id: string): Promise<User | null> {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    return user ? this.toUser(user) : null;
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    const user = await this.prisma.user.findFirst({ where: { email } });
+    return user ? this.toUser(user) : null;
+  }
+
+  async create(data: Omit<User, 'id'>): Promise<User> {
+    const user = await this.prisma.user.create({ data });
+    return this.toUser(user);
+  }
+
+  private toUser(prismaUser: any): User {
+    return {
+      id: prismaUser.id,
+      email: prismaUser.email,
+      name: prismaUser.name,
+      tier: prismaUser.tier,
+    };
+  }
+}
+```
+
+### Test Implementation with Test ID Isolation
+
+```typescript
+// lib/repositories/in-memory-user-repository.ts
+import type { UserRepository, User } from './user-repository';
+
+export class InMemoryUserRepository implements UserRepository {
+  // Map<testId, Map<userId, User>>
+  private store = new Map<string, Map<string, User>>();
+  private idCounter = new Map<string, number>();
+
+  constructor(private getTestId: () => string) {}
+
+  private getTestStore(): Map<string, User> {
+    const testId = this.getTestId();
+    if (!this.store.has(testId)) {
+      this.store.set(testId, new Map());
+      this.idCounter.set(testId, 0);
+    }
+    return this.store.get(testId)!;
+  }
+
+  private generateId(): string {
+    const testId = this.getTestId();
+    const counter = (this.idCounter.get(testId) ?? 0) + 1;
+    this.idCounter.set(testId, counter);
+    return `user-${counter}`;
+  }
+
+  async findById(id: string): Promise<User | null> {
+    return this.getTestStore().get(id) ?? null;
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    for (const user of this.getTestStore().values()) {
+      if (user.email === email) return user;
+    }
+    return null;
+  }
+
+  async create(data: Omit<User, 'id'>): Promise<User> {
+    const user: User = {
+      id: this.generateId(),
+      ...data,
+    };
+    this.getTestStore().set(user.id, user);
+    return user;
+  }
+}
+```
+
+### Dependency Injection Container
+
+```typescript
+// lib/container.ts
+import { AsyncLocalStorage } from 'node:async_hooks';
+import type { UserRepository } from './repositories/user-repository';
+import { PrismaUserRepository } from './repositories/prisma-user-repository';
+import { InMemoryUserRepository } from './repositories/in-memory-user-repository';
+import { prisma } from './prisma';
+
+// AsyncLocalStorage carries test ID through async request lifecycle
+const testIdStorage = new AsyncLocalStorage<string>();
+
+export const getTestId = (): string => {
+  return testIdStorage.getStore() ?? 'default-test';
+};
+
+export const runWithTestId = <T>(testId: string, fn: () => T): T => {
+  return testIdStorage.run(testId, fn);
+};
+
+// Create repositories based on environment
+export const createRepositories = (): { userRepository: UserRepository } => {
+  const isTest = process.env.NODE_ENV === 'test';
+
+  const userRepository: UserRepository = isTest
+    ? new InMemoryUserRepository(getTestId)
+    : new PrismaUserRepository(prisma);
+
+  return { userRepository };
+};
+```
+
+### Middleware to Extract Test ID
+
+```typescript
+// middleware.ts (Next.js middleware)
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { runWithTestId } from './lib/container';
+
+export function middleware(request: NextRequest) {
+  const testId = request.headers.get('x-test-id') ?? 'default-test';
+
+  // Store test ID for downstream use
+  const response = NextResponse.next();
+  response.headers.set('x-test-id-internal', testId);
+
+  return response;
+}
+```
+
+### Page Using Repository
+
+```typescript
+// app/products-repo/page.tsx
+import { headers } from 'next/headers';
+import { createRepositories } from '@/lib/container';
+import { scenarist } from '@/lib/scenarist';
+
+export default async function ProductsRepoPage() {
+  const headersList = await headers();
+  const testId = headersList.get(scenarist.config.headers.testId) ?? 'default-test';
+
+  // Get repository (in-memory in test mode, Prisma in production)
+  const { userRepository } = createRepositories();
+
+  // Database query (uses test ID isolation in test mode)
+  const user = await userRepository.findById('user-1');
+
+  // External API call (Scenarist mocks this)
+  const productsResponse = await fetch('http://localhost:3001/products', {
+    headers: {
+      'x-test-id': testId,
+      'x-user-tier': user?.tier ?? 'standard',
+    },
+  });
+  const { products } = await productsResponse.json();
+
+  return (
+    <div>
+      <h1>Products for {user?.name ?? 'Guest'}</h1>
+      <p>Tier: {user?.tier ?? 'standard'}</p>
+      <ul>
+        {products.map((product: any) => (
+          <li key={product.id}>
+            {product.name} - £{(product.price / 100).toFixed(2)}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+### API Route for Test Data Setup
+
+```typescript
+// app/api/test/users/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { createRepositories, runWithTestId } from '@/lib/container';
+
+// Only available in test mode
+export async function POST(request: NextRequest) {
+  if (process.env.NODE_ENV !== 'test') {
+    return NextResponse.json({ error: 'Not available' }, { status: 404 });
+  }
+
+  const testId = request.headers.get('x-test-id') ?? 'default-test';
+  const userData = await request.json();
+
+  const user = await runWithTestId(testId, async () => {
+    const { userRepository } = createRepositories();
+    return userRepository.create(userData);
+  });
+
+  return NextResponse.json({ user });
+}
+```
+
+### Playwright Tests
+
+```typescript
+// tests/playwright/products-repo.spec.ts
+import { test, expect } from '@playwright/test';
+
+test.describe('Products with Repository Pattern', () => {
+  test('should show premium pricing for premium user', async ({ page, switchScenario }) => {
+    // 1. Switch to premium scenario (Scenarist mocks external API)
+    const testId = await switchScenario(page, 'premiumUser');
+
+    // 2. Set up test data via API route (uses in-memory repository)
+    await page.request.post('http://localhost:3002/api/test/users', {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-test-id': testId,
+      },
+      data: {
+        email: 'premium@example.com',
+        name: 'Premium User',
+        tier: 'premium',
+      },
+    });
+
+    // 3. Navigate to page
+    await page.goto('/products-repo');
+
+    // 4. Verify user from repository
+    await expect(page.getByText('Products for Premium User')).toBeVisible();
+    await expect(page.getByText('Tier: premium')).toBeVisible();
+
+    // 5. Verify products from Scenarist mock
+    await expect(page.getByText('£99.99')).toBeVisible(); // Premium pricing
+  });
+
+  test('should show standard pricing for standard user', async ({ page, switchScenario }) => {
+    const testId = await switchScenario(page, 'standardUser');
+
+    await page.request.post('http://localhost:3002/api/test/users', {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-test-id': testId,
+      },
+      data: {
+        email: 'standard@example.com',
+        name: 'Standard User',
+        tier: 'standard',
+      },
+    });
+
+    await page.goto('/products-repo');
+
+    await expect(page.getByText('Products for Standard User')).toBeVisible();
+    await expect(page.getByText('Tier: standard')).toBeVisible();
+    await expect(page.getByText('£149.99')).toBeVisible(); // Standard pricing
+  });
+
+  // These tests run in PARALLEL with full isolation:
+  // - Test A (x-test-id: abc-123) → repository uses store['abc-123']
+  // - Test B (x-test-id: def-456) → repository uses store['def-456']
+  // - Same user ID in different tests → no conflict
+});
+```
+
+### What This Demonstrates
+
+✅ **Test ID isolation:** Repository partitions data by test ID (same pattern as Scenarist)
+✅ **True parallelism:** Tests run concurrently without database conflicts
+✅ **In-memory speed:** No database round-trips during tests
+✅ **Clean architecture:** Repository pattern benefits beyond testing
+✅ **Scenarist integration:** Repository + HTTP mocking working together
+✅ **Practical example:** Shows the pattern we recommend in documentation
+
+### Files to Create
+
+1. `lib/repositories/user-repository.ts` - Interface definition
+2. `lib/repositories/prisma-user-repository.ts` - Production implementation
+3. `lib/repositories/in-memory-user-repository.ts` - Test implementation
+4. `lib/container.ts` - Dependency injection container
+5. `app/products-repo/page.tsx` - Page using repository
+6. `app/api/test/users/route.ts` - Test data setup endpoint
+7. `tests/playwright/products-repo.spec.ts` - Playwright tests
+
 ## Test Labeling Strategy
 
 ### PR #1: API Proxy Pattern
@@ -459,6 +800,11 @@ test.describe('Checkout Page - Hybrid Testing', () => {
 - Prefix: `[HYBRID]`
 - Example: `[HYBRID] Premium user with full cart and recommendations`
 - Focus: Complete testing strategy (DB + APIs)
+
+### PR #3: Repository Pattern
+- Prefix: `[REPO]`
+- Example: `[REPO] Premium user from repository with premium pricing from Scenarist`
+- Focus: Test ID isolation for database access
 
 ## Documentation Updates
 
@@ -642,6 +988,17 @@ All docs (internal and external) will be updated to:
 - [ ] Playwright tests passing with `[HYBRID]` labels
 - [ ] Documentation showing complete strategy
 
+### PR #3: Repository Pattern
+- [ ] Working `/products-repo` page
+- [ ] UserRepository interface defined
+- [ ] PrismaUserRepository production implementation
+- [ ] InMemoryUserRepository test implementation with test ID isolation
+- [ ] Container with dependency injection
+- [ ] API route for test data setup
+- [ ] Playwright tests passing with `[REPO]` labels
+- [ ] Tests demonstrate parallel execution without conflicts
+- [ ] Integration with Scenarist for HTTP mocking
+
 ### Documentation
 - [ ] Landing page has "What Scenarist Is (and Isn't)" section
 - [ ] Database guide renamed to "Hybrid Testing Strategy"
@@ -651,8 +1008,9 @@ All docs (internal and external) will be updated to:
 
 ## Timeline
 
-- **PR #1 (API Proxy):** Complete within current session
-- **PR #2 (Hybrid):** Follow-up session (requires Testcontainers setup)
+- **PR #1 (API Proxy):** ✅ Complete
+- **PR #2 (Hybrid):** ✅ Complete (documentation)
+- **PR #3 (Repository Pattern):** Current session - demonstrate the recommended pattern
 - **Docs updates:** Complete with PR #1
 - **Issue update:** Complete with PR #1
 
