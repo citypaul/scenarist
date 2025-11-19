@@ -9,29 +9,23 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { getUserRepository, runWithTestId } from '@/lib/container';
 import { scenarioRepositoryData } from '@/lib/repository-data';
 
-/**
- * POST /api/test/seed
- *
- * Seed the repository with data for the specified scenario.
- *
- * Headers:
- * - x-test-id: Test ID for isolation (required)
- *
- * Body:
- * - scenarioId: ID of the scenario to seed data for
- */
+const SeedRequestSchema = z.object({
+  scenarioId: z.string().min(1),
+});
+
 export async function POST(request: NextRequest) {
   const testId = request.headers.get('x-test-id') ?? 'default-test';
-  const body: unknown = await request.json();
 
-  if (!body || typeof body !== 'object' || !('scenarioId' in body) || typeof (body as { scenarioId: unknown }).scenarioId !== 'string') {
-    return NextResponse.json({ error: 'scenarioId is required' }, { status: 400 });
+  const parseResult = SeedRequestSchema.safeParse(await request.json());
+  if (!parseResult.success) {
+    return NextResponse.json({ error: parseResult.error.message }, { status: 400 });
   }
 
-  const { scenarioId } = body as { scenarioId: string };
+  const { scenarioId } = parseResult.data;
 
   console.log('[Seed] testId:', testId, 'scenarioId:', scenarioId);
 
