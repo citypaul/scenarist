@@ -11,10 +11,7 @@
 
 import { test as base, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import type { ScenarioIds } from '@scenarist/playwright-helpers';
 import { scenarios } from '../../lib/scenarios';
-
-type Scenarios = typeof scenarios;
 
 /**
  * Custom switchScenario function that:
@@ -25,7 +22,7 @@ type Scenarios = typeof scenarios;
  */
 type SwitchScenarioFunction = (
   page: Page,
-  scenarioId: ScenarioIds<Scenarios>
+  scenarioId: keyof typeof scenarios
 ) => Promise<string>;
 
 /**
@@ -34,7 +31,7 @@ type SwitchScenarioFunction = (
 export const test = base.extend<{
   switchScenario: SwitchScenarioFunction;
 }>({
-  switchScenario: async ({ page }, use) => {
+  switchScenario: async ({}, use) => {
     const switchScenarioFn: SwitchScenarioFunction = async (
       targetPage,
       scenarioId
