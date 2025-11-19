@@ -1,12 +1,14 @@
 /**
  * Playwright test fixtures with type-safe scenario IDs and repository seeding
  *
- * This file exports a test object that includes:
- * - Scenarist fixtures with TypeScript autocomplete for scenario names
- * - Automatic repository seeding when scenarios are switched
+ * This file demonstrates how to extend Scenarist's switchScenario to also seed
+ * database state, keeping the same test ID isolation for both HTTP mocks and
+ * direct database queries.
  *
- * The pattern: switchScenario → seeds HTTP mocks + repository data → navigate → assert
- * No direct API calls in tests!
+ * NOTE: Repository seeding is NOT a Scenarist feature - it's a complementary
+ * pattern you implement in your app for handling direct database access.
+ *
+ * Learn more: https://scenarist.io/docs/patterns/repository-testing
  */
 
 import { test as base, expect } from '@playwright/test';

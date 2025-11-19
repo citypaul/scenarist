@@ -1,11 +1,13 @@
 /**
  * Test Seed API Route
  *
- * This endpoint seeds the in-memory repository with data for the given scenario.
- * Called automatically by the switchScenario Playwright fixture.
+ * NOTE: This is NOT a Scenarist feature. This endpoint seeds database state
+ * alongside Scenarist's HTTP mocking, using the same test ID for isolation.
  *
- * This demonstrates the pattern: scenario switch → repository seed → navigate → assert
- * No direct API calls in tests!
+ * Called by the switchScenario fixture to set up both HTTP mocks (Scenarist)
+ * and database state (this endpoint) together.
+ *
+ * Learn more: https://scenarist.io/docs/patterns/repository-testing
  */
 
 import { NextRequest, NextResponse } from 'next/server';

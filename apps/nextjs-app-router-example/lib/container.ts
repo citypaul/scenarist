@@ -1,11 +1,13 @@
 /**
  * Dependency injection container for repository pattern.
  *
- * Uses AsyncLocalStorage to carry the test ID through the async request
- * lifecycle - the same pattern Scenarist uses internally for HTTP mocking.
+ * NOTE: This is NOT a Scenarist feature. This demonstrates a complementary pattern
+ * for handling direct database queries alongside Scenarist's HTTP mocking.
  *
- * In test mode (NODE_ENV=test), uses in-memory repositories with test ID isolation.
- * In production mode, would use Prisma repositories with real database.
+ * Scenarist mocks external HTTP APIs. For direct database access in your app,
+ * you need a separate strategy like this repository pattern with test ID isolation.
+ *
+ * Learn more: https://scenarist.io/docs/patterns/repository-testing
  */
 
 import { AsyncLocalStorage } from 'node:async_hooks';

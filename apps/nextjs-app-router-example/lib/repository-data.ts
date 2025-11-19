@@ -1,9 +1,13 @@
 /**
  * Repository data for each scenario.
  *
- * When a scenario is switched, the repository is seeded with this data.
- * This keeps the Scenarist pattern intact: switch scenario, navigate, assert.
- * No direct API calls needed for test setup.
+ * NOTE: This is NOT a Scenarist feature. This demonstrates how to seed database
+ * state alongside Scenarist's HTTP mocking, keeping the same test ID isolation.
+ *
+ * When a scenario is switched, both HTTP mocks (Scenarist) and database state
+ * (this seeding) are set up together, maintaining the pattern: switch → navigate → assert.
+ *
+ * Learn more: https://scenarist.io/docs/patterns/repository-testing
  */
 
 import type { CreateUserInput } from './repositories';
