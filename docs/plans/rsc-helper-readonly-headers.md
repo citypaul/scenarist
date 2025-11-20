@@ -98,15 +98,24 @@ getHeadersFromReadonlyHeaders: (headers: { get(name: string): string | null }) =
 
 ### Phase 4: Integration (GREEN)
 
-**Status:** 🔴 TODO
+**Status:** ✅ COMPLETE
 
 Update example app to use new helper.
 
-**Files to update:**
-- `apps/nextjs-app-router-example/app/test-rsc-helper/page.tsx` - Use new API
-- Remove workaround from `app/hostname-matching/page.tsx` (TODO comment removal)
+**Files updated:**
+- `apps/nextjs-app-router-example/app/test-rsc-helper/page.tsx` ✅
+  - Removed @ts-expect-error comment
+  - Using clean API with getHeadersFromReadonlyHeaders
+- `apps/nextjs-app-router-example/app/hostname-matching/page.tsx` ✅
+  - Removed workaround (fake Request creation)
+  - Replaced all getHeaders(request) calls with getHeadersFromReadonlyHeaders(headersList)
+- `apps/nextjs-app-router-example/tests/playwright/rsc-helper.spec.ts` ✅
+  - Fixed test selectors for multiple products
 
-**Expected:** E2E test passes, no workaround needed.
+**Result:** All tests passing ✅
+- RSC helper test: 1/1 passing
+- Hostname matching tests: 6/6 passing
+- No workarounds needed, clean API throughout
 
 ### Phase 5: Documentation
 

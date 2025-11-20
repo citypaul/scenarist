@@ -29,8 +29,7 @@ const fetchProducts = async (
   headersList: Awaited<ReturnType<typeof headers>>
 ): Promise<FetchResult> => {
   try {
-    // DESIRED API (doesn't exist yet): Use ReadonlyHeaders directly
-    // @ts-expect-error - Method doesn't exist yet, this is the ATDD test
+    // CLEAN API: Use ReadonlyHeaders directly (no fake Request needed)
     const scenaristHeaders = scenarist.getHeadersFromReadonlyHeaders(headersList);
 
     const response = await fetch("http://localhost:3001/products", {

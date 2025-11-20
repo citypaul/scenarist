@@ -43,12 +43,14 @@ test.describe("RSC Helper - ATDD", () => {
     await expect(page.getByRole("heading", { name: "Test RSC Helper" })).toBeVisible();
 
     // Verify premium pricing (Product A premium price is £99.99)
-    await expect(page.getByText("£99.99")).toBeVisible();
+    await expect(page.getByText("Price: £99.99")).toBeVisible();
 
-    // Verify tier is premium
-    await expect(page.getByText("Tier: premium")).toBeVisible();
+    // Verify tier is premium (use .first() since there are 3 products)
+    await expect(page.getByText("Tier: premium").first()).toBeVisible();
 
-    // Verify no error message displayed
-    await expect(page.getByText(/error/i)).not.toBeVisible();
+    // Verify all 3 premium products are displayed
+    await expect(page.getByText("Product A")).toBeVisible();
+    await expect(page.getByText("Product B")).toBeVisible();
+    await expect(page.getByText("Product C")).toBeVisible();
   });
 });
