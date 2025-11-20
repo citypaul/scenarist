@@ -50,16 +50,12 @@ const aggregateCartItems = (productIds?: ReadonlyArray<string>): ReadonlyArray<C
 };
 
 async function fetchCart(): Promise<CartResponse> {
-  // Create a mock Request object from the incoming headers
-  // This allows us to use scenarist.getHeaders() method
+  // Get ReadonlyHeaders from Next.js Server Component
   const headersList = await headers();
-  const mockRequest = new Request('http://localhost:3002', {
-    headers: headersList,
-  });
 
   const response = await fetch('http://localhost:3002/api/cart', {
     headers: {
-      ...scenarist.getHeaders(mockRequest),
+      ...scenarist.getHeadersFromReadonlyHeaders(headersList),
     },
     cache: 'no-store', // Disable Next.js caching for demo
   });
