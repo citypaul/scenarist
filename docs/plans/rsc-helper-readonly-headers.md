@@ -128,9 +128,15 @@ Update example app to use new helper.
 
 **Content added:**
 - ✅ Both Route Handler pattern (Request) and Server Component pattern (ReadonlyHeaders) documented
-- ✅ Clear guidance on when to use `getScenaristHeaders(request, scenarist)` vs `scenarist.getHeadersFromReadonlyHeaders(headersList)`
+- ✅ Clear guidance on when to use instance methods (`scenarist.getHeaders()` and `scenarist.getHeadersFromReadonlyHeaders()`)
 - ✅ Complete working examples for both patterns
 - ✅ Explanation of why header forwarding matters
+
+**Documentation consistency fix (commit 7ede90e):**
+- ✅ Fixed README documentation that incorrectly showed non-existent `getScenaristHeaders()` standalone function
+- ✅ Updated to correct instance method pattern: `scenarist.getHeaders(req)` and `scenarist.getHeaders(request)`
+- ✅ Removed incorrect import statements from examples
+- ✅ This was discovered during Pages Router investigation (no implementation needed for Pages Router)
 
 ### Phase 6: Update GitHub Issue
 
