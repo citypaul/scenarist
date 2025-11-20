@@ -726,8 +726,9 @@ export default async function handler(
 
 Only Scenarist headers need forwarding via `getScenaristHeaders()`. Your application headers are independent.
 
-**App Router Note:** The same pattern applies to Server Actions and Route Handlers that make external API calls:
+**App Router:** Different patterns depending on context:
 
+**Route Handlers (Request object available):**
 ```typescript
 // app/api/products/route.ts
 import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
@@ -745,6 +746,32 @@ export async function GET(request: Request) {
   return Response.json(data);
 }
 ```
+
+**Server Components (ReadonlyHeaders from `headers()`):**
+```typescript
+// app/products/page.tsx
+import { headers } from 'next/headers';
+import { scenarist } from '@/lib/scenarist';
+
+export default async function ProductsPage() {
+  // Server Components use headers() which returns ReadonlyHeaders, not Request
+  const headersList = await headers();
+
+  const response = await fetch('http://external-api.com/products', {
+    headers: {
+      ...scenarist.getHeadersFromReadonlyHeaders(headersList),  // ✅ For ReadonlyHeaders
+      'content-type': 'application/json',
+    },
+  });
+
+  const data = await response.json();
+  return <ProductList products={data.products} />;
+}
+```
+
+**When to use which helper:**
+- **`getScenaristHeaders(request, scenarist)`** - When you have a `Request` object (Route Handlers, Pages Router API routes)
+- **`scenarist.getHeadersFromReadonlyHeaders(headersList)`** - When you have `ReadonlyHeaders` from `headers()` (Server Components)
 
 **For architectural rationale, see:** [ADR-0007: Framework-Specific Header Forwarding](../../docs/adrs/0007-framework-specific-header-helpers.md)
 

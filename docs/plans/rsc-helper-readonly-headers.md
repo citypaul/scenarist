@@ -119,17 +119,18 @@ Update example app to use new helper.
 
 ### Phase 5: Documentation
 
-**Status:** 🔴 TODO
+**Status:** ✅ COMPLETE
 
-**Files to update:**
-1. `packages/nextjs-adapter/README.md` - Add example for Server Components
-2. `apps/docs/src/content/docs/frameworks/nextjs-app-router/getting-started.mdx` - Document the helper
-3. Update any examples showing the workaround
+**Files updated:**
+1. ✅ `packages/nextjs-adapter/README.md` - Added Server Component example in "Making External API Calls" section
+2. ✅ `apps/docs/src/content/docs/frameworks/nextjs-app-router/getting-started.mdx` - Added "Forwarding Headers to External APIs" section
+3. ✅ All workaround comments removed in Phase 4
 
-**Content:**
-- Show both Route Handler pattern (Request) and Server Component pattern (ReadonlyHeaders)
-- Explain when to use each
-- Remove any workaround comments
+**Content added:**
+- ✅ Both Route Handler pattern (Request) and Server Component pattern (ReadonlyHeaders) documented
+- ✅ Clear guidance on when to use `getScenaristHeaders(request, scenarist)` vs `scenarist.getHeadersFromReadonlyHeaders(headersList)`
+- ✅ Complete working examples for both patterns
+- ✅ Explanation of why header forwarding matters
 
 ### Phase 6: Update GitHub Issue
 
