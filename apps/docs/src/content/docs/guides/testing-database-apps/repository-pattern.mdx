@@ -5,17 +5,38 @@ description: Use the repository pattern to achieve true test parallelism with te
 
 import { Aside } from '@astrojs/starlight/components';
 
-## The Problem
+<Aside type="note" title="This Is One Implementation Approach">
 
-Scenarist isolates HTTP tests via test ID in headers. Each test gets a unique ID, and MSW uses that ID to return the correct mock responses.
+This guide shows how to use the **repository pattern** to implement test ID isolation for databases. This is the approach we recommend and use in our examples, but it's not the only way.
 
-**Databases have no equivalent mechanism.** There's no "test ID header" in database protocols—so parallel tests corrupt each other's data.
+The **core pattern** is: "use the same test ID to partition all data sources." The repository pattern is one architectural approach to achieve that. See the [overview page](./index) for alternative approaches.
 
-## The Solution
+</Aside>
 
-The [repository pattern](https://martinfowler.com/eaaCatalog/repository.html) creates that mechanism at the application level. By abstracting database access behind interfaces, you can inject test implementations that partition data by test ID—giving you the same isolation model as Scenarist's HTTP mocking.
+## Two Concepts Working Together
 
-Beyond testing, the repository pattern is a well-established architectural practice that provides [significant additional benefits](#beyond-testing-why-the-repository-pattern-is-good-practice) including infrastructure flexibility, better separation of concerns, and alignment with SOLID principles.
+It's important to distinguish between two separate concepts:
+
+### 1. The Repository Pattern (Architectural)
+
+The [repository pattern](https://martinfowler.com/eaaCatalog/repository.html) is a well-established architectural practice that abstracts database access behind interfaces. It's not specific to testing—it provides [significant benefits](#beyond-testing-why-the-repository-pattern-is-good-practice) including infrastructure flexibility, better separation of concerns, and alignment with SOLID principles.
+
+### 2. Test ID Isolation (Testing Technique)
+
+Test ID isolation partitions data by a unique identifier per test, enabling parallel execution without interference. This is the same technique Scenarist uses for HTTP mocking.
+
+**This guide combines both:** We use the repository pattern as the mechanism to implement test ID isolation for databases.
+
+---
+
+## Why Use the Repository Pattern for Test Isolation?
+
+The repository pattern is particularly well-suited for test ID isolation because:
+
+1. **Interface injection** — Swap production (real DB) for test (in-memory with partitioning) implementations
+2. **Clean boundaries** — Database access is already abstracted, making partitioning natural
+3. **No schema changes** — Isolation happens in application code, not database
+4. **Fast execution** — In-memory stores are orders of magnitude faster than real databases
 
 ## How It Works
 

@@ -1,32 +1,151 @@
 ---
 title: Testing Apps with Database Access
-description: How to test applications that use direct database access with Scenarist
+description: How to test applications that use direct database access alongside Scenarist
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
+## The Pattern: Shared Identity for Parallel Test Isolation
+
+When testing applications that access multiple data sources (HTTP APIs + databases), the key insight is simple:
+
+**Use a single identifier to partition ALL data sources.**
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Test Runner                          │
+├─────────────────────────────────────────────────────────┤
+│  Test A (x-test-id: abc-123)                            │
+│     │                                                   │
+│     ├─→ HTTP API ──→ Scenarist ──→ Mocks for "abc-123"  │
+│     │                                                   │
+│     └─→ Database ──→ Your Code ──→ Data for "abc-123"   │
+├─────────────────────────────────────────────────────────┤
+│  Test B (x-test-id: xyz-789)                            │
+│     │                                                   │
+│     ├─→ HTTP API ──→ Scenarist ──→ Mocks for "xyz-789"  │
+│     │                                                   │
+│     └─→ Database ──→ Your Code ──→ Data for "xyz-789"   │
+└─────────────────────────────────────────────────────────┘
+
+Both tests run in PARALLEL with completely isolated state.
+```
+
+This is the same pattern used in distributed systems for request tracing, multi-tenancy, and session management. The test ID is just another form of correlation ID.
+
+---
+
+## What Scenarist Provides vs. What You Implement
+
+<Aside type="note" title="Clear Separation of Concerns">
+
+**Scenarist handles HTTP isolation** — it extracts the test ID from request headers and returns scenario-specific mock responses. This is built-in. You get it for free.
+
+**You handle database isolation** — you implement the mechanism to extract the test ID and partition database queries accordingly. Scenarist doesn't touch databases.
+
+The **connection point** is the `x-test-id` header. Both systems read the same header and use it as their partition key.
+
+</Aside>
+
+| Responsibility | Tool | What It Does |
+|----------------|------|--------------|
+| HTTP API mocking | **Scenarist** | Intercepts fetch calls, returns mocks based on test ID |
+| Database state isolation | **Your code** | Partitions database queries/data based on test ID |
+
+---
+
+## Implementing Database Isolation
+
+There are multiple valid approaches to partition database state by test ID. Each has different trade-offs:
+
+### Approach A: Repository Pattern with In-Memory Store
+
+Abstract database access behind interfaces, inject test implementations that partition data by test ID.
+
+**Best for:** Fast parallel tests, clean architecture, any ORM
+
+**Trade-offs:** Requires refactoring database access; doesn't test real SQL
+
+[Detailed Guide →](./repository-pattern)
+
+### Approach B: Test Fixtures with Direct Seeding
+
+Seed database directly in test setup, using test ID to isolate data.
+
+```typescript
+test('premium user sees discounts', async ({ page }) => {
+  const testId = generateTestId();
+
+  // Seed directly (if tests have DB access)
+  await db.users.create({
+    testId,
+    tier: 'premium',
+    // ...
+  });
+
+  // Or seed via HTTP endpoint
+  await page.request.post('/test/seed', {
+    headers: { 'x-test-id': testId },
+    data: { scenarioId: 'premiumUser' }
+  });
+
+  await page.goto('/products');
+  // ...
+});
+```
+
+**Best for:** When tests have direct database access (e.g., same process)
+
+**Trade-offs:** Tests coupled to database schema; requires cleanup logic
+
+### Approach C: Row-Level Security or Test ID Columns
+
+Add `test_id` column to tables, filter all queries automatically.
+
+```sql
+-- PostgreSQL RLS policy
+CREATE POLICY test_isolation ON users
+  USING (test_id = current_setting('app.test_id'));
+```
+
+**Best for:** When you can't change application code
+
+**Trade-offs:** Schema changes in production; RLS overhead
+
+### Approach D: Database Snapshots/Migrations
+
+Pre-seed database with known state, reset between tests.
+
+**Best for:** Testing specific SQL behavior; integration tests
+
+**Trade-offs:** Slower; harder to parallelize
+
+---
+
 ## Our Recommendation: Repository Pattern
 
-For teams that want scalable parallel testing of real server-side code, we recommend the **repository pattern**. It abstracts database access behind interfaces and injects test implementations with test ID isolation—the same model Scenarist uses for HTTP mocking.
+For teams that want **scalable parallel testing** of real server-side code, we recommend the repository pattern because:
 
-**Benefits:**
-- True test-level parallelism (not just shard-level)
-- Fast in-memory execution
-- Architectural benefits that extend beyond testing (clean separation, infrastructure flexibility)
+1. **Same isolation model as Scenarist** — Test ID partitions both HTTP and database
+2. **Fast execution** — In-memory stores are orders of magnitude faster than real databases
+3. **Clean architecture** — Benefits extend beyond testing (infrastructure flexibility, SOLID principles)
+4. **ORM agnostic** — Works with Prisma, Drizzle, TypeORM, raw SQL
 
-**Trade-offs:**
-- Requires refactoring database access behind interfaces
-- In-memory tests don't catch real database issues (mitigate with Testcontainers)
+[Full Repository Pattern Guide →](./repository-pattern)
 
-[Implement the Repository Pattern →](./repository-pattern)
+<Aside type="caution" title="The Pattern vs. The Implementation">
 
-<Aside type="note">
-**Different constraints?** [Sequential execution](./parallelism-options#option-1-sequential-execution) works for small test suites. [Sharding](./parallelism-options#option-3-sharding-container-per-shard) provides parallelism without code changes. See the [decision guide](#quick-decision-guide) below.
+The **pattern** is "use test ID to partition database state."
+
+The **repository pattern** is one way to implement that pattern. It's the approach we show in our examples because it provides the cleanest architecture, but it's not the only way.
+
+If your constraints don't allow refactoring to repositories, consider the other approaches above.
+
 </Aside>
 
 ---
 
-## Why Database Testing Is Hard
+## Why Database Testing Is Different
 
 Scenarist intercepts HTTP requests via MSW because every HTTP library eventually calls the same underlying APIs. **Databases have no equivalent universal interception point.**
 
@@ -36,8 +155,6 @@ Each ORM and driver is a different API surface:
 - TypeORM: `userRepository.find()`
 - Raw SQL: `pg.query('SELECT * FROM users')`
 
-There's no single place to intercept all database queries and inject test isolation.
-
 ```typescript
 // ❌ Scenarist CANNOT mock this - no HTTP request
 export async function fetchProducts() {
@@ -45,35 +162,24 @@ export async function fetchProducts() {
 }
 ```
 
-**The core problem:** Scenarist isolates tests via test ID in HTTP headers. Databases have no equivalent mechanism—without isolation, parallel tests corrupt each other's data.
-
-The repository pattern solves this by letting you inject in-memory implementations that partition data by test ID, just like Scenarist does for HTTP.
+That's why **you implement** database isolation, using whatever approach fits your architecture. The examples show one way; adapt it to your needs.
 
 ---
 
 ## Quick Decision Guide
 
-| Your Situation | Use This |
+| Your Situation | Approach |
 |----------------|----------|
-| Want scalable parallel tests | [Repository Pattern](./repository-pattern) |
+| Want scalable parallel tests + clean architecture | [Repository Pattern](./repository-pattern) |
+| Tests have direct database access | Test fixtures with direct seeding |
+| Can't change application code | Row-level security or test ID columns |
 | Need to test actual SQL queries, constraints | [Testcontainers](./testcontainers-hybrid) |
-| Can't change code right now | [Sharding](./parallelism-options#option-3-sharding-container-per-shard) |
 | Small test suite, prototyping | [Sequential Execution](./parallelism-options#option-1-sequential-execution) |
-
----
-
-## What Scenarist Handles
-
-| What You're Testing | Tool |
-|---------------------|------|
-| External HTTP APIs (Stripe, Auth0, SendGrid) | **Scenarist** |
-| Business logic with database state | **Repository Pattern** |
-| Actual SQL queries, constraints, transactions | **Testcontainers** |
 
 ---
 
 ## Next Steps
 
-- [Repository Pattern Guide](./repository-pattern) — Implementation walkthrough
+- [Repository Pattern Guide](./repository-pattern) — Full implementation walkthrough
 - [Testcontainers Hybrid](./testcontainers-hybrid) — Testing real database behavior
 - [All Parallelism Options](./parallelism-options) — Detailed comparison of approaches

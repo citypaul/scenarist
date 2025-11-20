@@ -1,4 +1,5 @@
 import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/express-adapter';
+import { buildProducts } from './data/products.js';
 
 /**
  * Default scenario - always available as fallback
@@ -50,6 +51,17 @@ export const defaultScenario: ScenaristScenario = {
           status: 'succeeded',
           amount: 1000,
           currency: 'usd',
+        },
+      },
+    },
+    // Products API - Standard pricing (fallback)
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/products',
+      response: {
+        status: 200,
+        body: {
+          products: buildProducts('standard'),
         },
       },
     },
@@ -1223,6 +1235,40 @@ export const hostnameMatchingScenario: ScenaristScenario = {
 };
 
 /**
+ * Premium User Scenario - Repository Pattern Integration
+ *
+ * NOTE: This scenario demonstrates the COMBINED testing strategy:
+ * - Scenarist for HTTP API mocking (products with premium pricing)
+ * - Repository pattern for database access (premium user data)
+ *
+ * The repository pattern is NOT a Scenarist feature. It's a complementary
+ * pattern for handling direct database queries.
+ *
+ * Learn more: https://scenarist.io/guides/testing-database-apps/repository-pattern
+ */
+export const premiumUserScenario: ScenaristScenario = {
+  id: 'premiumUser',
+  name: 'Premium User',
+  description: 'Premium tier pricing (£99.99)',
+  mocks: [
+    // Products API - Premium pricing (matched by x-user-tier header)
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/products',
+      match: {
+        headers: { 'x-user-tier': 'premium' },
+      },
+      response: {
+        status: 200,
+        body: {
+          products: buildProducts('premium'),
+        },
+      },
+    },
+  ],
+};
+
+/**
  * Scenarios organized as typed object for easy access in tests.
  *
  * Use this to get type-safe access to scenario IDs with autocomplete:
@@ -1254,5 +1300,6 @@ export const scenarios = {
   stringMatching: stringMatchingScenario,
   urlMatching: urlMatchingScenario,
   hostnameMatching: hostnameMatchingScenario,
+  premiumUser: premiumUserScenario,
 } as const satisfies ScenaristScenarios;
 
