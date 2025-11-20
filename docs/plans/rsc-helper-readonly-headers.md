@@ -132,8 +132,9 @@ Update example app to use new helper.
 - ✅ Complete working examples for both patterns
 - ✅ Explanation of why header forwarding matters
 
-**Documentation consistency fix (commit 7ede90e):**
-- ✅ Fixed README documentation that incorrectly showed non-existent `getScenaristHeaders()` standalone function
+**Documentation consistency fixes:**
+- ✅ (commit 7ede90e) Fixed README documentation that incorrectly showed non-existent `getScenaristHeaders()` standalone function
+- ✅ (commit 5b40b87) Fixed same issue in docs site getting-started.mdx
 - ✅ Updated to correct instance method pattern: `scenarist.getHeaders(req)` and `scenarist.getHeaders(request)`
 - ✅ Removed incorrect import statements from examples
 - ✅ This was discovered during Pages Router investigation (no implementation needed for Pages Router)
