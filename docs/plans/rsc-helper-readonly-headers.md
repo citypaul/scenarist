@@ -77,33 +77,24 @@ Add unit tests to Next.js adapter.
 
 ### Phase 3: Implementation (GREEN)
 
-**Status:** 🔴 TODO
+**Status:** ✅ COMPLETE
 
 Implement the helper in Next.js adapter.
 
-**File:** `packages/nextjs-adapter/src/app/setup.ts`
+**File:** `packages/nextjs-adapter/src/app/setup.ts` ✅
 
-**Implementation:**
+**Implementation added:**
+- Type definition in AppScenarist interface (lines 92-125) ✅
+- Implementation in createScenarist function (lines 202-209) ✅
+- Comprehensive JSDoc with examples ✅
+- Uses structural typing `{ get(name: string): string | null }` for ReadonlyHeaders ✅
+
+**Result:** All 30 unit tests passing (25 existing + 5 new) ✅
+
+Method signature:
 ```typescript
-getHeadersFromReadonlyHeaders: (headers: ReadonlyHeaders): Record<string, string> => {
-  const headerName = config.headers.testId;
-  const defaultTestId = config.defaultTestId;
-  const testId = headers.get(headerName.toLowerCase()) || defaultTestId;
-  return {
-    [headerName]: testId,
-  };
-}
+getHeadersFromReadonlyHeaders: (headers: { get(name: string): string | null }) => Record<string, string>
 ```
-
-**Type definition:**
-```typescript
-export type AppScenarist = {
-  // ... existing methods
-  getHeadersFromReadonlyHeaders: (headers: ReadonlyHeaders) => Record<string, string>;
-};
-```
-
-**Expected:** All unit tests pass.
 
 ### Phase 4: Integration (GREEN)
 
