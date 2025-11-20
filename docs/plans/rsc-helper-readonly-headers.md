@@ -58,20 +58,22 @@ This proves the need for the helper method.
 
 ### Phase 2: Unit Tests - Adapter (RED)
 
-**Status:** 🔴 TODO
+**Status:** ✅ COMPLETE
 
 Add unit tests to Next.js adapter.
 
-**File:** `packages/nextjs-adapter/tests/app/app-setup.test.ts`
+**File:** `packages/nextjs-adapter/tests/app/app-setup.test.ts` ✅
 
-**Tests to add:**
-1. `getHeadersFromReadonlyHeaders` extracts test ID from ReadonlyHeaders
-2. Uses default test ID when header missing
-3. Respects custom header name from config
-4. Handles lowercase header names (ReadonlyHeaders.get() is case-insensitive)
-5. Returns object with single header entry
+**Tests added:**
+1. ✅ `getHeadersFromReadonlyHeaders` extracts test ID from ReadonlyHeaders
+2. ✅ Uses default test ID when header missing
+3. ✅ Respects custom header name from config
+4. ✅ Handles lowercase header names (ReadonlyHeaders.get() is case-insensitive)
+5. ✅ Returns object with single header entry
 
-**Expected:** Tests fail because method doesn't exist.
+**Result:** All 5 tests fail with: `scenarist.getHeadersFromReadonlyHeaders is not a function` ✅
+
+25 existing tests still pass. Ready for implementation (GREEN phase).
 
 ### Phase 3: Implementation (GREEN)
 
