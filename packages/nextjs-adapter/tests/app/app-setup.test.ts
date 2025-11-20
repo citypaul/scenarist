@@ -381,4 +381,98 @@ describe('App Router createScenarist', () => {
       expect(result).toEqual({ 'x-test-id': 'test-123' });
     });
   });
+
+  describe('getHeadersFromReadonlyHeaders method', () => {
+    // Clean up all global state between tests to allow different configs
+    const clearAllGlobals = () => {
+      delete (global as any).__scenarist_instance;
+      delete (global as any).__scenarist_registry;
+      delete (global as any).__scenarist_store;
+      delete (global as any).__scenarist_msw_started;
+    };
+
+    // Mock ReadonlyHeaders (simplified version matching Next.js Headers interface)
+    class MockReadonlyHeaders {
+      private headers: Map<string, string>;
+
+      constructor(init?: Record<string, string>) {
+        this.headers = new Map();
+        if (init) {
+          Object.entries(init).forEach(([key, value]) => {
+            this.headers.set(key.toLowerCase(), value);
+          });
+        }
+      }
+
+      get(name: string): string | null {
+        return this.headers.get(name.toLowerCase()) ?? null;
+      }
+    }
+
+    it('should extract test ID from ReadonlyHeaders using default configured header name', () => {
+      clearAllGlobals();
+      const { scenarist } = createTestSetup();
+      const headers = new MockReadonlyHeaders({ 'x-test-id': 'test-456' });
+
+      // @ts-expect-error - Method doesn't exist yet (RED phase)
+      const result = scenarist.getHeadersFromReadonlyHeaders(headers);
+
+      expect(result).toEqual({ 'x-test-id': 'test-456' });
+    });
+
+    it('should use default test ID when header is missing from ReadonlyHeaders', () => {
+      clearAllGlobals();
+      const { scenarist } = createTestSetup();
+      const headers = new MockReadonlyHeaders({}); // No headers
+
+      // @ts-expect-error - Method doesn't exist yet (RED phase)
+      const result = scenarist.getHeadersFromReadonlyHeaders(headers);
+
+      expect(result).toEqual({ 'x-test-id': 'default-test' });
+    });
+
+    it('should respect custom header name from config with ReadonlyHeaders', () => {
+      clearAllGlobals();
+      const scenarist = createScenarist({
+        enabled: true,
+        scenarios: testScenarios,
+        headers: { testId: 'x-custom-test-id' },
+      });
+      const headers = new MockReadonlyHeaders({ 'x-custom-test-id': 'custom-789' });
+
+      // @ts-expect-error - Method doesn't exist yet (RED phase)
+      const result = scenarist.getHeadersFromReadonlyHeaders(headers);
+
+      expect(result).toEqual({ 'x-custom-test-id': 'custom-789' });
+    });
+
+    it('should handle lowercase header names with ReadonlyHeaders', () => {
+      clearAllGlobals();
+      const { scenarist } = createTestSetup();
+      // ReadonlyHeaders.get() is case-insensitive, store as uppercase
+      const headers = new MockReadonlyHeaders({ 'X-TEST-ID': 'test-uppercase' });
+
+      // @ts-expect-error - Method doesn't exist yet (RED phase)
+      const result = scenarist.getHeadersFromReadonlyHeaders(headers);
+
+      // Should still extract correctly despite uppercase input
+      expect(result).toEqual({ 'x-test-id': 'test-uppercase' });
+    });
+
+    it('should return object with single header entry', () => {
+      clearAllGlobals();
+      const { scenarist } = createTestSetup();
+      const headers = new MockReadonlyHeaders({
+        'x-test-id': 'test-single',
+        'x-other-header': 'other-value', // Should be ignored
+      });
+
+      // @ts-expect-error - Method doesn't exist yet (RED phase)
+      const result = scenarist.getHeadersFromReadonlyHeaders(headers);
+
+      // Should only contain test ID header, nothing else
+      expect(result).toEqual({ 'x-test-id': 'test-single' });
+      expect(Object.keys(result)).toHaveLength(1);
+    });
+  });
 });

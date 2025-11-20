@@ -50,19 +50,13 @@ const fetchTestData = async (
   postId: string,
   headersList: Awaited<ReturnType<typeof headers>>
 ): Promise<FetchResult> => {
-  // TEMPORARY WORKAROUND: Create mock Request to use scenarist.getHeaders()
-  // Server Components only have ReadonlyHeaders (from headers()), not Request object
-  // TODO: Add helper for ReadonlyHeaders in Next.js adapter
-  // See: https://github.com/citypaul/scenarist/issues/102
-  const request = new Request("http://localhost", { headers: headersList });
-
   try {
     switch (testType) {
       case "pathnameOnly": {
         // Test 1: Pathname-only pattern - should match ANY hostname
         const response = await fetch("http://localhost:3001/api/origin-agnostic", {
           headers: {
-            ...scenarist.getHeaders(request),
+            ...scenarist.getHeadersFromReadonlyHeaders(headersList),
           },
           cache: "no-store",
         });
@@ -74,7 +68,7 @@ const fetchTestData = async (
         // Test 2: Full URL with localhost - hostname-specific
         const response = await fetch("http://localhost:3001/api/localhost-only", {
           headers: {
-            ...scenarist.getHeaders(request),
+            ...scenarist.getHeadersFromReadonlyHeaders(headersList),
           },
           cache: "no-store",
         });
@@ -86,7 +80,7 @@ const fetchTestData = async (
         // Test 3: Full URL with external domain - hostname-specific
         const response = await fetch("https://api.example.com/api/production-only", {
           headers: {
-            ...scenarist.getHeaders(request),
+            ...scenarist.getHeadersFromReadonlyHeaders(headersList),
           },
           cache: "no-store",
         });
@@ -98,7 +92,7 @@ const fetchTestData = async (
         // Test 4: Native RegExp pattern - origin-agnostic
         const response = await fetch("http://localhost:3001/api/regex-pattern", {
           headers: {
-            ...scenarist.getHeaders(request),
+            ...scenarist.getHeadersFromReadonlyHeaders(headersList),
           },
           cache: "no-store",
         });
@@ -110,7 +104,7 @@ const fetchTestData = async (
         // Test 5: Pathname with path parameters - origin-agnostic + param extraction
         const response = await fetch(`http://localhost:3001/api/users/${userId}/posts/${postId}`, {
           headers: {
-            ...scenarist.getHeaders(request),
+            ...scenarist.getHeadersFromReadonlyHeaders(headersList),
           },
           cache: "no-store",
         });
@@ -122,7 +116,7 @@ const fetchTestData = async (
         // Test 6: Full URL with path parameters - hostname-specific + param extraction
         const response = await fetch(`http://localhost:3001/api/local-users/${userId}`, {
           headers: {
-            ...scenarist.getHeaders(request),
+            ...scenarist.getHeadersFromReadonlyHeaders(headersList),
           },
           cache: "no-store",
         });

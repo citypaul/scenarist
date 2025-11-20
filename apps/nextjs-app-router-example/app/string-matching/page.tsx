@@ -124,14 +124,11 @@ export default async function StringMatchingPage({ searchParams }: Props) {
 
   // Get test ID headers for MSW scenario lookup
   const headersList = await headers();
-  const mockRequest = new Request("http://localhost:3002", {
-    headers: headersList,
-  });
 
   const result = await fetchStrategyResult(
     strategy,
     { campaign, apiKey, email, exact },
-    scenarist.getHeaders(mockRequest)
+    scenarist.getHeadersFromReadonlyHeaders(headersList)
   );
 
   return (

@@ -689,12 +689,11 @@ Each test ID has completely isolated:
 
 **Why Next.js needs this:** Unlike Express (which uses AsyncLocalStorage middleware), Next.js API routes have no middleware layer to automatically propagate test IDs. You must manually forward the headers.
 
-Use the `getScenaristHeaders()` helper:
+Use the `scenarist.getHeaders()` instance method:
 
 ```typescript
 // pages/api/products.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
 import { scenarist } from '@/lib/scenarist';
 
 export default async function handler(
@@ -704,7 +703,7 @@ export default async function handler(
   // Fetch from external API with Scenarist headers forwarded
   const response = await fetch('http://external-api.com/products', {
     headers: {
-      ...getScenaristHeaders(req, scenarist),  // ✅ Scenarist infrastructure headers
+      ...scenarist.getHeaders(req),  // ✅ Scenarist infrastructure headers
       'content-type': 'application/json',      // ✅ Your application headers
       'x-user-tier': req.headers['x-user-tier'], // ✅ Other app-specific headers
     },
@@ -724,19 +723,19 @@ export default async function handler(
 - **Scenarist headers** (`x-test-id`) - Infrastructure for test isolation
 - **Application headers** (`x-user-tier`, `content-type`) - Your app's business logic
 
-Only Scenarist headers need forwarding via `getScenaristHeaders()`. Your application headers are independent.
+Only Scenarist headers need forwarding via `scenarist.getHeaders()`. Your application headers are independent.
 
-**App Router Note:** The same pattern applies to Server Actions and Route Handlers that make external API calls:
+**App Router:** Different patterns depending on context:
 
+**Route Handlers (Request object available):**
 ```typescript
 // app/api/products/route.ts
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
 import { scenarist } from '@/lib/scenarist';
 
 export async function GET(request: Request) {
   const response = await fetch('http://external-api.com/products', {
     headers: {
-      ...getScenaristHeaders(request, scenarist),
+      ...scenarist.getHeaders(request),
       'content-type': 'application/json',
     },
   });
@@ -745,6 +744,32 @@ export async function GET(request: Request) {
   return Response.json(data);
 }
 ```
+
+**Server Components (ReadonlyHeaders from `headers()`):**
+```typescript
+// app/products/page.tsx
+import { headers } from 'next/headers';
+import { scenarist } from '@/lib/scenarist';
+
+export default async function ProductsPage() {
+  // Server Components use headers() which returns ReadonlyHeaders, not Request
+  const headersList = await headers();
+
+  const response = await fetch('http://external-api.com/products', {
+    headers: {
+      ...scenarist.getHeadersFromReadonlyHeaders(headersList),  // ✅ For ReadonlyHeaders
+      'content-type': 'application/json',
+    },
+  });
+
+  const data = await response.json();
+  return <ProductList products={data.products} />;
+}
+```
+
+**When to use which helper:**
+- **`scenarist.getHeaders(request)` or `scenarist.getHeaders(req)`** - When you have a `Request` object (Route Handlers) or `NextApiRequest` (Pages Router API routes)
+- **`scenarist.getHeadersFromReadonlyHeaders(headersList)`** - When you have `ReadonlyHeaders` from `headers()` (Server Components)
 
 **For architectural rationale, see:** [ADR-0007: Framework-Specific Header Forwarding](../../docs/adrs/0007-framework-specific-header-helpers.md)
 

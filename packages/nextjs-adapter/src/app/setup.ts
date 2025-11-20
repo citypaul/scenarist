@@ -88,6 +88,41 @@ export type AppScenarist = Omit<ScenaristAdapter<never>, 'middleware'> & {
    * ```
    */
   getHeaders: (req: Request) => Record<string, string>;
+
+  /**
+   * Extract Scenarist infrastructure headers from ReadonlyHeaders.
+   *
+   * This helper is designed for Next.js Server Components that use headers() from 'next/headers',
+   * which returns ReadonlyHeaders (not a Request object).
+   *
+   * Respects the configured test ID header name and default test ID,
+   * ensuring headers are forwarded correctly when making external API calls.
+   *
+   * @param headers - The ReadonlyHeaders object from headers() in 'next/headers'
+   * @returns Object with single entry: configured test ID header name → value from headers or default
+   *
+   * @example
+   * ```typescript
+   * // Server Component
+   * import { headers } from 'next/headers';
+   * import { scenarist } from '@/lib/scenarist';
+   *
+   * export default async function ProductsPage() {
+   *   const headersList = await headers();
+   *
+   *   const response = await fetch('http://localhost:3001/products', {
+   *     headers: {
+   *       ...scenarist.getHeadersFromReadonlyHeaders(headersList),
+   *       'x-user-tier': 'premium',
+   *     },
+   *   });
+   *
+   *   const data = await response.json();
+   *   return <ProductList products={data.products} />;
+   * }
+   * ```
+   */
+  getHeadersFromReadonlyHeaders: (headers: { get(name: string): string | null }) => Record<string, string>;
 };
 
 /**
@@ -160,6 +195,14 @@ export const createScenarist = (options: AppAdapterOptions): AppScenarist => {
       const headerName = config.headers.testId;
       const defaultTestId = config.defaultTestId;
       const testId = req.headers.get(headerName.toLowerCase()) || defaultTestId;
+      return {
+        [headerName]: testId,
+      };
+    },
+    getHeadersFromReadonlyHeaders: (headers: { get(name: string): string | null }): Record<string, string> => {
+      const headerName = config.headers.testId;
+      const defaultTestId = config.defaultTestId;
+      const testId = headers.get(headerName.toLowerCase()) || defaultTestId;
       return {
         [headerName]: testId,
       };

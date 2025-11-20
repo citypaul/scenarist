@@ -269,10 +269,7 @@ export default async function URLMatchingPage({
 
   // Get Scenarist headers for test ID propagation
   const headersList = await headers();
-  const mockRequest = new Request("http://localhost:3001", {
-    headers: headersList,
-  });
-  const scenaristHeaders = scenarist.getHeaders(mockRequest);
+  const scenaristHeaders = scenarist.getHeadersFromReadonlyHeaders(headersList);
 
   const fetchResult = await fetchTestData(test, params, scenaristHeaders);
 
