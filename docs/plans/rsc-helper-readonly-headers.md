@@ -112,10 +112,20 @@ Update example app to use new helper.
 - `apps/nextjs-app-router-example/tests/playwright/rsc-helper.spec.ts` ✅
   - Fixed test selectors for multiple products
 
+**Additional refactoring (commit 0620f85):**
+- `apps/nextjs-app-router-example/app/products/page.tsx` ✅
+- `apps/nextjs-app-router-example/app/polling/page.tsx` ✅
+- `apps/nextjs-app-router-example/app/cart-server/page.tsx` ✅
+- `apps/nextjs-app-router-example/app/url-matching/page.tsx` ✅
+- `apps/nextjs-app-router-example/app/string-matching/page.tsx` ✅
+- All 5 files removed the old workaround pattern (creating fake Request from ReadonlyHeaders)
+- Now using proper getHeadersFromReadonlyHeaders() API
+
 **Result:** All tests passing ✅
 - RSC helper test: 1/1 passing
 - Hostname matching tests: 6/6 passing
-- No workarounds needed, clean API throughout
+- All Server Component tests: 16/16 passing
+- No workarounds remaining anywhere in codebase
 
 ### Phase 5: Documentation
 
