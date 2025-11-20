@@ -138,7 +138,7 @@ Update example app to use new helper.
 
 **Actions:**
 1. ✅ Commented on #102 with implementation summary (https://github.com/citypaul/scenarist/issues/102#issuecomment-3557339649)
-2. ⏳ PR not yet created (will link when PR is created)
+2. ✅ PR created: #111 (https://github.com/citypaul/scenarist/pull/111)
 3. ⏳ Issue will be closed when PR is merged
 
 **Comment includes:**
