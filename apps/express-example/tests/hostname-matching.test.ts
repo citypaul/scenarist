@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import type { Express } from 'express';
+import type { ExpressScenarist } from '@scenarist/express-adapter';
 import request from 'supertest';
 import { createApp } from '../src/server.js';
 import { scenarios } from '../src/scenarios.js';
@@ -11,15 +13,37 @@ import { scenarios } from '../src/scenarios.js';
  * - Full URL patterns (http://localhost:3000/api/data) - Hostname-specific (match ONLY specified hostname)
  * - Native RegExp patterns (/\/api\/data/) - Origin-agnostic (MSW weak comparison)
  */
-describe('Hostname Matching - Express', () => {
-  const { app, scenarist } = createApp();
+const createTestFixtures = async (): Promise<{
+  app: Express;
+  scenarist: ExpressScenarist<typeof scenarios> | undefined;
+  cleanup: () => void;
+}> => {
+  const setup = await createApp();
 
-  beforeAll(() => {
-    scenarist.start();
-  });
+  if (setup.scenarist) {
+    setup.scenarist.start();
+  }
+
+  return {
+    app: setup.app,
+    scenarist: setup.scenarist,
+    cleanup: () => {
+      if (setup.scenarist) {
+        setup.scenarist.stop();
+      }
+    },
+  };
+};
+
+const fixtures = await createTestFixtures();
+
+describe('Hostname Matching - Express', () => {
+  
+
+  
 
   afterAll(() => {
-    scenarist.stop();
+    fixtures.cleanup();
   });
 
   /**
@@ -29,14 +53,14 @@ describe('Hostname Matching - Express', () => {
    * Should match requests to ANY hostname (localhost, api.github.com, api.stripe.com, etc.)
    */
   it('should match pathname-only pattern at ANY hostname', async () => {
-    await request(app)
-      .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'hostname-test-1')
+    await request(fixtures.app)
+      .post(fixtures.scenarist.config.endpoints.setScenario)
+      .set(fixtures.scenarist.config.headers.testId, 'hostname-test-1')
       .send({ scenario: scenarios.hostnameMatching.id });
 
-    const response = await request(app)
+    const response = await request(fixtures.app)
       .get('/api/test-hostname-match/pathname-only')
-      .set(scenarist.config.headers.testId, 'hostname-test-1');
+      .set(fixtures.scenarist.config.headers.testId, 'hostname-test-1');
 
     expect(response.status).toBe(200);
     expect(response.body.patternType).toBe('pathname-only');
@@ -51,14 +75,14 @@ describe('Hostname Matching - Express', () => {
    * Should ONLY match api.github.com requests
    */
   it('should match full URL pattern ONLY for GitHub hostname', async () => {
-    await request(app)
-      .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'hostname-test-2')
+    await request(fixtures.app)
+      .post(fixtures.scenarist.config.endpoints.setScenario)
+      .set(fixtures.scenarist.config.headers.testId, 'hostname-test-2')
       .send({ scenario: scenarios.hostnameMatching.id });
 
-    const response = await request(app)
+    const response = await request(fixtures.app)
       .get('/api/test-hostname-match/github-full')
-      .set(scenarist.config.headers.testId, 'hostname-test-2');
+      .set(fixtures.scenarist.config.headers.testId, 'hostname-test-2');
 
     expect(response.status).toBe(200);
     expect(response.body.patternType).toBe('full-url');
@@ -74,14 +98,14 @@ describe('Hostname Matching - Express', () => {
    * Should ONLY match api.stripe.com requests
    */
   it('should match full URL pattern ONLY for Stripe hostname', async () => {
-    await request(app)
-      .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'hostname-test-3')
+    await request(fixtures.app)
+      .post(fixtures.scenarist.config.endpoints.setScenario)
+      .set(fixtures.scenarist.config.headers.testId, 'hostname-test-3')
       .send({ scenario: scenarios.hostnameMatching.id });
 
-    const response = await request(app)
+    const response = await request(fixtures.app)
       .get('/api/test-hostname-match/stripe-full')
-      .set(scenarist.config.headers.testId, 'hostname-test-3');
+      .set(fixtures.scenarist.config.headers.testId, 'hostname-test-3');
 
     expect(response.status).toBe(200);
     expect(response.body.patternType).toBe('full-url');
@@ -97,14 +121,14 @@ describe('Hostname Matching - Express', () => {
    * Should match the pathname pattern at ANY hostname (MSW weak comparison)
    */
   it('should match native RegExp pattern at ANY hostname', async () => {
-    await request(app)
-      .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'hostname-test-4')
+    await request(fixtures.app)
+      .post(fixtures.scenarist.config.endpoints.setScenario)
+      .set(fixtures.scenarist.config.headers.testId, 'hostname-test-4')
       .send({ scenario: scenarios.hostnameMatching.id });
 
-    const response = await request(app)
+    const response = await request(fixtures.app)
       .get('/api/test-hostname-match/regexp')
-      .set(scenarist.config.headers.testId, 'hostname-test-4');
+      .set(fixtures.scenarist.config.headers.testId, 'hostname-test-4');
 
     expect(response.status).toBe(200);
     expect(response.body.patternType).toBe('native-regexp');
@@ -119,14 +143,14 @@ describe('Hostname Matching - Express', () => {
    * Should extract params AND match ANY hostname
    */
   it('should extract path params from pathname pattern (origin-agnostic)', async () => {
-    await request(app)
-      .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'hostname-test-5')
+    await request(fixtures.app)
+      .post(fixtures.scenarist.config.endpoints.setScenario)
+      .set(fixtures.scenarist.config.headers.testId, 'hostname-test-5')
       .send({ scenario: scenarios.hostnameMatching.id });
 
-    const response = await request(app)
+    const response = await request(fixtures.app)
       .get('/api/test-hostname-match/pathname-params/789/321')
-      .set(scenarist.config.headers.testId, 'hostname-test-5');
+      .set(fixtures.scenarist.config.headers.testId, 'hostname-test-5');
 
     expect(response.status).toBe(200);
     expect(response.body.patternType).toBe('pathname-only with params');
@@ -142,14 +166,14 @@ describe('Hostname Matching - Express', () => {
    * Should extract params but ONLY match api.github.com
    */
   it('should extract path params from full URL pattern (hostname-specific)', async () => {
-    await request(app)
-      .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'hostname-test-6')
+    await request(fixtures.app)
+      .post(fixtures.scenarist.config.endpoints.setScenario)
+      .set(fixtures.scenarist.config.headers.testId, 'hostname-test-6')
       .send({ scenario: scenarios.hostnameMatching.id });
 
-    const response = await request(app)
+    const response = await request(fixtures.app)
       .get('/api/test-hostname-match/full-params/999')
-      .set(scenarist.config.headers.testId, 'hostname-test-6');
+      .set(fixtures.scenarist.config.headers.testId, 'hostname-test-6');
 
     expect(response.status).toBe(200);
     expect(response.body.patternType).toBe('full-url with params');

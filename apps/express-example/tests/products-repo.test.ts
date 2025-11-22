@@ -67,11 +67,35 @@ import { describe, it, expect } from "vitest";
 import request from "supertest";
 import { createApp } from "../src/server.js";
 
+const createTestFixtures = async (): Promise<{
+  app: Express;
+  scenarist: ExpressScenarist<typeof scenarios> | undefined;
+  cleanup: () => void;
+}> => {
+  const setup = await createApp();
+
+  if (setup.scenarist) {
+    setup.scenarist.start();
+  }
+
+  return {
+    app: setup.app,
+    scenarist: setup.scenarist,
+    cleanup: () => {
+      if (setup.scenarist) {
+        setup.scenarist.stop();
+      }
+    },
+  };
+};
+
+const fixtures = await createTestFixtures();
+
 describe("Products with Repository Pattern", () => {
-  const { app, scenarist } = createApp();
+  
 
   // Start MSW for HTTP mocking
-  scenarist.start();
+  fixtures.scenarist.start();
 
   /**
    * Helper function that performs both:
@@ -84,7 +108,7 @@ describe("Products with Repository Pattern", () => {
   const switchScenarioAndSeed = async (testId: string, scenarioId: string) => {
     // 1. Switch Scenarist scenario (HTTP mocks)
     // This tells Scenarist which mock responses to return for this test ID
-    await request(app)
+    await request(fixtures.app)
       .post("/__scenario__")
       .set("x-test-id", testId)
       .send({ scenario: scenarioId })
@@ -93,7 +117,7 @@ describe("Products with Repository Pattern", () => {
     // 2. Seed repository with scenario data
     // This populates the in-memory repository with user data for this test ID
     // The repository partitions data by test ID internally
-    await request(app)
+    await request(fixtures.app)
       .post("/test/seed")
       .set("x-test-id", testId)
       .send({ scenarioId })
@@ -118,7 +142,7 @@ describe("Products with Repository Pattern", () => {
 
     await switchScenarioAndSeed(testId, "premiumUser");
 
-    const response = await request(app)
+    const response = await request(fixtures.app)
       .get("/products-repo?userId=user-1")
       .set("x-test-id", testId)
       .expect(200);
@@ -151,7 +175,7 @@ describe("Products with Repository Pattern", () => {
 
     await switchScenarioAndSeed(testId, "default");
 
-    const response = await request(app)
+    const response = await request(fixtures.app)
       .get("/products-repo?userId=user-1")
       .set("x-test-id", testId)
       .expect(200);
@@ -184,7 +208,7 @@ describe("Products with Repository Pattern", () => {
 
     await switchScenarioAndSeed(testId, "default");
 
-    const response = await request(app)
+    const response = await request(fixtures.app)
       .get("/products-repo?userId=non-existent")
       .set("x-test-id", testId)
       .expect(200);
@@ -226,7 +250,7 @@ describe("Products with Repository Pattern", () => {
     await switchScenarioAndSeed(testId2, "default");
 
     // Test 1: Premium user, premium pricing
-    const response1 = await request(app)
+    const response1 = await request(fixtures.app)
       .get("/products-repo?userId=user-1")
       .set("x-test-id", testId1)
       .expect(200);
@@ -237,7 +261,7 @@ describe("Products with Repository Pattern", () => {
 
     // Test 2: Standard user, standard pricing
     // SAME user ID (user-1), but DIFFERENT test ID → DIFFERENT data
-    const response2 = await request(app)
+    const response2 = await request(fixtures.app)
       .get("/products-repo?userId=user-1")
       .set("x-test-id", testId2)
       .expect(200);
@@ -267,7 +291,7 @@ describe("Products with Repository Pattern", () => {
     await switchScenarioAndSeed(testId, "premiumUser");
 
     // Direct repository access (no Scenarist involvement)
-    const response = await request(app)
+    const response = await request(fixtures.app)
       .get("/users/user-1")
       .set("x-test-id", testId)
       .expect(200);

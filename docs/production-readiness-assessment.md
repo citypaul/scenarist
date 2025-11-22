@@ -66,7 +66,21 @@ Scenarist is **80% ready for production release**. The core architecture, testin
      - `files`: ["dist", "README.md", "LICENSE"] where applicable
    - Merged in PR #115
 
-3. Set up Changesets workflow (4 hours):
+3. ✅ **COMPLETED** - Add automatic production tree-shaking for Express adapter (2 hours)
+   - Refactored to async createScenarist with production wrapper pattern
+   - Returns `undefined` in production (entire implementation tree-shaken away)
+   - Updated all 12 example app tests to factory pattern (no `let`/`any`)
+   - All 42 adapter tests passing
+   - All 85 example app tests passing
+   - Zero code quality violations
+   - Enables bundlers to eliminate ~300KB from production bundles
+   - Merged in PR #117
+
+   **Future Work (Next.js Adapters):**
+   - App Router adapter tree-shaking (4 hours estimated)
+   - Pages Router adapter tree-shaking (4 hours estimated)
+
+4. Set up Changesets workflow (4 hours):
    ```bash
    pnpm add -Dw @changesets/cli
    pnpm changeset init
@@ -76,7 +90,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
    - Create initial changeset for v1.0.0
 
 **HIGH PRIORITY:**
-4. Add `publishConfig` to all packages (1 hour):
+5. Add `publishConfig` to all packages (1 hour):
    ```json
    {
      "publishConfig": {

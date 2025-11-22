@@ -16,22 +16,46 @@ import { scenarios } from "./scenarios.js";
 
 /**
  * Create and configure the Express application with Scenarist
+ *
+ * **PRODUCTION TREE-SHAKING (Automatic):**
+ *
+ * Scenarist adapters automatically optimize for production:
+ * - In production: `createScenarist()` returns `undefined`
+ * - Bundlers detect this and eliminate ~300KB of test code
+ * - No configuration needed - it just works!
+ *
+ * **How it works:**
+ * 1. Adapter checks `process.env.NODE_ENV === 'production'`
+ * 2. Returns `undefined` without loading any Scenarist code
+ * 3. Bundlers perform dead code elimination
+ * 4. Result: Zero test code in production bundles
+ *
+ * **Type safety:**
+ * - Return type: `ExpressScenarist<typeof scenarios> | undefined`
+ * - TypeScript enforces null checks via `if (scenarist)` guards
+ *
+ * **Learn more:** https://scenarist.dev/docs/production-safety
  */
-export const createApp = (): { app: Express; scenarist: ExpressScenarist<typeof scenarios> } => {
+export const createApp = async (): Promise<{
+  app: Express;
+  scenarist: ExpressScenarist<typeof scenarios> | undefined;
+}> => {
   const app = express();
 
   // Parse JSON bodies
   app.use(express.json());
 
-  // Initialize Scenarist with all scenarios registered upfront
-  const scenarist = createScenarist({
+  // Initialize Scenarist (automatically returns undefined in production)
+  const scenarist = await createScenarist({
     enabled: true,
     scenarios, // All scenarios registered at initialization (must include 'default')
     strictMode: false, // Allow passthrough for unmocked requests
   });
 
-  // Apply Scenarist middleware (includes test ID extraction and scenario endpoints)
-  app.use(scenarist.middleware);
+  // Apply Scenarist middleware (only in non-production)
+  if (scenarist) {
+    app.use(scenarist.middleware);
+  }
 
   // Setup application routes
   const router = express.Router();
@@ -60,12 +84,38 @@ export const createApp = (): { app: Express; scenarist: ExpressScenarist<typeof 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const { app, scenarist } = createApp();
 
-  // Start MSW
-  scenarist.start();
+  // Start MSW (only in non-production)
+  if (scenarist) {
+    scenarist.start();
+  }
 
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
-    console.log(`Scenario control: POST http://localhost:${PORT}/__scenario__`);
+    if (scenarist) {
+      console.log(`Scenario control: POST http://localhost:${PORT}/__scenario__`);
+    }
   });
+}
+/**
+ * Start the server (only if running directly, not when imported for tests)
+ */
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const main = async () => {
+    const { app, scenarist } = await createApp();
+
+    // Start MSW (only in non-production)
+    if (scenarist) {
+      scenarist.start();
+    }
+
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+      if (scenarist) {
+        console.log(`Scenario control: POST http://localhost:${PORT}/__scenario__`);
+      }
+    });
+  };
+  main().catch(console.error);
 }
