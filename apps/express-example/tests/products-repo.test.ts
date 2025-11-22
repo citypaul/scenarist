@@ -1,3 +1,6 @@
+import { createTestFixtures } from './test-helpers.js';
+import { scenarios } from '../src/scenarios.js';
+
 /**
  * Products with Repository Pattern - Integration Tests
  *
@@ -67,30 +70,7 @@ import { describe, it, expect } from "vitest";
 import request from "supertest";
 import type { Express } from "express";
 import type { ExpressScenarist } from "@scenarist/express-adapter";
-import { createApp } from "../src/server.js";
 import { scenarios } from "../src/scenarios.js";
-
-const createTestFixtures = async (): Promise<{
-  app: Express;
-  scenarist: ExpressScenarist<typeof scenarios> | undefined;
-  cleanup: () => void;
-}> => {
-  const setup = await createApp();
-
-  if (setup.scenarist) {
-    setup.scenarist.start();
-  }
-
-  return {
-    app: setup.app,
-    scenarist: setup.scenarist,
-    cleanup: () => {
-      if (setup.scenarist) {
-        setup.scenarist.stop();
-      }
-    },
-  };
-};
 
 const fixtures = await createTestFixtures();
 

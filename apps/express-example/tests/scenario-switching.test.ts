@@ -1,31 +1,8 @@
 import { describe, it, expect, afterAll } from 'vitest';
-import type { Express } from 'express';
-import type { ExpressScenarist } from '@scenarist/express-adapter';
 import request from 'supertest';
-import { createApp } from '../src/server.js';
+
+import { createTestFixtures } from './test-helpers.js';
 import { scenarios } from '../src/scenarios.js';
-
-const createTestFixtures = async (): Promise<{
-  app: Express;
-  scenarist: ExpressScenarist<typeof scenarios> | undefined;
-  cleanup: () => void;
-}> => {
-  const setup = await createApp();
-
-  if (setup.scenarist) {
-    setup.scenarist.start();
-  }
-
-  return {
-    app: setup.app,
-    scenarist: setup.scenarist,
-    cleanup: () => {
-      if (setup.scenarist) {
-        setup.scenarist.stop();
-      }
-    },
-  };
-};
 
 const fixtures = await createTestFixtures();
 
