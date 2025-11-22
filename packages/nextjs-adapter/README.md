@@ -1232,6 +1232,143 @@ import {
 
 </details>
 
+## Production Tree-Shaking
+
+**Problem:** MSW and Scenarist are test-only dependencies that should never appear in production bundles.
+
+**Solution:** The Next.js adapter uses **conditional exports** to eliminate all testing code from production builds automatically.
+
+### How It Works
+
+When `NODE_ENV=production`, bundlers (Next.js webpack/Turbopack, esbuild, Vite, etc.) automatically resolve to production entry points that return `undefined` with **zero imports**:
+
+```typescript
+// Production build imports this instead:
+// packages/nextjs-adapter/src/app/production.ts (or pages/production.ts)
+export const createScenarist = () => undefined;
+// No imports = 100% tree-shaking
+```
+
+### Bundle Size Impact
+
+**Before (development):**
+- Scenarist adapter + Core + MSW: ~320kb
+
+**After (production with tree-shaking):**
+- **0kb** - Complete elimination
+
+### Verifying Tree-Shaking
+
+Both Next.js example apps include verification scripts:
+
+```bash
+# App Router example
+cd apps/nextjs-app-router-example
+pnpm verify:treeshaking
+
+# Pages Router example
+cd apps/nextjs-pages-router-example
+pnpm verify:treeshaking
+```
+
+This builds your app with `NODE_ENV=production` and verifies zero MSW code exists in the `.next/` bundle.
+
+### Bundler Configuration
+
+**Next.js (Automatic):**
+- Next.js webpack/Turbopack automatically respects `NODE_ENV=production`
+- No configuration needed - tree-shaking works out of the box
+
+**Custom Bundlers:**
+
+If using a custom bundler, ensure it resolves the `"production"` condition:
+
+```javascript
+// esbuild
+esbuild.build({
+  conditions: ['production'],  // Resolves production entry points
+  define: { 'process.env.NODE_ENV': '"production"' },
+});
+
+// Webpack
+module.exports = {
+  resolve: {
+    conditionNames: ['production', 'import'],
+  },
+};
+
+// Vite
+export default {
+  resolve: {
+    conditions: ['production'],
+  },
+};
+```
+
+### What Gets Eliminated
+
+When tree-shaking succeeds, your production bundle has:
+- ❌ No MSW runtime code (`setupWorker`, `http.get`, `HttpResponse.json`)
+- ❌ No Scenarist core code (scenario manager, state manager, etc.)
+- ❌ No Zod validation schemas
+- ❌ No adapter code (request context, endpoints, etc.)
+- ✅ Only your application code
+
+### Troubleshooting Tree-Shaking
+
+**If `verify:treeshaking` fails:**
+
+1. **Check `NODE_ENV`:** Ensure `NODE_ENV=production` during build
+   ```bash
+   NODE_ENV=production next build
+   ```
+
+2. **Check bundler configuration:** Verify `"production"` condition is resolved
+   - Next.js: Should work automatically
+   - Custom bundlers: Add `conditions: ['production']`
+
+3. **Check dynamic imports:** Avoid dynamic imports that bypass tree-shaking
+   ```typescript
+   // ❌ BAD - Bypasses tree-shaking
+   const scenarist = await import('@scenarist/nextjs-adapter/app');
+
+   // ✅ GOOD - Enables tree-shaking
+   import { createScenarist } from '@scenarist/nextjs-adapter/app';
+   const scenarist = createScenarist({ ... });
+   ```
+
+4. **Inspect bundle:** Check `.next/` directory for MSW strings
+   ```bash
+   grep -r "setupWorker\|HttpResponse\.json" .next/
+   ```
+
+### Architecture Details
+
+The adapter uses **package.json conditional exports** to provide different entry points per environment:
+
+```json
+{
+  "exports": {
+    "./app": {
+      "types": "./dist/app/index.d.ts",
+      "production": "./dist/app/production.js",  // Returns undefined
+      "import": "./dist/app/index.js"           // Full implementation
+    },
+    "./pages": {
+      "types": "./dist/pages/index.d.ts",
+      "production": "./dist/pages/production.js", // Returns undefined
+      "import": "./dist/pages/index.js"          // Full implementation
+    }
+  }
+}
+```
+
+**Key Insight:** Since the production entry point has **zero imports**, bundlers eliminate the entire dependency chain (adapter → core → MSW → Zod). This is more effective than dynamic imports or `NODE_ENV` checks, which can't guarantee complete elimination.
+
+**For architectural rationale, see:** [Tree-Shaking Investigation](../../docs/investigations/tree-shaking-dynamic-imports-vs-conditional-exports.md)
+
+---
+
 ## Development & Testing
 
 ### Test Coverage Exception

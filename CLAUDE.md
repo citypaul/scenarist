@@ -270,6 +270,8 @@ apps/
 Each adapter has `production.ts` with zero imports → 100% elimination in production bundles.
 
 **Conditional exports pattern:**
+
+**Express adapter (single entry point):**
 ```json
 {
   "exports": {
@@ -281,9 +283,31 @@ Each adapter has `production.ts` with zero imports → 100% elimination in produ
 }
 ```
 
+**Next.js adapter (multiple entry points):**
+```json
+{
+  "exports": {
+    "./app": {
+      "types": "./dist/app/index.d.ts",
+      "production": "./dist/app/production.js",   // Returns undefined
+      "import": "./dist/app/index.js"             // Full implementation
+    },
+    "./pages": {
+      "types": "./dist/pages/index.d.ts",
+      "production": "./dist/pages/production.js", // Returns undefined
+      "import": "./dist/pages/index.js"           // Full implementation
+    }
+  }
+}
+```
+
 **Verification:**
 ```bash
+# Express adapter & example
 ! grep -rE '(setupWorker|HttpResponse\.json)' dist/
+
+# Next.js example apps
+NODE_ENV=production next build && ! grep -rE '(setupWorker|HttpResponse\.json)' .next/
 ```
 
 **Why core doesn't need production.ts:** When adapter has production.ts, core is never imported. Conditional exports are package-scoped, not transitive.

@@ -3,6 +3,11 @@
  *
  * Phase 1: Minimal setup
  * Phase 2: Auto-start MSW for development
+ *
+ * **PRODUCTION TREE-SHAKING:**
+ * In production builds, createScenarist() returns undefined and all test code
+ * is eliminated from the bundle (0kb overhead). The `if (scenarist)` guards
+ * protect against runtime errors while enabling tree-shaking.
  */
 
 import { createScenarist } from '@scenarist/nextjs-adapter/pages';
@@ -22,7 +27,7 @@ export const scenarist = createScenarist({
   scenarios, // All scenarios registered at initialization (must include 'default')
 });
 
-// Auto-start MSW server in development
-if (typeof window === 'undefined' && scenarist.config.enabled) {
+// Auto-start MSW server in development (only when Scenarist is enabled)
+if (typeof window === 'undefined' && scenarist) {
   scenarist.start();
 }
