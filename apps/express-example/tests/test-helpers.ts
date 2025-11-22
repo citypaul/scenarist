@@ -1,6 +1,6 @@
 import type { Express } from 'express';
 import type { ExpressScenarist } from '@scenarist/express-adapter';
-import { createApp } from '../src/server.js';
+import { createApp } from '../src/app.js';
 import { scenarios } from '../src/scenarios.js';
 
 /**
