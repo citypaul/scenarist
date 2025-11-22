@@ -2,7 +2,6 @@ import request from "supertest";
 import { afterAll, describe, expect, it } from "vitest";
 import type { Express, Request, Response } from "express";
 import type { ExpressScenarist } from "@scenarist/express-adapter";
-import { scenarios } from "../src/scenarios.js";
 
 import { createTestFixtures } from './test-helpers.js';
 import { scenarios } from '../src/scenarios.js';

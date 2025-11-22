@@ -70,7 +70,6 @@ import { describe, it, expect } from "vitest";
 import request from "supertest";
 import type { Express } from "express";
 import type { ExpressScenarist } from "@scenarist/express-adapter";
-import { scenarios } from "../src/scenarios.js";
 
 const fixtures = await createTestFixtures();
 
