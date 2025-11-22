@@ -29,13 +29,13 @@ describe('Dynamic Handler', () => {
       const getActiveScenario = (): ActiveScenario => ({
         scenarioId: 'happy-path',
       });
-      const getScenaristScenario = (scenarioId: string) =>
+      const getScenarioDefinition = (scenarioId: string) =>
         scenarios.get(scenarioId);
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenaristScenario,
+        getScenarioDefinition,
         strictMode: false,
         responseSelector,
       });
@@ -74,13 +74,13 @@ describe('Dynamic Handler', () => {
       const getActiveScenario = (): ActiveScenario => ({
         scenarioId: 'empty-scenario',
       });
-      const getScenaristScenario = (scenarioId: string) =>
+      const getScenarioDefinition = (scenarioId: string) =>
         scenarios.get(scenarioId);
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenaristScenario,
+        getScenarioDefinition,
         strictMode: false,
         responseSelector,
       });
@@ -139,13 +139,13 @@ describe('Dynamic Handler', () => {
       const getActiveScenario = (): ActiveScenario => ({
         scenarioId: 'premiumUser',
       });
-      const getScenaristScenario = (scenarioId: string) =>
+      const getScenarioDefinition = (scenarioId: string) =>
         scenarios.get(scenarioId);
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenaristScenario,
+        getScenarioDefinition,
         strictMode: false,
         responseSelector,
       });
@@ -182,13 +182,13 @@ describe('Dynamic Handler', () => {
 
       const getTestId = () => 'test-123';
       const getActiveScenario = () => undefined;
-      const getScenaristScenario = (scenarioId: string) =>
+      const getScenarioDefinition = (scenarioId: string) =>
         scenarios.get(scenarioId);
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenaristScenario,
+        getScenarioDefinition,
         strictMode: false,
         responseSelector,
       });
@@ -210,12 +210,12 @@ describe('Dynamic Handler', () => {
     it('should passthrough when no mock found and strictMode is false', async () => {
       const getTestId = () => 'test-123';
       const getActiveScenario = () => undefined;
-      const getScenaristScenario = () => undefined;
+      const getScenarioDefinition = () => undefined;
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenaristScenario,
+        getScenarioDefinition,
         strictMode: false,
         responseSelector,
       });
@@ -233,12 +233,12 @@ describe('Dynamic Handler', () => {
     it('should return error when no mock found and strictMode is true', async () => {
       const getTestId = () => 'test-123';
       const getActiveScenario = () => undefined;
-      const getScenaristScenario = () => undefined;
+      const getScenarioDefinition = () => undefined;
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenaristScenario,
+        getScenarioDefinition,
         strictMode: true,
         responseSelector,
       });
@@ -277,13 +277,13 @@ describe('Dynamic Handler', () => {
       const getActiveScenario = (): ActiveScenario => ({
         scenarioId: 'premium-user',
       });
-      const getScenaristScenario = (scenarioId: string) =>
+      const getScenarioDefinition = (scenarioId: string) =>
         scenarios.get(scenarioId);
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenaristScenario,
+        getScenarioDefinition,
         strictMode: false,
         responseSelector,
       });
@@ -326,13 +326,13 @@ describe('Dynamic Handler', () => {
       const getActiveScenario = (): ActiveScenario => ({
         scenarioId: 'auth-scenario',
       });
-      const getScenaristScenario = (scenarioId: string) =>
+      const getScenarioDefinition = (scenarioId: string) =>
         scenarios.get(scenarioId);
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenaristScenario,
+        getScenarioDefinition,
         strictMode: false,
         responseSelector,
       });
@@ -373,13 +373,13 @@ describe('Dynamic Handler', () => {
       const getActiveScenario = (): ActiveScenario => ({
         scenarioId: 'upload-scenario',
       });
-      const getScenaristScenario = (scenarioId: string) =>
+      const getScenarioDefinition = (scenarioId: string) =>
         scenarios.get(scenarioId);
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenaristScenario,
+        getScenarioDefinition,
         strictMode: false,
         responseSelector,
       });
@@ -424,13 +424,13 @@ describe('Dynamic Handler', () => {
       const getActiveScenario = (): ActiveScenario => ({
         scenarioId: 'search-scenario',
       });
-      const getScenaristScenario = (scenarioId: string) =>
+      const getScenarioDefinition = (scenarioId: string) =>
         scenarios.get(scenarioId);
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenaristScenario,
+        getScenarioDefinition,
         strictMode: false,
         responseSelector,
       });
@@ -485,13 +485,13 @@ describe('Dynamic Handler', () => {
       const getActiveScenario = (): ActiveScenario => ({
         scenarioId: 'post-scenario',
       });
-      const getScenaristScenario = (scenarioId: string) =>
+      const getScenarioDefinition = (scenarioId: string) =>
         scenarios.get(scenarioId);
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenaristScenario,
+        getScenarioDefinition,
         strictMode: false,
         responseSelector,
       });
@@ -535,13 +535,13 @@ describe('Dynamic Handler', () => {
       const getActiveScenario = (): ActiveScenario => ({
         scenarioId: 'non-existent-scenario', // Active scenario doesn't exist
       });
-      const getScenaristScenario = (scenarioId: string) =>
+      const getScenarioDefinition = (scenarioId: string) =>
         scenarios.get(scenarioId); // Will return undefined for 'non-existent-scenario'
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenaristScenario,
+        getScenarioDefinition,
         strictMode: false,
         responseSelector,
       });
@@ -596,13 +596,13 @@ describe('Dynamic Handler', () => {
       const getActiveScenario = (): ActiveScenario => ({
         scenarioId: 'products-scenario',
       });
-      const getScenaristScenario = (scenarioId: string) =>
+      const getScenarioDefinition = (scenarioId: string) =>
         scenarios.get(scenarioId);
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenaristScenario,
+        getScenarioDefinition,
         strictMode: false,
         responseSelector,
       });
