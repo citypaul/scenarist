@@ -61,7 +61,10 @@
       "Bash(pnpm verify:treeshaking:*)",
       "Bash(pnpm build:production:*)",
       "Bash(echo \"grep exit code: $?\")",
-      "Bash(pnpm turbo:*)"
+      "Bash(pnpm turbo:*)",
+      "Bash(gh pr list:*)",
+      "Bash(esbuild:*)",
+      "Bash(pnpm exec esbuild:*)"
     ],
     "deny": [],
     "ask": []

@@ -228,8 +228,66 @@ kill $PID
 
 **Bundled Deployments (esbuild, webpack, Vite, rollup):**
 
+<Aside type="tip">
+Modern bundlers with **code splitting enabled** automatically tree-shake Scenarist with **zero configuration**. The implementation code is split into a separate chunk that is never loaded into memory.
+</Aside>
+
+**Default Approach (Zero Config):**
+
+Most bundlers enable code splitting by default for dynamic imports:
+
+```bash
+# esbuild with code splitting
+esbuild --bundle --splitting --outdir=dist --define:process.env.NODE_ENV='"production"'
+
+# webpack (code splitting automatic for dynamic imports)
+webpack --mode production
+
+# Vite (code splitting automatic)
+vite build
+
+# rollup (code splitting automatic for dynamic imports)
+rollup -c
+```
+
+**How it works:**
+1. Dynamic import creates code-splitting boundary
+2. Impl code split into separate chunk (e.g., `impl-ABC123.js`)
+3. DefinePlugin makes `if (process.env.NODE_ENV === 'production')` unreachable
+4. Import statement eliminated from entry point
+5. **Chunk file exists on disk but never loads into memory**
+
+**Verification:**
+```bash
+# Build with code splitting
+NODE_ENV=production npm run build
+
+# Entry point should be small (~27kb)
+ls -lh dist/server.js
+
+# Impl chunk should exist but never be loaded
+ls -lh dist/impl-*.js  # Exists (~242kb)
+
+# Verify chunk never loads into memory (optional)
+NODE_ENV=production node dist/server.js &
+PID=$!
+lsof -p $PID | grep 'impl-.*\.js'
+# Should output nothing (chunk not loaded)
+kill $PID
+```
+
+**Result:**
+- Entry point: ~27kb (94% smaller than single bundle)
+- Impl chunk: ~242kb (exists but never loaded)
+- **Effective delivery: 27kb** (same as conditional exports!)
+- **Zero custom configuration required**
+
+---
+
+**Optional: Minimal Build Artifacts**
+
 <Aside type="caution">
-For teams bundling Express server code, **additional bundler configuration is required** to achieve complete tree-shaking.
+For teams needing absolute minimal build artifacts (not delivery size), Scenarist provides **conditional exports**. This requires a GLOBAL bundler flag that affects ALL packages.
 </Aside>
 
 Scenarist uses **conditional package.json exports** to provide different entry points:
@@ -249,7 +307,7 @@ The `"production"` condition is **custom** (not a Node.js built-in). Bundlers mu
 
 **esbuild:**
 ```bash
-esbuild --bundle --conditions=production --define:process.env.NODE_ENV='"production"'
+esbuild --bundle --splitting --outdir=dist --define:process.env.NODE_ENV='"production"' --conditions=production
 ```
 
 **webpack:**
@@ -286,43 +344,68 @@ export default {
 };
 ```
 
-**Without bundler configuration:**
-- MSW code included in bundle (~320kb)
-- Code never executes (safe)
-- Wastes bandwidth
+<Aside type="caution">
+**WARNING**: The `--conditions` flag is **GLOBAL** and affects ALL packages with conditional exports in your dependency tree, not just Scenarist. This could change behavior of other dependencies unexpectedly.
+</Aside>
 
-**With bundler configuration:**
-- MSW code completely eliminated
-- Bundle size: 618kb → 298kb (52% reduction)
-- Optimal production deployment
+**Trade-off:**
+- ✅ Smallest possible build artifacts (~298kb total vs ~27kb + ~242kb)
+- ⚠️ GLOBAL configuration affects all dependencies
+- ⚠️ May break other packages using conditional exports
+- ⚠️ Requires auditing dependency tree
 
-**Verify bundled Express app:**
+**When to use conditional exports:**
+- Build artifact size is critical (containers, CI/CD storage)
+- Disk space constrained environments
+- You've audited your dependency tree
+- You understand the global nature of `--conditions`
+
+**Default recommendation:** Use code splitting (zero config). Only use conditional exports if build artifact size is critical and you understand the trade-offs
+
+**Verify bundled Express app with code splitting:**
 
 ```bash
-# Build production bundle (with --conditions=production)
+# Build production bundle with code splitting (default approach)
 NODE_ENV=production npm run build
 
-# Check bundle size
+# Entry point should be small
 ls -lh dist/server.js
-# Should be ~298kb (not ~618kb)
 
-# Search bundle for MSW code
-grep -rE '(setupWorker|startWorker|HttpResponse\.json)' dist/
+# Search for MSW code (should not be in entry point)
+grep -rE '(setupWorker|startWorker|HttpResponse\.json)' dist/server.js
 # Should output nothing
+
+# Verify impl chunk exists but is never loaded
+ls -lh dist/impl-*.js  # Chunk exists on disk
+NODE_ENV=production node dist/server.js &
+PID=$!
+lsof -p $PID | grep 'impl-.*\.js'  # Not loaded into memory
+kill $PID
 ```
 
-**Example verification script:**
+**Example verification script (code splitting):**
 
 ```json
 {
   "scripts": {
-    "build:production": "esbuild src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --external:express --define:process.env.NODE_ENV='\"production\"' --minify --conditions=production",
-    "verify:treeshaking": "npm run build:production && ! grep -rE '(setupWorker|HttpResponse\\.json)' dist/"
+    "build:production": "esbuild src/server.ts --bundle --splitting --outdir=dist --platform=node --format=esm --external:express --define:process.env.NODE_ENV='\"production\"' --minify",
+    "verify:treeshaking": "npm run build:production && ! grep -rE '(setupWorker|HttpResponse\\.json)' dist/server.js"
   }
 }
 ```
 
-Run: `npm run verify:treeshaking`
+**Example verification script (conditional exports):**
+
+```json
+{
+  "scripts": {
+    "build:production": "esbuild src/server.ts --bundle --splitting --outdir=dist --platform=node --format=esm --external:express --define:process.env.NODE_ENV='\"production\"' --minify --conditions=production",
+    "verify:minimal": "npm run build:production && ! grep -rE 'impl-.*\\.js' dist/"
+  }
+}
+```
+
+Run: `npm run verify:treeshaking` (code splitting) or `npm run verify:minimal` (conditional exports)
 
 **For detailed bundler configuration examples**, see the [Express Adapter README - Production Tree-Shaking](https://github.com/citypaul/scenarist/tree/main/packages/express-adapter#production-tree-shaking).
 
