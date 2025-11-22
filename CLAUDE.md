@@ -64,7 +64,7 @@ Every line of production code must be written in response to a failing test.
 2. **GREEN:** Write minimum code to pass
 3. **REFACTOR:** Assess if refactoring adds value (commit before refactoring)
 
-**Git history must show TDD compliance.** For detailed workflow, see [TDD Process Guide](docs/workflow/tdd-process.md).
+**Git history must show TDD compliance.**
 
 **Common violations to avoid:**
 - Writing production code without failing test first
@@ -288,7 +288,7 @@ Each adapter has `production.ts` with zero imports → 100% elimination in produ
 
 **Why core doesn't need production.ts:** When adapter has production.ts, core is never imported. Conditional exports are package-scoped, not transitive.
 
-**For details:** See [Production Tree-Shaking Investigation](docs/implementation-history/production-tree-shaking.md)
+**For details:** See [Production Tree-Shaking Investigation](docs/investigations/tree-shaking-dynamic-imports-vs-conditional-exports.md)
 
 ## TypeScript Configuration
 
