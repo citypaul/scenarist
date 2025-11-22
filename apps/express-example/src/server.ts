@@ -34,7 +34,7 @@ import { scenarios } from "./scenarios.js";
  * - Return type: `ExpressScenarist<typeof scenarios> | undefined`
  * - TypeScript enforces null checks via `if (scenarist)` guards
  *
- * **Learn more:** https://scenarist.dev/docs/production-safety
+ * **Learn more:** https://scenarist.io/introduction/production-safety
  */
 export const createApp = async (): Promise<{
   app: Express;
@@ -82,7 +82,7 @@ export const createApp = async (): Promise<{
  * Start the server (only if running directly, not when imported for tests)
  */
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const { app, scenarist } = createApp();
+  const { app, scenarist } = await createApp();
 
   // Start MSW (only in non-production)
   if (scenarist) {

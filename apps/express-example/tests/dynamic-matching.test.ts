@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, afterAll } from 'vitest';
 import type { Express } from 'express';
 import type { ExpressScenarist } from '@scenarist/express-adapter';
 import request from 'supertest';
@@ -40,6 +40,8 @@ describe('Dynamic Content Matching E2E (Phase 1)', () => {
 
   describe('Request Body Matching', () => {
     it('should match premium items and apply discount', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       // Switch to content-matching scenario
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -67,6 +69,8 @@ describe('Dynamic Content Matching E2E (Phase 1)', () => {
     });
 
     it('should match standard items with regular pricing', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(fixtures.scenarist.config.headers.testId, 'body-match-test-2')
@@ -91,6 +95,8 @@ describe('Dynamic Content Matching E2E (Phase 1)', () => {
     });
 
     it('should use fallback when no body criteria matches', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(fixtures.scenarist.config.headers.testId, 'body-match-test-3')
@@ -115,6 +121,8 @@ describe('Dynamic Content Matching E2E (Phase 1)', () => {
     });
 
     it('should support partial body matching (extra fields ignored)', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(fixtures.scenarist.config.headers.testId, 'body-match-test-4')
@@ -139,6 +147,8 @@ describe('Dynamic Content Matching E2E (Phase 1)', () => {
 
   describe('Request Header Matching', () => {
     it('should match premium tier header and return enhanced data', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(fixtures.scenarist.config.headers.testId, 'header-match-test-1')
@@ -163,6 +173,8 @@ describe('Dynamic Content Matching E2E (Phase 1)', () => {
     });
 
     it('should match standard tier header and return basic data', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(fixtures.scenarist.config.headers.testId, 'header-match-test-2')
@@ -185,6 +197,8 @@ describe('Dynamic Content Matching E2E (Phase 1)', () => {
     });
 
     it('should use fallback when no tier header present', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(fixtures.scenarist.config.headers.testId, 'header-match-test-3')
@@ -209,6 +223,8 @@ describe('Dynamic Content Matching E2E (Phase 1)', () => {
 
   describe('Query Parameter Matching', () => {
     it('should match multiple query params and return detailed data', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(fixtures.scenarist.config.headers.testId, 'query-match-test-1')
@@ -232,6 +248,8 @@ describe('Dynamic Content Matching E2E (Phase 1)', () => {
     });
 
     it('should match single query param when subset matches', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(fixtures.scenarist.config.headers.testId, 'query-match-test-2')
@@ -252,6 +270,8 @@ describe('Dynamic Content Matching E2E (Phase 1)', () => {
     });
 
     it('should not match when only one of multiple required params present', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(fixtures.scenarist.config.headers.testId, 'query-match-test-3')
@@ -273,6 +293,8 @@ describe('Dynamic Content Matching E2E (Phase 1)', () => {
     });
 
     it('should use fallback when no query params match', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(fixtures.scenarist.config.headers.testId, 'query-match-test-4')
@@ -295,6 +317,8 @@ describe('Dynamic Content Matching E2E (Phase 1)', () => {
 
   describe('First Matching Mock Wins (Precedence)', () => {
     it('should use first matching mock when multiple could match', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(fixtures.scenarist.config.headers.testId, 'precedence-test-1')
@@ -319,6 +343,8 @@ describe('Dynamic Content Matching E2E (Phase 1)', () => {
 
   describe('Test ID Isolation with Content Matching', () => {
     it('should maintain separate matching state per test ID', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       // Test ID 1: Premium tier
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)

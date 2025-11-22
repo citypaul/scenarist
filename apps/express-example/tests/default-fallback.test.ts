@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, afterAll } from 'vitest';
 import type { Express } from 'express';
 import type { ExpressScenarist } from '@scenarist/express-adapter';
 import request from 'supertest';
 import { createApp } from '../src/server.js';
+import { scenarios } from "../src/scenarios.js";
 
 const createTestFixtures = async (): Promise<{
   app: Express;
@@ -39,6 +40,8 @@ describe('Default Scenario Fallback E2E', () => {
 
   describe('Partial scenario fallback', () => {
     it('should fall back to default for unmocked endpoints in github-not-found scenario', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       // github-not-found only defines GitHub mock, not weather or stripe
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -77,6 +80,8 @@ describe('Default Scenario Fallback E2E', () => {
     });
 
     it('should fall back to default for unmocked endpoints in weather-error scenario', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       // weather-error only defines weather mock, not GitHub or stripe
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -110,6 +115,8 @@ describe('Default Scenario Fallback E2E', () => {
     });
 
     it('should fall back to default for unmocked endpoints in stripe-failure scenario', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       // stripe-failure only defines stripe mock, not GitHub or weather
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -145,6 +152,8 @@ describe('Default Scenario Fallback E2E', () => {
 
   describe('Mixed results scenario', () => {
     it('should use mixed-results scenario for defined mocks and default for others', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       // mixed-results defines GitHub (success), weather (error), and stripe (success)
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -181,6 +190,8 @@ describe('Default Scenario Fallback E2E', () => {
 
   describe('No scenario set', () => {
     it('should use default scenario for all requests when no scenario is set', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       // Don't set any scenario, just use a new test ID
       const testId = 'no-scenario-set-test';
 
@@ -211,6 +222,8 @@ describe('Default Scenario Fallback E2E', () => {
 
   describe('Scenario override then fallback', () => {
     it('should override default when active scenario has mock, then fall back for others', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(fixtures.scenarist.config.headers.testId, 'override-fallback-test')

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, afterAll } from 'vitest';
 import type { Express } from 'express';
 import type { ExpressScenarist } from '@scenarist/express-adapter';
 import request from 'supertest';
@@ -40,6 +40,8 @@ describe('Scenario Switching E2E', () => {
 
   describe('Default scenario', () => {
     it('should use default scenario when no scenario is set', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       const response = await request(fixtures.app)
         .get('/api/github/user/testuser')
         .set(fixtures.scenarist.config.headers.testId, 'default-test-1');
@@ -56,6 +58,8 @@ describe('Scenario Switching E2E', () => {
     });
 
     it('should use default scenario for weather API', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       const response = await request(fixtures.app)
         .get('/api/weather/london')
         .set(fixtures.scenarist.config.headers.testId, 'default-test-2');
@@ -70,6 +74,8 @@ describe('Scenario Switching E2E', () => {
     });
 
     it('should use default scenario for stripe payment', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       const response = await request(fixtures.app)
         .post('/api/payment')
         .set(fixtures.scenarist.config.headers.testId, 'default-test-3')
@@ -87,6 +93,8 @@ describe('Scenario Switching E2E', () => {
 
   describe('Switching to success scenario', () => {
     it('should switch to success scenario via POST /__scenario__', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       // Switch scenario - type-safe with autocomplete!
       const switchResponse = await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -117,6 +125,8 @@ describe('Scenario Switching E2E', () => {
     });
 
     it('should return success scenario data for weather', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       // Switch scenario - type-safe!
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -140,6 +150,8 @@ describe('Scenario Switching E2E', () => {
 
   describe('Switching to error scenarios', () => {
     it('should return 404 when using github-not-found scenario', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       // Switch to github-not-found scenario
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -159,6 +171,8 @@ describe('Scenario Switching E2E', () => {
     });
 
     it('should return 500 when using weather-error scenario', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       // Switch to weather-error scenario
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -178,6 +192,8 @@ describe('Scenario Switching E2E', () => {
     });
 
     it('should return 402 when using stripe-failure scenario', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       // Switch to stripe-failure scenario
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -203,6 +219,8 @@ describe('Scenario Switching E2E', () => {
 
   describe('Getting current scenario', () => {
     it('should return current scenario via GET /__scenario__', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       // Switch to a scenario
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -221,6 +239,8 @@ describe('Scenario Switching E2E', () => {
     });
 
     it('should return 404 when no scenario is set', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       const getResponse = await request(fixtures.app)
         .get(fixtures.scenarist.config.endpoints.getScenario)
         .set(fixtures.scenarist.config.headers.testId, 'no-scenario-test');

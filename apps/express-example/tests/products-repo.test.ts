@@ -65,7 +65,10 @@
 
 import { describe, it, expect } from "vitest";
 import request from "supertest";
+import type { Express } from "express";
+import type { ExpressScenarist } from "@scenarist/express-adapter";
 import { createApp } from "../src/server.js";
+import { scenarios } from "../src/scenarios.js";
 
 const createTestFixtures = async (): Promise<{
   app: Express;
@@ -92,9 +95,10 @@ const createTestFixtures = async (): Promise<{
 const fixtures = await createTestFixtures();
 
 describe("Products with Repository Pattern", () => {
-  
+
 
   // Start MSW for HTTP mocking
+  if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
   fixtures.scenarist.start();
 
   /**

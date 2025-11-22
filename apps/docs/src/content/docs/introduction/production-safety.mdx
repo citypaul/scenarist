@@ -1,0 +1,213 @@
+---
+title: Production Safety
+description: How Scenarist ensures zero test code in production bundles
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Scenarist is **safe to use in production** - your test mocking code will never reach production users.
+
+## How It Works
+
+When you deploy to production with `NODE_ENV=production`, Scenarist automatically returns `undefined` without loading any test code. Your bundler (Webpack, Vite, esbuild, etc.) then performs **tree-shaking** to eliminate all Scenarist code from your production bundle.
+
+```typescript
+import { createScenarist } from '@scenarist/express-adapter';
+import { scenarios } from './scenarios';
+
+// In production: returns undefined
+// In development/test: returns working Scenarist instance
+export const scenarist = createScenarist({
+  enabled: true,
+  scenarios,
+});
+```
+
+### The Production Wrapper Pattern
+
+All Scenarist adapters use a **production wrapper** that checks `NODE_ENV` before loading any test code:
+
+```typescript
+// Simplified view of what happens inside createScenarist()
+export const createScenarist = (options) => {
+  if (process.env.NODE_ENV === 'production') {
+    return undefined;  // ← Returns immediately, no test code loaded
+  }
+
+  // Development/test: load implementation
+  return createScenaristImpl(options);
+};
+```
+
+This pattern ensures:
+- ✅ **Zero runtime impact** - Production code paths never execute test logic
+- ✅ **Automatic tree-shaking** - Bundlers eliminate dead code
+- ✅ **No configuration needed** - Works automatically based on NODE_ENV
+- ✅ **Type-safe** - TypeScript enforces null checks via `| undefined` return type
+
+## Bundle Size Impact
+
+**Before tree-shaking:** Adding Scenarist to your codebase increases bundle size by ~300KB
+
+**After tree-shaking:** Production bundles contain **zero Scenarist code** (~0KB impact)
+
+### Verification
+
+You can verify tree-shaking is working by analyzing your production bundle:
+
+<Aside type="tip" title="Webpack Bundle Analyzer">
+```bash
+npm install --save-dev webpack-bundle-analyzer
+```
+
+Check if `scenarist` or `msw` appear in your production bundle analysis.
+</Aside>
+
+```bash
+# Build for production
+NODE_ENV=production npm run build
+
+# Analyze bundle (framework-specific commands)
+npx webpack-bundle-analyzer dist/stats.json  # Webpack
+vite-bundle-visualizer dist                   # Vite
+```
+
+**Expected result:** No Scenarist or MSW code in production bundles.
+
+## Type Safety
+
+The return type `ExpressScenarist<T> | undefined` (or equivalent for your adapter) forces you to handle the production case:
+
+```typescript
+// TypeScript enforces null checks
+if (!scenarist) {
+  // Production mode - scenarist is undefined
+  return;
+}
+
+// Development/test mode - scenarist is defined
+scenarist.start();
+```
+
+This prevents accidentally calling test methods in production code.
+
+## Framework-Specific Notes
+
+### Express
+
+```typescript
+import { createScenarist } from '@scenarist/express-adapter';
+
+export const scenarist = await createScenarist({
+  enabled: true,
+  scenarios,
+});
+
+// Type-safe null check required
+if (scenarist) {
+  scenarist.start();  // Only runs in development/test
+}
+```
+
+### Next.js (App Router)
+
+```typescript
+import { createScenarist } from '@scenarist/nextjs-adapter/app';
+
+export const scenarist = createScenarist({
+  enabled: true,
+  scenarios,
+});
+
+// Singleton pattern handles production automatically
+// Returns same undefined instance on every call in production
+```
+
+### Next.js (Pages Router)
+
+```typescript
+import { createScenarist } from '@scenarist/nextjs-adapter/pages';
+
+export const scenarist = createScenarist({
+  enabled: true,
+  scenarios,
+});
+
+// Same production wrapper pattern
+```
+
+## Common Questions
+
+### Does Scenarist run in production if I forget NODE_ENV?
+
+**No.** Even without `NODE_ENV=production`, Scenarist only activates when explicitly started. The `scenarist?.start()` call is typically in development server setup, not production runtime.
+
+However, **you should always set NODE_ENV=production** for:
+- Optimal performance
+- Correct framework behavior
+- Automatic tree-shaking
+
+### What about CI/CD environments?
+
+CI/CD environments should use:
+- `NODE_ENV=test` for running tests
+- `NODE_ENV=production` for building production bundles
+
+Scenarist works in both modes:
+- **Test mode:** Full functionality for E2E tests
+- **Production mode:** Returns undefined, enabling tree-shaking
+
+### Can I verify tree-shaking before deploying?
+
+Yes! See the [Verification Guide](/reference/verification) for:
+- Bundle analysis tools
+- Size comparison techniques
+- Automated verification scripts
+
+### What if tree-shaking fails?
+
+If your bundler doesn't tree-shake Scenarist:
+
+1. **Check NODE_ENV:** Ensure `NODE_ENV=production` during build
+2. **Check bundler config:** Verify tree-shaking is enabled (it usually is by default)
+3. **Check sideEffects:** Scenarist marks itself as side-effect-free in package.json
+4. **File an issue:** If tree-shaking still fails, [open an issue](https://github.com/citypaul/scenarist/issues) with your bundler details
+
+## Best Practices
+
+1. **Always use `NODE_ENV=production` for production builds**
+   ```bash
+   NODE_ENV=production npm run build
+   ```
+
+2. **Add null checks where you use Scenarist**
+   ```typescript
+   if (scenarist) {
+     scenarist.start();
+   }
+   ```
+
+3. **Verify bundle size in CI/CD**
+   ```yaml
+   - name: Check bundle size
+     run: npm run build && npm run analyze
+   ```
+
+4. **Monitor production bundles**
+   - Set up bundle size budgets
+   - Alert on unexpected size increases
+   - Review bundle composition regularly
+
+## Summary
+
+Scenarist is designed for production safety:
+
+| Aspect | Guarantee |
+|--------|-----------|
+| Production runtime | Zero test code execution |
+| Bundle size | Zero Scenarist code after tree-shaking |
+| Configuration | No environment-specific config needed |
+| Type safety | TypeScript enforces null checks |
+| Performance | No runtime overhead in production |
+
+**The bottom line:** Scenarist's production wrapper + tree-shaking = zero production impact.

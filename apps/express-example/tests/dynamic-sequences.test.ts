@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, afterAll } from 'vitest';
 import type { Express } from 'express';
 import type { ExpressScenarist } from '@scenarist/express-adapter';
 import request from 'supertest';
 import { createApp } from '../src/server.js';
+import { scenarios } from "../src/scenarios.js";
 
 const createTestFixtures = async (): Promise<{
   app: Express;
@@ -39,6 +40,8 @@ describe('Dynamic Response Sequences E2E (Phase 2)', () => {
 
   describe('Basic Sequence Progression', () => {
     it('should return responses in sequence order (pending → processing → complete)', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       // Switch to polling scenario (already registered in scenarios.ts)
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -81,6 +84,8 @@ describe('Dynamic Response Sequences E2E (Phase 2)', () => {
 
   describe('Repeat Mode: cycle', () => {
     it('should cycle back to first response after sequence ends', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       // Switch to cycling scenario (already registered in scenarios.ts)
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -120,6 +125,8 @@ describe('Dynamic Response Sequences E2E (Phase 2)', () => {
 
   describe('Repeat Mode: none (with exhaustion)', () => {
     it('should fallback to next mock after sequence exhausted', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       // Switch to payment limited scenario (already registered in scenarios.ts)
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -167,6 +174,8 @@ describe('Dynamic Response Sequences E2E (Phase 2)', () => {
 
   describe('Test ID Isolation', () => {
     it('should maintain independent sequence positions for different test IDs', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       // Test ID A: Switch to scenario (already registered in scenarios.ts)
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)

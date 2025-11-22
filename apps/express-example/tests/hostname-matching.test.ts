@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, afterAll } from 'vitest';
 import type { Express } from 'express';
 import type { ExpressScenarist } from '@scenarist/express-adapter';
 import request from 'supertest';
@@ -53,6 +53,8 @@ describe('Hostname Matching - Express', () => {
    * Should match requests to ANY hostname (localhost, api.github.com, api.stripe.com, etc.)
    */
   it('should match pathname-only pattern at ANY hostname', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(fixtures.scenarist.config.headers.testId, 'hostname-test-1')
@@ -75,6 +77,8 @@ describe('Hostname Matching - Express', () => {
    * Should ONLY match api.github.com requests
    */
   it('should match full URL pattern ONLY for GitHub hostname', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(fixtures.scenarist.config.headers.testId, 'hostname-test-2')
@@ -98,6 +102,8 @@ describe('Hostname Matching - Express', () => {
    * Should ONLY match api.stripe.com requests
    */
   it('should match full URL pattern ONLY for Stripe hostname', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(fixtures.scenarist.config.headers.testId, 'hostname-test-3')
@@ -121,6 +127,8 @@ describe('Hostname Matching - Express', () => {
    * Should match the pathname pattern at ANY hostname (MSW weak comparison)
    */
   it('should match native RegExp pattern at ANY hostname', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(fixtures.scenarist.config.headers.testId, 'hostname-test-4')
@@ -143,6 +151,8 @@ describe('Hostname Matching - Express', () => {
    * Should extract params AND match ANY hostname
    */
   it('should extract path params from pathname pattern (origin-agnostic)', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(fixtures.scenarist.config.headers.testId, 'hostname-test-5')
@@ -166,6 +176,8 @@ describe('Hostname Matching - Express', () => {
    * Should extract params but ONLY match api.github.com
    */
   it('should extract path params from full URL pattern (hostname-specific)', async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(fixtures.scenarist.config.headers.testId, 'hostname-test-6')

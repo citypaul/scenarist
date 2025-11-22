@@ -37,6 +37,7 @@ export default defineConfig({
             { label: "How it works", slug: "introduction/overview" },
             { label: "Dynamic Capabilities", slug: "introduction/capabilities" },
             { label: "Installation", slug: "introduction/installation" },
+            { label: "Production Safety", slug: "introduction/production-safety" },
             { label: "Testing with Playwright", slug: "introduction/testing-with-playwright" },
             { label: "Scenario Format", slug: "introduction/scenario-format" },
             { label: "Declarative Design", slug: "introduction/declarative-design" },

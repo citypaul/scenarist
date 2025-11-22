@@ -1,6 +1,9 @@
 import request from "supertest";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
+import type { Express, Request, Response } from "express";
+import type { ExpressScenarist } from "@scenarist/express-adapter";
 import { createApp } from "../src/server.js";
+import { scenarios } from "../src/scenarios.js";
 
 const createTestFixtures = async (): Promise<{
   app: Express;
@@ -37,6 +40,8 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
 
   describe("Shopping Cart - Complete Journey", () => {
     it("should capture items and inject into cart response", async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(fixtures.scenarist.config.headers.testId, "cart-test-1")
@@ -70,6 +75,8 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
 
   describe("Multi-Step Form - Complete Journey", () => {
     it("should accumulate state across form steps and inject in final confirmation", async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(fixtures.scenarist.config.headers.testId, "form-test-1")
@@ -114,6 +121,8 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
 
   describe("State Reset on Scenario Switch", () => {
     it("should reset cart state when switching scenarios", async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(fixtures.scenarist.config.headers.testId, "reset-test-1")
@@ -145,6 +154,8 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
     });
 
     it("should NOT reset state when scenario switch fails", async () => {
+      if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       // Scenario already registered in scenarios.ts
 
       const router = fixtures.app._router as {
@@ -153,7 +164,7 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
       if (
         !router?.stack.some((layer) => layer.route?.path === "/api/temp-data")
       ) {
-        fixtures.app.post("/api/temp-data", async (req, res) => {
+        fixtures.app.post("/api/temp-data", async (req: Request, res: Response) => {
           try {
             const response = await fetch("https://api.example.com/temp-data", {
               method: "POST",
@@ -167,7 +178,7 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
           }
         });
 
-        fixtures.app.get("/api/temp-data", async (_req, res) => {
+        fixtures.app.get("/api/temp-data", async (_req: Request, res: Response) => {
           try {
             const response = await fetch("https://api.example.com/temp-data");
             const data = await response.json();
@@ -206,6 +217,8 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
 
   describe("State Isolation Between Test IDs", () => {
     it("should maintain independent cart state for different test IDs", async () => {
+    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
+
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(fixtures.scenarist.config.headers.testId, "isolation-test-A")
