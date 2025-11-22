@@ -9,10 +9,9 @@
     "start": "next start --port 3002",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "pnpm test:e2e && pnpm test:api",
+    "test": "pnpm test:e2e",
     "test:e2e": "playwright test --project=chromium",
-    "test:e2e:ui": "playwright test --project=chromium --ui",
-    "test:api": "vitest run"
+    "test:e2e:ui": "playwright test --project=chromium --ui"
   },
   "dependencies": {
     "@scenarist/nextjs-adapter": "workspace:*",
@@ -30,13 +29,10 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.4",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.1.1",
     "autoprefixer": "^10.4.22",
     "eslint": "^9.39.1",
-    "jsdom": "^27.2.0",
     "postcss": "^8.4.0",
     "tailwindcss": "^4.1.17",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.8"
+    "typescript": "^5.9.3"
   }
 }
