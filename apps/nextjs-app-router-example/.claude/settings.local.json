@@ -53,7 +53,11 @@
       "Bash(kill:*)",
       "Bash(pnpm exec tsc:*)",
       "Bash(/dev/null echo 'Waiting for port to clear...' sleep 3 echo 'Running test...' pnpm exec playwright test tests/playwright/products-repo.spec.ts --grep 'premium pricing for premium' --reporter=line)",
-      "Bash(pnpm add:*)"
+      "Bash(pnpm add:*)",
+      "Bash(cut:*)",
+      "Bash(chmod:*)",
+      "Bash(/tmp/fix-imports.sh)",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []
