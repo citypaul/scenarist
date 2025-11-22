@@ -2,6 +2,28 @@
   "name": "@scenarist/playwright-helpers",
   "version": "0.1.0",
   "description": "Playwright test helpers for Scenarist scenario management",
+  "author": "Paul Hammond (citypaul) <paul@packsoftware.co.uk>",
+  "license": "MIT",
+  "homepage": "https://github.com/citypaul/scenarist#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/citypaul/scenarist.git",
+    "directory": "packages/playwright-helpers"
+  },
+  "bugs": {
+    "url": "https://github.com/citypaul/scenarist/issues"
+  },
+  "keywords": [
+    "playwright",
+    "testing",
+    "test-helpers",
+    "scenario-testing",
+    "msw",
+    "mock-service-worker",
+    "e2e-testing",
+    "integration-testing",
+    "typescript"
+  ],
   "type": "module",
   "exports": {
     ".": {
@@ -10,7 +32,9 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc",

@@ -2,6 +2,31 @@
   "name": "@scenarist/nextjs-adapter",
   "version": "0.0.0",
   "description": "Next.js adapter for Scenarist (Pages Router and App Router)",
+  "author": "Paul Hammond (citypaul) <paul@packsoftware.co.uk>",
+  "license": "MIT",
+  "homepage": "https://github.com/citypaul/scenarist#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/citypaul/scenarist.git",
+    "directory": "packages/nextjs-adapter"
+  },
+  "bugs": {
+    "url": "https://github.com/citypaul/scenarist/issues"
+  },
+  "keywords": [
+    "nextjs",
+    "next",
+    "app-router",
+    "pages-router",
+    "react-server-components",
+    "msw",
+    "testing",
+    "scenario-testing",
+    "mock-service-worker",
+    "integration-testing",
+    "e2e-testing",
+    "typescript"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -19,6 +44,11 @@
       "import": "./dist/app/index.js"
     }
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",

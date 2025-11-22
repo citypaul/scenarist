@@ -2,6 +2,27 @@
   "name": "@scenarist/msw-adapter",
   "version": "0.0.0",
   "description": "Framework-agnostic MSW integration for Scenarist",
+  "author": "Paul Hammond (citypaul) <paul@packsoftware.co.uk>",
+  "license": "MIT",
+  "homepage": "https://github.com/citypaul/scenarist#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/citypaul/scenarist.git",
+    "directory": "packages/msw-adapter"
+  },
+  "bugs": {
+    "url": "https://github.com/citypaul/scenarist/issues"
+  },
+  "keywords": [
+    "msw",
+    "mock-service-worker",
+    "testing",
+    "scenario-testing",
+    "mocking",
+    "http-mocking",
+    "integration-testing",
+    "typescript"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -11,6 +32,11 @@
       "import": "./dist/index.js"
     }
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",

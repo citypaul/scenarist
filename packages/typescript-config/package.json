@@ -1,8 +1,25 @@
 {
   "name": "@scenarist/typescript-config",
   "version": "0.0.0",
-  "private": true,
+  "description": "Shared TypeScript configuration for Scenarist packages",
+  "author": "Paul Hammond (citypaul) <paul@packsoftware.co.uk>",
   "license": "MIT",
+  "homepage": "https://github.com/citypaul/scenarist#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/citypaul/scenarist.git",
+    "directory": "packages/typescript-config"
+  },
+  "bugs": {
+    "url": "https://github.com/citypaul/scenarist/issues"
+  },
+  "keywords": [
+    "typescript",
+    "tsconfig",
+    "configuration",
+    "typescript-config"
+  ],
+  "private": true,
   "publishConfig": {
     "access": "public"
   }
