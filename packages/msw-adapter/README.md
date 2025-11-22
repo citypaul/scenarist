@@ -1,6 +1,38 @@
 # @scenarist/msw-adapter
 
-Framework-agnostic MSW integration for Scenarist.
+**⚠️ INTERNAL PACKAGE - DO NOT INSTALL DIRECTLY**
+
+This package is an internal implementation detail of Scenarist and is **NOT published to npm**. It exists as a workspace dependency used by framework adapters.
+
+## Why is this package private?
+
+**You should install a framework adapter instead:**
+- ✅ `@scenarist/express-adapter` - For Express applications
+- ✅ `@scenarist/nextjs-adapter` - For Next.js applications
+- ✅ `@scenarist/core` - For building custom adapters
+
+**This package is private because:**
+
+1. **Not user-facing** - Users never import from `@scenarist/msw-adapter` directly
+2. **Implementation detail** - Provides MSW integration layer used internally by framework adapters
+3. **Prevents confusion** - Publishing would mislead users into thinking they should install it
+4. **Version coupling** - Framework adapters control which msw-adapter version they use
+5. **Simpler maintenance** - Internal packages don't need semver/breaking change coordination
+6. **Cleaner API surface** - Framework adapters ARE the public API, msw-adapter is hidden complexity
+
+**Dependency structure:**
+```
+Your App
+  ├─ @scenarist/express-adapter (public, install this!)
+  │   └─ @scenarist/msw-adapter (private, workspace:*)
+  │       └─ @scenarist/core (public)
+  │
+  └─ @scenarist/nextjs-adapter (public, install this!)
+      └─ @scenarist/msw-adapter (private, workspace:*)
+          └─ @scenarist/core (public)
+```
+
+---
 
 ## What is Scenarist?
 
@@ -16,35 +48,15 @@ Your App → Scenarist Adapter (Express/Next.js) → MSW Adapter → MSW → Int
 
 Converts Scenarist's serializable `ScenaristMock` data into MSW `HttpHandler` instances at runtime, enabling Scenarist to work with any Node.js framework.
 
-**Status:** ✅ Stable - Used by all Scenarist adapters (Express, Next.js, etc.)
+**Status:** ✅ Stable - Used internally by all Scenarist framework adapters
 
-## Why Use This Package?
+---
 
-**Framework-Agnostic**
-- Works with Express, Fastify, Next.js, Remix, any Node.js framework
-- Zero framework dependencies (except MSW types)
-- Build custom adapters for any framework
+## For Framework Adapter Developers
 
-**Declarative Mocks**
-- Mock definitions use declarative patterns (no imperative functions)
-- Most mocks CAN be stored as JSON (when not using native RegExp)
-- Store in Redis for distributed testing (using serialized regex form)
-- Version control scenarios as files
-- Share scenarios across teams
+If you're building a custom framework adapter for Scenarist, this package provides the MSW integration you need. Otherwise, you should use one of the existing public adapters listed above.
 
-**Powerful Matching**
-- URL patterns: exact, wildcards (`*/api/*`), path params (`/users/:id`)
-- Request content matching: body, headers, query params
-- Specificity-based selection
-- Dynamic responses based on request content
-
-**Complete MSW Integration**
-- Single dynamic handler routes to correct scenario
-- Automatic test ID isolation
-- Default scenario fallback
-- Strict mode for unmocked requests
-
-## What is this package?
+## What does this package provide?
 
 The MSW adapter is the bridge between Scenarist's serializable mock definitions and MSW's HTTP interception. It provides:
 
