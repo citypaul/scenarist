@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { buildConfig } from '../src/domain/config-builder.js';
-import type { ScenarioDefinition, ScenariosObject } from '../src/types/index.js';
+import type { ScenaristScenario, ScenaristScenarios } from '../src/types/index.js';
 
-const mockDefaultScenario: ScenarioDefinition = {
+const mockDefaultScenario: ScenaristScenario = {
   id: 'default',
   name: 'Default Scenario',
   description: 'Default test scenario',
@@ -11,7 +11,7 @@ const mockDefaultScenario: ScenarioDefinition = {
 
 const mockScenarios = {
   default: mockDefaultScenario,
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 describe('buildConfig', () => {
   it('should apply default values for missing config properties', () => {
@@ -120,7 +120,7 @@ describe('buildConfig', () => {
       const scenariosWithoutDefault = {
         baseline: { id: 'baseline', name: 'Baseline', description: 'Test', mocks: [] },
         premium: { id: 'premium', name: 'Premium', description: 'Test', mocks: [] },
-      } as const satisfies ScenariosObject;
+      } as const satisfies ScenaristScenarios;
 
       expect(() =>
         buildConfig({
@@ -134,7 +134,7 @@ describe('buildConfig', () => {
       const scenariosWithDefault = {
         default: { id: 'default', name: 'Default', description: 'Test', mocks: [] },
         premium: { id: 'premium', name: 'Premium', description: 'Test', mocks: [] },
-      } as const satisfies ScenariosObject;
+      } as const satisfies ScenaristScenarios;
 
       expect(() =>
         buildConfig({
@@ -147,7 +147,7 @@ describe('buildConfig', () => {
     it('should accept scenarios object with only "default" key', () => {
       const scenariosOnlyDefault = {
         default: { id: 'default', name: 'Default', description: 'Test', mocks: [] },
-      } as const satisfies ScenariosObject;
+      } as const satisfies ScenaristScenarios;
 
       expect(() =>
         buildConfig({

@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import type { NextApiRequest } from 'next';
-import { buildConfig, type ScenarioDefinition } from '@scenarist/core';
+import { buildConfig, type ScenaristScenario } from '@scenarist/core';
 import { PagesRequestContext } from '../../src/pages/context.js';
 
 describe('PagesRequestContext', () => {
-  const defaultScenario: ScenarioDefinition = {
+  const defaultScenario: ScenaristScenario = {
     id: 'default',
     name: 'Default',
     description: 'Default test scenario',

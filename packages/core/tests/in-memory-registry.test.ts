@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { InMemoryScenarioRegistry } from '../src/adapters/in-memory-registry.js';
-import type { ScenarioDefinition } from '../src/types/index.js';
+import type { ScenaristScenario } from '../src/types/index.js';
 
-const createTestScenarioDefinition = (
+const createTestScenaristScenario = (
   id: string,
   name: string = 'Test Scenario',
-): ScenarioDefinition => ({
+): ScenaristScenario => ({
   id,
   name,
   description: `Description for ${name}`,
@@ -25,7 +25,7 @@ describe('InMemoryScenarioRegistry', () => {
   describe('register', () => {
     it('should register a new scenario definition', () => {
       const registry = new InMemoryScenarioRegistry();
-      const definition = createTestScenarioDefinition('test-1', 'Test 1');
+      const definition = createTestScenaristScenario('test-1', 'Test 1');
 
       registry.register(definition);
 
@@ -35,8 +35,8 @@ describe('InMemoryScenarioRegistry', () => {
 
     it('should overwrite existing scenario with same ID', () => {
       const registry = new InMemoryScenarioRegistry();
-      const definition1 = createTestScenarioDefinition('test', 'First');
-      const definition2 = createTestScenarioDefinition('test', 'Second');
+      const definition1 = createTestScenaristScenario('test', 'First');
+      const definition2 = createTestScenaristScenario('test', 'Second');
 
       registry.register(definition1);
       registry.register(definition2);
@@ -49,7 +49,7 @@ describe('InMemoryScenarioRegistry', () => {
   describe('get', () => {
     it('should retrieve registered scenario by ID', () => {
       const registry = new InMemoryScenarioRegistry();
-      const definition = createTestScenarioDefinition('test', 'Test');
+      const definition = createTestScenaristScenario('test', 'Test');
       registry.register(definition);
 
       const retrieved = registry.get('test');
@@ -69,7 +69,7 @@ describe('InMemoryScenarioRegistry', () => {
   describe('has', () => {
     it('should return true for registered scenario', () => {
       const registry = new InMemoryScenarioRegistry();
-      const definition = createTestScenarioDefinition('test', 'Test');
+      const definition = createTestScenaristScenario('test', 'Test');
       registry.register(definition);
 
       expect(registry.has('test')).toBe(true);
@@ -85,8 +85,8 @@ describe('InMemoryScenarioRegistry', () => {
   describe('list', () => {
     it('should list all registered scenarios', () => {
       const registry = new InMemoryScenarioRegistry();
-      const def1 = createTestScenarioDefinition('scenario-1', 'Scenario 1');
-      const def2 = createTestScenarioDefinition('scenario-2', 'Scenario 2');
+      const def1 = createTestScenaristScenario('scenario-1', 'Scenario 1');
+      const def2 = createTestScenaristScenario('scenario-2', 'Scenario 2');
 
       registry.register(def1);
       registry.register(def2);
@@ -108,7 +108,7 @@ describe('InMemoryScenarioRegistry', () => {
 
     it('should return immutable array', () => {
       const registry = new InMemoryScenarioRegistry();
-      const definition = createTestScenarioDefinition('test', 'Test');
+      const definition = createTestScenaristScenario('test', 'Test');
       registry.register(definition);
 
       const scenarios = registry.list();
@@ -121,7 +121,7 @@ describe('InMemoryScenarioRegistry', () => {
   describe('unregister', () => {
     it('should remove scenario from registry', () => {
       const registry = new InMemoryScenarioRegistry();
-      const definition = createTestScenarioDefinition('test', 'Test');
+      const definition = createTestScenaristScenario('test', 'Test');
       registry.register(definition);
 
       registry.unregister('test');
@@ -138,8 +138,8 @@ describe('InMemoryScenarioRegistry', () => {
 
     it('should not affect other registered scenarios', () => {
       const registry = new InMemoryScenarioRegistry();
-      const def1 = createTestScenarioDefinition('test-1', 'Test 1');
-      const def2 = createTestScenarioDefinition('test-2', 'Test 2');
+      const def1 = createTestScenaristScenario('test-1', 'Test 1');
+      const def2 = createTestScenaristScenario('test-2', 'Test 2');
 
       registry.register(def1);
       registry.register(def2);

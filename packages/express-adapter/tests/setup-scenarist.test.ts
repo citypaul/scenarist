@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest';
 import express from 'express';
 import request from 'supertest';
 import { createScenarist } from '../src/setup/setup-scenarist.js';
-import type { ScenarioDefinition, ScenariosObject } from '@scenarist/core';
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/core';
 
-const mockDefaultScenario: ScenarioDefinition = {
+const mockDefaultScenario: ScenaristScenario = {
   id: 'default',
   name: 'Default Scenario',
   description: 'Default test scenario',
@@ -266,7 +266,7 @@ const testScenarios = {
       },
     ],
   },
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 describe('createScenarist', () => {
   it('should return object with all expected properties', async () => {

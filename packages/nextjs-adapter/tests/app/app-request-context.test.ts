@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { buildConfig, type ScenarioDefinition } from '@scenarist/core';
+import { buildConfig, type ScenaristScenario } from '@scenarist/core';
 import { AppRequestContext } from '../../src/app/context.js';
 
 describe('AppRequestContext', () => {
-  const defaultScenario: ScenarioDefinition = {
+  const defaultScenario: ScenaristScenario = {
     id: 'default',
     name: 'Default',
     description: 'Default test scenario',

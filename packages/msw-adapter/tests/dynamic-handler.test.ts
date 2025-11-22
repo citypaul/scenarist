@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { setupServer } from 'msw/node';
 import { createDynamicHandler } from '../src/handlers/dynamic-handler.js';
-import type { ActiveScenario, ScenarioDefinition } from '@scenarist/core';
+import type { ActiveScenario, ScenaristScenario } from '@scenarist/core';
 import { createResponseSelector } from '@scenarist/core';
 import { mockDefinition, mockScenario } from './factories.js';
 
@@ -11,7 +11,7 @@ describe('Dynamic Handler', () => {
 
   describe('Basic handler setup', () => {
     it('should return mocked response when mock matches request', async () => {
-      const scenarios = new Map<string, ScenarioDefinition>([
+      const scenarios = new Map<string, ScenaristScenario>([
         [
           'happy-path',
           mockScenario({
@@ -29,13 +29,13 @@ describe('Dynamic Handler', () => {
       const getActiveScenario = (): ActiveScenario => ({
         scenarioId: 'happy-path',
       });
-      const getScenarioDefinition = (scenarioId: string) =>
+      const getScenaristScenario = (scenarioId: string) =>
         scenarios.get(scenarioId);
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenarioDefinition,
+        getScenaristScenario,
         strictMode: false,
         responseSelector,
       });
@@ -55,7 +55,7 @@ describe('Dynamic Handler', () => {
 
   describe('Default scenario fallback', () => {
     it('should fall back to default scenario when no mock in active scenario', async () => {
-      const scenarios = new Map<string, ScenarioDefinition>([
+      const scenarios = new Map<string, ScenaristScenario>([
         ['empty-scenario', mockScenario({ id: 'empty-scenario' })],
         [
           'default',
@@ -74,13 +74,13 @@ describe('Dynamic Handler', () => {
       const getActiveScenario = (): ActiveScenario => ({
         scenarioId: 'empty-scenario',
       });
-      const getScenarioDefinition = (scenarioId: string) =>
+      const getScenaristScenario = (scenarioId: string) =>
         scenarios.get(scenarioId);
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenarioDefinition,
+        getScenaristScenario,
         strictMode: false,
         responseSelector,
       });
@@ -102,7 +102,7 @@ describe('Dynamic Handler', () => {
       // - premiumUser scenario has mock with match: { headers: { 'x-user-tier': 'premium' } }
       // - Request comes with 'x-user-tier': 'standard' (doesn't match)
       // - Should fall back to default mock (not passthrough)
-      const scenarios = new Map<string, ScenarioDefinition>([
+      const scenarios = new Map<string, ScenaristScenario>([
         [
           'default',
           mockScenario({
@@ -139,13 +139,13 @@ describe('Dynamic Handler', () => {
       const getActiveScenario = (): ActiveScenario => ({
         scenarioId: 'premiumUser',
       });
-      const getScenarioDefinition = (scenarioId: string) =>
+      const getScenaristScenario = (scenarioId: string) =>
         scenarios.get(scenarioId);
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenarioDefinition,
+        getScenaristScenario,
         strictMode: false,
         responseSelector,
       });
@@ -166,7 +166,7 @@ describe('Dynamic Handler', () => {
     });
 
     it('should use default scenario when no active scenario is set', async () => {
-      const scenarios = new Map<string, ScenarioDefinition>([
+      const scenarios = new Map<string, ScenaristScenario>([
         [
           'default',
           mockScenario({
@@ -182,13 +182,13 @@ describe('Dynamic Handler', () => {
 
       const getTestId = () => 'test-123';
       const getActiveScenario = () => undefined;
-      const getScenarioDefinition = (scenarioId: string) =>
+      const getScenaristScenario = (scenarioId: string) =>
         scenarios.get(scenarioId);
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenarioDefinition,
+        getScenaristScenario,
         strictMode: false,
         responseSelector,
       });
@@ -210,12 +210,12 @@ describe('Dynamic Handler', () => {
     it('should passthrough when no mock found and strictMode is false', async () => {
       const getTestId = () => 'test-123';
       const getActiveScenario = () => undefined;
-      const getScenarioDefinition = () => undefined;
+      const getScenaristScenario = () => undefined;
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenarioDefinition,
+        getScenaristScenario,
         strictMode: false,
         responseSelector,
       });
@@ -233,12 +233,12 @@ describe('Dynamic Handler', () => {
     it('should return error when no mock found and strictMode is true', async () => {
       const getTestId = () => 'test-123';
       const getActiveScenario = () => undefined;
-      const getScenarioDefinition = () => undefined;
+      const getScenaristScenario = () => undefined;
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenarioDefinition,
+        getScenaristScenario,
         strictMode: true,
         responseSelector,
       });
@@ -256,7 +256,7 @@ describe('Dynamic Handler', () => {
 
   describe('Request context extraction (body, headers, query)', () => {
     it('should match mock based on request body content', async () => {
-      const scenarios = new Map<string, ScenarioDefinition>([
+      const scenarios = new Map<string, ScenaristScenario>([
         [
           'premium-user',
           mockScenario({
@@ -277,13 +277,13 @@ describe('Dynamic Handler', () => {
       const getActiveScenario = (): ActiveScenario => ({
         scenarioId: 'premium-user',
       });
-      const getScenarioDefinition = (scenarioId: string) =>
+      const getScenaristScenario = (scenarioId: string) =>
         scenarios.get(scenarioId);
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenarioDefinition,
+        getScenaristScenario,
         strictMode: false,
         responseSelector,
       });
@@ -305,7 +305,7 @@ describe('Dynamic Handler', () => {
     });
 
     it('should match mock based on request headers', async () => {
-      const scenarios = new Map<string, ScenarioDefinition>([
+      const scenarios = new Map<string, ScenaristScenario>([
         [
           'auth-scenario',
           mockScenario({
@@ -326,13 +326,13 @@ describe('Dynamic Handler', () => {
       const getActiveScenario = (): ActiveScenario => ({
         scenarioId: 'auth-scenario',
       });
-      const getScenarioDefinition = (scenarioId: string) =>
+      const getScenaristScenario = (scenarioId: string) =>
         scenarios.get(scenarioId);
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenarioDefinition,
+        getScenaristScenario,
         strictMode: false,
         responseSelector,
       });
@@ -353,7 +353,7 @@ describe('Dynamic Handler', () => {
 
     it('should handle non-JSON request body', async () => {
       // This test ensures the catch block at line 39 is executed
-      const scenarios = new Map<string, ScenarioDefinition>([
+      const scenarios = new Map<string, ScenaristScenario>([
         [
           'upload-scenario',
           mockScenario({
@@ -373,13 +373,13 @@ describe('Dynamic Handler', () => {
       const getActiveScenario = (): ActiveScenario => ({
         scenarioId: 'upload-scenario',
       });
-      const getScenarioDefinition = (scenarioId: string) =>
+      const getScenaristScenario = (scenarioId: string) =>
         scenarios.get(scenarioId);
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenarioDefinition,
+        getScenaristScenario,
         strictMode: false,
         responseSelector,
       });
@@ -403,7 +403,7 @@ describe('Dynamic Handler', () => {
 
     it('should extract query parameters from request', async () => {
       // This test ensures the forEach loop at line 56 is executed
-      const scenarios = new Map<string, ScenarioDefinition>([
+      const scenarios = new Map<string, ScenaristScenario>([
         [
           'search-scenario',
           mockScenario({
@@ -424,13 +424,13 @@ describe('Dynamic Handler', () => {
       const getActiveScenario = (): ActiveScenario => ({
         scenarioId: 'search-scenario',
       });
-      const getScenarioDefinition = (scenarioId: string) =>
+      const getScenaristScenario = (scenarioId: string) =>
         scenarios.get(scenarioId);
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenarioDefinition,
+        getScenaristScenario,
         strictMode: false,
         responseSelector,
       });
@@ -450,7 +450,7 @@ describe('Dynamic Handler', () => {
 
     it('should skip default scenario mocks that do not match method', async () => {
       // This test ensures the false branch of line 94 is executed
-      const scenarios = new Map<string, ScenarioDefinition>([
+      const scenarios = new Map<string, ScenaristScenario>([
         [
           'default',
           mockScenario({
@@ -485,13 +485,13 @@ describe('Dynamic Handler', () => {
       const getActiveScenario = (): ActiveScenario => ({
         scenarioId: 'post-scenario',
       });
-      const getScenarioDefinition = (scenarioId: string) =>
+      const getScenaristScenario = (scenarioId: string) =>
         scenarios.get(scenarioId);
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenarioDefinition,
+        getScenaristScenario,
         strictMode: false,
         responseSelector,
       });
@@ -515,7 +515,7 @@ describe('Dynamic Handler', () => {
 
     it('should handle active scenario definition not found', async () => {
       // This test ensures line 104 false branch is executed
-      const scenarios = new Map<string, ScenarioDefinition>([
+      const scenarios = new Map<string, ScenaristScenario>([
         [
           'default',
           mockScenario({
@@ -535,13 +535,13 @@ describe('Dynamic Handler', () => {
       const getActiveScenario = (): ActiveScenario => ({
         scenarioId: 'non-existent-scenario', // Active scenario doesn't exist
       });
-      const getScenarioDefinition = (scenarioId: string) =>
+      const getScenaristScenario = (scenarioId: string) =>
         scenarios.get(scenarioId); // Will return undefined for 'non-existent-scenario'
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenarioDefinition,
+        getScenaristScenario,
         strictMode: false,
         responseSelector,
       });
@@ -561,7 +561,7 @@ describe('Dynamic Handler', () => {
 
     it('should skip active scenario mocks that do not match URL', async () => {
       // This test ensures the false branch of line 108 is executed
-      const scenarios = new Map<string, ScenarioDefinition>([
+      const scenarios = new Map<string, ScenaristScenario>([
         [
           'default',
           mockScenario({
@@ -596,13 +596,13 @@ describe('Dynamic Handler', () => {
       const getActiveScenario = (): ActiveScenario => ({
         scenarioId: 'products-scenario',
       });
-      const getScenarioDefinition = (scenarioId: string) =>
+      const getScenaristScenario = (scenarioId: string) =>
         scenarios.get(scenarioId);
 
       const handler = createDynamicHandler({
         getTestId,
         getActiveScenario,
-        getScenarioDefinition,
+        getScenaristScenario,
         strictMode: false,
         responseSelector,
       });

@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { createScenarioManager } from "../src/domain/scenario-manager.js";
 import type { ScenarioRegistry, ScenarioStore, StateManager, SequenceTracker, SequencePosition } from "../src/ports/index.js";
-import type { ActiveScenario, ScenarioDefinition } from "../src/types/index.js";
+import type { ActiveScenario, ScenaristScenario } from "../src/types/index.js";
 
 // In-memory registry for testing (simple Map-based implementation)
 const createTestRegistry = (): ScenarioRegistry => {
-  const registry = new Map<string, ScenarioDefinition>();
+  const registry = new Map<string, ScenaristScenario>();
 
   return {
     register: (definition) => registry.set(definition.id, definition),
@@ -105,10 +105,10 @@ const createTestSequenceTracker = (): SequenceTracker => {
 };
 
 // Test scenario definition factory
-const createTestScenarioDefinition = (
+const createTestScenaristScenario = (
   id: string,
   name: string = "Test Scenario"
-): ScenarioDefinition => ({
+): ScenaristScenario => ({
   id,
   name,
   description: `Description for ${name}`,
@@ -143,7 +143,7 @@ describe("ScenarioManager", () => {
   describe("registerScenario", () => {
     it("should register a new scenario", () => {
       const { manager } = createTestSetup();
-      const definition = createTestScenarioDefinition(
+      const definition = createTestScenaristScenario(
         "happy-path",
         "Happy Path"
       );
@@ -156,7 +156,7 @@ describe("ScenarioManager", () => {
 
     it("should delegate to registry", () => {
       const { manager, registry } = createTestSetup();
-      const definition = createTestScenarioDefinition("test", "Test");
+      const definition = createTestScenaristScenario("test", "Test");
 
       manager.registerScenario(definition);
 
@@ -165,8 +165,8 @@ describe("ScenarioManager", () => {
 
     it("should throw error when registering duplicate scenario ID", () => {
       const { manager } = createTestSetup();
-      const definition1 = createTestScenarioDefinition("duplicate", "First");
-      const definition2 = createTestScenarioDefinition("duplicate", "Second");
+      const definition1 = createTestScenaristScenario("duplicate", "First");
+      const definition2 = createTestScenaristScenario("duplicate", "Second");
 
       manager.registerScenario(definition1);
 
@@ -177,8 +177,8 @@ describe("ScenarioManager", () => {
 
     it("should not overwrite existing scenario when duplicate detected", () => {
       const { manager } = createTestSetup();
-      const definition1 = createTestScenarioDefinition("duplicate", "First");
-      const definition2 = createTestScenarioDefinition("duplicate", "Second");
+      const definition1 = createTestScenaristScenario("duplicate", "First");
+      const definition2 = createTestScenaristScenario("duplicate", "Second");
 
       manager.registerScenario(definition1);
 
@@ -194,7 +194,7 @@ describe("ScenarioManager", () => {
 
     it("should allow re-registering the exact same scenario (idempotent)", () => {
       const { manager } = createTestSetup();
-      const definition = createTestScenarioDefinition("test", "Test Scenario");
+      const definition = createTestScenaristScenario("test", "Test Scenario");
 
       manager.registerScenario(definition);
       // Re-registering the same object should not throw
@@ -207,7 +207,7 @@ describe("ScenarioManager", () => {
     describe("validation", () => {
       it("should reject scenario with unsafe ReDoS pattern in regex", () => {
         const { manager } = createTestSetup();
-        const unsafeScenario: ScenarioDefinition = {
+        const unsafeScenario: ScenaristScenario = {
           id: "unsafe-regex",
           name: "Unsafe Regex",
           description: "Scenario with ReDoS vulnerability",
@@ -234,7 +234,7 @@ describe("ScenarioManager", () => {
 
       it("should accept scenario with safe regex pattern", () => {
         const { manager } = createTestSetup();
-        const safeScenario: ScenarioDefinition = {
+        const safeScenario: ScenaristScenario = {
           id: "safe-regex",
           name: "Safe Regex",
           description: "Scenario with safe regex pattern",
@@ -264,7 +264,7 @@ describe("ScenarioManager", () => {
 
       it("should reject scenario with empty regex source", () => {
         const { manager } = createTestSetup();
-        const emptySourceScenario: ScenarioDefinition = {
+        const emptySourceScenario: ScenaristScenario = {
           id: "empty-source",
           name: "Empty Source",
           description: "Scenario with empty regex source",
@@ -291,7 +291,7 @@ describe("ScenarioManager", () => {
 
       it("should reject scenario with invalid regex flags", () => {
         const { manager } = createTestSetup();
-        const invalidFlagsScenario: ScenarioDefinition = {
+        const invalidFlagsScenario: ScenaristScenario = {
           id: "invalid-flags",
           name: "Invalid Flags",
           description: "Scenario with invalid regex flags",
@@ -318,7 +318,7 @@ describe("ScenarioManager", () => {
 
       it("should validate multiple unsafe patterns in same scenario", () => {
         const { manager } = createTestSetup();
-        const multipleUnsafeScenario: ScenarioDefinition = {
+        const multipleUnsafeScenario: ScenaristScenario = {
           id: "multiple-unsafe",
           name: "Multiple Unsafe",
           description: "Scenario with multiple unsafe patterns",
@@ -345,7 +345,7 @@ describe("ScenarioManager", () => {
 
       it("should accept regex with safe complex pattern", () => {
         const { manager } = createTestSetup();
-        const complexSafeScenario: ScenarioDefinition = {
+        const complexSafeScenario: ScenaristScenario = {
           id: "complex-safe",
           name: "Complex Safe",
           description: "Scenario with complex but safe pattern",
@@ -386,7 +386,7 @@ describe("ScenarioManager", () => {
 
       it("should accept scenario with contains string matching strategy", () => {
         const { manager } = createTestSetup();
-        const containsScenario: ScenarioDefinition = {
+        const containsScenario: ScenaristScenario = {
           id: "contains-strategy",
           name: "Contains Strategy",
           description: "Scenario with contains matching",
@@ -414,7 +414,7 @@ describe("ScenarioManager", () => {
 
       it("should accept scenario with startsWith string matching strategy", () => {
         const { manager } = createTestSetup();
-        const startsWithScenario: ScenarioDefinition = {
+        const startsWithScenario: ScenaristScenario = {
           id: "startsWith-strategy",
           name: "StartsWith Strategy",
           description: "Scenario with startsWith matching",
@@ -442,7 +442,7 @@ describe("ScenarioManager", () => {
 
       it("should accept scenario with endsWith string matching strategy", () => {
         const { manager } = createTestSetup();
-        const endsWithScenario: ScenarioDefinition = {
+        const endsWithScenario: ScenaristScenario = {
           id: "endsWith-strategy",
           name: "EndsWith Strategy",
           description: "Scenario with endsWith matching",
@@ -470,7 +470,7 @@ describe("ScenarioManager", () => {
 
       it("should accept scenario with equals string matching strategy", () => {
         const { manager } = createTestSetup();
-        const equalsScenario: ScenarioDefinition = {
+        const equalsScenario: ScenaristScenario = {
           id: "equals-strategy",
           name: "Equals Strategy",
           description: "Scenario with equals matching",
@@ -501,7 +501,7 @@ describe("ScenarioManager", () => {
   describe("switchScenario", () => {
     it("should switch to a registered scenario for a test ID", () => {
       const { manager } = createTestSetup();
-      const definition = createTestScenarioDefinition(
+      const definition = createTestScenaristScenario(
         "error-state",
         "Error State"
       );
@@ -528,7 +528,7 @@ describe("ScenarioManager", () => {
 
     it("should support scenario variants", () => {
       const { manager } = createTestSetup();
-      const definition = createTestScenarioDefinition(
+      const definition = createTestScenaristScenario(
         "with-variant",
         "With Variant"
       );
@@ -547,11 +547,11 @@ describe("ScenarioManager", () => {
 
     it("should isolate scenarios by test ID", () => {
       const { manager } = createTestSetup();
-      const definition1 = createTestScenarioDefinition(
+      const definition1 = createTestScenaristScenario(
         "scenario-1",
         "Scenario 1"
       );
-      const definition2 = createTestScenarioDefinition(
+      const definition2 = createTestScenaristScenario(
         "scenario-2",
         "Scenario 2"
       );
@@ -571,7 +571,7 @@ describe("ScenarioManager", () => {
 
     it("should store only reference not full definition", () => {
       const { manager, store } = createTestSetup();
-      const definition = createTestScenarioDefinition("test", "Test");
+      const definition = createTestScenaristScenario("test", "Test");
       manager.registerScenario(definition);
 
       manager.switchScenario("test-123", "test", "variant-1");
@@ -595,7 +595,7 @@ describe("ScenarioManager", () => {
 
     it("should delegate to store", () => {
       const { manager, store } = createTestSetup();
-      const definition = createTestScenarioDefinition("test", "Test");
+      const definition = createTestScenaristScenario("test", "Test");
       manager.registerScenario(definition);
       manager.switchScenario("test-123", "test");
 
@@ -609,10 +609,10 @@ describe("ScenarioManager", () => {
     it("should list all registered scenarios", () => {
       const { manager } = createTestSetup();
       manager.registerScenario(
-        createTestScenarioDefinition("scenario-1", "Scenario 1")
+        createTestScenaristScenario("scenario-1", "Scenario 1")
       );
       manager.registerScenario(
-        createTestScenarioDefinition("scenario-2", "Scenario 2")
+        createTestScenaristScenario("scenario-2", "Scenario 2")
       );
 
       const scenarios = manager.listScenarios();
@@ -631,7 +631,7 @@ describe("ScenarioManager", () => {
 
     it("should delegate to registry", () => {
       const { manager, registry } = createTestSetup();
-      manager.registerScenario(createTestScenarioDefinition("test", "Test"));
+      manager.registerScenario(createTestScenaristScenario("test", "Test"));
 
       const scenarios = manager.listScenarios();
 
@@ -642,7 +642,7 @@ describe("ScenarioManager", () => {
   describe("clearScenario", () => {
     it("should clear active scenario for a test ID", () => {
       const { manager } = createTestSetup();
-      const definition = createTestScenarioDefinition("test", "Test");
+      const definition = createTestScenaristScenario("test", "Test");
       manager.registerScenario(definition);
       manager.switchScenario("test-123", "test");
 
@@ -654,7 +654,7 @@ describe("ScenarioManager", () => {
 
     it("should not affect other test IDs when clearing", () => {
       const { manager } = createTestSetup();
-      const definition = createTestScenarioDefinition("test", "Test");
+      const definition = createTestScenaristScenario("test", "Test");
       manager.registerScenario(definition);
       manager.switchScenario("test-A", "test");
       manager.switchScenario("test-B", "test");
@@ -667,7 +667,7 @@ describe("ScenarioManager", () => {
 
     it("should delegate to store", () => {
       const { manager, store } = createTestSetup();
-      const definition = createTestScenarioDefinition("test", "Test");
+      const definition = createTestScenaristScenario("test", "Test");
       manager.registerScenario(definition);
       manager.switchScenario("test-123", "test");
 
@@ -680,7 +680,7 @@ describe("ScenarioManager", () => {
   describe("getScenarioById", () => {
     it("should return scenario definition by ID", () => {
       const { manager } = createTestSetup();
-      const definition = createTestScenarioDefinition("test", "Test Scenario");
+      const definition = createTestScenaristScenario("test", "Test Scenario");
       manager.registerScenario(definition);
 
       const retrieved = manager.getScenarioById("test");
@@ -698,7 +698,7 @@ describe("ScenarioManager", () => {
 
     it("should delegate to registry", () => {
       const { manager, registry } = createTestSetup();
-      const definition = createTestScenarioDefinition("test", "Test");
+      const definition = createTestScenaristScenario("test", "Test");
       manager.registerScenario(definition);
 
       const retrieved = manager.getScenarioById("test");
@@ -712,8 +712,8 @@ describe("ScenarioManager", () => {
       const stateManager = createTestStateManager();
       const { manager } = createTestSetup({ stateManager });
 
-      const scenario1 = createTestScenarioDefinition("scenario-1", "Scenario 1");
-      const scenario2 = createTestScenarioDefinition("scenario-2", "Scenario 2");
+      const scenario1 = createTestScenaristScenario("scenario-1", "Scenario 1");
+      const scenario2 = createTestScenaristScenario("scenario-2", "Scenario 2");
 
       manager.registerScenario(scenario1);
       manager.registerScenario(scenario2);
@@ -739,7 +739,7 @@ describe("ScenarioManager", () => {
       const stateManager = createTestStateManager();
       const { manager } = createTestSetup({ stateManager });
 
-      const scenario1 = createTestScenarioDefinition("scenario-1", "Scenario 1");
+      const scenario1 = createTestScenaristScenario("scenario-1", "Scenario 1");
       manager.registerScenario(scenario1);
 
       // Set some state for test-1
@@ -758,8 +758,8 @@ describe("ScenarioManager", () => {
     it("should work without state manager (backward compatibility)", () => {
       const { manager } = createTestSetup(); // No state manager
 
-      const scenario1 = createTestScenarioDefinition("scenario-1", "Scenario 1");
-      const scenario2 = createTestScenarioDefinition("scenario-2", "Scenario 2");
+      const scenario1 = createTestScenaristScenario("scenario-1", "Scenario 1");
+      const scenario2 = createTestScenaristScenario("scenario-2", "Scenario 2");
 
       manager.registerScenario(scenario1);
       manager.registerScenario(scenario2);
@@ -774,8 +774,8 @@ describe("ScenarioManager", () => {
       const stateManager = createTestStateManager();
       const { manager } = createTestSetup({ stateManager });
 
-      const scenario1 = createTestScenarioDefinition("scenario-1", "Scenario 1");
-      const scenario2 = createTestScenarioDefinition("scenario-2", "Scenario 2");
+      const scenario1 = createTestScenaristScenario("scenario-1", "Scenario 1");
+      const scenario2 = createTestScenaristScenario("scenario-2", "Scenario 2");
 
       manager.registerScenario(scenario1);
       manager.registerScenario(scenario2);
@@ -799,8 +799,8 @@ describe("ScenarioManager", () => {
       const sequenceTracker = createTestSequenceTracker();
       const { manager } = createTestSetup({ sequenceTracker });
 
-      const scenario1 = createTestScenarioDefinition("scenario-1", "Scenario 1");
-      const scenario2 = createTestScenarioDefinition("scenario-2", "Scenario 2");
+      const scenario1 = createTestScenaristScenario("scenario-1", "Scenario 1");
+      const scenario2 = createTestScenaristScenario("scenario-2", "Scenario 2");
 
       manager.registerScenario(scenario1);
       manager.registerScenario(scenario2);
@@ -826,7 +826,7 @@ describe("ScenarioManager", () => {
       const sequenceTracker = createTestSequenceTracker();
       const { manager } = createTestSetup({ sequenceTracker });
 
-      const scenario1 = createTestScenarioDefinition("scenario-1", "Scenario 1");
+      const scenario1 = createTestScenaristScenario("scenario-1", "Scenario 1");
       manager.registerScenario(scenario1);
 
       // Advance sequence for test-1
@@ -848,8 +848,8 @@ describe("ScenarioManager", () => {
     it("should work without sequence tracker (backward compatibility)", () => {
       const { manager } = createTestSetup(); // No sequence tracker
 
-      const scenario1 = createTestScenarioDefinition("scenario-1", "Scenario 1");
-      const scenario2 = createTestScenarioDefinition("scenario-2", "Scenario 2");
+      const scenario1 = createTestScenaristScenario("scenario-1", "Scenario 1");
+      const scenario2 = createTestScenaristScenario("scenario-2", "Scenario 2");
 
       manager.registerScenario(scenario1);
       manager.registerScenario(scenario2);
@@ -864,8 +864,8 @@ describe("ScenarioManager", () => {
       const sequenceTracker = createTestSequenceTracker();
       const { manager } = createTestSetup({ sequenceTracker });
 
-      const scenario1 = createTestScenarioDefinition("scenario-1", "Scenario 1");
-      const scenario2 = createTestScenarioDefinition("scenario-2", "Scenario 2");
+      const scenario1 = createTestScenaristScenario("scenario-1", "Scenario 1");
+      const scenario2 = createTestScenaristScenario("scenario-2", "Scenario 2");
 
       manager.registerScenario(scenario1);
       manager.registerScenario(scenario2);
