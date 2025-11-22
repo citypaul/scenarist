@@ -43,16 +43,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 - Version 0.0.0 consistently used (ready for initial release)
 
 #### ❌ What's Missing
-- **LICENSE files** - CRITICAL: No LICENSE file in root or packages
-- **Package metadata incomplete:**
-  - Missing `keywords` field in all packages
-  - Missing `repository` field in all packages
-  - Missing `homepage` field in all packages
-  - Missing `author` field in all packages
-  - Missing `bugs` field in all packages
 - **No Changesets workflow** - Version management not set up
-- **No .npmignore or files field** - Packages may publish unnecessary files
-- **publishConfig missing** in most packages (only playwright-helpers has it)
 
 #### 📋 Action Items
 
@@ -63,47 +54,19 @@ Scenarist is **80% ready for production release**. The core architecture, testin
    - Template from: https://opensource.org/licenses/MIT
    - Merged in PR #114
 
-2. Add complete package.json metadata to all packages (3 hours):
-   ```json
-   {
-     "author": "Paul Hammond <email@example.com>",
-     "license": "MIT",
-     "homepage": "https://github.com/citypaul/scenarist#readme",
-     "repository": {
-       "type": "git",
-       "url": "https://github.com/citypaul/scenarist.git",
-       "directory": "packages/core"
-     },
-     "bugs": {
-       "url": "https://github.com/citypaul/scenarist/issues"
-     },
-     "keywords": [
-       "msw",
-       "mock-service-worker",
-       "testing",
-       "e2e",
-       "integration-testing",
-       "scenario-testing",
-       "test-isolation",
-       "express",
-       "nextjs",
-       "typescript"
-     ]
-   }
-   ```
+2. ✅ **COMPLETED** - Add complete package.json metadata to all packages (3 hours)
+   - Added to all 7 packages: core, msw-adapter, express-adapter, nextjs-adapter, playwright-helpers, eslint-config, typescript-config
+   - Metadata added:
+     - `author`: "Paul Hammond (citypaul) <paul@packsoftware.co.uk>"
+     - `license`: "MIT"
+     - `homepage`: "https://github.com/citypaul/scenarist#readme"
+     - `repository`: Full git config with package-specific directory
+     - `bugs`: "https://github.com/citypaul/scenarist/issues"
+     - `keywords`: Package-specific npm search terms
+     - `files`: ["dist", "README.md", "LICENSE"] where applicable
+   - Merged in PR #115
 
-3. Add `files` field to all package.json to control published files (2 hours):
-   ```json
-   {
-     "files": [
-       "dist",
-       "README.md",
-       "LICENSE"
-     ]
-   }
-   ```
-
-4. Set up Changesets workflow (4 hours):
+3. Set up Changesets workflow (4 hours):
    ```bash
    pnpm add -Dw @changesets/cli
    pnpm changeset init
@@ -113,7 +76,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
    - Create initial changeset for v1.0.0
 
 **HIGH PRIORITY:**
-5. Add `publishConfig` to all packages (1 hour):
+4. Add `publishConfig` to all packages (1 hour):
    ```json
    {
      "publishConfig": {
@@ -122,7 +85,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
    }
    ```
 
-6. Add `engines` field to packages (matches root) (30 minutes):
+5. Add `engines` field to packages (matches root) (30 minutes):
    ```json
    {
      "engines": {
@@ -131,7 +94,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
    }
    ```
 
-7. Test dry-run npm publish (1 hour):
+6. Test dry-run npm publish (1 hour):
    ```bash
    pnpm --filter=@scenarist/core exec npm publish --dry-run
    ```
@@ -139,7 +102,9 @@ Scenarist is **80% ready for production release**. The core architecture, testin
    - Check package size
    - Ensure no secrets/test files
 
-**Total Estimate: 13.5 hours (2 days)**
+**Total Estimate: 6.5 hours (1 day)**
+**Completed: 5 hours (LICENSE + metadata)**
+**Remaining: 6.5 hours (Changesets + publishConfig + engines + testing)**
 
 ---
 
