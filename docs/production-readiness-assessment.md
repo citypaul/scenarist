@@ -57,10 +57,11 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 #### 📋 Action Items
 
 **CRITICAL (Block Publication):**
-1. Add MIT LICENSE file to root and all packages (2 hours)
+1. ✅ **COMPLETED** - Add MIT LICENSE file to root and all packages (2 hours)
    - Root: `/LICENSE`
    - Each package: `/packages/*/LICENSE`
    - Template from: https://opensource.org/licenses/MIT
+   - Merged in PR #114
 
 2. Add complete package.json metadata to all packages (3 hours):
    ```json
