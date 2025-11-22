@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
-import type { ScenarioManager, ScenaristConfig } from '@scenarist/core';
+import type { ScenarioManager, ScenaristConfig, ScenaristScenarios } from '@scenarist/core';
+import { createScenarist as createScenaristImpl, type ExpressScenarist, type ExpressAdapterOptions } from '../src/setup/setup-scenarist.js';
 
 /**
  * Create a mock ScenaristConfig with sensible defaults.
@@ -62,3 +63,26 @@ export const mockScenarioManager = (
     getScenarioById: () => undefined,
     ...overrides,
   }) as ScenarioManager;
+
+/**
+ * Create a Scenarist instance for testing.
+ *
+ * This wrapper ensures scenarist is always defined in test environment by
+ * throwing early if createScenarist returns undefined. This is the correct
+ * behavior for tests since NODE_ENV !== 'production' in test environments.
+ *
+ * Returns non-nullable ExpressScenarist so tests don't need null checks.
+ */
+export const createScenarist = async <T extends ScenaristScenarios>(
+  options: ExpressAdapterOptions<T>
+): Promise<ExpressScenarist<T>> => {
+  const scenarist = await createScenaristImpl(options);
+
+  if (!scenarist) {
+    throw new Error(
+      'Scenarist should be defined in test environment (NODE_ENV !== "production")'
+    );
+  }
+
+  return scenarist;
+};

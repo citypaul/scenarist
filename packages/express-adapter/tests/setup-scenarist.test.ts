@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import express from 'express';
 import request from 'supertest';
-import { createScenarist } from '../src/setup/setup-scenarist.js';
+import { createScenarist } from './test-helpers.js';
 import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/core';
 
 const mockDefaultScenario: ScenaristScenario = {
@@ -276,10 +276,6 @@ describe('createScenarist', () => {
       strictMode: false,
     });
 
-    if (!scenarist) {
-      throw new Error('Scenarist should be defined in test environment');
-    }
-
     expect(scenarist).toHaveProperty('config');
     expect(scenarist).toHaveProperty('middleware');
     expect(scenarist).toHaveProperty('switchScenario');
@@ -296,10 +292,6 @@ describe('createScenarist', () => {
       enabled: true,
       scenarios: testScenarios,
     });
-
-    if (!scenarist) {
-      throw new Error('Scenarist should be defined in test environment');
-    }
 
     expect(scenarist.config.endpoints.setScenario).toBe('/__scenario__');
     expect(scenarist.config.endpoints.getScenario).toBe('/__scenario__');
@@ -321,10 +313,6 @@ describe('createScenarist', () => {
       strictMode: true,
     });
 
-    if (!scenarist) {
-      throw new Error('Scenarist should be defined in test environment');
-    }
-
     expect(scenarist.config.endpoints.setScenario).toBe('/custom-set');
     expect(scenarist.config.endpoints.getScenario).toBe('/custom-get');
     expect(scenarist.config.headers.testId).toBe('x-custom-test');
@@ -337,10 +325,6 @@ describe('createScenarist', () => {
       scenarios: testScenarios,
       strictMode: false,
     });
-
-    if (!scenarist) {
-      throw new Error('Scenarist should be defined in test environment');
-    }
 
     const app = express();
     app.use(express.json());
@@ -362,10 +346,6 @@ describe('createScenarist', () => {
       scenarios: testScenarios,
       strictMode: false,
     });
-
-    if (!scenarist) {
-      throw new Error('Scenarist should be defined in test environment');
-    }
 
     scenarist.start();
 
@@ -400,10 +380,6 @@ describe('createScenarist', () => {
       scenarios: testScenarios,
     });
 
-    if (!scenarist) {
-      throw new Error('Scenarist should be defined in test environment');
-    }
-
     const scenarios = scenarist.listScenarios();
     expect(scenarios).toHaveLength(14); // All test scenarios
     expect(scenarios.find((s) => s.id === 'scenario-1')).toBeDefined();
@@ -416,10 +392,6 @@ describe('createScenarist', () => {
       enabled: true,
       scenarios: testScenarios,
     });
-
-    if (!scenarist) {
-      throw new Error('Scenarist should be defined in test environment');
-    }
 
     const result = scenarist.switchScenario('test-123', 'test-scenario');
 
@@ -435,10 +407,6 @@ describe('createScenarist', () => {
       scenarios: testScenarios,
     });
 
-    if (!scenarist) {
-      throw new Error('Scenarist should be defined in test environment');
-    }
-
     const scenario = scenarist.getScenarioById('test-scenario');
 
     expect(scenario).toBeDefined();
@@ -450,10 +418,6 @@ describe('createScenarist', () => {
       enabled: true,
       scenarios: testScenarios,
     });
-
-    if (!scenarist) {
-      throw new Error('Scenarist should be defined in test environment');
-    }
 
     scenarist.switchScenario('test-123', 'test-scenario');
 
@@ -472,10 +436,6 @@ describe('createScenarist', () => {
         enabled: true,
         scenarios: testScenarios,
       });
-
-    if (!scenarist) {
-      throw new Error('Scenarist should be defined in test environment');
-    }
 
       scenarist.start();
 
@@ -525,10 +485,6 @@ describe('createScenarist', () => {
         enabled: true,
         scenarios: testScenarios,
       });
-
-    if (!scenarist) {
-      throw new Error('Scenarist should be defined in test environment');
-    }
 
       scenarist.start();
 
@@ -582,10 +538,6 @@ describe('createScenarist', () => {
         enabled: true,
         scenarios: testScenarios,
       });
-
-    if (!scenarist) {
-      throw new Error('Scenarist should be defined in test environment');
-    }
 
       scenarist.start();
 
@@ -652,10 +604,6 @@ describe('createScenarist', () => {
         scenarios: testScenarios,
       });
 
-    if (!scenarist) {
-      throw new Error('Scenarist should be defined in test environment');
-    }
-
       scenarist.start();
 
       const app = express();
@@ -713,10 +661,6 @@ describe('createScenarist', () => {
         enabled: true,
         scenarios: testScenarios,
       });
-
-    if (!scenarist) {
-      throw new Error('Scenarist should be defined in test environment');
-    }
 
       scenarist.start();
 
@@ -776,10 +720,6 @@ describe('createScenarist', () => {
         enabled: true,
         scenarios: testScenarios,
       });
-
-    if (!scenarist) {
-      throw new Error('Scenarist should be defined in test environment');
-    }
 
       scenarist.start();
 
@@ -846,10 +786,6 @@ describe('createScenarist', () => {
         enabled: true,
         scenarios: testScenarios,
       });
-
-    if (!scenarist) {
-      throw new Error('Scenarist should be defined in test environment');
-    }
 
       scenarist.start();
 
