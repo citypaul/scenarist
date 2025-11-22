@@ -12,7 +12,6 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 - Missing LICENSE files across all packages
 - Missing package metadata (keywords, repository, homepage, author)
 - No Changesets workflow for versioning
-- One failing test in express-adapter needs investigation
 
 **High Priority (Should Fix Before v1.0):**
 - Security audit and dependency updates
@@ -220,7 +219,6 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 - CI running all tests on every PR
 
 #### ❌ What's Missing
-- **One failing test** in express-adapter (`scenario-endpoints.test.ts`)
 - No performance/benchmark tests
 - No load testing (parallel scenario switching)
 - Coverage not enforced for all packages (only core has 100% threshold)
@@ -228,12 +226,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 #### 📋 Action Items
 
 **CRITICAL:**
-1. Fix failing test in express-adapter (2 hours):
-   - Investigate `scenario-endpoints.test.ts` failure
-   - Fix or update test expectations
-   - Ensure all 35 tests pass
-
-2. Add coverage thresholds to all packages (3 hours):
+1. Add coverage thresholds to all packages (3 hours):
    - Update vitest.config.ts in each package
    - Enforce 100% coverage like core
    - Fix any coverage gaps
@@ -251,7 +244,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
    - Measure throughput
    - Document results
 
-**Total Estimate: 15 hours (2 days)**
+**Total Estimate: 13 hours (1.5 days)**
 
 ---
 
@@ -476,7 +469,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 
 ### Critical (Must Have Before v1.0)
 
-**Total: 28 hours (3-4 days)**
+**Total: 26 hours (3 days)**
 
 1. **Add LICENSE files** (2 hours)
    - MIT license to root and all packages
@@ -492,11 +485,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
    - CHANGELOG generation
    - Release management
 
-4. **Fix failing express-adapter test** (2 hours)
-   - Critical for CI green status
-   - Blocks release with confidence
-
-5. **Add npm publish automation** (4 hours)
+4. **Add npm publish automation** (4 hours)
    - GitHub Action for publishing
    - Provenance support
    - Automated on release
@@ -737,13 +726,12 @@ Focus on Critical items first (legal, package config, security). These are quick
 
 ### Immediate Actions (This Week)
 1. Add LICENSE files (2 hours) - **DO THIS FIRST**
-2. Fix express-adapter failing test (2 hours)
-3. Complete package.json metadata (3 hours)
-4. Run security audit and fix (2 hours)
+2. Complete package.json metadata (3 hours)
+3. Run security audit and fix (2 hours)
 
-**Total: 9 hours (1 day)**
+**Total: 7 hours (1 day)**
 
-This removes all legal blockers and critical bugs.
+This removes all legal blockers and security vulnerabilities.
 
 ### Next Week
 1. Set up Changesets (4 hours)
