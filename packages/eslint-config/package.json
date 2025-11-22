@@ -1,8 +1,11 @@
 {
   "name": "@scenarist/eslint-config",
   "version": "0.0.0",
-  "type": "module",
+  "description": "Internal ESLint configuration for Scenarist monorepo",
+  "author": "Paul Hammond (citypaul) <paul@packsoftware.co.uk>",
+  "license": "MIT",
   "private": true,
+  "type": "module",
   "exports": {
     "./base": "./base.js",
     "./next-js": "./next.js",

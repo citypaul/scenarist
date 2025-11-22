@@ -1,7 +1,10 @@
 {
   "name": "@scenarist/msw-adapter",
   "version": "0.0.0",
-  "description": "Framework-agnostic MSW integration for Scenarist",
+  "description": "Internal MSW integration layer for Scenarist framework adapters",
+  "author": "Paul Hammond (citypaul) <paul@packsoftware.co.uk>",
+  "license": "MIT",
+  "private": true,
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

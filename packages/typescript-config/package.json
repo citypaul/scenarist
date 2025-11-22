@@ -1,9 +1,8 @@
 {
   "name": "@scenarist/typescript-config",
   "version": "0.0.0",
-  "private": true,
+  "description": "Internal TypeScript configuration for Scenarist monorepo",
+  "author": "Paul Hammond (citypaul) <paul@packsoftware.co.uk>",
   "license": "MIT",
-  "publishConfig": {
-    "access": "public"
-  }
+  "private": true
 }
