@@ -854,6 +854,119 @@ Exceptions to the 100% rule require explicit documentation and justification. As
 
 The `noUnusedParameters` rule caught that `config` wasn't being used in `ScenarioManager`, leading us to discover it didn't belong there. This is strict mode working as intended - if a parameter isn't used, question whether it should exist.
 
+### Production Tree-Shaking with Conditional Exports
+
+**CRITICAL INSIGHT**: Dynamic imports alone are insufficient for tree-shaking in bundled applications. Conditional package.json exports are required for complete MSW code elimination.
+
+**The Problem:**
+
+Initial implementation used dynamic imports with environment checks:
+
+```typescript
+// setup-scenarist.ts
+export const createScenarist = async (options) => {
+  if (process.env.NODE_ENV === 'production') {
+    return undefined;
+  }
+  const { createScenaristImpl } = await import('./impl.js');
+  return createScenaristImpl(options);
+};
+```
+
+**Why this doesn't work with bundlers:**
+- Bundlers (esbuild, webpack, rollup, vite) treat dynamic imports as code-splitting boundaries
+- Even with `--define:process.env.NODE_ENV='"production"'`, bundlers include the dynamically imported module
+- Result: 618kb bundle including all MSW code (never executed, but still present)
+
+**The Solution: Conditional Package.json Exports**
+
+Created separate production entry point with **zero imports**:
+
+```typescript
+// production.ts
+export const createScenarist = async (_options) => {
+  return undefined;  // No imports, no dependencies
+};
+```
+
+Updated package.json with conditional exports:
+
+```json
+{
+  "exports": {
+    ".": {
+      "production": "./dist/setup/production.js",  // Zero dependencies
+      "default": "./dist/index.js"                 // Full implementation
+    }
+  }
+}
+```
+
+**Results:**
+- ✅ Bundle size: 618kb → 298kb (52% reduction)
+- ✅ Zero MSW code in production bundle
+- ✅ Complete tree-shaking achieved
+
+**Deployment Models:**
+
+1. **Unbundled Express apps** (most common): Tree-shaking automatic ✅
+   - `NODE_ENV=production node server.js`
+   - Dynamic imports never execute
+   - MSW code never loads into memory
+   - **Zero configuration required**
+
+2. **Bundled deployments**: Requires bundler configuration
+   - esbuild: `--conditions=production`
+   - webpack: `resolve.conditionNames: ['production']`
+   - vite: `resolve.conditions: ['production']`
+   - rollup: `exportConditions: ['production']`
+
+**Why "production" is a custom condition:**
+
+Built-in Node.js conditions:
+- `import` - ESM imports
+- `require` - CommonJS require
+- `node` - Node.js environment
+- `default` - Fallback
+
+Custom conditions (like "production"):
+- Must be explicitly recognized by bundler via configuration
+- Not automatically applied
+- Enables different entry points for different build targets
+
+**Verification Script:**
+
+```json
+{
+  "scripts": {
+    "build:production": "esbuild --bundle --conditions=production --define:process.env.NODE_ENV='\"production\"'",
+    "verify:treeshaking": "pnpm build:production && ! grep -rE '(setupWorker|HttpResponse\\.json)' dist/"
+  }
+}
+```
+
+Integrated into Turborepo pipeline:
+
+```json
+{
+  "tasks": {
+    "verify:treeshaking": {
+      "dependsOn": ["build"],
+      "outputs": ["dist/**"]
+    }
+  }
+}
+```
+
+**Key Lessons:**
+1. Dynamic imports ≠ tree-shaking in bundlers
+2. Conditional exports enable true code elimination
+3. "production" condition requires explicit bundler configuration
+4. Unbundled deployments work automatically (most Express apps)
+5. Verification scripts prevent regression
+
+**For user documentation, see:** [Express Adapter README - Production Tree-Shaking](packages/express-adapter/README.md#production-tree-shaking)
+
 ## Anti-Patterns to Avoid
 
 ### In Core Package
@@ -4648,3 +4761,176 @@ curl -s -H "x-test-id: test-premium" -H "x-user-tier: premium" "http://localhost
 ### Key Insight
 
 This is NOT an MSW configuration issue or header propagation issue. The architecture is sound. This is a scenario state management bug in how testId → ActiveScenario mapping is stored/retrieved.
+
+## Production Tree-Shaking Investigation - Critical Discovery (2025-01-22)
+
+**Status:** Complete - All documentation updated
+**Investigation document:** `/docs/investigations/tree-shaking-dynamic-imports-vs-conditional-exports.md`
+
+### The Original Mistake
+
+The initial investigation concluded that **conditional exports were REQUIRED** for bundled deployments. This was based on testing WITHOUT code splitting (`--outfile`), which doesn't reflect how modern bundlers work.
+
+**Wrong conclusion (Test 2):**
+- Used `--outfile` (forces single bundle file)
+- Result: 618kb bundle with impl code inline
+- Claimed: "Dynamic imports do NOT enable tree-shaking"
+
+### The Critical Discovery
+
+When testing with **code splitting enabled** (`--splitting`), the results are completely different:
+
+**Correct findings (Test 3):**
+```bash
+esbuild --bundle --splitting --outdir=dist --define:process.env.NODE_ENV='"production"'
+```
+
+**Results:**
+- Entry point: 27kb (94% smaller!)
+- Impl chunk: 242kb (separate file, never loaded)
+- **Runtime verification:** `lsof -p $PID | grep 'impl-.*\.js'` = NO MATCHES
+- **Conclusion:** Impl chunk exists on disk but NEVER loads into memory
+
+### Key Findings
+
+1. **Code Splitting Changes Everything**
+   - Most bundlers enable code splitting by default for dynamic imports
+   - Webpack: Automatic
+   - Vite: Automatic
+   - esbuild: Requires `--splitting` flag for ESM
+   - Rollup: Automatic for dynamic imports
+
+2. **Dynamic Imports + Code Splitting = Zero Config Tree-Shaking**
+   - ✅ Impl code split into separate chunk
+   - ✅ DefinePlugin eliminates unreachable import
+   - ✅ Chunk file exists but never referenced
+   - ✅ **Verified with lsof: chunk never loads into memory**
+   - ✅ Zero custom configuration required
+
+3. **Conditional Exports are OPTIONAL, Not Required**
+   - Conditional exports eliminate chunk from build artifacts entirely
+   - But this requires `--conditions=production` flag
+   - **This flag is GLOBAL** - affects ALL packages with conditional exports
+   - Risk: May break other dependencies unexpectedly
+
+### User's Concerns - All Addressed
+
+1. **"Code cannot be delivered to production"**
+   - ✅ Chunk never loads into memory (lsof verification)
+   - ✅ Effective delivery: ZERO bytes (chunk exists but never requested)
+
+2. **"As frictionless as possible"**
+   - ✅ Zero custom configuration (standard DefinePlugin)
+   - ✅ Code splitting is standard bundler feature
+   - ✅ No global flags that might break dependencies
+
+3. **"Not impact other parts of their code"**
+   - ✅ No `--conditions` flag in default approach
+   - ✅ Dependencies completely unaffected
+   - ⚠️ Conditional exports require GLOBAL flag (opt-in only)
+
+### Recommended Strategy (Hybrid Approach)
+
+**Default for 90% of users:** Dynamic imports + code splitting
+```bash
+esbuild --bundle --splitting --outdir=dist --define:process.env.NODE_ENV='"production"'
+```
+- Zero custom config
+- Impl never delivered/loaded (verified)
+- No global flags
+
+**Optional for 10% of users:** Add conditional exports
+```bash
+esbuild --bundle --splitting --outdir=dist --define:process.env.NODE_ENV='"production"' --conditions=production
+```
+- Smallest possible build artifacts
+- ⚠️ **GLOBAL flag** affects all packages
+- Document carefully with warnings
+
+### Documentation Updated
+
+**Files modified:**
+1. `/docs/investigations/tree-shaking-dynamic-imports-vs-conditional-exports.md`
+   - Added Test 3 results (code splitting verification)
+   - Updated comparison matrix (delivery vs bundling)
+   - Revised final conclusion (dynamic imports recommended)
+
+2. `/apps/docs/src/content/docs/introduction/production-safety.mdx`
+   - Repositioned code splitting as PRIMARY approach
+   - Demoted conditional exports to OPTIONAL optimization
+   - Added WARNING about `--conditions` being global
+   - Included lsof verification example
+
+3. `/tmp/final-recommendation-tree-shaking.md`
+   - Comprehensive summary of findings
+   - Decision matrix comparing approaches
+   - Implementation guidance
+
+### Key Lesson: Delivery ≠ Bundling
+
+The investigation initially conflated two separate concerns:
+
+1. **Bundle inclusion**: Is code in build output?
+2. **Code delivery/loading**: Is code delivered to users or loaded into memory?
+
+**Test 3 proved these are independent:**
+- Impl chunk EXISTS in build output (242kb file on disk)
+- But is NEVER loaded into memory (lsof verification)
+- Effective result: Zero delivery overhead
+
+This matches the user's requirement perfectly:
+> "The issue isn't necessarily that the code isn't bundled at all, it's more that we want to make sure the code can not be delivered to production."
+
+### Global Config Pollution Concern
+
+**User's critical question:**
+> "How do we ensure that these rules only apply to this library? I don't think consumers would want to change their global bundler rules for this one library, as that could impact other parts of their code."
+
+**Answer:** The `--conditions=production` flag IS global - it affects ALL packages with conditional exports in the user's dependency tree. This is why it's positioned as OPTIONAL, not recommended.
+
+**Safe default:** Dynamic imports + code splitting (no global flags needed)
+
+### Files Changed in PR
+
+- `apps/docs/src/content/docs/introduction/production-safety.mdx` - Major update
+- `docs/investigations/tree-shaking-dynamic-imports-vs-conditional-exports.md` - Added Test 3
+- PR description - Updated to clarify zero-config approach
+
+### Verification Evidence
+
+**Runtime memory check:**
+```bash
+$ NODE_ENV=production node dist/server.js &
+$ SERVER_PID=$!
+$ lsof -p $SERVER_PID | grep -E 'impl-.*\.js'
+# No matches
+
+Result: "Impl chunk NOT loaded" ✅
+```
+
+This is the critical evidence that proved dynamic imports + code splitting work with zero configuration.
+
+### Architectural Validation
+
+This investigation validates the production wrapper pattern:
+
+```typescript
+export const createScenarist = async (options) => {
+  if (process.env.NODE_ENV === 'production') {
+    return undefined;  // ← Returns immediately
+  }
+  
+  const { createScenaristImpl } = await import('./impl.js');  // ← Never executes in prod
+  return createScenaristImpl(options);
+};
+```
+
+With code splitting enabled:
+1. DefinePlugin replaces `process.env.NODE_ENV` with literal `'production'`
+2. `if ('production' === 'production')` becomes unreachable code
+3. Dynamic import never referenced
+4. Bundler creates separate chunk but entry point never imports it
+5. Chunk exists on disk but Node.js never loads it into memory
+
+**This is the simplest, most frictionless solution possible.**
+

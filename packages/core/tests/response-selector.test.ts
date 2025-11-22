@@ -519,7 +519,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       };
 
       // Less specific mock appears FIRST
-      const mocksWithLessSpecificFirst: ReadonlyArray<MockDefinition> = [
+      const mocksWithLessSpecificFirst: ReadonlyArray<ScenaristMock> = [
         {
           method: "POST",
           url: "/api/charge",
@@ -559,7 +559,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
       };
 
       // Both mocks have specificity of 1 (equal)
-      const mocksWithEqualSpecificity: ReadonlyArray<MockDefinition> = [
+      const mocksWithEqualSpecificity: ReadonlyArray<ScenaristMock> = [
         {
           method: "POST",
           url: "/api/items",
@@ -1489,7 +1489,7 @@ describe("ResponseSelector - Request Content Matching (Phase 1)", () => {
           method: "GET",
           url: "/api/test",
           // No response or sequence field - invalid mock
-        } as MockDefinition,
+        } as ScenaristMock,
       ];
 
       const result = selector.selectResponse("test-invalid", "scenario-invalid", context, wrapMocks(mocks));

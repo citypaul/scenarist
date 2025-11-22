@@ -27,6 +27,8 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 - ✅ Zero TODOs/FIXMEs in production code
 - ✅ Hexagonal architecture properly implemented
 - ✅ Multiple working example applications
+- ✅ Production tree-shaking implemented (Express: 618kb → 298kb, 52% reduction)
+- ✅ Verification scripts integrated into CI pipeline
 
 ---
 
@@ -41,6 +43,8 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 - Correct peer dependencies declared
 - Proper exports configuration (ESM)
 - Version 0.0.0 consistently used (ready for initial release)
+- Production tree-shaking via conditional exports (Express adapter)
+- Verification scripts integrated into Turborepo pipeline
 
 #### ❌ What's Missing
 - **No Changesets workflow** - Version management not set up
@@ -66,7 +70,53 @@ Scenarist is **80% ready for production release**. The core architecture, testin
      - `files`: ["dist", "README.md", "LICENSE"] where applicable
    - Merged in PR #115
 
-3. Set up Changesets workflow (4 hours):
+3. ✅ **COMPLETED** - Add automatic production tree-shaking for Express adapter (8 hours)
+   - Phase 1: Adapter-level tree-shaking via conditional exports
+   - Created `/packages/express-adapter/src/setup/production.ts` with zero imports
+   - Added `"production"` condition to package.json exports
+   - Bundle size reduction: 618kb → 298kb (52% reduction, MSW eliminated)
+   - Verification scripts added: `build:production` and `verify:treeshaking`
+   - Integrated into Turborepo via `turbo.json`
+   - All 42 adapter tests passing
+   - Zero MSW code in production bundles (verified via grep)
+   - Merged in PR #117
+
+   **Documentation:**
+   - Updated Express adapter README with tree-shaking section
+   - Updated CLAUDE.md with conditional exports pattern
+   - Updated docs site (production-safety.mdx, getting-started.mdx)
+   - Bundler configuration examples for esbuild, webpack, Vite, rollup
+
+   **Future Work (Phase 2 - Core-Level Optimization):**
+   - Tracked in GitHub Issue #118
+   - Apply conditional exports to core package to eliminate Zod (~150kb)
+   - Expected result: 298kb → 148kb (additional 50% reduction, 76% total)
+   - Estimated effort: 8 hours (same pattern as adapter-level)
+   - Next.js adapters tree-shaking (4 hours each after core work)
+
+**HIGH PRIORITY:**
+4. Phase 2: Core-level tree-shaking to eliminate Zod (8 hours):
+   - **Tracked in GitHub Issue #118**
+   - Create `packages/core/src/production.ts` with type-only exports
+   - Add conditional exports to `packages/core/package.json`
+   - Update all adapters to handle undefined core return
+   - Expected result: 298kb → 148kb (76% total reduction from baseline)
+   - Verification: `! grep -rE '(ZodObject|ZodString|z\\.object\\()' dist/`
+   - Benefits:
+     - Complete elimination of Zod from production bundles
+     - 150kb additional savings (50% reduction from current state)
+     - Cascading tree-shaking: adapters → core → dependencies
+   - Testing:
+     - All adapter tests must pass
+     - All example app tests must pass
+     - Verify bundled apps with esbuild/webpack/vite/rollup
+   - Documentation updates:
+     - Core package README
+     - All adapter READMEs
+     - Production safety guide (docs site)
+     - CLAUDE.md architectural learnings
+
+5. Set up Changesets workflow (4 hours):
    ```bash
    pnpm add -Dw @changesets/cli
    pnpm changeset init
@@ -76,7 +126,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
    - Create initial changeset for v1.0.0
 
 **HIGH PRIORITY:**
-4. Add `publishConfig` to all packages (1 hour):
+5. Add `publishConfig` to all packages (1 hour):
    ```json
    {
      "publishConfig": {

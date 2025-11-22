@@ -7,35 +7,160 @@ When evaluating whether Scenarist is working correctly in your project, use this
 
 ## Core Functionality Checks
 
-### Parallel Test Execution
+### Header Propagation in Parallel Tests
 
-**Verify:** Tests run in parallel without interference
+**Issue:** When tests fail in parallel but pass sequentially, the root cause is usually **test ID headers not being propagated** through server-side fetch calls.
 
+**How Test Isolation Works:**
+
+Each test gets a unique test ID (automatically generated). This test ID must be sent with EVERY request to ensure the test uses the correct scenario. If headers aren't propagated through internal server-side fetches, those requests will use the default scenario instead of the test's scenario.
+
+**Common Symptom:**
+- ✅ Tests pass when run individually (`--workers=1`)
+- ❌ Tests fail when run in parallel (`--workers=4`)
+- ❌ Flaky results that change between runs
+- ❌ Wrong data appearing in tests (from different scenario)
+
+**Root Cause: Missing Header Propagation**
+
+When your server-side code makes internal fetch calls, headers don't automatically propagate. You must explicitly include them.
+
+#### Next.js: Use getScenaristHeaders()
+
+**Problem:**
 ```typescript
-// tests/parallel.spec.ts
-test.describe.parallel('Parallel scenarios', () => {
-  test('scenario A', async ({ page, switchScenario }) => {
-    await switchScenario(page, 'scenarioA');
-    // ... test with scenario A
+// ❌ BAD - Headers not propagated to internal fetch
+export async function Page() {
+  // This fetch doesn't include test ID header!
+  const response = await fetch('http://localhost:3001/api/products');
+  const data = await response.json();
+  return <div>{/* render */}</div>;
+}
+```
+
+**Solution:**
+```typescript
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
+
+// ✅ GOOD - Headers propagated correctly
+export async function Page() {
+  const headers = getScenaristHeaders();  // Get headers from request context
+
+  const response = await fetch('http://localhost:3001/api/products', {
+    headers,  // Include test ID header
   });
 
-  test('scenario B', async ({ page, switchScenario }) => {
-    await switchScenario(page, 'scenarioB');
-    // ... test with scenario B - runs simultaneously
+  const data = await response.json();
+  return <div>{/* render */}</div>;
+}
+```
+
+**What `getScenaristHeaders()` does:**
+- Extracts test ID from current request context (AsyncLocalStorage)
+- Returns `{ 'x-test-id': 'generated-uuid' }` object
+- Safe to call even when Scenarist is disabled (returns empty object)
+- Works in both App Router and Pages Router
+
+#### Express: Headers Already Tracked
+
+Express adapter uses AsyncLocalStorage to automatically track test IDs per request. No manual header propagation needed for middleware chains.
+
+**Internal fetch calls** still need headers:
+```typescript
+// ✅ GOOD - Include test ID in internal fetches
+app.get('/api/dashboard', async (req, res) => {
+  const testId = req.get(scenarist.config.headers.testId);
+
+  const response = await fetch('http://localhost:3001/api/user', {
+    headers: {
+      [scenarist.config.headers.testId]: testId || 'default-test',
+    },
   });
+
+  const data = await response.json();
+  res.json(data);
 });
 ```
 
-**Expected behavior:**
-- Both tests execute concurrently
-- Each test uses its own scenario
-- No interference between tests
-- Results are consistent across runs
+#### Verification: Use Playwright Tests
 
-**Red flags:**
-- Tests fail when run in parallel but pass when run sequentially
-- Flaky test results that change between runs
-- Tests affecting each other's state
+**Verify headers are propagating correctly:**
+
+```typescript
+// tests/header-propagation.spec.ts
+test('headers propagate through server-side fetch', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'premium-user');
+
+  await page.goto('/dashboard');
+
+  // If headers propagated correctly, should see premium content
+  await expect(page.getByText('Premium Features')).toBeVisible();
+
+  // If headers DIDN'T propagate, would see default content
+  // This would fail in parallel tests (wrong scenario)
+});
+```
+
+**Debugging failed tests:**
+1. Add logging to see which scenario is active
+2. Check server logs for test ID headers
+3. Verify `getScenaristHeaders()` is called before fetch
+4. Confirm headers object includes test ID
+
+#### Red Flags
+
+**❌ Tests fail only in parallel:**
+```bash
+# Pass individually
+pnpm exec playwright test --workers=1
+# ✅ All tests pass
+
+# Fail in parallel
+pnpm exec playwright test --workers=4
+# ❌ Some tests fail with wrong data
+```
+
+**Root cause:** Missing header propagation. Tests interfere because they're all using the default scenario.
+
+**❌ Wrong data in tests:**
+```typescript
+// Test expects premium pricing
+await expect(page.getByText('£99.99')).toBeVisible();
+// ❌ Error: element not found
+
+// But sees standard pricing instead
+await expect(page.getByText('£149.99')).toBeVisible();
+// ✅ This passes (wrong scenario!)
+```
+
+**Root cause:** Internal fetch didn't include test ID header, used default scenario instead of premium scenario.
+
+**❌ Flaky test results:**
+- Sometimes premium pricing, sometimes standard
+- Different results on different runs
+- Race conditions between parallel tests
+
+**Root cause:** Tests sharing scenarios due to missing header propagation.
+
+#### Fix Checklist
+
+When parallel tests fail:
+
+1. ✅ **Next.js:** Add `getScenaristHeaders()` before all internal fetch calls
+2. ✅ **Express:** Include test ID header in internal fetch calls
+3. ✅ **Playwright:** Verify tests switch scenarios before navigation
+4. ✅ **Logging:** Add debug logs to confirm headers are present
+5. ✅ **Isolation:** Ensure each test calls `switchScenario()` independently
+
+**Quick fix for Next.js:**
+```typescript
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
+
+// Add this line before EVERY internal fetch in Server Components
+const headers = getScenaristHeaders();
+
+fetch(url, { headers });  // Always include
+```
 
 ### Runtime Scenario Switching
 
@@ -360,6 +485,212 @@ test('retries on failure', async ({ page, switchScenario }) => {
 - Tests are slower than unit tests
 - Scenario switching takes multiple seconds
 - Mock overhead is noticeable
+
+## Production Tree-Shaking Verification
+
+When deploying Scenarist to production, it's critical to verify that implementation code is NOT being delivered to production. Modern bundlers with code splitting enabled automatically tree-shake Scenarist with zero configuration, but you should verify this is working correctly in your build.
+
+### How Code Splitting Works
+
+When you use dynamic imports with code splitting:
+
+1. **DefinePlugin** replaces `process.env.NODE_ENV` with literal `'production'`
+2. **Dead code elimination** makes the `if (process.env.NODE_ENV === 'production')` branch unreachable
+3. **Code splitting** puts implementation code in a separate chunk (e.g., `impl-ABC123.js`)
+4. **Tree-shaking** eliminates the unreachable import statement from the entry point
+5. **Result:** Implementation chunk exists on disk but is NEVER loaded into memory
+
+### Step 1: Build Your Application
+
+First, build your application with code splitting enabled:
+
+```bash
+# esbuild (requires --splitting for ESM)
+esbuild src/server.ts --bundle --splitting --outdir=dist \
+  --platform=node --format=esm \
+  --define:process.env.NODE_ENV='"production"'
+
+# webpack (code splitting automatic for dynamic imports)
+NODE_ENV=production webpack --mode production
+
+# Vite (code splitting automatic)
+NODE_ENV=production vite build
+```
+
+**Expected output:**
+```
+dist/
+  server.js           ~27kb    ← Entry point (small!)
+  impl-ABC123.js      ~242kb   ← Implementation chunk (exists but never loaded)
+  chunk-XYZ789.js     ...      ← Other chunks
+```
+
+### Step 2: Verify Implementation is NOT in Entry Point
+
+Check that implementation code is NOT bundled into the main entry point:
+
+```bash
+# Search for Scenarist implementation code in entry point
+grep -rE '(createScenaristImpl|setupWorker|HttpResponse\.json)' dist/server.js
+
+# Should output nothing (no matches) ✅
+```
+
+**Expected result:** No matches. If you see matches, implementation code is being bundled inline (bad).
+
+### Step 3: Verify Implementation Chunk is Never Loaded (Runtime)
+
+This is the **critical verification** - prove the implementation chunk exists but never loads into memory:
+
+```bash
+# Start production server in background
+NODE_ENV=production node dist/server.js &
+SERVER_PID=$!
+
+# Wait for server to start
+sleep 2
+
+# Check which files are loaded into memory
+lsof -p $SERVER_PID | grep -E 'impl-.*\.js'
+
+# Should output nothing (chunk not loaded) ✅
+
+# Clean up
+kill $SERVER_PID
+```
+
+**Expected result:** No output. The `impl-*.js` chunk file exists on disk but is NOT loaded into the Node.js process memory.
+
+**What `lsof` proves:**
+- Lists all files opened by a process
+- If implementation chunk was loaded, it would appear in the output
+- No output = chunk never touched by runtime = zero delivery overhead
+
+### Step 4: Verify Build Artifact Sizes
+
+Check that your entry point is significantly smaller than total build output:
+
+```bash
+# Check entry point size
+ls -lh dist/server.js
+# Should be small (~27kb for typical Express app)
+
+# Check implementation chunk size (exists but never loads)
+ls -lh dist/impl-*.js
+# ~242kb (this is normal - it's tree-shaken by never loading)
+
+# Total on-disk size vs delivered size:
+# On disk: ~27kb + ~242kb = ~269kb
+# Delivered: ~27kb (impl chunk never loads)
+```
+
+**Expected behavior:**
+- Entry point is 85-95% smaller than it would be without code splitting
+- Implementation chunk exists (this is normal and expected)
+- Runtime verification (step 3) proves chunk never loads
+
+### Red Flags
+
+**❌ Implementation code in entry point:**
+```bash
+$ grep 'createScenaristImpl' dist/server.js
+# Found matches ← BAD: Implementation bundled inline
+```
+
+**Fix:** Enable code splitting:
+- esbuild: Add `--splitting --outdir=dist` (requires ESM format)
+- webpack: Check that dynamic imports aren't being forced inline
+- Vite: Code splitting should be automatic (check build config)
+
+**❌ Implementation chunk loads into memory:**
+```bash
+$ lsof -p $SERVER_PID | grep 'impl-.*\.js'
+dist/impl-ABC123.js  ← BAD: Chunk is being loaded!
+```
+
+**Fix:** Check that `process.env.NODE_ENV` is being set to `'production'`:
+- Verify DefinePlugin configuration
+- Check that `if (process.env.NODE_ENV === 'production')` branch is unreachable
+- Ensure bundler is actually replacing `process.env.NODE_ENV` with literal value
+
+**❌ No code splitting (single bundle):**
+```bash
+$ ls dist/
+server.js  ← Only one file, no chunks
+
+$ ls -lh dist/server.js
+618kb  ← Much larger than expected
+```
+
+**Fix:** Enable code splitting in your bundler configuration.
+
+### Framework-Specific Verification
+
+#### Express
+
+```bash
+# Build
+pnpm build:production
+
+# Verify implementation not in entry point
+grep 'createScenaristImpl' dist/server.js
+# (no matches)
+
+# Runtime verification
+NODE_ENV=production node dist/server.js &
+SERVER_PID=$!
+sleep 2
+lsof -p $SERVER_PID | grep 'impl-.*\.js'
+# (no output - chunk not loaded)
+kill $SERVER_PID
+```
+
+#### Next.js App Router
+
+Next.js automatically handles code splitting, but you can verify:
+
+```bash
+# Build
+pnpm build
+
+# Check .next/standalone output
+ls -lh .next/standalone/server.js
+
+# Next.js tree-shaking is automatic for dynamic imports
+# Verification: Check that Scenarist implementation is NOT in main bundle
+grep -r 'createScenaristImpl' .next/standalone
+# Should only appear in separate chunks, not main bundle
+```
+
+#### Next.js Pages Router
+
+```bash
+# Build
+pnpm build
+
+# Similar to App Router - check build output
+grep -r 'createScenaristImpl' .next/server/pages
+# Should be in separate chunks only
+```
+
+### What This Proves
+
+✅ **Zero delivery overhead** - Implementation code never reaches production runtime
+✅ **Code splitting works** - Bundler correctly creates separate chunks
+✅ **DefinePlugin works** - `process.env.NODE_ENV` replaced with literal
+✅ **Tree-shaking works** - Unreachable import eliminated
+✅ **Production safety** - Test infrastructure code completely absent from production execution
+
+### Next Steps
+
+If verification fails:
+1. Check bundler configuration for code splitting support
+2. Verify DefinePlugin is replacing `process.env.NODE_ENV`
+3. Ensure you're using dynamic imports (not static imports)
+4. Review [Production Safety Guide](/introduction/production-safety) for detailed configuration
+
+If verification succeeds:
+✅ Your production deployment is safe - Scenarist implementation code is completely tree-shaken!
 
 ## Common Issues to Watch
 

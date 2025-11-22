@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { findMatchingMock } from '../src/matching/mock-matcher.js';
-import type { MockDefinition } from '@scenarist/core';
+import type { ScenaristMock } from '@scenarist/core';
 import { mockDefinition } from './factories.js';
 
 describe('Mock Matcher', () => {
   describe('Basic matching', () => {
     it('should find mock matching method and URL', () => {
-      const mocks: ReadonlyArray<MockDefinition> = [mockDefinition()];
+      const mocks: ReadonlyArray<ScenaristMock> = [mockDefinition()];
 
       const result = findMatchingMock(mocks, 'GET', 'https://api.example.com/users');
 
@@ -14,7 +14,7 @@ describe('Mock Matcher', () => {
     });
 
     it('should return undefined when no match found', () => {
-      const mocks: ReadonlyArray<MockDefinition> = [mockDefinition()];
+      const mocks: ReadonlyArray<ScenaristMock> = [mockDefinition()];
 
       const result = findMatchingMock(mocks, 'POST', 'https://api.example.com/users');
 
@@ -22,7 +22,7 @@ describe('Mock Matcher', () => {
     });
 
     it('should return first match when multiple mocks match', () => {
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         mockDefinition({ response: { status: 200, body: { first: true } } }),
         mockDefinition({ response: { status: 201, body: { second: true } } }),
       ];
@@ -34,7 +34,7 @@ describe('Mock Matcher', () => {
     });
 
     it('should handle empty mocks array', () => {
-      const mocks: ReadonlyArray<MockDefinition> = [];
+      const mocks: ReadonlyArray<ScenaristMock> = [];
 
       const result = findMatchingMock(mocks, 'GET', 'https://api.example.com/users');
 
@@ -42,7 +42,7 @@ describe('Mock Matcher', () => {
     });
 
     it('should match method case-insensitively', () => {
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         mockDefinition({ method: 'POST', response: { status: 201 } }),
       ];
 
@@ -54,7 +54,7 @@ describe('Mock Matcher', () => {
 
   describe('URL pattern matching', () => {
     it('should match using path parameters', () => {
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         mockDefinition({ url: 'https://api.example.com/users/:id' }),
       ];
 
@@ -64,7 +64,7 @@ describe('Mock Matcher', () => {
     });
 
     it('should not match when URL pattern does not match', () => {
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         mockDefinition({ url: 'https://api.example.com/users/:id' }),
       ];
 
@@ -76,7 +76,7 @@ describe('Mock Matcher', () => {
 
   describe('Method and URL combination', () => {
     it('should require both method and URL to match', () => {
-      const mocks: ReadonlyArray<MockDefinition> = [
+      const mocks: ReadonlyArray<ScenaristMock> = [
         mockDefinition(),
         mockDefinition({ method: 'POST', url: 'https://api.example.com/posts', response: { status: 201 } }),
       ];

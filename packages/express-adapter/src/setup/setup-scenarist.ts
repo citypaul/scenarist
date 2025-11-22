@@ -1,115 +1,43 @@
-import { Router } from 'express';
-import { setupServer } from 'msw/node';
-import {
-  buildConfig,
-  createScenarioManager,
-  createResponseSelector,
-  InMemoryScenarioRegistry,
-  InMemoryScenarioStore,
-  createInMemorySequenceTracker,
-  createInMemoryStateManager,
-  type BaseAdapterOptions,
-  type ScenaristAdapter,
-  type ScenaristScenarios,
-} from '@scenarist/core';
-import { createDynamicHandler } from '@scenarist/msw-adapter';
-import { testIdStorage } from '../middleware/test-id-middleware.js';
-import { createTestIdMiddleware } from '../middleware/test-id-middleware.js';
-import { createScenarioEndpoints } from '../endpoints/scenario-endpoints.js';
+import type { ScenaristScenarios } from '@scenarist/core';
 
-/**
- * Express-specific adapter options.
- *
- * Extends BaseAdapterOptions to ensure consistency across all adapters.
- *
- * @template T - Scenarios object for type-safe scenario IDs
- */
-export type ExpressAdapterOptions<T extends ScenaristScenarios = ScenaristScenarios> =
-  BaseAdapterOptions<T>;
-
-/**
- * Express adapter instance.
- *
- * Implements ScenaristAdapter<Router> to ensure API consistency.
- *
- * @template T - Scenarios object for type-safe scenario IDs
- */
-export type ExpressScenarist<T extends ScenaristScenarios = ScenaristScenarios> =
-  ScenaristAdapter<Router, T>;
+// Re-export types from impl for public API
+export type { ExpressAdapterOptions, ExpressScenarist } from './impl.js';
 
 /**
  * Create a Scenarist instance for Express.
  *
- * This is the primary API for Express users. It wires everything automatically:
- * - MSW server with dynamic handler
- * - Test ID middleware
- * - Scenario endpoints
- * - Scenario manager with all scenarios registered upfront
+ * In production (NODE_ENV=production), this returns undefined to enable
+ * tree-shaking of all Scenarist code. In development/test environments,
+ * it returns a fully-functional ExpressScenarist instance.
+ *
+ * This pattern uses dynamic import to enable tree-shaking: the impl.js module
+ * is only loaded when needed (non-production). Combined with sideEffects: false,
+ * bundlers can eliminate the entire impl.js module from production builds.
  *
  * @example
  * ```typescript
- * const scenarios = {
- *   default: { id: 'default', ... },        // Required!
- *   cartWithState: { id: 'cartWithState', ... },
- *   premiumUser: { id: 'premiumUser', ... },
- * } as const satisfies ScenaristScenarios;
- *
- * const scenarist = createScenarist({
+ * const scenarist = await createScenarist({
  *   enabled: true,
  *   scenarios,
  * });
  *
- * app.use(scenarist.middleware);
- * beforeAll(() => scenarist.start());
- * afterAll(() => scenarist.stop());
- *
- * // TypeScript provides autocomplete for scenario IDs:
- * scenarist.switchScenario('test-123', 'premiumUser');
+ * if (scenarist) {
+ *   app.use(scenarist.middleware);
+ *   beforeAll(() => scenarist.start());
+ *   afterAll(() => scenarist.stop());
+ * }
  * ```
  */
-export const createScenarist = <T extends ScenaristScenarios>(
-  options: ExpressAdapterOptions<T>
-): ExpressScenarist<T> => {
-  const config = buildConfig(options);
-  const registry = options.registry ?? new InMemoryScenarioRegistry();
-  const store = options.store ?? new InMemoryScenarioStore();
+export const createScenarist = async <T extends ScenaristScenarios>(
+  options: import('./impl.js').ExpressAdapterOptions<T>
+): Promise<import('./impl.js').ExpressScenarist<T> | undefined> => {
+  // In production, return undefined without loading impl.js
+  // Dynamic import below is never executed, enabling tree-shaking
+  if (process.env.NODE_ENV === 'production') {
+    return undefined;
+  }
 
-  const stateManager = createInMemoryStateManager();
-  const sequenceTracker = createInMemorySequenceTracker();
-
-  const manager = createScenarioManager({ registry, store, stateManager, sequenceTracker });
-
-  // Register all scenarios upfront from the scenarios object
-  Object.values(options.scenarios).forEach((scenario) => {
-    manager.registerScenario(scenario);
-  });
-
-  const responseSelector = createResponseSelector({ sequenceTracker, stateManager });
-
-  const handler = createDynamicHandler({
-    getTestId: (_request) => testIdStorage.getStore() ?? config.defaultTestId,
-    getActiveScenario: (testId) => manager.getActiveScenario(testId),
-    getScenarioDefinition: (scenarioId) => manager.getScenarioById(scenarioId),
-    strictMode: config.strictMode,
-    responseSelector,
-  });
-
-  const server = setupServer(handler);
-
-  const middleware = Router();
-  middleware.use(createTestIdMiddleware(config));
-  middleware.use(createScenarioEndpoints(manager, config));
-
-  return {
-    config,
-    middleware,
-    switchScenario: (testId, scenarioId, variantName) =>
-      manager.switchScenario(testId, scenarioId, variantName),
-    getActiveScenario: (testId) => manager.getActiveScenario(testId),
-    getScenarioById: (scenarioId) => manager.getScenarioById(scenarioId),
-    listScenarios: () => manager.listScenarios(),
-    clearScenario: (testId) => manager.clearScenario(testId),
-    start: () => server.listen(),
-    stop: async () => server.close(),
-  };
+  // In non-production, dynamically import and create instance
+  const { createScenaristImpl } = await import('./impl.js');
+  return createScenaristImpl(options);
 };

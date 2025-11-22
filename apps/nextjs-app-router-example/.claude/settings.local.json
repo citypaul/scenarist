@@ -53,7 +53,21 @@
       "Bash(kill:*)",
       "Bash(pnpm exec tsc:*)",
       "Bash(/dev/null echo 'Waiting for port to clear...' sleep 3 echo 'Running test...' pnpm exec playwright test tests/playwright/products-repo.spec.ts --grep 'premium pricing for premium' --reporter=line)",
-      "Bash(pnpm add:*)"
+      "Bash(pnpm add:*)",
+      "Bash(cut:*)",
+      "Bash(chmod:*)",
+      "Bash(/tmp/fix-imports.sh)",
+      "Bash(python3:*)",
+      "Bash(pnpm verify:treeshaking:*)",
+      "Bash(pnpm build:production:*)",
+      "Bash(echo \"grep exit code: $?\")",
+      "Bash(pnpm turbo:*)",
+      "Bash(gh pr list:*)",
+      "Bash(esbuild:*)",
+      "Bash(pnpm exec esbuild:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(do)",
+      "Bash(do echo \"=== $file ===\" grep -v \"^import\" $file)"
     ],
     "deny": [],
     "ask": []

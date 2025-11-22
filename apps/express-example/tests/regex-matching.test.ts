@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, afterAll } from 'vitest';
 import request from 'supertest';
-import { createApp } from '../src/server.js';
+
+import { createTestFixtures } from './test-helpers.js';
 import { scenarios } from '../src/scenarios.js';
 
 /**
@@ -24,30 +25,31 @@ import { scenarios } from '../src/scenarios.js';
  * 4. MSW intercepts, matches x-campaign against /premium|vip/i
  * 5. Returns premium user data
  */
-describe('Regex Pattern Matching E2E (Server-Side)', () => {
-  const { app, scenarist } = createApp();
+const fixtures = await createTestFixtures();
 
-  beforeAll(() => {
-    scenarist.start();
-  });
+describe('Regex Pattern Matching E2E (Server-Side)', () => {
+  
+
+  
 
   afterAll(() => {
-    scenarist.stop();
+    fixtures.cleanup();
   });
 
   it('should match premium user data when campaign contains "premium"', async () => {
+
     // Switch to campaignRegex scenario
-    await request(app)
-      .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'regex-test-1')
+    await request(fixtures.app)
+      .post(fixtures.scenarist.config.endpoints.setScenario)
+      .set(fixtures.scenarist.config.headers.testId, 'regex-test-1')
       .send({ scenario: scenarios.campaignRegex.id });
 
     // Make request with campaign query param
     // API route will extract this and add as x-campaign header to the fetch
-    const response = await request(app)
+    const response = await request(fixtures.app)
       .get('/api/github/user/testuser')
       .query({ campaign: 'summer-premium-sale' })
-      .set(scenarist.config.headers.testId, 'regex-test-1');
+      .set(fixtures.scenarist.config.headers.testId, 'regex-test-1');
 
     // Expected: Premium user data (regex matched on x-campaign header in server-side fetch)
     // Pattern: /premium|vip/i should match "premium" in "summer-premium-sale"
@@ -65,16 +67,17 @@ describe('Regex Pattern Matching E2E (Server-Side)', () => {
   });
 
   it('should match premium user data when campaign contains "vip" (case insensitive)', async () => {
-    await request(app)
-      .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'regex-test-2')
+
+    await request(fixtures.app)
+      .post(fixtures.scenarist.config.endpoints.setScenario)
+      .set(fixtures.scenarist.config.headers.testId, 'regex-test-2')
       .send({ scenario: scenarios.campaignRegex.id });
 
     // Test case-insensitive flag: "VIP" should match /premium|vip/i
-    const response = await request(app)
+    const response = await request(fixtures.app)
       .get('/api/github/user/testuser')
       .query({ campaign: 'early-VIP-access' })
-      .set(scenarist.config.headers.testId, 'regex-test-2');
+      .set(fixtures.scenarist.config.headers.testId, 'regex-test-2');
 
     // Expected: Premium user data (regex matched "VIP" with 'i' flag)
     expect(response.status).toBe(200);
@@ -83,16 +86,17 @@ describe('Regex Pattern Matching E2E (Server-Side)', () => {
   });
 
   it('should fallback to guest user when campaign does NOT match pattern', async () => {
-    await request(app)
-      .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'regex-test-3')
+
+    await request(fixtures.app)
+      .post(fixtures.scenarist.config.endpoints.setScenario)
+      .set(fixtures.scenarist.config.headers.testId, 'regex-test-3')
       .send({ scenario: scenarios.campaignRegex.id });
 
     // Campaign that does NOT match /premium|vip/i
-    const response = await request(app)
+    const response = await request(fixtures.app)
       .get('/api/github/user/testuser')
       .query({ campaign: 'summer-sale' })
-      .set(scenarist.config.headers.testId, 'regex-test-3');
+      .set(fixtures.scenarist.config.headers.testId, 'regex-test-3');
 
     // Expected: Guest user (no regex match, fallback to default scenario)
     expect(response.status).toBe(200);
@@ -101,15 +105,16 @@ describe('Regex Pattern Matching E2E (Server-Side)', () => {
   });
 
   it('should fallback to guest user when campaign param is missing', async () => {
-    await request(app)
-      .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'regex-test-4')
+
+    await request(fixtures.app)
+      .post(fixtures.scenarist.config.endpoints.setScenario)
+      .set(fixtures.scenarist.config.headers.testId, 'regex-test-4')
       .send({ scenario: scenarios.campaignRegex.id });
 
     // No campaign param - x-campaign header won't be added to fetch
-    const response = await request(app)
+    const response = await request(fixtures.app)
       .get('/api/github/user/testuser')
-      .set(scenarist.config.headers.testId, 'regex-test-4');
+      .set(fixtures.scenarist.config.headers.testId, 'regex-test-4');
 
     // Expected: Guest user (no x-campaign header = no match, fallback to default)
     expect(response.status).toBe(200);
@@ -118,16 +123,17 @@ describe('Regex Pattern Matching E2E (Server-Side)', () => {
   });
 
   it('should demonstrate partial match within campaign string', async () => {
-    await request(app)
-      .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'regex-test-5')
+
+    await request(fixtures.app)
+      .post(fixtures.scenarist.config.endpoints.setScenario)
+      .set(fixtures.scenarist.config.headers.testId, 'regex-test-5')
       .send({ scenario: scenarios.campaignRegex.id });
 
     // Pattern should match "premium" anywhere in the campaign string
-    const response = await request(app)
+    const response = await request(fixtures.app)
       .get('/api/github/user/testuser')
       .query({ campaign: 'partners-premium-tier' })
-      .set(scenarist.config.headers.testId, 'regex-test-5');
+      .set(fixtures.scenarist.config.headers.testId, 'regex-test-5');
 
     // Expected: Premium user data (regex finds "premium" in middle of string)
     expect(response.status).toBe(200);
@@ -136,29 +142,30 @@ describe('Regex Pattern Matching E2E (Server-Side)', () => {
   });
 
   it('should maintain test ID isolation with regex matching', async () => {
+
     // Test ID 1: Premium campaign
-    await request(app)
-      .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'regex-isolation-1')
+    await request(fixtures.app)
+      .post(fixtures.scenarist.config.endpoints.setScenario)
+      .set(fixtures.scenarist.config.headers.testId, 'regex-isolation-1')
       .send({ scenario: scenarios.campaignRegex.id });
 
     // Test ID 2: Non-matching campaign
-    await request(app)
-      .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'regex-isolation-2')
+    await request(fixtures.app)
+      .post(fixtures.scenarist.config.endpoints.setScenario)
+      .set(fixtures.scenarist.config.headers.testId, 'regex-isolation-2')
       .send({ scenario: scenarios.campaignRegex.id });
 
     // Test ID 1 with premium campaign
-    const response1 = await request(app)
+    const response1 = await request(fixtures.app)
       .get('/api/github/user/user1')
       .query({ campaign: 'premium-2024' })
-      .set(scenarist.config.headers.testId, 'regex-isolation-1');
+      .set(fixtures.scenarist.config.headers.testId, 'regex-isolation-1');
 
     // Test ID 2 with standard campaign
-    const response2 = await request(app)
+    const response2 = await request(fixtures.app)
       .get('/api/github/user/user2')
       .query({ campaign: 'standard-2024' })
-      .set(scenarist.config.headers.testId, 'regex-isolation-2');
+      .set(fixtures.scenarist.config.headers.testId, 'regex-isolation-2');
 
     // Each test ID gets its matched response independently
     expect(response1.body.name).toBe('Premium Campaign User');

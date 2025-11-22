@@ -7,7 +7,7 @@ describe('Response Builder', () => {
     it('should build response with status code', async () => {
       const mock = mockDefinition();
 
-      const response = await buildResponse(mock.response);
+      const response = await buildResponse(mock.response!);
 
       expect(response.status).toBe(200);
     });
@@ -20,7 +20,7 @@ describe('Response Builder', () => {
         },
       });
 
-      const response = await buildResponse(mock.response);
+      const response = await buildResponse(mock.response!);
       const body = await response.json();
 
       expect(response.status).toBe(200);
@@ -38,7 +38,7 @@ describe('Response Builder', () => {
         },
       });
 
-      const response = await buildResponse(mock.response);
+      const response = await buildResponse(mock.response!);
 
       expect(response.headers.get('X-Custom-Header')).toBe('custom-value');
       expect(response.headers.get('Content-Type')).toBe('application/json');
@@ -54,7 +54,7 @@ describe('Response Builder', () => {
         },
       });
 
-      const responsePromise = buildResponse(mock.response);
+      const responsePromise = buildResponse(mock.response!);
 
       await vi.advanceTimersByTimeAsync(100);
       const response = await responsePromise;
@@ -73,7 +73,7 @@ describe('Response Builder', () => {
         },
       });
 
-      const response = await buildResponse(mock.response);
+      const response = await buildResponse(mock.response!);
 
       expect(response.status).toBe(204);
     });
@@ -93,7 +93,7 @@ describe('Response Builder', () => {
         },
       });
 
-      const responsePromise = buildResponse(mock.response);
+      const responsePromise = buildResponse(mock.response!);
 
       await vi.advanceTimersByTimeAsync(50);
       const response = await responsePromise;

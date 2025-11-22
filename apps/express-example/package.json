@@ -12,7 +12,9 @@
     "test:bruno": "cd bruno && bru run --env local",
     "test:bruno:ci": "concurrently --kill-others --success first -n SERVER,TESTS 'pnpm start' 'wait-on http://localhost:3000/health && pnpm test:bruno'",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "build:production": "esbuild src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --external:express --define:process.env.NODE_ENV='\"production\"' --minify --conditions=production",
+    "verify:treeshaking": "pnpm build:production && ! grep -rE '(setupWorker|startWorker|http\\.(get|post|put|delete|patch)|HttpResponse\\.json)' dist/"
   },
   "dependencies": {
     "@scenarist/express-adapter": "workspace:*",
@@ -28,6 +30,7 @@
     "@usebruno/cli": "^2.14.2",
     "@vitest/coverage-v8": "^4.0.8",
     "concurrently": "^9.2.1",
+    "esbuild": "^0.27.0",
     "eslint": "^9.39.1",
     "msw": "^2.12.1",
     "supertest": "^7.0.0",

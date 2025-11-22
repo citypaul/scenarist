@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { NextApiRequest } from 'next';
 import type { IncomingMessage } from 'http';
 import type { NextApiRequestCookies } from 'next/dist/server/api-utils';
-import type { ScenarioDefinition, ScenariosObject } from '@scenarist/core';
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/core';
 import { createScenarist } from '../../src/pages/setup.js';
 
 // Define all test scenarios upfront
@@ -25,7 +25,7 @@ const testScenarios = {
     description: 'Second test scenario',
     mocks: [],
   },
-} as const satisfies ScenariosObject;
+} as const satisfies ScenaristScenarios;
 
 const createTestSetup = () => {
   const scenarist = createScenarist({

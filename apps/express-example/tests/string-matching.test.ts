@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, afterAll } from 'vitest';
 import request from 'supertest';
-import { createApp } from '../src/server.js';
+
+import { createTestFixtures } from './test-helpers.js';
 import { scenarios } from '../src/scenarios.js';
 
 /**
@@ -17,15 +18,15 @@ import { scenarios } from '../src/scenarios.js';
  * - Tests header/query param matching through external API mocks
  * - Verifies automatic default fallback behavior
  */
-describe('String Matching Strategies - Express', () => {
-  const { app, scenarist } = createApp();
 
-  beforeAll(() => {
-    scenarist.start();
-  });
+const fixtures = await createTestFixtures();
+
+describe('String Matching Strategies - Express', () => {
+
+  
 
   afterAll(() => {
-    scenarist.stop();
+    fixtures.cleanup();
   });
 
   /**
@@ -43,17 +44,18 @@ describe('String Matching Strategies - Express', () => {
    * - 'standard-sale' (doesn't contain 'premium')
    */
   it('should match header using contains strategy', async () => {
+
     // Switch to string matching scenario
-    await request(app)
-      .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'string-test-1')
+    await request(fixtures.app)
+      .post(fixtures.scenarist.config.endpoints.setScenario)
+      .set(fixtures.scenarist.config.headers.testId, 'string-test-1')
       .send({ scenario: scenarios.stringMatching.id });
 
     // Make request with campaign containing 'premium'
-    const response = await request(app)
+    const response = await request(fixtures.app)
       .get('/api/test-string-match/contains/testuser')
       .query({ campaign: 'summer-premium-sale' })
-      .set(scenarist.config.headers.testId, 'string-test-1');
+      .set(fixtures.scenarist.config.headers.testId, 'string-test-1');
 
     // Verify premium response returned
     expect(response.status).toBe(200);
@@ -63,16 +65,17 @@ describe('String Matching Strategies - Express', () => {
   });
 
   it('should NOT match when header doesn\'t contain substring', async () => {
-    await request(app)
-      .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'string-test-2')
+
+    await request(fixtures.app)
+      .post(fixtures.scenarist.config.endpoints.setScenario)
+      .set(fixtures.scenarist.config.headers.testId, 'string-test-2')
       .send({ scenario: scenarios.stringMatching.id });
 
     // Make request with campaign NOT containing 'premium'
-    const response = await request(app)
+    const response = await request(fixtures.app)
       .get('/api/test-string-match/contains/testuser')
       .query({ campaign: 'standard-sale' })
-      .set(scenarist.config.headers.testId, 'string-test-2');
+      .set(fixtures.scenarist.config.headers.testId, 'string-test-2');
 
     // Should fall back to standard response (no match)
     expect(response.status).toBe(200);
@@ -96,16 +99,17 @@ describe('String Matching Strategies - Express', () => {
    * - 'test_sk_12345' (contains but doesn't start with)
    */
   it('should match header using startsWith strategy', async () => {
-    await request(app)
-      .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'string-test-3')
+
+    await request(fixtures.app)
+      .post(fixtures.scenarist.config.endpoints.setScenario)
+      .set(fixtures.scenarist.config.headers.testId, 'string-test-3')
       .send({ scenario: scenarios.stringMatching.id });
 
     // Make request with API key starting with 'sk_'
-    const response = await request(app)
+    const response = await request(fixtures.app)
       .get('/api/test-string-match/starts-with')
       .query({ apiKey: 'sk_test_12345' })
-      .set(scenarist.config.headers.testId, 'string-test-3');
+      .set(fixtures.scenarist.config.headers.testId, 'string-test-3');
 
     // Verify valid API key response
     expect(response.status).toBe(200);
@@ -115,16 +119,17 @@ describe('String Matching Strategies - Express', () => {
   });
 
   it('should NOT match when header doesn\'t start with prefix', async () => {
-    await request(app)
-      .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'string-test-4')
+
+    await request(fixtures.app)
+      .post(fixtures.scenarist.config.endpoints.setScenario)
+      .set(fixtures.scenarist.config.headers.testId, 'string-test-4')
       .send({ scenario: scenarios.stringMatching.id });
 
     // Make request with API key NOT starting with 'sk_'
-    const response = await request(app)
+    const response = await request(fixtures.app)
       .get('/api/test-string-match/starts-with')
       .query({ apiKey: 'pk_test_12345' })
-      .set(scenarist.config.headers.testId, 'string-test-4');
+      .set(fixtures.scenarist.config.headers.testId, 'string-test-4');
 
     // Should not see the startsWith match (MSW may return error or passthrough)
     // Since strictMode: false, this should passthrough to real API which will fail
@@ -146,16 +151,17 @@ describe('String Matching Strategies - Express', () => {
    * - 'company.com' (exact match but no @)
    */
   it('should match query param using endsWith strategy', async () => {
-    await request(app)
-      .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'string-test-5')
+
+    await request(fixtures.app)
+      .post(fixtures.scenarist.config.endpoints.setScenario)
+      .set(fixtures.scenarist.config.headers.testId, 'string-test-5')
       .send({ scenario: scenarios.stringMatching.id });
 
     // Make request with email ending with '@company.com'
-    const response = await request(app)
+    const response = await request(fixtures.app)
       .get('/api/test-string-match/ends-with/testuser')
       .query({ email: 'john@company.com' })
-      .set(scenarist.config.headers.testId, 'string-test-5');
+      .set(fixtures.scenarist.config.headers.testId, 'string-test-5');
 
     // Verify company users are returned
     expect(response.status).toBe(200);
@@ -166,16 +172,17 @@ describe('String Matching Strategies - Express', () => {
   });
 
   it('should NOT match when query param doesn\'t end with suffix', async () => {
-    await request(app)
-      .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'string-test-6')
+
+    await request(fixtures.app)
+      .post(fixtures.scenarist.config.endpoints.setScenario)
+      .set(fixtures.scenarist.config.headers.testId, 'string-test-6')
       .send({ scenario: scenarios.stringMatching.id });
 
     // Make request with email NOT ending with '@company.com'
-    const response = await request(app)
+    const response = await request(fixtures.app)
       .get('/api/test-string-match/ends-with/testuser')
       .query({ email: 'john@example.com' })
-      .set(scenarist.config.headers.testId, 'string-test-6');
+      .set(fixtures.scenarist.config.headers.testId, 'string-test-6');
 
     // Should not see the endsWith match (passthrough to real API with strictMode: false)
     // Real GitHub API returns 200 with empty array for non-existent user
@@ -201,16 +208,17 @@ describe('String Matching Strategies - Express', () => {
    * - 'EXACT-VALUE' (case-sensitive)
    */
   it('should match header using equals strategy', async () => {
-    await request(app)
-      .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'string-test-7')
+
+    await request(fixtures.app)
+      .post(fixtures.scenarist.config.endpoints.setScenario)
+      .set(fixtures.scenarist.config.headers.testId, 'string-test-7')
       .send({ scenario: scenarios.stringMatching.id });
 
     // Make request with exact header value
-    const response = await request(app)
+    const response = await request(fixtures.app)
       .get('/api/test-string-match/equals')
       .query({ exact: 'exact-value' })
-      .set(scenarist.config.headers.testId, 'string-test-7');
+      .set(fixtures.scenarist.config.headers.testId, 'string-test-7');
 
     // Verify exact match response
     expect(response.status).toBe(200);
@@ -220,16 +228,17 @@ describe('String Matching Strategies - Express', () => {
   });
 
   it('should NOT match when header value is not exact', async () => {
-    await request(app)
-      .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'string-test-8')
+
+    await request(fixtures.app)
+      .post(fixtures.scenarist.config.endpoints.setScenario)
+      .set(fixtures.scenarist.config.headers.testId, 'string-test-8')
       .send({ scenario: scenarios.stringMatching.id });
 
     // Make request with non-exact header value
-    const response = await request(app)
+    const response = await request(fixtures.app)
       .get('/api/test-string-match/equals')
       .query({ exact: 'exact-value-plus' })
-      .set(scenarist.config.headers.testId, 'string-test-8');
+      .set(fixtures.scenarist.config.headers.testId, 'string-test-8');
 
     // Should not see the equals match (MSW may return error or passthrough)
     expect(response.status).not.toBe(200);
@@ -242,16 +251,17 @@ describe('String Matching Strategies - Express', () => {
    * This ensures our changes are backward compatible.
    */
   it('should maintain backward compatibility with plain string matching', async () => {
+
     // Use existing default scenario (uses plain string matching)
-    await request(app)
-      .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'string-test-9')
+    await request(fixtures.app)
+      .post(fixtures.scenarist.config.endpoints.setScenario)
+      .set(fixtures.scenarist.config.headers.testId, 'string-test-9')
       .send({ scenario: scenarios.default.id });
 
     // Make request to GitHub API
-    const response = await request(app)
+    const response = await request(fixtures.app)
       .get('/api/github/user/octocat')
-      .set(scenarist.config.headers.testId, 'string-test-9');
+      .set(fixtures.scenarist.config.headers.testId, 'string-test-9');
 
     // Should still work with exact string match
     expect(response.status).toBe(200);
