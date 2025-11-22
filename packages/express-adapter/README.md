@@ -726,6 +726,183 @@ const scenarist = createScenarist({
 });
 ```
 
+## Production Tree-Shaking
+
+Scenarist is designed to be **completely eliminated from production bundles** when `NODE_ENV=production`. The implementation automatically disables itself and returns `undefined`, allowing bundlers to remove all Scenarist and MSW code through tree-shaking.
+
+### Unbundled Deployments (Most Express Apps) ✅
+
+**For most Express applications** that deploy unbundled code directly to production (the standard pattern), tree-shaking works **automatically with zero configuration**:
+
+```bash
+# Deploy your application
+NODE_ENV=production node src/server.js
+```
+
+**How it works:**
+1. `process.env.NODE_ENV === 'production'` evaluates to `true` at runtime
+2. `createScenarist()` returns `undefined` without loading dependencies
+3. MSW and all Scenarist code **never loads into memory**
+4. Zero performance impact, zero bundle bloat
+
+**This is the default use case** - most Express applications don't bundle their server code.
+
+### Bundled Deployments (esbuild, webpack, Vite, rollup)
+
+**For teams that bundle their Express server code**, additional bundler configuration is required to enable complete tree-shaking.
+
+**Why configuration is needed:**
+
+Scenarist uses **conditional package.json exports** to provide a production-specific entry point with zero dependencies:
+
+```json
+{
+  "exports": {
+    ".": {
+      "production": "./dist/setup/production.js",  // Zero imports
+      "default": "./dist/index.js"                 // Full implementation
+    }
+  }
+}
+```
+
+The `"production"` condition is a **custom condition** (not a Node.js built-in like `"import"` or `"require"`). Bundlers must be explicitly configured to recognize it.
+
+**Without configuration:**
+- MSW code included in bundle (~320kb)
+- Code never executes (safe)
+- Wastes bandwidth
+
+**With configuration:**
+- MSW code completely eliminated
+- Bundle size reduced by ~52% (618kb → 298kb)
+- Optimal production deployment
+
+### Bundler Configuration
+
+#### esbuild
+
+Add the `--conditions=production` flag:
+
+```json
+{
+  "scripts": {
+    "build": "esbuild src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --define:process.env.NODE_ENV='\"production\"' --conditions=production"
+  }
+}
+```
+
+#### webpack
+
+Add `conditionNames` to resolve configuration:
+
+```javascript
+// webpack.config.js
+module.exports = {
+  mode: 'production',
+  resolve: {
+    conditionNames: ['production', 'import', 'require']
+  },
+  plugins: [
+    new webpack.DefinePlugin({
+      'process.env.NODE_ENV': JSON.stringify('production')
+    })
+  ]
+};
+```
+
+#### Vite
+
+Add `conditions` to resolve configuration:
+
+```javascript
+// vite.config.js
+export default {
+  resolve: {
+    conditions: ['production']
+  },
+  define: {
+    'process.env.NODE_ENV': JSON.stringify('production')
+  }
+};
+```
+
+#### rollup
+
+Add `exportConditions` to node-resolve plugin:
+
+```javascript
+// rollup.config.js
+import resolve from '@rollup/plugin-node-resolve';
+import replace from '@rollup/plugin-replace';
+
+export default {
+  plugins: [
+    resolve({
+      exportConditions: ['production']
+    }),
+    replace({
+      'process.env.NODE_ENV': JSON.stringify('production'),
+      preventAssignment: true
+    })
+  ]
+};
+```
+
+### Verifying Tree-Shaking
+
+The Express example app includes a verification script you can adapt:
+
+```json
+{
+  "scripts": {
+    "build:production": "esbuild src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --external:express --define:process.env.NODE_ENV='\"production\"' --minify --conditions=production",
+    "verify:treeshaking": "pnpm build:production && ! grep -rE '(setupWorker|startWorker|http\\.(get|post|put|delete|patch)|HttpResponse\\.json)' dist/"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.0"
+  }
+}
+```
+
+**Run verification:**
+```bash
+pnpm verify:treeshaking
+```
+
+**Success output:**
+```
+dist/server.js  298.4kb
+
+✨ Done in 13ms
+```
+
+The script checks that MSW-specific implementation patterns (`setupWorker`, `HttpResponse.json`, etc.) are **not present** in the production bundle.
+
+### Bundle Size Comparison
+
+**Without tree-shaking configuration:**
+- Bundle size: ~618kb
+- Includes: Application + Zod + MSW + Scenarist
+- Status: Code included but never executes
+
+**With tree-shaking configuration:**
+- Bundle size: ~298kb (52% reduction)
+- Includes: Application + Zod only
+- Status: MSW and Scenarist completely eliminated
+
+### Trade-Offs
+
+| Deployment Type | Configuration Required | Tree-Shaking | Bundle Impact |
+|----------------|------------------------|--------------|---------------|
+| **Unbundled** (standard Express) | ✅ None | ✅ Automatic | ✅ Zero (code never loads) |
+| **Bundled** without config | ❌ None | ❌ Partial | ⚠️ ~320kb dead code |
+| **Bundled** with config | ✅ One line | ✅ Complete | ✅ Zero (eliminated) |
+
+**Recommendation:**
+- If you're deploying unbundled code: No action needed ✅
+- If you're bundling: Add the one-line bundler configuration for optimal bundle size
+
 ## Troubleshooting
 
 ### Scenarios switch but requests aren't mocked

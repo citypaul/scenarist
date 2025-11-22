@@ -26,6 +26,10 @@
     "dev": {
       "cache": false,
       "persistent": true
+    },
+    "verify:treeshaking": {
+      "dependsOn": ["build"],
+      "outputs": ["dist/**"]
     }
   }
 }

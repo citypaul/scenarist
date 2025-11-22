@@ -854,6 +854,119 @@ Exceptions to the 100% rule require explicit documentation and justification. As
 
 The `noUnusedParameters` rule caught that `config` wasn't being used in `ScenarioManager`, leading us to discover it didn't belong there. This is strict mode working as intended - if a parameter isn't used, question whether it should exist.
 
+### Production Tree-Shaking with Conditional Exports
+
+**CRITICAL INSIGHT**: Dynamic imports alone are insufficient for tree-shaking in bundled applications. Conditional package.json exports are required for complete MSW code elimination.
+
+**The Problem:**
+
+Initial implementation used dynamic imports with environment checks:
+
+```typescript
+// setup-scenarist.ts
+export const createScenarist = async (options) => {
+  if (process.env.NODE_ENV === 'production') {
+    return undefined;
+  }
+  const { createScenaristImpl } = await import('./impl.js');
+  return createScenaristImpl(options);
+};
+```
+
+**Why this doesn't work with bundlers:**
+- Bundlers (esbuild, webpack, rollup, vite) treat dynamic imports as code-splitting boundaries
+- Even with `--define:process.env.NODE_ENV='"production"'`, bundlers include the dynamically imported module
+- Result: 618kb bundle including all MSW code (never executed, but still present)
+
+**The Solution: Conditional Package.json Exports**
+
+Created separate production entry point with **zero imports**:
+
+```typescript
+// production.ts
+export const createScenarist = async (_options) => {
+  return undefined;  // No imports, no dependencies
+};
+```
+
+Updated package.json with conditional exports:
+
+```json
+{
+  "exports": {
+    ".": {
+      "production": "./dist/setup/production.js",  // Zero dependencies
+      "default": "./dist/index.js"                 // Full implementation
+    }
+  }
+}
+```
+
+**Results:**
+- ✅ Bundle size: 618kb → 298kb (52% reduction)
+- ✅ Zero MSW code in production bundle
+- ✅ Complete tree-shaking achieved
+
+**Deployment Models:**
+
+1. **Unbundled Express apps** (most common): Tree-shaking automatic ✅
+   - `NODE_ENV=production node server.js`
+   - Dynamic imports never execute
+   - MSW code never loads into memory
+   - **Zero configuration required**
+
+2. **Bundled deployments**: Requires bundler configuration
+   - esbuild: `--conditions=production`
+   - webpack: `resolve.conditionNames: ['production']`
+   - vite: `resolve.conditions: ['production']`
+   - rollup: `exportConditions: ['production']`
+
+**Why "production" is a custom condition:**
+
+Built-in Node.js conditions:
+- `import` - ESM imports
+- `require` - CommonJS require
+- `node` - Node.js environment
+- `default` - Fallback
+
+Custom conditions (like "production"):
+- Must be explicitly recognized by bundler via configuration
+- Not automatically applied
+- Enables different entry points for different build targets
+
+**Verification Script:**
+
+```json
+{
+  "scripts": {
+    "build:production": "esbuild --bundle --conditions=production --define:process.env.NODE_ENV='\"production\"'",
+    "verify:treeshaking": "pnpm build:production && ! grep -rE '(setupWorker|HttpResponse\\.json)' dist/"
+  }
+}
+```
+
+Integrated into Turborepo pipeline:
+
+```json
+{
+  "tasks": {
+    "verify:treeshaking": {
+      "dependsOn": ["build"],
+      "outputs": ["dist/**"]
+    }
+  }
+}
+```
+
+**Key Lessons:**
+1. Dynamic imports ≠ tree-shaking in bundlers
+2. Conditional exports enable true code elimination
+3. "production" condition requires explicit bundler configuration
+4. Unbundled deployments work automatically (most Express apps)
+5. Verification scripts prevent regression
+
+**For user documentation, see:** [Express Adapter README - Production Tree-Shaking](packages/express-adapter/README.md#production-tree-shaking)
+
 ## Anti-Patterns to Avoid
 
 ### In Core Package

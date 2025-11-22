@@ -57,7 +57,11 @@
       "Bash(cut:*)",
       "Bash(chmod:*)",
       "Bash(/tmp/fix-imports.sh)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(pnpm verify:treeshaking:*)",
+      "Bash(pnpm build:production:*)",
+      "Bash(echo \"grep exit code: $?\")",
+      "Bash(pnpm turbo:*)"
     ],
     "deny": [],
     "ask": []

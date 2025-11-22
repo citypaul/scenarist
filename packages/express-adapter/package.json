@@ -31,7 +31,8 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "production": "./dist/setup/production.js",
+      "default": "./dist/index.js"
     }
   },
   "files": [

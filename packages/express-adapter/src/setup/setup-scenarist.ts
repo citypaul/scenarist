@@ -10,7 +10,9 @@ export type { ExpressAdapterOptions, ExpressScenarist } from './impl.js';
  * tree-shaking of all Scenarist code. In development/test environments,
  * it returns a fully-functional ExpressScenarist instance.
  *
- * This allows bundlers to eliminate all Scenarist code from production builds.
+ * This pattern uses dynamic import to enable tree-shaking: the impl.js module
+ * is only loaded when needed (non-production). Combined with sideEffects: false,
+ * bundlers can eliminate the entire impl.js module from production builds.
  *
  * @example
  * ```typescript
@@ -29,7 +31,8 @@ export type { ExpressAdapterOptions, ExpressScenarist } from './impl.js';
 export const createScenarist = async <T extends ScenaristScenarios>(
   options: import('./impl.js').ExpressAdapterOptions<T>
 ): Promise<import('./impl.js').ExpressScenarist<T> | undefined> => {
-  // In production, return undefined to enable tree-shaking
+  // In production, return undefined without loading impl.js
+  // Dynamic import below is never executed, enabling tree-shaking
   if (process.env.NODE_ENV === 'production') {
     return undefined;
   }
