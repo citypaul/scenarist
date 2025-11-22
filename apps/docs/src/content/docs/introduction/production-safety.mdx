@@ -47,9 +47,7 @@ This pattern ensures:
 
 ## Bundle Size Impact
 
-**Before tree-shaking:** Adding Scenarist to your codebase increases bundle size by ~300KB
-
-**After tree-shaking:** Production bundles contain **zero Scenarist code** (~0KB impact)
+Production bundles contain **zero Scenarist code** - the production wrapper pattern combined with tree-shaking completely eliminates all test code from your production builds.
 
 ### Verification
 
@@ -311,7 +309,7 @@ Run: `npm run verify:production`
 
 **❌ Failed verification (tree-shaking didn't work):**
 - Bundle contains `scenarist` or `msw` strings
-- Bundle size increased by ~300KB
+- Bundle size significantly larger than expected
 - `createScenarist` function visible in bundle
 - MSW handlers appear in production code
 
