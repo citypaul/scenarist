@@ -78,7 +78,6 @@ describe("Products with Repository Pattern", () => {
 
 
   // Start MSW for HTTP mocking
-  if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
   fixtures.scenarist.start();
 
   /**

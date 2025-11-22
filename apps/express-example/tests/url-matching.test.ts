@@ -45,7 +45,6 @@ describe('URL Matching Strategies - Express', () => {
    * - '/users/123' (ends with different number)
    */
   it('should match URL with numeric ID using native RegExp', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -63,7 +62,6 @@ describe('URL Matching Strategies - Express', () => {
   });
 
   it('should NOT match non-numeric ID (fallback to path param mock)', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -93,7 +91,6 @@ describe('URL Matching Strategies - Express', () => {
    * - URLs without '/weather/' substring
    */
   it('should match URL containing "/weather/" using contains strategy', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -123,7 +120,6 @@ describe('URL Matching Strategies - Express', () => {
    * - 'https://api.weather.com/v1/weather/london' (starts with v1, not v2)
    */
   it('should match v2 API URL using startsWith strategy', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -141,7 +137,6 @@ describe('URL Matching Strategies - Express', () => {
   });
 
   it('should NOT match v1 API URL (fallback)', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -170,7 +165,6 @@ describe('URL Matching Strategies - Express', () => {
    * - '/repos/owner/repo/contents/readme.txt' (ends with .txt)
    */
   it('should match .json file extension using endsWith strategy', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -188,7 +182,6 @@ describe('URL Matching Strategies - Express', () => {
   });
 
   it('should NOT match non-.json file (fallback)', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -214,7 +207,6 @@ describe('URL Matching Strategies - Express', () => {
    * Should NOT match when only URL matches (header mismatch)
    */
   it('should match when both URL and header match', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -232,7 +224,6 @@ describe('URL Matching Strategies - Express', () => {
   });
 
   it('should NOT match when URL matches but header does not (fallback)', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -258,7 +249,6 @@ describe('URL Matching Strategies - Express', () => {
    * Should match only the exact URL
    */
   it('should match exact URL string', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -294,7 +284,6 @@ describe('URL Matching Strategies - Express', () => {
      * Should extract different IDs and return user-specific data
      */
     it('should extract simple path parameter :id and route to different users', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -327,7 +316,6 @@ describe('URL Matching Strategies - Express', () => {
      * Should extract both parameters correctly
      */
     it('should extract multiple path parameters :userId and :postId', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)

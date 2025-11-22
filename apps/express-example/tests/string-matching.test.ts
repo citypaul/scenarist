@@ -44,7 +44,6 @@ describe('String Matching Strategies - Express', () => {
    * - 'standard-sale' (doesn't contain 'premium')
    */
   it('should match header using contains strategy', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     // Switch to string matching scenario
     await request(fixtures.app)
@@ -66,7 +65,6 @@ describe('String Matching Strategies - Express', () => {
   });
 
   it('should NOT match when header doesn\'t contain substring', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -101,7 +99,6 @@ describe('String Matching Strategies - Express', () => {
    * - 'test_sk_12345' (contains but doesn't start with)
    */
   it('should match header using startsWith strategy', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -122,7 +119,6 @@ describe('String Matching Strategies - Express', () => {
   });
 
   it('should NOT match when header doesn\'t start with prefix', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -155,7 +151,6 @@ describe('String Matching Strategies - Express', () => {
    * - 'company.com' (exact match but no @)
    */
   it('should match query param using endsWith strategy', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -177,7 +172,6 @@ describe('String Matching Strategies - Express', () => {
   });
 
   it('should NOT match when query param doesn\'t end with suffix', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -214,7 +208,6 @@ describe('String Matching Strategies - Express', () => {
    * - 'EXACT-VALUE' (case-sensitive)
    */
   it('should match header using equals strategy', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -235,7 +228,6 @@ describe('String Matching Strategies - Express', () => {
   });
 
   it('should NOT match when header value is not exact', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -259,7 +251,6 @@ describe('String Matching Strategies - Express', () => {
    * This ensures our changes are backward compatible.
    */
   it('should maintain backward compatibility with plain string matching', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     // Use existing default scenario (uses plain string matching)
     await request(fixtures.app)

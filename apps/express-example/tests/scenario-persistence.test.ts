@@ -18,7 +18,6 @@ describe('Scenario Persistence Across Multiple Requests E2E', () => {
 
   describe('Single scenario across multiple API calls', () => {
     it('should persist success scenario across multiple different API requests', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
       const testId = 'multi-request-success';
 
@@ -58,7 +57,6 @@ describe('Scenario Persistence Across Multiple Requests E2E', () => {
     });
 
     it('should persist github-not-found scenario across multiple requests with fallback', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
       const testId = 'multi-request-github-error';
 
@@ -104,7 +102,6 @@ describe('Scenario Persistence Across Multiple Requests E2E', () => {
     });
 
     it('should persist mixed-results scenario showing both errors and success', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
       const testId = 'multi-request-mixed';
 
@@ -151,7 +148,6 @@ describe('Scenario Persistence Across Multiple Requests E2E', () => {
 
   describe('Simulating user journey with scenario persistence', () => {
     it('should maintain stripe-failure scenario throughout a payment flow', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
       const testId = 'payment-flow-failure';
 
@@ -197,7 +193,6 @@ describe('Scenario Persistence Across Multiple Requests E2E', () => {
     });
 
     it('should maintain success scenario throughout a complete user journey', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
       const testId = 'complete-journey-success';
 
@@ -255,7 +250,6 @@ describe('Scenario Persistence Across Multiple Requests E2E', () => {
 
   describe('Scenario persistence with no scenario set', () => {
     it('should consistently use default scenario across multiple requests', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
       const testId = 'no-scenario-multi-request';
 
@@ -306,7 +300,6 @@ describe('Scenario Persistence Across Multiple Requests E2E', () => {
 
   describe('Scenario switching during a session', () => {
     it('should allow switching scenarios mid-session and persist new scenario', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
       const testId = 'scenario-switch-mid-session';
 

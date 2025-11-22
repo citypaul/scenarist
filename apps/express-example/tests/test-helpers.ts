@@ -8,8 +8,11 @@ import { scenarios } from '../src/scenarios.js';
  *
  * This factory function:
  * 1. Creates the Express app with Scenarist configured
- * 2. Starts the MSW server if Scenarist is enabled
+ * 2. Starts the MSW server
  * 3. Returns cleanup function to stop MSW after tests
+ *
+ * IMPORTANT: This is a test-only helper. Scenarist MUST be enabled in test environment.
+ * If scenarist is undefined, this function will throw immediately.
  *
  * Usage:
  * ```typescript
@@ -21,29 +24,34 @@ import { scenarios } from '../src/scenarios.js';
  *   });
  *
  *   it('should work', async () => {
- *     await request(fixtures.app).get('/api/test')...
+ *     // No null checks needed - scenarist is guaranteed non-null
+ *     await request(fixtures.app)
+ *       .post(fixtures.scenarist.config.endpoints.setScenario)
+ *       ...
  *   });
  * });
  * ```
  */
 export const createTestFixtures = async (): Promise<{
   app: Express;
-  scenarist: ExpressScenarist<typeof scenarios> | undefined;
+  scenarist: ExpressScenarist<typeof scenarios>;
   cleanup: () => void;
 }> => {
   const setup = await createApp();
 
-  if (setup.scenarist) {
-    setup.scenarist.start();
+  if (!setup.scenarist) {
+    throw new Error(
+      'Scenarist not initialized - ensure NODE_ENV is set to "test" or scenarist.enabled is true'
+    );
   }
+
+  setup.scenarist.start();
 
   return {
     app: setup.app,
     scenarist: setup.scenarist,
     cleanup: () => {
-      if (setup.scenarist) {
-        setup.scenarist.stop();
-      }
+      setup.scenarist?.stop();
     },
   };
 };

@@ -37,7 +37,6 @@ describe('Regex Pattern Matching E2E (Server-Side)', () => {
   });
 
   it('should match premium user data when campaign contains "premium"', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     // Switch to campaignRegex scenario
     await request(fixtures.app)
@@ -68,7 +67,6 @@ describe('Regex Pattern Matching E2E (Server-Side)', () => {
   });
 
   it('should match premium user data when campaign contains "vip" (case insensitive)', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -88,7 +86,6 @@ describe('Regex Pattern Matching E2E (Server-Side)', () => {
   });
 
   it('should fallback to guest user when campaign does NOT match pattern', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -108,7 +105,6 @@ describe('Regex Pattern Matching E2E (Server-Side)', () => {
   });
 
   it('should fallback to guest user when campaign param is missing', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -127,7 +123,6 @@ describe('Regex Pattern Matching E2E (Server-Side)', () => {
   });
 
   it('should demonstrate partial match within campaign string', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -147,7 +142,6 @@ describe('Regex Pattern Matching E2E (Server-Side)', () => {
   });
 
   it('should maintain test ID isolation with regex matching', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     // Test ID 1: Premium campaign
     await request(fixtures.app)

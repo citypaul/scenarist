@@ -20,7 +20,6 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
 
   describe("Shopping Cart - Complete Journey", () => {
     it("should capture items and inject into cart response", async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -55,7 +54,6 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
 
   describe("Multi-Step Form - Complete Journey", () => {
     it("should accumulate state across form steps and inject in final confirmation", async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -101,7 +99,6 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
 
   describe("State Reset on Scenario Switch", () => {
     it("should reset cart state when switching scenarios", async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -134,7 +131,6 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
     });
 
     it("should NOT reset state when scenario switch fails", async () => {
-      if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
       // Scenario already registered in scenarios.ts
 
@@ -197,7 +193,6 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
 
   describe("State Isolation Between Test IDs", () => {
     it("should maintain independent cart state for different test IDs", async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)

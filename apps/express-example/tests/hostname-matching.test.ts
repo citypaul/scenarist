@@ -30,7 +30,6 @@ describe('Hostname Matching - Express', () => {
    * Should match requests to ANY hostname (localhost, api.github.com, api.stripe.com, etc.)
    */
   it('should match pathname-only pattern at ANY hostname', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -54,7 +53,6 @@ describe('Hostname Matching - Express', () => {
    * Should ONLY match api.github.com requests
    */
   it('should match full URL pattern ONLY for GitHub hostname', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -79,7 +77,6 @@ describe('Hostname Matching - Express', () => {
    * Should ONLY match api.stripe.com requests
    */
   it('should match full URL pattern ONLY for Stripe hostname', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -104,7 +101,6 @@ describe('Hostname Matching - Express', () => {
    * Should match the pathname pattern at ANY hostname (MSW weak comparison)
    */
   it('should match native RegExp pattern at ANY hostname', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -128,7 +124,6 @@ describe('Hostname Matching - Express', () => {
    * Should extract params AND match ANY hostname
    */
   it('should extract path params from pathname pattern (origin-agnostic)', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
@@ -153,7 +148,6 @@ describe('Hostname Matching - Express', () => {
    * Should extract params but ONLY match api.github.com
    */
   it('should extract path params from full URL pattern (hostname-specific)', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)

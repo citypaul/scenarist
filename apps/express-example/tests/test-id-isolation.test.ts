@@ -12,7 +12,6 @@ describe('Test ID Isolation E2E', () => {
   });
 
   it('should allow different test IDs to use different scenarios concurrently', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     // Test ID 1: Set to success scenario
     await request(fixtures.app)
@@ -56,7 +55,6 @@ describe('Test ID Isolation E2E', () => {
   });
 
   it('should use default test ID when header is not provided', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
     // Switch default test ID to success scenario
     await request(fixtures.app)

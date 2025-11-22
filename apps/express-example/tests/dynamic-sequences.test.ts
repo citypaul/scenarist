@@ -18,7 +18,6 @@ describe('Dynamic Response Sequences E2E (Phase 2)', () => {
 
   describe('Basic Sequence Progression', () => {
     it('should return responses in sequence order (pending → processing → complete)', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
       // Switch to polling scenario (already registered in scenarios.ts)
       await request(fixtures.app)
@@ -62,7 +61,6 @@ describe('Dynamic Response Sequences E2E (Phase 2)', () => {
 
   describe('Repeat Mode: cycle', () => {
     it('should cycle back to first response after sequence ends', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
       // Switch to cycling scenario (already registered in scenarios.ts)
       await request(fixtures.app)
@@ -103,7 +101,6 @@ describe('Dynamic Response Sequences E2E (Phase 2)', () => {
 
   describe('Repeat Mode: none (with exhaustion)', () => {
     it('should fallback to next mock after sequence exhausted', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
       // Switch to payment limited scenario (already registered in scenarios.ts)
       await request(fixtures.app)
@@ -152,7 +149,6 @@ describe('Dynamic Response Sequences E2E (Phase 2)', () => {
 
   describe('Test ID Isolation', () => {
     it('should maintain independent sequence positions for different test IDs', async () => {
-    if (!fixtures.scenarist) throw new Error('Scenarist not initialized');
 
       // Test ID A: Switch to scenario (already registered in scenarios.ts)
       await request(fixtures.app)
