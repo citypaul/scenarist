@@ -55,17 +55,19 @@ Production bundles contain **zero Scenarist code** - the production wrapper patt
 
 #### Quick Verification (30 seconds)
 
-The fastest way to verify tree-shaking:
+The fastest way to verify tree-shaking by searching for **MSW runtime functions** (not just the word "msw"):
 
 ```bash
 # Build for production
 NODE_ENV=production npm run build
 
-# Search production bundle for Scenarist code
-grep -r "scenarist\|msw" dist/ .next/ build/
+# Search for MSW runtime code (setupWorker, HttpResponse, handler functions)
+! grep -rE '(setupWorker|startWorker|http\.(get|post|put|delete|patch)|HttpResponse\.json)' dist/ .next/static/ build/
 ```
 
-**Expected result:** No matches (exit code 1). If you find matches, tree-shaking failed.
+**Expected result:** No matches found (exit code 0 from the command due to `!` negation). If matches are found, tree-shaking failed.
+
+**Why this pattern:** Searching for the literal strings "scenarist" or "msw" gives false positives (your own variable names, Zod code, comments). This pattern searches for actual MSW runtime functions like `http.get()`, `HttpResponse.json()`, and worker setup - code that should NEVER appear in production bundles.
 
 #### Visual Bundle Analysis
 
@@ -417,13 +419,13 @@ Next.js has separate client and server bundles. Verify both:
 # Build
 NODE_ENV=production npm run build
 
-# Check client bundles
-find .next/static -name "*.js" -exec grep -l "scenarist\|msw" {} \;
-# Should output nothing
+# Check client bundles for MSW runtime functions
+! find .next/static -name "*.js" -exec grep -E '(setupWorker|HttpResponse\.json)' {} \;
+# Should output nothing (exit code 0)
 
-# Check server bundles
-find .next/server -name "*.js" -exec grep -l "scenarist\|msw" {} \;
-# Should output nothing
+# Check server bundles for MSW runtime functions
+! find .next/server -name "*.js" -exec grep -E '(http\.(get|post|put|delete|patch)|HttpResponse\.json)' {} \;
+# Should output nothing (exit code 0)
 ```
 
 **Vercel Deployment:**
@@ -469,14 +471,14 @@ jobs:
         env:
           NODE_ENV: production
 
-      - name: Verify no Scenarist code in bundle
+      - name: Verify no MSW runtime code in bundle
         run: |
-          if grep -r "scenarist\|msw" dist/ .next/ build/ 2>/dev/null; then
-            echo "❌ ERROR: Scenarist code found in production bundle!"
+          if grep -rE '(setupWorker|startWorker|http\.(get|post|put|delete|patch)|HttpResponse\.json)' dist/ .next/static/ build/ 2>/dev/null; then
+            echo "❌ ERROR: MSW runtime code found in production bundle!"
             echo "Tree-shaking failed. Check NODE_ENV and bundler config."
             exit 1
           fi
-          echo "✅ Verified: No Scenarist code in production bundle"
+          echo "✅ Verified: No MSW runtime code in production bundle"
 
       - name: Compare bundle sizes
         run: |
@@ -493,7 +495,7 @@ Add to `package.json` for manual verification:
 ```json
 {
   "scripts": {
-    "verify:production": "NODE_ENV=production npm run build && ! grep -r 'scenarist\\|msw' dist/ .next/ build/"
+    "verify:production": "NODE_ENV=production npm run build && ! grep -rE '(setupWorker|HttpResponse\\.json)' dist/ .next/static/ build/"
   }
 }
 ```

@@ -79,7 +79,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
    - Integrated into Turborepo via `turbo.json`
    - All 42 adapter tests passing
    - Zero MSW code in production bundles (verified via grep)
-   - Merged in PR #117
+   - PR #117 (ready for merge - all tests passing)
 
    **Documentation:**
    - Updated Express adapter README with tree-shaking section
@@ -95,24 +95,24 @@ Scenarist is **80% ready for production release**. The core architecture, testin
    - Next.js adapters tree-shaking (4 hours each after core work)
 
 **HIGH PRIORITY:**
-4. Phase 2: Core-level tree-shaking to eliminate Zod (8 hours):
-   - **Tracked in GitHub Issue #118**
-   - Create `packages/core/src/production.ts` with type-only exports
-   - Add conditional exports to `packages/core/package.json`
-   - Update all adapters to handle undefined core return
-   - Expected result: 298kb → 148kb (76% total reduction from baseline)
-   - Verification: `! grep -rE '(ZodObject|ZodString|z\\.object\\()' dist/`
+4. Phase 2: Add production.ts to Next.js Adapters (6-8 hours):
+   - **CORRECTED:** Core-level conditional exports DON'T help (see `/docs/production-readiness-plan-corrected.md`)
+   - Create `packages/nextjs-adapter/src/app/production.ts` (App Router)
+   - Create `packages/nextjs-adapter/src/pages/production.ts` (Pages Router)
+   - Update package.json exports with "production" condition for both entry points
+   - Add verification scripts: `verify:treeshaking:app` and `verify:treeshaking:pages`
+   - Expected result: Same 100% elimination as Express adapter
+   - Verification: `! grep -rE '(setupWorker|HttpResponse\\.json)' dist/`
    - Benefits:
-     - Complete elimination of Zod from production bundles
-     - 150kb additional savings (50% reduction from current state)
-     - Cascading tree-shaking: adapters → core → dependencies
+     - Complete elimination of Next.js adapter + Core + MSW in production
+     - Consistent pattern across all adapters
+     - Same bundle size reduction as Express (100% elimination)
    - Testing:
-     - All adapter tests must pass
-     - All example app tests must pass
-     - Verify bundled apps with esbuild/webpack/vite/rollup
+     - Unit tests for both production entry points
+     - Integration tests with Next.js example apps
+     - Verify bundled apps work correctly
    - Documentation updates:
-     - Core package README
-     - All adapter READMEs
+     - Next.js adapter README
      - Production safety guide (docs site)
      - CLAUDE.md architectural learnings
 
@@ -170,6 +170,13 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 - 16 Architecture Decision Records (ADRs)
 - Testing guidelines documented
 - Example applications with working code
+- **PR #117 Documentation Review (2025-11-22):**
+  - ✅ All internal docs verified (CLAUDE.md, package READMEs)
+  - ✅ All external docs verified (docs site: production-safety.mdx, getting-started.mdx)
+  - ✅ No old type names found (ScenarioDefinition, MockDefinition)
+  - ✅ No old parameter names found (getScenaristScenario)
+  - ✅ Tree-shaking documentation matches implementation
+  - ✅ All examples use correct naming conventions
 
 #### ❌ What's Missing
 - **Migration guides** - No guidance for breaking changes
