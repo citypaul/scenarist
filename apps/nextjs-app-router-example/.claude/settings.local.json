@@ -64,7 +64,10 @@
       "Bash(pnpm turbo:*)",
       "Bash(gh pr list:*)",
       "Bash(esbuild:*)",
-      "Bash(pnpm exec esbuild:*)"
+      "Bash(pnpm exec esbuild:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(do)",
+      "Bash(do echo \"=== $file ===\" grep -v \"^import\" $file)"
     ],
     "deny": [],
     "ask": []

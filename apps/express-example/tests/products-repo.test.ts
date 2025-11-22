@@ -1,5 +1,4 @@
 import { createTestFixtures } from './test-helpers.js';
-import { scenarios } from '../src/scenarios.js';
 
 /**
  * Products with Repository Pattern - Integration Tests
@@ -68,9 +67,6 @@ import { scenarios } from '../src/scenarios.js';
 
 import { describe, it, expect } from "vitest";
 import request from "supertest";
-import type { Express } from "express";
-import type { ExpressScenarist } from "@scenarist/express-adapter";
-
 const fixtures = await createTestFixtures();
 
 describe("Products with Repository Pattern", () => {

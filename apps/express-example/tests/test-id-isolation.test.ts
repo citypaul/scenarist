@@ -1,6 +1,5 @@
 import { describe, it, expect, afterAll } from 'vitest';
 import request from 'supertest';
-import type { scenarios } from '../src/scenarios.js';
 
 import { createTestFixtures } from './test-helpers.js';
 

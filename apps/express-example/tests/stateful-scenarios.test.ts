@@ -1,11 +1,8 @@
 import request from "supertest";
 import { afterAll, describe, expect, it } from "vitest";
-import type { Express, Request, Response } from "express";
-import type { ExpressScenarist } from "@scenarist/express-adapter";
+import type { Request, Response } from "express";
 
 import { createTestFixtures } from './test-helpers.js';
-import { scenarios } from '../src/scenarios.js';
-
 const fixtures = await createTestFixtures();
 
 describe("Stateful Scenarios E2E (Phase 3)", () => {

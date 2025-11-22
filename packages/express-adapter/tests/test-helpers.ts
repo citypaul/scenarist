@@ -67,13 +67,15 @@ export const mockScenarioManager = (
 /**
  * Create a Scenarist instance for testing.
  *
- * This wrapper ensures scenarist is always defined in test environment by
- * throwing early if createScenarist returns undefined. This is the correct
- * behavior for tests since NODE_ENV !== 'production' in test environments.
+ * This test helper wraps createScenarist() and ensures it returns a non-nullable
+ * value by throwing early if undefined. This is the correct behavior for tests
+ * since NODE_ENV !== 'production' in test environments.
  *
  * Returns non-nullable ExpressScenarist so tests don't need null checks.
+ *
+ * Note: Named createTestScenarist to distinguish from the public createScenarist API.
  */
-export const createScenarist = async <T extends ScenaristScenarios>(
+export const createTestScenarist = async <T extends ScenaristScenarios>(
   options: ExpressAdapterOptions<T>
 ): Promise<ExpressScenarist<T>> => {
   const scenarist = await createScenaristImpl(options);
