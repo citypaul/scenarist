@@ -212,6 +212,101 @@ We recommend using **Supertest** with **Vitest** for testing Express application
 
 **Your Code Runs** - Your Express routes, middleware, validation, and business logic all execute normally. Only external API calls are mocked.
 
+## Production Tree-Shaking
+
+Scenarist automatically eliminates all test code from production builds. The implementation differs based on your deployment model:
+
+### Unbundled Deployments (Most Common) ✅
+
+**Most Express applications** deploy unbundled code directly to production:
+
+```bash
+NODE_ENV=production node src/server.js
+```
+
+**Tree-shaking is automatic** with zero configuration:
+- `createScenarist()` returns `undefined` at runtime
+- Dynamic imports never execute
+- MSW code **never loads into memory**
+- ✅ **No configuration required**
+
+### Bundled Deployments (esbuild, webpack, Vite, rollup)
+
+**For teams bundling Express server code**, additional bundler configuration is required for complete tree-shaking.
+
+Scenarist uses **conditional package.json exports** to provide different entry points:
+
+```json
+{
+  "exports": {
+    ".": {
+      "production": "./dist/setup/production.js",  // Zero dependencies
+      "default": "./dist/index.js"                 // Full implementation
+    }
+  }
+}
+```
+
+The `"production"` condition is **custom** (not a Node.js built-in). Bundlers must be configured to recognize it:
+
+**esbuild:**
+```json
+{
+  "scripts": {
+    "build": "esbuild src/server.ts --bundle --conditions=production --define:process.env.NODE_ENV='\"production\"'"
+  }
+}
+```
+
+**webpack:**
+```js
+// webpack.config.js
+module.exports = {
+  mode: 'production',
+  resolve: {
+    conditionNames: ['production', 'import', 'require']
+  }
+};
+```
+
+**Vite:**
+```js
+// vite.config.js
+export default {
+  resolve: {
+    conditions: ['production']
+  }
+};
+```
+
+**rollup:**
+```js
+import resolve from '@rollup/plugin-node-resolve';
+
+export default {
+  plugins: [
+    resolve({
+      exportConditions: ['production']
+    })
+  ]
+};
+```
+
+**Results:**
+- ✅ Bundle size: 618kb → 298kb (52% reduction)
+- ✅ Zero MSW code in production bundle
+
+**Verification:**
+```bash
+# Build with bundler configuration
+npm run build:production
+
+# Verify MSW code eliminated
+! grep -rE '(setupWorker|HttpResponse\.json)' dist/
+```
+
+**For detailed configuration examples**, see the [Express Adapter README - Production Tree-Shaking](https://github.com/citypaul/scenarist/tree/main/packages/express-adapter#production-tree-shaking).
+
 ## Next Steps
 
 - **Production safety:** Learn why [Scenarist is safe for production](/introduction/production-safety)

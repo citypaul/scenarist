@@ -191,21 +191,140 @@ du -sh dist/ .next/static/ build/
 
 #### Framework-Specific Verification
 
-**Express (Bundled Deployments):**
+**Express (Automatic for Unbundled, Configuration for Bundled):**
 
-If you bundle Express apps for deployment (e.g., with esbuild):
+<Aside type="tip">
+**Most Express apps deploy unbundled code** and get automatic tree-shaking with zero configuration. Only bundled deployments require additional bundler setup.
+</Aside>
+
+**Unbundled Deployments (Most Common):**
+
+Standard Express deployment pattern - no bundler involved:
 
 ```bash
-# Build production bundle
+# Deploy directly
+NODE_ENV=production node src/server.js
+```
+
+**How it works:**
+- `createScenarist()` returns `undefined` at runtime
+- Dynamic imports never execute
+- MSW code **never loads into memory**
+- ✅ **Zero configuration required**
+
+Verify with memory inspection (optional):
+
+```bash
+# Run production server and check memory
+NODE_ENV=production node --trace-warnings src/server.js &
+PID=$!
+
+# MSW should not appear in loaded modules
+lsof -p $PID | grep -i msw
+# Should output nothing
+
+kill $PID
+```
+
+**Bundled Deployments (esbuild, webpack, Vite, rollup):**
+
+<Aside type="caution">
+For teams bundling Express server code, **additional bundler configuration is required** to achieve complete tree-shaking.
+</Aside>
+
+Scenarist uses **conditional package.json exports** to provide different entry points:
+
+```json
+{
+  "exports": {
+    ".": {
+      "production": "./dist/setup/production.js",  // Zero dependencies
+      "default": "./dist/index.js"                 // Full implementation
+    }
+  }
+}
+```
+
+The `"production"` condition is **custom** (not a Node.js built-in). Bundlers must be configured to recognize it:
+
+**esbuild:**
+```bash
+esbuild --bundle --conditions=production --define:process.env.NODE_ENV='"production"'
+```
+
+**webpack:**
+```js
+// webpack.config.js
+module.exports = {
+  mode: 'production',
+  resolve: {
+    conditionNames: ['production', 'import', 'require']
+  }
+};
+```
+
+**Vite:**
+```js
+// vite.config.js
+export default {
+  resolve: {
+    conditions: ['production']
+  }
+};
+```
+
+**rollup:**
+```js
+import resolve from '@rollup/plugin-node-resolve';
+
+export default {
+  plugins: [
+    resolve({
+      exportConditions: ['production']
+    })
+  ]
+};
+```
+
+**Without bundler configuration:**
+- MSW code included in bundle (~320kb)
+- Code never executes (safe)
+- Wastes bandwidth
+
+**With bundler configuration:**
+- MSW code completely eliminated
+- Bundle size: 618kb → 298kb (52% reduction)
+- Optimal production deployment
+
+**Verify bundled Express app:**
+
+```bash
+# Build production bundle (with --conditions=production)
 NODE_ENV=production npm run build
 
 # Check bundle size
 ls -lh dist/server.js
+# Should be ~298kb (not ~618kb)
 
-# Search bundle
-grep -o "scenarist\|msw" dist/server.js
+# Search bundle for MSW code
+grep -rE '(setupWorker|startWorker|HttpResponse\.json)' dist/
 # Should output nothing
 ```
+
+**Example verification script:**
+
+```json
+{
+  "scripts": {
+    "build:production": "esbuild src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --external:express --define:process.env.NODE_ENV='\"production\"' --minify --conditions=production",
+    "verify:treeshaking": "npm run build:production && ! grep -rE '(setupWorker|HttpResponse\\.json)' dist/"
+  }
+}
+```
+
+Run: `npm run verify:treeshaking`
+
+**For detailed bundler configuration examples**, see the [Express Adapter README - Production Tree-Shaking](https://github.com/citypaul/scenarist/tree/main/packages/express-adapter#production-tree-shaking).
 
 **Next.js (Detailed):**
 
