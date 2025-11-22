@@ -319,14 +319,13 @@ Each adapter has `production.ts` with zero imports → 100% elimination in produ
 
 **For detailed roadmap:** See [Production Readiness Assessment](docs/production-readiness-assessment.md)
 
-## Implementation History
+## Additional Documentation
 
-Detailed implementation learnings have been moved to preserve context efficiency. See:
+For deeper dives into specific topics, see:
 
-- [Implementation History Index](docs/implementation-history/README.md) - Chronological implementation phases
 - [Architecture Deep-Dives](docs/architecture/) - Hexagonal architecture, declarative patterns, DI
 - [Investigations](docs/investigations/) - MSW behavior, Next.js quirks, tree-shaking analysis
-- [Migrations](docs/migrations/) - API migration guides
+- [Production Readiness](docs/production-readiness-assessment.md) - v1.0 readiness checklist
 
 ## Key Files Reference
 
