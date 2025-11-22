@@ -53,26 +53,359 @@ This pattern ensures:
 
 ### Verification
 
-You can verify tree-shaking is working by analyzing your production bundle:
+**Critical:** Always verify tree-shaking is working in your production builds. This section provides multiple methods to confirm Scenarist code is eliminated.
 
-<Aside type="tip" title="Webpack Bundle Analyzer">
-```bash
-npm install --save-dev webpack-bundle-analyzer
-```
+#### Quick Verification (30 seconds)
 
-Check if `scenarist` or `msw` appear in your production bundle analysis.
-</Aside>
+The fastest way to verify tree-shaking:
 
 ```bash
 # Build for production
 NODE_ENV=production npm run build
 
-# Analyze bundle (framework-specific commands)
-npx webpack-bundle-analyzer dist/stats.json  # Webpack
-vite-bundle-visualizer dist                   # Vite
+# Search production bundle for Scenarist code
+grep -r "scenarist\|msw" dist/ .next/ build/
 ```
 
-**Expected result:** No Scenarist or MSW code in production bundles.
+**Expected result:** No matches (exit code 1). If you find matches, tree-shaking failed.
+
+#### Visual Bundle Analysis
+
+Visual analysis tools provide the most comprehensive verification. Choose the tool matching your bundler:
+
+**Next.js (Webpack):**
+
+```bash
+# Install analyzer
+npm install --save-dev @next/bundle-analyzer
+
+# Add to next.config.js
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
+
+module.exports = withBundleAnalyzer({
+  // ... your config
+});
+
+# Build and analyze
+ANALYZE=true NODE_ENV=production npm run build
+```
+
+Opens interactive visualization in browser. Search for "scenarist" or "msw" - should find nothing.
+
+**Vite:**
+
+```bash
+# Install visualizer
+npm install --save-dev rollup-plugin-visualizer
+
+# Add to vite.config.ts
+import { visualizer } from 'rollup-plugin-visualizer';
+
+export default defineConfig({
+  plugins: [
+    visualizer({
+      open: true,
+      gzipSize: true,
+      brotliSize: true,
+    }),
+  ],
+});
+
+# Build and analyze
+NODE_ENV=production npm run build
+```
+
+Opens `stats.html` showing bundle composition. Scenarist/MSW should be absent.
+
+**Webpack (standalone):**
+
+```bash
+# Install analyzer
+npm install --save-dev webpack-bundle-analyzer
+
+# Generate stats during build
+webpack --mode production --profile --json > stats.json
+
+# Analyze
+npx webpack-bundle-analyzer stats.json
+```
+
+**Rollup:**
+
+```bash
+# Install visualizer
+npm install --save-dev rollup-plugin-visualizer
+
+# Add to rollup.config.js
+import { visualizer } from 'rollup-plugin-visualizer';
+
+export default {
+  plugins: [
+    visualizer({
+      filename: 'bundle-stats.html',
+      open: true,
+    }),
+  ],
+};
+
+# Build
+NODE_ENV=production npm run build
+```
+
+#### Source Map Analysis (Framework-Agnostic)
+
+Works with any bundler:
+
+```bash
+# Install source-map-explorer
+npm install --save-dev source-map-explorer
+
+# Build with source maps
+NODE_ENV=production npm run build
+
+# Analyze (adjust paths to your build output)
+npx source-map-explorer 'dist/**/*.js' 'dist/**/*.js.map'
+```
+
+Generates treemap showing code origins. Scenarist/MSW should not appear.
+
+#### Size Comparison (Before/After)
+
+Measure actual bundle size impact:
+
+```bash
+# Baseline: Build without Scenarist
+# (Comment out scenarist imports temporarily)
+NODE_ENV=production npm run build
+du -sh dist/ .next/static/ build/
+# Note the size
+
+# With Scenarist: Build normally
+# (Uncomment scenarist imports)
+NODE_ENV=production npm run build
+du -sh dist/ .next/static/ build/
+# Compare sizes - should be identical or negligible difference
+```
+
+**Expected:** ≤ 1KB difference (rounding/metadata only)
+
+#### Framework-Specific Verification
+
+**Express (Bundled Deployments):**
+
+If you bundle Express apps for deployment (e.g., with esbuild):
+
+```bash
+# Build production bundle
+NODE_ENV=production npm run build
+
+# Check bundle size
+ls -lh dist/server.js
+
+# Search bundle
+grep -o "scenarist\|msw" dist/server.js
+# Should output nothing
+```
+
+**Next.js (Detailed):**
+
+Next.js has separate client and server bundles. Verify both:
+
+```bash
+# Build
+NODE_ENV=production npm run build
+
+# Check client bundles
+find .next/static -name "*.js" -exec grep -l "scenarist\|msw" {} \;
+# Should output nothing
+
+# Check server bundles
+find .next/server -name "*.js" -exec grep -l "scenarist\|msw" {} \;
+# Should output nothing
+```
+
+**Vercel Deployment:**
+
+If deployed to Vercel, check production bundle size in deployment logs:
+
+```
+Build Output:
+├ ƒ /                    1.2 kB        123 B
+├ ○ /404                 2.1 kB        456 B
+└ ƒ /api/products       450 B          78 B
+```
+
+Compare with pre-Scenarist deployment - sizes should be nearly identical.
+
+#### Automated CI/CD Verification
+
+Prevent tree-shaking regressions by adding checks to CI:
+
+**GitHub Actions Example:**
+
+```yaml
+name: Verify Production Safety
+
+on:
+  pull_request:
+    paths:
+      - 'package.json'
+      - 'src/**'
+
+jobs:
+  verify-bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production bundle
+        run: NODE_ENV=production npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Verify no Scenarist code in bundle
+        run: |
+          if grep -r "scenarist\|msw" dist/ .next/ build/ 2>/dev/null; then
+            echo "❌ ERROR: Scenarist code found in production bundle!"
+            echo "Tree-shaking failed. Check NODE_ENV and bundler config."
+            exit 1
+          fi
+          echo "✅ Verified: No Scenarist code in production bundle"
+
+      - name: Compare bundle sizes
+        run: |
+          # Store baseline size (first run) or compare
+          BUNDLE_SIZE=$(du -sb dist/ .next/ build/ 2>/dev/null | awk '{sum+=$1} END {print sum}')
+          echo "Bundle size: $BUNDLE_SIZE bytes"
+          # Add budget check if needed
+```
+
+**npm script:**
+
+Add to `package.json` for manual verification:
+
+```json
+{
+  "scripts": {
+    "verify:production": "NODE_ENV=production npm run build && ! grep -r 'scenarist\\|msw' dist/ .next/ build/"
+  }
+}
+```
+
+Run: `npm run verify:production`
+
+#### What Success Looks Like
+
+**✅ Passing verification:**
+- Bundle analyzer shows NO `scenarist` or `msw` packages
+- `grep` search returns no matches (exit code 1)
+- Bundle size same as before adding Scenarist (±1KB)
+- Source maps show NO Scenarist source files
+- Production deployment works normally
+
+**❌ Failed verification (tree-shaking didn't work):**
+- Bundle contains `scenarist` or `msw` strings
+- Bundle size increased by ~300KB
+- `createScenarist` function visible in bundle
+- MSW handlers appear in production code
+
+#### Troubleshooting Failed Verification
+
+If verification fails, check these common issues:
+
+**1. NODE_ENV not set to 'production':**
+
+```bash
+# ❌ Wrong - tree-shaking won't work
+npm run build
+
+# ✅ Correct - enables tree-shaking
+NODE_ENV=production npm run build
+```
+
+**2. Bundler not configured for tree-shaking:**
+
+Most bundlers enable tree-shaking by default in production mode. Verify config:
+
+**Webpack:**
+```js
+// webpack.config.js
+module.exports = {
+  mode: 'production',  // ← Required
+  optimization: {
+    usedExports: true,  // ← Should be true (default in production)
+    sideEffects: true,  // ← Should be true (default)
+  },
+};
+```
+
+**Vite:**
+```js
+// vite.config.js - tree-shaking automatic in production
+export default defineConfig({
+  build: {
+    minify: 'terser',  // Or 'esbuild' - both tree-shake
+  },
+});
+```
+
+**3. Dynamic imports preventing tree-shaking:**
+
+```js
+// ❌ Wrong - prevents tree-shaking
+const scenarist = require('@scenarist/express-adapter');
+
+// ✅ Correct - enables tree-shaking
+import { createScenarist } from '@scenarist/express-adapter';
+```
+
+**4. package.json sideEffects field:**
+
+Check if your bundler respects `sideEffects: false` in Scenarist's package.json:
+
+```bash
+cat node_modules/@scenarist/*/package.json | grep sideEffects
+# Should show: "sideEffects": false
+```
+
+If this is missing, [file an issue](https://github.com/citypaul/scenarist/issues) - this is a bug.
+
+**5. TypeScript compilation settings:**
+
+Ensure TypeScript preserves ES modules:
+
+```json
+// tsconfig.json
+{
+  "compilerOptions": {
+    "module": "ES2020",     // ← Or "ESNext", not "CommonJS"
+    "moduleResolution": "bundler",  // ← Or "node16"
+  }
+}
+```
+
+CommonJS modules prevent tree-shaking in most bundlers.
+
+#### Still Having Issues?
+
+If tree-shaking still fails after checking the above:
+
+1. **Check your bundler version** - Update to latest version
+2. **Review bundler logs** - Look for warnings about side effects
+3. **Minimal reproduction** - Test in fresh project to isolate issue
+4. **Open an issue** - [Report it](https://github.com/citypaul/scenarist/issues) with:
+   - Bundler name and version
+   - Framework name and version
+   - Bundler config
+   - Output of `npm ls @scenarist/*`
+
+For additional help, see the [Verification Guide](/reference/verification) for general Scenarist testing verification.
 
 ## Type Safety
 
