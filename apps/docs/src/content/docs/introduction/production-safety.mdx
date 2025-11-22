@@ -605,7 +605,9 @@ If tree-shaking still fails after checking the above:
    - Bundler config
    - Output of `npm ls @scenarist/*`
 
-For additional help, see the [Verification Guide](/reference/verification) for general Scenarist testing verification.
+For additional help, see:
+- [Production Tree-Shaking Verification](/reference/verification#production-tree-shaking-verification) - Verify code splitting works correctly
+- [Header Propagation in Parallel Tests](/reference/verification#header-propagation-in-parallel-tests) - Troubleshoot test isolation issues
 
 ## Type Safety
 
@@ -692,10 +694,12 @@ Scenarist works in both modes:
 
 ### Can I verify tree-shaking before deploying?
 
-Yes! See the [Verification Guide](/reference/verification) for:
-- Bundle analysis tools
-- Size comparison techniques
-- Automated verification scripts
+Yes! See the [Production Tree-Shaking Verification](/reference/verification#production-tree-shaking-verification) section for:
+- Step-by-step verification with lsof (proves chunk never loads)
+- Bundle size analysis
+- Build artifact inspection
+- Framework-specific verification commands
+- Red flags and troubleshooting
 
 ### What if tree-shaking fails?
 

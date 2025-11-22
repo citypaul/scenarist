@@ -192,6 +192,163 @@ describe('Checkout API', () => {
 });
 ```
 
+## Test ID Headers
+
+**Every test request must include a test ID header** for proper test isolation. This is what enables parallel test execution without interference.
+
+### How Test Isolation Works
+
+1. **Unique test ID per test:** Each test gets a unique identifier (e.g., `'test-1'`, `'test-2'`)
+2. **Header on every request:** Send the test ID with every HTTP request
+3. **AsyncLocalStorage tracking:** Express adapter uses AsyncLocalStorage to track which test ID is active for the current request
+4. **Scenario isolation:** Each test ID has its own active scenario and state
+
+### Required Headers
+
+Include the test ID header on **both** scenario switch requests AND actual API requests:
+
+```typescript
+// Step 1: Switch scenario (with test ID header)
+await request(app)
+  .post(scenarist.config.endpoints.setScenario)
+  .set(scenarist.config.headers.testId, 'test-1')  // ← Test ID header
+  .send({ scenario: 'cardDeclined' });
+
+// Step 2: Make API request (with SAME test ID header)
+const response = await request(app)
+  .post('/api/checkout')
+  .set(scenarist.config.headers.testId, 'test-1')  // ← Same test ID
+  .send({ amount: 5000, token: 'tok_test' });
+```
+
+**What happens:**
+1. First request switches to `'cardDeclined'` scenario for test ID `'test-1'`
+2. Second request includes same test ID header
+3. AsyncLocalStorage associates the request with `'test-1'`
+4. Scenarist uses the `'cardDeclined'` scenario for this request
+5. Different test using `'test-2'` would use its own scenario
+
+### Default Header Name
+
+By default, the header name is `'x-test-id'`:
+
+```typescript
+// These are equivalent:
+.set('x-test-id', 'test-1')
+.set(scenarist.config.headers.testId, 'test-1')  // Recommended
+```
+
+**Why use `scenarist.config.headers.testId`?**
+- If you customize the header name in config, your tests continue working
+- Self-documenting code (clear intent)
+- Type-safe (TypeScript will catch typos)
+
+### Custom Header Name
+
+If you need a different header name:
+
+```typescript
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  scenarios,
+  headers: {
+    testId: 'x-custom-test-id',  // Custom header name
+  },
+});
+
+// In tests, use the configured name:
+.set(scenarist.config.headers.testId, 'test-1')
+// Sends: 'x-custom-test-id: test-1'
+```
+
+### Parallel Test Execution
+
+Test IDs enable **parallel test execution** without interference:
+
+```typescript
+describe('Parallel checkout tests', () => {
+  it('test 1: successful payment', async () => {
+    // Uses test ID 'test-1'
+    await request(app)
+      .post(scenarist.config.endpoints.setScenario)
+      .set(scenarist.config.headers.testId, 'test-1')
+      .send({ scenario: 'default' });
+
+    const response = await request(app)
+      .post('/api/checkout')
+      .set(scenarist.config.headers.testId, 'test-1')
+      .send({ amount: 5000, token: 'tok_test' });
+
+    expect(response.status).toBe(200);
+  });
+
+  it('test 2: card declined', async () => {
+    // Uses test ID 'test-2' - runs simultaneously with test 1
+    await request(app)
+      .post(scenarist.config.endpoints.setScenario)
+      .set(scenarist.config.headers.testId, 'test-2')
+      .send({ scenario: 'cardDeclined' });
+
+    const response = await request(app)
+      .post('/api/checkout')
+      .set(scenarist.config.headers.testId, 'test-2')
+      .send({ amount: 5000, token: 'tok_test' });
+
+    expect(response.status).toBe(402);
+  });
+});
+```
+
+**Both tests run in parallel:**
+- Test 1 uses scenario `'default'` via test ID `'test-1'`
+- Test 2 uses scenario `'cardDeclined'` via test ID `'test-2'`
+- No interference because test IDs isolate scenarios and state
+
+### Missing Headers = Default Scenario
+
+If you forget to include the test ID header:
+
+```typescript
+// ❌ Missing test ID header
+const response = await request(app)
+  .post('/api/checkout')
+  // .set(scenarist.config.headers.testId, 'test-1')  ← MISSING!
+  .send({ amount: 5000, token: 'tok_test' });
+```
+
+**What happens:**
+- Request uses the `'default'` scenario (fallback behavior)
+- If you switched to a different scenario, it won't be used
+- May cause confusing test failures (wrong scenario active)
+
+**Always include the header on every request!**
+
+### Internal Fetch Calls
+
+If your Express routes make internal fetch calls to other services, you must manually propagate the test ID header:
+
+```typescript
+app.get('/api/dashboard', async (req, res) => {
+  // Extract test ID from incoming request
+  const testId = req.get(scenarist.config.headers.testId) || 'default-test';
+
+  // Include test ID in internal fetch
+  const response = await fetch('http://localhost:3001/api/user', {
+    headers: {
+      [scenarist.config.headers.testId]: testId,
+    },
+  });
+
+  const data = await response.json();
+  res.json(data);
+});
+```
+
+**Why this is needed:**
+- AsyncLocalStorage only tracks the current request
+- Internal fetch calls are new requests (separate context)
+- Must explicitly pass test ID header to maintain isolation
+
 :::tip[Recommended: Supertest for Express APIs]
 We recommend using **Supertest** with **Vitest** for testing Express applications. Supertest is designed specifically for HTTP API testing and provides a clean, fluent interface for making requests and assertions.
 
