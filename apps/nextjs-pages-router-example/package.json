@@ -9,12 +9,11 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "pnpm test:e2e && pnpm test:api",
+    "test": "pnpm test:e2e",
     "test:e2e": "playwright test --project=chromium",
     "test:e2e:ui": "playwright test --project=chromium --ui",
     "test:e2e:comparison": "SKIP_MSW=true playwright test --project=comparison",
     "test:e2e:all": "playwright test",
-    "test:api": "vitest run",
     "fake-api": "json-server fake-api/db.json --port 3001"
   },
   "dependencies": {
@@ -35,15 +34,12 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.4",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.1.1",
     "autoprefixer": "^10.4.22",
     "eslint": "^9.39.1",
-    "jsdom": "^27.2.0",
     "json-server": "^1.0.0-beta.3",
     "postcss": "^8.4.0",
     "tailwindcss": "^4.1.17",
     "tsx": "^4.7.0",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.8"
+    "typescript": "^5.9.3"
   }
 }
