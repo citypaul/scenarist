@@ -98,68 +98,87 @@ For each example app, create production tests that prove the same journey as moc
 
 ## App 2: Next.js App Router Example 📋 THIS PR
 
-### Implementation Plan (Based on Express Lessons)
+### Critical Difference from Express: Playwright vs Vitest
 
-**Approach: Production-Ready Routes with GET-then-PATCH**
-- Express proved this pattern works cleanly in both environments
-- Apply the same environment-aware routing pattern
-- Use localhost everywhere (no 127.0.0.1)
+**Express Example:**
+- Uses **vitest** for all tests (mocked + production)
+- Mocked tests: vitest → Express server → MSW intercepts
+- Production tests: vitest → json-server (real backend)
 
-**Step 1: Update API Routes**
+**Next.js Examples:**
+- Use **Playwright** for all tests (mocked + production)
+- Mocked tests: Playwright → Next.js → MSW intercepts in browser
+- Production tests: Playwright → Next.js production build → json-server (real backend)
+
+**DO NOT add vitest to Next.js apps!** They use Playwright exclusively.
+
+### Implementation Plan
+
+**Step 1: Update API Routes with Environment-Aware Pattern** ✅
 ```typescript
-// app/api/cart/route.ts
-const CART_BACKEND_URL =
-  process.env.NODE_ENV === 'production'
-    ? 'http://localhost:3001/cart'  // Real json-server
-    : 'https://api.store.com/cart';  // Mocked by MSW
+// app/api/cart/add/route.ts
+const CART_BACKEND_URL = 'http://localhost:3001/cart';
 
-// For POST /api/cart/add:
 if (process.env.NODE_ENV === 'production') {
-  // GET-then-PATCH for json-server
+  // GET-then-PATCH for json-server (production)
   const current = await fetch(CART_BACKEND_URL);
   const cart = await current.json();
   const updated = await fetch(CART_BACKEND_URL, {
     method: 'PATCH',
-    body: JSON.stringify({ items: [...cart.items, item] }),
+    body: JSON.stringify({ items: [...cart.items, productId] }),
   });
 } else {
-  // Call mocked endpoint
+  // POST to mocked endpoint (test/dev - MSW intercepts)
   const response = await fetch(`${CART_BACKEND_URL}/add`, {
     method: 'POST',
-    body: JSON.stringify({ item }),
+    body: JSON.stringify({ productId }),
   });
 }
 ```
 
-**Step 2: Create Vitest Configs**
-- `vitest.config.ts`: Default config, excludes production tests
-- `vitest.production.config.ts`: globalSetup, 30s timeout
-- Add scripts: `test` and `test:production`
+**Step 2: Create Playwright Production Config**
+- `playwright.config.ts`: Existing config for mocked tests (MSW active)
+- `playwright.production.config.ts`: New config for production tests
+  - globalSetup: starts json-server + Next.js production build
+  - Uses `request` fixture (no browser needed for API tests)
+- Add script: `test:production` using production config
 
-**Step 3: Create globalSetup.ts**
-- Use return-cleanup pattern (no mutable state)
-- Use wait-on for server readiness
-- Reset db.json via file copy
-- Use localhost everywhere
+**Step 3: Create globalSetup for Playwright**
+- Build Next.js in production mode
+- Start json-server with db.template.json
+- Start Next.js production server (`next start`)
+- Wait for servers (wait-on library)
+- Return cleanup function
 
-**Step 4: Update Scenarios**
-- Keep existing MSW mocks for test/dev mode
-- No need to mock GET+PATCH (production doesn't use MSW)
-
-**Step 5: Production Tests**
+**Step 4: Create Playwright Production Tests**
 ```typescript
-// tests/production/production.test.ts
-describe('Production Build Verification', () => {
-  it('health endpoint works', ...);
-  it('scenario endpoint returns 404', ...);  // Next.js returns 405, not 404
-  it('cart CRUD operations work', ...);
+// tests/production/cart-api.spec.ts
+import { test, expect } from '@playwright/test';
+
+test('cart API works with real backend', async ({ request }) => {
+  // Reset cart
+  await request.patch('http://localhost:3001/cart', {
+    data: { items: [] }
+  });
+
+  // Add items via Next.js API route (calls json-server)
+  const response = await request.post('http://localhost:3000/api/cart/add', {
+    data: { productId: 1 }
+  });
+
+  expect(response.status()).toBe(200);
 });
 ```
 
+**Step 5: Verify Tree-Shaking**
+- Playwright test checks `/__scenario__` returns 405
+- Build verification script already exists
+
 **Key Differences from Express:**
-- Next.js API routes (not Express middleware)
-- Scenario endpoint returns 405 Method Not Allowed (not 404)
-- Uses Next.js dev server for mocked tests, production build for production tests
+- Playwright tests (not vitest)
+- Playwright globalSetup (not vitest globalSetup)
+- Uses Playwright `request` fixture for API calls
+- Scenario endpoint returns 405 (Next.js behavior) not 404 (Express behavior)
 
 ---
 
