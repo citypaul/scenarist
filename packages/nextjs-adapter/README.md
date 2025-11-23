@@ -315,15 +315,11 @@ if (typeof window === 'undefined' && scenarist) {
 
 **Pages Router:** Create `pages/api/__scenario__.ts`:
 ```typescript
-import type { NextApiRequest, NextApiResponse } from 'next';
 import { scenarist } from '@/lib/scenarist';
 
-// Fallback handler for production (when scenarist is undefined)
-const productionHandler = async (_req: NextApiRequest, res: NextApiResponse) => {
-  res.status(404).json({ error: 'Scenario endpoint not available in production' });
-};
-
-export default scenarist?.createScenarioEndpoint() ?? productionHandler;
+// In production, scenarist is undefined due to conditional exports
+// When the default export is undefined, Next.js treats the route as non-existent
+export default scenarist?.createScenarioEndpoint();
 ```
 
 **App Router:** Create `app/api/%5F%5Fscenario%5F%5F/route.ts`:
@@ -331,18 +327,11 @@ export default scenarist?.createScenarioEndpoint() ?? productionHandler;
 > **Why the URL encoding?** Next.js App Router treats folders starting with `_` (underscore) as private folders that are excluded from routing. To create a URL route `/api/__scenario__`, we use `%5F` (URL-encoded underscore). This creates the actual endpoint at `http://localhost:3000/api/__scenario__`.
 
 ```typescript
-import { NextResponse } from 'next/server';
 import { scenarist } from '@/lib/scenarist';
 
-// Fallback handler for production (when scenarist is undefined)
-const productionHandler = async () => {
-  return NextResponse.json(
-    { error: 'Scenario endpoint not available in production' },
-    { status: 404 }
-  );
-};
-
-const handler = scenarist?.createScenarioEndpoint() ?? productionHandler;
+// In production, scenarist is undefined due to conditional exports
+// When exports are undefined, Next.js treats the route as non-existent
+const handler = scenarist?.createScenarioEndpoint();
 
 export const POST = handler;
 export const GET = handler;
@@ -477,15 +466,11 @@ if (typeof window === 'undefined' && scenarist) {
 
 ```typescript
 // pages/api/__scenario__.ts
-import type { NextApiRequest, NextApiResponse } from 'next';
 import { scenarist } from '../../lib/scenarist';
 
-// Fallback handler for production (when scenarist is undefined)
-const productionHandler = async (_req: NextApiRequest, res: NextApiResponse) => {
-  res.status(404).json({ error: 'Scenario endpoint not available in production' });
-};
-
-export default scenarist?.createScenarioEndpoint() ?? productionHandler;
+// In production, scenarist is undefined due to conditional exports
+// When the default export is undefined, Next.js treats the route as non-existent
+export default scenarist?.createScenarioEndpoint();
 ```
 
 This single line creates a Next.js API route that handles both GET and POST requests for scenario management.
@@ -554,18 +539,11 @@ if (typeof window === 'undefined' && scenarist) {
 
 ```typescript
 // app/api/%5F%5Fscenario%5F%5F/route.ts
-import { NextResponse } from 'next/server';
 import { scenarist } from '@/lib/scenarist';
 
-// Fallback handler for production (when scenarist is undefined)
-const productionHandler = async () => {
-  return NextResponse.json(
-    { error: 'Scenario endpoint not available in production' },
-    { status: 404 }
-  );
-};
-
-const handler = scenarist?.createScenarioEndpoint() ?? productionHandler;
+// In production, scenarist is undefined due to conditional exports
+// When exports are undefined, Next.js treats the route as non-existent
+const handler = scenarist?.createScenarioEndpoint();
 
 export const POST = handler;
 export const GET = handler;
