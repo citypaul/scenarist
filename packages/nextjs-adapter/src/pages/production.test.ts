@@ -80,29 +80,32 @@
  *
  * ## Related Documentation
  *
- * - **Node.js Conditional Exports (Core Feature):**
- *   https://nodejs.org/api/packages.html#conditional-exports
- *   Next.js respects Node.js package.json "exports" field during builds
+ * **Core Feature (Node.js Conditional Exports):**
+ * - https://nodejs.org/api/packages.html#conditional-exports
+ *   Defines how package.json "exports" field works with conditions like "production"
+ * - https://nodejs.org/api/packages.html#exports
+ *   Complete specification for package.json exports field
  *
- * - **Node.js Package Exports Specification:**
- *   https://nodejs.org/api/packages.html#exports
- *   Defines how "production" condition works
+ * **Next.js Build Optimizations:**
+ * - https://nextjs.org/blog/next-14-2
+ *   Next.js 14.2 tree-shaking improvements (see "Improved Tree Shaking" section)
+ * - https://nextjs.org/docs/app/guides/package-bundling
+ *   Next.js package bundling and optimization strategies
  *
- * - **Next.js Optimizing: Tree Shaking:**
- *   https://nextjs.org/docs/architecture/nextjs-compiler#tree-shaking
- *   How Next.js eliminates unused code during production builds
- *
- * - **Next.js Pages Router API Routes:**
- *   https://nextjs.org/docs/pages/building-your-application/routing/api-routes
+ * **Next.js Pages Router:**
+ * - https://nextjs.org/docs/pages/building-your-application/routing/api-routes
  *   Pages Router API route handler pattern (NextApiRequest/NextApiResponse)
  *
- * - **Webpack Production Mode (Next.js uses Webpack/Turbopack):**
- *   https://webpack.js.org/configuration/mode/#mode-production
- *   Sets NODE_ENV=production, enabling conditional exports
+ * **Bundler Documentation:**
+ * - https://webpack.js.org/configuration/mode/#mode-production
+ *   Webpack production mode (sets NODE_ENV=production, enables conditional exports)
+ * - https://turbo.build/pack/docs
+ *   Turbopack (Next.js's new bundler, also respects conditional exports)
  *
- * - **Package.json "exports" Field Examples:**
- *   https://nodejs.org/api/packages.html#conditional-exports
- *   See "production" condition examples
+ * **Note:** Next.js doesn't document conditional exports specifically because it's a
+ * Node.js feature that Next.js (via Webpack/Turbopack) automatically respects during
+ * production builds. The key is that NODE_ENV=production triggers the "production"
+ * export path in package.json.
  *
  * ## Testing Strategy
  *
