@@ -1,24 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git commit:*)",
-      "Bash(gh issue view:*)",
-      "Bash(gh issue edit:*)",
-      "Bash(cat:*)",
-      "Bash(git checkout:*)",
-      "Bash(pnpm dev)",
-      "Bash(git add:*)",
-      "Bash(git pull:*)",
-      "Bash(git stash:*)",
-      "Bash(git push:*)",
-      "Bash(gh pr create:*)",
-      "Bash(git restore:*)",
-      "WebSearch",
-      "WebFetch(domain:mermaid.js.org)",
-      "WebFetch(domain:github.com)",
-      "WebFetch(domain:stackoverflow.com)",
-      "Bash(git switch:*)",
-      "Bash(pnpm test:production:*)"
+      "Bash(gh run view:*)",
+      "Bash(xargs gh run view:*)",
+      "Bash(pnpm --filter=@scenarist/express-example typecheck:*)"
     ],
     "deny": [],
     "ask": []

@@ -10,7 +10,7 @@
  * well-tested library for server readiness checking.
  */
 
-import { spawn, type ChildProcess } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { copyFileSync } from 'node:fs';
 import { join } from 'node:path';
 import waitOn from 'wait-on';
