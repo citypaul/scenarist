@@ -11,7 +11,7 @@
  */
 
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { scenarist } from '../../../lib/scenarist';
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
 
 type AddToCartRequest = {
   readonly productId: number;
@@ -44,7 +44,7 @@ export default async function handler(
     const response = await fetch('http://localhost:3001/cart/add', {
       method: 'POST',
       headers: {
-        ...scenarist.getHeaders(req),  // ✅ Scenarist infrastructure headers (x-test-id)
+        ...getScenaristHeaders(req),  // ✅ Scenarist infrastructure headers (x-test-id)
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),

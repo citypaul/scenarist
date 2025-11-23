@@ -27,25 +27,30 @@ const testScenarios = {
   },
 } as const satisfies ScenaristScenarios;
 
-const createTestSetup = () => {
+const createTestSetup = async () => {
   const scenarist = createScenarist({
     enabled: true,
     scenarios: testScenarios,
   });
 
+  // Should never be undefined in tests (NODE_ENV !== 'production')
+  if (!scenarist) {
+    throw new Error('createScenarist returned undefined in test environment');
+  }
+
   return { scenarist };
 };
 
 describe('Pages Router createScenarist', () => {
-  it('should create scenarist instance with config', () => {
-    const { scenarist } = createTestSetup();
+  it('should create scenarist instance with config', async () => {
+    const { scenarist } = await createTestSetup();
 
     expect(scenarist.config).toBeDefined();
     expect(scenarist.config.enabled).toBe(true);
   });
 
-  it('should have all scenarios registered at initialization', () => {
-    const { scenarist } = createTestSetup();
+  it('should have all scenarios registered at initialization', async () => {
+    const { scenarist } = await createTestSetup();
 
     const scenarios = scenarist.listScenarios();
 
@@ -55,16 +60,16 @@ describe('Pages Router createScenarist', () => {
     expect(scenarios.map((s) => s.id)).toContain('scenario2');
   });
 
-  it('should switch scenarios', () => {
-    const { scenarist } = createTestSetup();
+  it('should switch scenarios', async () => {
+    const { scenarist } = await createTestSetup();
 
     const result = scenarist.switchScenario('test-1', 'premium', undefined);
 
     expect(result.success).toBe(true);
   });
 
-  it('should get active scenario', () => {
-    const { scenarist } = createTestSetup();
+  it('should get active scenario', async () => {
+    const { scenarist } = await createTestSetup();
 
     scenarist.switchScenario('test-2', 'premium', undefined);
 
@@ -76,16 +81,16 @@ describe('Pages Router createScenarist', () => {
     });
   });
 
-  it('should get scenario by ID', () => {
-    const { scenarist } = createTestSetup();
+  it('should get scenario by ID', async () => {
+    const { scenarist } = await createTestSetup();
 
     const scenario = scenarist.getScenarioById('premium');
 
     expect(scenario).toEqual(testScenarios.premium);
   });
 
-  it('should clear scenario for test ID', () => {
-    const { scenarist } = createTestSetup();
+  it('should clear scenario for test ID', async () => {
+    const { scenarist } = await createTestSetup();
 
     scenarist.switchScenario('test-3', 'premium', undefined);
 
@@ -95,15 +100,15 @@ describe('Pages Router createScenarist', () => {
     expect(active).toBeUndefined();
   });
 
-  it('should provide scenario endpoint handler', () => {
-    const { scenarist } = createTestSetup();
+  it('should provide scenario endpoint handler', async () => {
+    const { scenarist } = await createTestSetup();
 
     expect(scenarist.createScenarioEndpoint).toBeDefined();
     expect(typeof scenarist.createScenarioEndpoint).toBe('function');
   });
 
   it('should create working scenario endpoint when called', async () => {
-    const { scenarist } = createTestSetup();
+    const { scenarist } = await createTestSetup();
 
     const endpoint = scenarist.createScenarioEndpoint();
 
@@ -111,14 +116,14 @@ describe('Pages Router createScenarist', () => {
     expect(typeof endpoint).toBe('function');
   });
 
-  it('should start MSW server', () => {
-    const { scenarist } = createTestSetup();
+  it('should start MSW server', async () => {
+    const { scenarist } = await createTestSetup();
 
     expect(() => scenarist.start()).not.toThrow();
   });
 
   it('should stop MSW server', async () => {
-    const { scenarist } = createTestSetup();
+    const { scenarist } = await createTestSetup();
 
     scenarist.start();
     await expect(scenarist.stop()).resolves.not.toThrow();
@@ -138,7 +143,7 @@ describe('Pages Router createScenarist', () => {
       clearAllGlobals();
     });
 
-    it('should return same instance when createScenarist() called multiple times', () => {
+    it('should return same instance when createScenarist() called multiple times', async () => {
       const instance1 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
@@ -153,7 +158,7 @@ describe('Pages Router createScenarist', () => {
       expect(instance1).toBe(instance2);
     });
 
-    it('should prevent duplicate scenario registration errors', () => {
+    it('should prevent duplicate scenario registration errors', async () => {
       // First call registers all scenarios
       const instance1 = createScenarist({
         enabled: true,
@@ -162,15 +167,16 @@ describe('Pages Router createScenarist', () => {
 
       // Second call should return same instance, NOT try to re-register scenarios
       // Without singleton guard, this would throw DuplicateScenarioError
-      expect(() => {
-        createScenarist({
-          enabled: true,
-          scenarios: testScenarios,
-        });
-      }).not.toThrow();
+      const instance2 = createScenarist({
+        enabled: true,
+        scenarios: testScenarios,
+      });
+
+      // Verify same instance is returned
+      expect(instance2).toBe(instance1);
     });
 
-    it('should share scenario registry across all instances', () => {
+    it('should share scenario registry across all instances', async () => {
       const instance1 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
@@ -180,6 +186,10 @@ describe('Pages Router createScenarist', () => {
         enabled: true,
         scenarios: testScenarios,
       });
+
+      if (!instance1 || !instance2) {
+        throw new Error('Instances should not be undefined in tests');
+      }
 
       // Both instances should see the same scenarios
       const scenarios1 = instance1.listScenarios();
@@ -189,7 +199,7 @@ describe('Pages Router createScenarist', () => {
       expect(scenarios1).toHaveLength(3); // default + premium + scenario2
     });
 
-    it('should share scenario store across all instances', () => {
+    it('should share scenario store across all instances', async () => {
       const instance1 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
@@ -199,6 +209,10 @@ describe('Pages Router createScenarist', () => {
         enabled: true,
         scenarios: testScenarios,
       });
+
+      if (!instance1 || !instance2) {
+        throw new Error('Instances should not be undefined in tests');
+      }
 
       // Switch scenario using instance1
       instance1.switchScenario('test-singleton-store', 'premium', undefined);
@@ -211,7 +225,7 @@ describe('Pages Router createScenarist', () => {
       });
     });
 
-    it('should maintain singleton across different scenario configurations', () => {
+    it('should maintain singleton across different scenario configurations', async () => {
       const instance1 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
@@ -224,6 +238,9 @@ describe('Pages Router createScenarist', () => {
       });
 
       expect(instance1).toBe(instance2);
+      if (!instance2) {
+        throw new Error('Instance should not be undefined in tests');
+      }
       // Original config should be preserved
       expect(instance2.config.enabled).toBe(true); // Not false!
     });
@@ -235,15 +252,15 @@ describe('Pages Router createScenarist', () => {
       delete (global as any).__scenarist_msw_started_pages;
     };
 
-    it('should start MSW on first start() call', () => {
+    it('should start MSW on first start() call', async () => {
       clearGlobalFlag();
-      const { scenarist } = createTestSetup();
+      const { scenarist } = await createTestSetup();
 
       // Should start MSW without throwing
       expect(() => scenarist.start()).not.toThrow();
     });
 
-    it('should skip MSW initialization on subsequent start() calls from different instances', () => {
+    it('should skip MSW initialization on subsequent start() calls from different instances', async () => {
       clearGlobalFlag();
       const scenarist1 = createScenarist({
         enabled: true,
@@ -253,6 +270,10 @@ describe('Pages Router createScenarist', () => {
         enabled: true,
         scenarios: testScenarios,
       });
+
+      if (!scenarist1 || !scenarist2) {
+        throw new Error('Instances should not be undefined in tests');
+      }
 
       scenarist1.start(); // First call - should start MSW
 
@@ -260,7 +281,7 @@ describe('Pages Router createScenarist', () => {
       expect(() => scenarist2.start()).not.toThrow();
     });
 
-    it('should share scenario store across multiple instances', () => {
+    it('should share scenario store across multiple instances', async () => {
       clearGlobalFlag();
       const scenarist1 = createScenarist({
         enabled: true,
@@ -270,6 +291,10 @@ describe('Pages Router createScenarist', () => {
         enabled: true,
         scenarios: testScenarios,
       });
+
+      if (!scenarist1 || !scenarist2) {
+        throw new Error('Instances should not be undefined in tests');
+      }
 
       scenarist1.start();
       scenarist2.start();
@@ -285,9 +310,9 @@ describe('Pages Router createScenarist', () => {
       });
     });
 
-    it('should allow multiple start() calls on same instance', () => {
+    it('should allow multiple start() calls on same instance', async () => {
       clearGlobalFlag();
-      const { scenarist } = createTestSetup();
+      const { scenarist } = await createTestSetup();
 
       // Multiple start() calls should not throw
       expect(() => {
@@ -307,8 +332,8 @@ describe('Pages Router createScenarist', () => {
       delete (global as any).__scenarist_msw_started_pages;
     };
 
-    it('should extract test ID from request using default configured header name', () => {
-      const { scenarist } = createTestSetup();
+    it('should extract test ID from request using default configured header name', async () => {
+      const { scenarist } = await createTestSetup();
       const req = {
         headers: { 'x-test-id': 'test-123' },
       } as NextApiRequest;
@@ -318,8 +343,8 @@ describe('Pages Router createScenarist', () => {
       expect(headers).toEqual({ 'x-test-id': 'test-123' });
     });
 
-    it('should use default test ID when header is missing', () => {
-      const { scenarist } = createTestSetup();
+    it('should use default test ID when header is missing', async () => {
+      const { scenarist } = await createTestSetup();
       const req = {
         headers: {},
       } as NextApiRequest;
@@ -329,13 +354,18 @@ describe('Pages Router createScenarist', () => {
       expect(headers).toEqual({ 'x-test-id': 'default-test' });
     });
 
-    it('should respect custom header name from config', () => {
+    it('should respect custom header name from config', async () => {
       clearAllGlobals();
       const scenarist = createScenarist({
         enabled: true,
         scenarios: testScenarios,
         headers: { testId: 'x-custom-test-id' },
       });
+
+      if (!scenarist) {
+        throw new Error('Scenarist should not be undefined in tests');
+      }
+
       const req = {
         headers: { 'x-custom-test-id': 'custom-123' },
       } as NextApiRequest;
@@ -345,13 +375,18 @@ describe('Pages Router createScenarist', () => {
       expect(headers).toEqual({ 'x-custom-test-id': 'custom-123' });
     });
 
-    it('should respect custom default test ID from config', () => {
+    it('should respect custom default test ID from config', async () => {
       clearAllGlobals();
       const scenarist = createScenarist({
         enabled: true,
         scenarios: testScenarios,
         defaultTestId: 'my-default',
       });
+
+      if (!scenarist) {
+        throw new Error('Scenarist should not be undefined in tests');
+      }
+
       const req = {
         headers: {},
       } as NextApiRequest;
@@ -361,7 +396,7 @@ describe('Pages Router createScenarist', () => {
       expect(headers).toEqual({ 'x-test-id': 'my-default' });
     });
 
-    it('should handle both custom header name and custom default test ID', () => {
+    it('should handle both custom header name and custom default test ID', async () => {
       clearAllGlobals();
       const scenarist = createScenarist({
         enabled: true,
@@ -369,6 +404,11 @@ describe('Pages Router createScenarist', () => {
         headers: { testId: 'x-my-header' },
         defaultTestId: 'my-default',
       });
+
+      if (!scenarist) {
+        throw new Error('Scenarist should not be undefined in tests');
+      }
+
       const req = {
         headers: {},
       } as NextApiRequest;
@@ -378,9 +418,9 @@ describe('Pages Router createScenarist', () => {
       expect(headers).toEqual({ 'x-my-header': 'my-default' });
     });
 
-    it('should handle header value as array (take first element)', () => {
+    it('should handle header value as array (take first element)', async () => {
       clearAllGlobals();
-      const { scenarist } = createTestSetup();
+      const { scenarist } = await createTestSetup();
       const req = {
         headers: { 'x-test-id': ['test-123', 'test-456'] },
       } as NextApiRequest;
@@ -390,9 +430,9 @@ describe('Pages Router createScenarist', () => {
       expect(headers).toEqual({ 'x-test-id': 'test-123' });
     });
 
-    it('should work with GetServerSidePropsContext.req type (IncomingMessage with cookies)', () => {
+    it('should work with GetServerSidePropsContext.req type (IncomingMessage with cookies)', async () => {
       clearAllGlobals();
-      const { scenarist } = createTestSetup();
+      const { scenarist } = await createTestSetup();
 
       // Type from GetServerSidePropsContext: IncomingMessage & { cookies: NextApiRequestCookies }
       const req = {

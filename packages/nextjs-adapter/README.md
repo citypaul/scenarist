@@ -286,11 +286,16 @@ export const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
   scenarios,                    // All scenarios registered upfront
 });
+
+// Start MSW in Node.js environment
+if (typeof window === 'undefined' && scenarist) {
+  scenarist.start();
+}
 ```
 
 > **CRITICAL: Singleton Pattern Required**
 >
-> **You MUST use `export const scenarist` as shown above.** Do NOT wrap `createScenarist()` in a function:
+> **You MUST use `export const scenarist = createScenarist(...)` as shown above.** Do NOT wrap `createScenarist()` in a function:
 >
 > ```typescript
 > // ❌ WRONG - Creates new instance each time
@@ -311,7 +316,10 @@ export const scenarist = createScenarist({
 **Pages Router:** Create `pages/api/__scenario__.ts`:
 ```typescript
 import { scenarist } from '@/lib/scenarist';
-export default scenarist.createScenarioEndpoint();
+
+// In production, scenarist is undefined due to conditional exports
+// When the default export is undefined, Next.js treats the route as non-existent
+export default scenarist?.createScenarioEndpoint();
 ```
 
 **App Router:** Create `app/api/%5F%5Fscenario%5F%5F/route.ts`:
@@ -320,7 +328,11 @@ export default scenarist.createScenarioEndpoint();
 
 ```typescript
 import { scenarist } from '@/lib/scenarist';
-const handler = scenarist.createScenarioEndpoint();
+
+// In production, scenarist is undefined due to conditional exports
+// When exports are undefined, Next.js treats the route as non-existent
+const handler = scenarist?.createScenarioEndpoint();
+
 export const POST = handler;
 export const GET = handler;
 ```
@@ -443,6 +455,11 @@ export const scenarist = createScenarist({
   scenarios,                    // All scenarios registered upfront
   strictMode: false,            // Allow unmocked requests to pass through to real APIs
 });
+
+// Start MSW in Node.js environment
+if (typeof window === 'undefined' && scenarist) {
+  scenarist.start();
+}
 ```
 
 ### 3. Create Scenario Endpoint
@@ -451,7 +468,9 @@ export const scenarist = createScenarist({
 // pages/api/__scenario__.ts
 import { scenarist } from '../../lib/scenarist';
 
-export default scenarist.createScenarioEndpoint();
+// In production, scenarist is undefined due to conditional exports
+// When the default export is undefined, Next.js treats the route as non-existent
+export default scenarist?.createScenarioEndpoint();
 ```
 
 This single line creates a Next.js API route that handles both GET and POST requests for scenario management.
@@ -509,15 +528,22 @@ export const scenarist = createScenarist({
   scenarios,                    // All scenarios registered upfront
   strictMode: false,            // Allow unmocked requests to pass through to real APIs
 });
+
+// Start MSW in Node.js environment
+if (typeof window === 'undefined' && scenarist) {
+  scenarist.start();
+}
 ```
 
 ### 3. Create Scenario Route Handlers
 
 ```typescript
-// app/api/__scenario__/route.ts
+// app/api/%5F%5Fscenario%5F%5F/route.ts
 import { scenarist } from '@/lib/scenarist';
 
-const handler = scenarist.createScenarioEndpoint();
+// In production, scenarist is undefined due to conditional exports
+// When exports are undefined, Next.js treats the route as non-existent
+const handler = scenarist?.createScenarioEndpoint();
 
 export const POST = handler;
 export const GET = handler;
@@ -689,12 +715,13 @@ Each test ID has completely isolated:
 
 **Why Next.js needs this:** Unlike Express (which uses AsyncLocalStorage middleware), Next.js API routes have no middleware layer to automatically propagate test IDs. You must manually forward the headers.
 
-Use the `scenarist.getHeaders()` instance method:
+Use the safe helper functions provided by the adapter:
 
+**Pages Router:**
 ```typescript
 // pages/api/products.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { scenarist } from '@/lib/scenarist';
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
 
 export default async function handler(
   req: NextApiRequest,
@@ -703,7 +730,7 @@ export default async function handler(
   // Fetch from external API with Scenarist headers forwarded
   const response = await fetch('http://external-api.com/products', {
     headers: {
-      ...scenarist.getHeaders(req),  // ✅ Scenarist infrastructure headers
+      ...getScenaristHeaders(req),  // ✅ Scenarist infrastructure headers
       'content-type': 'application/json',      // ✅ Your application headers
       'x-user-tier': req.headers['x-user-tier'], // ✅ Other app-specific headers
     },
@@ -714,28 +741,15 @@ export default async function handler(
 }
 ```
 
-**What it does:**
-- Extracts test ID from request headers (`x-test-id` by default)
-- Respects your configured `testIdHeaderName` and `defaultTestId`
-- Returns object with Scenarist headers ready to spread
-
-**Key Distinction:**
-- **Scenarist headers** (`x-test-id`) - Infrastructure for test isolation
-- **Application headers** (`x-user-tier`, `content-type`) - Your app's business logic
-
-Only Scenarist headers need forwarding via `scenarist.getHeaders()`. Your application headers are independent.
-
-**App Router:** Different patterns depending on context:
-
-**Route Handlers (Request object available):**
+**App Router Route Handlers:**
 ```typescript
 // app/api/products/route.ts
-import { scenarist } from '@/lib/scenarist';
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
 
 export async function GET(request: Request) {
   const response = await fetch('http://external-api.com/products', {
     headers: {
-      ...scenarist.getHeaders(request),
+      ...getScenaristHeaders(request),
       'content-type': 'application/json',
     },
   });
@@ -745,11 +759,11 @@ export async function GET(request: Request) {
 }
 ```
 
-**Server Components (ReadonlyHeaders from `headers()`):**
+**App Router Server Components:**
 ```typescript
 // app/products/page.tsx
 import { headers } from 'next/headers';
-import { scenarist } from '@/lib/scenarist';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
 
 export default async function ProductsPage() {
   // Server Components use headers() which returns ReadonlyHeaders, not Request
@@ -757,7 +771,7 @@ export default async function ProductsPage() {
 
   const response = await fetch('http://external-api.com/products', {
     headers: {
-      ...scenarist.getHeadersFromReadonlyHeaders(headersList),  // ✅ For ReadonlyHeaders
+      ...getScenaristHeadersFromReadonlyHeaders(headersList),  // ✅ For ReadonlyHeaders
       'content-type': 'application/json',
     },
   });
@@ -767,9 +781,21 @@ export default async function ProductsPage() {
 }
 ```
 
+**What these helpers do:**
+- Extract test ID from request headers (`x-test-id` by default)
+- Respect your configured `testIdHeaderName` and `defaultTestId`
+- Return object with Scenarist headers ready to spread
+- Safe to use in production (return empty object when scenarist is undefined)
+
 **When to use which helper:**
-- **`scenarist.getHeaders(request)` or `scenarist.getHeaders(req)`** - When you have a `Request` object (Route Handlers) or `NextApiRequest` (Pages Router API routes)
-- **`scenarist.getHeadersFromReadonlyHeaders(headersList)`** - When you have `ReadonlyHeaders` from `headers()` (Server Components)
+- **`getScenaristHeaders(request | req)`** - Route Handlers (Request object) or Pages Router API routes (NextApiRequest)
+- **`getScenaristHeadersFromReadonlyHeaders(headersList)`** - App Router Server Components (ReadonlyHeaders from `headers()`)
+
+**Key Distinction:**
+- **Scenarist headers** (`x-test-id`) - Infrastructure for test isolation
+- **Application headers** (`x-user-tier`, `content-type`) - Your app's business logic
+
+Only Scenarist headers need forwarding via helper functions. Your application headers are independent.
 
 **For architectural rationale, see:** [ADR-0007: Framework-Specific Header Forwarding](../../docs/adrs/0007-framework-specific-header-helpers.md)
 
@@ -1231,6 +1257,143 @@ import {
 **For typical Next.js applications, use `createScenarist()` instead.** It provides the same functionality with zero configuration.
 
 </details>
+
+## Production Tree-Shaking
+
+**Problem:** MSW and Scenarist are test-only dependencies that should never appear in production bundles.
+
+**Solution:** The Next.js adapter uses **conditional exports** to eliminate all testing code from production builds automatically.
+
+### How It Works
+
+When `NODE_ENV=production`, bundlers (Next.js webpack/Turbopack, esbuild, Vite, etc.) automatically resolve to production entry points that return `undefined` with **zero imports**:
+
+```typescript
+// Production build imports this instead:
+// packages/nextjs-adapter/src/app/production.ts (or pages/production.ts)
+export const createScenarist = () => undefined;
+// No imports = 100% tree-shaking
+```
+
+### Bundle Size Impact
+
+**Before (development):**
+- Scenarist adapter + Core + MSW: ~320kb
+
+**After (production with tree-shaking):**
+- **0kb** - Complete elimination
+
+### Verifying Tree-Shaking
+
+Both Next.js example apps include verification scripts:
+
+```bash
+# App Router example
+cd apps/nextjs-app-router-example
+pnpm verify:treeshaking
+
+# Pages Router example
+cd apps/nextjs-pages-router-example
+pnpm verify:treeshaking
+```
+
+This builds your app with `NODE_ENV=production` and verifies zero MSW code exists in the `.next/` bundle.
+
+### Bundler Configuration
+
+**Next.js (Automatic):**
+- Next.js webpack/Turbopack automatically respects `NODE_ENV=production`
+- No configuration needed - tree-shaking works out of the box
+
+**Custom Bundlers:**
+
+If using a custom bundler, ensure it resolves the `"production"` condition:
+
+```javascript
+// esbuild
+esbuild.build({
+  conditions: ['production'],  // Resolves production entry points
+  define: { 'process.env.NODE_ENV': '"production"' },
+});
+
+// Webpack
+module.exports = {
+  resolve: {
+    conditionNames: ['production', 'import'],
+  },
+};
+
+// Vite
+export default {
+  resolve: {
+    conditions: ['production'],
+  },
+};
+```
+
+### What Gets Eliminated
+
+When tree-shaking succeeds, your production bundle has:
+- ❌ No MSW runtime code (`setupWorker`, `http.get`, `HttpResponse.json`)
+- ❌ No Scenarist core code (scenario manager, state manager, etc.)
+- ❌ No Zod validation schemas
+- ❌ No adapter code (request context, endpoints, etc.)
+- ✅ Only your application code
+
+### Troubleshooting Tree-Shaking
+
+**If `verify:treeshaking` fails:**
+
+1. **Check `NODE_ENV`:** Ensure `NODE_ENV=production` during build
+   ```bash
+   NODE_ENV=production next build
+   ```
+
+2. **Check bundler configuration:** Verify `"production"` condition is resolved
+   - Next.js: Should work automatically
+   - Custom bundlers: Add `conditions: ['production']`
+
+3. **Check dynamic imports:** Avoid dynamic imports that bypass tree-shaking
+   ```typescript
+   // ❌ BAD - Bypasses tree-shaking
+   const scenarist = await import('@scenarist/nextjs-adapter/app');
+
+   // ✅ GOOD - Enables tree-shaking
+   import { createScenarist } from '@scenarist/nextjs-adapter/app';
+   const scenarist = createScenarist({ ... });
+   ```
+
+4. **Inspect bundle:** Check `.next/` directory for MSW strings
+   ```bash
+   grep -r "setupWorker\|HttpResponse\.json" .next/
+   ```
+
+### Architecture Details
+
+The adapter uses **package.json conditional exports** to provide different entry points per environment:
+
+```json
+{
+  "exports": {
+    "./app": {
+      "types": "./dist/app/index.d.ts",
+      "production": "./dist/app/production.js",  // Returns undefined
+      "import": "./dist/app/index.js"           // Full implementation
+    },
+    "./pages": {
+      "types": "./dist/pages/index.d.ts",
+      "production": "./dist/pages/production.js", // Returns undefined
+      "import": "./dist/pages/index.js"          // Full implementation
+    }
+  }
+}
+```
+
+**Key Insight:** Since the production entry point has **zero imports**, bundlers eliminate the entire dependency chain (adapter → core → MSW → Zod). This is more effective than dynamic imports or `NODE_ENV` checks, which can't guarantee complete elimination.
+
+**For architectural rationale, see:** [Tree-Shaking Investigation](../../docs/investigations/tree-shaking-dynamic-imports-vs-conditional-exports.md)
+
+---
 
 ## Development & Testing
 

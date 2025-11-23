@@ -11,7 +11,7 @@ import type { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import type { Product } from '../types/product';
-import { scenarist } from '../lib/scenarist';
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
 
 type CartItem = {
   readonly productId: number;
@@ -182,7 +182,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     // This demonstrates Scenarist intercepting EXTERNAL API calls directly from getServerSideProps
     // No API route in between - direct external call that MSW intercepts
     const response = await fetch('http://localhost:3001/cart', {
-      headers: scenarist.getHeaders(context.req),
+      headers: getScenaristHeaders(context.req),
     });
 
     if (!response.ok) {

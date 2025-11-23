@@ -13,8 +13,9 @@
  * Scenarist approach: ✅ Playwright + sequences + RSC = works perfectly
  */
 
-import { scenarist } from '@/lib/scenarist';
 import { headers } from 'next/headers';
+
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
 
 type JobStatus = {
   readonly jobId: string;
@@ -28,7 +29,7 @@ async function fetchJobStatus(jobId: string): Promise<JobStatus> {
 
   const response = await fetch(`http://localhost:3002/api/github/jobs/${jobId}`, {
     headers: {
-      ...scenarist.getHeadersFromReadonlyHeaders(headersList),
+      ...getScenaristHeadersFromReadonlyHeaders(headersList),
     },
     cache: 'no-store', // Disable Next.js caching for demo
   });

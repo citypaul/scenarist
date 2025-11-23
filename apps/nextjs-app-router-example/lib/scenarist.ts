@@ -18,6 +18,6 @@ export const scenarist = createScenarist({
 });
 
 // Start MSW in Node.js environment
-if (typeof window === 'undefined') {
+if (typeof window === 'undefined' && scenarist) {
   scenarist.start();
 }

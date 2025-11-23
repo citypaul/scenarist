@@ -13,8 +13,9 @@
  * Scenarist approach: ✅ Playwright + stateful mocks + RSC = works perfectly
  */
 
-import { scenarist } from '@/lib/scenarist';
 import { headers } from 'next/headers';
+
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
 
 type CartItem = {
   readonly id: string;
@@ -55,7 +56,7 @@ async function fetchCart(): Promise<CartResponse> {
 
   const response = await fetch('http://localhost:3002/api/cart', {
     headers: {
-      ...scenarist.getHeadersFromReadonlyHeaders(headersList),
+      ...getScenaristHeadersFromReadonlyHeaders(headersList),
     },
     cache: 'no-store', // Disable Next.js caching for demo
   });

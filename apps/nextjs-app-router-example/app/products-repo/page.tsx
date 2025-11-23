@@ -13,9 +13,13 @@
 
 import { headers } from 'next/headers';
 import type { ProductsResponse } from '@/types/product';
-import { scenarist } from '@/lib/scenarist';
 import { getUserRepository, runWithTestId } from '@/lib/container';
 import type { User } from '@/lib/repositories';
+
+import {
+  getScenaristHeadersFromReadonlyHeaders,
+  getScenaristTestIdFromReadonlyHeaders,
+} from '@scenarist/nextjs-adapter/app';
 
 type ProductsRepoPageProps = {
   searchParams: Promise<{ userId?: string }>;
@@ -34,13 +38,13 @@ async function fetchUserFromRepository(
 }
 
 async function fetchProductsFromApi(
-  testId: string,
+  scenaristHeaders: Record<string, string>,
   tier: string
 ): Promise<ProductsResponse> {
   // Fetch products from external API (mocked by Scenarist)
   const response = await fetch('http://localhost:3001/products', {
     headers: {
-      'x-test-id': testId, // Scenarist uses this to select scenario
+      ...scenaristHeaders, // Scenarist test isolation headers
       'x-user-tier': tier, // External API uses this for pricing
     },
     cache: 'no-store',
@@ -58,16 +62,17 @@ export default async function ProductsRepoPage({
 }: ProductsRepoPageProps) {
   const { userId = 'user-1' } = await searchParams;
 
-  // Get test ID from request headers
+  // Get Scenarist test isolation headers and test ID
   const headersList = await headers();
-  const testId = headersList.get(scenarist.config.headers.testId) ?? 'default-test';
+  const scenaristHeaders = getScenaristHeadersFromReadonlyHeaders(headersList);
+  const testId = getScenaristTestIdFromReadonlyHeaders(headersList);
 
   // 1. Get user from repository (in-memory with test ID isolation)
   const user = await fetchUserFromRepository(testId, userId);
 
   // 2. Get products from external API (mocked by Scenarist)
   const tier = user?.tier ?? 'standard';
-  const data = await fetchProductsFromApi(testId, tier);
+  const data = await fetchProductsFromApi(scenaristHeaders, tier);
 
   return (
     <div className="container mx-auto px-4 py-8">

@@ -18,7 +18,8 @@
 
 import { headers } from 'next/headers';
 import type { ProductsResponse } from '@/types/product';
-import { scenarist } from '@/lib/scenarist';
+
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
 
 type ProductsPageProps = {
   searchParams: Promise<{ tier?: string; campaign?: string }>;
@@ -41,7 +42,7 @@ async function fetchProducts(
 
   const response = await fetch(url.toString(), {
     headers: {
-      ...scenarist.getHeadersFromReadonlyHeaders(headersList), // Scenarist infrastructure (x-test-id)
+      ...getScenaristHeadersFromReadonlyHeaders(headersList), // Scenarist infrastructure (x-test-id)
       'x-user-tier': tier, // Application context (external API needs this!)
     },
     cache: 'no-store', // Disable Next.js caching for demo

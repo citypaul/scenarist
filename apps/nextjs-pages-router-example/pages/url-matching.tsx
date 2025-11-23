@@ -15,7 +15,7 @@
 
 import type { GetServerSideProps } from "next";
 import Head from "next/head";
-import { scenarist } from "../lib/scenarist";
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/pages";
 
 type User = {
   readonly login: string;
@@ -393,7 +393,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
   const testParam = context.query.test;
   const test = Array.isArray(testParam) ? testParam[0] : testParam || "numericId";
 
-  const scenaristHeaders = scenarist.getHeaders(context.req);
+  const scenaristHeaders = getScenaristHeaders(context.req);
   const result = await fetchTestData(test, context.query, scenaristHeaders);
 
   return {

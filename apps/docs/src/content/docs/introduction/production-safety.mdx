@@ -646,32 +646,85 @@ if (scenarist) {
 }
 ```
 
-### Next.js (App Router)
+### Next.js (App Router & Pages Router)
+
+Both Next.js adapters use the **synchronous pattern** with conditional exports for production safety:
 
 ```typescript
+// lib/scenarist.ts
 import { createScenarist } from '@scenarist/nextjs-adapter/app';
+// or: import { createScenarist } from '@scenarist/nextjs-adapter/pages';
 
+// Synchronous - no async/await needed
 export const scenarist = createScenarist({
   enabled: true,
   scenarios,
 });
 
-// Singleton pattern handles production automatically
-// Returns same undefined instance on every call in production
+// MSW auto-starts in development/test (when scenarist is defined)
+if (typeof window === 'undefined' && scenarist) {
+  scenarist.start();
+}
 ```
 
-### Next.js (Pages Router)
+**Production behavior:**
+- ✅ **Conditional exports** resolve to `production.js` which returns `undefined` immediately
+- ✅ **Zero imports** in production.js guarantees tree-shaking
+- ✅ **Zero configuration:** Works automatically based on `NODE_ENV`
+
+**Safe Helper Functions:**
+
+To avoid `scenarist?.method() ?? fallback` patterns everywhere, both adapters export safe helper functions:
 
 ```typescript
-import { createScenarist } from '@scenarist/nextjs-adapter/pages';
+// App Router API Route
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
 
-export const scenarist = createScenarist({
-  enabled: true,
-  scenarios,
-});
-
-// Same production wrapper pattern
+export async function GET(request: Request) {
+  const response = await fetch('http://localhost:3001/products', {
+    headers: {
+      ...getScenaristHeaders(request),  // Always safe, no guards needed
+      'x-user-tier': 'premium',
+    },
+  });
+}
 ```
+
+```typescript
+// App Router Server Component
+import { headers } from 'next/headers';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+
+export default async function ProductsPage() {
+  const headersList = await headers();
+
+  const response = await fetch('http://localhost:3001/products', {
+    headers: getScenaristHeadersFromReadonlyHeaders(headersList),
+  });
+}
+```
+
+```typescript
+// Pages Router API Route
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
+
+export default async function handler(req, res) {
+  const response = await fetch('http://localhost:3001/products', {
+    headers: getScenaristHeaders(req),
+  });
+}
+```
+
+**Available helpers:**
+- **App Router:**
+  - `getScenaristHeaders(request)` - Extract Scenarist headers from Request
+  - `getScenaristHeadersFromReadonlyHeaders(headers)` - Extract Scenarist headers from ReadonlyHeaders
+  - `getScenaristTestId(request)` - Extract test ID string from Request
+  - `getScenaristTestIdFromReadonlyHeaders(headers)` - Extract test ID string from ReadonlyHeaders
+- **Pages Router:**
+  - `getScenaristHeaders(req)` - Extract Scenarist headers from IncomingMessage
+
+These helpers access global singletons and return safe defaults in production (empty objects for headers, `'default-test'` for test IDs), eliminating the need for manual undefined checks.
 
 ## Common Questions
 

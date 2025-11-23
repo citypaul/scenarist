@@ -13,7 +13,7 @@
  */
 
 import type { GetServerSideProps } from "next";
-import { scenarist } from "../lib/scenarist";
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/pages";
 
 type HostnameMatchingResponse = {
   readonly patternType: string;
@@ -103,7 +103,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (context)
   const postId = (query.postId as string) || "456";
 
   // Get Scenarist headers for test ID propagation
-  const scenaristHeaders = scenarist.getHeaders(context.req);
+  const scenaristHeaders = getScenaristHeaders(context.req);
 
   let result: HostnameMatchingResponse | null = null;
   let error: string | null = null;

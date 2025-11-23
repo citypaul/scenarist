@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:production": "NODE_ENV=production next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -14,7 +15,8 @@
     "test:e2e:ui": "playwright test --project=chromium --ui",
     "test:e2e:comparison": "SKIP_MSW=true playwright test --project=comparison",
     "test:e2e:all": "playwright test",
-    "fake-api": "json-server fake-api/db.json --port 3001"
+    "fake-api": "json-server fake-api/db.json --port 3001",
+    "verify:treeshaking": "pnpm build:production && ! grep -rE '(setupWorker|startWorker|http\\.(get|post|put|delete|patch)|HttpResponse\\.json)' .next/ --exclude-dir=cache"
   },
   "dependencies": {
     "@scenarist/nextjs-adapter": "workspace:*",

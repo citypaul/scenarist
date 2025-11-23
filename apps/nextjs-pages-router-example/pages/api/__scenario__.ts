@@ -7,8 +7,15 @@
  * It handles:
  * - POST /__scenario__ - Switch scenario for a test ID
  * - GET /__scenario__ - Get active scenario for a test ID
+ *
+ * **PRODUCTION TREE-SHAKING:**
+ * In production builds, scenarist is undefined due to conditional exports.
+ * When the default export is undefined, Next.js treats the route as non-existent.
+ * No manual guards needed - the architecture provides safety automatically.
  */
 
 import { scenarist } from '../../lib/scenarist';
 
-export default scenarist.createScenarioEndpoint();
+// In production, scenarist is undefined due to conditional exports
+// This makes the default export undefined, and Next.js treats the route as non-existent
+export default scenarist?.createScenarioEndpoint();

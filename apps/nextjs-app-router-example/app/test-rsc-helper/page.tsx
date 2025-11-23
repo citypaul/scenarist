@@ -9,8 +9,12 @@
  */
 
 // CRITICAL: Import scenarist to ensure MSW starts before fetch calls
-import { scenarist } from "@/lib/scenarist";
 import { headers } from "next/headers";
+
+import {
+  getScenaristHeadersFromReadonlyHeaders,
+  getScenaristTestIdFromReadonlyHeaders,
+} from '@scenarist/nextjs-adapter/app';
 
 type ProductsResponse = {
   readonly products: readonly {
@@ -30,7 +34,7 @@ const fetchProducts = async (
 ): Promise<FetchResult> => {
   try {
     // CLEAN API: Use ReadonlyHeaders directly (no fake Request needed)
-    const scenaristHeaders = scenarist.getHeadersFromReadonlyHeaders(headersList);
+    const scenaristHeaders = getScenaristHeadersFromReadonlyHeaders(headersList);
 
     const response = await fetch("http://localhost:3001/products", {
       headers: {
@@ -60,7 +64,7 @@ const fetchProducts = async (
 export default async function TestRSCHelperPage() {
   // Get headers for test ID propagation
   const headersList = await headers();
-  const testId = headersList.get(scenarist.config.headers.testId) || "default-test";
+  const testId = getScenaristTestIdFromReadonlyHeaders(headersList);
 
   const fetchResult = await fetchProducts(headersList);
 

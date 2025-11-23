@@ -396,6 +396,56 @@ docs-site/
 
 ---
 
+## Pre-Release Requirements
+
+These items MUST be complete before v1.0 release.
+
+### 0. Simplify Test ID Header Configuration (NEXT UP - BEFORE v1.0)
+
+**Goal:** Remove custom test ID header configuration, standardize on `x-scenarist-test-id`
+
+**Status:** 📋 Planned for v1.0 - **NEXT UP** - Tracked in [Issue #123](https://github.com/citypaul/scenarist/issues/123)
+
+**Why This Change:**
+
+Currently, users can configure a custom test ID header name via `headers.testId` configuration. This creates complexity and limitations:
+
+1. **Helper Function Limitations**: `getScenaristTestId()` and `getScenaristTestIdFromReadonlyHeaders()` helpers cannot respect custom configurations without accessing the full scenarist instance. They hardcode the default `'x-test-id'` header name.
+
+2. **Inconsistent API**: Users can configure a custom header, but convenience helpers won't work with it. This creates confusion.
+
+3. **Unnecessary Complexity**: No compelling use case for customizing the test ID header name. It's internal infrastructure for test isolation.
+
+**Proposed Changes:**
+
+1. Remove `headers.testId` configuration option from all adapters
+2. Standardize on `'x-scenarist-test-id'` header name (more specific, clearly identifies Scenarist infrastructure)
+3. Simplify helper implementations (remove JSDoc "Important Limitation" warnings)
+4. Update all documentation and examples
+
+**Breaking Changes:**
+- Applications using default `'x-test-id'` must update to `'x-scenarist-test-id'`
+- Custom `headers.testId` configuration option removed
+- All documentation examples require updates
+
+**Benefits:**
+- Simpler API (one less configuration option)
+- Consistent behavior across all helpers
+- Clearer intent (`'x-scenarist-test-id'` makes Scenarist ownership obvious)
+- Reduced code complexity
+
+**Why Now (Before v1.0):**
+- No real users yet - perfect time for breaking changes
+- Cleaner API for v1.0 launch
+- Avoids migration burden later
+- Helpers work consistently from day one
+
+**Estimated Time:** 1-2 days
+**Priority:** HIGH - Do this NEXT, before v1.0 release
+**Status:** 📋 Ready to start - Issue #123 created
+
+---
+
 ## Post-Release Enhancements
 
 These items can be added after v1.0 release based on user feedback.

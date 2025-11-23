@@ -37,10 +37,12 @@
     },
     "./pages": {
       "types": "./dist/pages/index.d.ts",
+      "production": "./dist/pages/production.js",
       "import": "./dist/pages/index.js"
     },
     "./app": {
       "types": "./dist/app/index.d.ts",
+      "production": "./dist/app/production.js",
       "import": "./dist/app/index.js"
     }
   },

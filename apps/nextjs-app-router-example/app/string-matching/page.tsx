@@ -9,7 +9,8 @@
  */
 
 import { headers } from "next/headers";
-import { scenarist } from "@/lib/scenarist";
+
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
 
 type Props = {
   searchParams: Promise<{
@@ -128,7 +129,7 @@ export default async function StringMatchingPage({ searchParams }: Props) {
   const result = await fetchStrategyResult(
     strategy,
     { campaign, apiKey, email, exact },
-    scenarist.getHeadersFromReadonlyHeaders(headersList)
+    getScenaristHeadersFromReadonlyHeaders(headersList)
   );
 
   return (
