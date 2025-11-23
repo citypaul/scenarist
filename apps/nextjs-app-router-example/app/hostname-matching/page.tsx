@@ -19,7 +19,10 @@
 // CRITICAL: Import scenarist to ensure MSW starts before fetch calls
 import { headers } from "next/headers";
 
-import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+import {
+  getScenaristHeadersFromReadonlyHeaders,
+  getScenaristTestIdFromReadonlyHeaders,
+} from '@scenarist/nextjs-adapter/app';
 
 type HostnameMatchingResponse = {
   readonly patternType: string;
@@ -144,8 +147,7 @@ export default async function HostnameMatchingPage({ searchParams }: PageProps) 
 
   // Get headers for test ID propagation
   const headersList = await headers();
-  const scenaristHeaders = getScenaristHeadersFromReadonlyHeaders(headersList);
-  const testId = scenaristHeaders['x-test-id'] || "default-test";
+  const testId = getScenaristTestIdFromReadonlyHeaders(headersList);
 
   const fetchResult = await fetchTestData(testType, userId, postId, headersList);
 

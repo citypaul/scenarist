@@ -1,9 +1,9 @@
 /**
- * Default Scenarist configuration constants.
- * These can be used even when scenarist is undefined (production builds).
+ * Internal constants for Scenarist configuration.
+ * Not exported - use helper functions instead to avoid leaky abstractions.
  */
-export const SCENARIST_TEST_ID_HEADER = 'x-test-id';
-export const SCENARIST_DEFAULT_TEST_ID = 'default-test';
+const SCENARIST_TEST_ID_HEADER = 'x-test-id';
+const SCENARIST_DEFAULT_TEST_ID = 'default-test';
 
 /**
  * Safe helper to extract Scenarist infrastructure headers from a Request object.
@@ -79,4 +79,81 @@ export function getScenaristHeaders(req: Request): Record<string, string> {
 export function getScenaristHeadersFromReadonlyHeaders(headers: { get(name: string): string | null }): Record<string, string> {
   const scenarist = global.__scenarist_instance;
   return scenarist?.getHeadersFromReadonlyHeaders(headers) ?? {};
+}
+
+/**
+ * Safe helper to extract just the test ID from ReadonlyHeaders.
+ *
+ * This helper is designed for scenarios where you need the test ID value directly,
+ * such as when integrating with repository patterns or other test-scoped systems.
+ *
+ * **Use this when:**
+ * - You need to partition in-memory data by test ID
+ * - You're integrating Scenarist with custom test isolation mechanisms
+ * - You need the test ID for logging/debugging
+ *
+ * @param headers - The ReadonlyHeaders object from headers() in 'next/headers'
+ * @returns The test ID string extracted from headers, or default if not found
+ *
+ * @example
+ * ```typescript
+ * // Server Component with repository pattern
+ * import { headers } from 'next/headers';
+ * import { getScenaristTestIdFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+ * import { runWithTestId, getUserRepository } from '@/lib/container';
+ *
+ * export default async function UserPage() {
+ *   const headersList = await headers();
+ *   const testId = getScenaristTestIdFromReadonlyHeaders(headersList);
+ *
+ *   // Use test ID for repository isolation
+ *   const user = await runWithTestId(testId, async () => {
+ *     const userRepo = getUserRepository();
+ *     return userRepo.findById('user-123');
+ *   });
+ *
+ *   return <UserProfile user={user} />;
+ * }
+ * ```
+ */
+export function getScenaristTestIdFromReadonlyHeaders(headers: { get(name: string): string | null }): string {
+  const scenarist = global.__scenarist_instance;
+  if (!scenarist) {
+    return SCENARIST_DEFAULT_TEST_ID;
+  }
+
+  // Get test ID from configured header
+  const testIdHeader = SCENARIST_TEST_ID_HEADER;
+  return headers.get(testIdHeader) ?? SCENARIST_DEFAULT_TEST_ID;
+}
+
+/**
+ * Safe helper to extract just the test ID from a Request object.
+ *
+ * This helper is designed for Route Handlers where you need the test ID value directly.
+ *
+ * @param req - The Web standard Request object
+ * @returns The test ID string extracted from request headers, or default if not found
+ *
+ * @example
+ * ```typescript
+ * // Route Handler
+ * import { getScenaristTestId } from '@scenarist/nextjs-adapter/app';
+ *
+ * export async function GET(request: Request) {
+ *   const testId = getScenaristTestId(request);
+ *   console.log('Processing request for test:', testId);
+ *   // ...
+ * }
+ * ```
+ */
+export function getScenaristTestId(req: Request): string {
+  const scenarist = global.__scenarist_instance;
+  if (!scenarist) {
+    return SCENARIST_DEFAULT_TEST_ID;
+  }
+
+  // Get test ID from configured header
+  const testIdHeader = SCENARIST_TEST_ID_HEADER;
+  return req.headers.get(testIdHeader) ?? SCENARIST_DEFAULT_TEST_ID;
 }

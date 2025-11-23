@@ -37,8 +37,8 @@ export { createScenarioEndpoint } from './endpoints.js';
 export {
   getScenaristHeaders,
   getScenaristHeadersFromReadonlyHeaders,
-  SCENARIST_TEST_ID_HEADER,
-  SCENARIST_DEFAULT_TEST_ID,
+  getScenaristTestId,
+  getScenaristTestIdFromReadonlyHeaders,
 } from './helpers.js';
 export type { AppAdapterOptions, AppScenarist } from './setup.js';
 

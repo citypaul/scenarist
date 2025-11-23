@@ -714,10 +714,15 @@ export default async function handler(req, res) {
 ```
 
 **Available helpers:**
-- **App Router:** `getScenaristHeaders(request)`, `getScenaristHeadersFromReadonlyHeaders(headers)`, `SCENARIST_TEST_ID_HEADER`, `SCENARIST_DEFAULT_TEST_ID`
-- **Pages Router:** `getScenaristHeaders(req)`
+- **App Router:**
+  - `getScenaristHeaders(request)` - Extract Scenarist headers from Request
+  - `getScenaristHeadersFromReadonlyHeaders(headers)` - Extract Scenarist headers from ReadonlyHeaders
+  - `getScenaristTestId(request)` - Extract test ID string from Request
+  - `getScenaristTestIdFromReadonlyHeaders(headers)` - Extract test ID string from ReadonlyHeaders
+- **Pages Router:**
+  - `getScenaristHeaders(req)` - Extract Scenarist headers from IncomingMessage
 
-These helpers access global singletons and return empty objects in production, eliminating the need for manual undefined checks.
+These helpers access global singletons and return safe defaults in production (empty objects for headers, `'default-test'` for test IDs), eliminating the need for manual undefined checks.
 
 ## Common Questions
 

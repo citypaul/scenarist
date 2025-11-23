@@ -28,8 +28,17 @@ export function getScenaristHeadersFromReadonlyHeaders(_headers: unknown): Recor
 }
 
 /**
- * Default Scenarist configuration constants.
- * Safe to use even in production.
+ * Production-safe helper that returns the default test ID.
+ * In production, scenarist is undefined, so this always returns 'default-test'.
  */
-export const SCENARIST_TEST_ID_HEADER = 'x-test-id';
-export const SCENARIST_DEFAULT_TEST_ID = 'default-test';
+export function getScenaristTestId(_request: unknown): string {
+  return 'default-test';
+}
+
+/**
+ * Production-safe helper that returns the default test ID from ReadonlyHeaders.
+ * In production, scenarist is undefined, so this always returns 'default-test'.
+ */
+export function getScenaristTestIdFromReadonlyHeaders(_headers: unknown): string {
+  return 'default-test';
+}

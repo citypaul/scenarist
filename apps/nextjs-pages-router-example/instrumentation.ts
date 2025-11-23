@@ -8,7 +8,9 @@
  */
 
 export async function register() {
-  if (process.env.NEXT_RUNTIME === 'nodejs') {
+  // Run unless explicitly in Edge runtime (MSW requires Node.js)
+  // NEXT_RUNTIME can be 'nodejs', 'edge', or undefined
+  if (process.env.NEXT_RUNTIME !== 'edge') {
     // Import and start scenarist on server startup
     // This ensures MSW is ready before getServerSideProps runs
     await import('./lib/scenarist');

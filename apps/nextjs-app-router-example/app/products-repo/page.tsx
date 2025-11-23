@@ -16,7 +16,10 @@ import type { ProductsResponse } from '@/types/product';
 import { getUserRepository, runWithTestId } from '@/lib/container';
 import type { User } from '@/lib/repositories';
 
-import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+import {
+  getScenaristHeadersFromReadonlyHeaders,
+  getScenaristTestIdFromReadonlyHeaders,
+} from '@scenarist/nextjs-adapter/app';
 
 type ProductsRepoPageProps = {
   searchParams: Promise<{ userId?: string }>;
@@ -59,12 +62,10 @@ export default async function ProductsRepoPage({
 }: ProductsRepoPageProps) {
   const { userId = 'user-1' } = await searchParams;
 
-  // Get Scenarist test isolation headers
+  // Get Scenarist test isolation headers and test ID
   const headersList = await headers();
   const scenaristHeaders = getScenaristHeadersFromReadonlyHeaders(headersList);
-
-  // Extract test ID for repository isolation (both use same test ID)
-  const testId = scenaristHeaders['x-test-id'] ?? 'default-test';
+  const testId = getScenaristTestIdFromReadonlyHeaders(headersList);
 
   // 1. Get user from repository (in-memory with test ID isolation)
   const user = await fetchUserFromRepository(testId, userId);

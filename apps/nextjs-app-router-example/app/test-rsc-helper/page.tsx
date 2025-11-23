@@ -11,7 +11,10 @@
 // CRITICAL: Import scenarist to ensure MSW starts before fetch calls
 import { headers } from "next/headers";
 
-import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+import {
+  getScenaristHeadersFromReadonlyHeaders,
+  getScenaristTestIdFromReadonlyHeaders,
+} from '@scenarist/nextjs-adapter/app';
 
 type ProductsResponse = {
   readonly products: readonly {
@@ -61,8 +64,7 @@ const fetchProducts = async (
 export default async function TestRSCHelperPage() {
   // Get headers for test ID propagation
   const headersList = await headers();
-  const scenaristHeaders = getScenaristHeadersFromReadonlyHeaders(headersList);
-  const testId = scenaristHeaders['x-test-id'] || "default-test";
+  const testId = getScenaristTestIdFromReadonlyHeaders(headersList);
 
   const fetchResult = await fetchProducts(headersList);
 
