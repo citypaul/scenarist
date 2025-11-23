@@ -91,7 +91,49 @@ export const scenarios = {
 } as const satisfies ScenaristScenarios;
 ```
 
-## 2. Set Up Scenarist
+## 2. Create Instrumentation Hook (REQUIRED)
+
+<Aside type="danger" title="⚠️ CRITICAL: This Step is REQUIRED">
+
+**You MUST create this file for Scenarist to work with Next.js.** Without it, MSW won't be initialized before your Server Components or Route Handlers try to fetch data, causing real HTTP requests instead of mocked responses.
+
+</Aside>
+
+Create `instrumentation.ts` at the root of your Next.js project:
+
+```typescript
+// instrumentation.ts
+export async function register() {
+  // MSW requires Node.js APIs not available in Edge runtime
+  if (process.env.NEXT_RUNTIME !== 'edge') {
+    // Import and start scenarist on server startup
+    // This ensures MSW is ready before Server Components fetch data
+    await import('./lib/scenarist');
+  }
+}
+```
+
+**Enable instrumentation in `next.config.js`:**
+
+```javascript
+// next.config.js
+module.exports = {
+  experimental: {
+    instrumentationHook: true,
+  },
+};
+```
+
+**Why this is required:** Next.js Server Components and data fetching run immediately on server startup. The instrumentation hook ensures MSW is initialized before any components try to fetch data.
+
+**Why Edge runtime is excluded:** MSW requires Node.js APIs (fs, crypto) that aren't available in Edge runtime. This isn't a problem because:
+- Tests always use Node.js runtime (where Scenarist works)
+- Production tree-shakes Scenarist completely (0kb bundle)
+- Edge Functions can't be tested with Scenarist (fundamental MSW limitation)
+
+**Learn more:** [Next.js Instrumentation Docs](https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation)
+
+## 3. Set Up Scenarist
 
 ```typescript
 // lib/scenarist.ts
@@ -103,6 +145,11 @@ export const scenarist = await createScenarist({
   enabled: process.env.NODE_ENV === 'test',
   scenarios,
 });
+
+// Auto-start MSW server in test environment
+if (typeof window === 'undefined' && scenarist) {
+  scenarist.start();
+}
 ```
 
 <Aside type="tip" title="Top-Level Await">
@@ -147,7 +194,7 @@ The module duplication issue is a [well-known Next.js challenge](https://github.
 
 </Aside>
 
-## 3. Create Scenario Control Endpoint
+## 4. Create Scenario Control Endpoint
 
 ```typescript
 // app/api/%5F%5Fscenario%5F%5F/route.ts
@@ -174,7 +221,7 @@ The folder is named `%5F%5Fscenario%5F%5F` (URL-encoded underscores) because Nex
 The route will be accessible at `/__scenario__` in your application. While this endpoint path is configurable via `scenarist` config options, using `/__scenario__` is the recommended approach.
 :::
 
-## 4. Set Up Playwright Fixtures
+## 5. Set Up Playwright Fixtures
 
 ```typescript
 // tests/fixtures.ts
@@ -186,7 +233,7 @@ export const test = withScenarios(scenarios);
 export { expect };
 ```
 
-## 5. Write Tests
+## 6. Write Tests
 
 ```typescript
 // tests/products.spec.ts
@@ -290,6 +337,17 @@ export default async function ProductsPage() {
   );
 }
 ```
+
+<Aside type="tip" title="Production Safety">
+
+**All helper functions are production-safe:**
+- Return `{}` (empty object) when scenarist is undefined
+- Safe to spread in headers without guards
+- Zero runtime overhead (tree-shaken in production builds)
+
+You don't need `if (scenarist)` checks - just spread the helpers directly into your fetch headers.
+
+</Aside>
 
 ### Route Handlers (Request object)
 
