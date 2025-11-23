@@ -15,7 +15,7 @@
  * @see https://playwright.dev/docs/test-global-setup-teardown
  */
 
-import { spawn, execSync, type ChildProcess } from 'node:child_process';
+import { spawn, execSync } from 'node:child_process';
 import { copyFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { writeFileSync } from 'node:fs';

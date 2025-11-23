@@ -38,3 +38,4 @@ next-env.d.ts
 
 # json-server (production tests)
 /fake-api/db.json
+.test-server-pids.json
