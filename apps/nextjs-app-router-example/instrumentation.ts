@@ -1,8 +1,27 @@
 /**
- * Next.js Instrumentation Hook
+ * Next.js Instrumentation Hook - REQUIRED for Scenarist
  *
- * This file is loaded once when the server starts (before any pages render).
- * It's the ideal place to initialize MSW for server-side scenarios.
+ * ⚠️ CRITICAL: This file is REQUIRED when using Scenarist with Next.js.
+ *
+ * **Why?** Next.js Server Components and data fetching run immediately on
+ * server startup. Without this instrumentation hook, MSW won't be initialized
+ * before your components try to fetch data, causing real HTTP requests instead
+ * of mocked responses.
+ *
+ * **Setup Instructions:**
+ * 1. Create this file at the root of your Next.js project: `instrumentation.ts`
+ * 2. Enable instrumentation in next.config.js:
+ *    ```js
+ *    module.exports = {
+ *      experimental: {
+ *        instrumentationHook: true,
+ *      },
+ *    };
+ *    ```
+ * 3. Import your scenarist setup in the register() function (as shown below)
+ *
+ * This ensures MSW is ready before any Server Components render or
+ * getServerSideProps executes.
  *
  * @see https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation
  */

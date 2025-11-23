@@ -12,13 +12,19 @@ const SCENARIST_DEFAULT_TEST_ID = 'default-test';
  * even when scenarist is undefined (production builds). It respects the configured
  * test ID header name and default test ID.
  *
+ * **Production Behavior:**
+ * - Returns `{}` (empty object) when scenarist is undefined
+ * - Safe to spread in fetch headers without guards
+ * - Zero runtime overhead (tree-shaken in production builds)
+ *
  * **Why use this instead of scenarist.getHeaders()?**
  * - No need to check if scenarist is defined (`scenarist?.getHeaders(req) ?? {}`)
  * - Works automatically by accessing the global singleton
- * - Safe in production (returns empty object)
+ * - Consistent API across development, test, and production
  *
  * @param req - The Web standard Request object
  * @returns Object with single entry: configured test ID header name → value from request or default
+ *          Returns `{}` in production when scenarist is undefined
  *
  * @example
  * ```typescript
@@ -47,13 +53,19 @@ export function getScenaristHeaders(req: Request): Record<string, string> {
  * which returns ReadonlyHeaders (not a Request object). It accesses the global scenarist instance
  * and safely returns headers even when scenarist is undefined (production builds).
  *
+ * **Production Behavior:**
+ * - Returns `{}` (empty object) when scenarist is undefined
+ * - Safe to spread in fetch headers without guards
+ * - Zero runtime overhead (tree-shaken in production builds)
+ *
  * **Why use this instead of scenarist.getHeadersFromReadonlyHeaders()?**
  * - No need to check if scenarist is defined
  * - Works automatically by accessing the global singleton
- * - Safe in production (returns empty object)
+ * - Consistent API across development, test, and production
  *
  * @param headers - The ReadonlyHeaders object from headers() in 'next/headers'
  * @returns Object with single entry: configured test ID header name → value from headers or default
+ *          Returns `{}` in production when scenarist is undefined
  *
  * @example
  * ```typescript
@@ -87,13 +99,18 @@ export function getScenaristHeadersFromReadonlyHeaders(headers: { get(name: stri
  * This helper is designed for scenarios where you need the test ID value directly,
  * such as when integrating with repository patterns or other test-scoped systems.
  *
+ * **Production Behavior:**
+ * - Returns `'default-test'` when scenarist is undefined
+ * - Safe to use for partitioning data without guards
+ * - Zero runtime overhead (tree-shaken in production builds)
+ *
  * **Use this when:**
  * - You need to partition in-memory data by test ID
  * - You're integrating Scenarist with custom test isolation mechanisms
  * - You need the test ID for logging/debugging
  *
  * @param headers - The ReadonlyHeaders object from headers() in 'next/headers'
- * @returns The test ID string extracted from headers, or default if not found
+ * @returns The test ID string extracted from headers, or `'default-test'` if not found or in production
  *
  * @example
  * ```typescript
@@ -132,8 +149,13 @@ export function getScenaristTestIdFromReadonlyHeaders(headers: { get(name: strin
  *
  * This helper is designed for Route Handlers where you need the test ID value directly.
  *
+ * **Production Behavior:**
+ * - Returns `'default-test'` when scenarist is undefined
+ * - Safe to use for partitioning data without guards
+ * - Zero runtime overhead (tree-shaken in production builds)
+ *
  * @param req - The Web standard Request object
- * @returns The test ID string extracted from request headers, or default if not found
+ * @returns The test ID string extracted from request headers, or `'default-test'` if not found or in production
  *
  * @example
  * ```typescript

@@ -26,8 +26,25 @@ export const scenarist = await createScenarist({
   scenarios,
 });
 
-// Start MSW in Node.js environment (only when Scenarist is enabled)
-// Skip for comparison tests (they use real json-server instead)
+/**
+ * Auto-start MSW server in development
+ *
+ * NOTE: The SKIP_MSW environment variable is ONLY used for comparison tests
+ * in this example app. These tests verify that Scenarist responses match
+ * real json-server responses.
+ *
+ * **For your own app**, you should use:
+ * ```typescript
+ * export const scenarist = await createScenarist({
+ *   enabled: process.env.NODE_ENV === 'test',  // Only enable in test environment
+ *   scenarios,
+ * });
+ *
+ * if (typeof window === 'undefined' && scenarist) {
+ *   scenarist.start();
+ * }
+ * ```
+ */
 if (typeof window === 'undefined' && scenarist && process.env.SKIP_MSW !== 'true') {
   scenarist.start();
 }

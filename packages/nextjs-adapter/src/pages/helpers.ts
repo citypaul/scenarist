@@ -15,13 +15,19 @@ type RequestWithHeaders = {
  * even when scenarist is undefined (production builds). It respects the configured
  * test ID header name and default test ID.
  *
+ * **Production Behavior:**
+ * - Returns `{}` (empty object) when scenarist is undefined
+ * - Safe to spread in fetch headers without guards
+ * - Zero runtime overhead (tree-shaken in production builds)
+ *
  * **Why use this instead of scenarist.getHeaders()?**
  * - No need to check if scenarist is defined (`scenarist?.getHeaders(req) ?? {}`)
  * - Works automatically by accessing the global singleton
- * - Safe in production (returns empty object)
+ * - Consistent API across development, test, and production
  *
  * @param req - Request object with headers (NextApiRequest or GetServerSidePropsContext.req)
  * @returns Object with single entry: configured test ID header name → value from request or default
+ *          Returns `{}` in production when scenarist is undefined
  *
  * @example
  * ```typescript
