@@ -144,7 +144,7 @@ export type AppScenarist = Omit<ScenaristAdapter<never>, 'middleware'> & {
  * import { createScenarist } from '@scenarist/nextjs-adapter/app';
  * import { defaultScenario } from './scenarios';
  *
- * export const scenarist = await createScenarist({
+ * export const scenarist = createScenarist({
  *   enabled: process.env.NODE_ENV === 'development',
  *   defaultScenario,
  * });

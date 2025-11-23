@@ -267,12 +267,11 @@ apps/
 
 ## Production Tree-Shaking
 
-**Defense in Depth:** All adapters use a two-layer approach to guarantee zero test code in production:
+**Production Tree-Shaking Strategy:**
 
-1. **Layer 1: Conditional Exports** - Build tool resolves to production.ts (returns undefined, zero imports)
-2. **Layer 2: Runtime Guard** - NODE_ENV check + dynamic imports in setup.ts
+Scenarist adapters use conditional exports to guarantee zero test code in production. The Express adapter adds an additional runtime guard as defense-in-depth.
 
-**Express adapter implementation:**
+**Express adapter (two-layer defense):**
 ```typescript
 // Layer 1: Conditional exports
 // package.json exports → production.ts when NODE_ENV=production
@@ -285,13 +284,18 @@ export const createScenarist = async (options) => {
   const { createScenaristImpl } = await import('./impl.js');  // Dynamic import
   return createScenaristImpl(options);
 };
+
+// production.ts (returns undefined, zero imports)
+export const createScenarist = async (_options) => {
+  return undefined;
+};
 ```
 
-**Next.js adapter implementation (App Router + Pages Router):**
+**Next.js adapters (conditional exports only):**
 ```typescript
-// Conditional exports in package.json → app/production.ts or pages/production.ts
+// Layer 1: Conditional exports in package.json → app/production.ts or pages/production.ts
 
-// app/setup.ts or pages/setup.ts (synchronous re-export)
+// app/setup.ts or pages/setup.ts (synchronous re-export, no runtime guard)
 export { createScenaristImpl as createScenarist } from './impl.js';
 
 // production.ts (returns undefined, zero imports)
@@ -347,9 +351,15 @@ export const scenarist = createScenarist({
 NODE_ENV=production next build && ! grep -rE '(setupWorker|HttpResponse\.json)' .next/
 ```
 
-**Why two layers?**
+**Why Express uses two layers (defense-in-depth):**
 - Layer 1 (conditional exports): Primary defense, handles all standard build tools
-- Layer 2 (NODE_ENV + dynamic imports): Fallback if conditional exports fail or misconfigured bundler
+- Layer 2 (NODE_ENV + dynamic imports): Fallback if conditional exports fail or bundler misconfigured
+- Provides extra safety for Express apps with custom build configurations
+
+**Why Next.js uses only Layer 1:**
+- Next.js build process is standardized and always respects conditional exports
+- No need for runtime guard when bundler behavior is predictable
+- Simpler implementation: synchronous re-export, no async/await required
 
 **Why core doesn't need production.ts:** When adapter has production.ts, core is never imported. Conditional exports are package-scoped, not transitive.
 
