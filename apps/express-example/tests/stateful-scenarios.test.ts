@@ -121,9 +121,9 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
         .set(fixtures.scenarist.config.headers.testId, "reset-test-1");
 
       expect(response.status).toBe(200);
-      // Pure templates with missing state return undefined (not the template string)
-      expect(response.body.items).toBeUndefined();
-      expect(response.body.count).toBeUndefined();
+      // Pure templates with missing state return null (JSON-safe, not undefined)
+      expect(response.body.items).toBeNull();
+      expect(response.body.count).toBeNull();
     });
 
     it("should NOT reset state when scenario switch fails", async () => {

@@ -25,8 +25,9 @@ export const applyTemplates = (value: unknown, templateData: Record<string, unkn
       const path = pureTemplateMatch[2]!; // Guaranteed to exist by regex capture group
       const resolvedValue = resolveTemplatePath(normalizedData, prefix, path);
 
-      // Return raw value if found, otherwise return undefined
-      return resolvedValue !== undefined ? resolvedValue : undefined;
+      // Return raw value if found, otherwise return null (JSON-safe)
+      // null is used instead of undefined to ensure JSON serialization preserves the field
+      return resolvedValue !== undefined ? resolvedValue : null;
     }
 
     // Mixed template (has surrounding text): use string replacement

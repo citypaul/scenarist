@@ -89,3 +89,6 @@ jobs:
         run: pnpm --filter=@scenarist/nextjs-pages-router-example test:e2e:comparison
         env:
           SKIP_MSW: "true"
+
+      - name: Production E2E Tests (Express)
+        run: pnpm --filter=@scenarist/express-example test:production

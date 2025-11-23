@@ -530,7 +530,7 @@ describe('createScenarist', () => {
       await scenarist.stop();
 
       expect(response.status).toBe(200);
-      expect(response.body.value).toBeUndefined(); // Pure templates with missing state return undefined
+      expect(response.body.value).toBeNull(); // Pure templates with missing state return null (JSON-safe)
     });
 
     it('should isolate state per test ID', async () => {
@@ -811,10 +811,10 @@ describe('createScenarist', () => {
       await scenarist.stop();
 
       expect(response.status).toBe(200);
-      // Pure templates with missing state keys return undefined (not the template string)
-      expect(response.body.name).toBeUndefined();
-      expect(response.body.email).toBeUndefined();
-      expect(response.body.address).toBeUndefined();
+      // Pure templates with missing state keys return null (JSON-safe, not the template string)
+      expect(response.body.name).toBeNull();
+      expect(response.body.email).toBeNull();
+      expect(response.body.address).toBeNull();
     });
   });
 });
