@@ -11,7 +11,7 @@
     "test:watch": "vitest",
     "test:bruno": "cd bruno && bru run --env local",
     "test:bruno:ci": "concurrently --kill-others --success first -n SERVER,TESTS 'pnpm start' 'wait-on http://localhost:3000/health && pnpm test:bruno'",
-    "test:production": "pnpm build:production && vitest run tests/production",
+    "test:production": "pnpm build:production && vitest run tests/production --config vitest.production.config.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "build:production": "esbuild src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --external:express --define:process.env.NODE_ENV='\"production\"' --minify --conditions=production",
