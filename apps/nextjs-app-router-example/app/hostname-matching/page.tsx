@@ -17,8 +17,9 @@
  */
 
 // CRITICAL: Import scenarist to ensure MSW starts before fetch calls
-import { scenarist } from "@/lib/scenarist";
 import { headers } from "next/headers";
+
+import { getScenaristHeadersFromReadonlyHeaders, SCENARIST_TEST_ID_HEADER } from '@scenarist/nextjs-adapter/app';
 
 type HostnameMatchingResponse = {
   readonly patternType: string;
@@ -56,7 +57,7 @@ const fetchTestData = async (
         // Test 1: Pathname-only pattern - should match ANY hostname
         const response = await fetch("http://localhost:3001/api/origin-agnostic", {
           headers: {
-            ...scenarist.getHeadersFromReadonlyHeaders(headersList),
+            ...getScenaristHeadersFromReadonlyHeaders(headersList),
           },
           cache: "no-store",
         });
@@ -68,7 +69,7 @@ const fetchTestData = async (
         // Test 2: Full URL with localhost - hostname-specific
         const response = await fetch("http://localhost:3001/api/localhost-only", {
           headers: {
-            ...scenarist.getHeadersFromReadonlyHeaders(headersList),
+            ...getScenaristHeadersFromReadonlyHeaders(headersList),
           },
           cache: "no-store",
         });
@@ -80,7 +81,7 @@ const fetchTestData = async (
         // Test 3: Full URL with external domain - hostname-specific
         const response = await fetch("https://api.example.com/api/production-only", {
           headers: {
-            ...scenarist.getHeadersFromReadonlyHeaders(headersList),
+            ...getScenaristHeadersFromReadonlyHeaders(headersList),
           },
           cache: "no-store",
         });
@@ -92,7 +93,7 @@ const fetchTestData = async (
         // Test 4: Native RegExp pattern - origin-agnostic
         const response = await fetch("http://localhost:3001/api/regex-pattern", {
           headers: {
-            ...scenarist.getHeadersFromReadonlyHeaders(headersList),
+            ...getScenaristHeadersFromReadonlyHeaders(headersList),
           },
           cache: "no-store",
         });
@@ -104,7 +105,7 @@ const fetchTestData = async (
         // Test 5: Pathname with path parameters - origin-agnostic + param extraction
         const response = await fetch(`http://localhost:3001/api/users/${userId}/posts/${postId}`, {
           headers: {
-            ...scenarist.getHeadersFromReadonlyHeaders(headersList),
+            ...getScenaristHeadersFromReadonlyHeaders(headersList),
           },
           cache: "no-store",
         });
@@ -116,7 +117,7 @@ const fetchTestData = async (
         // Test 6: Full URL with path parameters - hostname-specific + param extraction
         const response = await fetch(`http://localhost:3001/api/local-users/${userId}`, {
           headers: {
-            ...scenarist.getHeadersFromReadonlyHeaders(headersList),
+            ...getScenaristHeadersFromReadonlyHeaders(headersList),
           },
           cache: "no-store",
         });
@@ -143,7 +144,7 @@ export default async function HostnameMatchingPage({ searchParams }: PageProps) 
 
   // Get headers for test ID propagation
   const headersList = await headers();
-  const testId = headersList.get(scenarist.config.headers.testId) || "default-test";
+  const testId = headersList.get(SCENARIST_TEST_ID_HEADER) || "default-test";
 
   const fetchResult = await fetchTestData(testType, userId, postId, headersList);
 

@@ -17,7 +17,11 @@
 import { createScenarist } from '@scenarist/nextjs-adapter/app';
 import { scenarios } from './scenarios';
 
-export const scenarist = createScenarist({
+/**
+ * Note: createScenarist is now async for defense-in-depth tree-shaking.
+ * We use top-level await here (supported in Next.js 13+).
+ */
+export const scenarist = await createScenarist({
   enabled: true,
   scenarios,
 });

@@ -13,9 +13,10 @@
 
 import { headers } from 'next/headers';
 import type { ProductsResponse } from '@/types/product';
-import { scenarist } from '@/lib/scenarist';
 import { getUserRepository, runWithTestId } from '@/lib/container';
 import type { User } from '@/lib/repositories';
+
+import { SCENARIST_TEST_ID_HEADER } from '@scenarist/nextjs-adapter/app';
 
 type ProductsRepoPageProps = {
   searchParams: Promise<{ userId?: string }>;
@@ -60,7 +61,7 @@ export default async function ProductsRepoPage({
 
   // Get test ID from request headers
   const headersList = await headers();
-  const testId = headersList.get(scenarist.config.headers.testId) ?? 'default-test';
+  const testId = headersList.get(SCENARIST_TEST_ID_HEADER) ?? 'default-test';
 
   // 1. Get user from repository (in-memory with test ID isolation)
   const user = await fetchUserFromRepository(testId, userId);

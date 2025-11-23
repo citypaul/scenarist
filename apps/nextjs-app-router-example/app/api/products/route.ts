@@ -11,7 +11,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import type { ProductsResponse } from '../../../types/product';
-import { scenarist } from '../../../lib/scenarist';
+
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
     // Fetch from external API (json-server simulating Stripe)
     // External API needs tier context to return correct pricing
     const fetchHeaders: Record<string, string> = {
-      ...scenarist.getHeaders(request),  // Scenarist infrastructure (x-test-id)
+      ...getScenaristHeaders(request),  // Scenarist infrastructure (x-test-id)
       'x-user-tier': userTier,           // Application context (API needs this!)
     };
 

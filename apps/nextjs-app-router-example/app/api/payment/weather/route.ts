@@ -9,7 +9,8 @@
  */
 
 import { NextResponse } from 'next/server';
-import { scenarist } from '../../../../lib/scenarist';
+
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
 
 type WeatherResponse = {
   readonly city: string;
@@ -24,7 +25,7 @@ export async function GET(request: Request) {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        ...scenarist.getHeaders(request), // ✅ Pass test ID to MSW
+        ...getScenaristHeaders(request), // ✅ Pass test ID to MSW
       },
     });
 

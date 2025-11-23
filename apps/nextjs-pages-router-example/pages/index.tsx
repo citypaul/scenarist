@@ -12,7 +12,7 @@ import Link from 'next/link';
 import { ProductCard } from '../components/ProductCard';
 import { TierSelector } from '../components/TierSelector';
 import type { Product } from '../types/product';
-import { scenarist } from '../lib/scenarist';
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
 
 type HomeProps = {
   readonly initialProducts?: ReadonlyArray<Product>;
@@ -187,7 +187,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
   try {
     const headers: Record<string, string> = {
-      ...scenarist.getHeaders(context.req),
+      ...getScenaristHeaders(context.req),
       'x-user-tier': tier,
     };
 

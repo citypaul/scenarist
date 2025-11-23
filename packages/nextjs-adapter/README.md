@@ -282,24 +282,27 @@ export const scenarios = {
 import { createScenarist } from '@scenarist/nextjs-adapter/pages'; // or /app
 import { scenarios } from './scenarios';
 
-export const scenarist = createScenarist({
+// createScenarist is async - use top-level await
+export const scenarist = await createScenarist({
   enabled: process.env.NODE_ENV === 'test',
   scenarios,                    // All scenarios registered upfront
 });
 ```
 
+> **Top-Level Await:** Supported in Next.js 13+ and works seamlessly. The `await` keyword enables defense-in-depth production safety through dynamic imports.
+
 > **CRITICAL: Singleton Pattern Required**
 >
-> **You MUST use `export const scenarist` as shown above.** Do NOT wrap `createScenarist()` in a function:
+> **You MUST use `export const scenarist = await createScenarist(...)` as shown above.** Do NOT wrap `createScenarist()` in a function:
 >
 > ```typescript
 > // ❌ WRONG - Creates new instance each time
-> export function getScenarist() {
->   return createScenarist({ enabled: true, scenarios });
+> export async function getScenarist() {
+>   return await createScenarist({ enabled: true, scenarios });
 > }
 >
-> // ✅ CORRECT - Single exported constant
-> export const scenarist = createScenarist({ enabled: true, scenarios });
+> // ✅ CORRECT - Single exported constant with await
+> export const scenarist = await createScenarist({ enabled: true, scenarios });
 > ```
 >
 > **Why:** Next.js dev server (and Turbopack) can load the same module multiple times. If you call `createScenarist()` repeatedly, you'll get multiple MSW servers conflicting with each other, causing `[MSW] Multiple handlers with the same URL` warnings and intermittent 500 errors.
@@ -310,8 +313,15 @@ export const scenarist = createScenarist({
 
 **Pages Router:** Create `pages/api/__scenario__.ts`:
 ```typescript
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { scenarist } from '@/lib/scenarist';
-export default scenarist.createScenarioEndpoint();
+
+// Fallback handler for production (when scenarist is undefined)
+const productionHandler = async (_req: NextApiRequest, res: NextApiResponse) => {
+  res.status(404).json({ error: 'Scenario endpoint not available in production' });
+};
+
+export default scenarist?.createScenarioEndpoint() ?? productionHandler;
 ```
 
 **App Router:** Create `app/api/%5F%5Fscenario%5F%5F/route.ts`:
@@ -319,8 +329,19 @@ export default scenarist.createScenarioEndpoint();
 > **Why the URL encoding?** Next.js App Router treats folders starting with `_` (underscore) as private folders that are excluded from routing. To create a URL route `/api/__scenario__`, we use `%5F` (URL-encoded underscore). This creates the actual endpoint at `http://localhost:3000/api/__scenario__`.
 
 ```typescript
+import { NextResponse } from 'next/server';
 import { scenarist } from '@/lib/scenarist';
-const handler = scenarist.createScenarioEndpoint();
+
+// Fallback handler for production (when scenarist is undefined)
+const productionHandler = async () => {
+  return NextResponse.json(
+    { error: 'Scenario endpoint not available in production' },
+    { status: 404 }
+  );
+};
+
+const handler = scenarist?.createScenarioEndpoint() ?? productionHandler;
+
 export const POST = handler;
 export const GET = handler;
 ```
@@ -438,7 +459,8 @@ export const adminUserScenario: ScenaristScenario = {
 import { createScenarist } from '@scenarist/nextjs-adapter/pages';
 import { scenarios } from './scenarios';
 
-export const scenarist = createScenarist({
+// createScenarist is async - use top-level await
+export const scenarist = await createScenarist({
   enabled: process.env.NODE_ENV === 'test',
   scenarios,                    // All scenarios registered upfront
   strictMode: false,            // Allow unmocked requests to pass through to real APIs
@@ -449,9 +471,15 @@ export const scenarist = createScenarist({
 
 ```typescript
 // pages/api/__scenario__.ts
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { scenarist } from '../../lib/scenarist';
 
-export default scenarist.createScenarioEndpoint();
+// Fallback handler for production (when scenarist is undefined)
+const productionHandler = async (_req: NextApiRequest, res: NextApiResponse) => {
+  res.status(404).json({ error: 'Scenario endpoint not available in production' });
+};
+
+export default scenarist?.createScenarioEndpoint() ?? productionHandler;
 ```
 
 This single line creates a Next.js API route that handles both GET and POST requests for scenario management.
@@ -504,7 +532,8 @@ Same as Pages Router - see [Define Scenarios](#1-define-scenarios) above.
 import { createScenarist } from '@scenarist/nextjs-adapter/app';
 import { scenarios } from './scenarios';
 
-export const scenarist = createScenarist({
+// createScenarist is async - use top-level await
+export const scenarist = await createScenarist({
   enabled: process.env.NODE_ENV === 'test',
   scenarios,                    // All scenarios registered upfront
   strictMode: false,            // Allow unmocked requests to pass through to real APIs
@@ -514,10 +543,19 @@ export const scenarist = createScenarist({
 ### 3. Create Scenario Route Handlers
 
 ```typescript
-// app/api/__scenario__/route.ts
+// app/api/%5F%5Fscenario%5F%5F/route.ts
+import { NextResponse } from 'next/server';
 import { scenarist } from '@/lib/scenarist';
 
-const handler = scenarist.createScenarioEndpoint();
+// Fallback handler for production (when scenarist is undefined)
+const productionHandler = async () => {
+  return NextResponse.json(
+    { error: 'Scenario endpoint not available in production' },
+    { status: 404 }
+  );
+};
+
+const handler = scenarist?.createScenarioEndpoint() ?? productionHandler;
 
 export const POST = handler;
 export const GET = handler;
@@ -689,12 +727,13 @@ Each test ID has completely isolated:
 
 **Why Next.js needs this:** Unlike Express (which uses AsyncLocalStorage middleware), Next.js API routes have no middleware layer to automatically propagate test IDs. You must manually forward the headers.
 
-Use the `scenarist.getHeaders()` instance method:
+Use the safe helper functions provided by the adapter:
 
+**Pages Router:**
 ```typescript
 // pages/api/products.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { scenarist } from '@/lib/scenarist';
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
 
 export default async function handler(
   req: NextApiRequest,
@@ -703,7 +742,7 @@ export default async function handler(
   // Fetch from external API with Scenarist headers forwarded
   const response = await fetch('http://external-api.com/products', {
     headers: {
-      ...scenarist.getHeaders(req),  // ✅ Scenarist infrastructure headers
+      ...getScenaristHeaders(req),  // ✅ Scenarist infrastructure headers
       'content-type': 'application/json',      // ✅ Your application headers
       'x-user-tier': req.headers['x-user-tier'], // ✅ Other app-specific headers
     },
@@ -714,28 +753,15 @@ export default async function handler(
 }
 ```
 
-**What it does:**
-- Extracts test ID from request headers (`x-test-id` by default)
-- Respects your configured `testIdHeaderName` and `defaultTestId`
-- Returns object with Scenarist headers ready to spread
-
-**Key Distinction:**
-- **Scenarist headers** (`x-test-id`) - Infrastructure for test isolation
-- **Application headers** (`x-user-tier`, `content-type`) - Your app's business logic
-
-Only Scenarist headers need forwarding via `scenarist.getHeaders()`. Your application headers are independent.
-
-**App Router:** Different patterns depending on context:
-
-**Route Handlers (Request object available):**
+**App Router Route Handlers:**
 ```typescript
 // app/api/products/route.ts
-import { scenarist } from '@/lib/scenarist';
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
 
 export async function GET(request: Request) {
   const response = await fetch('http://external-api.com/products', {
     headers: {
-      ...scenarist.getHeaders(request),
+      ...getScenaristHeaders(request),
       'content-type': 'application/json',
     },
   });
@@ -745,11 +771,11 @@ export async function GET(request: Request) {
 }
 ```
 
-**Server Components (ReadonlyHeaders from `headers()`):**
+**App Router Server Components:**
 ```typescript
 // app/products/page.tsx
 import { headers } from 'next/headers';
-import { scenarist } from '@/lib/scenarist';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
 
 export default async function ProductsPage() {
   // Server Components use headers() which returns ReadonlyHeaders, not Request
@@ -757,7 +783,7 @@ export default async function ProductsPage() {
 
   const response = await fetch('http://external-api.com/products', {
     headers: {
-      ...scenarist.getHeadersFromReadonlyHeaders(headersList),  // ✅ For ReadonlyHeaders
+      ...getScenaristHeadersFromReadonlyHeaders(headersList),  // ✅ For ReadonlyHeaders
       'content-type': 'application/json',
     },
   });
@@ -767,9 +793,21 @@ export default async function ProductsPage() {
 }
 ```
 
+**What these helpers do:**
+- Extract test ID from request headers (`x-test-id` by default)
+- Respect your configured `testIdHeaderName` and `defaultTestId`
+- Return object with Scenarist headers ready to spread
+- Safe to use in production (return empty object when scenarist is undefined)
+
 **When to use which helper:**
-- **`scenarist.getHeaders(request)` or `scenarist.getHeaders(req)`** - When you have a `Request` object (Route Handlers) or `NextApiRequest` (Pages Router API routes)
-- **`scenarist.getHeadersFromReadonlyHeaders(headersList)`** - When you have `ReadonlyHeaders` from `headers()` (Server Components)
+- **`getScenaristHeaders(request | req)`** - Route Handlers (Request object) or Pages Router API routes (NextApiRequest)
+- **`getScenaristHeadersFromReadonlyHeaders(headersList)`** - App Router Server Components (ReadonlyHeaders from `headers()`)
+
+**Key Distinction:**
+- **Scenarist headers** (`x-test-id`) - Infrastructure for test isolation
+- **Application headers** (`x-user-tier`, `content-type`) - Your app's business logic
+
+Only Scenarist headers need forwarding via helper functions. Your application headers are independent.
 
 **For architectural rationale, see:** [ADR-0007: Framework-Specific Header Forwarding](../../docs/adrs/0007-framework-specific-header-helpers.md)
 

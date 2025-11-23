@@ -9,13 +9,21 @@
  * Note: Both GET and POST use the same handler which routes based on req.method internally.
  *
  * **PRODUCTION TREE-SHAKING:**
- * In production builds, scenarist is undefined and the handler exports are also undefined.
- * Next.js will handle this gracefully by not registering the route.
+ * In production builds, scenarist is undefined and the handlers return 404.
  */
 
+import { NextResponse } from 'next/server';
 import { scenarist } from '../../../lib/scenarist';
 
-const handler = scenarist?.createScenarioEndpoint();
+// Fallback handler for when scenarist is undefined (production builds)
+const productionHandler = async () => {
+  return NextResponse.json(
+    { error: 'Scenario endpoint not available in production' },
+    { status: 404 }
+  );
+};
+
+const handler = scenarist?.createScenarioEndpoint() ?? productionHandler;
 
 export const POST = handler;
 export const GET = handler;

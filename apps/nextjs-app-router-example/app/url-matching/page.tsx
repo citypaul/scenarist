@@ -14,8 +14,9 @@
  */
 
 // CRITICAL: Import scenarist to ensure MSW starts before fetch calls
-import { scenarist } from "@/lib/scenarist";
 import { headers } from "next/headers";
+
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
 
 type User = {
   readonly login: string;
@@ -269,7 +270,7 @@ export default async function URLMatchingPage({
 
   // Get Scenarist headers for test ID propagation
   const headersList = await headers();
-  const scenaristHeaders = scenarist.getHeadersFromReadonlyHeaders(headersList);
+  const scenaristHeaders = getScenaristHeadersFromReadonlyHeaders(headersList);
 
   const fetchResult = await fetchTestData(test, params, scenaristHeaders);
 

@@ -9,7 +9,7 @@
  */
 
 import type { NextApiRequest, NextApiResponse } from "next";
-import { scenarist } from "../../../lib/scenarist";
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/pages";
 
 export default async function handler(
   req: NextApiRequest,
@@ -24,7 +24,7 @@ export default async function handler(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...scenarist.getHeaders(req), // ✅ Pass test ID to MSW
+      ...getScenaristHeaders(req), // ✅ Pass test ID to MSW
     },
     body: JSON.stringify(req.body),
   });

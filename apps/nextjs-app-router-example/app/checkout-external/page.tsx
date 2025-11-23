@@ -16,7 +16,8 @@
  */
 
 import { headers } from 'next/headers';
-import { scenarist } from '@/lib/scenarist';
+
+import { SCENARIST_TEST_ID_HEADER, SCENARIST_DEFAULT_TEST_ID } from '@scenarist/nextjs-adapter/app';
 
 type User = {
   id: string;
@@ -62,8 +63,8 @@ export default async function CheckoutExternalPage({
 
   // Get test ID from headers for Scenarist isolation
   const headersList = await headers();
-  const testId = headersList.get(scenarist.config.headers.testId) || scenarist.config.defaultTestId;
-  const testHeaders = { [scenarist.config.headers.testId]: testId };
+  const testId = headersList.get(SCENARIST_TEST_ID_HEADER) || SCENARIST_DEFAULT_TEST_ID;
+  const testHeaders = { [SCENARIST_TEST_ID_HEADER]: testId };
 
   // ✅ Fetch from EXTERNAL service (localhost:3001)
   // MSW intercepts this HTTP request

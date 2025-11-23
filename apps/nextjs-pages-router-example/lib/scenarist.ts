@@ -21,8 +21,11 @@ import { scenarios } from './scenarios';
  * - Scenario management
  * - Test ID isolation
  * - Scenario endpoint handlers
+ *
+ * Note: createScenarist is now async for defense-in-depth tree-shaking.
+ * We use top-level await here (supported in Next.js 13+).
  */
-export const scenarist = createScenarist({
+export const scenarist = await createScenarist({
   enabled: true, // Always enabled in example app for demonstration
   scenarios, // All scenarios registered at initialization (must include 'default')
 });

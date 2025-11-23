@@ -9,7 +9,8 @@
  */
 
 import { NextResponse } from 'next/server';
-import { scenarist } from '../../../../lib/scenarist';
+
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
 
 type OrderRequest = {
   readonly orderId: string;
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...scenarist.getHeaders(request), // ✅ Pass test ID to MSW
+        ...getScenaristHeaders(request), // ✅ Pass test ID to MSW
       },
       body: JSON.stringify(body),
     });

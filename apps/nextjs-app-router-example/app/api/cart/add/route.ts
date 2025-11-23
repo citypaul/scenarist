@@ -11,7 +11,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { scenarist } from '../../../../lib/scenarist';
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...scenarist.getHeaders(request),
+        ...getScenaristHeaders(request),
       },
       body: JSON.stringify(body),
     });

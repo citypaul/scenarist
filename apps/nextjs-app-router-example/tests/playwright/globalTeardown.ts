@@ -10,6 +10,9 @@
 import { scenarist } from '../../lib/scenarist.js';
 
 export default async function globalTeardown(): Promise<void> {
-  console.log('✅ Stopping MSW server');
-  await scenarist.stop();
+  // Stop MSW server (guard against production mode)
+  if (scenarist) {
+    await scenarist.stop();
+    console.log('✅ MSW server stopped after Playwright tests');
+  }
 }

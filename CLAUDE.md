@@ -267,35 +267,74 @@ apps/
 
 ## Production Tree-Shaking
 
-Each adapter has `production.ts` with zero imports → 100% elimination in production bundles.
+**Defense in Depth:** All adapters use a two-layer approach to guarantee zero test code in production:
 
-**Conditional exports pattern:**
+1. **Layer 1: Conditional Exports** - Build tool resolves to production.ts (returns undefined, zero imports)
+2. **Layer 2: Runtime Guard** - NODE_ENV check + dynamic imports in setup.ts
 
-**Express adapter (single entry point):**
+**Express adapter implementation:**
+```typescript
+// Layer 1: Conditional exports
+// package.json exports → production.ts when NODE_ENV=production
+
+// Layer 2: Runtime guard in setup.ts
+export const createScenarist = async (options) => {
+  if (process.env.NODE_ENV === 'production') {
+    return undefined;
+  }
+  const { createScenaristImpl } = await import('./impl.js');  // Dynamic import
+  return createScenaristImpl(options);
+};
+```
+
+**Next.js adapter implementation (App Router + Pages Router):**
+```typescript
+// Layer 1: Conditional exports (same as Express)
+// package.json exports → app/production.ts or pages/production.ts
+
+// Layer 2: Runtime guard in app/setup.ts or pages/setup.ts
+export const createScenarist = async (options) => {
+  if (process.env.NODE_ENV === 'production') {
+    return undefined;
+  }
+  const { createScenaristImpl } = await import('./impl.js');
+  return createScenaristImpl(options);
+};
+```
+
+**User-facing pattern (all adapters):**
+```typescript
+// Top-level await required due to async createScenarist
+export const scenarist = await createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  scenarios,
+});
+```
+
+**Conditional exports:**
 ```json
+// Express adapter
 {
   "exports": {
     ".": {
-      "production": "./dist/setup/production.js",  // Returns undefined
-      "default": "./dist/index.js"                 // Full implementation
+      "production": "./dist/setup/production.js",
+      "default": "./dist/index.js"
     }
   }
 }
-```
 
-**Next.js adapter (multiple entry points):**
-```json
+// Next.js adapter
 {
   "exports": {
     "./app": {
       "types": "./dist/app/index.d.ts",
-      "production": "./dist/app/production.js",   // Returns undefined
-      "import": "./dist/app/index.js"             // Full implementation
+      "production": "./dist/app/production.js",
+      "import": "./dist/app/index.js"
     },
     "./pages": {
       "types": "./dist/pages/index.d.ts",
-      "production": "./dist/pages/production.js", // Returns undefined
-      "import": "./dist/pages/index.js"           // Full implementation
+      "production": "./dist/pages/production.js",
+      "import": "./dist/pages/index.js"
     }
   }
 }
@@ -309,6 +348,10 @@ Each adapter has `production.ts` with zero imports → 100% elimination in produ
 # Next.js example apps
 NODE_ENV=production next build && ! grep -rE '(setupWorker|HttpResponse\.json)' .next/
 ```
+
+**Why two layers?**
+- Layer 1 (conditional exports): Primary defense, handles all standard build tools
+- Layer 2 (NODE_ENV + dynamic imports): Fallback if conditional exports fail or misconfigured bundler
 
 **Why core doesn't need production.ts:** When adapter has production.ts, core is never imported. Conditional exports are package-scoped, not transitive.
 
