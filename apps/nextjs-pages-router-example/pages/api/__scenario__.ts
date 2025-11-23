@@ -9,15 +9,13 @@
  * - GET /__scenario__ - Get active scenario for a test ID
  *
  * **PRODUCTION TREE-SHAKING:**
- * In production builds, scenarist is undefined and this endpoint returns 404.
+ * In production builds, scenarist is undefined due to conditional exports.
+ * When the default export is undefined, Next.js treats the route as non-existent.
+ * No manual guards needed - the architecture provides safety automatically.
  */
 
-import type { NextApiRequest, NextApiResponse } from 'next';
 import { scenarist } from '../../lib/scenarist';
 
-// Fallback handler for when scenarist is undefined (production builds)
-const productionHandler = async (_req: NextApiRequest, res: NextApiResponse) => {
-  res.status(404).json({ error: 'Scenario endpoint not available in production' });
-};
-
-export default scenarist?.createScenarioEndpoint() ?? productionHandler;
+// In production, scenarist is undefined due to conditional exports
+// This makes the default export undefined, and Next.js treats the route as non-existent
+export default scenarist?.createScenarioEndpoint();
