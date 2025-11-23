@@ -130,6 +130,8 @@ describe('Pages Router production entry point', () => {
         scenarios: {
           test: {
             id: 'test',
+            name: 'Test Scenario',
+            description: 'A test scenario',
             mocks: [],
           },
         },
@@ -143,8 +145,15 @@ describe('Pages Router production entry point', () => {
       // as the real implementation, preventing type errors in user code
       const scenarist = production.createScenarist({
         enabled: false,
-        scenarios: {},
-        defaultScenario: 'test',
+        scenarios: {
+          default: {
+            id: 'default',
+            name: 'Default Scenario',
+            description: 'Default test scenario',
+            mocks: [],
+          },
+        },
+        defaultTestId: 'test-123',
       });
 
       expect(scenarist).toBeUndefined();
@@ -160,7 +169,7 @@ describe('Pages Router production entry point', () => {
         },
         method: 'GET',
         url: '/api/test',
-      } as NextApiRequest;
+      } as unknown as NextApiRequest;
 
       const headers = production.getScenaristHeaders(mockRequest);
 
@@ -174,7 +183,7 @@ describe('Pages Router production entry point', () => {
         headers: {},
         method: 'GET',
         url: '/api/test',
-      } as NextApiRequest;
+      } as unknown as NextApiRequest;
 
       const headers = production.getScenaristHeaders(mockRequest);
 
@@ -198,7 +207,7 @@ describe('Pages Router production entry point', () => {
         method: 'POST',
         url: '/api/cart/add',
         body: { item: 'product-1' },
-      } as NextApiRequest;
+      } as unknown as NextApiRequest;
 
       const headers = production.getScenaristHeaders(mockRequest);
 
@@ -221,18 +230,23 @@ describe('Pages Router production entry point', () => {
     it('should not have any Scenarist instance methods', () => {
       const scenarist = production.createScenarist({
         enabled: true,
-        scenarios: {},
+        scenarios: {
+          default: {
+            id: 'default',
+            name: 'Default',
+            description: 'Default scenario',
+            mocks: [],
+          },
+        },
       });
 
       // Production stub returns undefined, not a Scenarist instance
       expect(scenarist).toBeUndefined();
 
       // These methods exist in development but NOT in production
-      // @ts-expect-error - Testing that these don't exist
+      // Optional chaining prevents errors when accessing properties on undefined
       expect(scenarist?.start).toBeUndefined();
-      // @ts-expect-error - Testing that these don't exist
       expect(scenarist?.stop).toBeUndefined();
-      // @ts-expect-error - Testing that these don't exist
       expect(scenarist?.createScenarioEndpoint).toBeUndefined();
     });
 
@@ -263,7 +277,7 @@ describe('Pages Router production entry point', () => {
         headers: {},
         method: 'GET',
         url: '/api/test',
-      } as NextApiRequest;
+      } as unknown as NextApiRequest;
 
       expect(() => {
         for (let i = 0; i < 100; i++) {
@@ -277,7 +291,7 @@ describe('Pages Router production entry point', () => {
         headers: { 'x-test-id': 'test-123' },
         method: 'GET',
         url: '/api/test',
-      } as NextApiRequest;
+      } as unknown as NextApiRequest;
 
       const headers1 = production.getScenaristHeaders(mockRequest);
       const headers2 = production.getScenaristHeaders(mockRequest);
@@ -288,9 +302,9 @@ describe('Pages Router production entry point', () => {
     it('should work with various NextApiRequest shapes', () => {
       // Different request shapes should all work safely
       const requests = [
-        { headers: {}, method: 'GET', url: '/' } as NextApiRequest,
-        { headers: { 'x-test-id': 'abc' }, method: 'POST', url: '/api/test' } as NextApiRequest,
-        { headers: { 'x-custom': 'value' }, method: 'PUT', url: '/api/update' } as NextApiRequest,
+        { headers: {}, method: 'GET', url: '/' } as unknown as NextApiRequest,
+        { headers: { 'x-test-id': 'abc' }, method: 'POST', url: '/api/test' } as unknown as NextApiRequest,
+        { headers: { 'x-custom': 'value' }, method: 'PUT', url: '/api/update' } as unknown as NextApiRequest,
       ];
 
       requests.forEach((req) => {
@@ -309,7 +323,7 @@ describe('Pages Router production entry point', () => {
         method: 'POST',
         url: '/api/cart/add',
         body: { productId: 1 },
-      } as NextApiRequest;
+      } as unknown as NextApiRequest;
 
       const scenaristHeaders = production.getScenaristHeaders(mockRequest);
 
@@ -332,7 +346,7 @@ describe('Pages Router production entry point', () => {
         },
         method: 'GET',
         url: '/api/protected',
-      } as NextApiRequest;
+      } as unknown as NextApiRequest;
 
       const scenaristHeaders = production.getScenaristHeaders(mockRequest);
       const allHeaders = {

@@ -110,6 +110,8 @@ describe('App Router production entry point', () => {
         scenarios: {
           test: {
             id: 'test',
+            name: 'Test Scenario',
+            description: 'A test scenario',
             mocks: [],
           },
         },
@@ -123,8 +125,15 @@ describe('App Router production entry point', () => {
       // as the real implementation, preventing type errors in user code
       const scenarist = production.createScenarist({
         enabled: false,
-        scenarios: {},
-        defaultScenario: 'test',
+        scenarios: {
+          default: {
+            id: 'default',
+            name: 'Default Scenario',
+            description: 'Default test scenario',
+            mocks: [],
+          },
+        },
+        defaultTestId: 'test-123',
       });
 
       expect(scenarist).toBeUndefined();
@@ -179,7 +188,7 @@ describe('App Router production entry point', () => {
 
     it('should be safe to spread in Server Component fetch headers', () => {
       const mockReadonlyHeaders = {
-        get: (name: string) => null,
+        get: (_name: string) => null,
       };
 
       const headers =
@@ -237,7 +246,7 @@ describe('App Router production entry point', () => {
 
     it('should be usable for logging/debugging in production', () => {
       const mockReadonlyHeaders = {
-        get: (name: string) => null,
+        get: (_name: string) => null,
       };
 
       const testId =
@@ -267,18 +276,23 @@ describe('App Router production entry point', () => {
     it('should not have any Scenarist instance methods', () => {
       const scenarist = production.createScenarist({
         enabled: true,
-        scenarios: {},
+        scenarios: {
+          default: {
+            id: 'default',
+            name: 'Default',
+            description: 'Default scenario',
+            mocks: [],
+          },
+        },
       });
 
       // Production stub returns undefined, not a Scenarist instance
       expect(scenarist).toBeUndefined();
 
       // These methods exist in development but NOT in production
-      // @ts-expect-error - Testing that these don't exist
+      // Optional chaining prevents errors when accessing properties on undefined
       expect(scenarist?.start).toBeUndefined();
-      // @ts-expect-error - Testing that these don't exist
       expect(scenarist?.stop).toBeUndefined();
-      // @ts-expect-error - Testing that these don't exist
       expect(scenarist?.createScenarioEndpoint).toBeUndefined();
     });
   });
