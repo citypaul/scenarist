@@ -11,11 +11,18 @@
  */
 
 import { spawn, type ChildProcess } from 'node:child_process';
+import { copyFileSync } from 'node:fs';
+import { join } from 'node:path';
 import waitOn from 'wait-on';
 
 const processes: ChildProcess[] = [];
 
 export async function setup() {
+  // Reset json-server database to clean state before each test run
+  const dbTemplate = join(process.cwd(), 'fake-api/db.template.json');
+  const dbFile = join(process.cwd(), 'fake-api/db.json');
+  copyFileSync(dbTemplate, dbFile);
+
   // Start json-server (real backend for production tests)
   processes.push(
     spawn(
