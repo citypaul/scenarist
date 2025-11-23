@@ -22,10 +22,11 @@ import { scenarios } from './scenarios';
  * - Test ID isolation
  * - Scenario endpoint handlers
  *
- * Note: createScenarist is now async for defense-in-depth tree-shaking.
- * We use top-level await here (supported in Next.js 13+).
+ * CRITICAL: Always use `export const scenarist = createScenarist(...)` pattern.
+ * The adapter handles singleton logic internally (MSW, registry, store).
+ * Never wrap in a function or default export - module duplication requires this pattern.
  */
-export const scenarist = await createScenarist({
+export const scenarist = createScenarist({
   enabled: true, // Always enabled in example app for demonstration
   scenarios, // All scenarios registered at initialization (must include 'default')
 });
@@ -39,7 +40,7 @@ export const scenarist = await createScenarist({
  *
  * **For your own app**, you should use:
  * ```typescript
- * export const scenarist = await createScenarist({
+ * export const scenarist = createScenarist({
  *   enabled: process.env.NODE_ENV === 'test',  // Only enable in test environment
  *   scenarios,
  * });

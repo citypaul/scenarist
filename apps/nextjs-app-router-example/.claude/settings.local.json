@@ -5,7 +5,9 @@
       "WebFetch(domain:syntax.tailwindui.com)",
       "WebFetch(domain:protocol.tailwindui.com)",
       "WebFetch(domain:tailwindui.com)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(NODE_ENV=test node -e \"import(''@scenarist/nextjs-adapter/app'').then(async m => { const inst = await m.createScenarist({enabled: true, scenarios: []}); console.log(''Instance:'', inst ? ''defined'' : ''undefined''); })\")",
+      "Bash(timeout 60 pnpm test:*)"
     ],
     "deny": [],
     "ask": []

@@ -5,9 +5,9 @@ export type { PagesAdapterOptions, PagesScenarist } from './setup.js';
  * Production-only entry point that returns undefined without loading any dependencies.
  * This file has ZERO imports to guarantee tree-shaking.
  */
-export const createScenarist = async (
+export const createScenarist = (
   _options: import('./setup.js').PagesAdapterOptions
-): Promise<import('./setup.js').PagesScenarist | undefined> => {
+): import('./setup.js').PagesScenarist | undefined => {
   return undefined;
 };
 

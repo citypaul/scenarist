@@ -282,27 +282,29 @@ export const scenarios = {
 import { createScenarist } from '@scenarist/nextjs-adapter/pages'; // or /app
 import { scenarios } from './scenarios';
 
-// createScenarist is async - use top-level await
-export const scenarist = await createScenarist({
+export const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
   scenarios,                    // All scenarios registered upfront
 });
-```
 
-> **Top-Level Await:** Supported in Next.js 13+ and works seamlessly. The `await` keyword enables defense-in-depth production safety through dynamic imports.
+// Start MSW in Node.js environment
+if (typeof window === 'undefined' && scenarist) {
+  scenarist.start();
+}
+```
 
 > **CRITICAL: Singleton Pattern Required**
 >
-> **You MUST use `export const scenarist = await createScenarist(...)` as shown above.** Do NOT wrap `createScenarist()` in a function:
+> **You MUST use `export const scenarist = createScenarist(...)` as shown above.** Do NOT wrap `createScenarist()` in a function:
 >
 > ```typescript
 > // ❌ WRONG - Creates new instance each time
-> export async function getScenarist() {
->   return await createScenarist({ enabled: true, scenarios });
+> export function getScenarist() {
+>   return createScenarist({ enabled: true, scenarios });
 > }
 >
-> // ✅ CORRECT - Single exported constant with await
-> export const scenarist = await createScenarist({ enabled: true, scenarios });
+> // ✅ CORRECT - Single exported constant
+> export const scenarist = createScenarist({ enabled: true, scenarios });
 > ```
 >
 > **Why:** Next.js dev server (and Turbopack) can load the same module multiple times. If you call `createScenarist()` repeatedly, you'll get multiple MSW servers conflicting with each other, causing `[MSW] Multiple handlers with the same URL` warnings and intermittent 500 errors.
@@ -459,12 +461,16 @@ export const adminUserScenario: ScenaristScenario = {
 import { createScenarist } from '@scenarist/nextjs-adapter/pages';
 import { scenarios } from './scenarios';
 
-// createScenarist is async - use top-level await
-export const scenarist = await createScenarist({
+export const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
   scenarios,                    // All scenarios registered upfront
   strictMode: false,            // Allow unmocked requests to pass through to real APIs
 });
+
+// Start MSW in Node.js environment
+if (typeof window === 'undefined' && scenarist) {
+  scenarist.start();
+}
 ```
 
 ### 3. Create Scenario Endpoint
@@ -532,12 +538,16 @@ Same as Pages Router - see [Define Scenarios](#1-define-scenarios) above.
 import { createScenarist } from '@scenarist/nextjs-adapter/app';
 import { scenarios } from './scenarios';
 
-// createScenarist is async - use top-level await
-export const scenarist = await createScenarist({
+export const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
   scenarios,                    // All scenarios registered upfront
   strictMode: false,            // Allow unmocked requests to pass through to real APIs
 });
+
+// Start MSW in Node.js environment
+if (typeof window === 'undefined' && scenarist) {
+  scenarist.start();
+}
 ```
 
 ### 3. Create Scenario Route Handlers
