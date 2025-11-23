@@ -24,13 +24,13 @@ For each example app, create production tests that prove the same journey as moc
 ## Approach: One PR Per App
 
 **Each app gets its own PR** to allow focused review and avoid scope creep:
-1. ✅ **PR #1: Express Example** (completed, ready for review)
-2. 📋 **PR #2: Next.js App Router Example** (future PR)
+1. ✅ **PR #1: Express Example** ([#126](https://github.com/citypaul/scenarist/pull/126) - MERGED)
+2. 📋 **PR #2: Next.js App Router Example** (this PR)
 3. 📋 **PR #3: Next.js Pages Router Example** (future PR)
 
 ---
 
-## App 1: Express Example ✅ COMPLETE
+## App 1: Express Example ✅ MERGED
 
 ### Test Journey: Shopping Cart State
 **User story:** Add items to cart, verify cart persists state
@@ -59,65 +59,127 @@ For each example app, create production tests that prove the same journey as moc
 ✅ Production test: Starts json-server, passes
 ✅ CI: Production test added
 
+### Lessons Learned
+
+**Vitest globalSetup Pattern (Immutability):**
+- ✅ Return cleanup function from setup() - Vitest calls it automatically
+- ❌ Don't use separate teardown() function
+- ❌ Don't use mutable module-level state (let processes = [])
+- Use wait-on library for reliable server readiness checking
+
+**Separate Vitest Configs:**
+- Default `vitest.config.ts`: Excludes production tests, no globalSetup
+- Separate `vitest.production.config.ts`: Includes globalSetup, 30s timeout
+- Prevents regular tests from waiting for servers to start
+- CI runs both: `pnpm test` (mocked) and `pnpm test:production` (real backend)
+
+**Environment-Aware Routes:**
+- Routes check `process.env.NODE_ENV === 'production'`
+- Test/dev: Call fake URLs (`https://api.store.com/cart`) → MSW intercepts
+- Production: Call real backend (`http://localhost:3001/cart`) → json-server
+- Pattern works cleanly, no MSW leakage into production
+
+**Hostname Standardization:**
+- ✅ Use `localhost` everywhere (globalSetup, wait-on, route URLs)
+- ❌ Don't mix `127.0.0.1` and `localhost` - can cause IPv4/IPv6 issues
+- Consistency prevents hard-to-debug connection failures
+
+**json-server Pattern:**
+- Use GET-then-PATCH for state accumulation (json-server doesn't have POST /cart/add)
+- Reset database with file copy: `copyFileSync(db.template.json, db.json)`
+- Works reliably with wait-on for readiness checking
+
+**Test Timeouts:**
+- Production tests with real HTTP calls need 30s timeout
+- Mocked tests can use default timeout (5s)
+- Configure in vitest.production.config.ts: `testTimeout: 30000`
+
 ---
 
-## App 2: Next.js App Router Example 📋 FUTURE PR
+## App 2: Next.js App Router Example 📋 THIS PR
 
-### Implementation Notes for Next PR
+### Implementation Plan (Based on Express Lessons)
 
-**Key Challenge:** API routes call backend endpoints that don't exist in real json-server.
+**Approach: Production-Ready Routes with GET-then-PATCH**
+- Express proved this pattern works cleanly in both environments
+- Apply the same environment-aware routing pattern
+- Use localhost everywhere (no 127.0.0.1)
 
-**Current Implementation:**
-- Routes call `POST http://localhost:3001/cart/add` (fake endpoint, only works with MSW)
-- Scenarios mock `POST /cart/add` with state capture using `cartItems[]` (append pattern)
-- Mocked tests pass (MSW intercepts the fake endpoint)
-- Production tests fail (json-server doesn't have `/cart/add` endpoint)
+**Step 1: Update API Routes**
+```typescript
+// app/api/cart/route.ts
+const CART_BACKEND_URL =
+  process.env.NODE_ENV === 'production'
+    ? 'http://localhost:3001/cart'  // Real json-server
+    : 'https://api.store.com/cart';  // Mocked by MSW
 
-**Two Viable Approaches:**
+// For POST /api/cart/add:
+if (process.env.NODE_ENV === 'production') {
+  // GET-then-PATCH for json-server
+  const current = await fetch(CART_BACKEND_URL);
+  const cart = await current.json();
+  const updated = await fetch(CART_BACKEND_URL, {
+    method: 'PATCH',
+    body: JSON.stringify({ items: [...cart.items, item] }),
+  });
+} else {
+  // Call mocked endpoint
+  const response = await fetch(`${CART_BACKEND_URL}/add`, {
+    method: 'POST',
+    body: JSON.stringify({ item }),
+  });
+}
+```
 
-**Option A: Keep Routes Simple, Mock Both Patterns**
-- Keep routes calling `POST /cart/add` (current implementation)
-- Add both patterns to scenarios:
-  - `POST /cart/add` → for mocked tests (MSW intercepts)
-  - `GET + PATCH /cart` → for production (json-server REST API)
-- Frontend chooses based on env or adapter provides shim
-- **Pro:** Minimal route changes
-- **Con:** Scenarios need both patterns, frontend complexity
+**Step 2: Create Vitest Configs**
+- `vitest.config.ts`: Default config, excludes production tests
+- `vitest.production.config.ts`: globalSetup, 30s timeout
+- Add scripts: `test` and `test:production`
 
-**Option B: Production-Ready Routes, Scenarios Support Both**
-- Change routes to GET-then-PATCH pattern (works with real json-server)
-- Scenarios mock both:
-  - `POST /cart/add` with `cartItems[]` append (backward compat if needed)
-  - `PATCH /cart` with `cartItems` replace (production pattern)
-  - `GET /cart` with state injection (both patterns)
-- **Pro:** Routes work in production without MSW
-- **Con:** More complex implementation, two patterns to maintain
+**Step 3: Create globalSetup.ts**
+- Use return-cleanup pattern (no mutable state)
+- Use wait-on for server readiness
+- Reset db.json via file copy
+- Use localhost everywhere
 
-**Hostname Consistency:**
-- Main branch uses `localhost:3001`
-- Commit 74d0b20 uses `127.0.0.1:3001`
-- **Decision needed:** Standardize on one (probably `localhost` for consistency)
+**Step 4: Update Scenarios**
+- Keep existing MSW mocks for test/dev mode
+- No need to mock GET+PATCH (production doesn't use MSW)
 
-**For Next PR:**
-1. Choose approach (A or B)
-2. Implement chosen pattern
-3. Ensure both mocked AND production tests pass
-4. Verify tree-shaking (/__scenario__ returns 404)
-5. Add beforeEach cart reset for production tests
+**Step 5: Production Tests**
+```typescript
+// tests/production/production.test.ts
+describe('Production Build Verification', () => {
+  it('health endpoint works', ...);
+  it('scenario endpoint returns 404', ...);  // Next.js returns 405, not 404
+  it('cart CRUD operations work', ...);
+});
+```
+
+**Key Differences from Express:**
+- Next.js API routes (not Express middleware)
+- Scenario endpoint returns 405 Method Not Allowed (not 404)
+- Uses Next.js dev server for mocked tests, production build for production tests
 
 ---
 
 ## App 3: Next.js Pages Router Example 📋 FUTURE PR
 
-### Implementation Notes for Future PR
+### Implementation Plan
 
-**Same challenges and approaches as App Router** - refer to App 2 notes above.
+**Apply App Router pattern from PR #2** - implementation will be nearly identical.
 
-**Implementation will be nearly identical:**
-1. Same cart journey testing
-2. Same route pattern decisions (Option A or B from App 2)
-3. Same scenario configuration
-4. Same production test structure
+**Key Steps:**
+1. Update API routes with environment-aware pattern (GET-then-PATCH for production)
+2. Create separate vitest configs (mocked vs production)
+3. Create globalSetup.ts with return-cleanup pattern
+4. Add production tests (health, scenario 405, cart CRUD)
+5. Verify tree-shaking
+
+**Differences from App Router:**
+- Pages Router uses `pages/api/` instead of `app/api/`
+- API handler signature: `(req: NextApiRequest, res: NextApiResponse) => void`
+- Otherwise, same environment-aware routing pattern applies
 
 ---
 
@@ -144,17 +206,34 @@ pnpm test                    # ✅ ALL monorepo tests pass
 
 ---
 
-## Questions for Confirmation
+## Decisions Made
 
-1. **Test Journey:** Is "Shopping Cart State" the right journey to prove for production parity?
-   - Alternative: Could do products with premium/standard pricing instead
-   - Cart proves state persistence which is more complex
+**✅ Test Journey:** Shopping Cart State
+- Proves state persistence (more complex than static pricing)
+- Successfully implemented for Express example
+- Same journey for App Router and Pages Router
 
-2. **App Order:** Express → App Router → Pages Router - correct?
+**✅ App Order:** Express → App Router → Pages Router
+- Express completed and merged (PR #126)
+- App Router next (PR #2, this branch)
+- Pages Router last (PR #3, future)
 
-3. **Production Test Scope:** Just cart journey, or also test:
-   - Health endpoint works
-   - Scenario endpoint doesn't exist (404/405)
-   - One API call proves enough
+**✅ Production Test Scope:**
+- Health endpoint works (proves app runs)
+- Scenario endpoint returns 404/405 (proves tree-shaking)
+- Cart CRUD journey (proves production API integration)
+- Express example validated this scope is sufficient
 
-Please confirm and I'll start with App 2 (Next.js App Router).
+**✅ Approach:** Production-ready routes with environment-aware pattern
+- GET-then-PATCH for json-server in production
+- POST /cart/add for MSW mocking in test/dev
+- Express proved this pattern works cleanly
+
+**✅ Hostname:** Use `localhost` everywhere
+- Prevents IPv4/IPv6 resolution issues
+- Consistent across all configs and URLs
+
+**✅ Vitest Pattern:** Separate configs with return-cleanup
+- Default config excludes production tests
+- Production config uses globalSetup with return cleanup
+- No mutable module-level state
