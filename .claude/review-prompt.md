@@ -2,7 +2,35 @@
 
 This file contains specific rules and guidelines for reviewing code in the Scenarist repository. Use these rules when reviewing pull requests.
 
-## Critical Architecture Rules
+## CRITICAL: Scope of Architecture Rules
+
+**These architecture rules apply to LIBRARY CODE ONLY (`packages/*`), NOT to example apps (`apps/*`).**
+
+### Library Code (`packages/*`)
+- **Strict hexagonal architecture** - Zero framework coupling in core
+- **All architecture rules below apply**
+- This is the published npm package - must be pristine
+- Examples: `packages/core`, `packages/express-adapter`, `packages/nextjs-adapter`
+
+### Example Apps (`apps/*`)
+- **Realistic demonstration applications** showing how to USE Scenarist
+- **NOT library code** - these are end-user applications
+- **Intentionally use non-hexagonal patterns** to show real-world integration:
+  - Direct HTTP calls (fetch, axios) - showing how real apps work
+  - Framework coupling (Express routes, Next.js API routes) - the whole point
+  - Imperative code patterns - realistic application code
+  - Direct json-server calls for production tests - proving tree-shaking works
+- **DO NOT flag hexagonal violations** in these apps
+- **DO review for**:
+  - Test quality and coverage (E2E tests demonstrating Scenarist works)
+  - Correct Scenarist usage (proper scenario definitions, state management)
+  - Production parity (same journey works mocked and in production)
+  - Clear demonstration of Scenarist features
+- Examples: `apps/express-example`, `apps/nextjs-app-router-example`, `apps/nextjs-pages-router-example`
+
+**If you're reviewing changes to `apps/*`, skip hexagonal architecture checks and focus on test quality and realistic integration patterns.**
+
+## Critical Architecture Rules (packages/* ONLY)
 
 ### 1. Hexagonal Architecture (Ports & Adapters)
 
