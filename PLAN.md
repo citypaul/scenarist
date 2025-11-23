@@ -98,87 +98,119 @@ For each example app, create production tests that prove the same journey as moc
 
 ## App 2: Next.js App Router Example 📋 THIS PR
 
-### Critical Difference from Express: Playwright vs Vitest
+### Critical Differences from Express
 
-**Express Example:**
-- Uses **vitest** for all tests (mocked + production)
-- Mocked tests: vitest → Express server → MSW intercepts
-- Production tests: vitest → json-server (real backend)
+**Testing Framework:**
+- **Express:** Uses vitest for all tests (mocked + production)
+- **Next.js:** Uses Playwright for all tests (mocked + production)
+- **DO NOT add vitest to Next.js apps!**
 
-**Next.js Examples:**
-- Use **Playwright** for all tests (mocked + production)
-- Mocked tests: Playwright → Next.js → MSW intercepts in browser
-- Production tests: Playwright → Next.js production build → json-server (real backend)
+**Route Implementation Pattern:**
+- **Express:** Environment-aware (if/else based on NODE_ENV)
+  - Test/dev: Calls fake `POST /cart/add` endpoint (MSW only)
+  - Production: Calls real json-server endpoints (GET + PATCH)
+  - Routes have environment branching logic
 
-**DO NOT add vitest to Next.js apps!** They use Playwright exclusively.
+- **Next.js:** No environment branching! Always call real endpoints
+  - All environments: Call real json-server REST endpoints (GET + PATCH)
+  - Test/dev: MSW intercepts these real endpoints
+  - Production: Calls pass through to real json-server
+  - **Routes have ZERO environment logic** - same code everywhere
 
-### Implementation Plan
+### The Key Insight: Use Real REST Endpoints Everywhere
 
-**Step 1: Update API Routes with Environment-Aware Pattern** ✅
+**Routes always call json-server's actual endpoints:**
 ```typescript
-// app/api/cart/add/route.ts
-const CART_BACKEND_URL = 'http://localhost:3001/cart';
+// POST /api/cart/add - NO environment branching
+export async function POST(request: NextRequest) {
+  const { productId } = await request.json();
 
-if (process.env.NODE_ENV === 'production') {
-  // GET-then-PATCH for json-server (production)
-  const current = await fetch(CART_BACKEND_URL);
-  const cart = await current.json();
-  const updated = await fetch(CART_BACKEND_URL, {
+  // Always GET current cart
+  const getResponse = await fetch('http://localhost:3001/cart', {
+    headers: { ...getScenaristHeaders(request) }
+  });
+  const currentCart = await getResponse.json();
+
+  // Route handles accumulation logic
+  const updatedItems = [...(currentCart.items || []), productId];
+
+  // Always PATCH with updated array
+  const patchResponse = await fetch('http://localhost:3001/cart', {
     method: 'PATCH',
-    body: JSON.stringify({ items: [...cart.items, productId] }),
+    headers: { 'Content-Type': 'application/json', ...getScenaristHeaders(request) },
+    body: JSON.stringify({ items: updatedItems })
   });
-} else {
-  // POST to mocked endpoint (test/dev - MSW intercepts)
-  const response = await fetch(`${CART_BACKEND_URL}/add`, {
-    method: 'POST',
-    body: JSON.stringify({ productId }),
-  });
+
+  return NextResponse.json({ success: true, items: patchResponse.items });
 }
 ```
 
-**Step 2: Create Playwright Production Config**
-- `playwright.config.ts`: Existing config for mocked tests (MSW active)
-- `playwright.production.config.ts`: New config for production tests
-  - globalSetup: starts json-server + Next.js production build
-  - Uses `request` fixture (no browser needed for API tests)
-- Add script: `test:production` using production config
-
-**Step 3: Create globalSetup for Playwright**
-- Build Next.js in production mode
-- Start json-server with db.template.json
-- Start Next.js production server (`next start`)
-- Wait for servers (wait-on library)
-- Return cleanup function
-
-**Step 4: Create Playwright Production Tests**
+**MSW scenarios mock the REAL json-server endpoints:**
 ```typescript
-// tests/production/cart-api.spec.ts
-import { test, expect } from '@playwright/test';
-
-test('cart API works with real backend', async ({ request }) => {
-  // Reset cart
-  await request.patch('http://localhost:3001/cart', {
-    data: { items: [] }
-  });
-
-  // Add items via Next.js API route (calls json-server)
-  const response = await request.post('http://localhost:3000/api/cart/add', {
-    data: { productId: 1 }
-  });
-
-  expect(response.status()).toBe(200);
-});
+// GET /cart - inject state
+{
+  method: 'GET',
+  url: 'http://localhost:3001/cart',
+  response: {
+    body: {
+      items: '{{state.cartItems}}',  // null initially (ADR-0017)
+    }
+  }
+},
+// PATCH /cart - capture full array
+{
+  method: 'PATCH',
+  url: 'http://localhost:3001/cart',
+  captureState: {
+    'cartItems': 'body.items',  // Capture full array [1,2,3]
+  },
+  response: {
+    body: {
+      items: '{{body.items}}',  // Echo back what was sent
+    }
+  }
+}
 ```
 
-**Step 5: Verify Tree-Shaking**
-- Playwright test checks `/__scenario__` returns 405
-- Build verification script already exists
+**Why This Is Superior:**
+- ✅ True production parity - same code paths in test and production
+- ✅ No environment branching - simpler, fewer edge cases
+- ✅ Realistic testing - tests exercise actual production behavior
+- ✅ json-server native - uses standard REST API
+- ✅ ADR-0017 critical - null preserves fields in JSON, enables `|| []` pattern
 
-**Key Differences from Express:**
-- Playwright tests (not vitest)
-- Playwright globalSetup (not vitest globalSetup)
-- Uses Playwright `request` fixture for API calls
-- Scenario endpoint returns 405 (Next.js behavior) not 404 (Express behavior)
+### Implementation Plan
+
+**Step 1: Create Infrastructure** ✅
+- ✅ fake-api/db.template.json
+- ✅ app/api/health/route.ts
+
+**Step 2: Update Cart Routes** (remove environment branching)
+- GET /api/cart: Always fetch from http://localhost:3001/cart
+- POST /api/cart/add: Always GET-then-PATCH (no if/else)
+- Remove all NODE_ENV checks
+- Routes handle accumulation logic, not MSW
+
+**Step 3: Update Scenarios**
+- Remove POST /cart/add mocks (fake endpoint)
+- Add GET /cart with state injection ({{state.cartItems}})
+- Add PATCH /cart with state capture (body.items)
+- Both mocks use real json-server URLs
+
+**Step 4: Create Playwright Production Config**
+- playwright.production.config.ts
+- globalSetup: build Next.js, start json-server + next start
+- Uses `request` fixture (API-only tests)
+
+**Step 5: Create Playwright Production Tests**
+- tests/production/cart-api.spec.ts
+- Health check (app runs)
+- Scenario endpoint 405 (tree-shaken)
+- Cart CRUD (real json-server)
+
+**Step 6: Update package.json**
+- Add test:production script
+- NO vitest dependencies (Playwright only)
 
 ---
 
