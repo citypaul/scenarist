@@ -26,6 +26,27 @@
     }
   ],
   "cart": {
-    "items": []
+    "item": {
+      "item": {
+        "item": {
+          "item": {
+            "items": []
+          },
+          "items": []
+        },
+        "items": [
+          1
+        ]
+      },
+      "items": [
+        1,
+        2
+      ]
+    },
+    "items": [
+      1,
+      2,
+      1
+    ]
   }
 }

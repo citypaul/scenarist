@@ -24,33 +24,41 @@ export async function setup() {
   copyFileSync(dbTemplate, dbFile);
 
   // Start json-server (real backend for production tests)
-  processes.push(
-    spawn(
-      'npx',
-      [
-        'json-server',
-        '--watch',
-        'fake-api/db.json',
-        '--port',
-        '3001',
-        '--host',
-        '127.0.0.1',
-      ],
-      {
-        stdio: 'ignore',
-        cwd: process.cwd(),
-      }
-    )
+  const jsonServer = spawn(
+    'npx',
+    [
+      'json-server',
+      '--watch',
+      'fake-api/db.json',
+      '--port',
+      '3001',
+      '--host',
+      '127.0.0.1',
+    ],
+    {
+      stdio: 'inherit', // Show output for debugging
+      cwd: process.cwd(),
+    }
   );
 
+  jsonServer.on('error', (err) => {
+    console.error('json-server failed to start:', err);
+  });
+
+  processes.push(jsonServer);
+
   // Start production Express server
-  processes.push(
-    spawn('node', ['dist/server.js'], {
-      env: { ...process.env, NODE_ENV: 'production', PORT: '3000' },
-      stdio: 'ignore',
-      cwd: process.cwd(),
-    })
-  );
+  const expressServer = spawn('node', ['dist/server.js'], {
+    env: { ...process.env, NODE_ENV: 'production', PORT: '3000' },
+    stdio: 'inherit', // Show output for debugging
+    cwd: process.cwd(),
+  });
+
+  expressServer.on('error', (err) => {
+    console.error('Express server failed to start:', err);
+  });
+
+  processes.push(expressServer);
 
   // Wait for both servers to be ready
   // wait-on checks HTTP endpoints and retries until success or timeout
