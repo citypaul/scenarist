@@ -400,7 +400,47 @@ docs-site/
 
 These items can be added after v1.0 release based on user feedback.
 
-### 5. Phase 5 - Developer Experience & Debugging (OPTIONAL)
+### 5. Simplify Test ID Header Configuration (v2.0 - BREAKING CHANGE)
+
+**Goal:** Remove custom test ID header configuration, standardize on `x-scenarist-test-id`
+
+**Status:** 📋 Planned for v2.0 - Tracked in [Issue #123](https://github.com/citypaul/scenarist/issues/123)
+
+**Why This Change:**
+
+Currently, users can configure a custom test ID header name via `headers.testId` configuration. This creates complexity and limitations:
+
+1. **Helper Function Limitations**: `getScenaristTestId()` and `getScenaristTestIdFromReadonlyHeaders()` helpers cannot respect custom configurations without accessing the full scenarist instance. They hardcode the default `'x-test-id'` header name.
+
+2. **Inconsistent API**: Users can configure a custom header, but convenience helpers won't work with it. This creates confusion.
+
+3. **Unnecessary Complexity**: No compelling use case for customizing the test ID header name. It's internal infrastructure for test isolation.
+
+**Proposed Changes:**
+
+1. Remove `headers.testId` configuration option from all adapters
+2. Standardize on `'x-scenarist-test-id'` header name (more specific, clearly identifies Scenarist infrastructure)
+3. Simplify helper implementations (remove JSDoc "Important Limitation" warnings)
+4. Update all documentation and examples
+
+**Breaking Changes (v2.0):**
+- Users with custom `headers.testId` configuration must remove it
+- Applications using default `'x-test-id'` must update to `'x-scenarist-test-id'`
+- All documentation examples require updates
+
+**Benefits:**
+- Simpler API (one less configuration option)
+- Consistent behavior across all helpers
+- Clearer intent (`'x-scenarist-test-id'` makes Scenarist ownership obvious)
+- Reduced code complexity
+
+**Estimated Time:** 1-2 days
+**Priority:** v2.0 breaking change (defer until after v1.0 release)
+**Status:** 📋 Planned - Issue created, awaiting v2.0 planning
+
+---
+
+### 6. Phase 5 - Developer Experience & Debugging (OPTIONAL)
 
 **Goal:** Add inspection API for debugging complex scenarios
 
@@ -459,28 +499,28 @@ Response:
 
 ---
 
-### 6. Additional Framework Adapters
+### 7. Additional Framework Adapters
 
 **Goal:** Support more Node.js frameworks
 
 **Priority Order:**
 
-**6.1 Fastify Adapter** (v1.1)
+**7.1 Fastify Adapter** (v1.1)
 - High demand after Express
 - Similar middleware pattern
 - Estimated: 1-2 days
 
-**6.2 Hono Adapter** (v1.2)
+**7.2 Hono Adapter** (v1.2)
 - Edge runtime compatible (CloudFlare Workers, Deno, Bun)
 - Growing popularity
 - Estimated: 1-2 days
 
-**6.3 Koa Adapter** (v1.3)
+**7.3 Koa Adapter** (v1.3)
 - Middleware pattern
 - Less popular but requested
 - Estimated: 1 day
 
-**6.4 Remix Adapter** (v2.0?)
+**7.4 Remix Adapter** (v2.0?)
 - Different architecture (loaders, actions)
 - May require adapter pattern changes
 - Estimated: 2-3 days
@@ -494,7 +534,7 @@ Response:
 
 ---
 
-### 7. Community & Growth
+### 8. Community & Growth
 
 **Tasks:**
 

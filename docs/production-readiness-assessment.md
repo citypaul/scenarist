@@ -631,7 +631,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 
 ### Nice to Have (Can Defer to v1.1)
 
-**Total: 21 hours (3 days)**
+**Total: 23 hours (3 days)**
 
 1. **Set up Renovate/Dependabot** (1 hour)
    - Automated updates
@@ -652,6 +652,18 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 5. **Interactive playground** (future)
    - Try before installing
    - Marketing tool
+
+6. **Simplify test ID header configuration (v2.0 breaking change)** (2 hours)
+   - Remove `headers.testId` custom configuration option
+   - Standardize on `'x-scenarist-test-id'` header name
+   - Simplify helper implementations (remove limitation warnings)
+   - Update all documentation and examples
+   - **Why defer to v2.0:**
+     - Breaking change (users need migration)
+     - Current workaround is documented
+     - No urgent user pain
+     - Better to ship v1.0 sooner
+   - Tracked in [Issue #123](https://github.com/citypaul/scenarist/issues/123)
 
 ---
 
