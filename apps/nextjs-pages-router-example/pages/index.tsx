@@ -208,9 +208,13 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
     const data = await response.json();
 
+    // json-server returns array directly, MSW returns { products: [...] }
+    // Handle both formats for comparison tests and regular tests
+    const products = Array.isArray(data) ? data : data.products;
+
     return {
       props: {
-        initialProducts: data.products,
+        initialProducts: products,
         initialTier: tier,
       },
     };

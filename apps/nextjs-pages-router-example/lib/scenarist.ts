@@ -31,6 +31,7 @@ export const scenarist = await createScenarist({
 });
 
 // Auto-start MSW server in development (only when Scenarist is enabled)
-if (typeof window === 'undefined' && scenarist) {
+// Skip for comparison tests (they use real json-server instead)
+if (typeof window === 'undefined' && scenarist && process.env.SKIP_MSW !== 'true') {
   scenarist.start();
 }
