@@ -17,7 +17,7 @@
 
 import { headers } from 'next/headers';
 
-import { SCENARIST_TEST_ID_HEADER, SCENARIST_DEFAULT_TEST_ID } from '@scenarist/nextjs-adapter/app';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
 
 type User = {
   id: string;
@@ -61,29 +61,28 @@ export default async function CheckoutExternalPage({
   const { userId: userIdParam } = await searchParams;
   const userId = userIdParam || 'user-1';
 
-  // Get test ID from headers for Scenarist isolation
+  // Get Scenarist test isolation headers
   const headersList = await headers();
-  const testId = headersList.get(SCENARIST_TEST_ID_HEADER) || SCENARIST_DEFAULT_TEST_ID;
-  const testHeaders = { [SCENARIST_TEST_ID_HEADER]: testId };
+  const scenaristHeaders = getScenaristHeadersFromReadonlyHeaders(headersList);
 
   // ✅ Fetch from EXTERNAL service (localhost:3001)
   // MSW intercepts this HTTP request
   const userResponse = await fetch(`http://localhost:3001/api/user/${userId}`, {
-    headers: testHeaders,
+    headers: scenaristHeaders,
     cache: 'no-store',
   });
   const { user }: { user: User } = await userResponse.json();
 
   // ✅ External service call - MSW intercepts
   const cartResponse = await fetch(`http://localhost:3001/api/user/${userId}/cart`, {
-    headers: testHeaders,
+    headers: scenaristHeaders,
     cache: 'no-store',
   });
   const { cartItems }: { cartItems: CartItem[] } = await cartResponse.json();
 
   // ✅ External service call - MSW intercepts
   const ordersResponse = await fetch(`http://localhost:3001/api/user/${userId}/orders`, {
-    headers: testHeaders,
+    headers: scenaristHeaders,
     cache: 'no-store',
   });
   const { orders }: { orders: Order[] } = await ordersResponse.json();
@@ -91,7 +90,7 @@ export default async function CheckoutExternalPage({
   // ✅ External service call with tier-based matching - MSW intercepts
   const recommendationsResponse = await fetch('http://localhost:3001/api/recommendations', {
     headers: {
-      ...testHeaders,
+      ...scenaristHeaders,
       'x-user-tier': user.tier,
     },
     cache: 'no-store',
