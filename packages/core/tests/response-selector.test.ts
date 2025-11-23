@@ -2956,9 +2956,10 @@ describe("ResponseSelector - Regex Matching", () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        // When params prefix doesn't exist, template returns undefined
-        // which gets removed from the final object
+        // When params prefix doesn't exist, template returns null
+        // which gets preserved in the final object (JSON-safe)
         expect(result.data.body).toEqual({
+          itemId: null,
           fallback: "default",
         });
       }
@@ -3040,8 +3041,9 @@ describe("ResponseSelector - Regex Matching", () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        // State template works, params template returns undefined (removed from object)
+        // State template works, params template returns null (preserved in object for JSON safety)
         expect(result.data.body).toEqual({
+          paramsValue: null,
           stateValue: "item-from-state",
         });
       }

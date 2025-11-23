@@ -172,13 +172,14 @@ describe('Template Replacement', () => {
       expect(typeof result).toBe('boolean');
     });
 
-    it('should return undefined when pure template state key is missing', () => {
+    it('should return null when pure template state key is missing', () => {
       const value = '{{state.nonexistent}}';
       const state = {};
 
       const result = applyTemplates(value, state);
 
-      expect(result).toBeUndefined();
+      // Returns null (not undefined) to ensure JSON serialization preserves the field
+      expect(result).toBeNull();
     });
 
     it('should convert to string when template is embedded (not pure)', () => {
@@ -232,7 +233,7 @@ describe('Template Replacement', () => {
       });
     });
 
-    it('should return undefined for pure template when prefix is null', () => {
+    it('should return null for pure template when prefix is null', () => {
       const value = {
         userId: '{{state.userId}}', // Pure template
       };
@@ -243,11 +244,11 @@ describe('Template Replacement', () => {
 
       const result = applyTemplates(value, templateData);
 
-      // Pure template with null prefix returns undefined (removed)
-      expect(result).toEqual({});
+      // Pure template with null prefix returns null (field preserved for JSON serialization)
+      expect(result).toEqual({ userId: null });
     });
 
-    it('should return undefined for pure template when prefix is not an object', () => {
+    it('should return null for pure template when prefix is not an object', () => {
       const value = {
         userId: '{{state.userId}}', // Pure template
       };
@@ -258,8 +259,34 @@ describe('Template Replacement', () => {
 
       const result = applyTemplates(value, templateData);
 
-      // Pure template with non-object prefix returns undefined (removed)
-      expect(result).toEqual({});
+      // Pure template with non-object prefix returns null (field preserved for JSON serialization)
+      expect(result).toEqual({ userId: null });
+    });
+
+    it('should preserve field with null when template value is missing (JSON serialization safe)', () => {
+      // This test demonstrates the JSON serialization problem with undefined
+      const value = {
+        items: '{{state.cartItems}}',
+        count: '{{state.count}}',
+      };
+      const state = {}; // No state exists
+
+      const result = applyTemplates(value, state);
+
+      // CRITICAL: Result should have fields with null, not undefined
+      // undefined gets omitted by JSON.stringify, breaking API contracts
+      expect(result).toEqual({
+        items: null,  // Should be null, not undefined
+        count: null,  // Should be null, not undefined
+      });
+
+      // Verify JSON serialization preserves the fields
+      const serialized = JSON.stringify(result);
+      const parsed = JSON.parse(serialized);
+      expect(parsed).toEqual({
+        items: null,
+        count: null,
+      });
     });
   });
 });
