@@ -167,12 +167,13 @@ describe('Pages Router createScenarist', () => {
 
       // Second call should return same instance, NOT try to re-register scenarios
       // Without singleton guard, this would throw DuplicateScenarioError
-      await expect(
-        createScenarist({
-          enabled: true,
-          scenarios: testScenarios,
-        })
-      ).resolves.not.toThrow();
+      const instance2 = await createScenarist({
+        enabled: true,
+        scenarios: testScenarios,
+      });
+
+      // Verify same instance is returned
+      expect(instance2).toBe(instance1);
     });
 
     it('should share scenario registry across all instances', async () => {
