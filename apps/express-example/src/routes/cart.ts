@@ -2,7 +2,18 @@ import type { Request, Response, Router } from 'express';
 
 /**
  * Shopping cart routes - demonstrates stateful mock with capture and injection
+ *
+ * Behavior by environment:
+ * - test/dev: Calls api.store.com (mocked by Scenarist/MSW)
+ * - production: Calls localhost:3001 (real json-server backend)
  */
+
+// Backend URL changes based on environment
+const CART_BACKEND_URL =
+  process.env.NODE_ENV === 'production'
+    ? 'http://localhost:3001/cart'
+    : 'https://api.store.com/cart';
+
 export const setupCartRoutes = (router: Router): void => {
   router.post('/api/cart/add', async (req: Request, res: Response) => {
     const { item } = req.body;
@@ -15,22 +26,40 @@ export const setupCartRoutes = (router: Router): void => {
     }
 
     try {
-      // Call external cart API (will be mocked by Scenarist with state capture)
-      const response = await fetch('https://api.store.com/cart/add', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ item }),
-      });
+      // In production: GET-then-PATCH pattern for json-server
+      // In test: POST to mocked endpoint
+      if (process.env.NODE_ENV === 'production') {
+        // GET current cart
+        const getResponse = await fetch(CART_BACKEND_URL);
+        const currentCart = await getResponse.json();
 
-      const data = await response.json();
+        // PATCH to add new item
+        const patchResponse = await fetch(CART_BACKEND_URL, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: [...(currentCart.items || []), item],
+          }),
+        });
 
-      if (!response.ok) {
-        return res.status(response.status).json(data);
+        const data = await patchResponse.json();
+        return res.json({ success: true, items: data.items });
+      } else {
+        // Test/dev: call mocked endpoint
+        const response = await fetch(`${CART_BACKEND_URL}/add`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ item }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          return res.status(response.status).json(data);
+        }
+
+        return res.json(data);
       }
-
-      return res.json(data);
     } catch (error) {
       return res.status(500).json({
         error: 'Failed to add item to cart',
@@ -41,9 +70,8 @@ export const setupCartRoutes = (router: Router): void => {
 
   router.get('/api/cart', async (_req: Request, res: Response) => {
     try {
-      // Call external cart API (will be mocked by Scenarist with state injection)
-      const response = await fetch('https://api.store.com/cart');
-
+      // Both envs: GET cart
+      const response = await fetch(CART_BACKEND_URL);
       const data = await response.json();
 
       if (!response.ok) {

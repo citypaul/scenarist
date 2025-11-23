@@ -78,7 +78,7 @@ describe('Production Build Verification', () => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ productId: 1 }),
+      body: JSON.stringify({ item: 1 }),
     });
     expect(addProduct1Response.status).toBe(200);
     const added1 = await addProduct1Response.json();
@@ -97,7 +97,7 @@ describe('Production Build Verification', () => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ productId: 2 }),
+      body: JSON.stringify({ item: 2 }),
     });
     expect(addProduct2Response.status).toBe(200);
 
@@ -114,7 +114,7 @@ describe('Production Build Verification', () => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ productId: 1 }),
+      body: JSON.stringify({ item: 1 }),
     });
     expect(addProduct1AgainResponse.status).toBe(200);
 
