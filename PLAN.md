@@ -257,6 +257,52 @@ pnpm test                    # ✅ ALL monorepo tests pass
 
 ---
 
+## Follow-up Work
+
+### TODO: Refactor Express to Match Next.js Pattern
+
+**Problem:** Express example has environment branching that Next.js doesn't need:
+
+```typescript
+// ❌ Express (current) - has branching
+const CART_BACKEND_URL =
+  process.env.NODE_ENV === 'production'
+    ? 'http://localhost:3001/cart'
+    : 'https://api.store.com/cart';
+
+if (process.env.NODE_ENV === 'production') {
+  // GET-then-PATCH pattern
+} else {
+  // POST to fake /add endpoint
+}
+
+// ✅ Next.js (desired) - no branching
+const CART_BACKEND_URL = 'http://localhost:3001/cart';  // Always same URL
+
+// Always GET-then-PATCH (MSW intercepts in test/dev)
+const getResponse = await fetch(CART_BACKEND_URL);
+const currentCart = await getResponse.json();
+const updatedItems = [...(currentCart.items || []), item];
+await fetch(CART_BACKEND_URL, { method: 'PATCH', body: ... });
+```
+
+**Solution:** Apply Next.js pattern to Express:
+1. Remove environment branching from `apps/express-example/src/routes/cart.ts`
+2. Always call real json-server endpoints (`http://localhost:3001/cart`)
+3. Update scenarios to mock GET /cart and PATCH /cart (not POST /cart/add)
+4. MSW intercepts in test/dev, json-server responds in production
+5. **Same code everywhere** - simpler, true production parity
+
+**Benefits:**
+- ✅ No environment logic in routes
+- ✅ True production parity (same code paths)
+- ✅ Simpler implementation
+- ✅ Consistent pattern across all example apps
+
+**When:** After all apps have production tests (after PR #3)
+
+---
+
 ## Decisions Made
 
 **✅ Test Journey:** Shopping Cart State
