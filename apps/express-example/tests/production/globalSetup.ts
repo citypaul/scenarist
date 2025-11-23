@@ -15,8 +15,6 @@ import { copyFileSync } from 'node:fs';
 import { join } from 'node:path';
 import waitOn from 'wait-on';
 
-const processes: ChildProcess[] = [];
-
 export async function setup() {
   // Reset json-server database to clean state before each test run
   const dbTemplate = join(process.cwd(), 'fake-api/db.template.json');
@@ -33,7 +31,7 @@ export async function setup() {
       '--port',
       '3001',
       '--host',
-      '127.0.0.1',
+      'localhost',
     ],
     {
       stdio: 'inherit', // Show output for debugging
@@ -44,8 +42,6 @@ export async function setup() {
   jsonServer.on('error', (err) => {
     console.error('json-server failed to start:', err);
   });
-
-  processes.push(jsonServer);
 
   // Start production Express server
   const expressServer = spawn('node', ['dist/server.js'], {
@@ -58,22 +54,20 @@ export async function setup() {
     console.error('Express server failed to start:', err);
   });
 
-  processes.push(expressServer);
-
   // Wait for both servers to be ready
   // wait-on checks HTTP endpoints and retries until success or timeout
   await waitOn({
     resources: [
-      'http://127.0.0.1:3001/cart', // json-server endpoint
+      'http://localhost:3001/cart', // json-server endpoint
       'http://localhost:3000/health', // Express health check
     ],
     timeout: 30000, // 30 seconds
     interval: 500, // Check every 500ms
   });
-}
 
-export async function teardown() {
-  // Kill all spawned processes
-  // Guaranteed to run even if tests crash
-  processes.forEach((process) => process.kill());
+  // Return cleanup function (Vitest calls this automatically on teardown)
+  return async () => {
+    jsonServer.kill();
+    expressServer.kill();
+  };
 }
