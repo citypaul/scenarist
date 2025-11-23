@@ -515,23 +515,31 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 
 ### Critical (Must Have Before v1.0)
 
-**Total: 26 hours (3 days)**
+**Total: 28 hours (3-4 days)**
 
-1. **Add LICENSE files** (2 hours)
+1. **Add LICENSE files** (2 hours) ✅ COMPLETE
    - MIT license to root and all packages
    - Legal requirement for npm publication
 
-2. **Complete package.json metadata** (3 hours)
+2. **Complete package.json metadata** (3 hours) ✅ COMPLETE
    - author, repository, homepage, bugs, keywords
    - files field to control published content
    - Required for npm publication
 
-3. **Set up Changesets workflow** (4 hours)
+3. **Simplify test ID header configuration** (2 hours) **NEXT UP**
+   - Remove `headers.testId` custom configuration option
+   - Standardize on `'x-scenarist-test-id'` header name
+   - Simplify helper implementations (remove limitation warnings)
+   - Update all documentation and examples
+   - **Why before v1.0:** No real users yet - perfect time for breaking changes
+   - Tracked in [Issue #123](https://github.com/citypaul/scenarist/issues/123)
+
+4. **Set up Changesets workflow** (4 hours)
    - Automated versioning
    - CHANGELOG generation
    - Release management
 
-4. **Add npm publish automation** (4 hours)
+5. **Add npm publish automation** (4 hours)
    - GitHub Action for publishing
    - Provenance support
    - Automated on release
@@ -631,7 +639,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 
 ### Nice to Have (Can Defer to v1.1)
 
-**Total: 23 hours (3 days)**
+**Total: 21 hours (3 days)**
 
 1. **Set up Renovate/Dependabot** (1 hour)
    - Automated updates
@@ -652,18 +660,6 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 5. **Interactive playground** (future)
    - Try before installing
    - Marketing tool
-
-6. **Simplify test ID header configuration (v2.0 breaking change)** (2 hours)
-   - Remove `headers.testId` custom configuration option
-   - Standardize on `'x-scenarist-test-id'` header name
-   - Simplify helper implementations (remove limitation warnings)
-   - Update all documentation and examples
-   - **Why defer to v2.0:**
-     - Breaking change (users need migration)
-     - Current workaround is documented
-     - No urgent user pain
-     - Better to ship v1.0 sooner
-   - Tracked in [Issue #123](https://github.com/citypaul/scenarist/issues/123)
 
 ---
 
