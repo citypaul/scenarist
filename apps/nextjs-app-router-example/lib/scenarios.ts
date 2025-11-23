@@ -31,7 +31,7 @@ export const defaultScenario: ScenaristScenario = {
         },
       },
     },
-    // Cart API - empty cart (initial state)
+    // Cart API - GET cart (returns empty cart initially)
     {
       method: "GET",
       url: "http://localhost:3001/cart",
@@ -42,15 +42,14 @@ export const defaultScenario: ScenaristScenario = {
         },
       },
     },
-    // Cart add - successful addition
+    // Cart API - PATCH cart (successful update)
     {
-      method: "POST",
-      url: "http://localhost:3001/cart/add",
+      method: "PATCH",
+      url: "http://localhost:3001/cart",
       response: {
         status: 200,
         body: {
-          success: true,
-          message: "Item added to cart",
+          items: "{{body.items}}", // Echo back the items array sent in request
         },
       },
     },
@@ -121,16 +120,23 @@ export const standardUserScenario: ScenaristScenario = {
 /**
  * Cart with State Scenario - Phase 3: Stateful Mocks
  *
- * Demonstrates Scenarist's stateful mock feature:
- * - POST /cart/add: Captures productId from request body into cartItems[] array
- * - GET /cart: Injects cartItems array into response with aggregated quantities
+ * Demonstrates Scenarist's stateful mock feature with json-server REST endpoints:
+ * - GET /cart: Injects cartItems array from state (null initially, then [1,2,3])
+ * - PATCH /cart: Captures full items array from request body into state
+ *
+ * Route logic (same in all environments):
+ * - POST /api/cart/add → GET /cart (MSW injects state) → append productId → PATCH /cart (MSW captures)
  *
  * State structure:
- * - cartItems[]: Array of productIds (appends with [] syntax)
+ * - cartItems: Full array of productIds [1, 2, 3] (not append syntax)
  *
- * Response injection:
- * - Aggregates cartItems into unique items with quantities
- * - Returns as { items: [{ productId, quantity }, ...] }
+ * Why PATCH captures full array (not individual items):
+ * - Route handles accumulation logic: [...cart.items, productId]
+ * - PATCH sends full updated array to json-server
+ * - MSW captures this full array, echoes it back
+ * - Next GET injects the full array from state
+ *
+ * ADR-0017 critical: state.cartItems is null initially, route handles with || []
  */
 export const cartWithStateScenario: ScenaristScenario = {
   id: "cartWithState",
@@ -148,29 +154,28 @@ export const cartWithStateScenario: ScenaristScenario = {
         },
       },
     },
-    // POST /cart/add - Capture productId into state
-    {
-      method: "POST",
-      url: "http://localhost:3001/cart/add",
-      captureState: {
-        "cartItems[]": "body.productId",
-      },
-      response: {
-        status: 200,
-        body: {
-          success: true,
-          message: "Item added to cart",
-        },
-      },
-    },
-    // GET /cart - Inject cartItems from state
+    // GET /cart - Inject cartItems from state (null initially)
     {
       method: "GET",
       url: "http://localhost:3001/cart",
       response: {
         status: 200,
         body: {
-          items: "{{state.cartItems}}",
+          items: "{{state.cartItems}}", // null → route handles with || []
+        },
+      },
+    },
+    // PATCH /cart - Capture full items array into state
+    {
+      method: "PATCH",
+      url: "http://localhost:3001/cart",
+      captureState: {
+        cartItems: "body.items", // Capture full array [1,2,3], not append
+      },
+      response: {
+        status: 200,
+        body: {
+          items: "{{body.items}}", // Echo back what route sent
         },
       },
     },

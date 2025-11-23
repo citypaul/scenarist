@@ -4,16 +4,25 @@ export type { PagesAdapterOptions, PagesScenarist } from './setup.js';
 /**
  * Production-only entry point that returns undefined without loading test dependencies.
  *
- * This file returns undefined from createScenarist to prevent MSW and test code from
- * being included in production bundles. Conditional exports ensure this file is used
- * when NODE_ENV=production, achieving 100% tree-shaking of test infrastructure.
+ * This file provides safe stub implementations for all Scenarist functions to prevent
+ * MSW and test code from being included in production bundles. Conditional exports
+ * ensure this file is used when NODE_ENV=production, achieving 100% tree-shaking
+ * of test infrastructure.
  *
- * Note: Helper function is NOT exported here - it's exported from index.ts and
- * accesses the global singleton, which will be undefined in production, causing it
- * to safely return an empty object.
+ * All helper functions return safe defaults (empty objects) so that application code
+ * can import and use them without production guards.
  */
 export const createScenarist = (
   _options: import('./setup.js').PagesAdapterOptions
 ): import('./setup.js').PagesScenarist | undefined => {
   return undefined;
 };
+
+/**
+ * Production stub: Returns empty object (no test headers needed in production)
+ */
+export function getScenaristHeaders(
+  _req: import('next').NextApiRequest
+): Record<string, string> {
+  return {};
+}

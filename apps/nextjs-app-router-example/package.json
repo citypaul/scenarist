@@ -13,6 +13,7 @@
     "test": "pnpm test:e2e",
     "test:e2e": "playwright test --project=chromium",
     "test:e2e:ui": "playwright test --project=chromium --ui",
+    "test:production": "playwright test --config=playwright.production.config.ts",
     "verify:treeshaking": "pnpm build:production && ! grep -rE '(setupWorker|startWorker|http\\.(get|post|put|delete|patch)|HttpResponse\\.json)' .next/ --exclude-dir=cache"
   },
   "dependencies": {
@@ -31,10 +32,12 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.4",
     "@types/react-dom": "^19.2.3",
+    "@types/wait-on": "^5.3.4",
     "autoprefixer": "^10.4.22",
     "eslint": "^9.39.1",
     "postcss": "^8.4.0",
     "tailwindcss": "^4.1.17",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "wait-on": "^8.0.1"
   }
 }

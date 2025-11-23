@@ -155,6 +155,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.4)
+      '@types/wait-on':
+        specifier: ^5.3.4
+        version: 5.3.4
       autoprefixer:
         specifier: ^10.4.22
         version: 10.4.22(postcss@8.5.6)
@@ -170,6 +173,9 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+      wait-on:
+        specifier: ^8.0.1
+        version: 8.0.5
 
   apps/nextjs-pages-router-example:
     dependencies:
@@ -7240,6 +7246,11 @@ packages:
   w3c-xmlserializer@5.0.0:
     resolution: {integrity: sha512-o8qghlI8NZHU1lLPrpi2+Uq7abh4GGPpYANlalzWxyWteJOCsr/P+oPBA49TOLu5FTZO4d3F9MnWJfiMo4BkmA==, tarball: https://registry.npmjs.org/w3c-xmlserializer/-/w3c-xmlserializer-5.0.0.tgz}
     engines: {node: '>=18'}
+
+  wait-on@8.0.5:
+    resolution: {integrity: sha512-J3WlS0txVHkhLRb2FsmRg3dkMTCV1+M6Xra3Ho7HzZDHpE7DCOnoSoCJsZotrmW3uRMhvIJGSKUKrh/MeF4iag==, tarball: https://registry.npmjs.org/wait-on/-/wait-on-8.0.5.tgz}
+    engines: {node: '>=12.0.0'}
+    hasBin: true
 
   wait-on@9.0.3:
     resolution: {integrity: sha512-13zBnyYvFDW1rBvWiJ6Av3ymAaq8EDQuvxZnPIw3g04UqGi4TyoIJABmfJ6zrvKo9yeFQExNkOk7idQbDJcuKA==, tarball: https://registry.npmjs.org/wait-on/-/wait-on-9.0.3.tgz}
@@ -15813,6 +15824,16 @@ snapshots:
     dependencies:
       xml-name-validator: 5.0.0
     optional: true
+
+  wait-on@8.0.5:
+    dependencies:
+      axios: 1.13.2(debug@4.4.3)
+      joi: 18.0.1
+      lodash: 4.17.21
+      minimist: 1.2.8
+      rxjs: 7.8.2
+    transitivePeerDependencies:
+      - debug
 
   wait-on@9.0.3:
     dependencies:

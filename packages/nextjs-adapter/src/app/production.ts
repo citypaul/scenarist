@@ -4,16 +4,48 @@ export type { AppAdapterOptions, AppScenarist } from './setup.js';
 /**
  * Production-only entry point that returns undefined without loading test dependencies.
  *
- * This file returns undefined from createScenarist to prevent MSW and test code from
- * being included in production bundles. Conditional exports ensure this file is used
- * when NODE_ENV=production, achieving 100% tree-shaking of test infrastructure.
+ * This file provides safe stub implementations for all Scenarist functions to prevent
+ * MSW and test code from being included in production bundles. Conditional exports
+ * ensure this file is used when NODE_ENV=production, achieving 100% tree-shaking
+ * of test infrastructure.
  *
- * Note: Helper functions are NOT exported here - they're exported from index.ts and
- * access the global singleton, which will be undefined in production, causing them
- * to safely return empty objects/defaults.
+ * All helper functions return safe defaults (empty objects, fallback strings) so that
+ * application code can import and use them without production guards.
  */
 export const createScenarist = (
   _options: import('./setup.js').AppAdapterOptions
 ): import('./setup.js').AppScenarist | undefined => {
   return undefined;
 };
+
+/**
+ * Production stub: Returns empty object (no test headers needed in production)
+ */
+export function getScenaristHeaders(_req: Request): Record<string, string> {
+  return {};
+}
+
+/**
+ * Production stub: Returns empty object (no test headers needed in production)
+ */
+export function getScenaristHeadersFromReadonlyHeaders(
+  _headers: { get(name: string): string | null }
+): Record<string, string> {
+  return {};
+}
+
+/**
+ * Production stub: Returns fallback test ID
+ */
+export function getScenaristTestId(_req: Request): string {
+  return 'default-test';
+}
+
+/**
+ * Production stub: Returns fallback test ID
+ */
+export function getScenaristTestIdFromReadonlyHeaders(
+  _headers: { get(name: string): string | null }
+): string {
+  return 'default-test';
+}
