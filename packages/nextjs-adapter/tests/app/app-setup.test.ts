@@ -25,7 +25,7 @@ const testScenarios = {
 } as const satisfies ScenaristScenarios;
 
 const createTestSetup = async () => {
-  const scenarist = await createScenarist({
+  const scenarist = createScenarist({
     enabled: true,
     scenarios: testScenarios,
   });
@@ -142,12 +142,12 @@ describe('App Router createScenarist', () => {
 
     it('should return same instance when createScenarist() called multiple times', async () => {
 
-      const instance1 = await createScenarist({
+      const instance1 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
 
-      const instance2 = await createScenarist({
+      const instance2 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
@@ -158,14 +158,14 @@ describe('App Router createScenarist', () => {
 
     it('should prevent duplicate scenario registration errors', async () => {
       // First call registers all scenarios
-      const instance1 = await createScenarist({
+      const instance1 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
 
       // Second call should return same instance, NOT try to re-register scenarios
       // Without singleton guard, this would throw DuplicateScenarioError
-      const instance2 = await createScenarist({
+      const instance2 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
@@ -175,12 +175,12 @@ describe('App Router createScenarist', () => {
     });
 
     it('should share scenario registry across all instances', async () => {
-      const instance1 = await createScenarist({
+      const instance1 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
 
-      const instance2 = await createScenarist({
+      const instance2 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
@@ -198,12 +198,12 @@ describe('App Router createScenarist', () => {
     });
 
     it('should share scenario store across all instances', async () => {
-      const instance1 = await createScenarist({
+      const instance1 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
 
-      const instance2 = await createScenarist({
+      const instance2 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
@@ -224,13 +224,13 @@ describe('App Router createScenarist', () => {
     });
 
     it('should maintain singleton across different scenario configurations', async () => {
-      const instance1 = await createScenarist({
+      const instance1 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
 
       // Even with different config, should return same instance
-      const instance2 = await createScenarist({
+      const instance2 = createScenarist({
         enabled: false, // Different enabled flag
         scenarios: testScenarios,
       });
@@ -260,11 +260,11 @@ describe('App Router createScenarist', () => {
 
     it('should skip MSW initialization on subsequent start() calls from different instances', async () => {
       clearGlobalFlag();
-      const scenarist1 = await createScenarist({
+      const scenarist1 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
-      const scenarist2 = await createScenarist({
+      const scenarist2 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
@@ -281,11 +281,11 @@ describe('App Router createScenarist', () => {
 
     it('should share scenario store across multiple instances', async () => {
       clearGlobalFlag();
-      const scenarist1 = await createScenarist({
+      const scenarist1 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
-      const scenarist2 = await createScenarist({
+      const scenarist2 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
@@ -353,7 +353,7 @@ describe('App Router createScenarist', () => {
 
     it('should respect custom header name from config', async () => {
       clearAllGlobals();
-      const scenarist = await createScenarist({
+      const scenarist = createScenarist({
         enabled: true,
         scenarios: testScenarios,
         headers: { testId: 'x-custom-test-id' },
@@ -373,7 +373,7 @@ describe('App Router createScenarist', () => {
 
     it('should respect custom default test ID from config', async () => {
       clearAllGlobals();
-      const scenarist = await createScenarist({
+      const scenarist = createScenarist({
         enabled: true,
         scenarios: testScenarios,
         defaultTestId: 'my-default',
@@ -392,7 +392,7 @@ describe('App Router createScenarist', () => {
 
     it('should handle both custom header name and custom default test ID', async () => {
       clearAllGlobals();
-      const scenarist = await createScenarist({
+      const scenarist = createScenarist({
         enabled: true,
         scenarios: testScenarios,
         headers: { testId: 'x-my-header' },
@@ -471,7 +471,7 @@ describe('App Router createScenarist', () => {
 
     it('should respect custom header name from config with ReadonlyHeaders', async () => {
       clearAllGlobals();
-      const scenarist = await createScenarist({
+      const scenarist = createScenarist({
         enabled: true,
         scenarios: testScenarios,
         headers: { testId: 'x-custom-test-id' },

@@ -289,23 +289,21 @@ export const createScenarist = async (options) => {
 
 **Next.js adapter implementation (App Router + Pages Router):**
 ```typescript
-// Layer 1: Conditional exports (same as Express)
-// package.json exports → app/production.ts or pages/production.ts
+// Conditional exports in package.json → app/production.ts or pages/production.ts
 
-// Layer 2: Runtime guard in app/setup.ts or pages/setup.ts
-export const createScenarist = async (options) => {
-  if (process.env.NODE_ENV === 'production') {
-    return undefined;
-  }
-  const { createScenaristImpl } = await import('./impl.js');
-  return createScenaristImpl(options);
+// app/setup.ts or pages/setup.ts (synchronous re-export)
+export { createScenaristImpl as createScenarist } from './impl.js';
+
+// production.ts (returns undefined, zero imports)
+export const createScenarist = (_options) => {
+  return undefined;
 };
 ```
 
 **User-facing pattern (all adapters):**
 ```typescript
-// Top-level await required due to async createScenarist
-export const scenarist = await createScenarist({
+// Synchronous pattern - no async/await needed
+export const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === 'test',
   scenarios,
 });

@@ -5,7 +5,7 @@ describe('Pages Router Production Entry Point', () => {
     // Import from production entry point
     const { createScenarist } = await import('../../src/pages/production.js');
 
-    const result = await createScenarist({
+    const result = createScenarist({
       enabled: true,
       scenarios: {
         default: {
@@ -40,7 +40,7 @@ describe('Pages Router Production Entry Point', () => {
     const { createScenarist } = await import('../../src/pages/production.js');
 
     // Calling createScenarist should not trigger any MSW or core imports
-    const result = await createScenarist({
+    const result = createScenarist({
       enabled: true,
       scenarios: {
         default: {

@@ -648,26 +648,28 @@ if (scenarist) {
 
 ### Next.js (App Router & Pages Router)
 
-Both Next.js adapters use the async pattern with **defense-in-depth** - two layers of production safety:
+Both Next.js adapters use the **synchronous pattern** with conditional exports for production safety:
 
 ```typescript
 // lib/scenarist.ts
 import { createScenarist } from '@scenarist/nextjs-adapter/app';
 // or: import { createScenarist } from '@scenarist/nextjs-adapter/pages';
 
-// Layer 1: Conditional exports (package.json)
-// Layer 2: NODE_ENV check + dynamic imports
-export const scenarist = await createScenarist({
+// Synchronous - no async/await needed
+export const scenarist = createScenarist({
   enabled: true,
   scenarios,
 });
+
+// MSW auto-starts in development/test (when scenarist is defined)
+if (typeof window === 'undefined' && scenarist) {
+  scenarist.start();
+}
 ```
 
-**Top-level await** is supported in Next.js 13+ and works seamlessly.
-
 **Production behavior:**
-- ✅ **Layer 1 (Build Time):** Conditional exports resolve to `production.js` which returns `undefined` immediately
-- ✅ **Layer 2 (Runtime Fallback):** If Layer 1 fails, `NODE_ENV=production` check returns `undefined` before any dynamic imports execute
+- ✅ **Conditional exports** resolve to `production.js` which returns `undefined` immediately
+- ✅ **Zero imports** in production.js guarantees tree-shaking
 - ✅ **Zero configuration:** Works automatically based on `NODE_ENV`
 
 **Safe Helper Functions:**

@@ -1,9 +1,9 @@
 /**
- * Internal constants for Scenarist configuration.
- * Not exported - use helper functions instead to avoid leaky abstractions.
+ * Fallback constants for when scenarist is undefined (production builds).
+ * In development/test, these are overridden by values from scenarist.config.
  */
-const SCENARIST_TEST_ID_HEADER = 'x-test-id';
-const SCENARIST_DEFAULT_TEST_ID = 'default-test';
+const FALLBACK_TEST_ID_HEADER = 'x-test-id';
+const FALLBACK_DEFAULT_TEST_ID = 'default-test';
 
 /**
  * Safe helper to extract Scenarist infrastructure headers from a Request object.
@@ -104,10 +104,10 @@ export function getScenaristHeadersFromReadonlyHeaders(headers: { get(name: stri
  * - Safe to use for partitioning data without guards
  * - Zero runtime overhead (tree-shaken in production builds)
  *
- * **Important Limitation:**
- * - Uses default header name `'x-test-id'`
- * - Won't work with custom test ID header configurations
- * - For custom configurations, use `scenarist.getHeadersFromReadonlyHeaders()` and extract the test ID
+ * **Configuration:**
+ * - Respects your configured test ID header name from `scenarist.config.headers.testId`
+ * - Respects your configured default test ID from `scenarist.config.defaultTestId`
+ * - Falls back to `'x-test-id'` and `'default-test'` in production when scenarist is undefined
  *
  * **Use this when:**
  * - You need to partition in-memory data by test ID
@@ -115,7 +115,7 @@ export function getScenaristHeadersFromReadonlyHeaders(headers: { get(name: stri
  * - You need the test ID for logging/debugging
  *
  * @param headers - The ReadonlyHeaders object from headers() in 'next/headers'
- * @returns The test ID string extracted from headers, or `'default-test'` if not found or in production
+ * @returns The test ID string extracted from headers, or configured default if not found
  *
  * @example
  * ```typescript
@@ -141,12 +141,14 @@ export function getScenaristHeadersFromReadonlyHeaders(headers: { get(name: stri
 export function getScenaristTestIdFromReadonlyHeaders(headers: { get(name: string): string | null }): string {
   const scenarist = global.__scenarist_instance;
   if (!scenarist) {
-    return SCENARIST_DEFAULT_TEST_ID;
+    return FALLBACK_DEFAULT_TEST_ID;
   }
 
-  // NOTE: Uses default header name 'x-test-id'
-  // If you configured a custom header name, use scenarist.getHeadersFromReadonlyHeaders() instead
-  return headers.get(SCENARIST_TEST_ID_HEADER) ?? SCENARIST_DEFAULT_TEST_ID;
+  // Use configured header name and default from scenarist instance (if available)
+  // Fall back to defaults if config is not present (e.g., in test mocks)
+  const testIdHeader = scenarist.config?.headers?.testId ?? FALLBACK_TEST_ID_HEADER;
+  const defaultTestId = scenarist.config?.defaultTestId ?? FALLBACK_DEFAULT_TEST_ID;
+  return headers.get(testIdHeader) ?? defaultTestId;
 }
 
 /**
@@ -159,13 +161,13 @@ export function getScenaristTestIdFromReadonlyHeaders(headers: { get(name: strin
  * - Safe to use for partitioning data without guards
  * - Zero runtime overhead (tree-shaken in production builds)
  *
- * **Important Limitation:**
- * - Uses default header name `'x-test-id'`
- * - Won't work with custom test ID header configurations
- * - For custom configurations, use `scenarist.getHeaders()` and extract the test ID
+ * **Configuration:**
+ * - Respects your configured test ID header name from `scenarist.config.headers.testId`
+ * - Respects your configured default test ID from `scenarist.config.defaultTestId`
+ * - Falls back to `'x-test-id'` and `'default-test'` in production when scenarist is undefined
  *
  * @param req - The Web standard Request object
- * @returns The test ID string extracted from request headers, or `'default-test'` if not found or in production
+ * @returns The test ID string extracted from request headers, or configured default if not found
  *
  * @example
  * ```typescript
@@ -182,10 +184,12 @@ export function getScenaristTestIdFromReadonlyHeaders(headers: { get(name: strin
 export function getScenaristTestId(req: Request): string {
   const scenarist = global.__scenarist_instance;
   if (!scenarist) {
-    return SCENARIST_DEFAULT_TEST_ID;
+    return FALLBACK_DEFAULT_TEST_ID;
   }
 
-  // NOTE: Uses default header name 'x-test-id'
-  // If you configured a custom header name, use scenarist.getHeaders() instead
-  return req.headers.get(SCENARIST_TEST_ID_HEADER) ?? SCENARIST_DEFAULT_TEST_ID;
+  // Use configured header name and default from scenarist instance (if available)
+  // Fall back to defaults if config is not present (e.g., in test mocks)
+  const testIdHeader = scenarist.config?.headers?.testId ?? FALLBACK_TEST_ID_HEADER;
+  const defaultTestId = scenarist.config?.defaultTestId ?? FALLBACK_DEFAULT_TEST_ID;
+  return req.headers.get(testIdHeader) ?? defaultTestId;
 }
