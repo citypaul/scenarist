@@ -104,6 +104,11 @@ export function getScenaristHeadersFromReadonlyHeaders(headers: { get(name: stri
  * - Safe to use for partitioning data without guards
  * - Zero runtime overhead (tree-shaken in production builds)
  *
+ * **Important Limitation:**
+ * - Uses default header name `'x-test-id'`
+ * - Won't work with custom test ID header configurations
+ * - For custom configurations, use `scenarist.getHeadersFromReadonlyHeaders()` and extract the test ID
+ *
  * **Use this when:**
  * - You need to partition in-memory data by test ID
  * - You're integrating Scenarist with custom test isolation mechanisms
@@ -139,9 +144,9 @@ export function getScenaristTestIdFromReadonlyHeaders(headers: { get(name: strin
     return SCENARIST_DEFAULT_TEST_ID;
   }
 
-  // Get test ID from configured header
-  const testIdHeader = SCENARIST_TEST_ID_HEADER;
-  return headers.get(testIdHeader) ?? SCENARIST_DEFAULT_TEST_ID;
+  // NOTE: Uses default header name 'x-test-id'
+  // If you configured a custom header name, use scenarist.getHeadersFromReadonlyHeaders() instead
+  return headers.get(SCENARIST_TEST_ID_HEADER) ?? SCENARIST_DEFAULT_TEST_ID;
 }
 
 /**
@@ -153,6 +158,11 @@ export function getScenaristTestIdFromReadonlyHeaders(headers: { get(name: strin
  * - Returns `'default-test'` when scenarist is undefined
  * - Safe to use for partitioning data without guards
  * - Zero runtime overhead (tree-shaken in production builds)
+ *
+ * **Important Limitation:**
+ * - Uses default header name `'x-test-id'`
+ * - Won't work with custom test ID header configurations
+ * - For custom configurations, use `scenarist.getHeaders()` and extract the test ID
  *
  * @param req - The Web standard Request object
  * @returns The test ID string extracted from request headers, or `'default-test'` if not found or in production
@@ -175,7 +185,7 @@ export function getScenaristTestId(req: Request): string {
     return SCENARIST_DEFAULT_TEST_ID;
   }
 
-  // Get test ID from configured header
-  const testIdHeader = SCENARIST_TEST_ID_HEADER;
-  return req.headers.get(testIdHeader) ?? SCENARIST_DEFAULT_TEST_ID;
+  // NOTE: Uses default header name 'x-test-id'
+  // If you configured a custom header name, use scenarist.getHeaders() instead
+  return req.headers.get(SCENARIST_TEST_ID_HEADER) ?? SCENARIST_DEFAULT_TEST_ID;
 }
