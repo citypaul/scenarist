@@ -92,3 +92,9 @@ jobs:
 
       - name: Production E2E Tests (Express)
         run: pnpm --filter=@scenarist/express-example test:production
+
+      - name: Production E2E Tests (App Router)
+        run: pnpm --filter=@scenarist/nextjs-app-router-example test:production
+
+      - name: Production E2E Tests (Pages Router)
+        run: pnpm --filter=@scenarist/nextjs-pages-router-example test:production

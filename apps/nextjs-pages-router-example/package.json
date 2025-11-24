@@ -15,6 +15,7 @@
     "test:e2e:ui": "playwright test --project=chromium --ui",
     "test:e2e:comparison": "SKIP_MSW=true playwright test --project=comparison",
     "test:e2e:all": "playwright test",
+    "test:production": "playwright test --config=playwright.production.config.ts",
     "fake-api": "json-server fake-api/db.json --port 3001",
     "verify:treeshaking": "pnpm build:production && ! grep -rE '(setupWorker|startWorker|http\\.(get|post|put|delete|patch)|HttpResponse\\.json)' .next/ --exclude-dir=cache"
   },
@@ -36,12 +37,14 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.4",
     "@types/react-dom": "^19.2.3",
+    "@types/wait-on": "^5.3.4",
     "autoprefixer": "^10.4.22",
     "eslint": "^9.39.1",
     "json-server": "^1.0.0-beta.3",
     "postcss": "^8.4.0",
     "tailwindcss": "^4.1.17",
     "tsx": "^4.7.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "wait-on": "^8.0.3"
   }
 }
