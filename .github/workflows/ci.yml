@@ -159,10 +159,10 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Run library tests
-        run: pnpm --filter=./packages/* test
+        run: pnpm turbo test --filter=./packages/*
 
       - name: Test with coverage (enforces 100% threshold)
-        run: pnpm --filter=@scenarist/core exec vitest run --coverage
+        run: pnpm turbo test --filter=@scenarist/core -- --coverage
 
       - name: Upload coverage reports
         if: always()
@@ -210,7 +210,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Run mocked tests (Playwright + MSW)
-        run: pnpm --filter=./apps/* test
+        run: pnpm turbo test --filter=./apps/*
 
   # Job 5: Bruno Tests (API contracts + comparison baseline)
   bruno-tests:
@@ -253,7 +253,7 @@ jobs:
         run: pnpm test:bruno:ci
 
       - name: Comparison E2E Tests (without Scenarist)
-        run: pnpm --filter=@scenarist/nextjs-pages-router-example test:e2e:comparison
+        run: pnpm turbo test:e2e:comparison --filter=@scenarist/nextjs-pages-router-example
         env:
           SKIP_MSW: "true"
 
@@ -305,4 +305,4 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Run production tests
-        run: pnpm --filter=${{ matrix.filter }} test:production
+        run: pnpm turbo test:production --filter=${{ matrix.filter }}
