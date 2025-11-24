@@ -27,7 +27,7 @@ For each example app, create production tests that prove the same journey as moc
 1. ✅ **PR #1: Express Example - Production Tests** ([#126](https://github.com/citypaul/scenarist/pull/126) - MERGED)
 2. ✅ **PR #2: Next.js App Router - Production Tests** ([#128](https://github.com/citypaul/scenarist/pull/128) - MERGED)
 3. ✅ **PR #3: Express Example - Remove Environment Branching** ([#129](https://github.com/citypaul/scenarist/pull/129) - MERGED)
-4. 📋 **PR #4: Next.js Pages Router - Production Tests** (this PR)
+4. ✅ **PR #4: Next.js Pages Router - Production Tests** ([#130](https://github.com/citypaul/scenarist/pull/130) - MERGED)
 
 ---
 
@@ -221,25 +221,25 @@ export async function POST(request: NextRequest) {
 
 ---
 
-## App 4: Next.js Pages Router Example 📋 THIS PR
+## App 4: Next.js Pages Router Example ✅ MERGED
 
 ### Implementation Plan
 
 **Apply App Router pattern from PR #2** - implementation will be nearly identical (no environment branching).
 
-**Key Steps:**
-1. Update API routes with no-branching pattern (always GET-then-PATCH)
-2. Update scenarios to mock real json-server endpoints (GET /cart, PATCH /cart)
-3. Create Playwright production config with globalSetup
-4. Add production tests (health, scenario 405, cart CRUD)
-5. Verify tree-shaking
-6. Add production stub tests for Pages Router adapter
+**Implementation Status:**
+✅ 1. Update API routes with no-branching pattern (always GET-then-PATCH)
+✅ 2. Update scenarios to mock real json-server endpoints (GET /cart, PATCH /cart)
+✅ 3. Create Playwright production config with globalSetup
+✅ 4. Add production tests (health, scenario 405, cart CRUD) - 3 tests passing
+✅ 5. Verify tree-shaking - verified in production tests
+✅ 6. Add production stub tests for Pages Router adapter - packages/nextjs-adapter/src/pages/production.test.ts
 
-**Differences from App Router:**
-- Pages Router uses `pages/api/` instead of `app/api/`
-- API handler signature: `(req: NextApiRequest, res: NextApiResponse) => void`
-- Uses Playwright (not vitest) for testing
-- Otherwise, same no-branching routing pattern applies
+**Success Criteria Met:**
+✅ All mocked tests pass (70 Playwright tests)
+✅ All production tests pass (3 tests)
+✅ CI updated to run production tests for all apps
+✅ Tree-shaking verified (Scenarist completely absent in production builds)
 
 ---
 
