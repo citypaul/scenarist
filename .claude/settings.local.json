@@ -3,7 +3,16 @@
     "allow": [
       "Bash(gh run view:*)",
       "Bash(xargs gh run view:*)",
-      "Bash(pnpm --filter=@scenarist/express-example typecheck:*)"
+      "Bash(pnpm --filter=@scenarist/express-example typecheck:*)",
+      "Bash(git add:*)",
+      "Bash(git restore:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh run list:*)",
+      "Bash(cat:*)",
+      "Bash(pnpm turbo test:production:*)"
     ],
     "deny": [],
     "ask": []

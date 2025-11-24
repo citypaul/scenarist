@@ -17,6 +17,11 @@
       "cache": false,
       "env": ["NODE_ENV"]
     },
+    "test:e2e:comparison": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "env": ["NODE_ENV", "SKIP_MSW"]
+    },
     "lint": {
       "dependsOn": ["^lint"]
     },
