@@ -21,9 +21,9 @@ build-and-test (single job)
 ├── Coverage (~2 min)
 ├── Bruno API Tests (~1 min)
 ├── Comparison E2E (~2 min)
-├── Production Tests - Express (~2-3 min)
-├── Production Tests - App Router (~2-3 min)
-└── Production Tests - Pages Router (~2-3 min)
+├── Production Build Tests - Express (~2-3 min)
+├── Production Build Tests - App Router (~2-3 min)
+└── Production Build Tests - Pages Router (~2-3 min)
 ```
 
 **Characteristics:**
@@ -44,12 +44,13 @@ setup-and-build (shared)
 └── Cache artifacts
 
 ┌──────────────┬──────────────┬──────────────┬──────────────┬──────────────┐
-│ validation   │ library-tests│ mocked-tests │ bruno-tests  │ production-  │
+│ validation   │ library-tests│ mocked-tests │ bruno-tests  │ prod-build-  │
 │ (matrix: 2)  │              │              │              │ tests (x3)   │
 ├──────────────┼──────────────┼──────────────┼──────────────┼──────────────┤
 │ • Typecheck  │ • Core       │ • Apps +MSW  │ • Bruno API  │ • Express    │
 │ • Lint       │ • Adapters   │ • Playwright │ • Comparison │ • App Router │
 │              │ • Coverage   │ • Vitest     │ • No MSW     │ • Pages Rtr  │
+│              │              │              │              │ • Tree-shake │
 │ ~1 min       │ ~3 min       │ ~5 min       │ ~3 min       │ ~3 min       │
 └──────────────┴──────────────┴──────────────┴──────────────┴──────────────┘
 
@@ -66,23 +67,29 @@ Total: setup (3 min) + max(1, 3, 5, 3, 3) = ~8 min
 
 ## Key Improvements
 
-### 1. Production Tests Run in Parallel (3x speedup)
+### 1. Production Build Tests Run in Parallel (3x speedup)
+
+**What these test:** Tree-shaking, conditional exports, and production build setup (not actual production environments - they're library integration tests)
 
 **Before:**
 ```yaml
-- name: Production E2E Tests (Express)      # 2-3 min
-- name: Production E2E Tests (App Router)   # 2-3 min
-- name: Production E2E Tests (Pages Router) # 2-3 min
+- name: Production Build Tests (Express)      # 2-3 min
+- name: Production Build Tests (App Router)   # 2-3 min
+- name: Production Build Tests (Pages Router) # 2-3 min
 # Total: 6-9 minutes sequential
 ```
 
 **After:**
 ```yaml
-production-tests:
+production-build-tests:
   strategy:
     matrix:
-      app: [Express, App Router, Pages Router]
+      include:
+        - name: Express
+        - name: App Router
+        - name: Pages Router
   # All run concurrently: ~3 min total
+  # ✅ Turbo cached (deterministic library tests)
 ```
 
 ### 2. Validation Runs in Parallel
@@ -103,16 +110,19 @@ validation:
   # Both run concurrently: ~1 min total
 ```
 
-### 3. Better Resource Utilization
+### 3. Better Resource Utilization & Turbo Caching
 
 **Before:**
-- 1 runner idle while production tests run sequentially
+- 1 runner idle while production build tests run sequentially
 - Typecheck and lint run one after another
+- No Turbo caching (commands bypassed Turbo)
 
 **After:**
 - Multiple runners work simultaneously
-- Production tests of different apps run concurrently
+- Production build tests of different apps run concurrently
 - Validation steps run concurrently
+- ✅ Turbo caching enabled for all test commands
+- Cache hits on re-runs for unchanged code
 
 ## Migration Strategy
 
@@ -142,24 +152,28 @@ validation:
 **Sequential (ci.yml):**
 - 1 job × 25 minutes = 25 runner-minutes
 
-**Parallel (ci-parallel.yml):**
+**Parallel (ci.yml):**
 - setup-and-build: 1 job × 5 min = 5 runner-minutes
 - validation: 2 jobs × 1 min = 2 runner-minutes
-- tests: 1 job × 7 min = 7 runner-minutes
-- e2e-tests: 1 job × 3 min = 3 runner-minutes
-- production-tests: 3 jobs × 3 min = 9 runner-minutes
-- **Total: 26 runner-minutes**
+- library-tests: 1 job × 3 min = 3 runner-minutes
+- mocked-tests: 1 job × 5 min = 5 runner-minutes
+- bruno-tests: 1 job × 3 min = 3 runner-minutes
+- production-build-tests: 3 jobs × 3 min = 9 runner-minutes
+- **Total: 27 runner-minutes**
+- **With caching (re-runs):** ~15-20 runner-minutes (cached tests skip quickly)
 
 ### Analysis
 
-**Cost:** ~4% increase (26 vs 25 runner-minutes)
+**Cost (first run):** ~8% increase (27 vs 25 runner-minutes)
+**Cost (re-runs with cache):** ~25% decrease (15-20 vs 25 runner-minutes)
 **Time:** ~60% decrease (10 vs 25 wall-clock minutes)
-**Developer productivity:** Significant improvement (faster feedback)
+**Developer productivity:** Significant improvement (faster feedback + cache hits)
 
 For GitHub Actions (2,000 free minutes/month for private repos):
 - Current: ~80 CI runs/month before hitting limit
-- Parallel: ~77 CI runs/month before hitting limit
-- **Impact: Negligible** for most workflows
+- Parallel (first run): ~74 CI runs/month before hitting limit
+- Parallel (with cache): ~100-130 CI runs/month before hitting limit
+- **Impact: Net positive** with caching enabled
 
 ## Rollback Plan
 

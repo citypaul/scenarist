@@ -257,9 +257,9 @@ jobs:
         env:
           SKIP_MSW: "true"
 
-  # Job 6: Production Tests (parallel per app)
-  production-tests:
-    name: Production Tests (${{ matrix.name }})
+  # Job 6: Production Build Tests (verifies tree-shaking & production setup)
+  production-build-tests:
+    name: Production Build Tests (${{ matrix.name }})
     needs: setup-and-build
     timeout-minutes: 10
     runs-on: ubuntu-latest
@@ -304,5 +304,5 @@ jobs:
           key: build-${{ github.sha }}
           fail-on-cache-miss: true
 
-      - name: Run production tests
+      - name: Run production build tests
         run: pnpm turbo test:production --filter=${{ matrix.filter }}
