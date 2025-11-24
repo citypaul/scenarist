@@ -211,7 +211,7 @@ jobs:
 
   # Job 5: Production Tests (parallel per app)
   production-tests:
-    name: Production Tests (${{ matrix.app }})
+    name: Production Tests (${{ matrix.app.name }})
     needs: setup-and-build
     timeout-minutes: 10
     runs-on: ubuntu-latest
