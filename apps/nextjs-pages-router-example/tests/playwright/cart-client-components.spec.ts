@@ -62,13 +62,18 @@ test.describe('Shopping Cart - Stateful Mocks', () => {
 
     // Get all add-to-cart buttons
     const addButtons = page.getByRole('button', { name: /Add .* to cart/ });
+    const cartCount = page.getByLabel('Cart item count');
 
-    // Add first product twice
+    // Add first product twice (wait between to avoid GET-then-PATCH race)
     await addButtons.nth(0).click();
+    await expect(cartCount).toHaveText('1');
+
     await addButtons.nth(0).click();
+    await expect(cartCount).toHaveText('2');
 
     // Add second product once
     await addButtons.nth(1).click();
+    await expect(cartCount).toHaveText('3');
 
     // Navigate to cart page
     await page.goto('/cart');
@@ -91,10 +96,14 @@ test.describe('Shopping Cart - Stateful Mocks', () => {
 
     // Get all add-to-cart buttons
     const addButtons = page.getByRole('button', { name: /Add .* to cart/ });
+    const cartCount = page.getByLabel('Cart item count');
 
-    // Add items to cart
+    // Add items to cart (wait between to avoid race)
     await addButtons.nth(0).click();
+    await expect(cartCount).toHaveText('1');
+
     await addButtons.nth(1).click();
+    await expect(cartCount).toHaveText('2');
 
     // Navigate to cart page
     await page.goto('/cart');
@@ -106,7 +115,6 @@ test.describe('Shopping Cart - Stateful Mocks', () => {
     await page.goto('/');
 
     // Cart count should still show 2 (Playwright auto-waits)
-    const cartCount = page.getByLabel('Cart item count');
     await expect(cartCount).toHaveText('2');
 
     // Navigate to cart again

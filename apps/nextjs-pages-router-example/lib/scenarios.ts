@@ -106,18 +106,21 @@ export const standardUserScenario: ScenaristScenario = {
 };
 
 /**
- * Cart with State Scenario - Phase 3: Stateful Mocks
+ * Cart with State Scenario - Stateful Mocks
  *
- * Demonstrates Scenarist's stateful mock feature:
- * - POST /cart/add: Captures productId from request body into cartItems[] array
- * - GET /cart: Injects cartItems array into response with aggregated quantities
+ * Demonstrates Scenarist's stateful mock feature with json-server REST API:
+ * - GET /cart: Injects captured items array (null initially per ADR-0017)
+ * - PATCH /cart: Captures full items array from request body
+ *
+ * Always mocks real json-server REST endpoints:
+ * - Route performs GET-then-PATCH
+ * - GET returns null initially, route handles with || []
+ * - PATCH receives full items array and captures it
  *
  * State structure:
- * - cartItems[]: Array of productIds (appends with [] syntax)
+ * - cartItems: Array of cart items [{ productId, quantity }, ...]
  *
- * Response injection:
- * - Aggregates cartItems into unique items with quantities
- * - Returns as { items: [{ productId, quantity }, ...] }
+ * No environment branching - same endpoints in test/dev and production.
  */
 export const cartWithStateScenario: ScenaristScenario = {
   id: "cartWithState",
@@ -135,28 +138,28 @@ export const cartWithStateScenario: ScenaristScenario = {
         },
       },
     },
-    // POST /cart/add - Capture productId into cartItems array
-    {
-      method: "POST",
-      url: "http://localhost:3001/cart/add",
-      captureState: {
-        "cartItems[]": "body.productId", // Append productId to cartItems array
-      },
-      response: {
-        status: 200,
-        body: {
-          success: true,
-        },
-      },
-    },
-    // GET /cart - Inject cart items from state
+    // GET /cart - Inject captured items (null initially, route handles with || [])
     {
       method: "GET",
       url: "http://localhost:3001/cart",
       response: {
         status: 200,
         body: {
-          items: "{{state.cartItems}}", // Inject captured cart items
+          items: "{{state.cartItems}}", // Inject items array (null initially)
+        },
+      },
+    },
+    // PATCH /cart - Capture full items array
+    {
+      method: "PATCH",
+      url: "http://localhost:3001/cart",
+      captureState: {
+        cartItems: "body.items", // Capture full array
+      },
+      response: {
+        status: 200,
+        body: {
+          items: "{{body.items}}", // Echo back what was sent
         },
       },
     },

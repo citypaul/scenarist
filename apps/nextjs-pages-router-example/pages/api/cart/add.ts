@@ -1,13 +1,14 @@
 /**
- * Add to Cart API Route - Phase 3
+ * Add to Cart API Route
  *
- * Adds an item to the cart via external API (json-server).
- * Demonstrates Scenarist's state capture - the productId from the request
- * is captured and added to the cart state, which is then injected into
- * subsequent GET /cart responses.
+ * Adds an item to the cart via json-server REST API.
+ * Demonstrates Scenarist's state capture and injection.
  *
- * With Scenarist enabled: Captures productId and updates cart state
- * With Scenarist disabled: Sends actual POST to json-server
+ * Always calls real json-server REST endpoints:
+ * - test/dev: MSW intercepts GET /cart and PATCH /cart
+ * - production: Calls pass through to json-server
+ *
+ * No environment branching - same code everywhere for true production parity.
  */
 
 import type { NextApiRequest, NextApiResponse } from 'next';
@@ -19,7 +20,11 @@ type AddToCartRequest = {
 
 type AddToCartResponse = {
   readonly success: boolean;
+  readonly items: ReadonlyArray<number>;
 };
+
+// Always use real json-server endpoint (MSW intercepts in test/dev)
+const CART_BACKEND_URL = 'http://localhost:3001/cart';
 
 export default async function handler(
   req: NextApiRequest,
@@ -38,25 +43,44 @@ export default async function handler(
       return res.status(400).json({ error: 'Invalid productId' });
     }
 
-    // POST to json-server (external API)
-    // Scenarist MSW will intercept this request, capture the productId,
-    // and update the cart state
-    const response = await fetch('http://localhost:3001/cart/add', {
-      method: 'POST',
-      headers: {
-        ...getScenaristHeaders(req),  // ✅ Scenarist infrastructure headers (x-test-id)
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
+    // Always use GET-then-PATCH pattern
+    // MSW intercepts in test/dev, json-server in production
+
+    // GET current cart
+    const getResponse = await fetch(CART_BACKEND_URL, {
+      headers: getScenaristHeaders(req),
     });
 
-    if (!response.ok) {
-      throw new Error(`External API error: ${response.status}`);
+    if (!getResponse.ok) {
+      throw new Error(`GET cart failed: ${getResponse.status}`);
     }
 
-    const data = await response.json();
+    const currentCart = await getResponse.json();
 
-    return res.status(200).json(data);
+    // Route handles accumulation logic
+    // Store raw productIds array [1, 1, 2] - client-side aggregates into quantities
+    const updatedItems: number[] = [
+      ...(currentCart.items || []),
+      body.productId,
+    ];
+
+    // PATCH cart with updated items array
+    const patchResponse = await fetch(CART_BACKEND_URL, {
+      method: 'PATCH',
+      headers: {
+        ...getScenaristHeaders(req),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ items: updatedItems }),
+    });
+
+    if (!patchResponse.ok) {
+      throw new Error(`PATCH cart failed: ${patchResponse.status}`);
+    }
+
+    const data = await patchResponse.json();
+
+    return res.status(200).json({ success: true, items: data.items });
   } catch (error) {
     return res.status(500).json({
       error: error instanceof Error ? error.message : 'Failed to add to cart',

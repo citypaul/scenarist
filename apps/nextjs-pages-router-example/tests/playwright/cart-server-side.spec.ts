@@ -26,8 +26,14 @@ test.describe('Cart Page - Server-Side Rendering (getServerSideProps)', () => {
     // Start on products page and add items
     await page.goto('/');
     const addButtons = page.getByRole('button', { name: /Add .* to cart/ });
+    const cartCount = page.getByLabel('Cart item count');
+
+    // Add items (wait between to avoid GET-then-PATCH race)
     await addButtons.nth(0).click();
+    await expect(cartCount).toHaveText('1');
+
     await addButtons.nth(1).click();
+    await expect(cartCount).toHaveText('2');
 
     // Navigate to cart page (should be server-rendered)
     await page.goto('/cart');
