@@ -121,6 +121,12 @@ jobs:
       - name: Run ${{ matrix.check }}
         run: pnpm ${{ matrix.check }}
 
+      - name: Save Turbo cache
+        uses: actions/cache/save@v4
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}-validation-${{ matrix.check }}
+
   # Job 3: Library Tests (packages only)
   library-tests:
     name: Library Tests
@@ -172,6 +178,12 @@ jobs:
           path: "**/coverage/**"
           if-no-files-found: ignore
 
+      - name: Save Turbo cache
+        uses: actions/cache/save@v4
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}-library-tests
+
   # Job 4: Mocked Tests (apps with MSW - proves Scenarist features)
   mocked-tests:
     name: Mocked Tests
@@ -211,6 +223,12 @@ jobs:
 
       - name: Run mocked tests (Playwright + MSW)
         run: pnpm turbo test --filter=./apps/*
+
+      - name: Save Turbo cache
+        uses: actions/cache/save@v4
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}-mocked-tests
 
   # Job 5: Bruno Tests (API contracts + comparison baseline)
   bruno-tests:
