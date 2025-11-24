@@ -25,15 +25,23 @@ import waitOn from 'wait-on';
 const pidsFile = join(process.cwd(), '.test-server-pids.json');
 
 export default async function globalSetup() {
-  console.log('Building Next.js app in production mode...');
+  // Check if production build already exists (from CI cache)
+  const nextDir = join(process.cwd(), '.next');
+  const { existsSync } = await import('node:fs');
 
-  // Build Next.js app with NODE_ENV=production
-  execSync('pnpm build:production', {
-    cwd: process.cwd(),
-    stdio: 'inherit',
-  });
+  if (existsSync(nextDir)) {
+    console.log('Using existing Next.js production build from cache...');
+  } else {
+    console.log('Building Next.js app in production mode...');
+    // Build Next.js app with NODE_ENV=production
+    execSync('pnpm build:production', {
+      cwd: process.cwd(),
+      stdio: 'inherit',
+    });
+    console.log('Build complete.');
+  }
 
-  console.log('Build complete. Starting servers...');
+  console.log('Starting servers...');
 
   // Reset json-server database to clean state before each test run
   const dbTemplate = join(process.cwd(), 'fake-api/db.template.json');
