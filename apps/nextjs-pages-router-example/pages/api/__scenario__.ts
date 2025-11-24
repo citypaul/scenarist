@@ -14,8 +14,11 @@
  * No manual guards needed - the architecture provides safety automatically.
  */
 
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { scenarist } from '../../lib/scenarist';
 
 // In production, scenarist is undefined due to conditional exports
-// This makes the default export undefined, and Next.js treats the route as non-existent
-export default scenarist?.createScenarioEndpoint();
+// Provide a fallback handler that returns 405 Method Not Allowed
+export default scenarist?.createScenarioEndpoint() ?? ((_req: NextApiRequest, res: NextApiResponse) => {
+  res.status(405).end();
+});
