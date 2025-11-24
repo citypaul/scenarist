@@ -1,4 +1,4 @@
-name: CI
+name: CI (Parallel)
 
 on:
   pull_request:
@@ -11,9 +11,10 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  build-and-test:
-    name: Build and Test
-    timeout-minutes: 15
+  # Job 1: Setup and Build (shared by all other jobs)
+  setup-and-build:
+    name: Setup and Build
+    timeout-minutes: 10
     runs-on: ubuntu-latest
 
     steps:
@@ -44,11 +45,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-turbo-
 
-      - name: Check types
-        run: pnpm typecheck
-
-      - name: Lint
-        run: pnpm lint
+      - name: Build
+        run: pnpm build
 
       - name: Get installed Playwright version
         id: playwright-version
@@ -65,11 +63,103 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm --filter=@scenarist/nextjs-pages-router-example exec playwright install --with-deps chromium
 
-      - name: Build
-        run: pnpm build
+      - name: Cache build artifacts
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            .turbo
+            node_modules
+            packages/*/dist
+            packages/*/node_modules
+            apps/*/node_modules
+            apps/*/.next
+            ~/.cache/ms-playwright
+            pnpm-lock.yaml
+          key: build-${{ github.sha }}
 
-      - name: Test
-        run: pnpm test
+  # Job 2: Validation (typecheck + lint in parallel)
+  validation:
+    name: Validation
+    needs: setup-and-build
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        check: [typecheck, lint]
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+
+      - name: Restore build artifacts
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .turbo
+            node_modules
+            packages/*/dist
+            packages/*/node_modules
+            apps/*/node_modules
+            apps/*/.next
+            ~/.cache/ms-playwright
+            pnpm-lock.yaml
+          key: build-${{ github.sha }}
+          fail-on-cache-miss: true
+
+      - name: Run ${{ matrix.check }}
+        run: pnpm ${{ matrix.check }}
+
+  # Job 3: Library Tests (packages only)
+  library-tests:
+    name: Library Tests
+    needs: setup-and-build
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+
+      - name: Restore build artifacts
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .turbo
+            node_modules
+            packages/*/dist
+            packages/*/node_modules
+            apps/*/node_modules
+            apps/*/.next
+            ~/.cache/ms-playwright
+            pnpm-lock.yaml
+          key: build-${{ github.sha }}
+          fail-on-cache-miss: true
+
+      - name: Run library tests
+        run: pnpm --filter=./packages/* test
 
       - name: Test with coverage (enforces 100% threshold)
         run: pnpm --filter=@scenarist/core exec vitest run --coverage
@@ -82,6 +172,83 @@ jobs:
           path: "**/coverage/**"
           if-no-files-found: ignore
 
+  # Job 4: Mocked Tests (apps with MSW - proves Scenarist features)
+  mocked-tests:
+    name: Mocked Tests
+    needs: setup-and-build
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+
+      - name: Restore build artifacts
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .turbo
+            node_modules
+            packages/*/dist
+            packages/*/node_modules
+            apps/*/node_modules
+            apps/*/.next
+            ~/.cache/ms-playwright
+            pnpm-lock.yaml
+          key: build-${{ github.sha }}
+          fail-on-cache-miss: true
+
+      - name: Run mocked tests (Playwright + MSW)
+        run: pnpm --filter=./apps/* test
+
+  # Job 5: Bruno Tests (API contracts + comparison baseline)
+  bruno-tests:
+    name: Bruno & Baseline Tests
+    needs: setup-and-build
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+
+      - name: Restore build artifacts
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .turbo
+            node_modules
+            packages/*/dist
+            packages/*/node_modules
+            apps/*/node_modules
+            apps/*/.next
+            ~/.cache/ms-playwright
+            pnpm-lock.yaml
+          key: build-${{ github.sha }}
+          fail-on-cache-miss: true
+
       - name: Bruno API Tests
         run: pnpm test:bruno:ci
 
@@ -90,11 +257,52 @@ jobs:
         env:
           SKIP_MSW: "true"
 
-      - name: Production E2E Tests (Express)
-        run: pnpm --filter=@scenarist/express-example test:production
+  # Job 6: Production Tests (parallel per app)
+  production-tests:
+    name: Production Tests (${{ matrix.name }})
+    needs: setup-and-build
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Express
+            filter: "@scenarist/express-example"
+          - name: App Router
+            filter: "@scenarist/nextjs-app-router-example"
+          - name: Pages Router
+            filter: "@scenarist/nextjs-pages-router-example"
 
-      - name: Production E2E Tests (App Router)
-        run: pnpm --filter=@scenarist/nextjs-app-router-example test:production
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
 
-      - name: Production E2E Tests (Pages Router)
-        run: pnpm --filter=@scenarist/nextjs-pages-router-example test:production
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+
+      - name: Restore build artifacts
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .turbo
+            node_modules
+            packages/*/dist
+            packages/*/node_modules
+            apps/*/node_modules
+            apps/*/.next
+            ~/.cache/ms-playwright
+            pnpm-lock.yaml
+          key: build-${{ github.sha }}
+          fail-on-cache-miss: true
+
+      - name: Run production tests
+        run: pnpm --filter=${{ matrix.filter }} test:production

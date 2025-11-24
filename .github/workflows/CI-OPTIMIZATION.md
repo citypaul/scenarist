@@ -33,7 +33,7 @@ build-and-test (single job)
 - ❌ Production tests run sequentially despite being independent
 - ❌ Late failure (typecheck/lint run before all tests)
 
-## Optimized Pipeline (`ci-parallel.yml`) - Parallel
+## Optimized Pipeline (`ci.yml`) - Parallel
 
 **Total Runtime: ~8-12 minutes** (60% faster)
 
@@ -43,20 +43,17 @@ setup-and-build (shared)
 ├── Build (~2-3 min)
 └── Cache artifacts
 
-┌─────────────────┬─────────────────┬─────────────────┬─────────────────┐
-│ validation      │ tests           │ e2e-tests       │ production-tests│
-│ (parallel)      │ (parallel)      │ (parallel)      │ (matrix)        │
-├─────────────────┼─────────────────┼─────────────────┼─────────────────┤
-│ • Typecheck     │ • Unit tests    │ • Bruno API     │ • Express       │
-│   (~1 min)      │   (~3-5 min)    │   (~1 min)      │   (~2-3 min)    │
-│ • Lint          │ • Coverage      │ • Comparison    │ • App Router    │
-│   (~1 min)      │   (~2 min)      │   (~2 min)      │   (~2-3 min)    │
-│                 │                 │                 │ • Pages Router  │
-│ Max: ~1 min     │ Max: ~7 min     │ Max: ~3 min     │   (~2-3 min)    │
-│                 │                 │                 │ Max: ~3 min     │
-└─────────────────┴─────────────────┴─────────────────┴─────────────────┘
+┌──────────────┬──────────────┬──────────────┬──────────────┬──────────────┐
+│ validation   │ library-tests│ mocked-tests │ bruno-tests  │ production-  │
+│ (matrix: 2)  │              │              │              │ tests (x3)   │
+├──────────────┼──────────────┼──────────────┼──────────────┼──────────────┤
+│ • Typecheck  │ • Core       │ • Apps +MSW  │ • Bruno API  │ • Express    │
+│ • Lint       │ • Adapters   │ • Playwright │ • Comparison │ • App Router │
+│              │ • Coverage   │ • Vitest     │ • No MSW     │ • Pages Rtr  │
+│ ~1 min       │ ~3 min       │ ~5 min       │ ~3 min       │ ~3 min       │
+└──────────────┴──────────────┴──────────────┴──────────────┴──────────────┘
 
-Total: setup (3 min) + max(validation, tests, e2e, production) = ~10 min
+Total: setup (3 min) + max(1, 3, 5, 3, 3) = ~8 min
 ```
 
 **Characteristics:**
