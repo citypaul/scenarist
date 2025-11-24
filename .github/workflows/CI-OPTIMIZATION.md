@@ -69,7 +69,7 @@ Total: setup (3 min) + max(1, 3, 5, 3, 3) = ~8 min
 
 ### 1. Production Build Tests Run in Parallel (3x speedup)
 
-**What these test:** Tree-shaking, conditional exports, and production build setup (not actual production environments - they're library integration tests)
+**What these test:** Tree-shaking, conditional exports, and production build setup (not actual production environments - they're library integration tests with real servers)
 
 **Before:**
 ```yaml
@@ -88,8 +88,8 @@ production-build-tests:
         - name: Express
         - name: App Router
         - name: Pages Router
-  # All run concurrently: ~3 min total
-  # ✅ Turbo cached (deterministic library tests)
+  # All run concurrently: ~3-4 min total
+  # ❌ Not cached (spawns servers: json-server + app)
 ```
 
 ### 2. Validation Runs in Parallel
@@ -158,22 +158,22 @@ validation:
 - library-tests: 1 job × 3 min = 3 runner-minutes
 - mocked-tests: 1 job × 5 min = 5 runner-minutes
 - bruno-tests: 1 job × 3 min = 3 runner-minutes
-- production-build-tests: 3 jobs × 3 min = 9 runner-minutes
-- **Total: 27 runner-minutes**
-- **With caching (re-runs):** ~15-20 runner-minutes (cached tests skip quickly)
+- production-build-tests: 3 jobs × 3-4 min = 9-12 runner-minutes
+- **Total: 27-30 runner-minutes**
+- **With caching (re-runs):** ~20-24 runner-minutes (library/mocked tests cached, production not cached)
 
 ### Analysis
 
-**Cost (first run):** ~8% increase (27 vs 25 runner-minutes)
-**Cost (re-runs with cache):** ~25% decrease (15-20 vs 25 runner-minutes)
+**Cost (first run):** ~8-20% increase (27-30 vs 25 runner-minutes)
+**Cost (re-runs with cache):** ~4-20% decrease (20-24 vs 25 runner-minutes)
 **Time:** ~60% decrease (10 vs 25 wall-clock minutes)
-**Developer productivity:** Significant improvement (faster feedback + cache hits)
+**Developer productivity:** Significant improvement (faster feedback + partial cache hits)
 
 For GitHub Actions (2,000 free minutes/month for private repos):
-- Current: ~80 CI runs/month before hitting limit
-- Parallel (first run): ~74 CI runs/month before hitting limit
-- Parallel (with cache): ~100-130 CI runs/month before hitting limit
-- **Impact: Net positive** with caching enabled
+- Sequential: ~80 CI runs/month before hitting limit
+- Parallel (first run): ~67-74 CI runs/month before hitting limit
+- Parallel (with cache): ~83-100 CI runs/month before hitting limit
+- **Impact: Neutral to positive** - faster feedback is worth the marginal cost increase
 
 ## Rollback Plan
 

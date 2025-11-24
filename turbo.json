@@ -19,7 +19,7 @@
     },
     "test:production": {
       "dependsOn": ["build"],
-      "outputs": [],
+      "cache": false,
       "env": ["NODE_ENV"]
     },
     "test:e2e:comparison": {
