@@ -43,7 +43,7 @@ export const setupCartRoutes = (router: Router): void => {
       });
 
       const data = await patchResponse.json();
-      return res.json({ success: true, items: data.items });
+      return res.json({ success: true, items: data.items, message: data.message });
     } catch (error) {
       return res.status(500).json({
         error: 'Failed to add item to cart',

@@ -557,6 +557,7 @@ export const shoppingCartScenario: ScenaristScenario = {
         body: {
           items: '{{state.cartItems}}',  // Inject items array (null initially)
           count: '{{state.cartItems.length}}',  // Inject array length
+          total: 0,  // Bruno API tests expect this field
         },
       },
     },
@@ -571,6 +572,7 @@ export const shoppingCartScenario: ScenaristScenario = {
         status: 200,
         body: {
           items: '{{body.items}}',  // Echo back what was sent
+          message: 'Item added to cart',  // Bruno API tests expect this field
         },
       },
     },
