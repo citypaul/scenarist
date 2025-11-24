@@ -26,8 +26,8 @@ For each example app, create production tests that prove the same journey as moc
 **Each app/refactor gets its own PR** to allow focused review and avoid scope creep:
 1. ✅ **PR #1: Express Example - Production Tests** ([#126](https://github.com/citypaul/scenarist/pull/126) - MERGED)
 2. ✅ **PR #2: Next.js App Router - Production Tests** ([#128](https://github.com/citypaul/scenarist/pull/128) - MERGED)
-3. 📋 **PR #3: Express Example - Remove Environment Branching** (this PR)
-4. 📋 **PR #4: Next.js Pages Router - Production Tests** (future PR)
+3. ✅ **PR #3: Express Example - Remove Environment Branching** ([#129](https://github.com/citypaul/scenarist/pull/129) - MERGED)
+4. 📋 **PR #4: Next.js Pages Router - Production Tests** (this PR)
 
 ---
 
@@ -221,7 +221,7 @@ export async function POST(request: NextRequest) {
 
 ---
 
-## App 4: Next.js Pages Router Example 📋 FUTURE PR
+## App 4: Next.js Pages Router Example 📋 THIS PR
 
 ### Implementation Plan
 
@@ -252,7 +252,7 @@ pnpm test                    # ✅ All mocked tests pass
 pnpm test:production         # ✅ Production test passes
 ```
 
-### After Refactor 1 (Express No-Branching) Complete
+### After Refactor 1 (Express No-Branching) Complete ✅
 ```bash
 cd apps/express-example
 pnpm test                    # ✅ All mocked tests pass (with updated scenarios)
@@ -274,7 +274,7 @@ pnpm test                    # ✅ ALL monorepo tests pass
 
 ---
 
-## Refactor 1: Express Example - Remove Environment Branching 📋 THIS PR
+## Refactor 1: Express Example - Remove Environment Branching ✅ MERGED
 
 ### Motivation
 
@@ -360,10 +360,10 @@ Apply the Next.js pattern to Express for consistency and simplicity:
 - Same journey for App Router and Pages Router
 
 **✅ App Order:** Express → App Router → Express Refactor → Pages Router
-- Express production tests completed (PR #126)
-- App Router production tests completed (PR #128)
-- Express refactoring to remove branching (PR #3, this branch)
-- Pages Router last (PR #4, future)
+- Express production tests completed (PR #126 - MERGED)
+- App Router production tests completed (PR #128 - MERGED)
+- Express refactoring to remove branching (PR #129 - MERGED)
+- Pages Router production tests (PR #4 - this branch)
 
 **✅ Production Test Scope:**
 - Health endpoint works (proves app runs)
@@ -380,7 +380,8 @@ Apply the Next.js pattern to Express for consistency and simplicity:
   - App Router proved this works (PR #128)
   - MSW intercepts in test/dev, json-server in production
   - **Same code everywhere** = true production parity
-  - Now applying to Express (PR #3, this branch)
+  - Applied to Express (PR #129 - MERGED)
+  - Now applying to Pages Router (PR #4 - this branch)
 
 **✅ Hostname:** Use `localhost` everywhere
 - Prevents IPv4/IPv6 resolution issues
