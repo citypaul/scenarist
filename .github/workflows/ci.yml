@@ -305,4 +305,4 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Run production build tests
-        run: pnpm turbo test:production --filter=${{ matrix.filter }}
+        run: pnpm --filter=${{ matrix.filter }} test:production

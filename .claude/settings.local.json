@@ -11,7 +11,8 @@
       "Bash(gh pr create:*)",
       "Bash(gh pr view:*)",
       "Bash(gh run list:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(pnpm turbo test:production:*)"
     ],
     "deny": [],
     "ask": []
