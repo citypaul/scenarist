@@ -18,8 +18,7 @@
       "env": ["NODE_ENV"]
     },
     "test:production": {
-      "dependsOn": ["build"],
-      "outputs": ["test-results/**", ".test-server-pids.json"],
+      "outputs": ["playwright-report/**", "test-results/**", ".test-server-pids.json"],
       "env": ["NODE_ENV"]
     },
     "test:e2e:comparison": {
