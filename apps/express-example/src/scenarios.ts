@@ -548,7 +548,7 @@ export const shoppingCartScenario: ScenaristScenario = {
   name: 'Shopping Cart (Stateful)',
   description: 'Stateful shopping cart with capture and injection',
   mocks: [
-    // Get cart - injects captured items (null initially)
+    // Get cart - injects captured items (null initially, route handles with || [])
     {
       method: 'GET',
       url: 'http://localhost:3001/cart',
@@ -556,7 +556,7 @@ export const shoppingCartScenario: ScenaristScenario = {
         status: 200,
         body: {
           items: '{{state.cartItems}}',  // Inject items array (null initially)
-          count: '{{state.cartItems.length}}',  // Inject array length
+          count: '{{state.cartItems.length}}',  // Compute from state items
           total: 0,  // Bruno API tests expect this field
         },
       },
@@ -572,6 +572,7 @@ export const shoppingCartScenario: ScenaristScenario = {
         status: 200,
         body: {
           items: '{{body.items}}',  // Echo back what was sent
+          count: '{{body.items.length}}',  // Compute from request body (always defined)
           message: 'Item added to cart',  // Bruno API tests expect this field
         },
       },
