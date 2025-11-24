@@ -536,40 +536,44 @@ export const paymentLimitedScenario: ScenaristScenario = {
  * Scenario: Shopping Cart (Phase 3 - Stateful Mocks)
  * Demonstrates state capture and injection across multiple requests.
  *
- * Flow:
- * 1. POST /cart/add - Captures item and appends to cartItems[] array
- * 2. GET /cart - Injects cartItems into response with count
+ * Always mocks real json-server endpoints (no fake /cart/add):
+ * - GET /cart - Injects state.cartItems (null initially per ADR-0017)
+ * - PATCH /cart - Captures full items array from body
+ *
+ * Route handles accumulation logic (GET-then-PATCH pattern).
+ * MSW intercepts in test/dev, json-server in production.
  */
 export const shoppingCartScenario: ScenaristScenario = {
   id: 'shoppingCart',
   name: 'Shopping Cart (Stateful)',
   description: 'Stateful shopping cart with capture and injection',
   mocks: [
-    // Add item to cart - captures item
+    // Get cart - injects captured items (null initially, route handles with || [])
     {
-      method: 'POST',
-      url: 'https://api.store.com/cart/add',
-      captureState: {
-        'cartItems[]': 'body.item',  // Append to array
-      },
+      method: 'GET',
+      url: 'http://localhost:3001/cart',
       response: {
         status: 200,
         body: {
-          success: true,
-          message: 'Item added to cart',
+          items: '{{state.cartItems}}',  // Inject items array (null initially)
+          count: '{{state.cartItems.length}}',  // Compute from state items
+          total: 0,  // Bruno API tests expect this field
         },
       },
     },
-    // Get cart - injects captured items
+    // PATCH cart - captures full items array
     {
-      method: 'GET',
-      url: 'https://api.store.com/cart',
+      method: 'PATCH',
+      url: 'http://localhost:3001/cart',
+      captureState: {
+        'cartItems': 'body.items',  // Capture full array [1,2,3]
+      },
       response: {
         status: 200,
         body: {
-          items: '{{state.cartItems}}',  // Inject items array
-          count: '{{state.cartItems.length}}',  // Inject array length
-          total: 0,  // Would calculate from items in real app
+          items: '{{body.items}}',  // Echo back what was sent
+          count: '{{body.items.length}}',  // Compute from request body (always defined)
+          message: 'Item added to cart',  // Bruno API tests expect this field
         },
       },
     },

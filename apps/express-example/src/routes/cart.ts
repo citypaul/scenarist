@@ -3,16 +3,15 @@ import type { Request, Response, Router } from 'express';
 /**
  * Shopping cart routes - demonstrates stateful mock with capture and injection
  *
- * Behavior by environment:
- * - test/dev: Calls api.store.com (mocked by Scenarist/MSW)
- * - production: Calls localhost:3001 (real json-server backend)
+ * Always calls real json-server REST endpoints:
+ * - test/dev: MSW intercepts GET /cart and PATCH /cart
+ * - production: Calls pass through to json-server
+ *
+ * No environment branching - same code everywhere for true production parity.
  */
 
-// Backend URL changes based on environment
-const CART_BACKEND_URL =
-  process.env.NODE_ENV === 'production'
-    ? 'http://localhost:3001/cart'
-    : 'https://api.store.com/cart';
+// Always use real json-server endpoint (MSW intercepts in test/dev)
+const CART_BACKEND_URL = 'http://localhost:3001/cart';
 
 export const setupCartRoutes = (router: Router): void => {
   router.post('/api/cart/add', async (req: Request, res: Response) => {
@@ -26,40 +25,25 @@ export const setupCartRoutes = (router: Router): void => {
     }
 
     try {
-      // In production: GET-then-PATCH pattern for json-server
-      // In test: POST to mocked endpoint
-      if (process.env.NODE_ENV === 'production') {
-        // GET current cart
-        const getResponse = await fetch(CART_BACKEND_URL);
-        const currentCart = await getResponse.json();
+      // Always use GET-then-PATCH pattern
+      // MSW intercepts in test/dev, json-server in production
 
-        // PATCH to add new item
-        const patchResponse = await fetch(CART_BACKEND_URL, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            items: [...(currentCart.items || []), item],
-          }),
-        });
+      // GET current cart
+      const getResponse = await fetch(CART_BACKEND_URL);
+      const currentCart = await getResponse.json();
 
-        const data = await patchResponse.json();
-        return res.json({ success: true, items: data.items });
-      } else {
-        // Test/dev: call mocked endpoint
-        const response = await fetch(`${CART_BACKEND_URL}/add`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ item }),
-        });
+      // Route handles accumulation logic
+      const updatedItems = [...(currentCart.items || []), item];
 
-        const data = await response.json();
+      // PATCH cart with updated items array
+      const patchResponse = await fetch(CART_BACKEND_URL, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: updatedItems }),
+      });
 
-        if (!response.ok) {
-          return res.status(response.status).json(data);
-        }
-
-        return res.json(data);
-      }
+      const data = await patchResponse.json();
+      return res.json({ success: true, items: data.items, message: data.message });
     } catch (error) {
       return res.status(500).json({
         error: 'Failed to add item to cart',
