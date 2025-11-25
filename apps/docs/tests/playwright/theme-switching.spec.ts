@@ -35,12 +35,12 @@ test.describe('Theme Switching', () => {
   });
 
   test('theme persists from landing page to docs', async ({ page }) => {
-    // Set dark theme explicitly before navigation
-    await page.addInitScript(() => {
-      localStorage.setItem('starlight-theme', 'dark');
-    });
-
+    // Start on landing page - don't use addInitScript as it persists across navigations
     await page.goto('/');
+
+    // Set dark theme initially via evaluate (only for this page load)
+    await page.evaluate(() => localStorage.setItem('starlight-theme', 'dark'));
+    await page.reload();
 
     // Should start in dark mode
     await expect(page.locator('html')).toHaveClass(/dark/);
