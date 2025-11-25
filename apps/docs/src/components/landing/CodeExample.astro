@@ -1,29 +1,6 @@
 ---
 // Split-view code example showing scenario definition and test
-import { Code } from 'astro:components';
-
-const scenarioCode = `const successScenario = {
-  id: 'payment_success',
-  mocks: [{
-    url: 'https://api.stripe.com/*',
-    method: 'POST',
-    response: {
-      status: 200,
-      body: { paid: true }
-    }
-  }]
-};`;
-
-const testCode = `test('checkout flow', async ({ page }) => {
-  await switchScenario(page, 'payment_success');
-
-  // Hits real Next.js backend
-  await page.goto('/checkout');
-  await page.click('#pay-button');
-
-  // Real DB, Real Middleware, Mocked Stripe
-  await expect(page).toHaveURL('/success');
-});`;
+// Using inline styles for syntax highlighting to avoid runtime Shiki theme loading on Cloudflare
 ---
 
 <section class="relative z-10 px-6 pb-20">
@@ -47,19 +24,34 @@ const testCode = `test('checkout flow', async ({ page }) => {
       <!-- Split code panels -->
       <div class="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-100 dark:divide-white/10">
         <!-- Left Panel - Define Scenario -->
-        <div class="p-6">
-          <div class="text-gray-400 dark:text-gray-500 mb-4 text-xs uppercase tracking-widest font-bold">1. Define Scenario</div>
-          <div class="code-panel [&_pre]:!bg-transparent [&_pre]:!p-0 [&_pre]:!m-0 [&_code]:!text-sm [&_code]:!leading-relaxed">
-            <Code code={scenarioCode} lang="typescript" theme="dracula" />
-          </div>
+        <div class="p-6 font-mono text-sm leading-relaxed overflow-x-auto">
+          <div class="text-gray-400 dark:text-gray-500 mb-4 text-xs uppercase tracking-widest font-bold font-sans">1. Define Scenario</div>
+          <pre class="text-left"><code><span class="text-purple-600 dark:text-purple-400">const</span> <span class="text-gray-800 dark:text-gray-200">successScenario</span> <span class="text-gray-600 dark:text-gray-400">=</span> <span class="text-gray-600 dark:text-gray-400">&#123;</span>
+  <span class="text-gray-800 dark:text-gray-200">id</span><span class="text-gray-600 dark:text-gray-400">:</span> <span class="text-emerald-600 dark:text-emerald-400">'payment_success'</span><span class="text-gray-600 dark:text-gray-400">,</span>
+  <span class="text-gray-800 dark:text-gray-200">mocks</span><span class="text-gray-600 dark:text-gray-400">:</span> <span class="text-gray-600 dark:text-gray-400">[&#123;</span>
+    <span class="text-gray-800 dark:text-gray-200">url</span><span class="text-gray-600 dark:text-gray-400">:</span> <span class="text-emerald-600 dark:text-emerald-400">'https://api.stripe.com/*'</span><span class="text-gray-600 dark:text-gray-400">,</span>
+    <span class="text-gray-800 dark:text-gray-200">method</span><span class="text-gray-600 dark:text-gray-400">:</span> <span class="text-emerald-600 dark:text-emerald-400">'POST'</span><span class="text-gray-600 dark:text-gray-400">,</span>
+    <span class="text-gray-800 dark:text-gray-200">response</span><span class="text-gray-600 dark:text-gray-400">:</span> <span class="text-gray-600 dark:text-gray-400">&#123;</span>
+      <span class="text-gray-800 dark:text-gray-200">status</span><span class="text-gray-600 dark:text-gray-400">:</span> <span class="text-blue-600 dark:text-blue-400">200</span><span class="text-gray-600 dark:text-gray-400">,</span>
+      <span class="text-gray-800 dark:text-gray-200">body</span><span class="text-gray-600 dark:text-gray-400">:</span> <span class="text-gray-600 dark:text-gray-400">&#123;</span> <span class="text-gray-800 dark:text-gray-200">paid</span><span class="text-gray-600 dark:text-gray-400">:</span> <span class="text-purple-600 dark:text-purple-400">true</span> <span class="text-gray-600 dark:text-gray-400">&#125;</span>
+    <span class="text-gray-600 dark:text-gray-400">&#125;</span>
+  <span class="text-gray-600 dark:text-gray-400">&#125;]</span>
+<span class="text-gray-600 dark:text-gray-400">&#125;;</span></code></pre>
         </div>
 
         <!-- Right Panel - Run Test -->
-        <div class="p-6 bg-gray-50 dark:bg-[#161618]/30">
-          <div class="text-gray-400 dark:text-gray-500 mb-4 text-xs uppercase tracking-widest font-bold">2. Run Test</div>
-          <div class="code-panel [&_pre]:!bg-transparent [&_pre]:!p-0 [&_pre]:!m-0 [&_code]:!text-sm [&_code]:!leading-relaxed">
-            <Code code={testCode} lang="typescript" theme="dracula" />
-          </div>
+        <div class="p-6 font-mono text-sm leading-relaxed overflow-x-auto bg-gray-50 dark:bg-[#161618]/30">
+          <div class="text-gray-400 dark:text-gray-500 mb-4 text-xs uppercase tracking-widest font-bold font-sans">2. Run Test</div>
+          <pre class="text-left"><code><span class="text-blue-600 dark:text-blue-400">test</span><span class="text-gray-600 dark:text-gray-400">(</span><span class="text-emerald-600 dark:text-emerald-400">'checkout flow'</span><span class="text-gray-600 dark:text-gray-400">,</span> <span class="text-purple-600 dark:text-purple-400">async</span> <span class="text-gray-600 dark:text-gray-400">(&#123;</span> <span class="text-gray-800 dark:text-gray-200">page</span> <span class="text-gray-600 dark:text-gray-400">&#125;)</span> <span class="text-purple-600 dark:text-purple-400">=&gt;</span> <span class="text-gray-600 dark:text-gray-400">&#123;</span>
+  <span class="text-purple-600 dark:text-purple-400">await</span> <span class="text-blue-600 dark:text-blue-400">switchScenario</span><span class="text-gray-600 dark:text-gray-400">(</span><span class="text-gray-800 dark:text-gray-200">page</span><span class="text-gray-600 dark:text-gray-400">,</span> <span class="text-emerald-600 dark:text-emerald-400">'payment_success'</span><span class="text-gray-600 dark:text-gray-400">);</span>
+
+  <span class="text-gray-400 dark:text-gray-500 italic">// Hits real Next.js backend</span>
+  <span class="text-purple-600 dark:text-purple-400">await</span> <span class="text-gray-800 dark:text-gray-200">page</span><span class="text-gray-600 dark:text-gray-400">.</span><span class="text-blue-600 dark:text-blue-400">goto</span><span class="text-gray-600 dark:text-gray-400">(</span><span class="text-emerald-600 dark:text-emerald-400">'/checkout'</span><span class="text-gray-600 dark:text-gray-400">);</span>
+  <span class="text-purple-600 dark:text-purple-400">await</span> <span class="text-gray-800 dark:text-gray-200">page</span><span class="text-gray-600 dark:text-gray-400">.</span><span class="text-blue-600 dark:text-blue-400">click</span><span class="text-gray-600 dark:text-gray-400">(</span><span class="text-emerald-600 dark:text-emerald-400">'#pay-button'</span><span class="text-gray-600 dark:text-gray-400">);</span>
+
+  <span class="text-gray-400 dark:text-gray-500 italic">// Real DB, Real Middleware, Mocked Stripe</span>
+  <span class="text-purple-600 dark:text-purple-400">await</span> <span class="text-blue-600 dark:text-blue-400">expect</span><span class="text-gray-600 dark:text-gray-400">(</span><span class="text-gray-800 dark:text-gray-200">page</span><span class="text-gray-600 dark:text-gray-400">).</span><span class="text-blue-600 dark:text-blue-400">toHaveURL</span><span class="text-gray-600 dark:text-gray-400">(</span><span class="text-emerald-600 dark:text-emerald-400">'/success'</span><span class="text-gray-600 dark:text-gray-400">);</span>
+<span class="text-gray-600 dark:text-gray-400">&#125;);</span></code></pre>
         </div>
       </div>
     </div>
