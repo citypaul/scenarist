@@ -2,8 +2,8 @@
 // Value proposition section - "Only mock what you don't control"
 ---
 
-<section class="py-24 border-t border-gray-100 dark:border-white/5">
-  <div class="max-w-6xl mx-auto px-6">
+<section class="py-24 border-t border-gray-100 dark:border-white/5 relative overflow-hidden">
+  <div class="max-w-6xl mx-auto px-6 relative z-10">
     <!-- Header -->
     <div class="text-center mb-16">
       <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-4 text-gray-900 dark:text-white">
@@ -15,44 +15,65 @@
     </div>
 
     <!-- Cards Grid -->
-    <div class="grid md:grid-cols-3 gap-8 text-center">
+    <div class="grid md:grid-cols-3 gap-8 items-center">
       <!-- Your Application Card (2/3 width) -->
-      <div class="md:col-span-2 p-8 rounded-2xl border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/5 relative overflow-hidden">
+      <div class="md:col-span-2 p-8 rounded-2xl border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/5 relative overflow-hidden group">
         <div class="absolute top-0 left-0 w-full h-1 bg-emerald-500"></div>
-        <div class="text-emerald-600 dark:text-emerald-400 font-mono text-xs uppercase tracking-widest mb-2 font-bold">Your Application</div>
+        <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-colors duration-500"></div>
+        
+        <div class="flex items-center justify-between mb-6">
+          <div class="text-emerald-600 dark:text-emerald-400 font-mono text-xs uppercase tracking-widest font-bold">Your Application</div>
+          <div class="flex items-center gap-2 text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-500/10 px-2 py-1 rounded">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            Running Real Code
+          </div>
+        </div>
+        
         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Executes For Real</h3>
 
-        <div class="flex justify-center gap-4 flex-wrap">
-          <div class="px-4 py-2 bg-white dark:bg-[#0A0A0C] border border-emerald-100 dark:border-white/10 rounded text-sm text-gray-700 dark:text-gray-300 font-medium shadow-sm">
+        <div class="flex justify-start gap-4 flex-wrap">
+          <div class="px-4 py-2 bg-white dark:bg-[#0A0A0C] border border-emerald-100 dark:border-white/10 rounded text-sm text-gray-700 dark:text-gray-300 font-medium shadow-sm flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
             Server Components
           </div>
-          <div class="px-4 py-2 bg-white dark:bg-[#0A0A0C] border border-emerald-100 dark:border-white/10 rounded text-sm text-gray-700 dark:text-gray-300 font-medium shadow-sm">
+          <div class="px-4 py-2 bg-white dark:bg-[#0A0A0C] border border-emerald-100 dark:border-white/10 rounded text-sm text-gray-700 dark:text-gray-300 font-medium shadow-sm flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
             Middleware
           </div>
-          <div class="px-4 py-2 bg-white dark:bg-[#0A0A0C] border border-emerald-100 dark:border-white/10 rounded text-sm text-gray-700 dark:text-gray-300 font-medium shadow-sm">
+          <div class="px-4 py-2 bg-white dark:bg-[#0A0A0C] border border-emerald-100 dark:border-white/10 rounded text-sm text-gray-700 dark:text-gray-300 font-medium shadow-sm flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
             Zod Validation
           </div>
-          <div class="px-4 py-2 bg-white dark:bg-[#0A0A0C] border border-emerald-100 dark:border-white/10 rounded text-sm text-gray-700 dark:text-gray-300 font-medium shadow-sm">
+          <div class="px-4 py-2 bg-white dark:bg-[#0A0A0C] border border-emerald-100 dark:border-white/10 rounded text-sm text-gray-700 dark:text-gray-300 font-medium shadow-sm flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
             Session Cookies
           </div>
         </div>
       </div>
 
       <!-- The Edge Card (1/3 width) -->
-      <div class="p-8 rounded-2xl border border-purple-200 dark:border-purple-500/20 bg-purple-50 dark:bg-purple-500/5 relative overflow-hidden">
+      <div class="p-8 rounded-2xl border border-purple-200 dark:border-purple-500/20 bg-purple-50 dark:bg-purple-500/5 relative overflow-hidden group">
         <div class="absolute top-0 left-0 w-full h-1 bg-purple-500"></div>
+        <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-colors duration-500"></div>
+        
         <div class="text-purple-600 dark:text-purple-400 font-mono text-xs uppercase tracking-widest mb-2 font-bold">The Edge</div>
         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Mocked by Scenarist</h3>
 
         <div class="flex flex-col gap-3 items-center">
-          <div class="px-4 py-2 w-full bg-white dark:bg-[#0A0A0C] border border-dashed border-purple-300 dark:border-purple-500/30 rounded text-sm text-gray-500 dark:text-gray-400">
-            Stripe API
+          <div class="px-4 py-2 w-full bg-white dark:bg-[#0A0A0C] border border-dashed border-purple-300 dark:border-purple-500/30 rounded text-sm text-gray-500 dark:text-gray-400 flex items-center justify-between group-hover:border-purple-400 dark:group-hover:border-purple-500/50 transition-colors">
+            <span>Stripe API</span>
+            <span class="text-xs bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-300 px-1.5 py-0.5 rounded">JSON</span>
           </div>
-          <div class="px-4 py-2 w-full bg-white dark:bg-[#0A0A0C] border border-dashed border-purple-300 dark:border-purple-500/30 rounded text-sm text-gray-500 dark:text-gray-400">
-            Auth0
+          <div class="px-4 py-2 w-full bg-white dark:bg-[#0A0A0C] border border-dashed border-purple-300 dark:border-purple-500/30 rounded text-sm text-gray-500 dark:text-gray-400 flex items-center justify-between group-hover:border-purple-400 dark:group-hover:border-purple-500/50 transition-colors">
+            <span>Auth0</span>
+            <span class="text-xs bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-300 px-1.5 py-0.5 rounded">JWT</span>
           </div>
-          <div class="px-4 py-2 w-full bg-white dark:bg-[#0A0A0C] border border-dashed border-purple-300 dark:border-purple-500/30 rounded text-sm text-gray-500 dark:text-gray-400">
-            SendGrid
+          <div class="px-4 py-2 w-full bg-white dark:bg-[#0A0A0C] border border-dashed border-purple-300 dark:border-purple-500/30 rounded text-sm text-gray-500 dark:text-gray-400 flex items-center justify-between group-hover:border-purple-400 dark:group-hover:border-purple-500/50 transition-colors">
+            <span>SendGrid</span>
+            <span class="text-xs bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-300 px-1.5 py-0.5 rounded">202</span>
           </div>
         </div>
       </div>

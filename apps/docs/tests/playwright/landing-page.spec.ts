@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 /**
  * Landing Page Tests
@@ -36,8 +36,8 @@ test.describe('Landing Page', () => {
     const copyButton = page.locator('#copy-install');
     await copyButton.click();
 
-    // Verify button text changes to "Copied!"
-    await expect(copyButton.getByText('Copied!')).toBeVisible();
+    // Verify button has the copied class (which shows the checkmark)
+    await expect(copyButton).toHaveClass(/copied/);
 
     // Verify clipboard content
     const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
