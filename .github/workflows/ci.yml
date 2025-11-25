@@ -340,9 +340,9 @@ jobs:
       - name: Run production build tests
         run: pnpm --filter=${{ matrix.filter }} test:production
 
-  # Job 7: Docs E2E Tests (verifies landing page and theme switching)
-  docs-e2e-tests:
-    name: Docs E2E Tests
+  # Job 7: Production Build Tests (Docs - verifies landing page and theme switching)
+  docs-production-tests:
+    name: Production Build Tests (Docs)
     needs: setup-and-build
     timeout-minutes: 10
     runs-on: ubuntu-latest
