@@ -37,16 +37,22 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Get installed Playwright version
+      - name: Get installed Playwright versions
         id: playwright-version
-        run: echo "PLAYWRIGHT_VERSION=$(pnpm --filter=@scenarist/docs list playwright --depth=0 | grep playwright | awk '{print $2}')" >> $GITHUB_OUTPUT
+        run: |
+          # Get versions from both docs (mermaid) and example apps (E2E tests)
+          DOCS_VERSION=$(pnpm --filter=@scenarist/docs list playwright --depth=0 | grep playwright | awk '{print $2}')
+          EXAMPLE_VERSION=$(pnpm --filter=@scenarist/nextjs-pages-router-example list @playwright/test --depth=0 | grep @playwright/test | awk '{print $2}')
+          echo "DOCS_VERSION=$DOCS_VERSION" >> $GITHUB_OUTPUT
+          echo "EXAMPLE_VERSION=$EXAMPLE_VERSION" >> $GITHUB_OUTPUT
 
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.PLAYWRIGHT_VERSION }}
+          # Composite key ensures cache invalidates if either version changes
+          key: ${{ runner.os }}-playwright-docs-${{ steps.playwright-version.outputs.DOCS_VERSION }}-example-${{ steps.playwright-version.outputs.EXAMPLE_VERSION }}
 
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
