@@ -1,0 +1,62 @@
+---
+// Split-view code example showing scenario definition and test
+
+const scenarioCode = `<span class="text-gray-600 select-none">1</span>  <span class="text-[#C084FC] font-semibold">const</span> successScenario = &#123;
+<span class="text-gray-600 select-none">2</span>    id: <span class="text-[#34D399]">'payment_success'</span>,
+<span class="text-gray-600 select-none">3</span>    mocks: [&#123;
+<span class="text-gray-600 select-none">4</span>      url: <span class="text-[#34D399]">'https://api.stripe.com/*'</span>,
+<span class="text-gray-600 select-none">5</span>      method: <span class="text-[#34D399]">'POST'</span>,
+<span class="text-gray-600 select-none">6</span>      response: &#123;
+<span class="bg-primary/10 -mx-6 px-6 border-l-2 border-primary block"><span class="text-gray-600 select-none">7</span>        status: <span class="text-[#60A5FA]">200</span>,</span>
+<span class="bg-primary/10 -mx-6 px-6 border-l-2 border-primary block"><span class="text-gray-600 select-none">8</span>        body: &#123; paid: <span class="text-[#C084FC] font-semibold">true</span> &#125;</span>
+<span class="text-gray-600 select-none">9</span>      &#125;
+<span class="text-gray-600 select-none">10</span>   &#125;]
+<span class="text-gray-600 select-none">11</span> &#125;;`;
+
+const testCode = `<span class="text-gray-600 select-none">1</span>  test(<span class="text-[#34D399]">'checkout flow'</span>, <span class="text-[#C084FC] font-semibold">async</span> (&#123; page &#125;) =&gt; &#123;
+<span class="bg-secondary/10 -mx-6 px-6 border-l-2 border-secondary block"><span class="text-gray-600 select-none">2</span>    <span class="text-[#C084FC] font-semibold">await</span> <span class="text-[#60A5FA]">switchScenario</span>(page, <span class="text-[#34D399]">'payment_success'</span>);</span>
+<span class="text-gray-600 select-none">3</span>
+<span class="text-gray-600 select-none">4</span>    <span class="text-gray-500 italic">// Hits real Next.js backend</span>
+<span class="text-gray-600 select-none">5</span>    <span class="text-[#C084FC] font-semibold">await</span> page.<span class="text-[#60A5FA]">goto</span>(<span class="text-[#34D399]">'/checkout'</span>);
+<span class="text-gray-600 select-none">6</span>    <span class="text-[#C084FC] font-semibold">await</span> page.<span class="text-[#60A5FA]">click</span>(<span class="text-[#34D399]">'#pay-button'</span>);
+<span class="text-gray-600 select-none">7</span>
+<span class="text-gray-600 select-none">8</span>    <span class="text-gray-500 italic">// Real DB, Real Middleware, Mocked Stripe</span>
+<span class="text-gray-600 select-none">9</span>    <span class="text-[#C084FC] font-semibold">await</span> expect(page).<span class="text-[#60A5FA]">toHaveURL</span>(<span class="text-[#34D399]">'/success'</span>);
+<span class="text-gray-600 select-none">10</span> &#125;);`;
+---
+
+<section class="relative z-10 px-6 pb-20">
+  <div class="max-w-5xl mx-auto relative">
+    <!-- Glow effect behind the code block -->
+    <div class="absolute -inset-1 bg-gradient-to-r from-primary to-secondary opacity-20 blur-2xl rounded-xl"></div>
+
+    <!-- Code block container -->
+    <div class="relative bg-[#0A0A0C] border border-white/10 rounded-xl overflow-hidden shadow-2xl">
+      <!-- Window header -->
+      <div class="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-white/[0.02]">
+        <div class="flex gap-2">
+          <div class="w-3 h-3 rounded-full bg-[#FF5F56]"></div>
+          <div class="w-3 h-3 rounded-full bg-[#FFBD2E]"></div>
+          <div class="w-3 h-3 rounded-full bg-[#27C93F]"></div>
+        </div>
+        <div class="text-xs font-mono text-gray-500">scenario.ts — checkout.spec.ts</div>
+        <div class="w-10"></div>
+      </div>
+
+      <!-- Split code panels -->
+      <div class="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-white/10">
+        <!-- Left Panel - Define Scenario -->
+        <div class="p-6 font-mono text-sm leading-relaxed overflow-x-auto">
+          <div class="text-gray-500 mb-4 text-xs uppercase tracking-widest font-bold">1. Define Scenario</div>
+          <pre class="text-left text-gray-200"><code set:html={scenarioCode} /></pre>
+        </div>
+
+        <!-- Right Panel - Run Test -->
+        <div class="p-6 font-mono text-sm leading-relaxed overflow-x-auto bg-[#161618]/30">
+          <div class="text-gray-500 mb-4 text-xs uppercase tracking-widest font-bold">2. Run Test</div>
+          <pre class="text-left text-gray-200"><code set:html={testCode} /></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

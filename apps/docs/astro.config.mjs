@@ -1,5 +1,6 @@
 // @ts-check
 import starlight from "@astrojs/starlight";
+import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "astro/config";
 import rehypeMermaid from "rehype-mermaid";
 
@@ -8,6 +9,10 @@ import cloudflare from "@astrojs/cloudflare";
 // https://astro.build/config
 export default defineConfig({
   output: 'static',
+
+  vite: {
+    plugins: [tailwindcss()],
+  },
 
   markdown: {
     syntaxHighlight: {
