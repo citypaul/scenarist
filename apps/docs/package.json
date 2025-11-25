@@ -7,9 +7,12 @@
     "dev": "astro dev",
     "start": "astro dev",
     "build": "astro build",
-    "preview": "astro preview",
+    "preview": "wrangler pages dev dist --port 4321",
     "astro": "astro",
-    "typecheck": "astro check"
+    "typecheck": "astro check",
+    "test": "pnpm pw",
+    "pw": "playwright test --project=chromium",
+    "pw:ui": "playwright test --config=playwright.dev.config.ts --project=chromium --ui"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.10",
@@ -20,6 +23,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.5",
+    "@playwright/test": "^1.56.1",
     "@tailwindcss/vite": "^4.1.17",
     "playwright": "^1.56.1",
     "tailwindcss": "^4.1.17",
