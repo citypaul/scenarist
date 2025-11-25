@@ -56,6 +56,7 @@ const twitterHandle = '@scenarist';
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
   <!-- Theme Color -->
   <meta name="theme-color" content="#8B5CF6" />
@@ -64,27 +65,45 @@ const twitterHandle = '@scenarist';
   <slot />
 
   <script>
-    const getThemePreference = (): string => {
-      if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
-        return localStorage.getItem('theme') as string;
+    type Theme = 'dark' | 'light';
+
+    const isValidTheme = (value: string | null): value is Theme => {
+      return value === 'dark' || value === 'light';
+    };
+
+    const getThemePreference = (): Theme => {
+      if (typeof localStorage !== 'undefined') {
+        const stored = localStorage.getItem('theme');
+        if (isValidTheme(stored)) {
+          return stored;
+        }
       }
       return 'dark';
     };
 
-    const setTheme = (theme: string): void => {
-      if (theme === 'light') {
-        document.documentElement.classList.remove('dark');
-      } else {
+    const updateAriaPressed = (isDark: boolean): void => {
+      const toggle = document.getElementById('theme-toggle');
+      if (toggle) {
+        toggle.setAttribute('aria-pressed', String(isDark));
+      }
+    };
+
+    const setTheme = (theme: Theme): void => {
+      const isDark = theme === 'dark';
+      if (isDark) {
         document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
       }
       localStorage.setItem('theme', theme);
+      updateAriaPressed(isDark);
     };
 
     setTheme(getThemePreference());
 
     document.addEventListener('theme-toggle', () => {
-      const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-      setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+      const isDark = document.documentElement.classList.contains('dark');
+      setTheme(isDark ? 'light' : 'dark');
     });
   </script>
 </body>
