@@ -296,6 +296,6 @@ MIT
 ## Related Packages
 
 - **[@scenarist/core](../core)** - Core scenario management
-- **[@scenarist/msw-adapter](../msw-adapter)** - MSW integration (used internally)
+- **[@scenarist/msw-adapter](../../internal/msw-adapter)** - MSW integration (used internally)
 
 **Note:** The MSW adapter is used internally by this package. Users of `@scenarist/[framework]-adapter` don't need to interact with it directly.

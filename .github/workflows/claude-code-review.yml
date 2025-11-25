@@ -26,12 +26,30 @@ jobs:
       id-token: write
 
     steps:
+      - name: Check if workflow file changed
+        id: workflow-changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Get list of changed files in this PR
+          CHANGED_FILES=$(gh pr diff ${{ github.event.pull_request.number }} --name-only --repo ${{ github.repository }})
+
+          # Check if this workflow file is in the changed files
+          if echo "$CHANGED_FILES" | grep -q "^.github/workflows/claude-code-review.yml$"; then
+            echo "Workflow file changed - skipping Claude review (OAuth validation will fail)"
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Checkout repository
+        if: steps.workflow-changed.outputs.skip != 'true'
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
       - name: Run Claude Code Review
+        if: steps.workflow-changed.outputs.skip != 'true'
         id: claude-review
         uses: anthropics/claude-code-action@v1
         with:
@@ -48,7 +66,7 @@ jobs:
             Review testing approach against `docs/testing-guidelines.md` and `docs/adrs/0003-testing-strategy.md`.
 
             **CRITICAL: Library vs Example Apps**
-            - **Library Code (`packages/*`)**: Strict hexagonal architecture - enforce ALL rules below
+            - **Library Code (`packages/*` and `internal/*`)**: Strict hexagonal architecture - enforce ALL rules below
             - **Example Apps (`apps/*`)**: Demonstration/testing applications showing real-world Scenarist usage
               - These are NOT library code - they're realistic example applications
               - They intentionally use non-hexagonal patterns (direct HTTP calls, framework coupling, imperative code)
@@ -56,7 +74,7 @@ jobs:
               - Focus reviews on: test quality, correct Scenarist usage, production parity demonstration
               - Example apps exist to prove Scenarist works in real frameworks with real patterns
 
-            **Key Architecture Rules to Enforce (packages/* ONLY):**
+            **Key Architecture Rules to Enforce (packages/* and internal/* ONLY):**
             1. Hexagonal Architecture - Core has zero framework dependencies
             2. Serializable Scenarios - No functions in scenario definitions
             3. Dependency Injection - All ports injected, never created internally
@@ -69,14 +87,14 @@ jobs:
             **Your Task:**
             1. Read the PR changes using `gh pr diff ${{ github.event.pull_request.number }}`
             2. Review against the rules in `.claude/review-prompt.md`
-            3. For `packages/*` changes: Check for violations of hexagonal architecture, serialization, dependency injection
+            3. For `packages/*` and `internal/*` changes: Check for violations of hexagonal architecture, serialization, dependency injection
             4. For `apps/*` changes: Focus on test quality, correct Scenarist usage, realistic integration patterns
             5. Verify test coverage follows appropriate strategy (four-layer for library, E2E for examples)
             6. Ensure tests verify behavior, not implementation details
             7. Check that tests are at the correct layer (core vs adapter vs integration vs E2E)
             8. Leave a constructive review comment using `gh pr comment ${{ github.event.pull_request.number }} --body "..."`
 
-            Be specific, reference relevant documentation, and provide examples. For library code (`packages/*`), focus on architecture violations first, then code quality. For example apps (`apps/*`), focus on demonstrating realistic usage patterns and test coverage.
+            Be specific, reference relevant documentation, and provide examples. For library code (`packages/*` and `internal/*`), focus on architecture violations first, then code quality. For example apps (`apps/*`), focus on demonstrating realistic usage patterns and test coverage.
 
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://docs.claude.com/en/docs/claude-code/cli-reference for available options

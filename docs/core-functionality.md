@@ -1199,7 +1199,7 @@ const scenarioManager = createScenarioManager({
 ## Related Documentation
 
 - [Express Adapter README](../packages/express-adapter/README.md) - Express-specific usage
-- [MSW Adapter README](../packages/msw-adapter/README.md) - MSW integration details
+- [MSW Adapter README](../internal/msw-adapter/README.md) - MSW integration details (internal)
 - [Dynamic Responses Plan](./plans/dynamic-responses.md) - Complete implementation plan
 - [ADR-0002: Dynamic Response System](./adrs/0002-dynamic-response-system.md) - Architectural decisions
 

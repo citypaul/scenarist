@@ -387,7 +387,7 @@ Scenarist implements **identical weak comparison semantics** for MSW compatibili
 
 ### Implementation Notes
 
-**URL matching implementation** (`packages/msw-adapter/src/matching/url-matcher.ts`):
+**URL matching implementation** (`internal/msw-adapter/src/matching/url-matcher.ts`):
 
 ```typescript
 // Handle native RegExp patterns
@@ -403,7 +403,7 @@ if (pattern instanceof RegExp) {
 
 Scenarist includes comprehensive tests proving MSW weak comparison compatibility:
 
-**MSW Adapter tests** (`packages/msw-adapter/tests/url-matcher.test.ts`):
+**MSW Adapter tests** (`internal/msw-adapter/tests/url-matcher.test.ts`):
 - Cross-origin matching (same pattern, different domains)
 - Partial path matching (substring in any position)
 - Query parameter support
