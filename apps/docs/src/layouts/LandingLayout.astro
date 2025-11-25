@@ -20,19 +20,18 @@ const { title, description } = Astro.props;
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 </head>
-<body class="bg-[#030304] text-white font-sans antialiased selection:bg-primary/20 selection:text-primary">
+<body class="bg-white dark:bg-[#030304] text-gray-900 dark:text-white font-sans antialiased transition-colors duration-200">
   <slot />
 
   <script>
-    // Theme toggle functionality
-    const getThemePreference = () => {
+    const getThemePreference = (): string => {
       if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
-        return localStorage.getItem('theme');
+        return localStorage.getItem('theme') as string;
       }
-      return 'dark'; // Default to dark for landing page
+      return 'dark';
     };
 
-    const setTheme = (theme: string) => {
+    const setTheme = (theme: string): void => {
       if (theme === 'light') {
         document.documentElement.classList.remove('dark');
       } else {
@@ -41,10 +40,8 @@ const { title, description } = Astro.props;
       localStorage.setItem('theme', theme);
     };
 
-    // Initialize theme
-    setTheme(getThemePreference() || 'dark');
+    setTheme(getThemePreference());
 
-    // Listen for theme toggle events
     document.addEventListener('theme-toggle', () => {
       const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
       setTheme(currentTheme === 'dark' ? 'light' : 'dark');

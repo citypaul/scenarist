@@ -2,19 +2,19 @@
 // Glass navigation with logo, links, and CTA
 ---
 
-<nav class="fixed w-full z-50 bg-[#0A0A0C]/70 backdrop-blur-[12px] border-b border-white/5">
+<nav class="fixed w-full z-50 bg-white/80 dark:bg-[#0A0A0C]/70 backdrop-blur-[12px] border-b border-gray-200 dark:border-white/5 transition-colors">
   <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
     <!-- Logo -->
     <a href="/" class="flex items-center gap-2">
       <div class="w-4 h-4 bg-primary rounded-full shadow-[0_0_10px_rgba(139,92,246,0.5)]"></div>
-      <span class="font-bold tracking-tight text-lg text-white">Scenarist</span>
+      <span class="font-bold tracking-tight text-lg text-gray-900 dark:text-white">Scenarist</span>
     </a>
 
     <!-- Navigation Links -->
     <div class="flex items-center gap-6 text-sm font-medium">
       <a
         href="/introduction/quick-start"
-        class="text-gray-400 hover:text-primary transition"
+        class="text-gray-600 dark:text-gray-400 hover:text-primary transition"
       >
         Docs
       </a>
@@ -22,7 +22,7 @@
         href="https://github.com/citypaul/scenarist"
         target="_blank"
         rel="noopener noreferrer"
-        class="text-gray-400 hover:text-primary transition"
+        class="text-gray-600 dark:text-gray-400 hover:text-primary transition"
       >
         GitHub
       </a>
@@ -30,19 +30,23 @@
       <!-- Theme Toggle Button -->
       <button
         id="theme-toggle"
-        class="p-2 rounded-lg text-gray-400 hover:text-primary transition"
+        class="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-primary transition"
         aria-label="Toggle theme"
       >
-        <!-- Sun icon -->
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <!-- Sun icon (shown in dark mode) -->
+        <svg class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+        </svg>
+        <!-- Moon icon (shown in light mode) -->
+        <svg class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
         </svg>
       </button>
 
       <!-- Get Started CTA -->
       <a
         href="/introduction/quick-start"
-        class="bg-white text-black px-4 py-1.5 rounded-full hover:opacity-90 transition font-semibold shadow-md"
+        class="bg-gray-900 dark:bg-white text-white dark:text-black px-4 py-1.5 rounded-full hover:opacity-90 transition font-semibold shadow-md"
       >
         Get Started
       </a>
