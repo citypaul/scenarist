@@ -65,17 +65,26 @@ const twitterHandle = '@scenarist';
   <slot />
 
   <script>
+    // Sync with Starlight's theme system using the same storage key
     type Theme = 'dark' | 'light';
+    const STORAGE_KEY = 'starlight-theme';
 
     const isValidTheme = (value: string | null): value is Theme => {
       return value === 'dark' || value === 'light';
     };
 
+    const getPreferredColorScheme = (): Theme =>
+      window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+
     const getThemePreference = (): Theme => {
       if (typeof localStorage !== 'undefined') {
-        const stored = localStorage.getItem('theme');
+        const stored = localStorage.getItem(STORAGE_KEY);
         if (isValidTheme(stored)) {
           return stored;
+        }
+        // Empty string or null means 'auto' in Starlight - use system preference
+        if (stored === '' || stored === null) {
+          return getPreferredColorScheme();
         }
       }
       return 'dark';
@@ -95,11 +104,20 @@ const twitterHandle = '@scenarist';
       } else {
         document.documentElement.classList.remove('dark');
       }
-      localStorage.setItem('theme', theme);
+      // Store in Starlight's format for cross-page sync
+      localStorage.setItem(STORAGE_KEY, theme);
       updateAriaPressed(isDark);
     };
 
     setTheme(getThemePreference());
+
+    // Listen for system theme changes when in 'auto' mode
+    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === '' || stored === null) {
+        setTheme(getPreferredColorScheme());
+      }
+    });
 
     document.addEventListener('theme-toggle', () => {
       const isDark = document.documentElement.classList.contains('dark');
