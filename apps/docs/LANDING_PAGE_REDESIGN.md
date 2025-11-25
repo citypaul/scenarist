@@ -1,7 +1,7 @@
 # Landing Page Redesign Plan
 
 > **Branch:** `feat/docs-landing-page-redesign`
-> **Status:** In Progress
+> **Status:** Complete ✅
 
 ## Overview
 
@@ -40,20 +40,24 @@ Redesign the Scenarist docs site with:
 
 ### Phase 4: Theme Toggle
 - [x] Add dark/light mode toggle to Nav
-- [ ] Test theme switching on landing page
-- [ ] **Checkpoint:** Theme toggle works
+- [x] Configure Tailwind v4 class-based dark mode (`@custom-variant`)
+- [x] Add light mode styles to all landing page components
+- [x] Implement localStorage persistence for theme preference
+- [x] Test theme switching on landing page
+- [x] **Checkpoint:** Theme toggle works ✅
 
 ### Phase 5: Docs Section Styling
 - [x] Apply design tokens to Starlight (header, sidebar)
 - [x] Style code blocks
 - [x] Style links and typography
-- [ ] Test docs pages in both themes
-- [ ] **Checkpoint:** Docs section matches new design
+- [x] Test docs pages in both themes
+- [x] **Checkpoint:** Docs section matches new design ✅
 
 ### Phase 6: Cleanup
 - [x] Delete old `src/content/docs/index.mdx`
-- [ ] Responsive testing (mobile/tablet)
-- [ ] Final polish
+- [x] Responsive testing (mobile/tablet)
+- [x] Final polish
+- [x] **Checkpoint:** Landing page redesign complete ✅
 
 ---
 
