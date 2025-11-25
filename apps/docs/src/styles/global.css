@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+/* Enable class-based dark mode for Tailwind v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Tailwind v4 Theme Configuration */
+@theme {
+  /* Font families */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Dark mode colors (base) */
+  --color-dark-bg: #030304;
+  --color-dark-surface: #0A0A0C;
+  --color-dark-surface-highlight: #161618;
+  --color-dark-border: #27272A;
+
+  /* Light mode colors */
+  --color-light-bg: #ffffff;
+  --color-light-surface: #ffffff;
+  --color-light-surface-highlight: #f3f4f6;
+  --color-light-border: #e4e4e7;
+
+  /* Brand colors */
+  --color-primary: #8B5CF6;
+  --color-primary-dark: #7C3AED;
+  --color-primary-glow: rgba(139, 92, 246, 0.15);
+  --color-secondary: #10B981;
+  --color-secondary-dark: #059669;
+  --color-secondary-glow: rgba(16, 185, 129, 0.15);
+
+  /* Text colors */
+  --color-text-main: #18181b;
+  --color-text-muted: #52525b;
+
+  /* Code syntax colors */
+  --color-code-keyword: #C084FC;
+  --color-code-string: #34D399;
+  --color-code-func: #60A5FA;
+  --color-code-comment: #6B7280;
+}
+
+/* Base styles for landing page */
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    scroll-behavior: smooth;
+  }
+
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Selection styling */
+  ::selection {
+    background-color: var(--color-primary);
+    color: white;
+  }
+
+  /* Light mode selection */
+  :root:not(.dark) ::selection {
+    background-color: rgba(139, 92, 246, 0.2);
+    color: var(--color-primary-dark);
+  }
+}
+
+/* Custom utility classes */
+@layer utilities {
+  .glass {
+    background: rgba(10, 10, 12, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .glass-light {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .text-glow {
+    text-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+  }
+
+  .grid-bg {
+    background-size: 40px 40px;
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+  }
+
+  .grid-bg-light {
+    background-size: 40px 40px;
+    background-image:
+      linear-gradient(to right, #e5e7eb 1px, transparent 1px),
+      linear-gradient(to bottom, #e5e7eb 1px, transparent 1px);
+    mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+  }
+}
+
+/* Code syntax highlighting classes */
+@layer components {
+  .code-keyword {
+    color: var(--color-code-keyword);
+  }
+
+  .code-string {
+    color: var(--color-code-string);
+  }
+
+  .code-func {
+    color: var(--color-code-func);
+  }
+
+  .code-comment {
+    color: var(--color-code-comment);
+  }
+}

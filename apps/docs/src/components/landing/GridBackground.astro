@@ -1,0 +1,29 @@
+---
+// Grid background with radial fade - decorative component
+---
+
+<!-- Light mode grid -->
+<div class="fixed inset-0 -z-10 pointer-events-none dark:hidden">
+  <div
+    class="absolute inset-0 opacity-20"
+    style="
+      background-size: 40px 40px;
+      background-image: linear-gradient(to right, #d1d5db 1px, transparent 1px),
+                        linear-gradient(to bottom, #d1d5db 1px, transparent 1px);
+      mask-image: radial-gradient(circle at center, black 10%, transparent 60%);
+    "
+  ></div>
+</div>
+
+<!-- Dark mode grid -->
+<div class="fixed inset-0 -z-10 pointer-events-none hidden dark:block">
+  <div
+    class="absolute inset-0 opacity-20"
+    style="
+      background-size: 40px 40px;
+      background-image: linear-gradient(to right, #1f1f1f 1px, transparent 1px),
+                        linear-gradient(to bottom, #1f1f1f 1px, transparent 1px);
+      mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+    "
+  ></div>
+</div>

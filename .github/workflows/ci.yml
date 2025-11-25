@@ -37,6 +37,30 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Get installed Playwright versions
+        id: playwright-version
+        run: |
+          # Get versions from both docs (mermaid) and example apps (E2E tests)
+          DOCS_VERSION=$(pnpm --filter=@scenarist/docs list playwright --depth=0 | grep playwright | awk '{print $2}')
+          EXAMPLE_VERSION=$(pnpm --filter=@scenarist/nextjs-pages-router-example list @playwright/test --depth=0 | grep @playwright/test | awk '{print $2}')
+          echo "DOCS_VERSION=$DOCS_VERSION" >> $GITHUB_OUTPUT
+          echo "EXAMPLE_VERSION=$EXAMPLE_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          # Composite key ensures cache invalidates if either version changes
+          key: ${{ runner.os }}-playwright-docs-${{ steps.playwright-version.outputs.DOCS_VERSION }}-example-${{ steps.playwright-version.outputs.EXAMPLE_VERSION }}
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: |
+          # Install for docs (mermaid rendering) and app examples (E2E tests)
+          pnpm --filter=@scenarist/docs exec playwright install --with-deps chromium
+          pnpm --filter=@scenarist/nextjs-pages-router-example exec playwright install chromium
+
       - name: Restore Turborepo cache
         uses: actions/cache/restore@v4
         with:
@@ -48,21 +72,6 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Get installed Playwright version
-        id: playwright-version
-        run: echo "PLAYWRIGHT_VERSION=$(pnpm --filter=@scenarist/nextjs-pages-router-example list @playwright/test --depth=0 | grep @playwright/test | awk '{print $2}')" >> $GITHUB_OUTPUT
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.PLAYWRIGHT_VERSION }}
-
-      - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm --filter=@scenarist/nextjs-pages-router-example exec playwright install --with-deps chromium
-
       - name: Cache build artifacts
         uses: actions/cache/save@v4
         with:
@@ -73,6 +82,7 @@ jobs:
             packages/*/node_modules
             apps/*/node_modules
             apps/*/.next
+            apps/docs/dist
             ~/.cache/ms-playwright
             pnpm-lock.yaml
           key: build-${{ github.sha }}
@@ -113,6 +123,7 @@ jobs:
             packages/*/node_modules
             apps/*/node_modules
             apps/*/.next
+            apps/docs/dist
             ~/.cache/ms-playwright
             pnpm-lock.yaml
           key: build-${{ github.sha }}
@@ -159,6 +170,7 @@ jobs:
             packages/*/node_modules
             apps/*/node_modules
             apps/*/.next
+            apps/docs/dist
             ~/.cache/ms-playwright
             pnpm-lock.yaml
           key: build-${{ github.sha }}
@@ -216,6 +228,7 @@ jobs:
             packages/*/node_modules
             apps/*/node_modules
             apps/*/.next
+            apps/docs/dist
             ~/.cache/ms-playwright
             pnpm-lock.yaml
           key: build-${{ github.sha }}
@@ -262,6 +275,7 @@ jobs:
             packages/*/node_modules
             apps/*/node_modules
             apps/*/.next
+            apps/docs/dist
             ~/.cache/ms-playwright
             pnpm-lock.yaml
           key: build-${{ github.sha }}
@@ -317,6 +331,7 @@ jobs:
             packages/*/node_modules
             apps/*/node_modules
             apps/*/.next
+            apps/docs/dist
             ~/.cache/ms-playwright
             pnpm-lock.yaml
           key: build-${{ github.sha }}
@@ -324,3 +339,44 @@ jobs:
 
       - name: Run production build tests
         run: pnpm --filter=${{ matrix.filter }} test:production
+
+  # Job 7: Production Build Tests (Docs - verifies landing page and theme switching)
+  docs-production-tests:
+    name: Production Build Tests (Docs)
+    needs: setup-and-build
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+
+      - name: Restore build artifacts
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .turbo
+            node_modules
+            packages/*/dist
+            packages/*/node_modules
+            apps/*/node_modules
+            apps/*/.next
+            apps/docs/dist
+            ~/.cache/ms-playwright
+            pnpm-lock.yaml
+          key: build-${{ github.sha }}
+          fail-on-cache-miss: true
+
+      - name: Run docs E2E tests
+        run: pnpm --filter=@scenarist/docs test

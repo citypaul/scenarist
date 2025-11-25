@@ -1,0 +1,128 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+  image?: string;
+  canonicalUrl?: string;
+}
+
+const {
+  title,
+  description,
+  image = '/og-image.png',
+  canonicalUrl = Astro.url.href,
+} = Astro.props;
+
+const siteName = 'Scenarist';
+const twitterHandle = '@scenarist';
+---
+
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Primary Meta Tags -->
+  <title>{title}</title>
+  <meta name="title" content={title} />
+  <meta name="description" content={description} />
+  <meta name="keywords" content="testing, e2e testing, playwright, msw, mock service worker, server components, next.js, express, api testing, backend testing, scenario testing" />
+  <meta name="author" content="Scenarist" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href={canonicalUrl} />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content={canonicalUrl} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:image" content={image} />
+  <meta property="og:site_name" content={siteName} />
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:url" content={canonicalUrl} />
+  <meta property="twitter:title" content={title} />
+  <meta property="twitter:description" content={description} />
+  <meta property="twitter:image" content={image} />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Theme Color -->
+  <meta name="theme-color" content="#8B5CF6" />
+</head>
+<body class="bg-white dark:bg-[#030304] text-gray-900 dark:text-white font-sans antialiased transition-colors duration-200">
+  <slot />
+
+  <script>
+    // Sync with Starlight's theme system using the same storage key
+    type Theme = 'dark' | 'light';
+    const STORAGE_KEY = 'starlight-theme';
+
+    const isValidTheme = (value: string | null): value is Theme => {
+      return value === 'dark' || value === 'light';
+    };
+
+    const getPreferredColorScheme = (): Theme =>
+      window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+
+    const getThemePreference = (): Theme => {
+      if (typeof localStorage !== 'undefined') {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (isValidTheme(stored)) {
+          return stored;
+        }
+        // Empty string or null means 'auto' in Starlight - use system preference
+        if (stored === '' || stored === null) {
+          return getPreferredColorScheme();
+        }
+      }
+      return 'dark';
+    };
+
+    const updateAriaPressed = (isDark: boolean): void => {
+      const toggle = document.getElementById('theme-toggle');
+      if (toggle) {
+        toggle.setAttribute('aria-pressed', String(isDark));
+      }
+    };
+
+    const setTheme = (theme: Theme): void => {
+      const isDark = theme === 'dark';
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      // Store in Starlight's format for cross-page sync
+      localStorage.setItem(STORAGE_KEY, theme);
+      updateAriaPressed(isDark);
+    };
+
+    setTheme(getThemePreference());
+
+    // Listen for system theme changes when in 'auto' mode
+    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === '' || stored === null) {
+        setTheme(getPreferredColorScheme());
+      }
+    });
+
+    document.addEventListener('theme-toggle', () => {
+      const isDark = document.documentElement.classList.contains('dark');
+      setTheme(isDark ? 'light' : 'dark');
+    });
+  </script>
+</body>
+</html>
