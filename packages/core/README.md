@@ -1,5 +1,12 @@
 # @scenarist/core
 
+> **Note:** This is an internal package. Users should install framework-specific adapters instead:
+> - **Express:** `@scenarist/express-adapter`
+> - **Next.js:** `@scenarist/nextjs-adapter`
+> - **Playwright:** `@scenarist/playwright-helpers`
+>
+> All types are re-exported from adapters for convenience. See the [full documentation](https://scenarist.io) for usage guides.
+
 The core domain logic for Scenarist - a framework-agnostic library for managing MSW mock scenarios in E2E testing environments.
 
 ## What is Scenarist?
@@ -758,9 +765,8 @@ export const createScenarist = <T extends ScenaristScenarios>(
 
 ## Contributing
 
-Follow the TDD workflow:
-1. **RED**: Write a failing test
-2. **GREEN**: Write minimum code to pass
-3. **REFACTOR**: Improve code structure
+See [CONTRIBUTING.md](../../CONTRIBUTING.md) for development setup and guidelines.
 
-See the root `CLAUDE.md` for detailed development guidelines.
+## License
+
+MIT
