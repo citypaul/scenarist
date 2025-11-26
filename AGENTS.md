@@ -11,7 +11,7 @@
 - **Build**: `pnpm build` (all) | `pnpm build --filter=@scenarist/core` (package)
 - **Test**: `pnpm test` (all) | `cd packages/core && pnpm test scenario-manager.test.ts` (single file) | `pnpm test:watch` (watch)
 - **Coverage**: `cd packages/[name] && pnpm exec vitest run --coverage` (100% required)
-- **Lint**: `pnpm lint` | **Format**: `pnpm format` | **Types**: `pnpm check-types`
+- **Lint**: `pnpm lint` | **Format**: `pnpm format` | **Types**: `pnpm typecheck`
 
 ## TDD (NON-NEGOTIABLE)
 

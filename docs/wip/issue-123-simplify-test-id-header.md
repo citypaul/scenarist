@@ -56,7 +56,7 @@
 ### 1.6 Verify Core
 
 - [ ] Run: `pnpm --filter=@scenarist/core test`
-- [ ] Run: `pnpm --filter=@scenarist/core check-types`
+- [ ] Run: `pnpm --filter=@scenarist/core typecheck`
 
 ---
 
@@ -86,7 +86,7 @@
 ### 2.3 Verify Express Adapter
 
 - [ ] Run: `pnpm --filter=@scenarist/express-adapter test`
-- [ ] Run: `pnpm --filter=@scenarist/express-adapter check-types`
+- [ ] Run: `pnpm --filter=@scenarist/express-adapter typecheck`
 
 ---
 
@@ -141,7 +141,7 @@
 ### 3.5 Verify Next.js Adapter
 
 - [ ] Run: `pnpm --filter=@scenarist/nextjs-adapter test`
-- [ ] Run: `pnpm --filter=@scenarist/nextjs-adapter check-types`
+- [ ] Run: `pnpm --filter=@scenarist/nextjs-adapter typecheck`
 
 ---
 
@@ -166,7 +166,7 @@
 ### 4.4 Verify Playwright Helpers
 
 - [ ] Run: `pnpm --filter=@scenarist/playwright-helpers test`
-- [ ] Run: `pnpm --filter=@scenarist/playwright-helpers check-types`
+- [ ] Run: `pnpm --filter=@scenarist/playwright-helpers typecheck`
 
 ---
 
@@ -305,7 +305,7 @@
 
 - [ ] `pnpm build` - All packages build
 - [ ] `pnpm test` - All 314+ tests pass
-- [ ] `pnpm check-types` - No TypeScript errors
+- [ ] `pnpm typecheck` - No TypeScript errors
 - [ ] `pnpm lint` - No lint errors
 - [ ] `grep -r "x-scenarist-test-id" --include="*.ts" --include="*.tsx"` - No remaining references (except migration docs)
 - [ ] `grep -r "headers\.testId" --include="*.ts"` - No remaining references

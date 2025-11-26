@@ -4,7 +4,7 @@
 
 Test your complete application—business logic, database queries, API routes—while mocking only external third-party APIs. Built on MSW with runtime scenario management and parallel test isolation.
 
-Works with Express, Fastify, Next.js, Remix, tRPC, and any Node.js framework.
+Adapter-based architecture with Express and Next.js adapters available.
 
 [![Build Status](https://img.shields.io/github/workflow/status/citypaul/scenarist/CI)](https://github.com/citypaul/scenarist/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -33,27 +33,14 @@ Testing full-stack applications is hard:
 ✅ **Only external APIs are mocked** - Stripe, Auth0, SendGrid, AWS—mock only what you don't control
 ✅ **Switch scenarios instantly** - Test success, errors, edge cases without restarting your app
 ✅ **Parallel tests that don't conflict** - 100 tests running different scenarios simultaneously
-✅ **Framework agnostic** - Works with any Node.js application
+✅ **Adapter architecture** - Express and Next.js adapters available
 
-### Works With Any Node.js Framework
+### Framework Support
 
-**Backend Frameworks:**
+**Available Adapters:**
 
-- **Express** - Routes, middleware, error handlers
-- **Fastify** - Plugins, routes, hooks
-- **Hono** - Lightweight edge runtime compatible
-- **Koa** - Middleware and context
-
-**Full-Stack Frameworks:**
-
-- **Next.js** - Server Components, Server Actions, App Router, API Routes
-- **Remix** - Loaders, actions, server-side rendering
-- **SvelteKit** - Load functions, form actions
-- **tRPC** - End-to-end type-safe procedures
-
-**Any Node.js App:**
-
-- REST APIs, GraphQL servers, microservices, serverless functions
+- **Express** - Full adapter with routes, middleware, error handlers
+- **Next.js** - Full adapter for App Router + Pages Router, Server Components, Server Actions, API Routes
 
 ### Real Application, Real Tests
 
@@ -191,14 +178,14 @@ test("user B sees error", async ({ page }) => {
 app.use((req, res, next) => {
   if (req.headers["mock-scenario"] === "error") {
     // Express-specific implementation
-    // Can't reuse in Fastify, Hono, Koa, etc.
+    // Can't reuse across different frameworks
   }
 });
 ```
 
 **Problems:**
 
-- 🔒 Locked into one framework
+- 🔒 Locked into one framework's request/response model
 - 🔄 Code duplication across projects
 - 📦 Can't extract to shared library
 
@@ -250,7 +237,7 @@ app.use((req, res, next) => {
                                                                     │
                                                                     ▼
                                                             Your Application
-                                                        (Express, Fastify, etc.)
+                                                          (Express, Next.js)
 ```
 
 ### How It Works
@@ -288,7 +275,7 @@ test("payment fails", async ({ page }) => {
 
 ### 🚀 True End-to-End Integration Testing
 
-Your complete application stack executes—frontend, backend, database, business logic. Test the real user experience, not mocked simulations. Perfect for Next.js Server Components, Remix loaders, tRPC procedures, and any full-stack architecture.
+Your complete application stack executes—frontend, backend, database, business logic. Test the real user experience, not mocked simulations. Perfect for Next.js Server Components, Express routes, and any Node.js application.
 
 ### 🎯 Test Isolation with Parallel Execution
 
@@ -304,7 +291,7 @@ Mock third-party services (Stripe, Auth0, SendGrid, AWS) while your application 
 
 ### 🏗️ Framework Agnostic Architecture
 
-Built with hexagonal architecture (ports & adapters). Works with Express, Fastify, Next.js, Remix, and any Node.js framework. One library for your entire stack.
+Built with hexagonal architecture (ports & adapters). First-class adapters for Express and Next.js, with the core scenario management working at the HTTP level via MSW. One library for your entire stack.
 
 ### 📦 Type-Safe with Full TypeScript Support
 
@@ -369,9 +356,8 @@ Scenarist uses **Hexagonal Architecture** (Ports & Adapters) for maximum flexibi
         │  Drive the application   │   │  Driven by core        │
         │                          │   │                        │
         │  • Express Middleware    │   │  • InMemoryStore       │
-        │  • Fastify Plugin        │   │  • RedisStore (future) │
-        │  • Koa Middleware        │   │                        │
-        │  • Hono Middleware       │   │                        │
+        │  • Next.js Adapter       │   │  • RedisStore (future) │
+        │  • (More coming soon)    │   │                        │
         │                          │   │                        │
         └──────────────────────────┘   └────────────────────────┘
 ```
@@ -381,7 +367,7 @@ Scenarist uses **Hexagonal Architecture** (Ports & Adapters) for maximum flexibi
 **Technology Independence**
 
 - ✅ Core logic has zero framework dependencies
-- ✅ Swap Express for Fastify without changing core
+- ✅ Add new framework adapters without changing core
 - ✅ Test domain logic without HTTP frameworks
 
 **Clear Boundaries**
@@ -905,7 +891,7 @@ async function switchScenario(page: Page, scenario: string) {
 
 ✅ **Test Real Application Behavior**
 
-- Your Express/Next.js/Remix code actually runs—no fake mocks
+- Your Express/Next.js code actually runs—no fake mocks
 - Database queries, middleware, routing—all execute normally
 - Only external APIs are mocked
 - Catch integration bugs where components interact
@@ -924,8 +910,8 @@ async function switchScenario(page: Page, scenario: string) {
 
 ✅ **Framework Flexibility**
 
-- Learn once, use with any framework
-- Move from Express to Fastify? Tests work unchanged
+- Learn once, use with Express and Next.js
+- Extensible architecture for additional frameworks
 - Future-proof your testing strategy
 
 ### For Engineering Teams
@@ -958,9 +944,9 @@ async function switchScenario(page: Page, scenario: string) {
 
 ✅ **Supports Modern Full-Stack Frameworks**
 
-- Built for Next.js App Router, Remix, SvelteKit
+- Full support for Next.js App Router and Pages Router
 - Works with tRPC, GraphQL, REST
-- Traditional backends (Express, Fastify) too
+- Full support for Express
 
 ✅ **Open Source & Extensible**
 
@@ -1066,39 +1052,11 @@ pnpm test:watch
 
 ### Areas for Contribution
 
-- 🔌 **Framework Adapters** - Fastify, Koa, Hono, Next.js
+- 🔌 **Framework Adapters** - Fastify, Hono, Koa, Remix (see existing adapters as patterns)
 - 💾 **Storage Adapters** - Redis, PostgreSQL, DynamoDB
 - 📚 **Documentation** - Examples, tutorials, blog posts
 - 🐛 **Bug Fixes** - Check our [issues](https://github.com/citypaul/scenarist/issues)
 - ✨ **Features** - See existing packages for patterns
-
----
-
-## Roadmap
-
-### v1.x - Framework Adapters ✅
-
-- ✅ Express adapter
-- ✅ Next.js adapter (App Router + Pages Router)
-- ✅ Playwright helpers
-- 🔜 Fastify adapter
-- 🔜 Koa adapter
-- 🔜 Hono adapter
-
-### v2.x - Distributed Testing
-
-- 🔮 Redis-based ScenarioStore
-- 🔮 Scenario recording/replay
-- 🔮 Visual scenario debugger
-
-### v3.x - Advanced Features
-
-- 🔮 AI-powered scenario generation
-- 🔮 OpenAPI → Scenario conversion
-- 🔮 Performance regression detection
-- 🔮 Contract testing integration
-
-See our [full roadmap](./docs/roadmap.md) for details.
 
 ---
 
@@ -1107,7 +1065,7 @@ See our [full roadmap](./docs/roadmap.md) for details.
 ### 🛒 E-Commerce: Test Checkout with Payment Provider Scenarios
 
 ```typescript
-// Your real Express API runs (or Next.js, Fastify, etc.)
+// Your real Express or Next.js API runs
 // Only Stripe API is mocked
 
 test('successful purchase flow', async ({ request }) => {
@@ -1140,7 +1098,7 @@ test('3D Secure required flow', async ({ request }) => {
 ### 🔐 Auth: Test Login/Signup with Auth Provider Scenarios
 
 ```typescript
-// Your real Remix auth routes run
+// Your real Express or Next.js auth routes run
 // Only Auth0/Clerk API is mocked
 
 test("successful OAuth login", async ({ page }) => {
@@ -1162,7 +1120,7 @@ test("email verification flow", async ({ page }) => {
 ### 📧 Transactional Emails: Test Email Sending Scenarios
 
 ```typescript
-// Your real tRPC procedure runs
+// Your real Express or Next.js API runs
 // Only SendGrid/Resend API is mocked
 
 test("welcome email sent successfully", async ({ page }) => {
@@ -1226,7 +1184,7 @@ test("enterprise SSO login", async ({ page }) => {
 
 **Q: Does my application really run, or is it mocked?**
 
-A: **Your application really runs!** Whether it's Express routes, Next.js Server Components, Remix loaders, or Fastify handlers—all your application code executes normally. Only external API calls (Stripe, Auth0, AWS, etc.) are mocked by MSW. This is true integration testing.
+A: **Your application really runs!** Whether it's Express routes or Next.js Server Components—all your application code executes normally. Only external API calls (Stripe, Auth0, AWS, etc.) are mocked by MSW. This is true integration testing.
 
 **Q: Does this work with Express APIs?**
 
@@ -1238,7 +1196,7 @@ A: MSW provides HTTP mocking. Scenarist adds:
 
 - **Runtime scenario switching** (no app restarts)
 - **Test isolation** via test IDs (parallel tests don't conflict)
-- **Framework adapters** (Express, Fastify, Next.js, etc.)
+- **Framework adapters** (Express, Next.js)
 - **Type-safe scenario management** (TypeScript first)
 
 Think of it as MSW + scenario management + test orchestration.
@@ -1247,9 +1205,9 @@ Think of it as MSW + scenario management + test orchestration.
 
 A: Yes! Scenarist works perfectly with Next.js 13+ App Router, Server Components, Server Actions, and the Pages Router. Your React Server Components execute normally, only external API calls are intercepted.
 
-**Q: Does this work with Remix loaders and actions?**
+**Q: Does this work with Remix, Fastify, or other frameworks?**
 
-A: Absolutely! Your Remix loaders and actions run on the server as normal. External API calls within those functions are mocked based on the active scenario.
+A: We currently provide adapters for Express and Next.js. More are planned.
 
 **Q: What about tRPC? Does my tRPC router execute?**
 

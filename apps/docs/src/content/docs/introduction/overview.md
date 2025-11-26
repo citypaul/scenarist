@@ -343,7 +343,7 @@ Benefits:
 - Framework-specific adapters handle integration
 - Switching frameworks doesn't require rewriting scenarios
 
-Supported frameworks: Express, Next.js (Pages and App Router), Fastify, and others.
+Supported frameworks: Express and Next.js (Pages and App Router). Additional adapters planned.
 
 [Learn about the architecture →](/concepts/architecture)
 

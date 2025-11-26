@@ -1,6 +1,6 @@
 # Core Functionality
 
-This document explains Scenarist's core domain logic, independent of any specific framework or adapter. Understanding these concepts is essential for working with Scenarist effectively, regardless of which adapter (Express, Fastify, etc.) you're using.
+This document explains Scenarist's core domain logic, independent of any specific framework or adapter. Understanding these concepts is essential for working with Scenarist effectively, regardless of which adapter (Express, Next.js, etc.) you're using.
 
 ## Table of Contents
 
@@ -20,7 +20,7 @@ This document explains Scenarist's core domain logic, independent of any specifi
 
 ## Overview
 
-Scenarist's core functionality is implemented in `@scenarist/core`, which contains zero framework dependencies. All domain logic lives here, ensuring consistent behavior across all adapters (Express, Fastify, Next.js, etc.).
+Scenarist's core functionality is implemented in `@scenarist/core`, which contains zero framework dependencies. All domain logic lives here, ensuring consistent behavior across all adapters (Express, Next.js, etc.).
 
 **Key Principle:** The core defines **what** happens (business logic), while adapters define **how** it happens in specific frameworks.
 
@@ -1031,7 +1031,6 @@ app.get('/api/products', async (req, res) => {
 
 **Frameworks using this pattern:**
 - Express
-- Future: Fastify (with middleware support)
 
 #### Pattern 2: Manual Forwarding (Next.js)
 
@@ -1144,10 +1143,10 @@ Scenarist uses hexagonal architecture to remain framework-agnostic:
         ┌───────────┴───────────┐
         │                       │
 ┌───────▼─────────┐   ┌────────▼──────────┐
-│  Express Adapter│   │  Fastify Adapter  │
-│                 │   │     (future)      │
-│  • Middleware   │   │  • Plugin         │
-│  • Endpoints    │   │  • Hooks          │
+│  Express Adapter│   │  Next.js Adapter  │
+│                 │   │                   │
+│  • Middleware   │   │  • App Router     │
+│  • Endpoints    │   │  • Pages Router   │
 └─────────────────┘   └───────────────────┘
 ```
 

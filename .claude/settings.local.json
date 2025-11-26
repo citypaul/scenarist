@@ -17,11 +17,12 @@
       "Bash(pnpm build:*)",
       "Bash(pnpm test:*)",
       "Bash(mv:*)",
-      "Bash(pnpm check-types:*)",
+      "Bash(pnpm typecheck:*)",
       "Bash(pnpm lint:*)",
       "Bash(git fetch:*)",
       "Bash(git rebase:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []

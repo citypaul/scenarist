@@ -848,7 +848,7 @@ All tests must pass before merging:
 pnpm build        # Build all packages
 pnpm test         # Run all tests
 pnpm lint         # Lint all packages
-pnpm check-types  # TypeScript type checking
+pnpm typecheck    # TypeScript type checking
 ```
 
 See `.github/workflows/` for full CI configuration.

@@ -96,7 +96,7 @@ Each ticket should be completed through multiple small commits, not one large co
 2. **Incremental commits**: One logical change per commit
 3. **Each commit must**:
    - Pass all tests (`pnpm test`)
-   - Pass type checking (`pnpm check-types`)
+   - Pass type checking (`pnpm typecheck`)
    - Pass linting (`pnpm lint`)
    - Be independently revertable
 
@@ -292,7 +292,7 @@ If you encounter merge conflicts:
 
 - [ ] All commits follow message format
 - [ ] All tests pass (`pnpm test`)
-- [ ] Type checking passes (`pnpm check-types`)
+- [ ] Type checking passes (`pnpm typecheck`)
 - [ ] Linting passes (`pnpm lint`)
 - [ ] Acceptance criteria from ticket verified
 - [ ] PR description includes plan and "Closes #XXX"
