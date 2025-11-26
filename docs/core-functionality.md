@@ -45,7 +45,7 @@ A **Scenario** is a complete set of mock API responses representing a specific a
 
 ### Test ID
 
-A **Test ID** is a unique identifier for each test execution, passed via the `x-scenarist-test-id` header (configurable). Test IDs enable parallel test isolation - 100 tests can run simultaneously with different scenarios without conflicts.
+A **Test ID** is a unique identifier for each test execution, passed via the `x-scenarist-test-id` header (configurable). Test IDs enable parallel test isolation - tests can run simultaneously with different scenarios without conflicts.
 
 **How it works:**
 ```typescript

@@ -32,7 +32,7 @@ Testing full-stack applications is hard:
 ✅ **Your application code runs** - Express routes, business logic, database queries, middleware
 ✅ **Only external APIs are mocked** - Stripe, Auth0, SendGrid, AWS—mock only what you don't control
 ✅ **Switch scenarios instantly** - Test success, errors, edge cases without restarting your app
-✅ **Parallel tests that don't conflict** - 100 tests running different scenarios simultaneously
+✅ **Parallel tests that don't conflict** - tests run simultaneously with different scenarios
 ✅ **Adapter architecture** - Express and Next.js adapters available
 
 ### Framework Support
@@ -142,7 +142,7 @@ test("payment fails", async ({ page }) => {
 
 **Problems:**
 
-- ⏰ Slow tests - restarting adds 5-10 seconds per test
+- ⏰ Slow tests - restarting the server for each scenario
 - 🐛 Flaky tests - startup timing issues
 - 💸 Expensive CI - more compute time
 
@@ -283,7 +283,7 @@ Each test gets its own isolated scenario via unique test IDs. Run 100+ tests in 
 
 ### ⚡ Instant Scenario Switching (No Restarts)
 
-Switch between mock scenarios in <100ms without restarting your application. What took 60 seconds with app restarts now takes 6 seconds. **10x faster test suites.**
+Switch between mock scenarios instantly without restarting your application. No more slow restarts between scenarios.
 
 ### 🎭 Mock External APIs Only
 
@@ -768,100 +768,46 @@ test("my test", async ({ page, switchScenario }) => {
 
 See the [Playwright Helpers Documentation](./packages/playwright-helpers/README.md) for complete usage.
 
-### Other Frameworks (Coming Soon)
-
-Scenarist's hexagonal architecture makes it easy to create adapters for any framework:
-
-- **Fastify** - Coming soon
-- **Koa** - Coming soon
-- **Hono** - Coming soon
-
-Contributions welcome! See the existing adapters as reference implementations.
-
 ---
 
-## Real-World Example
+## Parallel Test Example
 
-### Before Scenarist ❌
-
-```typescript
-// Slow, sequential tests - ~60 seconds total
-test.describe.serial("User Dashboard", () => {
-  test("shows basic features for standard users", async ({ page }) => {
-    await restartApp({ mockProfile: "standard" }); // +10s
-    await page.goto("/dashboard");
-    await expect(page.locator(".basic-features")).toBeVisible();
-  });
-
-  test("shows advanced features for premium users", async ({ page }) => {
-    await restartApp({ mockProfile: "premium" }); // +10s
-    await page.goto("/dashboard");
-    await expect(page.locator(".advanced-features")).toBeVisible();
-  });
-
-  test("shows upgrade prompt for free users", async ({ page }) => {
-    await restartApp({ mockProfile: "free" }); // +10s
-    await page.goto("/dashboard");
-    await expect(page.locator(".upgrade-prompt")).toBeVisible();
-  });
-
-  test("handles API errors gracefully", async ({ page }) => {
-    await restartApp({ mockProfile: "error" }); // +10s
-    await page.goto("/dashboard");
-    await expect(page.locator(".error-message")).toBeVisible();
-  });
-
-  test("handles slow API responses", async ({ page }) => {
-    await restartApp({ mockProfile: "slow" }); // +10s
-    await page.goto("/dashboard");
-    await expect(page.locator(".loading-spinner")).toBeVisible();
-  });
-
-  test("shows empty state for new users", async ({ page }) => {
-    await restartApp({ mockProfile: "empty" }); // +10s
-    await page.goto("/dashboard");
-    await expect(page.locator(".empty-state")).toBeVisible();
-  });
-});
-```
-
-### After Scenarist ✅
+Each test switches to a different scenario without restarting the application. Tests run in parallel with isolated state.
 
 ```typescript
-// Fast, parallel tests - ~6 seconds total!
 test.describe("User Dashboard", () => {
   test("shows basic features for standard users", async ({ page }) => {
-    await switchScenario(page, "user-standard"); // <100ms
+    await switchScenario(page, "user-standard");
     await page.goto("/dashboard");
     await expect(page.locator(".basic-features")).toBeVisible();
   });
 
   test("shows advanced features for premium users", async ({ page }) => {
-    await switchScenario(page, "user-premium"); // <100ms
+    await switchScenario(page, "user-premium");
     await page.goto("/dashboard");
     await expect(page.locator(".advanced-features")).toBeVisible();
   });
 
   test("shows upgrade prompt for free users", async ({ page }) => {
-    await switchScenario(page, "user-free"); // <100ms
+    await switchScenario(page, "user-free");
     await page.goto("/dashboard");
     await expect(page.locator(".upgrade-prompt")).toBeVisible();
   });
 
   test("handles API errors gracefully", async ({ page }) => {
-    await switchScenario(page, "api-error"); // <100ms
+    await switchScenario(page, "api-error");
     await page.goto("/dashboard");
     await expect(page.locator(".error-message")).toBeVisible();
   });
 
   test("handles slow API responses", async ({ page }) => {
-    await switchScenario(page, "api-slow"); // <100ms
+    await switchScenario(page, "api-slow");
     await page.goto("/dashboard");
     await expect(page.locator(".loading-spinner")).toBeVisible();
   });
 
   test("shows empty state for new users", async ({ page }) => {
-    await switchScenario(page, "user-new"); // <100ms
+    await switchScenario(page, "user-new");
     await page.goto("/dashboard");
     await expect(page.locator(".empty-state")).toBeVisible();
   });
@@ -876,12 +822,11 @@ async function switchScenario(page: Page, scenario: string) {
 }
 ```
 
-**Results:**
+**Key benefits:**
 
-- ⚡ **10x faster** - 6s vs 60s
-- 🔀 **Parallel execution** - all tests run simultaneously
-- ✅ **More reliable** - no restart timing issues
-- 💰 **Cheaper CI** - less compute time
+- 🔀 **Parallel execution** - tests run simultaneously without conflicts
+- ✅ **Isolated state** - each test has its own scenario via test ID
+- 🚫 **No restarts** - switch scenarios at runtime
 
 ---
 
@@ -896,10 +841,10 @@ async function switchScenario(page: Page, scenario: string) {
 - Only external APIs are mocked
 - Catch integration bugs where components interact
 
-✅ **10x Faster Test Development**
+✅ **Fast Test Development**
 
-- Switch scenarios in milliseconds, not minutes
-- No app restarts—instant feedback loop
+- Switch scenarios instantly
+- No app restarts between tests
 - Test all edge cases without setup overhead
 
 ✅ **Better Developer Experience**
@@ -916,11 +861,11 @@ async function switchScenario(page: Page, scenario: string) {
 
 ### For Engineering Teams
 
-✅ **Dramatically Faster CI/CD**
+✅ **Faster CI/CD**
 
-- Tests run 10x faster (6s instead of 60s)
-- 100+ parallel tests without conflicts
-- **Lower AWS/Vercel/cloud costs** from faster builds
+- Tests run in parallel without conflicts
+- No server restarts between scenarios
+- Efficient use of CI resources
 
 ✅ **Ship with Confidence**
 
@@ -970,12 +915,10 @@ async function switchScenario(page: Page, scenario: string) {
 | **External APIs Mocked**      | ✅ Yes               | ✅ Yes                | ✅ Yes                       | ❌ Real            |
 | **Test Express Routes**       | ✅ Yes               | ✅ Yes                | ✅ Yes                       | ✅ Yes             |
 | **Test Database Integration** | ✅ Real (test DB)    | ✅ Real (test DB)     | ✅ Real (test DB)            | ✅ Real            |
-| **Scenario Switching**        | Restart app (5-10s)  | Restart app (5-10s)   | Runtime (<100ms)             | Manual setup       |
+| **Scenario Switching**        | ⚠️ Restart required  | ⚠️ Restart required   | ✅ Runtime                   | Manual setup       |
 | **Parallel Test Isolation**   | ❌ Conflicts         | ❌ Conflicts          | ✅ Test ID isolation         | ❌ Very hard       |
 | **Framework Agnostic**        | ⚠️ DIY per framework | ⚠️ DIY per framework  | ✅ Built-in adapters         | ✅ Yes             |
 | **Type Safety**               | ⚠️ Manual            | ⚠️ Manual             | ✅ Full TypeScript           | ✅ If typed        |
-| **Test Suite Speed**          | 🐢 Slow (restarts)   | 🐢 Slow (restarts)    | ⚡ Fast (no restarts)        | 🐌 Very slow       |
-| **CI/CD Cost**                | 💰 High              | 💰 High               | 💵 Low                       | 💰💰 Very high     |
 | **Flakiness**                 | ⚠️ Timing issues     | ⚠️ Timing issues      | ✅ Stable                    | ⚠️ Can be flaky    |
 | **Setup Complexity**          | ⚠️ DIY               | ⚠️ DIY                | ✅ Declarative               | ⚠️ Complex         |
 
