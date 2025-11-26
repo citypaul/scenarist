@@ -1,0 +1,74 @@
+name: Pre-Release (Beta/RC)
+
+on:
+  push:
+    branches:
+      - 'release/beta'
+      - 'release/rc'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  pre-release:
+    name: Pre-Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Determine pre-release tag
+        id: tag
+        run: |
+          BRANCH=${GITHUB_REF#refs/heads/release/}
+          echo "tag=$BRANCH" >> $GITHUB_OUTPUT
+          echo "Publishing with tag: $BRANCH"
+
+      - name: Version packages
+        run: pnpm changeset version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit version changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --staged --quiet || git commit -m "chore: version packages for ${{ steps.tag.outputs.tag }}"
+          git push
+
+      - name: Publish to npm
+        run: pnpm changeset publish --tag ${{ steps.tag.outputs.tag }}
+        env:
+          NPM_CONFIG_PROVENANCE: true
+
+      - name: Create Git Tags
+        run: |
+          # Get the new version from one of the packages
+          VERSION=$(node -p "require('./packages/express-adapter/package.json').version")
+          git tag "v${VERSION}"
+          git push origin "v${VERSION}"
