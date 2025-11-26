@@ -7,7 +7,6 @@ export type {
   RepeatMode,
   ScenaristSequence,
   ScenaristCaptureConfig,
-  ScenaristVariant,
   ScenaristScenario,
 } from '../schemas/scenario-definition.js';
 

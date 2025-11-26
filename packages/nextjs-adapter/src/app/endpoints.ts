@@ -29,7 +29,6 @@ const handlePost = (manager: ScenarioManager, config: ScenaristConfig) => {
         success: true,
         testId: result.testId,
         scenarioId: result.scenarioId,
-        ...(result.variant && { variant: result.variant }),
       },
       { status: 200 }
     );
@@ -62,7 +61,6 @@ const handleGet = (manager: ScenarioManager, config: ScenaristConfig) => {
         testId: result.testId,
         scenarioId: result.scenarioId,
         ...(result.scenarioName && { scenarioName: result.scenarioName }),
-        ...(result.variantName && { variantName: result.variantName }),
       },
       { status: 200 }
     );

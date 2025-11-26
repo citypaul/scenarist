@@ -18,7 +18,7 @@ import { z } from 'zod';
  * // In adapter endpoint handler:
  * import { ScenarioRequestSchema } from '@scenarist/core';
  *
- * const { scenario, variant } = ScenarioRequestSchema.parse(req.body);
+ * const { scenario } = ScenarioRequestSchema.parse(req.body);
  * ```
  */
 export const ScenarioRequestSchema = z.object({
@@ -27,12 +27,6 @@ export const ScenarioRequestSchema = z.object({
    * Must be a non-empty string matching a registered scenario ID.
    */
   scenario: z.string().min(1, 'Scenario ID must not be empty'),
-
-  /**
-   * Optional variant name within the scenario.
-   * If provided, must be a non-empty string.
-   */
-  variant: z.string().min(1, 'Variant name must not be empty').optional(),
 });
 
 /**

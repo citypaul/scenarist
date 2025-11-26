@@ -15,7 +15,7 @@ describe('Pages Router Scenario Endpoints', () => {
       const req = {
         method: 'POST',
         headers: {
-          'x-scenarist-test-id': 'test-123',
+          'x-test-id': 'test-123',
         },
         body: {
           scenario: 'premium',
@@ -37,43 +37,13 @@ describe('Pages Router Scenario Endpoints', () => {
       });
     });
 
-    it('should switch scenario with variant', async () => {
-      const { handler } = createTestSetup();
-
-      const req = {
-        method: 'POST',
-        headers: {
-          'x-scenarist-test-id': 'test-456',
-        },
-        body: {
-          scenario: 'premium',
-          variant: 'high-tier',
-        },
-      } as NextApiRequest;
-
-      const res = {
-        status: vi.fn().mockReturnThis(),
-        json: vi.fn(),
-      } as unknown as NextApiResponse;
-
-      await handler(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
-        success: true,
-        testId: 'test-456',
-        scenarioId: 'premium',
-        variant: 'high-tier',
-      });
-    });
-
     it('should return 400 when scenario does not exist', async () => {
       const { handler } = createTestSetup();
 
       const req = {
         method: 'POST',
         headers: {
-          'x-scenarist-test-id': 'test-789',
+          'x-test-id': 'test-789',
         },
         body: {
           scenario: 'nonexistent',
@@ -101,7 +71,7 @@ describe('Pages Router Scenario Endpoints', () => {
       const req = {
         method: 'POST',
         headers: {
-          'x-scenarist-test-id': 'test-bad',
+          'x-test-id': 'test-bad',
         },
         body: {
           // Missing 'scenario' field
@@ -134,7 +104,7 @@ describe('Pages Router Scenario Endpoints', () => {
       const req = {
         method: 'POST',
         headers: {
-          'x-scenarist-test-id': 'test-error',
+          'x-test-id': 'test-error',
         },
         body: {
           scenario: 'premium',
@@ -165,7 +135,7 @@ describe('Pages Router Scenario Endpoints', () => {
       const req = {
         method: 'GET',
         headers: {
-          'x-scenarist-test-id': 'test-abc',
+          'x-test-id': 'test-abc',
         },
       } as NextApiRequest;
 
@@ -190,7 +160,7 @@ describe('Pages Router Scenario Endpoints', () => {
       const req = {
         method: 'GET',
         headers: {
-          'x-scenarist-test-id': 'test-no-scenario',
+          'x-test-id': 'test-no-scenario',
         },
       } as NextApiRequest;
 
@@ -210,34 +180,6 @@ describe('Pages Router Scenario Endpoints', () => {
       );
     });
 
-    it('should include variant name when present', async () => {
-      const { handler, manager } = createTestSetup();
-
-      // Switch to scenario with variant
-      manager.switchScenario('test-variant', 'premium', 'high-tier');
-
-      const req = {
-        method: 'GET',
-        headers: {
-          'x-scenarist-test-id': 'test-variant',
-        },
-      } as NextApiRequest;
-
-      const res = {
-        status: vi.fn().mockReturnThis(),
-        json: vi.fn(),
-      } as unknown as NextApiResponse;
-
-      await handler(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
-        testId: 'test-variant',
-        scenarioId: 'premium',
-        scenarioName: 'Premium Scenario',
-        variantName: 'high-tier',
-      });
-    });
   });
 
   describe('unsupported methods', () => {
@@ -247,7 +189,7 @@ describe('Pages Router Scenario Endpoints', () => {
       const req = {
         method: 'PUT',
         headers: {
-          'x-scenarist-test-id': 'test-put',
+          'x-test-id': 'test-put',
         },
       } as NextApiRequest;
 

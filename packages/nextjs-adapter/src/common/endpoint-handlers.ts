@@ -16,7 +16,6 @@ export type PostResult =
       readonly success: true;
       readonly testId: string;
       readonly scenarioId: string;
-      readonly variant?: string;
     }
   | {
       readonly success: false;
@@ -66,13 +65,13 @@ export const handlePostLogic = async (
 ): Promise<PostResult> => {
   try {
     // Validate request body
-    const { scenario, variant } = ScenarioRequestSchema.parse(body);
+    const { scenario } = ScenarioRequestSchema.parse(body);
 
     // Extract test ID from context
     const testId = context.getTestId();
 
     // Attempt scenario switch
-    const result = manager.switchScenario(testId, scenario, variant);
+    const result = manager.switchScenario(testId, scenario);
 
     if (!result.success) {
       return {
@@ -86,7 +85,6 @@ export const handlePostLogic = async (
       success: true,
       testId,
       scenarioId: scenario,
-      ...(variant && { variant }),
     };
   } catch (error) {
     // Zod validation error
@@ -120,7 +118,6 @@ export type GetResult =
       readonly testId: string;
       readonly scenarioId: string;
       readonly scenarioName?: string;
-      readonly variantName?: string;
     }
   | {
       readonly success: false;
@@ -180,6 +177,5 @@ export const handleGetLogic = (
     testId,
     scenarioId: activeScenario.scenarioId,
     ...(scenarioDefinition && { scenarioName: scenarioDefinition.name }),
-    ...(activeScenario.variantName && { variantName: activeScenario.variantName }),
   };
 };

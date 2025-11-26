@@ -31,20 +31,18 @@ const BASE_URL = 'http://localhost:9877'; // Different port from switch-scenario
 // MSW server for fixture tests
 const server = setupServer(
   http.post(`${BASE_URL}/__scenario__`, async ({ request }) => {
-    const body = await request.json() as { scenario: string; variant?: string };
+    const body = await request.json() as { scenario: string };
     return HttpResponse.json({
       success: true,
       scenario: body.scenario,
-      variant: body.variant,
     });
   }),
 
   http.post(`${BASE_URL}/custom-endpoint`, async ({ request }) => {
-    const body = await request.json() as { scenario: string; variant?: string };
+    const body = await request.json() as { scenario: string };
     return HttpResponse.json({
       success: true,
       scenario: body.scenario,
-      variant: body.variant,
     });
   })
 );

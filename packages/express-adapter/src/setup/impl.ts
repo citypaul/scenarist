@@ -103,8 +103,8 @@ export const createScenaristImpl = <T extends ScenaristScenarios>(
   return {
     config,
     middleware,
-    switchScenario: (testId, scenarioId, variantName) =>
-      manager.switchScenario(testId, scenarioId, variantName),
+    switchScenario: (testId, scenarioId) =>
+      manager.switchScenario(testId, scenarioId),
     getActiveScenario: (testId) => manager.getActiveScenario(testId),
     getScenarioById: (scenarioId) => manager.getScenarioById(scenarioId),
     listScenarios: () => manager.listScenarios(),

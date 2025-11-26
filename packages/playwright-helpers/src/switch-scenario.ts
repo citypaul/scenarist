@@ -1,5 +1,4 @@
 import type { Page } from '@playwright/test';
-import { SCENARIST_TEST_ID_HEADER } from '@scenarist/core';
 
 /**
  * Options for switchScenario helper
@@ -18,9 +17,10 @@ export type SwitchScenarioOptions = {
   readonly endpoint?: string;
 
   /**
-   * Optional variant within the scenario
+   * Test ID header name
+   * @default 'x-test-id'
    */
-  readonly variant?: string;
+  readonly testIdHeader?: string;
 
   /**
    * Optional test ID to use instead of auto-generating one.
@@ -39,10 +39,12 @@ export type SwitchScenarioOptions = {
  *
  * @param page - Playwright Page object
  * @param testId - Test ID to inject into all requests
+ * @param testIdHeader - Header name for test ID
  */
 const establishTestIdInterception = async (
   page: Page,
   testId: string,
+  testIdHeader: string
 ): Promise<void> => {
   // Clear any existing handlers to prevent accumulation
   await page.unroute('**/*');
@@ -50,12 +52,12 @@ const establishTestIdInterception = async (
   // Intercept all routes to inject test ID header
   await page.route('**/*', async (route) => {
     const headers = route.request().headers();
-    headers[SCENARIST_TEST_ID_HEADER] = testId;
+    headers[testIdHeader] = testId;
     await route.continue({ headers });
   });
 
   // Set test ID header for navigation requests (belt and suspenders)
-  await page.setExtraHTTPHeaders({ [SCENARIST_TEST_ID_HEADER]: testId });
+  await page.setExtraHTTPHeaders({ [testIdHeader]: testId });
 };
 
 /**
@@ -74,7 +76,6 @@ const establishTestIdInterception = async (
  * @example
  * ```typescript
  * import { switchScenario } from '@scenarist/playwright-helpers';
- * import { SCENARIST_TEST_ID_HEADER } from '@scenarist/core';
  *
  * test('premium user flow', async ({ page }) => {
  *   const testId = await switchScenario(page, 'premiumUser', {
@@ -83,7 +84,7 @@ const establishTestIdInterception = async (
  *
  *   // Use testId for explicit API requests
  *   await page.request.post('/api/action', {
- *     headers: { [SCENARIST_TEST_ID_HEADER]: testId },
+ *     headers: { 'x-test-id': testId },
  *   });
  *
  *   await page.goto('/');
@@ -99,7 +100,7 @@ export const switchScenario = async (
   const {
     baseURL,
     endpoint = '/__scenario__',
-    variant,
+    testIdHeader = 'x-test-id',
     testId: providedTestId,
   } = options;
 
@@ -110,15 +111,14 @@ export const switchScenario = async (
 
   // Establish test ID interception BEFORE scenario switch to prevent race conditions
   // Client Components may fire API calls immediately on mount/navigation
-  await establishTestIdInterception(page, testId);
+  await establishTestIdInterception(page, testId, testIdHeader);
 
   // Call scenario endpoint
   const url = `${baseURL}${endpoint}`;
   const response = await page.request.post(url, {
-    headers: { [SCENARIST_TEST_ID_HEADER]: testId },
+    headers: { [testIdHeader]: testId },
     data: {
       scenario: scenarioId,
-      ...(variant && { variant }),
     },
   });
 

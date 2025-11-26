@@ -19,8 +19,8 @@ const BASE_URL = 'http://localhost:9876';
 const server = setupServer(
   // Success case
   http.post(`${BASE_URL}/__scenario__`, async ({ request }) => {
-    const body = await request.json() as { scenario: string; variant?: string };
-    
+    const body = await request.json() as { scenario: string };
+
     // Error scenarios for testing
     if (body.scenario === 'error-404') {
       return HttpResponse.json(
@@ -28,27 +28,26 @@ const server = setupServer(
         { status: 404 }
       );
     }
-    
+
     if (body.scenario === 'error-400') {
       return HttpResponse.json(
         { error: 'Invalid scenario ID' },
         { status: 400 }
       );
     }
-    
+
     if (body.scenario === 'error-500') {
       return HttpResponse.json(
         { error: 'Internal server error' },
         { status: 500 }
       );
     }
-    
+
     // Success response
     return HttpResponse.json({
       success: true,
       scenario: body.scenario,
-      variant: body.variant,
-      testId: request.headers.get('x-scenarist-test-id'),
+      testId: request.headers.get('x-test-id') || request.headers.get('x-custom-test-id'),
     });
   }),
   
@@ -125,13 +124,16 @@ test.describe('switchScenario - Playwright Integration', () => {
       expect(true).toBe(true);
     });
     
-    test('should include variant when provided', async ({ page }) => {
+  });
+
+  test.describe('custom test ID header', () => {
+    test('should use custom testIdHeader when provided', async ({ page }) => {
       await switchScenario(page, 'premiumUser', {
         baseURL: BASE_URL,
-        variant: 'tier-gold',
+        testIdHeader: 'x-custom-test-id',
       });
       
-      // MSW handler validates variant is included
+      // MSW handler validates custom header is used
       expect(true).toBe(true);
     });
   });

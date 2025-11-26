@@ -63,7 +63,7 @@ describe('Pages Router createScenarist', () => {
   it('should switch scenarios', async () => {
     const { scenarist } = await createTestSetup();
 
-    const result = scenarist.switchScenario('test-1', 'premium', undefined);
+    const result = scenarist.switchScenario('test-1', 'premium');
 
     expect(result.success).toBe(true);
   });
@@ -71,13 +71,12 @@ describe('Pages Router createScenarist', () => {
   it('should get active scenario', async () => {
     const { scenarist } = await createTestSetup();
 
-    scenarist.switchScenario('test-2', 'premium', undefined);
+    scenarist.switchScenario('test-2', 'premium');
 
     const active = scenarist.getActiveScenario('test-2');
 
     expect(active).toEqual({
       scenarioId: 'premium',
-      variantName: undefined,
     });
   });
 
@@ -92,7 +91,7 @@ describe('Pages Router createScenarist', () => {
   it('should clear scenario for test ID', async () => {
     const { scenarist } = await createTestSetup();
 
-    scenarist.switchScenario('test-3', 'premium', undefined);
+    scenarist.switchScenario('test-3', 'premium');
 
     scenarist.clearScenario('test-3');
 
@@ -215,13 +214,12 @@ describe('Pages Router createScenarist', () => {
       }
 
       // Switch scenario using instance1
-      instance1.switchScenario('test-singleton-store', 'premium', undefined);
+      instance1.switchScenario('test-singleton-store', 'premium');
 
       // Instance2 should see the same active scenario
       const active = instance2.getActiveScenario('test-singleton-store');
       expect(active).toEqual({
         scenarioId: 'premium',
-        variantName: undefined,
       });
     });
 
@@ -300,13 +298,12 @@ describe('Pages Router createScenarist', () => {
       scenarist2.start();
 
       // Switch scenario using instance 1
-      scenarist1.switchScenario('test-singleton-1', 'premium', undefined);
+      scenarist1.switchScenario('test-singleton-1', 'premium');
 
       // Verify instance 2 sees the same scenario
       const active = scenarist2.getActiveScenario('test-singleton-1');
       expect(active).toEqual({
         scenarioId: 'premium',
-        variantName: undefined,
       });
     });
 
