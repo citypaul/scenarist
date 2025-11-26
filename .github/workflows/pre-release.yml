@@ -67,6 +67,11 @@ jobs:
           git diff --staged --quiet || git commit -m "chore: version packages for ${{ steps.tag.outputs.tag }}"
           git push
 
+      - name: Upgrade npm for OIDC trusted publishing
+        run: |
+          npm install -g npm@latest
+          echo "npm version: $(npm --version)"
+
       - name: Publish to npm
         run: pnpm changeset publish --tag ${{ steps.tag.outputs.tag }}
         env:
@@ -74,7 +79,10 @@ jobs:
 
       - name: Create Git Tags
         run: |
-          # Get the new version from one of the packages
           VERSION=$(node -p "require('./packages/express-adapter/package.json').version")
-          git tag "v${VERSION}"
-          git push origin "v${VERSION}"
+          if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
+            echo "Tag v${VERSION} already exists, skipping"
+          else
+            git tag "v${VERSION}"
+            git push origin "v${VERSION}"
+          fi
