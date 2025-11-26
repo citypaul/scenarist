@@ -244,17 +244,19 @@ Is it a scenario definition concern?
 ## Package Structure
 
 ```
-packages/
+packages/                    (PUBLIC - users install these)
 ├── core/                    # The hexagon (zero framework deps)
 │   ├── src/ports/           # Interfaces (use `interface`)
 │   ├── src/types/           # Data structures (use `type` + `readonly`)
 │   ├── src/schemas/         # Zod schemas (validation at trust boundaries)
 │   ├── src/domain/          # Business logic
 │   └── src/adapters/        # Default implementations (InMemory*)
-├── msw-adapter/             # MSW integration (framework-agnostic)
 ├── express-adapter/         # Express middleware
 ├── nextjs-adapter/          # Next.js App/Pages Router
-├── playwright-helpers/      # Playwright test utilities
+└── playwright-helpers/      # Playwright test utilities
+
+internal/                    (PRIVATE - workspace dependencies only)
+├── msw-adapter/             # MSW integration (framework-agnostic)
 ├── eslint-config/           # Shared linting
 └── typescript-config/       # Shared TypeScript config
 

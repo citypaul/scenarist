@@ -429,7 +429,7 @@ Tier parameter breakdown:
 
 ### The Bug Location
 
-**File:** `packages/msw-adapter/src/handlers/dynamic-handler.ts` (or wherever MSW calls `getActiveScenario`)
+**File:** `internal/msw-adapter/src/handlers/dynamic-handler.ts` (or wherever MSW calls `getActiveScenario`)
 
 **Code flow:**
 1. Request intercepted with testId: `7303a536b19f9ee3cc0a...`
@@ -483,5 +483,5 @@ Tier parameter breakdown:
 
 - `packages/core/src/adapters/in-memory-scenario-store.ts` - The store implementation
 - `packages/core/src/domain/scenario-manager.ts` - The switchScenario implementation
-- `packages/msw-adapter/src/handlers/dynamic-handler.ts` - Where getActiveScenario is called
+- `internal/msw-adapter/src/handlers/dynamic-handler.ts` - Where getActiveScenario is called
 - `packages/nextjs-adapter/src/pages/setup.ts` - The switchScenario wrapper

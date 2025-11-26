@@ -15,12 +15,17 @@ node_modules
 # Testing
 coverage
 *.timestamp-*.mjs
+test-results/
+.playwright-mcp/
 
 # Turbo
 .turbo
 
 # Vercel
 .vercel
+
+# Cloudflare
+.wrangler/
 
 # Build Outputs
 .next/

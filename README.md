@@ -955,7 +955,7 @@ async function switchScenario(page: Page, scenario: string) {
 ### Adapter Documentation
 
 - **[Express Adapter README](./packages/express-adapter/README.md)** - Express-specific usage and setup
-- **[MSW Adapter README](./packages/msw-adapter/README.md)** - MSW integration details
+- **[MSW Adapter README](./internal/msw-adapter/README.md)** - MSW integration details (internal)
 
 ### Examples
 
