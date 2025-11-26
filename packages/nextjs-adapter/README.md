@@ -33,7 +33,7 @@ await setScenario('test-1', 'admin');
 This package provides complete Next.js integration for Scenarist's scenario management system, supporting both Pages Router and App Router:
 
 - **Runtime scenario switching** via HTTP endpoints - no restarts needed
-- **Test isolation** using unique test IDs - run 100 tests in parallel
+- **Test isolation** using unique test IDs - run tests in parallel
 - **Automatic MSW integration** for request interception - no MSW setup required
 - **Zero boilerplate** - everything wired automatically with one function call
 - **Both routers supported** - Pages Router and App Router with identical functionality
@@ -212,7 +212,7 @@ test('premium user sees all features', async () => {
 
 ### Parallel Test Execution
 
-Run 100 tests concurrently with different backend states - no conflicts:
+Run tests concurrently with different backend states - no conflicts:
 
 ```typescript
 // Test 1: Uses 'success' scenario with test-id-1
