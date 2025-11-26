@@ -490,6 +490,16 @@ This ensures proper test isolation and mock activation.
 
 Both examples demonstrate identical Scenarist features with router-specific implementations.
 
+## Custom Server Support
+
+Scenarist works with custom Next.js servers (Express + Next.js). To verify:
+
+```bash
+pnpm test:custom
+```
+
+This runs all E2E tests against a custom Express server instead of `next dev`.
+
 ## CI/CD
 
 This example is tested in CI with:

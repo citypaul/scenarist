@@ -13,6 +13,7 @@
     "test": "pnpm test:e2e",
     "test:e2e": "playwright test --project=chromium",
     "test:e2e:ui": "playwright test --project=chromium --ui",
+    "test:custom": "SERVER_MODE=custom playwright test --project=chromium",
     "test:production": "playwright test --config=playwright.production.config.ts",
     "verify:treeshaking": "pnpm build:production && ! grep -rE '(setupWorker|startWorker|http\\.(get|post|put|delete|patch)|HttpResponse\\.json)' .next/ --exclude-dir=cache"
   },
@@ -26,6 +27,8 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",
+    "@types/express": "^5.0.5",
+    "express": "^5.1.0",
     "@scenarist/eslint-config": "workspace:*",
     "@scenarist/playwright-helpers": "workspace:*",
     "@tailwindcss/postcss": "^4.1.17",

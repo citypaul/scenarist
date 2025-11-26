@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 import type { ScenaristOptions } from '@scenarist/playwright-helpers';
 
+const useCustomServer = process.env.SERVER_MODE === 'custom';
+
 /**
  * Playwright configuration for Scenarist App Router Example
  *
@@ -33,7 +35,7 @@ export default defineConfig<ScenaristOptions>({
   ],
 
   webServer: {
-    command: 'pnpm dev',
+    command: useCustomServer ? 'node server.cjs' : 'pnpm dev',
     url: 'http://localhost:3002',
     reuseExistingServer: !process.env.CI,
   },

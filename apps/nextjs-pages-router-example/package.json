@@ -13,6 +13,7 @@
     "test": "pnpm test:e2e",
     "test:e2e": "playwright test --project=chromium",
     "test:e2e:ui": "playwright test --project=chromium --ui",
+    "test:custom": "SERVER_MODE=custom playwright test --project=chromium",
     "test:e2e:comparison": "SKIP_MSW=true playwright test --project=comparison",
     "test:e2e:all": "playwright test",
     "test:production": "playwright test --config=playwright.production.config.ts",
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",
+    "express4": "npm:express@^4.21.0",
     "@scenarist/eslint-config": "workspace:*",
     "@scenarist/playwright-helpers": "workspace:*",
     "@tailwindcss/postcss": "^4.1.17",
