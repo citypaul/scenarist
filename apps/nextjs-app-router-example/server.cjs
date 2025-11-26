@@ -13,6 +13,7 @@ app.prepare().then(() => {
     res.json({ serverType: 'custom', framework: 'express' });
   });
 
+  // Express 5 wildcard syntax - matches all routes
   server.all('/{*path}', (req, res) => handle(req, res));
   server.listen(3002, () => {
     console.log('> Custom server ready on http://localhost:3002');

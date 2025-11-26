@@ -14,6 +14,7 @@ app.prepare().then(() => {
     res.json({ serverType: 'custom', framework: 'express' });
   });
 
+  // Express 4 wildcard syntax - matches all routes
   server.all('*', (req, res) => handle(req, res));
   server.listen(3000, () => {
     console.log('> Custom server ready on http://localhost:3000');

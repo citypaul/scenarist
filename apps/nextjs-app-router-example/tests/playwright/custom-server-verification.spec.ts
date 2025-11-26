@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test';
  * will fail if accidentally running with `pnpm dev` instead of `node server.cjs`.
  */
 test.describe('Custom Server Verification', () => {
-  test('should be running custom Express server', async ({ request }) => {
+  test('should verify custom Express server is running (not next dev)', async ({ request }) => {
     const response = await request.get('/__server-type');
 
     expect(response.status()).toBe(200);
