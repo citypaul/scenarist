@@ -49,14 +49,16 @@ Please be respectful and constructive in all interactions. We welcome contributo
 ### Workspace Structure
 
 ```
-packages/          # Public packages (published to npm)
+packages/          # Published packages
+├── core/          # Core domain logic (internal - import via adapters)
 ├── express-adapter/
 ├── nextjs-adapter/
 └── playwright-helpers/
 
 internal/          # Internal packages (not published)
-├── core/
-└── msw-adapter/
+├── msw-adapter/   # Framework-agnostic MSW integration
+├── eslint-config/
+└── typescript-config/
 
 apps/              # Example applications
 ├── express-example/
@@ -64,6 +66,8 @@ apps/              # Example applications
 ├── nextjs-pages-router-example/
 └── docs/
 ```
+
+> **Note:** While `@scenarist/core` is in `packages/`, users should import from adapters (`@scenarist/express-adapter`, `@scenarist/nextjs-adapter`) which re-export core types.
 
 ## TDD Requirements (Non-Negotiable)
 
@@ -97,8 +101,8 @@ We follow strict Test-Driven Development (TDD) with the RED-GREEN-REFACTOR cycle
 
 ### Test Quality Requirements
 
-- 100% test coverage expected (through business behavior, not implementation testing)
-- Test behavior, not implementation details
+- 100% behavior coverage expected (test business behavior, not implementation details)
+- Test through public API only - internals should be invisible to tests
 - Use factory functions for test data (no `let` or `beforeEach` with shared mutable state)
 - No `any` types in test code
 
