@@ -308,7 +308,6 @@ await request(app)
   testId: string;
   scenarioId: string;
   scenarioName?: string;
-  variantName?: string;
 }
 ```
 
