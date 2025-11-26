@@ -94,13 +94,37 @@ jobs:
 
 ## Step 3: First-Time Package Publishing
 
-For **new packages** that haven't been published yet:
+For **new packages** that haven't been published yet, you need to establish the package on npm before trusted publishing can be configured.
 
-### Option A: Publish First Version Manually
+### Option A: Use `setup-npm-trusted-publish` Tool (Recommended)
+
+This tool creates a placeholder package and configures trusted publishing in one step:
+
+```bash
+# Authenticate first
+npm login
+
+# For each package (run from anywhere)
+npx --yes setup-npm-trusted-publish @scenarist/express-adapter
+npx --yes setup-npm-trusted-publish @scenarist/nextjs-adapter
+npx --yes setup-npm-trusted-publish @scenarist/playwright-helpers
+```
+
+This will:
+1. Create the package name on npm registry
+2. Configure trusted publishing for the GitHub repository
+3. Allow subsequent publishes via GitHub Actions OIDC
+
+### Option B: Manual First Publish
+
+Publish the actual v0.0.1 manually, then configure trusted publishing:
 
 ```bash
 # Authenticate locally
 npm login
+
+# Build packages first
+pnpm build
 
 # Publish each package once (from repo root)
 cd packages/express-adapter && npm publish --access public
@@ -108,11 +132,13 @@ cd ../nextjs-adapter && npm publish --access public
 cd ../playwright-helpers && npm publish --access public
 ```
 
-Then configure trusted publishing for subsequent releases.
+Then go to npmjs.com → each package → Settings → Trusted Publishers to link the repository.
 
-### Option B: Use npm's Linking Feature (Beta)
+### Important Notes
 
-npm may support linking repositories to unpublished package names. Check npm documentation for current status.
+- **npm CLI v11.5.1+** is required for OIDC trusted publishing
+- Each package can only have **one trusted publisher** configured at a time
+- Trusted publishing currently supports only **cloud-hosted runners** (not self-hosted)
 
 ## Step 4: Verify Configuration
 
