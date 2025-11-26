@@ -457,7 +457,7 @@ Scenarios are defined as declarative patterns (not MSW handlers with imperative 
 
 ```typescript
 // scenarios/default.ts
-import type { ScenaristScenario } from "@scenarist/core";
+import type { ScenaristScenario } from "@scenarist/express-adapter";
 
 export const defaultScenario: ScenaristScenario = {
   id: "default",
@@ -493,7 +493,7 @@ export const defaultScenario: ScenaristScenario = {
 
 ```typescript
 // scenarios/error-state.ts
-import type { ScenaristScenario } from "@scenarist/core";
+import type { ScenaristScenario } from "@scenarist/express-adapter";
 
 export const errorState: ScenaristScenario = {
   id: "error-state",
@@ -526,7 +526,7 @@ export const errorState: ScenaristScenario = {
 // server.ts
 import express from "express";
 import { createScenarist } from "@scenarist/express-adapter";
-import type { ScenaristScenarios } from "@scenarist/core";
+import type { ScenaristScenarios } from "@scenarist/express-adapter";
 import { defaultScenario, errorState } from "./scenarios";
 
 const app = express();

@@ -24,8 +24,8 @@ By the end of this guide, you'll have:
 ## Installation
 
 ```bash
-# Install Scenarist core + adapter for your framework
-npm install @scenarist/core @scenarist/[your-framework]-adapter
+# Install Scenarist adapter for your framework
+npm install @scenarist/[your-framework]-adapter
 
 # Install Playwright helpers
 npm install -D @playwright/test @scenarist/playwright-helpers
@@ -37,7 +37,8 @@ Create a file to define your mock scenarios:
 
 ```typescript
 // scenarios.ts
-import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/core';
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/express-adapter';
+// Note: Types are re-exported from all adapters. Use your framework's adapter.
 
 const successScenario: ScenaristScenario = {
   id: 'success',

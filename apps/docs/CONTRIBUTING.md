@@ -44,7 +44,7 @@ Next.js
 ```markdown
 ✅ CORRECT:
 ```bash
-npm install @scenarist/core
+npm install @scenarist/express-adapter
 \```
 
 ```typescript
@@ -53,7 +53,7 @@ export const scenarios = { ... };
 
 ❌ WRONG:
 \```
-npm install @scenarist/core
+npm install @scenarist/express-adapter
 \```
 
 \```

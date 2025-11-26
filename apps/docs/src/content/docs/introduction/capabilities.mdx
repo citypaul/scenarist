@@ -18,7 +18,7 @@ Return different responses based on request content. Multiple mocks can exist fo
 Match on request body, headers, or query parameters:
 
 ```typescript
-import type { ScenaristMock } from '@scenarist/core';
+import type { ScenaristMock } from '@scenarist/express-adapter';
 
 const mock: ScenaristMock = {
   method: 'POST',
@@ -43,7 +43,7 @@ When multiple mocks match the same URL, Scenarist uses specificity scoring:
 **Example:**
 
 ```typescript
-import type { ScenaristScenario } from '@scenarist/core';
+import type { ScenaristScenario } from '@scenarist/express-adapter';
 
 const premiumScenario: ScenaristScenario = {
   id: 'premium',
@@ -90,7 +90,7 @@ const premiumScenario: ScenaristScenario = {
 Body matching is **partial** - only the specified fields must match:
 
 ```typescript
-import type { ScenaristMock } from '@scenarist/core';
+import type { ScenaristMock } from '@scenarist/express-adapter';
 
 const mock: ScenaristMock = {
   method: 'POST',
@@ -112,7 +112,7 @@ const mock: ScenaristMock = {
 Header and query parameter matching is **exact** for specified keys:
 
 ```typescript
-import type { ScenaristMock } from '@scenarist/core';
+import type { ScenaristMock } from '@scenarist/express-adapter';
 
 const mock: ScenaristMock = {
   method: 'GET',
@@ -132,7 +132,7 @@ You can combine multiple match criteria across body, headers, and query paramete
 **Example with mixed strategies:**
 
 ```typescript
-import type { ScenaristMock } from '@scenarist/core';
+import type { ScenaristMock } from '@scenarist/express-adapter';
 
 const mock: ScenaristMock = {
   method: 'POST',
@@ -179,7 +179,7 @@ const mock: ScenaristMock = {
 Since match criteria use AND logic, implement OR logic by creating multiple mocks:
 
 ```typescript
-import type { ScenaristScenario } from '@scenarist/core';
+import type { ScenaristScenario } from '@scenarist/express-adapter';
 
 const scenario: ScenaristScenario = {
   id: 'premium-or-vip',
@@ -273,7 +273,7 @@ See [Issue #99](https://github.com/citypaul/scenarist/issues/99) for details.
 
 **Headers:**
 ```typescript
-import type { ScenaristMock } from '@scenarist/core';
+import type { ScenaristMock } from '@scenarist/express-adapter';
 
 const mock: ScenaristMock = {
   method: 'GET',
@@ -294,7 +294,7 @@ const mock: ScenaristMock = {
 
 **Query Parameters:**
 ```typescript
-import type { ScenaristMock } from '@scenarist/core';
+import type { ScenaristMock } from '@scenarist/express-adapter';
 
 const mock: ScenaristMock = {
   method: 'GET',
@@ -315,7 +315,7 @@ const mock: ScenaristMock = {
 
 **Body Fields:**
 ```typescript
-import type { ScenaristMock } from '@scenarist/core';
+import type { ScenaristMock } from '@scenarist/express-adapter';
 
 const mock: ScenaristMock = {
   method: 'POST',
@@ -339,7 +339,7 @@ const mock: ScenaristMock = {
 **Marketing Campaigns:**
 
 ```typescript
-import type { ScenaristMock } from '@scenarist/core';
+import type { ScenaristMock } from '@scenarist/express-adapter';
 
 const mock: ScenaristMock = {
   method: 'GET',
@@ -367,7 +367,7 @@ const mock: ScenaristMock = {
 **Referer Patterns:**
 
 ```typescript
-import type { ScenaristMock } from '@scenarist/core';
+import type { ScenaristMock } from '@scenarist/express-adapter';
 
 const mock: ScenaristMock = {
   method: 'POST',
@@ -391,7 +391,7 @@ const mock: ScenaristMock = {
 **User Agent Detection:**
 
 ```typescript
-import type { ScenaristMock } from '@scenarist/core';
+import type { ScenaristMock } from '@scenarist/express-adapter';
 
 const mock: ScenaristMock = {
   method: 'GET',
@@ -465,7 +465,7 @@ Regex patterns work identically in headers, query parameters, and body fields:
 
 **Headers:**
 ```typescript
-import type { ScenaristMock } from '@scenarist/core';
+import type { ScenaristMock } from '@scenarist/express-adapter';
 
 const mock: ScenaristMock = {
   method: 'GET',
@@ -483,7 +483,7 @@ const mock: ScenaristMock = {
 
 **Query Parameters:**
 ```typescript
-import type { ScenaristMock } from '@scenarist/core';
+import type { ScenaristMock } from '@scenarist/express-adapter';
 
 const mock: ScenaristMock = {
   method: 'GET',
@@ -506,7 +506,7 @@ const mock: ScenaristMock = {
 
 **Body Fields:**
 ```typescript
-import type { ScenaristMock } from '@scenarist/core';
+import type { ScenaristMock } from '@scenarist/express-adapter';
 
 const mock: ScenaristMock = {
   method: 'POST',
@@ -549,7 +549,7 @@ Simulate multi-step processes like polling, where each request advances through 
 ### Basic Sequence
 
 ```typescript
-import type { ScenaristMock } from '@scenarist/core';
+import type { ScenaristMock } from '@scenarist/express-adapter';
 
 const mock: ScenaristMock = {
   method: 'GET',
@@ -609,7 +609,7 @@ sequence: {
 **`repeat: 'none'`** - After sequence exhausts, fall through to next mock
 
 ```typescript
-import type { ScenaristScenario } from '@scenarist/core';
+import type { ScenaristScenario } from '@scenarist/express-adapter';
 
 const scenario: ScenaristScenario = {
   id: 'payment-sequence',
@@ -642,7 +642,7 @@ const scenario: ScenaristScenario = {
 Sequences can be combined with match criteria:
 
 ```typescript
-import type { ScenaristMock } from '@scenarist/core';
+import type { ScenaristMock } from '@scenarist/express-adapter';
 
 const mock: ScenaristMock = {
   method: 'GET',
@@ -670,7 +670,7 @@ Capture data from requests and inject it into subsequent responses, enabling sta
 ### Basic State Capture and Injection
 
 ```typescript
-import type { ScenaristScenario } from '@scenarist/core';
+import type { ScenaristScenario } from '@scenarist/express-adapter';
 
 const scenario: ScenaristScenario = {
   id: 'cart-state',
@@ -710,7 +710,7 @@ const scenario: ScenaristScenario = {
 Use `stateKey[]` to append values to an array:
 
 ```typescript
-import type { ScenaristMock } from '@scenarist/core';
+import type { ScenaristMock } from '@scenarist/express-adapter';
 
 const mock: ScenaristMock = {
   method: 'POST',
@@ -740,7 +740,7 @@ const mock: ScenaristMock = {
 Capture deeply nested values using dot notation:
 
 ```typescript
-import type { ScenaristMock } from '@scenarist/core';
+import type { ScenaristMock } from '@scenarist/express-adapter';
 
 const mock: ScenaristMock = {
   method: 'POST',
@@ -769,7 +769,7 @@ const mock: ScenaristMock = {
 Use `{{state.key}}` syntax to inject captured state into responses:
 
 ```typescript
-import type { ScenaristMock } from '@scenarist/core';
+import type { ScenaristMock } from '@scenarist/express-adapter';
 
 const mock: ScenaristMock = {
   method: 'GET',
@@ -824,7 +824,7 @@ test('cart workflow', async ({ page, switchScenario }) => {
 The power comes from combining request matching, sequences, and state together:
 
 ```typescript
-import type { ScenaristScenario } from '@scenarist/core';
+import type { ScenaristScenario } from '@scenarist/express-adapter';
 
 const scenario: ScenaristScenario = {
   id: 'premium-onboarding',
