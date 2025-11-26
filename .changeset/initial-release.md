@@ -1,7 +1,7 @@
 ---
-"@scenarist/express-adapter": major
-"@scenarist/nextjs-adapter": major
-"@scenarist/playwright-helpers": major
+"@scenarist/express-adapter": patch
+"@scenarist/nextjs-adapter": patch
+"@scenarist/playwright-helpers": patch
 ---
 
 Initial v1.0.0 release of Scenarist - a hexagonal architecture library for MSW-based mock scenarios in E2E testing.
