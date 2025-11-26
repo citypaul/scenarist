@@ -27,7 +27,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "Scenarist",
-      description: "E2E testing for Node.js with instant scenario switching. Run your real app—mock only external APIs.",
+      description: "Playwright tests that hit your real server. Server Components, routes, and middleware execute for real. Mock only external APIs—switchable per test.",
       head: [
         // Open Graph
         {
@@ -87,7 +87,7 @@ export default defineConfig({
             "@context": "https://schema.org",
             "@type": "SoftwareSourceCode",
             "name": "Scenarist",
-            "description": "E2E testing for Node.js with instant scenario switching. Run your real app—mock only external APIs.",
+            "description": "Playwright tests that hit your real server. Server Components, routes, and middleware execute for real. Mock only external APIs—switchable per test.",
             "url": "https://scenarist.io",
             "codeRepository": "https://github.com/citypaul/scenarist",
             "programmingLanguage": ["TypeScript", "JavaScript"],
@@ -109,7 +109,7 @@ export default defineConfig({
             "@type": "WebSite",
             "name": "Scenarist Documentation",
             "url": "https://scenarist.io",
-            "description": "Documentation for Scenarist - E2E testing for Node.js with instant scenario switching",
+            "description": "Documentation for Scenarist - Playwright tests that hit your real server. Mock only external APIs—switchable per test.",
             "potentialAction": {
               "@type": "SearchAction",
               "target": {
