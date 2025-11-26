@@ -45,7 +45,7 @@ pnpm test
 cd internal/core && pnpm test:watch
 
 # Type check
-pnpm check-types
+pnpm typecheck
 
 # Lint
 pnpm lint

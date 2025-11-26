@@ -113,7 +113,7 @@ This adapter implements all 25 Scenarist capabilities:
 - ✅ **Response building** - Status codes, JSON bodies, headers, delays, state injection
 - ✅ **Sequences and state** - Polling scenarios and stateful mocks fully supported
 - ✅ **Automatic default fallback** - Collects default + active scenario mocks, uses specificity to select best match
-- ✅ **Framework-agnostic** - Works with Express, Fastify, Next.js, Remix, any Node.js framework
+- ✅ **Framework-agnostic** - Works with Express, Next.js, and any Node.js framework via HTTP-level interception
 
 ## Internal Package
 
@@ -121,9 +121,8 @@ This adapter implements all 25 Scenarist capabilities:
 
 You typically don't install or use this directly. Instead, use a framework-specific adapter:
 
-- **[@scenarist/express-adapter](../express-adapter)** - For Express applications
-- **@scenarist/fastify-adapter** - Coming soon
-- **@scenarist/nextjs-adapter** - Coming soon
+- **[@scenarist/express-adapter](../../packages/express-adapter)** - For Express applications
+- **[@scenarist/nextjs-adapter](../../packages/nextjs-adapter)** - For Next.js applications (App Router + Pages Router)
 
 ## How It Works
 
@@ -228,7 +227,7 @@ server.listen();
 
 ## Architecture
 
-This package is designed to be framework-agnostic. Framework adapters (Express, Fastify, etc.) handle:
+This package is designed to be framework-agnostic. Framework adapters (Express, Next.js, etc.) handle:
 
 - Test ID extraction (from headers, context, etc.)
 - Scenario management (switching, retrieving)

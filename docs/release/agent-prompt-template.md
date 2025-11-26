@@ -342,7 +342,7 @@ Moving core is high-risk. After each change:
 pnpm install
 pnpm build
 pnpm test
-pnpm check-types
+pnpm typecheck
 ```
 
 All must pass before committing.

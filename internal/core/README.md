@@ -55,7 +55,7 @@ await switchScenario('test-2', 'success'); // Test 2 sees success (parallel!)
 
 **Framework-Agnostic Core**
 - Zero framework dependencies
-- Works with Express, Fastify, Next.js, Remix, any framework
+- Works with Express, Next.js, and any Node.js framework
 - Hexagonal architecture enables custom adapters
 
 **Type-Safe & Tested**
@@ -187,7 +187,7 @@ Per [RFC 2616 Section 4.2](https://www.w3.org/Protocols/rfc2616/rfc2616-sec4.htm
 **Implementation Details:**
 - Core's `ResponseSelector` normalizes both request headers AND criteria headers to lowercase
 - Adapters pass headers as-is (no normalization required)
-- Works regardless of framework (Express, Next.js, Fastify, etc.)
+- Works regardless of framework (Express, Next.js, etc.)
 
 **Why This Matters:**
 - Browser and client libraries may send headers with any casing
@@ -658,7 +658,7 @@ Scenarist validates patterns before execution to protect your tests from denial-
 
 ## Adapter Contract
 
-The core package defines a **universal adapter contract** that all framework adapters (Express, Fastify, Next.js, etc.) must implement. This ensures consistent API across all frameworks.
+The core package defines a **universal adapter contract** that all framework adapters (Express, Next.js, etc.) must implement. This ensures consistent API across all frameworks.
 
 ### BaseAdapterOptions
 
