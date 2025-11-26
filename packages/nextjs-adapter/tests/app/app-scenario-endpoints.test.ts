@@ -13,7 +13,7 @@ describe('App Router Scenario Endpoints', () => {
       const req = new Request('http://localhost:3000/__scenario__', {
         method: 'POST',
         headers: {
-          'x-test-id': 'test-123',
+          'x-scenarist-test-id': 'test-123',
           'content-type': 'application/json',
         },
         body: JSON.stringify({
@@ -38,7 +38,7 @@ describe('App Router Scenario Endpoints', () => {
       const req = new Request('http://localhost:3000/__scenario__', {
         method: 'POST',
         headers: {
-          'x-test-id': 'test-789',
+          'x-scenarist-test-id': 'test-789',
           'content-type': 'application/json',
         },
         body: JSON.stringify({
@@ -59,7 +59,7 @@ describe('App Router Scenario Endpoints', () => {
       const req = new Request('http://localhost:3000/__scenario__', {
         method: 'POST',
         headers: {
-          'x-test-id': 'test-bad',
+          'x-scenarist-test-id': 'test-bad',
           'content-type': 'application/json',
         },
         body: JSON.stringify({
@@ -85,7 +85,7 @@ describe('App Router Scenario Endpoints', () => {
       const req = new Request('http://localhost:3000/__scenario__', {
         method: 'POST',
         headers: {
-          'x-test-id': 'test-error',
+          'x-scenarist-test-id': 'test-error',
           'content-type': 'application/json',
         },
         body: JSON.stringify({
@@ -111,7 +111,7 @@ describe('App Router Scenario Endpoints', () => {
       const req = new Request('http://localhost:3000/__scenario__', {
         method: 'GET',
         headers: {
-          'x-test-id': 'test-abc',
+          'x-scenarist-test-id': 'test-abc',
         },
       });
 
@@ -132,7 +132,7 @@ describe('App Router Scenario Endpoints', () => {
       const req = new Request('http://localhost:3000/__scenario__', {
         method: 'GET',
         headers: {
-          'x-test-id': 'test-no-scenario',
+          'x-scenarist-test-id': 'test-no-scenario',
         },
       });
 
@@ -153,7 +153,7 @@ describe('App Router Scenario Endpoints', () => {
       const req = new Request('http://localhost:3000/__scenario__', {
         method: 'PUT',
         headers: {
-          'x-test-id': 'test-put',
+          'x-scenarist-test-id': 'test-put',
         },
       });
 

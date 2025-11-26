@@ -19,7 +19,7 @@ describe('Scenario Endpoints', () => {
 
       const response = await request(app)
         .post('/__scenario__')
-        .set('x-test-id', 'test-123')
+        .set('x-scenarist-test-id', 'test-123')
         .send({ scenario: 'happy-path' });
 
       expect(response.status).toBe(200);
@@ -41,7 +41,7 @@ describe('Scenario Endpoints', () => {
 
       const response = await request(app)
         .post('/__scenario__')
-        .set('x-test-id', 'test-123')
+        .set('x-scenarist-test-id', 'test-123')
         .send({});
 
       expect(response.status).toBe(400);
@@ -60,7 +60,7 @@ describe('Scenario Endpoints', () => {
       // Send invalid data: scenario is a number instead of string
       const response = await request(app)
         .post('/__scenario__')
-        .set('x-test-id', 'test-123')
+        .set('x-scenarist-test-id', 'test-123')
         .send({ scenario: 123 });
 
       expect(response.status).toBe(400);
@@ -91,7 +91,7 @@ describe('Scenario Endpoints', () => {
 
       const response = await request(app)
         .post('/__scenario__')
-        .set('x-test-id', 'test-123')
+        .set('x-scenarist-test-id', 'test-123')
         .send({ scenario: 'non-existent' });
 
       expect(response.status).toBe(400);
@@ -113,7 +113,7 @@ describe('Scenario Endpoints', () => {
 
       const response = await request(app)
         .post('/__scenario__')
-        .set('x-test-id', 'test-123')
+        .set('x-scenarist-test-id', 'test-123')
         .send({ scenario: 'test-scenario' });
 
       expect(response.status).toBe(500);
@@ -142,7 +142,7 @@ describe('Scenario Endpoints', () => {
 
       const response = await request(app)
         .get('/__scenario__')
-        .set('x-test-id', 'test-123');
+        .set('x-scenarist-test-id', 'test-123');
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual({
@@ -164,7 +164,7 @@ describe('Scenario Endpoints', () => {
 
       const response = await request(app)
         .get('/__scenario__')
-        .set('x-test-id', 'test-123');
+        .set('x-scenarist-test-id', 'test-123');
 
       expect(response.status).toBe(404);
       expect(response.body.error).toBe('No active scenario for this test ID');
@@ -184,7 +184,7 @@ describe('Scenario Endpoints', () => {
 
       const response = await request(app)
         .get('/__scenario__')
-        .set('x-test-id', 'test-123');
+        .set('x-scenarist-test-id', 'test-123');
 
       expect(response.status).toBe(200);
       expect(response.body.scenarioName).toBeUndefined();
