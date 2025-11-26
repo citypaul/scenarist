@@ -255,28 +255,38 @@ describe("MSW Parity: Path Parameter Extraction", () => {
     });
 
     it("should NOT match :id(\\d+) with non-numeric value", async () => {
-      // Capture whether MSW handler was called
-      const handlerCalled = await new Promise<boolean>((resolve) => {
-        server.use(
-          http.get("https://api.example.com/users/:id(\\d+)", ({ params }) => {
-            resolve(true); // Handler called
-            return HttpResponse.json({ ok: true });
-          })
-        );
+      // Track which handler was called - specific pattern or catch-all fallback
+      const handlerResult = await new Promise<"specific" | "fallback">(
+        (resolve) => {
+          server.use(
+            // Specific handler with regex constraint - should NOT match "alice"
+            http.get(
+              "https://api.example.com/users/:id(\\d+)",
+              ({ params }) => {
+                resolve("specific");
+                return HttpResponse.json({ matched: "specific", params });
+              }
+            ),
+            // Catch-all fallback handler - will match if specific handler doesn't
+            http.get("https://api.example.com/users/*", () => {
+              resolve("fallback");
+              return HttpResponse.json({ matched: "fallback" });
+            })
+          );
 
-        // Make request that shouldn't match the regex pattern
-        // MSW will passthrough because pattern doesn't match
-        fetch("https://api.example.com/users/alice").catch(() => {
-          // Expected: MSW passthrough to non-existent endpoint
-          resolve(false); // Handler not called
-        });
-      });
+          // Make request that shouldn't match the regex pattern
+          // If MSW's :id(\d+) doesn't match "alice", the fallback will catch it
+          fetch("https://api.example.com/users/alice");
+        }
+      );
 
       // Our implementation should also not match
       const ourResult = matchesUrl("/users/:id(\\d+)", "/users/alice");
 
       expect(ourResult.matches).toBe(false);
-      expect(handlerCalled).toBe(false); // MSW didn't call handler
+      expect(handlerResult).toBe("fallback"); // MSW didn't match specific handler
+
+      server.resetHandlers();
     });
 
     it("should extract :year(\\d{4}) for 4-digit year", async () => {
