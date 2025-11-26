@@ -1,71 +1,182 @@
-# NPM Token Setup Guide
+# npm Trusted Publishing Setup Guide
 
-This guide documents the steps to configure the `NPM_TOKEN` secret required for automated npm publishing via GitHub Actions.
+This guide documents configuring **npm Trusted Publishing** for secure, secretless npm publishing via GitHub Actions using OIDC (OpenID Connect).
+
+## Why Trusted Publishing?
+
+Trusted publishing is the **recommended approach** for npm publishing from CI/CD:
+
+| Feature | Traditional Token | Trusted Publishing |
+|---------|------------------|-------------------|
+| Secrets to manage | Yes (NPM_TOKEN) | **None** |
+| Token expiration | Manual rotation needed | **Automatic** (per-publish) |
+| Security | Long-lived credential | **OIDC short-lived tokens** |
+| Provenance | Optional | **Built-in attestation** |
+| Supply chain security | Basic | **Enhanced** |
 
 ## Prerequisites
 
-- Access to the npm account that will own the `@scenarist/*` packages
+- npm account that owns the `@scenarist` organization
 - Admin access to the GitHub repository
+- Packages must be published at least once before enabling (or use npm's "link" feature for new packages)
 
-## Step 1: Generate npm Automation Token
+## Step 1: Link GitHub Repository to npm Packages
+
+For **each package** (`@scenarist/express-adapter`, `@scenarist/nextjs-adapter`, `@scenarist/playwright-helpers`):
 
 1. Go to [npmjs.com](https://www.npmjs.com/) and log in
-2. Click your profile icon (top right) → **Access Tokens**
-3. Click **Generate New Token** → **Classic Token**
-4. Select **Automation** token type
-   - **Important**: Choose "Automation" not "Publish" - Automation tokens work with CI/CD and don't require 2FA
-5. Give the token a descriptive name (e.g., `scenarist-github-actions`)
-6. Copy the token immediately (it won't be shown again)
+2. Navigate to the package settings (or organization settings for new packages)
+3. Go to **Settings** → **Trusted Publishers** (or **Publishing access**)
+4. Click **Link a repository**
+5. Configure:
+   - **Repository owner**: `citypaul`
+   - **Repository name**: `scenarist`
+   - **Workflow filename**: `release.yml`
+   - **Environment** (optional): `release` (if using GitHub environments)
+6. Save the configuration
 
-## Step 2: Add Token to GitHub Repository Secrets
+Repeat for each package, or configure at the organization level if supported.
 
-1. Go to the GitHub repository: https://github.com/citypaul/scenarist
-2. Navigate to **Settings** → **Secrets and variables** → **Actions**
-3. Click **New repository secret**
-4. Set:
-   - **Name**: `NPM_TOKEN`
-   - **Secret**: Paste the token from Step 1
-5. Click **Add secret**
+## Step 2: Configure GitHub Actions Workflow
 
-## Step 3: Verify Configuration
+The release workflow needs these settings (Workstream D will implement this):
 
-After completing the above steps, verify the setup:
+```yaml
+name: Release
 
-1. **Check secret exists**: Settings → Secrets and variables → Actions → Repository secrets
-   - `NPM_TOKEN` should appear in the list (value hidden)
+on:
+  push:
+    branches:
+      - main
 
-2. **Test with dry-run** (after Workstream B completes):
-   ```bash
-   # In a GitHub Actions workflow or locally with the token:
-   pnpm --filter @scenarist/express-adapter exec npm publish --dry-run
-   ```
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write  # Required for OIDC token exchange
 
-## Security Notes
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-- **Never commit the token** to the repository
-- **Automation tokens** are recommended because:
-  - They don't require 2FA during publish
-  - They can be scoped to specific packages (if using granular tokens)
-  - They can be revoked without affecting your main account access
-- **Token rotation**: Consider rotating the token periodically (e.g., annually)
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+      - name: Create Release Pull Request or Publish
+        uses: changesets/action@v1
+        with:
+          version: pnpm changeset version
+          publish: pnpm changeset publish
+          title: 'chore: release packages'
+          commit: 'chore: release packages'
+          createGithubReleases: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true  # Enable provenance attestation
+```
+
+### Key Configuration Points
+
+1. **`id-token: write`** - Allows GitHub Actions to request OIDC tokens
+2. **`NPM_CONFIG_PROVENANCE: true`** - Enables npm provenance attestation
+3. **No `NPM_TOKEN`** - Authentication handled via OIDC
+
+## Step 3: First-Time Package Publishing
+
+For **new packages** that haven't been published yet:
+
+### Option A: Publish First Version Manually
+
+```bash
+# Authenticate locally
+npm login
+
+# Publish each package once (from repo root)
+cd packages/express-adapter && npm publish --access public
+cd ../nextjs-adapter && npm publish --access public
+cd ../playwright-helpers && npm publish --access public
+```
+
+Then configure trusted publishing for subsequent releases.
+
+### Option B: Use npm's Linking Feature (Beta)
+
+npm may support linking repositories to unpublished package names. Check npm documentation for current status.
+
+## Step 4: Verify Configuration
+
+After setup, verify trusted publishing works:
+
+1. **Check npm package settings**: Each package should show the linked GitHub repository
+2. **Test with a beta release**: Create a release branch and verify publishing succeeds
+3. **Check provenance**: Published packages should show provenance badge on npmjs.com
+
+## How It Works
+
+```
+┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
+│ GitHub Actions  │──────│  npm Registry   │──────│  Package Page   │
+│                 │ OIDC │                 │      │                 │
+│ 1. Request      │ ───► │ 2. Verify       │      │ 4. Provenance   │
+│    OIDC token   │      │    identity     │      │    badge shown  │
+│                 │      │                 │      │                 │
+│ 3. Publish with │ ───► │    Trust        │      │                 │
+│    short-lived  │      │    established  │      │                 │
+│    credential   │      │                 │      │                 │
+└─────────────────┘      └─────────────────┘      └─────────────────┘
+```
+
+## Security Benefits
+
+- **No stored secrets**: No NPM_TOKEN to leak or rotate
+- **Identity verification**: npm verifies the GitHub repository identity
+- **Provenance attestation**: Users can verify packages came from this repo
+- **Short-lived credentials**: Tokens expire immediately after use
+- **Audit trail**: Clear link between GitHub commit and npm publish
 
 ## Troubleshooting
 
-### "402 Payment Required" error
-- The packages need `"publishConfig": { "access": "public" }` in their package.json
-- This is handled by Workstream B issues
-
 ### "403 Forbidden" error
-- Token may lack publish permissions
-- Ensure token type is "Automation" or "Publish"
-- Verify you're logged into the correct npm account
+- Trusted publisher not configured for this package
+- Workflow filename doesn't match configured value
+- Repository owner/name doesn't match
 
-### "404 Not Found" error
-- Package name may already be taken on npm
-- Check package naming in package.json files
+### "OIDC token exchange failed"
+- `id-token: write` permission not set in workflow
+- GitHub Actions OIDC provider not available
+
+### Provenance not showing
+- `NPM_CONFIG_PROVENANCE: true` not set
+- Package was published without provenance initially
+
+## Migration from NPM_TOKEN
+
+If you previously used `NPM_TOKEN`:
+
+1. Configure trusted publishing (Steps 1-2 above)
+2. Remove `NPM_TOKEN` from workflow env vars
+3. Add `NPM_CONFIG_PROVENANCE: true`
+4. Remove `NPM_TOKEN` from GitHub repository secrets (after verification)
+
+## Related Documentation
+
+- [npm Trusted Publishers](https://docs.npmjs.com/trusted-publishers)
+- [npm Provenance](https://docs.npmjs.com/generating-provenance-statements)
+- [GitHub OIDC](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect)
 
 ## Related Issues
 
-- #157: Configure NPM_TOKEN secret (this document)
-- #147, #148, #149: Package metadata (Workstream B)
-- #154: Release workflow that uses NPM_TOKEN
+- #157: Configure npm publishing (this document)
+- #154: Release workflow (Workstream D - implements the workflow)
+- #155: Pre-release workflow (Workstream D)
