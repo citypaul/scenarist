@@ -17,13 +17,9 @@
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": [
-    "@scenarist/core",
     "@scenarist/docs",
     "@scenarist/express-example",
     "@scenarist/nextjs-app-router-example",
-    "@scenarist/nextjs-pages-router-example",
-    "@scenarist/msw-adapter",
-    "@scenarist/eslint-config",
-    "@scenarist/typescript-config"
+    "@scenarist/nextjs-pages-router-example"
   ]
 }
