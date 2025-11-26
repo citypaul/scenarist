@@ -25,7 +25,30 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "Scenarist",
-      description: "Fix E2E testing for Next.js, Remix, and TanStack",
+      description: "E2E testing for Node.js with instant scenario switching. Run your real app—mock only external APIs.",
+      head: [
+        {
+          tag: "meta",
+          attrs: {
+            property: "og:image",
+            content: "https://scenarist.io/social-preview.png",
+          },
+        },
+        {
+          tag: "meta",
+          attrs: {
+            name: "twitter:image",
+            content: "https://scenarist.io/social-preview.png",
+          },
+        },
+        {
+          tag: "meta",
+          attrs: {
+            name: "twitter:card",
+            content: "summary_large_image",
+          },
+        },
+      ],
       social: [
         {
           icon: "github",
