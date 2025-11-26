@@ -238,3 +238,28 @@ jobs:
 
       - name: Run docs E2E tests
         run: pnpm --filter=@scenarist/docs test
+
+  # Job 8: Custom Server Tests (verifies Scenarist works with Express + Next.js custom servers)
+  custom-server-tests:
+    name: Custom Server Tests (${{ matrix.name }})
+    needs: setup-and-build
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: App Router
+            filter: "@scenarist/nextjs-app-router-example"
+          - name: Pages Router
+            filter: "@scenarist/nextjs-pages-router-example"
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Restore workspace
+        uses: ./.github/actions/restore-workspace
+
+      - name: Run custom server tests
+        run: pnpm --filter=${{ matrix.filter }} test:custom
