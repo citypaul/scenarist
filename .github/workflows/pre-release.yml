@@ -44,6 +44,7 @@ jobs:
         run: |
           # For docs (mermaid rendering) and example apps (E2E tests)
           pnpm --filter=@scenarist/docs exec playwright install --with-deps chromium
+          pnpm --filter=@scenarist/nextjs-app-router-example exec playwright install chromium
           pnpm --filter=@scenarist/nextjs-pages-router-example exec playwright install chromium
 
       - name: Build packages
@@ -59,8 +60,18 @@ jobs:
 
       - name: Run production build tests
         run: |
+          # Run production tests sequentially with port cleanup between each
+          # All apps use port 3001 for json-server (hardcoded in app code)
           pnpm --filter=@scenarist/express-example test:production
+
+          # Kill any lingering processes on shared ports before next test
+          # (Process cleanup in globalTeardown may not kill child processes properly)
+          fuser -k 3001/tcp 2>/dev/null || true
+
           pnpm --filter=@scenarist/nextjs-app-router-example test:production
+
+          fuser -k 3001/tcp 2>/dev/null || true
+
           pnpm --filter=@scenarist/nextjs-pages-router-example test:production
 
       - name: Determine pre-release tag

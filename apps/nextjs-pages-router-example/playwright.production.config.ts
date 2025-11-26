@@ -7,6 +7,7 @@ import { defineConfig } from '@playwright/test';
  * - No Scenarist (tree-shaken)
  * - No MSW (not running)
  * - Real API calls to json-server on port 3001
+ * - Next.js app server runs on port 3200 (to avoid conflicts with other apps)
  *
  * globalSetup builds Next.js in production mode and starts servers
  *
@@ -20,7 +21,7 @@ export default defineConfig({
   workers: 1, // Single worker (json-server has shared state)
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:3000', // Production server port
+    baseURL: 'http://localhost:3200', // Production server port (3200 to avoid conflicts with other apps)
     trace: 'on-first-retry',
   },
 

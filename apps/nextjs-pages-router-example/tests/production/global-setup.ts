@@ -24,12 +24,18 @@ import waitOn from 'wait-on';
 // Store process PIDs for teardown
 const pidsFile = join(process.cwd(), '.test-server-pids.json');
 
+// Production test ports
+// Note: JSON_SERVER_PORT must be 3001 as the app's API routes have this hardcoded
+const NEXT_PORT = 3200;
+const JSON_SERVER_PORT = 3001;
+
 export default async function globalSetup() {
-  // Check if production build already exists (from CI cache)
-  const nextDir = join(process.cwd(), '.next');
+  // Check if production build already exists by verifying BUILD_ID file
+  // (not just .next directory, which may exist but be incomplete)
+  const buildIdFile = join(process.cwd(), '.next', 'BUILD_ID');
   const { existsSync } = await import('node:fs');
 
-  if (existsSync(nextDir)) {
+  if (existsSync(buildIdFile)) {
     console.log('Using existing Next.js production build from cache...');
   } else {
     console.log('Building Next.js app in production mode...');
@@ -56,7 +62,7 @@ export default async function globalSetup() {
       '--watch',
       'fake-api/db.json',
       '--port',
-      '3001',
+      String(JSON_SERVER_PORT),
       '--host',
       'localhost',
     ],
@@ -72,12 +78,16 @@ export default async function globalSetup() {
   });
 
   // Start Next.js production server
-  const nextServer = spawn('npx', ['next', 'start', '--port', '3000'], {
-    env: { ...process.env, NODE_ENV: 'production' },
-    stdio: 'inherit', // Show output for debugging
-    cwd: process.cwd(),
-    detached: false,
-  });
+  const nextServer = spawn(
+    'npx',
+    ['next', 'start', '--port', String(NEXT_PORT)],
+    {
+      env: { ...process.env, NODE_ENV: 'production' },
+      stdio: 'inherit', // Show output for debugging
+      cwd: process.cwd(),
+      detached: false,
+    }
+  );
 
   nextServer.on('error', (err) => {
     console.error('Next.js server failed to start:', err);
@@ -88,8 +98,8 @@ export default async function globalSetup() {
   console.log('Waiting for servers to be ready...');
   await waitOn({
     resources: [
-      'http://localhost:3001/cart', // json-server endpoint
-      'http://localhost:3000/api/health', // Next.js health check
+      `http://localhost:${JSON_SERVER_PORT}/cart`, // json-server endpoint
+      `http://localhost:${NEXT_PORT}/api/health`, // Next.js health check
     ],
     timeout: 60000, // 60 seconds (Next.js can take longer to start)
     interval: 500, // Check every 500ms
