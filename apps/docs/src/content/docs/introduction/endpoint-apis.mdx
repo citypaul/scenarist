@@ -164,7 +164,6 @@ x-scenarist-test-id: <test-id>
   testId: string;           // The test ID
   scenarioId: string;       // The active scenario ID
   scenarioName?: string;    // The scenario's human-readable name (if found)
-  variantName?: string;     // The variant name (if set)
 }
 ```
 
@@ -173,8 +172,7 @@ x-scenarist-test-id: <test-id>
 {
   "testId": "test-abc123",
   "scenarioId": "payment-error",
-  "scenarioName": "Payment Error Scenarios",
-  "variantName": "visa-declined"
+  "scenarioName": "Payment Error Scenarios"
 }
 ```
 
@@ -395,7 +393,7 @@ Both endpoints delegate to `ScenarioManager`:
 
 ```typescript
 // POST /__scenario__ flow
-const result = manager.switchScenario(testId, scenarioId, variantName);
+const result = manager.switchScenario(testId, scenarioId);
 // 1. Looks up scenario definition by ID
 // 2. Returns error if not found
 // 3. Stores active scenario for test ID
@@ -415,7 +413,7 @@ const scenarioDefinition = manager.getScenarioById(activeScenario.scenarioId);
 When switching scenarios, state and sequences are reset:
 
 ```typescript
-manager.switchScenario(testId, scenarioId, variantName);
+manager.switchScenario(testId, scenarioId);
 // Internally calls:
 // - sequenceTracker.reset(testId)  // All sequence positions cleared
 // - stateManager.reset(testId)     // All captured state cleared

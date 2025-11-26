@@ -30,26 +30,6 @@ describe('Scenario Endpoints', () => {
       });
     });
 
-    it('should set scenario with variant', async () => {
-      const config = mockConfig();
-      const manager = mockScenarioManager({
-        switchScenario: () => ({ success: true, data: undefined }),
-      });
-
-      const router = createScenarioEndpoints(manager, config);
-      const app = express();
-      app.use(express.json());
-      app.use(router!);
-
-      const response = await request(app)
-        .post('/__scenario__')
-        .set('x-scenarist-test-id', 'test-123')
-        .send({ scenario: 'payment-flow', variant: 'credit-card' });
-
-      expect(response.status).toBe(200);
-      expect(response.body.variant).toBe('credit-card');
-    });
-
     it('should return 400 when scenario is missing', async () => {
       const config = mockConfig();
       const manager = mockScenarioManager();
@@ -147,7 +127,6 @@ describe('Scenario Endpoints', () => {
       const manager = mockScenarioManager({
         getActiveScenario: () => ({
           scenarioId: 'happy-path',
-          variantName: 'credit-card',
         }),
         getScenarioById: () => ({
           id: 'happy-path',
@@ -170,7 +149,6 @@ describe('Scenario Endpoints', () => {
         testId: 'test-123',
         scenarioId: 'happy-path',
         scenarioName: 'Happy Path Scenario',
-        variantName: 'credit-card',
       });
     });
 

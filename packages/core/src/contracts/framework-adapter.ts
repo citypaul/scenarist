@@ -102,8 +102,7 @@ export type ScenaristAdapter<
    */
   readonly switchScenario: (
     testId: string,
-    scenarioId: ScenarioIds<TScenarios>,
-    variantName?: string
+    scenarioId: ScenarioIds<TScenarios>
   ) => ScenaristResult<void, Error>;
 
   /**

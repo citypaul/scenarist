@@ -18,11 +18,6 @@ export type SwitchScenarioOptions = {
   readonly endpoint?: string;
 
   /**
-   * Optional variant within the scenario
-   */
-  readonly variant?: string;
-
-  /**
    * Optional test ID to use instead of auto-generating one.
    * When using the fixture-based API, this is automatically provided.
    * @internal
@@ -74,7 +69,6 @@ const establishTestIdInterception = async (
  * @example
  * ```typescript
  * import { switchScenario } from '@scenarist/playwright-helpers';
- * import { SCENARIST_TEST_ID_HEADER } from '@scenarist/core';
  *
  * test('premium user flow', async ({ page }) => {
  *   const testId = await switchScenario(page, 'premiumUser', {
@@ -83,7 +77,7 @@ const establishTestIdInterception = async (
  *
  *   // Use testId for explicit API requests
  *   await page.request.post('/api/action', {
- *     headers: { [SCENARIST_TEST_ID_HEADER]: testId },
+ *     headers: { 'x-scenarist-test-id': testId },
  *   });
  *
  *   await page.goto('/');
@@ -99,7 +93,6 @@ export const switchScenario = async (
   const {
     baseURL,
     endpoint = '/__scenario__',
-    variant,
     testId: providedTestId,
   } = options;
 
@@ -118,7 +111,6 @@ export const switchScenario = async (
     headers: { [SCENARIST_TEST_ID_HEADER]: testId },
     data: {
       scenario: scenarioId,
-      ...(variant && { variant }),
     },
   });
 

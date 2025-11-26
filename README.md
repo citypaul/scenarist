@@ -627,8 +627,7 @@ console.log(response.body);
 // {
 //   testId: 'test-123',
 //   scenarioId: 'user-scenario',
-//   scenarioName: 'User Scenario',
-//   variantName: 'premium-tier'
+//   scenarioName: 'User Scenario'
 // }
 ```
 

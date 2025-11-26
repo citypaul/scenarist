@@ -32,33 +32,6 @@ describe('App Router Scenario Endpoints', () => {
       });
     });
 
-    it('should switch scenario with variant', async () => {
-      const { handler } = createTestSetup();
-
-      const req = new Request('http://localhost:3000/__scenario__', {
-        method: 'POST',
-        headers: {
-          'x-scenarist-test-id': 'test-456',
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          scenario: 'premium',
-          variant: 'high-tier',
-        }),
-      });
-
-      const response = await handler(req);
-      const data = await response.json();
-
-      expect(response.status).toBe(200);
-      expect(data).toEqual({
-        success: true,
-        testId: 'test-456',
-        scenarioId: 'premium',
-        variant: 'high-tier',
-      });
-    });
-
     it('should return 400 when scenario does not exist', async () => {
       const { handler } = createTestSetup();
 
@@ -171,30 +144,6 @@ describe('App Router Scenario Endpoints', () => {
       expect(data.testId).toBe('test-no-scenario');
     });
 
-    it('should include variant name when present', async () => {
-      const { handler, manager } = createTestSetup();
-
-      // Switch to scenario with variant
-      manager.switchScenario('test-variant', 'premium', 'high-tier');
-
-      const req = new Request('http://localhost:3000/__scenario__', {
-        method: 'GET',
-        headers: {
-          'x-scenarist-test-id': 'test-variant',
-        },
-      });
-
-      const response = await handler(req);
-      const data = await response.json();
-
-      expect(response.status).toBe(200);
-      expect(data).toEqual({
-        testId: 'test-variant',
-        scenarioId: 'premium',
-        scenarioName: 'Premium Scenario',
-        variantName: 'high-tier',
-      });
-    });
   });
 
   describe('unsupported methods', () => {

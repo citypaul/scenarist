@@ -76,13 +76,6 @@ export type ScenaristMockWithParams = {
  */
 
 /**
- * Serializable variant definition.
- * Variants allow parameterization of scenarios with different data.
- *
- * NOTE: VariantDefinition type is now schema-inferred from ScenaristVariantSchema.
- */
-
-/**
  * Serializable scenario definition.
  * This is pure data that can be:
  * - Stored in Redis for distributed testing
@@ -103,7 +96,6 @@ export type ScenaristMockWithParams = {
  */
 export type ActiveScenario = {
   readonly scenarioId: string;
-  readonly variantName?: string;
 };
 
 /**

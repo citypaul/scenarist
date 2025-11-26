@@ -526,25 +526,6 @@ describe("ScenarioManager", () => {
       }
     });
 
-    it("should support scenario variants", () => {
-      const { manager } = createTestSetup();
-      const definition = createTestScenaristScenario(
-        "with-variant",
-        "With Variant"
-      );
-      manager.registerScenario(definition);
-
-      const result = manager.switchScenario(
-        "test-123",
-        "with-variant",
-        "premium-user"
-      );
-
-      expect(result.success).toBe(true);
-      const active = manager.getActiveScenario("test-123");
-      expect(active?.variantName).toBe("premium-user");
-    });
-
     it("should isolate scenarios by test ID", () => {
       const { manager } = createTestSetup();
       const definition1 = createTestScenaristScenario(
@@ -574,12 +555,11 @@ describe("ScenarioManager", () => {
       const definition = createTestScenaristScenario("test", "Test");
       manager.registerScenario(definition);
 
-      manager.switchScenario("test-123", "test", "variant-1");
+      manager.switchScenario("test-123", "test");
 
       const active = store.get("test-123");
       expect(active).toEqual({
         scenarioId: "test",
-        variantName: "variant-1",
       });
     });
   });

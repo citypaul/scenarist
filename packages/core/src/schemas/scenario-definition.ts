@@ -93,18 +93,10 @@ export const ScenaristMockSchema = z.object({
 });
 export type ScenaristMock = z.infer<typeof ScenaristMockSchema>;
 
-export const ScenaristVariantSchema = z.object({
-  name: z.string().min(1),
-  description: z.string(),
-  data: z.unknown(),
-});
-export type ScenaristVariant = z.infer<typeof ScenaristVariantSchema>;
-
 export const ScenaristScenarioSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   description: z.string(),
   mocks: z.array(ScenaristMockSchema),
-  variants: z.array(ScenaristVariantSchema).optional(),
 });
 export type ScenaristScenario = z.infer<typeof ScenaristScenarioSchema>;

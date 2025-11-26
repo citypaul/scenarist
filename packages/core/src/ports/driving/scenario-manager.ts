@@ -53,13 +53,11 @@ export interface ScenarioManager {
    *
    * @param testId Unique identifier for the test
    * @param scenarioId ID of the scenario to activate
-   * @param variantName Optional variant name for the scenario
    * @returns Success or error if scenario not found in registry
    */
   switchScenario(
     testId: string,
-    scenarioId: string,
-    variantName?: string
+    scenarioId: string
   ): ScenaristResult<void, Error>;
 
   /**
@@ -67,7 +65,7 @@ export interface ScenarioManager {
    *
    * Delegates to: ScenarioStore.get()
    *
-   * Note: This returns only the reference (scenarioId + variantName).
+   * Note: This returns only the reference (scenarioId).
    * To get the full ScenarioDefinition, use getScenarioById().
    *
    * @param testId Unique identifier for the test

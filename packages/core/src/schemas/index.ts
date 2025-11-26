@@ -24,7 +24,6 @@ export {
   ScenaristCaptureConfigSchema,
   ScenaristUrlPatternSchema,
   ScenaristMockSchema,
-  ScenaristVariantSchema,
   ScenaristScenarioSchema,
   // Export schema-inferred types (single source of truth)
   type HttpMethod,
@@ -36,7 +35,6 @@ export {
   type ScenaristCaptureConfig,
   type ScenaristUrlPattern,
   type ScenaristMock,
-  type ScenaristVariant,
   type ScenaristScenario,
 } from './scenario-definition.js';
 export { SerializedRegexSchema, type SerializedRegex } from './match-criteria.js';

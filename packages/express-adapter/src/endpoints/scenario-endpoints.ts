@@ -13,11 +13,11 @@ const handleSetScenario = (
 ) => {
   return (req: Request, res: Response): void => {
     try {
-      const { scenario, variant } = ScenarioRequestSchema.parse(req.body);
+      const { scenario } = ScenarioRequestSchema.parse(req.body);
       const context = new ExpressRequestContext(req, config);
       const testId = context.getTestId();
 
-      const result = manager.switchScenario(testId, scenario, variant);
+      const result = manager.switchScenario(testId, scenario);
 
       if (!result.success) {
         res.status(400).json({
@@ -30,7 +30,6 @@ const handleSetScenario = (
         success: true,
         testId,
         scenarioId: scenario,
-        ...(variant && { variant }),
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -74,9 +73,6 @@ const handleGetScenario = (
       testId,
       scenarioId: activeScenario.scenarioId,
       ...(scenarioDefinition && { scenarioName: scenarioDefinition.name }),
-      ...(activeScenario.variantName && {
-        variantName: activeScenario.variantName,
-      }),
     });
   };
 };

@@ -89,8 +89,7 @@ export const createScenarioManager = ({
 
     switchScenario(
       testId: string,
-      scenarioId: string,
-      variantName?: string
+      scenarioId: string
     ): ScenaristResult<void, Error> {
       const definition = registry.get(scenarioId);
 
@@ -103,7 +102,6 @@ export const createScenarioManager = ({
 
       const activeScenario: ActiveScenario = {
         scenarioId,
-        variantName,
       };
 
       store.set(testId, activeScenario);

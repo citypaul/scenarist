@@ -662,7 +662,6 @@ await fetch('http://localhost:3000/__scenario__', {
   testId: string;
   scenarioId: string;
   scenarioName?: string;
-  variantName?: string;
 }
 ```
 

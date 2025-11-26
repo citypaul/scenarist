@@ -4,10 +4,8 @@ import type { ActiveScenario } from '../src/types/index.js';
 
 const createTestActiveScenario = (
   scenarioId: string,
-  variantName?: string,
 ): ActiveScenario => ({
   scenarioId,
-  variantName,
 });
 
 describe('InMemoryScenarioStore', () => {
@@ -38,7 +36,7 @@ describe('InMemoryScenarioStore', () => {
   describe('get', () => {
     it('should retrieve stored scenario by test ID', () => {
       const store = new InMemoryScenarioStore();
-      const scenario = createTestActiveScenario('test-scenario', 'variant-1');
+      const scenario = createTestActiveScenario('test-scenario');
       store.set('test-123', scenario);
 
       const retrieved = store.get('test-123');
@@ -129,8 +127,8 @@ describe('InMemoryScenarioStore', () => {
   describe('test isolation', () => {
     it('should isolate scenarios by test ID', () => {
       const store = new InMemoryScenarioStore();
-      const scenarioA = createTestActiveScenario('scenario-A', 'variant-a');
-      const scenarioB = createTestActiveScenario('scenario-B', 'variant-b');
+      const scenarioA = createTestActiveScenario('scenario-A');
+      const scenarioB = createTestActiveScenario('scenario-B');
 
       store.set('test-A', scenarioA);
       store.set('test-B', scenarioB);

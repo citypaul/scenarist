@@ -186,9 +186,9 @@ export const createScenaristImpl = (options: AppAdapterOptions): AppScenarist =>
 
   const instance: AppScenarist = {
     config,
-    switchScenario: (testId, scenarioId, variantName) => {
+    switchScenario: (testId, scenarioId) => {
       currentTestId.value = testId; // Update for MSW handler
-      return manager.switchScenario(testId, scenarioId, variantName);
+      return manager.switchScenario(testId, scenarioId);
     },
     getActiveScenario: (testId) => manager.getActiveScenario(testId),
     getScenarioById: (scenarioId) => manager.getScenarioById(scenarioId),

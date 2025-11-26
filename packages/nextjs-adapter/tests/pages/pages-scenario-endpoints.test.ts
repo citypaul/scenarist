@@ -37,36 +37,6 @@ describe('Pages Router Scenario Endpoints', () => {
       });
     });
 
-    it('should switch scenario with variant', async () => {
-      const { handler } = createTestSetup();
-
-      const req = {
-        method: 'POST',
-        headers: {
-          'x-scenarist-test-id': 'test-456',
-        },
-        body: {
-          scenario: 'premium',
-          variant: 'high-tier',
-        },
-      } as NextApiRequest;
-
-      const res = {
-        status: vi.fn().mockReturnThis(),
-        json: vi.fn(),
-      } as unknown as NextApiResponse;
-
-      await handler(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
-        success: true,
-        testId: 'test-456',
-        scenarioId: 'premium',
-        variant: 'high-tier',
-      });
-    });
-
     it('should return 400 when scenario does not exist', async () => {
       const { handler } = createTestSetup();
 
@@ -210,34 +180,6 @@ describe('Pages Router Scenario Endpoints', () => {
       );
     });
 
-    it('should include variant name when present', async () => {
-      const { handler, manager } = createTestSetup();
-
-      // Switch to scenario with variant
-      manager.switchScenario('test-variant', 'premium', 'high-tier');
-
-      const req = {
-        method: 'GET',
-        headers: {
-          'x-scenarist-test-id': 'test-variant',
-        },
-      } as NextApiRequest;
-
-      const res = {
-        status: vi.fn().mockReturnThis(),
-        json: vi.fn(),
-      } as unknown as NextApiResponse;
-
-      await handler(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
-        testId: 'test-variant',
-        scenarioId: 'premium',
-        scenarioName: 'Premium Scenario',
-        variantName: 'high-tier',
-      });
-    });
   });
 
   describe('unsupported methods', () => {
