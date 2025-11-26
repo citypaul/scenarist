@@ -20,8 +20,8 @@ describe('Hostname Matching - Express', () => {
 
   
 
-  afterAll(() => {
-    fixtures.cleanup();
+  afterAll(async () => {
+    await fixtures.cleanup();
   });
 
   /**

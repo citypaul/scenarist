@@ -7,8 +7,8 @@ import { createTestFixtures } from './test-helpers.js';
 const fixtures = await createTestFixtures();
 
 describe('Test ID Isolation E2E', () => {
-  afterAll(() => {
-    fixtures.cleanup();
+  afterAll(async () => {
+    await fixtures.cleanup();
   });
 
   it('should allow different test IDs to use different scenarios concurrently', async () => {

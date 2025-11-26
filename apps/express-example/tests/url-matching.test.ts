@@ -28,8 +28,8 @@ import { scenarios } from '../src/scenarios.js';
 const fixtures = await createTestFixtures();
 
 describe('URL Matching Strategies - Express', () => {
-  afterAll(() => {
-    fixtures.cleanup();
+  afterAll(async () => {
+    await fixtures.cleanup();
   });
 
   /**

@@ -11,8 +11,8 @@ describe('Dynamic Response Sequences E2E (Phase 2)', () => {
 
   
 
-  afterAll(() => {
-    fixtures.cleanup();
+  afterAll(async () => {
+    await fixtures.cleanup();
   });
 
   describe('Basic Sequence Progression', () => {

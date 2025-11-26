@@ -11,8 +11,8 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
 
   
 
-  afterAll(() => {
-    fixtures.cleanup();
+  afterAll(async () => {
+    await fixtures.cleanup();
   });
 
   describe("Shopping Cart - Complete Journey", () => {

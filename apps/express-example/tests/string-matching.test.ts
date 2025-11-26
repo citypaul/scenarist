@@ -26,8 +26,8 @@ describe('String Matching Strategies - Express', () => {
 
   
 
-  afterAll(() => {
-    fixtures.cleanup();
+  afterAll(async () => {
+    await fixtures.cleanup();
   });
 
   /**
@@ -132,9 +132,10 @@ describe('String Matching Strategies - Express', () => {
       .query({ apiKey: 'pk_test_12345' })
       .set(SCENARIST_TEST_ID_HEADER, 'string-test-4');
 
-    // Should not see the startsWith match (MSW may return error or passthrough)
-    // Since strictMode: false, this should passthrough to real API which will fail
-    expect(response.status).not.toBe(200);
+    // Should not match the startsWith pattern, falls back to catch-all handler
+    // Fallback returns 401 with error body
+    expect(response.status).toBe(401);
+    expect(response.body.matchedBy).toBe('fallback');
   });
 
   /**
@@ -185,12 +186,10 @@ describe('String Matching Strategies - Express', () => {
       .query({ email: 'john@example.com' })
       .set(SCENARIST_TEST_ID_HEADER, 'string-test-6');
 
-    // Should not see the endsWith match (passthrough to real API with strictMode: false)
-    // Real GitHub API returns 200 with empty array for non-existent user
+    // Should not match the endsWith pattern, falls back to catch-all handler
     expect(response.status).toBe(200);
-    expect(response.body.matchedBy).not.toBe('endsWith');
-    // Should be real GitHub response (empty array) not our mock
-    expect(Array.isArray(response.body)).toBe(true);
+    expect(response.body.matchedBy).toBe('fallback');
+    expect(response.body.repos).toEqual([]);
   });
 
   /**
@@ -241,8 +240,10 @@ describe('String Matching Strategies - Express', () => {
       .query({ exact: 'exact-value-plus' })
       .set(SCENARIST_TEST_ID_HEADER, 'string-test-8');
 
-    // Should not see the equals match (MSW may return error or passthrough)
-    expect(response.status).not.toBe(200);
+    // Should not match the equals pattern, falls back to catch-all handler
+    // Fallback returns 400 with error body
+    expect(response.status).toBe(400);
+    expect(response.body.matchedBy).toBe('fallback');
   });
 
   /**

@@ -850,7 +850,11 @@ export const stringMatchingScenario: ScenaristScenario = {
       },
     },
 
-    // Fallback: No match criteria - handles non-matching requests
+    // Fallbacks: No match criteria - handles non-matching requests
+    // These catch requests that don't match the specific patterns above,
+    // preventing passthrough to real APIs and enabling reliable testing.
+
+    // Fallback for GitHub users endpoint (contains test)
     {
       method: 'GET',
       url: 'https://api.github.com/users/:username',
@@ -863,6 +867,48 @@ export const stringMatchingScenario: ScenaristScenario = {
           bio: 'Standard access',
           public_repos: 25,
           followers: 200,
+          matchedBy: 'fallback',
+        },
+      },
+    },
+
+    // Fallback for Stripe API keys endpoint (startsWith test)
+    {
+      method: 'GET',
+      url: 'https://api.stripe.com/v1/api-keys',
+      response: {
+        status: 401,
+        body: {
+          error: {
+            message: 'Invalid API key',
+            type: 'invalid_request_error',
+          },
+          matchedBy: 'fallback',
+        },
+      },
+    },
+
+    // Fallback for GitHub repos endpoint (endsWith test)
+    {
+      method: 'GET',
+      url: 'https://api.github.com/users/:username/repos',
+      response: {
+        status: 200,
+        body: {
+          matchedBy: 'fallback',
+          repos: [],
+        },
+      },
+    },
+
+    // Fallback for status endpoint (equals test)
+    {
+      method: 'GET',
+      url: 'https://api.status.com/status',
+      response: {
+        status: 400,
+        body: {
+          error: 'Missing or invalid x-exact header',
           matchedBy: 'fallback',
         },
       },
