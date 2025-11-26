@@ -1,11 +1,13 @@
 ---
-title: Example Guide
-description: A guide in my new Starlight docs site.
+title: Coming Soon
+description: Additional guides for Scenarist are being developed
+head:
+  - tag: meta
+    attrs:
+      name: robots
+      content: noindex
 ---
 
-Guides lead a user through a specific task they want to accomplish, often with a sequence of steps.
-Writing a good guide requires thinking about what your users are trying to do.
+More guides are being developed. Check back soon or [watch the GitHub repository](https://github.com/citypaul/scenarist) for updates.
 
-## Further reading
-
-- Read [about how-to guides](https://diataxis.fr/how-to-guides/) in the Diátaxis framework
+**Want to contribute?** We welcome contributions! See the [contributing guidelines](https://github.com/citypaul/scenarist/blob/main/CONTRIBUTING.md).

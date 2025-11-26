@@ -6,8 +6,10 @@ Test your complete application—business logic, database queries, API routes—
 
 Adapter-based architecture with Express and Next.js adapters available.
 
-[![Build Status](https://img.shields.io/github/workflow/status/citypaul/scenarist/CI)](https://github.com/citypaul/scenarist/actions)
+[![CI](https://img.shields.io/github/actions/workflow/status/citypaul/scenarist/ci.yml?branch=main&label=CI)](https://github.com/citypaul/scenarist/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Docs](https://img.shields.io/badge/docs-scenarist.io-6366f1)](https://scenarist.io)
 
 [![npm @scenarist/express-adapter](https://img.shields.io/npm/v/@scenarist/express-adapter.svg?label=@scenarist/express-adapter)](https://www.npmjs.com/package/@scenarist/express-adapter)
 [![npm @scenarist/nextjs-adapter](https://img.shields.io/npm/v/@scenarist/nextjs-adapter.svg?label=@scenarist/nextjs-adapter)](https://www.npmjs.com/package/@scenarist/nextjs-adapter)
