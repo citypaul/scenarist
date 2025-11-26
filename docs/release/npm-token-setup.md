@@ -39,7 +39,7 @@ Repeat for each package, or configure at the organization level if supported.
 
 ## Step 2: Configure GitHub Actions Workflow
 
-The release workflow needs these settings (Workstream D will implement this):
+The release workflow is configured in `.github/workflows/release.yml` with these settings:
 
 ```yaml
 name: Release
@@ -204,5 +204,5 @@ If you previously used `NPM_TOKEN`:
 ## Related Issues
 
 - #157: Configure npm publishing (this document)
-- #154: Release workflow (Workstream D - implements the workflow)
-- #155: Pre-release workflow (Workstream D)
+- #154: Release workflow (implemented in `.github/workflows/release.yml`)
+- #155: Pre-release workflow (implemented in `.github/workflows/pre-release.yml`)

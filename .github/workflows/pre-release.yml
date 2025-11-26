@@ -41,6 +41,12 @@ jobs:
       - name: Build packages
         run: pnpm build
 
+      - name: Type check
+        run: pnpm check-types
+
+      - name: Run tests
+        run: pnpm test
+
       - name: Determine pre-release tag
         id: tag
         run: |
