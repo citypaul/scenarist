@@ -142,6 +142,7 @@ npm install -D vitest supertest @types/supertest
 // tests/checkout.test.ts
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
+import { SCENARIST_TEST_ID_HEADER } from '@scenarist/express-adapter';
 import { createApp } from '../src/server'; // Your Express app factory
 import { scenarios } from '../src/scenarios';
 
@@ -160,13 +161,13 @@ describe('Checkout API', () => {
     // Switch to default scenario
     await request(app)
       .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'test-1')
+      .set(SCENARIST_TEST_ID_HEADER, 'test-1')
       .send({ scenario: 'default' });
 
     // Make API request - your Express route runs normally
     const response = await request(app)
       .post('/api/checkout')
-      .set(scenarist.config.headers.testId, 'test-1')
+      .set(SCENARIST_TEST_ID_HEADER, 'test-1')
       .send({ amount: 5000, token: 'tok_test' });
 
     expect(response.status).toBe(200);
@@ -178,12 +179,12 @@ describe('Checkout API', () => {
     // Switch to cardDeclined scenario
     await request(app)
       .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'test-2')
+      .set(SCENARIST_TEST_ID_HEADER, 'test-2')
       .send({ scenario: 'cardDeclined' });
 
     const response = await request(app)
       .post('/api/checkout')
-      .set(scenarist.config.headers.testId, 'test-2')
+      .set(SCENARIST_TEST_ID_HEADER, 'test-2')
       .send({ amount: 5000, token: 'tok_test' });
 
     expect(response.status).toBe(402);
@@ -211,13 +212,13 @@ Include the test ID header on **both** scenario switch requests AND actual API r
 // Step 1: Switch scenario (with test ID header)
 await request(app)
   .post(scenarist.config.endpoints.setScenario)
-  .set(scenarist.config.headers.testId, 'test-1')  // ← Test ID header
+  .set(SCENARIST_TEST_ID_HEADER, 'test-1')  // ← Test ID header
   .send({ scenario: 'cardDeclined' });
 
 // Step 2: Make API request (with SAME test ID header)
 const response = await request(app)
   .post('/api/checkout')
-  .set(scenarist.config.headers.testId, 'test-1')  // ← Same test ID
+  .set(SCENARIST_TEST_ID_HEADER, 'test-1')  // ← Same test ID
   .send({ amount: 5000, token: 'tok_test' });
 ```
 
@@ -228,38 +229,20 @@ const response = await request(app)
 4. Scenarist uses the `'cardDeclined'` scenario for this request
 5. Different test using `'test-2'` would use its own scenario
 
-### Default Header Name
+### Header Name
 
-By default, the header name is `'x-test-id'`:
+The header name is standardized to `'x-scenarist-test-id'`:
 
 ```typescript
 // These are equivalent:
-.set('x-test-id', 'test-1')
-.set(scenarist.config.headers.testId, 'test-1')  // Recommended
+.set('x-scenarist-test-id', 'test-1')
+.set(SCENARIST_TEST_ID_HEADER, 'test-1')  // Recommended
 ```
 
-**Why use `scenarist.config.headers.testId`?**
-- If you customize the header name in config, your tests continue working
-- Self-documenting code (clear intent)
+**Why use `SCENARIST_TEST_ID_HEADER`?**
+- Avoids magic strings (clear intent)
 - Type-safe (TypeScript will catch typos)
-
-### Custom Header Name
-
-If you need a different header name:
-
-```typescript
-const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
-  scenarios,
-  headers: {
-    testId: 'x-custom-test-id',  // Custom header name
-  },
-});
-
-// In tests, use the configured name:
-.set(scenarist.config.headers.testId, 'test-1')
-// Sends: 'x-custom-test-id: test-1'
-```
+- Consistent across all Scenarist packages
 
 ### Parallel Test Execution
 
@@ -271,12 +254,12 @@ describe('Parallel checkout tests', () => {
     // Uses test ID 'test-1'
     await request(app)
       .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'test-1')
+      .set(SCENARIST_TEST_ID_HEADER, 'test-1')
       .send({ scenario: 'default' });
 
     const response = await request(app)
       .post('/api/checkout')
-      .set(scenarist.config.headers.testId, 'test-1')
+      .set(SCENARIST_TEST_ID_HEADER, 'test-1')
       .send({ amount: 5000, token: 'tok_test' });
 
     expect(response.status).toBe(200);
@@ -286,12 +269,12 @@ describe('Parallel checkout tests', () => {
     // Uses test ID 'test-2' - runs simultaneously with test 1
     await request(app)
       .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'test-2')
+      .set(SCENARIST_TEST_ID_HEADER, 'test-2')
       .send({ scenario: 'cardDeclined' });
 
     const response = await request(app)
       .post('/api/checkout')
-      .set(scenarist.config.headers.testId, 'test-2')
+      .set(SCENARIST_TEST_ID_HEADER, 'test-2')
       .send({ amount: 5000, token: 'tok_test' });
 
     expect(response.status).toBe(402);
@@ -312,7 +295,7 @@ If you forget to include the test ID header:
 // ❌ Missing test ID header
 const response = await request(app)
   .post('/api/checkout')
-  // .set(scenarist.config.headers.testId, 'test-1')  ← MISSING!
+  // .set(SCENARIST_TEST_ID_HEADER, 'test-1')  ← MISSING!
   .send({ amount: 5000, token: 'tok_test' });
 ```
 
@@ -330,12 +313,12 @@ If your Express routes make internal fetch calls to other services, you must man
 ```typescript
 app.get('/api/dashboard', async (req, res) => {
   // Extract test ID from incoming request
-  const testId = req.get(scenarist.config.headers.testId) || 'default-test';
+  const testId = req.get(SCENARIST_TEST_ID_HEADER) || 'default-test';
 
   // Include test ID in internal fetch
   const response = await fetch('http://localhost:3001/api/user', {
     headers: {
-      [scenarist.config.headers.testId]: testId,
+      [SCENARIST_TEST_ID_HEADER]: testId,
     },
   });
 

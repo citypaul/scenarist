@@ -15,7 +15,7 @@ describe('Pages Router Scenario Endpoints', () => {
       const req = {
         method: 'POST',
         headers: {
-          'x-test-id': 'test-123',
+          'x-scenarist-test-id': 'test-123',
         },
         body: {
           scenario: 'premium',
@@ -43,7 +43,7 @@ describe('Pages Router Scenario Endpoints', () => {
       const req = {
         method: 'POST',
         headers: {
-          'x-test-id': 'test-456',
+          'x-scenarist-test-id': 'test-456',
         },
         body: {
           scenario: 'premium',
@@ -73,7 +73,7 @@ describe('Pages Router Scenario Endpoints', () => {
       const req = {
         method: 'POST',
         headers: {
-          'x-test-id': 'test-789',
+          'x-scenarist-test-id': 'test-789',
         },
         body: {
           scenario: 'nonexistent',
@@ -101,7 +101,7 @@ describe('Pages Router Scenario Endpoints', () => {
       const req = {
         method: 'POST',
         headers: {
-          'x-test-id': 'test-bad',
+          'x-scenarist-test-id': 'test-bad',
         },
         body: {
           // Missing 'scenario' field
@@ -134,7 +134,7 @@ describe('Pages Router Scenario Endpoints', () => {
       const req = {
         method: 'POST',
         headers: {
-          'x-test-id': 'test-error',
+          'x-scenarist-test-id': 'test-error',
         },
         body: {
           scenario: 'premium',
@@ -165,7 +165,7 @@ describe('Pages Router Scenario Endpoints', () => {
       const req = {
         method: 'GET',
         headers: {
-          'x-test-id': 'test-abc',
+          'x-scenarist-test-id': 'test-abc',
         },
       } as NextApiRequest;
 
@@ -190,7 +190,7 @@ describe('Pages Router Scenario Endpoints', () => {
       const req = {
         method: 'GET',
         headers: {
-          'x-test-id': 'test-no-scenario',
+          'x-scenarist-test-id': 'test-no-scenario',
         },
       } as NextApiRequest;
 
@@ -219,7 +219,7 @@ describe('Pages Router Scenario Endpoints', () => {
       const req = {
         method: 'GET',
         headers: {
-          'x-test-id': 'test-variant',
+          'x-scenarist-test-id': 'test-variant',
         },
       } as NextApiRequest;
 
@@ -247,7 +247,7 @@ describe('Pages Router Scenario Endpoints', () => {
       const req = {
         method: 'PUT',
         headers: {
-          'x-test-id': 'test-put',
+          'x-scenarist-test-id': 'test-put',
         },
       } as NextApiRequest;
 

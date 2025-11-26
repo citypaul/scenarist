@@ -181,7 +181,7 @@ await page.goto('/dashboard'); // Now sees 'appComplete' state
 | Conditional logic | ✅ Full JavaScript | ❌ Declarative only | ❌ |
 | **Scenario Management** | | | |
 | Scenario switching | ✅ POST /__mock_scenario__ | ✅ POST /__scenario__ | ✅ |
-| Test ID isolation | ✅ x-test-id header | ✅ x-test-id header | ✅ |
+| Test ID isolation | ✅ x-scenarist-test-id header | ✅ x-scenarist-test-id header | ✅ |
 | Default fallback | ✅ Manual handler reset | ✅ Automatic default merge | ✅ |
 | Variant system | ✅ Enum + meta config | ❌ No variants | ❌ |
 | **Advanced Features** | | | |

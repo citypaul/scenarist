@@ -299,7 +299,7 @@ export async function GET(request: Request) {
 - **`scenarist.getHeadersFromReadonlyHeaders(headersList)`** - Server Components (using `headers()` from `next/headers`)
 - **`scenarist.getHeaders(request)`** - Route Handlers (using `Request` object)
 
-Both helpers extract the test ID header and respect your configured header names and defaults
+Both helpers extract the test ID header (`x-scenarist-test-id`) for forwarding to external APIs.
 
 ## What Makes App Router Setup Special
 

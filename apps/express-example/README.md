@@ -102,13 +102,13 @@ The Bruno collection includes:
 The collection uses these environment variables (set in `environments/Local.bru`):
 
 - `baseUrl`: `http://localhost:3000` - Server URL
-- `testId`: `bruno-test` - Test ID used in x-test-id header
+- `testId`: `bruno-test` - Test ID used in x-scenarist-test-id header
 
 You can create additional environments for different setups (staging, production, etc.).
 
 ### Tips
 
-- All requests include the `x-test-id` header automatically using `{{testId}}`
+- All requests include the `x-scenarist-test-id` header automatically using `{{testId}}`
 - Scenarios persist across requests, so you only need to set them once
 - Use different test IDs to test multiple scenarios simultaneously
 - Check the "Docs" tab in each request for detailed information
@@ -233,13 +233,13 @@ describe('GitHub API Integration', () => {
     // Switch to success scenario for this test
     await request(app)
       .post('/__scenario__')
-      .set('x-test-id', 'test-1')
+      .set('x-scenarist-test-id', 'test-1')
       .send({ scenario: 'success' });
 
     // Make request
     const response = await request(app)
       .get('/api/github/user/testuser')
-      .set('x-test-id', 'test-1');
+      .set('x-scenarist-test-id', 'test-1');
 
     expect(response.status).toBe(200);
     expect(response.body.login).toBe('testuser');
@@ -249,13 +249,13 @@ describe('GitHub API Integration', () => {
     // Switch to error scenario for this test
     await request(app)
       .post('/__scenario__')
-      .set('x-test-id', 'test-2')
+      .set('x-scenarist-test-id', 'test-2')
       .send({ scenario: 'github-not-found' });
 
     // Make request
     const response = await request(app)
       .get('/api/github/user/nonexistent')
-      .set('x-test-id', 'test-2');
+      .set('x-scenarist-test-id', 'test-2');
 
     expect(response.status).toBe(404);
   });
@@ -274,25 +274,25 @@ const testId = 'user-journey';
 // Set scenario once
 await request(app)
   .post('/__scenario__')
-  .set('x-test-id', testId)
+  .set('x-scenarist-test-id', testId)
   .send({ scenario: 'success' });
 
 // Page 1: User profile
 await request(app)
   .get('/api/github/user/john')
-  .set('x-test-id', testId);
+  .set('x-scenarist-test-id', testId);
 // => Uses success scenario
 
 // Page 2: Weather dashboard
 await request(app)
   .get('/api/weather/london')
-  .set('x-test-id', testId);
+  .set('x-scenarist-test-id', testId);
 // => Still uses success scenario
 
 // Page 3: Payment
 await request(app)
   .post('/api/payment')
-  .set('x-test-id', testId)
+  .set('x-scenarist-test-id', testId)
   .send({ amount: 1000 });
 // => Still uses success scenario
 ```
@@ -307,12 +307,12 @@ The scenario remains active until explicitly changed or cleared. This enables:
 ```bash
 # Switch scenario for a specific test ID
 POST /__scenario__
-Headers: x-test-id: my-test
+Headers: x-scenarist-test-id: my-test
 Body: { "scenario": "success" }
 
 # Get current scenario
 GET /__scenario__
-Headers: x-test-id: my-test
+Headers: x-scenarist-test-id: my-test
 ```
 
 ### Test ID Isolation
@@ -323,13 +323,13 @@ Each test ID has its own scenario state. Tests run in parallel don't affect each
 // Test 1 uses success scenario
 await request(app)
   .post('/__scenario__')
-  .set('x-test-id', 'test-1')
+  .set('x-scenarist-test-id', 'test-1')
   .send({ scenario: 'success' });
 
 // Test 2 uses error scenario - completely independent!
 await request(app)
   .post('/__scenario__')
-  .set('x-test-id', 'test-2')
+  .set('x-scenarist-test-id', 'test-2')
   .send({ scenario: 'error' });
 ```
 
@@ -341,19 +341,19 @@ If a scenario doesn't define a mock for a specific endpoint, it automatically fa
 // weather-error scenario only defines weather API mocks
 await request(app)
   .post('/__scenario__')
-  .set('x-test-id', 'partial-test')
+  .set('x-scenarist-test-id', 'partial-test')
   .send({ scenario: 'weather-error' });
 
 // Weather API uses weather-error scenario (returns 500)
 await request(app)
   .get('/api/weather/tokyo')
-  .set('x-test-id', 'partial-test');
+  .set('x-scenarist-test-id', 'partial-test');
 // => 500 error
 
 // GitHub API falls back to default scenario (returns success)
 await request(app)
   .get('/api/github/user/testuser')
-  .set('x-test-id', 'partial-test');
+  .set('x-scenarist-test-id', 'partial-test');
 // => 200 success with default data
 ```
 

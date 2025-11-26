@@ -51,13 +51,13 @@ This gives you the same isolation model as Scenarist's HTTP mocking:
 
 | Scenarist (HTTP) | Repository Pattern (Database) |
 |------------------|-------------------------------|
-| `x-test-id` header identifies test | `x-test-id` header identifies test |
+| `x-scenarist-test-id` header identifies test | `x-scenarist-test-id` header identifies test |
 | MSW returns scenario-specific responses | Repository returns test-specific data |
 | Each test gets isolated mock state | Each test gets isolated data store |
 
 **The flow:**
 
-1. Test sends request with `x-test-id: abc-123`
+1. Test sends request with `x-scenarist-test-id: abc-123`
 2. Middleware extracts test ID and stores it in `AsyncLocalStorage`
 3. Repository retrieves test ID and uses it as partition key
 4. Data operations only affect that test's partition
@@ -258,7 +258,7 @@ export const testIdMiddleware = (
   res: Response,
   next: NextFunction
 ): void => {
-  const testId = (req.headers['x-test-id'] as string) ?? 'default-test';
+  const testId = (req.headers['x-scenarist-test-id'] as string) ?? 'default-test';
 
   runWithTestId(testId, () => {
     next();
@@ -312,7 +312,7 @@ test.describe('User Registration', () => {
     await switchScenario(page, 'emailSuccess');
 
     // Repository pattern isolates database by test ID
-    // (test ID automatically flows from x-test-id header set by Scenarist)
+    // (test ID automatically flows from x-scenarist-test-id header set by Scenarist)
 
     await page.goto('/register');
     await page.fill('[name="email"]', 'test@example.com');
@@ -342,14 +342,14 @@ test.describe('User Registration', () => {
 });
 
 // These tests run in PARALLEL with full isolation:
-// - Test A (x-test-id: abc-123) → store['abc-123']
-// - Test B (x-test-id: def-456) → store['def-456']
+// - Test A (x-scenarist-test-id: abc-123) → store['abc-123']
+// - Test B (x-scenarist-test-id: def-456) → store['def-456']
 // - Same email in different tests → no conflict
 ```
 
 ## How the Test ID Flows
 
-1. **Playwright** sends request with `x-test-id` header (set automatically by Scenarist)
+1. **Playwright** sends request with `x-scenarist-test-id` header (set automatically by Scenarist)
 2. **Express middleware** extracts the test ID and stores it in `AsyncLocalStorage`
 3. **Repository** calls `getTestId()` to retrieve the test ID from `AsyncLocalStorage`
 4. **Data partitioning** ensures each test ID maps to its own isolated data store

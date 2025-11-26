@@ -1,5 +1,5 @@
 import type { BaseAdapterOptions, ScenaristAdapter, ScenarioRegistry, ScenarioStore } from '@scenarist/core';
-import { InMemoryScenarioRegistry, InMemoryScenarioStore } from '@scenarist/core';
+import { InMemoryScenarioRegistry, InMemoryScenarioStore, SCENARIST_TEST_ID_HEADER } from '@scenarist/core';
 import { createScenaristBase } from '../common/create-scenarist-base.js';
 import { createScenarioEndpoint } from './endpoints.js';
 
@@ -196,19 +196,15 @@ export const createScenaristImpl = (options: AppAdapterOptions): AppScenarist =>
     clearScenario: (testId) => manager.clearScenario(testId),
     createScenarioEndpoint: () => createScenarioEndpoint(manager, config),
     getHeaders: (req: Request): Record<string, string> => {
-      const headerName = config.headers.testId;
-      const defaultTestId = config.defaultTestId;
-      const testId = req.headers.get(headerName.toLowerCase()) || defaultTestId;
+      const testId = req.headers.get(SCENARIST_TEST_ID_HEADER) || config.defaultTestId;
       return {
-        [headerName]: testId,
+        [SCENARIST_TEST_ID_HEADER]: testId,
       };
     },
     getHeadersFromReadonlyHeaders: (headers: { get(name: string): string | null }): Record<string, string> => {
-      const headerName = config.headers.testId;
-      const defaultTestId = config.defaultTestId;
-      const testId = headers.get(headerName.toLowerCase()) || defaultTestId;
+      const testId = headers.get(SCENARIST_TEST_ID_HEADER) || config.defaultTestId;
       return {
-        [headerName]: testId,
+        [SCENARIST_TEST_ID_HEADER]: testId,
       };
     },
     start: () => {

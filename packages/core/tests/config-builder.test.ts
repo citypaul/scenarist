@@ -21,23 +21,10 @@ describe('buildConfig', () => {
     });
 
     expect(config.enabled).toBe(true);
-    expect(config.headers.testId).toBe('x-test-id');
     expect(config.endpoints.setScenario).toBe('/__scenario__');
     expect(config.endpoints.getScenario).toBe('/__scenario__');
     expect(config.defaultTestId).toBe('default-test');
     expect(config.strictMode).toBe(false);
-  });
-
-  it('should allow overriding header config', () => {
-    const config = buildConfig({
-      enabled: true,
-      scenarios: mockScenarios,
-      headers: {
-        testId: 'x-custom-test-id',
-      },
-    });
-
-    expect(config.headers.testId).toBe('x-custom-test-id');
   });
 
   it('should allow overriding endpoint config', () => {
@@ -88,18 +75,6 @@ describe('buildConfig', () => {
 
     expect(config.enabled).toBe(isEnabled);
     expect(typeof config.enabled).toBe('boolean');
-  });
-
-  it('should allow partial override of headers while keeping defaults for others', () => {
-    const config = buildConfig({
-      enabled: true,
-      scenarios: mockScenarios,
-      headers: {
-        testId: 'x-my-test-id',
-      },
-    });
-
-    expect(config.headers.testId).toBe('x-my-test-id');
   });
 
   it('should allow partial override of endpoints while keeping defaults for others', () => {

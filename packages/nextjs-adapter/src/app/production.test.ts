@@ -144,7 +144,7 @@ describe('App Router production entry point', () => {
     it('should return empty object (no test headers in production)', () => {
       const mockRequest = new Request('http://localhost:3000', {
         headers: {
-          'x-test-id': 'test-123',
+          'x-scenarist-test-id': 'test-123',
           'x-user-id': 'user-456',
         },
       });
@@ -176,7 +176,7 @@ describe('App Router production entry point', () => {
     it('should return empty object for ReadonlyHeaders (Server Components)', () => {
       // Simulate ReadonlyHeaders from next/headers
       const mockReadonlyHeaders = {
-        get: (name: string) => (name === 'x-test-id' ? 'test-123' : null),
+        get: (name: string) => (name === 'x-scenarist-test-id' ? 'test-123' : null),
       };
 
       const headers =
@@ -208,7 +208,7 @@ describe('App Router production entry point', () => {
   describe('getScenaristTestId', () => {
     it('should return fallback test ID for Request', () => {
       const mockRequest = new Request('http://localhost:3000', {
-        headers: { 'x-test-id': 'test-123' },
+        headers: { 'x-scenarist-test-id': 'test-123' },
       });
 
       const testId = production.getScenaristTestId(mockRequest);
@@ -219,10 +219,10 @@ describe('App Router production entry point', () => {
 
     it('should always return same fallback regardless of headers', () => {
       const request1 = new Request('http://localhost:3000', {
-        headers: { 'x-test-id': 'test-abc' },
+        headers: { 'x-scenarist-test-id': 'test-abc' },
       });
       const request2 = new Request('http://localhost:3000', {
-        headers: { 'x-test-id': 'test-xyz' },
+        headers: { 'x-scenarist-test-id': 'test-xyz' },
       });
       const request3 = new Request('http://localhost:3000'); // No headers
 
@@ -235,7 +235,7 @@ describe('App Router production entry point', () => {
   describe('getScenaristTestIdFromReadonlyHeaders', () => {
     it('should return fallback test ID for ReadonlyHeaders (Server Components)', () => {
       const mockReadonlyHeaders = {
-        get: (name: string) => (name === 'x-test-id' ? 'test-123' : null),
+        get: (name: string) => (name === 'x-scenarist-test-id' ? 'test-123' : null),
       };
 
       const testId =

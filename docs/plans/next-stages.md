@@ -113,10 +113,10 @@ import { createScenarist } from '@scenarist/nextjs-adapter/app';
 test('my test', async ({ page }) => {
   const testId = `test-${Date.now()}-${Math.random()}`;
   await page.request.post('http://localhost:3000/__scenario__', {
-    headers: { 'x-test-id': testId },
+    headers: { 'x-scenarist-test-id': testId },
     data: { scenarioId: 'premium' }
   });
-  await page.setExtraHTTPHeaders({ 'x-test-id': testId });
+  await page.setExtraHTTPHeaders({ 'x-scenarist-test-id': testId });
   await page.goto('/');
   // 6 lines of boilerplate
 });
@@ -410,7 +410,7 @@ These items MUST be complete before v1.0 release.
 
 Currently, users can configure a custom test ID header name via `headers.testId` configuration. This creates complexity and limitations:
 
-1. **Helper Function Limitations**: `getScenaristTestId()` and `getScenaristTestIdFromReadonlyHeaders()` helpers cannot respect custom configurations without accessing the full scenarist instance. They hardcode the default `'x-test-id'` header name.
+1. **Helper Function Limitations**: `getScenaristTestId()` and `getScenaristTestIdFromReadonlyHeaders()` helpers cannot respect custom configurations without accessing the full scenarist instance. They hardcode the default `'x-scenarist-test-id'` header name.
 
 2. **Inconsistent API**: Users can configure a custom header, but convenience helpers won't work with it. This creates confusion.
 
@@ -424,7 +424,7 @@ Currently, users can configure a custom test ID header name via `headers.testId`
 4. Update all documentation and examples
 
 **Breaking Changes:**
-- Applications using default `'x-test-id'` must update to `'x-scenarist-test-id'`
+- Applications using default `'x-scenarist-test-id'` must update to `'x-scenarist-test-id'`
 - Custom `headers.testId` configuration option removed
 - All documentation examples require updates
 
@@ -458,7 +458,7 @@ These items can be added after v1.0 release based on user feedback.
 
 ```typescript
 GET /__scenario_debug__
-Headers: { 'x-test-id': 'my-test' }
+Headers: { 'x-scenarist-test-id': 'my-test' }
 
 Response:
 {

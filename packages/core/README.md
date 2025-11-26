@@ -348,7 +348,7 @@ const config = buildConfig({
   defaultScenario: defaultScenario, // REQUIRED - fallback for unmocked requests
   strictMode: false,  // true = error on unmocked requests, false = passthrough
   headers: {
-    testId: 'x-test-id',
+    testId: 'x-scenarist-test-id',
   },
 });
 

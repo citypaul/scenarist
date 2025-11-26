@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import express from 'express';
 import request from 'supertest';
 import { createTestScenarist } from './test-helpers.js';
-import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/core';
+import { SCENARIST_TEST_ID_HEADER, type ScenaristScenario, type ScenaristScenarios } from '@scenarist/core';
 
 const mockDefaultScenario: ScenaristScenario = {
   id: 'default',
@@ -295,7 +295,6 @@ describe('createScenarist', () => {
 
     expect(scenarist.config.endpoints.setScenario).toBe('/__scenario__');
     expect(scenarist.config.endpoints.getScenario).toBe('/__scenario__');
-    expect(scenarist.config.headers.testId).toBe('x-test-id');
     expect(scenarist.config.strictMode).toBe(false);
   });
 
@@ -307,15 +306,11 @@ describe('createScenarist', () => {
         setScenario: '/custom-set',
         getScenario: '/custom-get',
       },
-      headers: {
-        testId: 'x-custom-test',
-      },
       strictMode: true,
     });
 
     expect(scenarist.config.endpoints.setScenario).toBe('/custom-set');
     expect(scenarist.config.endpoints.getScenario).toBe('/custom-get');
-    expect(scenarist.config.headers.testId).toBe('x-custom-test');
     expect(scenarist.config.strictMode).toBe(true);
   });
 
@@ -332,7 +327,7 @@ describe('createScenarist', () => {
 
     const response = await request(app)
       .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'test-123')
+      .set(SCENARIST_TEST_ID_HEADER, 'test-123')
       .send({ scenario: 'test-scenario' });
 
     expect(response.status).toBe(200);
@@ -361,12 +356,12 @@ describe('createScenarist', () => {
 
     await request(app)
       .post(scenarist.config.endpoints.setScenario)
-      .set(scenarist.config.headers.testId, 'test-456')
+      .set(SCENARIST_TEST_ID_HEADER, 'test-456')
       .send({ scenario: 'api-success' });
 
     const response = await request(app)
       .get('/test-route')
-      .set(scenarist.config.headers.testId, 'test-456');
+      .set(SCENARIST_TEST_ID_HEADER, 'test-456');
 
     await scenarist.stop();
 
@@ -461,17 +456,17 @@ describe('createScenarist', () => {
 
       await request(app)
         .post(scenarist.config.endpoints.setScenario)
-        .set(scenarist.config.headers.testId, 'test-state-1')
+        .set(SCENARIST_TEST_ID_HEADER, 'test-state-1')
         .send({ scenario: 'stateful' });
 
       await request(app)
         .post('/capture')
-        .set(scenarist.config.headers.testId, 'test-state-1')
+        .set(SCENARIST_TEST_ID_HEADER, 'test-state-1')
         .send({ name: 'Alice', email: 'alice@example.com' });
 
       const response = await request(app)
         .get('/inject')
-        .set(scenarist.config.headers.testId, 'test-state-1');
+        .set(SCENARIST_TEST_ID_HEADER, 'test-state-1');
 
       await scenarist.stop();
 
@@ -510,22 +505,22 @@ describe('createScenarist', () => {
 
       await request(app)
         .post(scenarist.config.endpoints.setScenario)
-        .set(scenarist.config.headers.testId, 'test-reset-1')
+        .set(SCENARIST_TEST_ID_HEADER, 'test-reset-1')
         .send({ scenario: 'scenario-with-capture' });
 
       await request(app)
         .post('/data')
-        .set(scenarist.config.headers.testId, 'test-reset-1')
+        .set(SCENARIST_TEST_ID_HEADER, 'test-reset-1')
         .send({ value: 'captured-data' });
 
       await request(app)
         .post(scenarist.config.endpoints.setScenario)
-        .set(scenarist.config.headers.testId, 'test-reset-1')
+        .set(SCENARIST_TEST_ID_HEADER, 'test-reset-1')
         .send({ scenario: 'scenario-with-injection' });
 
       const response = await request(app)
         .get('/data')
-        .set(scenarist.config.headers.testId, 'test-reset-1');
+        .set(SCENARIST_TEST_ID_HEADER, 'test-reset-1');
 
       await scenarist.stop();
 
@@ -563,31 +558,31 @@ describe('createScenarist', () => {
 
       await request(app)
         .post(scenarist.config.endpoints.setScenario)
-        .set(scenarist.config.headers.testId, 'test-isolation-1')
+        .set(SCENARIST_TEST_ID_HEADER, 'test-isolation-1')
         .send({ scenario: 'isolated-state' });
 
       await request(app)
         .post(scenarist.config.endpoints.setScenario)
-        .set(scenarist.config.headers.testId, 'test-isolation-2')
+        .set(SCENARIST_TEST_ID_HEADER, 'test-isolation-2')
         .send({ scenario: 'isolated-state' });
 
       await request(app)
         .post('/user')
-        .set(scenarist.config.headers.testId, 'test-isolation-1')
+        .set(SCENARIST_TEST_ID_HEADER, 'test-isolation-1')
         .send({ name: 'Alice' });
 
       await request(app)
         .post('/user')
-        .set(scenarist.config.headers.testId, 'test-isolation-2')
+        .set(SCENARIST_TEST_ID_HEADER, 'test-isolation-2')
         .send({ name: 'Bob' });
 
       const response1 = await request(app)
         .get('/user')
-        .set(scenarist.config.headers.testId, 'test-isolation-1');
+        .set(SCENARIST_TEST_ID_HEADER, 'test-isolation-1');
 
       const response2 = await request(app)
         .get('/user')
-        .set(scenarist.config.headers.testId, 'test-isolation-2');
+        .set(SCENARIST_TEST_ID_HEADER, 'test-isolation-2');
 
       await scenarist.stop();
 
@@ -628,27 +623,27 @@ describe('createScenarist', () => {
 
       await request(app)
         .post(scenarist.config.endpoints.setScenario)
-        .set(scenarist.config.headers.testId, 'test-array-1')
+        .set(SCENARIST_TEST_ID_HEADER, 'test-array-1')
         .send({ scenario: 'array-append' });
 
       await request(app)
         .post('/cart/add')
-        .set(scenarist.config.headers.testId, 'test-array-1')
+        .set(SCENARIST_TEST_ID_HEADER, 'test-array-1')
         .send({ item: 'Apple' });
 
       await request(app)
         .post('/cart/add')
-        .set(scenarist.config.headers.testId, 'test-array-1')
+        .set(SCENARIST_TEST_ID_HEADER, 'test-array-1')
         .send({ item: 'Banana' });
 
       await request(app)
         .post('/cart/add')
-        .set(scenarist.config.headers.testId, 'test-array-1')
+        .set(SCENARIST_TEST_ID_HEADER, 'test-array-1')
         .send({ item: 'Cherry' });
 
       const response = await request(app)
         .get('/cart')
-        .set(scenarist.config.headers.testId, 'test-array-1');
+        .set(SCENARIST_TEST_ID_HEADER, 'test-array-1');
 
       await scenarist.stop();
 
@@ -686,27 +681,27 @@ describe('createScenarist', () => {
 
       await request(app)
         .post(scenarist.config.endpoints.setScenario)
-        .set(scenarist.config.headers.testId, 'test-length-1')
+        .set(SCENARIST_TEST_ID_HEADER, 'test-length-1')
         .send({ scenario: 'array-length' });
 
       await request(app)
         .post('/items/add')
-        .set(scenarist.config.headers.testId, 'test-length-1')
+        .set(SCENARIST_TEST_ID_HEADER, 'test-length-1')
         .send({ item: 'Item1' });
 
       await request(app)
         .post('/items/add')
-        .set(scenarist.config.headers.testId, 'test-length-1')
+        .set(SCENARIST_TEST_ID_HEADER, 'test-length-1')
         .send({ item: 'Item2' });
 
       await request(app)
         .post('/items/add')
-        .set(scenarist.config.headers.testId, 'test-length-1')
+        .set(SCENARIST_TEST_ID_HEADER, 'test-length-1')
         .send({ item: 'Item3' });
 
       const response = await request(app)
         .get('/items/count')
-        .set(scenarist.config.headers.testId, 'test-length-1');
+        .set(SCENARIST_TEST_ID_HEADER, 'test-length-1');
 
       await scenarist.stop();
 
@@ -755,22 +750,22 @@ describe('createScenarist', () => {
 
       await request(app)
         .post(scenarist.config.endpoints.setScenario)
-        .set(scenarist.config.headers.testId, 'test-nested-1')
+        .set(SCENARIST_TEST_ID_HEADER, 'test-nested-1')
         .send({ scenario: 'nested-paths' });
 
       await request(app)
         .post('/form/step1')
-        .set(scenarist.config.headers.testId, 'test-nested-1')
+        .set(SCENARIST_TEST_ID_HEADER, 'test-nested-1')
         .send({ name: 'Charlie', email: 'charlie@example.com' });
 
       await request(app)
         .post('/form/step2')
-        .set(scenarist.config.headers.testId, 'test-nested-1')
+        .set(SCENARIST_TEST_ID_HEADER, 'test-nested-1')
         .send({ street: '123 Main St', city: 'Springfield' });
 
       const response = await request(app)
         .get('/form/summary')
-        .set(scenarist.config.headers.testId, 'test-nested-1');
+        .set(SCENARIST_TEST_ID_HEADER, 'test-nested-1');
 
       await scenarist.stop();
 
@@ -801,12 +796,12 @@ describe('createScenarist', () => {
 
       await request(app)
         .post(scenarist.config.endpoints.setScenario)
-        .set(scenarist.config.headers.testId, 'test-missing-1')
+        .set(SCENARIST_TEST_ID_HEADER, 'test-missing-1')
         .send({ scenario: 'missing-keys' });
 
       const response = await request(app)
         .get('/profile')
-        .set(scenarist.config.headers.testId, 'test-missing-1');
+        .set(SCENARIST_TEST_ID_HEADER, 'test-missing-1');
 
       await scenarist.stop();
 

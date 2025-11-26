@@ -217,7 +217,7 @@ app.use((req, res, next) => {
 │                        Playwright Tests                              │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │
 │  │  Test A      │  │  Test B      │  │  Test C      │              │
-│  │  x-test-id:  │  │  x-test-id:  │  │  x-test-id:  │              │
+│  │  x-scenarist-test-id:  │  │  x-scenarist-test-id:  │  │  x-scenarist-test-id:  │              │
 │  │    "A"       │  │    "B"       │  │    "C"       │              │
 │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘              │
 │         │                  │                  │                       │
@@ -258,7 +258,7 @@ app.use((req, res, next) => {
 test("payment succeeds", async ({ page }) => {
   // Switch to success scenario - no restart needed!
   await page.request.post("http://localhost:3000/__scenario__", {
-    headers: { "x-test-id": "test-1" },
+    headers: { "x-scenarist-test-id": "test-1" },
     data: { scenario: "payment-success" },
   });
 
@@ -269,7 +269,7 @@ test("payment succeeds", async ({ page }) => {
 test("payment fails", async ({ page }) => {
   // Switch to error scenario - runs in parallel with test above!
   await page.request.post("http://localhost:3000/__scenario__", {
-    headers: { "x-test-id": "test-2" },
+    headers: { "x-scenarist-test-id": "test-2" },
     data: { scenario: "payment-error" },
   });
 
@@ -545,7 +545,7 @@ describe("Payment Flow", () => {
   it("should return user data from default scenario", async () => {
     const response = await request(app)
       .get("/api/profile")
-      .set("x-test-id", "test-default");
+      .set("x-scenarist-test-id", "test-default");
 
     expect(response.status).toBe(200);
     expect(response.body.name).toBe("John Doe");
@@ -555,13 +555,13 @@ describe("Payment Flow", () => {
     // Switch to error scenario
     await request(app)
       .post("/__scenario__")
-      .set("x-test-id", "test-error")
+      .set("x-scenarist-test-id", "test-error")
       .send({ scenario: "error-state" });
 
     // Make request - gets error response
     const response = await request(app)
       .get("/api/profile")
-      .set("x-test-id", "test-error");
+      .set("x-scenarist-test-id", "test-error");
 
     expect(response.status).toBe(404);
     expect(response.body.error).toBe("User not found");
@@ -609,7 +609,7 @@ You can pass optional variant names when switching scenarios:
 ```typescript
 await request(app)
   .post("/__scenario__")
-  .set("x-test-id", "test-123")
+  .set("x-scenarist-test-id", "test-123")
   .send({
     scenario: "user-scenario",
     variant: "premium-tier", // Optional variant
@@ -621,7 +621,7 @@ await request(app)
 ```typescript
 const response = await request(app)
   .get("/__scenario__")
-  .set("x-test-id", "test-123");
+  .set("x-scenarist-test-id", "test-123");
 
 console.log(response.body);
 // {
@@ -671,24 +671,24 @@ const shoppingCartScenario: ScenaristScenario = {
 test("shopping cart accumulates items", async () => {
   await request(app)
     .post("/__scenario__")
-    .set("x-test-id", "cart-1")
+    .set("x-scenarist-test-id", "cart-1")
     .send({ scenario: "shopping-cart" });
 
   // Add items
   await request(app)
     .post("/api/cart/add")
-    .set("x-test-id", "cart-1")
+    .set("x-scenarist-test-id", "cart-1")
     .send({ item: "Apple" });
 
   await request(app)
     .post("/api/cart/add")
-    .set("x-test-id", "cart-1")
+    .set("x-scenarist-test-id", "cart-1")
     .send({ item: "Banana" });
 
   // Get cart - state is injected
   const response = await request(app)
     .get("/api/cart")
-    .set("x-test-id", "cart-1");
+    .set("x-scenarist-test-id", "cart-1");
 
   expect(response.body.items).toEqual(["Apple", "Banana"]);
   expect(response.body.count).toBe(2);
@@ -819,7 +819,7 @@ test.describe("User Dashboard", () => {
 // Helper function
 async function switchScenario(page: Page, scenario: string) {
   await page.request.post("http://localhost:3000/__scenario__", {
-    headers: { "x-test-id": test.info().testId },
+    headers: { "x-scenarist-test-id": test.info().testId },
     data: { scenario },
   });
 }

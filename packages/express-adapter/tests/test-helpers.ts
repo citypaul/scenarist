@@ -9,9 +9,6 @@ import { createScenarist as createScenaristImpl, type ExpressScenarist, type Exp
 export const mockConfig = (overrides?: Partial<ScenaristConfig>): ScenaristConfig => ({
   enabled: true,
   strictMode: false,
-  headers: {
-    testId: 'x-test-id',
-  },
   endpoints: {
     setScenario: '/__scenario__',
     getScenario: '/__scenario__',

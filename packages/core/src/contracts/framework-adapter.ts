@@ -66,13 +66,15 @@ export type ScenaristAdapter<
   /**
    * Resolved configuration.
    *
-   * Use this to access configured endpoints and headers in tests.
+   * Use this to access configured endpoints in tests.
    *
    * @example
    * ```typescript
+   * import { SCENARIST_TEST_ID_HEADER } from '@scenarist/core';
+   *
    * await request(app)
    *   .post(scenarist.config.endpoints.setScenario)
-   *   .set(scenarist.config.headers.testId, 'test-123')
+   *   .set(SCENARIST_TEST_ID_HEADER, 'test-123')
    *   .send({ scenario: 'cartWithState' });
    * ```
    */

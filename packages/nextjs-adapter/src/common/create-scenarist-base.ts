@@ -7,6 +7,7 @@ import {
   InMemoryScenarioStore,
   createInMemorySequenceTracker,
   createInMemoryStateManager,
+  SCENARIST_TEST_ID_HEADER,
   type BaseAdapterOptions,
   type ScenaristConfig,
   type ScenarioManager,
@@ -80,8 +81,7 @@ export const createScenaristBase = (
   const handler = createDynamicHandler({
     getTestId: (request) => {
       // Extract test ID from request headers (MSW Request object)
-      const headerName = config.headers.testId.toLowerCase();
-      const headerValue = request.headers.get(headerName);
+      const headerValue = request.headers.get(SCENARIST_TEST_ID_HEADER);
       return headerValue || config.defaultTestId;
     },
     getActiveScenario: (testId) => manager.getActiveScenario(testId),

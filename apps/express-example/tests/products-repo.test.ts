@@ -9,7 +9,7 @@ import { createTestFixtures } from './test-helpers.js';
  *
  * These tests demonstrate the "shared identity for parallel test isolation" pattern:
  *
- *   Test → x-test-id → ┬─→ Scenarist (HTTP mocks)
+ *   Test → x-scenarist-test-id → ┬─→ Scenarist (HTTP mocks)
  *                      └─→ Repository (database state)
  *
  * Both Scenarist and the repository use the SAME test ID to partition their data,
@@ -24,7 +24,7 @@ import { createTestFixtures } from './test-helpers.js';
  *    This is the same pattern used in distributed tracing, multi-tenancy, etc.
  *
  * 2. SCENARIST'S ROLE:
- *    - Extracts test ID from x-test-id header
+ *    - Extracts test ID from x-scenarist-test-id header
  *    - Returns scenario-specific HTTP mock responses
  *    - Built-in: you get this for free
  *
@@ -45,7 +45,7 @@ import { createTestFixtures } from './test-helpers.js';
  *   1. Generate unique test ID
  *   2. Switch Scenarist scenario (configures HTTP mocks for this test ID)
  *   3. Seed repository (configures database state for this test ID)
- *   4. Make request with x-test-id header
+ *   4. Make request with x-scenarist-test-id header
  *   5. Server fetches:
  *      - User from repository → partitioned by test ID
  *      - Products from HTTP API → mocked by Scenarist using test ID
@@ -88,7 +88,7 @@ describe("Products with Repository Pattern", () => {
     // This tells Scenarist which mock responses to return for this test ID
     await request(fixtures.app)
       .post("/__scenario__")
-      .set("x-test-id", testId)
+      .set("x-scenarist-test-id", testId)
       .send({ scenario: scenarioId })
       .expect(200);
 
@@ -97,7 +97,7 @@ describe("Products with Repository Pattern", () => {
     // The repository partitions data by test ID internally
     await request(fixtures.app)
       .post("/test/seed")
-      .set("x-test-id", testId)
+      .set("x-scenarist-test-id", testId)
       .send({ scenarioId })
       .expect(200);
   };
@@ -122,7 +122,7 @@ describe("Products with Repository Pattern", () => {
 
     const response = await request(fixtures.app)
       .get("/products-repo?userId=user-1")
-      .set("x-test-id", testId)
+      .set("x-scenarist-test-id", testId)
       .expect(200);
 
     // User from repository (database isolation)
@@ -155,7 +155,7 @@ describe("Products with Repository Pattern", () => {
 
     const response = await request(fixtures.app)
       .get("/products-repo?userId=user-1")
-      .set("x-test-id", testId)
+      .set("x-scenarist-test-id", testId)
       .expect(200);
 
     // User from repository
@@ -188,7 +188,7 @@ describe("Products with Repository Pattern", () => {
 
     const response = await request(fixtures.app)
       .get("/products-repo?userId=non-existent")
-      .set("x-test-id", testId)
+      .set("x-scenarist-test-id", testId)
       .expect(200);
 
     // Repository correctly returns null for unknown user
@@ -230,7 +230,7 @@ describe("Products with Repository Pattern", () => {
     // Test 1: Premium user, premium pricing
     const response1 = await request(fixtures.app)
       .get("/products-repo?userId=user-1")
-      .set("x-test-id", testId1)
+      .set("x-scenarist-test-id", testId1)
       .expect(200);
 
     expect(response1.body.user.name).toBe("Premium User");
@@ -241,7 +241,7 @@ describe("Products with Repository Pattern", () => {
     // SAME user ID (user-1), but DIFFERENT test ID → DIFFERENT data
     const response2 = await request(fixtures.app)
       .get("/products-repo?userId=user-1")
-      .set("x-test-id", testId2)
+      .set("x-scenarist-test-id", testId2)
       .expect(200);
 
     expect(response2.body.user.name).toBe("Standard User");
@@ -271,7 +271,7 @@ describe("Products with Repository Pattern", () => {
     // Direct repository access (no Scenarist involvement)
     const response = await request(fixtures.app)
       .get("/users/user-1")
-      .set("x-test-id", testId)
+      .set("x-scenarist-test-id", testId)
       .expect(200);
 
     expect(response.body.id).toBe("user-1");

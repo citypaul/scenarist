@@ -45,16 +45,16 @@ A **Scenario** is a complete set of mock API responses representing a specific a
 
 ### Test ID
 
-A **Test ID** is a unique identifier for each test execution, passed via the `x-test-id` header (configurable). Test IDs enable parallel test isolation - 100 tests can run simultaneously with different scenarios without conflicts.
+A **Test ID** is a unique identifier for each test execution, passed via the `x-scenarist-test-id` header (configurable). Test IDs enable parallel test isolation - 100 tests can run simultaneously with different scenarios without conflicts.
 
 **How it works:**
 ```typescript
 // Test A
-headers: { 'x-test-id': 'test-A' }
+headers: { 'x-scenarist-test-id': 'test-A' }
 // Switches to "payment-success" scenario for test-A only
 
 // Test B (running in parallel)
-headers: { 'x-test-id': 'test-B' }
+headers: { 'x-scenarist-test-id': 'test-B' }
 // Switches to "payment-error" scenario for test-B only
 ```
 
@@ -977,12 +977,12 @@ Each test ID has completely isolated state:
 ```typescript
 // Test A
 POST /__scenario__
-Headers: { 'x-test-id': 'test-A' }
+Headers: { 'x-scenarist-test-id': 'test-A' }
 Body: { scenario: 'payment-success' }
 
 // Test B (parallel, different scenario)
 POST /__scenario__
-Headers: { 'x-test-id': 'test-B' }
+Headers: { 'x-scenarist-test-id': 'test-B' }
 Body: { scenario: 'payment-error' }
 ```
 
@@ -994,7 +994,7 @@ Body: { scenario: 'payment-error' }
 
 ### Default Test ID
 
-If no `x-test-id` header is provided, requests use the default test ID: `'default-test'`.
+If no `x-scenarist-test-id` header is provided, requests use the default test ID: `'default-test'`.
 
 ### Test ID Propagation Patterns
 
@@ -1003,7 +1003,7 @@ Different frameworks have different architectures for propagating test IDs throu
 #### Pattern 1: AsyncLocalStorage (Express)
 
 **How it works:**
-1. Middleware extracts `x-test-id` header **once** at request start
+1. Middleware extracts `x-scenarist-test-id` header **once** at request start
 2. Test ID stored in AsyncLocalStorage for request duration
 3. MSW dynamic handler reads from AsyncLocalStorage
 4. All external API calls automatically use correct test ID
@@ -1012,7 +1012,7 @@ Different frameworks have different architectures for propagating test IDs throu
 
 ```typescript
 // Middleware (runs once per request)
-app.use(testIdMiddleware); // Extracts x-test-id → AsyncLocalStorage
+app.use(testIdMiddleware); // Extracts x-scenarist-test-id → AsyncLocalStorage
 
 // Route handler (no manual forwarding needed)
 app.get('/api/products', async (req, res) => {
@@ -1038,7 +1038,7 @@ app.get('/api/products', async (req, res) => {
 **How it works:**
 1. No global middleware layer for API routes
 2. Each route receives request independently
-3. Routes must manually forward `x-test-id` header when calling external APIs
+3. Routes must manually forward `x-scenarist-test-id` header when calling external APIs
 4. Use `getScenaristHeaders()` helper to extract and forward
 
 **Code example:**

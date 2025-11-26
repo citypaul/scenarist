@@ -26,7 +26,7 @@ const scenarist = createScenarist({
 - Both endpoints process requests normally
 
 **Middleware extracts test IDs:**
-- Reads `x-test-id` header from requests
+- Reads `x-scenarist-test-id` header from requests
 - Routes requests to correct scenario
 - Maintains test isolation
 
@@ -124,7 +124,7 @@ test('handles success', async ({ page, switchScenario }) => {
   // testId = 'test-abc123' (auto-generated UUID)
 
   await page.goto('/api/payment');
-  // Request includes header: x-test-id: test-abc123
+  // Request includes header: x-scenarist-test-id: test-abc123
   // Scenarist routes to 'success' scenario for this test ID
 });
 
@@ -134,7 +134,7 @@ test('handles error', async ({ page, switchScenario }) => {
   // testId = 'test-def456' (different UUID)
 
   await page.goto('/api/payment');
-  // Request includes header: x-test-id: test-def456
+  // Request includes header: x-scenarist-test-id: test-def456
   // Scenarist routes to 'error' scenario for this test ID
 });
 ```
@@ -151,20 +151,13 @@ test('handles error', async ({ page, switchScenario }) => {
 6. **Response returned**: From active scenario for that test ID
 7. **Test ends**: Test ID and scenario cleaned up
 
-### Test ID Header Configuration
+### Test ID Header
 
-The header name is configurable:
+The test ID header is standardized to `'x-scenarist-test-id'`. Use the `SCENARIST_TEST_ID_HEADER` constant from your adapter package:
 
 ```typescript
-const scenarist = createScenarist({
-  enabled: true,
-  scenarios,
-  headers: {
-    testId: 'x-test-id',  // Default
-    // Or customize:
-    // testId: 'x-scenarist-test-id',
-  },
-});
+import { SCENARIST_TEST_ID_HEADER } from '@scenarist/express-adapter';
+// SCENARIST_TEST_ID_HEADER === 'x-scenarist-test-id'
 ```
 
 **All requests must include this header** for scenario routing to work.
@@ -189,16 +182,16 @@ test('my test', async ({ page, switchScenario }) => {
   // Helper automatically:
   // 1. Generates unique test ID
   // 2. Calls POST /__scenario__ with test ID header
-  // 3. Sets page.setExtraHTTPHeaders({ 'x-test-id': testId })
+  // 3. Sets page.setExtraHTTPHeaders({ 'x-scenarist-test-id': testId })
 
   await page.goto('/profile');
-  // All navigation requests include x-test-id header
+  // All navigation requests include x-scenarist-test-id header
 
   await page.request.post('/api/data', { data: { foo: 'bar' } });
   // API requests need explicit test ID (Playwright limitation):
   const testId = await switchScenario(page, 'success');
   await page.request.post('/api/data', {
-    headers: { 'x-test-id': testId },  // Manual header for page.request
+    headers: { 'x-scenarist-test-id': testId },  // Manual header for page.request
     data: { foo: 'bar' },
   });
 });
@@ -209,9 +202,9 @@ test('my test', async ({ page, switchScenario }) => {
 When no test ID header is present, Scenarist uses a default test ID:
 
 ```typescript
-// Request without x-test-id header
+// Request without x-scenarist-test-id header
 GET /api/user
-// No x-test-id header
+// No x-scenarist-test-id header
 
 // Scenarist uses default test ID: 'default-test'
 // Routes to 'default' scenario
@@ -320,16 +313,16 @@ NODE_ENV=test npm start
 # Switch to error scenario via curl
 curl -X POST http://localhost:3000/__scenario__ \
   -H "Content-Type: application/json" \
-  -H "x-test-id: manual-testing" \
+  -H "x-scenarist-test-id: manual-testing" \
   -d '{"scenario": "payment-error"}'
 
 # Open browser and manually test error scenario
-# All requests with x-test-id: manual-testing see error scenario
+# All requests with x-scenarist-test-id: manual-testing see error scenario
 
 # Switch to success scenario
 curl -X POST http://localhost:3000/__scenario__ \
   -H "Content-Type: application/json" \
-  -H "x-test-id: manual-testing" \
+  -H "x-scenarist-test-id: manual-testing" \
   -d '{"scenario": "payment-success"}'
 
 # Manually test success scenario
@@ -351,13 +344,13 @@ curl -X POST http://localhost:3000/__scenario__ \
 2. Helper generates test ID: 'test-abc123'
    ↓
 3. Helper calls: POST /__scenario__
-   Headers: { x-test-id: 'test-abc123' }
+   Headers: { x-scenarist-test-id: 'test-abc123' }
    Body: { scenario: 'payment-error' }
    ↓
 4. Endpoint stores: test-abc123 → payment-error
    ↓
 5. Test makes request: GET /api/payment
-   Headers: { x-test-id: 'test-abc123' }
+   Headers: { x-scenarist-test-id: 'test-abc123' }
    ↓
 6. Middleware extracts test ID from header
    ↓
@@ -382,7 +375,7 @@ scenarioStore.set('test-abc123', {
   variantName: undefined,
 });
 
-// On request with x-test-id: test-abc123
+// On request with x-scenarist-test-id: test-abc123
 const activeScenario = scenarioStore.get('test-abc123');
 // { scenarioId: 'payment-error', variantName: undefined }
 ```
@@ -429,11 +422,8 @@ const scenarist = createScenarist({
     setScenario: '/__scenario__',     // POST: switch scenario
     getScenario: '/__scenario__',     // GET: get active scenario
   },
-
-  // Header names (configurable)
-  headers: {
-    testId: 'x-test-id',               // Test ID routing
-  },
+  // Note: Test ID header is standardized to 'x-scenarist-test-id'
+  // Use SCENARIST_TEST_ID_HEADER constant from your adapter package
 });
 ```
 

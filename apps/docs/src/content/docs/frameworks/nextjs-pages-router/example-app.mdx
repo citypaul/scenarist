@@ -270,7 +270,7 @@ test('cart maintains state across requests', async ({ page, switchScenario }) =>
 
   // Add product via API route - state captured
   const response = await page.request.post('http://localhost:3000/api/cart', {
-    headers: { 'x-test-id': testId },
+    headers: { 'x-scenarist-test-id': testId },
     data: { productId: 'prod-1' }
   });
 
@@ -290,7 +290,7 @@ test('checkout captures address and applies UK free shipping', async ({ page, sw
 
   // Calculate shipping - matches UK, captures address
   await page.request.post('http://localhost:3000/api/checkout/shipping', {
-    headers: { 'x-test-id': testId },
+    headers: { 'x-scenarist-test-id': testId },
     data: {
       country: 'UK',
       address: '123 Test St',
@@ -301,7 +301,7 @@ test('checkout captures address and applies UK free shipping', async ({ page, sw
 
   // Place order - injects captured address
   const orderResponse = await page.request.post('http://localhost:3000/api/checkout/order', {
-    headers: { 'x-test-id': testId },
+    headers: { 'x-scenarist-test-id': testId },
     data: { orderId: 'order-123' }
   });
 
@@ -327,8 +327,8 @@ test('checkout captures address and applies UK free shipping', async ({ page, sw
 ### Test Isolation
 
 Each test gets a unique test ID:
-- Scenario switching: `POST /api/__scenario__` with `x-test-id` header
-- All requests include `x-test-id` header automatically (Playwright helper)
+- Scenario switching: `POST /api/__scenario__` with `x-scenarist-test-id` header
+- All requests include `x-scenarist-test-id` header automatically (Playwright helper)
 - Server routes requests to correct scenario based on test ID
 - Parallel tests don't interfere with each other
 
@@ -376,7 +376,7 @@ test('standard data', async ({ page, switchScenario }) => {
   const testId = await switchScenario(page, 'default');
 
   const response = await page.request.get('/api/data', {
-    headers: { 'x-test-id': testId }
+    headers: { 'x-scenarist-test-id': testId }
   });
 
   expect(await response.json()).toMatchObject({ tier: 'standard' });
@@ -386,7 +386,7 @@ test('premium data', async ({ page, switchScenario }) => {
   const testId = await switchScenario(page, 'premiumUser');
 
   const response = await page.request.get('/api/data', {
-    headers: { 'x-test-id': testId }
+    headers: { 'x-scenarist-test-id': testId }
   });
 
   expect(await response.json()).toMatchObject({ tier: 'premium' });

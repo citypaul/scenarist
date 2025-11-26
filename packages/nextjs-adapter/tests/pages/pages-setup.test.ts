@@ -335,12 +335,12 @@ describe('Pages Router createScenarist', () => {
     it('should extract test ID from request using default configured header name', async () => {
       const { scenarist } = await createTestSetup();
       const req = {
-        headers: { 'x-test-id': 'test-123' },
+        headers: { 'x-scenarist-test-id': 'test-123' },
       } as NextApiRequest;
 
       const headers = scenarist.getHeaders(req);
 
-      expect(headers).toEqual({ 'x-test-id': 'test-123' });
+      expect(headers).toEqual({ 'x-scenarist-test-id': 'test-123' });
     });
 
     it('should use default test ID when header is missing', async () => {
@@ -351,28 +351,7 @@ describe('Pages Router createScenarist', () => {
 
       const headers = scenarist.getHeaders(req);
 
-      expect(headers).toEqual({ 'x-test-id': 'default-test' });
-    });
-
-    it('should respect custom header name from config', async () => {
-      clearAllGlobals();
-      const scenarist = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-        headers: { testId: 'x-custom-test-id' },
-      });
-
-      if (!scenarist) {
-        throw new Error('Scenarist should not be undefined in tests');
-      }
-
-      const req = {
-        headers: { 'x-custom-test-id': 'custom-123' },
-      } as NextApiRequest;
-
-      const headers = scenarist.getHeaders(req);
-
-      expect(headers).toEqual({ 'x-custom-test-id': 'custom-123' });
+      expect(headers).toEqual({ 'x-scenarist-test-id': 'default-test' });
     });
 
     it('should respect custom default test ID from config', async () => {
@@ -393,41 +372,19 @@ describe('Pages Router createScenarist', () => {
 
       const headers = scenarist.getHeaders(req);
 
-      expect(headers).toEqual({ 'x-test-id': 'my-default' });
-    });
-
-    it('should handle both custom header name and custom default test ID', async () => {
-      clearAllGlobals();
-      const scenarist = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-        headers: { testId: 'x-my-header' },
-        defaultTestId: 'my-default',
-      });
-
-      if (!scenarist) {
-        throw new Error('Scenarist should not be undefined in tests');
-      }
-
-      const req = {
-        headers: {},
-      } as NextApiRequest;
-
-      const headers = scenarist.getHeaders(req);
-
-      expect(headers).toEqual({ 'x-my-header': 'my-default' });
+      expect(headers).toEqual({ 'x-scenarist-test-id': 'my-default' });
     });
 
     it('should handle header value as array (take first element)', async () => {
       clearAllGlobals();
       const { scenarist } = await createTestSetup();
       const req = {
-        headers: { 'x-test-id': ['test-123', 'test-456'] },
+        headers: { 'x-scenarist-test-id': ['test-123', 'test-456'] },
       } as NextApiRequest;
 
       const headers = scenarist.getHeaders(req);
 
-      expect(headers).toEqual({ 'x-test-id': 'test-123' });
+      expect(headers).toEqual({ 'x-scenarist-test-id': 'test-123' });
     });
 
     it('should work with GetServerSidePropsContext.req type (IncomingMessage with cookies)', async () => {
@@ -436,13 +393,13 @@ describe('Pages Router createScenarist', () => {
 
       // Type from GetServerSidePropsContext: IncomingMessage & { cookies: NextApiRequestCookies }
       const req = {
-        headers: { 'x-test-id': 'ssr-test-123' },
+        headers: { 'x-scenarist-test-id': 'ssr-test-123' },
         cookies: {},
       } as IncomingMessage & { cookies: NextApiRequestCookies };
 
       const headers = scenarist.getHeaders(req);
 
-      expect(headers).toEqual({ 'x-test-id': 'ssr-test-123' });
+      expect(headers).toEqual({ 'x-scenarist-test-id': 'ssr-test-123' });
     });
   });
 });

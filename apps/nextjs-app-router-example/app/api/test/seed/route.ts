@@ -20,7 +20,7 @@ const SeedRequestSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const testId = request.headers.get('x-test-id') ?? 'default-test';
+  const testId = request.headers.get('x-scenarist-test-id') ?? 'default-test';
 
   const parseResult = SeedRequestSchema.safeParse(await request.json());
   if (!parseResult.success) {

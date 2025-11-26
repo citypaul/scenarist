@@ -29,7 +29,7 @@ type ProductsRepoPageProps = {
 
 export const getServerSideProps: GetServerSideProps<ProductsRepoPageProps> = async (context) => {
   const { userId = 'user-1' } = context.query;
-  const testId = (context.req.headers['x-test-id'] as string) ?? 'default-test';
+  const testId = (context.req.headers['x-scenarist-test-id'] as string) ?? 'default-test';
 
   // 1. Get user from repository (in-memory with test ID isolation)
   const user = await runWithTestId(testId, async () => {
@@ -41,7 +41,7 @@ export const getServerSideProps: GetServerSideProps<ProductsRepoPageProps> = asy
   const tier = user?.tier ?? 'standard';
   const response = await fetch('http://localhost:3001/products', {
     headers: {
-      'x-test-id': testId,
+      'x-scenarist-test-id': testId,
       'x-user-tier': tier,
     },
   });

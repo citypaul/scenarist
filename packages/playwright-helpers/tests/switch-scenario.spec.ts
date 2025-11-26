@@ -48,7 +48,7 @@ const server = setupServer(
       success: true,
       scenario: body.scenario,
       variant: body.variant,
-      testId: request.headers.get('x-test-id') || request.headers.get('x-custom-test-id'),
+      testId: request.headers.get('x-scenarist-test-id'),
     });
   }),
   
@@ -132,18 +132,6 @@ test.describe('switchScenario - Playwright Integration', () => {
       });
       
       // MSW handler validates variant is included
-      expect(true).toBe(true);
-    });
-  });
-  
-  test.describe('custom test ID header', () => {
-    test('should use custom testIdHeader when provided', async ({ page }) => {
-      await switchScenario(page, 'premiumUser', {
-        baseURL: BASE_URL,
-        testIdHeader: 'x-custom-test-id',
-      });
-      
-      // MSW handler validates custom header is used
       expect(true).toBe(true);
     });
   });

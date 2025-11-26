@@ -4,6 +4,9 @@ export type * from './types/index.js';
 // Schemas (runtime validation)
 export * from './schemas/index.js';
 
+// Constants
+export * from './constants/index.js';
+
 // Ports (interfaces the hexagon uses/exposes)
 export type * from './ports/index.js';
 

@@ -57,7 +57,7 @@ export async function Page() {
 
 **What `getScenaristHeaders()` does:**
 - Extracts test ID from current request context (AsyncLocalStorage)
-- Returns `{ 'x-test-id': 'generated-uuid' }` object
+- Returns `{ 'x-scenarist-test-id': 'generated-uuid' }` object
 - Safe to call even when Scenarist is disabled (returns empty object)
 - Works in both App Router and Pages Router
 
@@ -69,11 +69,11 @@ Express adapter uses AsyncLocalStorage to automatically track test IDs per reque
 ```typescript
 // ✅ GOOD - Include test ID in internal fetches
 app.get('/api/dashboard', async (req, res) => {
-  const testId = req.get(scenarist.config.headers.testId);
+  const testId = req.get(SCENARIST_TEST_ID_HEADER);
 
   const response = await fetch('http://localhost:3001/api/user', {
     headers: {
-      [scenarist.config.headers.testId]: testId || 'default-test',
+      [SCENARIST_TEST_ID_HEADER]: testId || 'default-test',
     },
   });
 

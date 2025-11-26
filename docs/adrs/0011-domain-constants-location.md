@@ -90,7 +90,7 @@ export const CONFIG_DEFAULTS = {
   MOCK_ENABLED: true,
 
   /**
-   * Default test ID when x-test-id header is absent.
+   * Default test ID when x-scenarist-test-id header is absent.
    */
   TEST_ID: 'default-test',
 
@@ -98,7 +98,7 @@ export const CONFIG_DEFAULTS = {
    * HTTP header names for test isolation and control.
    */
   HEADERS: {
-    TEST_ID: 'x-test-id',
+    TEST_ID: 'x-scenarist-test-id',
     MOCK_ENABLED: 'x-mock-enabled',
   },
 
@@ -462,7 +462,7 @@ export const CONFIG_DEFAULTS = {
   MOCK_ENABLED: true,
 
   /**
-   * Default test ID when x-test-id header is absent.
+   * Default test ID when x-scenarist-test-id header is absent.
    */
   TEST_ID: 'default-test',
 
@@ -470,7 +470,7 @@ export const CONFIG_DEFAULTS = {
    * HTTP header names for test isolation and control.
    */
   HEADERS: {
-    TEST_ID: 'x-test-id',
+    TEST_ID: 'x-scenarist-test-id',
     MOCK_ENABLED: 'x-mock-enabled',
   },
 
@@ -644,7 +644,7 @@ console.log(CONFIG_DEFAULTS);
 //   MOCK_ENABLED: true,
 //   TEST_ID: 'default-test',
 //   STRICT_MODE: false,
-//   HEADERS: { TEST_ID: 'x-test-id', MOCK_ENABLED: 'x-mock-enabled' },
+//   HEADERS: { TEST_ID: 'x-scenarist-test-id', MOCK_ENABLED: 'x-mock-enabled' },
 //   ENDPOINTS: { SET_SCENARIO: '/__scenario__', GET_SCENARIO: '/__scenario__' }
 // }
 \`\`\`

@@ -16,9 +16,6 @@ export const buildConfig = <T extends ScenaristScenarios>(
   return {
     enabled: input.enabled,
     strictMode: input.strictMode ?? false,
-    headers: {
-      testId: input.headers?.testId ?? 'x-test-id',
-    },
     endpoints: {
       setScenario: input.endpoints?.setScenario ?? '/__scenario__',
       getScenario: input.endpoints?.getScenario ?? '/__scenario__',

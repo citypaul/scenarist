@@ -1,3 +1,4 @@
+import { SCENARIST_TEST_ID_HEADER } from '@scenarist/express-adapter';
 import request from "supertest";
 import { afterAll, describe, expect, it } from "vitest";
 import type { Request, Response } from "express";
@@ -19,27 +20,27 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
 
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(fixtures.scenarist.config.headers.testId, "cart-test-1")
+        .set(SCENARIST_TEST_ID_HEADER, "cart-test-1")
         .send({ scenario: "shoppingCart" });
 
       await request(fixtures.app)
         .post("/api/cart/add")
-        .set(fixtures.scenarist.config.headers.testId, "cart-test-1")
+        .set(SCENARIST_TEST_ID_HEADER, "cart-test-1")
         .send({ item: "Apple" });
 
       await request(fixtures.app)
         .post("/api/cart/add")
-        .set(fixtures.scenarist.config.headers.testId, "cart-test-1")
+        .set(SCENARIST_TEST_ID_HEADER, "cart-test-1")
         .send({ item: "Banana" });
 
       await request(fixtures.app)
         .post("/api/cart/add")
-        .set(fixtures.scenarist.config.headers.testId, "cart-test-1")
+        .set(SCENARIST_TEST_ID_HEADER, "cart-test-1")
         .send({ item: "Cherry" });
 
       const response = await request(fixtures.app)
         .get("/api/cart")
-        .set(fixtures.scenarist.config.headers.testId, "cart-test-1");
+        .set(SCENARIST_TEST_ID_HEADER, "cart-test-1");
 
       expect(response.status).toBe(200);
       expect(response.body.items).toEqual(["Apple", "Banana", "Cherry"]);
@@ -53,12 +54,12 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
 
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(fixtures.scenarist.config.headers.testId, "form-test-1")
+        .set(SCENARIST_TEST_ID_HEADER, "form-test-1")
         .send({ scenario: "multiStepForm" });
 
       const step1 = await request(fixtures.app)
         .post("/api/form/step1")
-        .set(fixtures.scenarist.config.headers.testId, "form-test-1")
+        .set(SCENARIST_TEST_ID_HEADER, "form-test-1")
         .send({ name: "Alice", email: "alice@example.com" });
 
       expect(step1.status).toBe(200);
@@ -68,7 +69,7 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
 
       const step2 = await request(fixtures.app)
         .post("/api/form/step2")
-        .set(fixtures.scenarist.config.headers.testId, "form-test-1")
+        .set(SCENARIST_TEST_ID_HEADER, "form-test-1")
         .send({ address: "123 Main St", city: "Portland" });
 
       expect(step2.status).toBe(200);
@@ -78,7 +79,7 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
 
       const submit = await request(fixtures.app)
         .post("/api/form/submit")
-        .set(fixtures.scenarist.config.headers.testId, "form-test-1");
+        .set(SCENARIST_TEST_ID_HEADER, "form-test-1");
 
       expect(submit.status).toBe(200);
       expect(submit.body.success).toBe(true);
@@ -98,27 +99,27 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
 
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(fixtures.scenarist.config.headers.testId, "reset-test-1")
+        .set(SCENARIST_TEST_ID_HEADER, "reset-test-1")
         .send({ scenario: "shoppingCart" });
 
       await request(fixtures.app)
         .post("/api/cart/add")
-        .set(fixtures.scenarist.config.headers.testId, "reset-test-1")
+        .set(SCENARIST_TEST_ID_HEADER, "reset-test-1")
         .send({ item: "Widget" });
 
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(fixtures.scenarist.config.headers.testId, "reset-test-1")
+        .set(SCENARIST_TEST_ID_HEADER, "reset-test-1")
         .send({ scenario: "success" });
 
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(fixtures.scenarist.config.headers.testId, "reset-test-1")
+        .set(SCENARIST_TEST_ID_HEADER, "reset-test-1")
         .send({ scenario: "shoppingCart" });
 
       const response = await request(fixtures.app)
         .get("/api/cart")
-        .set(fixtures.scenarist.config.headers.testId, "reset-test-1");
+        .set(SCENARIST_TEST_ID_HEADER, "reset-test-1");
 
       expect(response.status).toBe(200);
       // Pure templates with missing state return null (JSON-safe, not undefined)
@@ -163,24 +164,24 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
 
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(fixtures.scenarist.config.headers.testId, "failed-switch-test")
+        .set(SCENARIST_TEST_ID_HEADER, "failed-switch-test")
         .send({ scenario: "temp-capture-scenario" });
 
       await request(fixtures.app)
         .post("/api/temp-data")
-        .set(fixtures.scenarist.config.headers.testId, "failed-switch-test")
+        .set(SCENARIST_TEST_ID_HEADER, "failed-switch-test")
         .send({ value: "important-data" });
 
       const failedSwitch = await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(fixtures.scenarist.config.headers.testId, "failed-switch-test")
+        .set(SCENARIST_TEST_ID_HEADER, "failed-switch-test")
         .send({ scenario: "non-existent-scenario" });
 
       expect(failedSwitch.status).toBe(400);
 
       const response = await request(fixtures.app)
         .get("/api/temp-data")
-        .set(fixtures.scenarist.config.headers.testId, "failed-switch-test");
+        .set(SCENARIST_TEST_ID_HEADER, "failed-switch-test");
 
       expect(response.status).toBe(200);
       expect(response.body.value).toBe("important-data");
@@ -192,36 +193,36 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
 
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(fixtures.scenarist.config.headers.testId, "isolation-test-A")
+        .set(SCENARIST_TEST_ID_HEADER, "isolation-test-A")
         .send({ scenario: "shoppingCart" });
 
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(fixtures.scenarist.config.headers.testId, "isolation-test-B")
+        .set(SCENARIST_TEST_ID_HEADER, "isolation-test-B")
         .send({ scenario: "shoppingCart" });
 
       await request(fixtures.app)
         .post("/api/cart/add")
-        .set(fixtures.scenarist.config.headers.testId, "isolation-test-A")
+        .set(SCENARIST_TEST_ID_HEADER, "isolation-test-A")
         .send({ item: "Apple" });
 
       await request(fixtures.app)
         .post("/api/cart/add")
-        .set(fixtures.scenarist.config.headers.testId, "isolation-test-A")
+        .set(SCENARIST_TEST_ID_HEADER, "isolation-test-A")
         .send({ item: "Banana" });
 
       await request(fixtures.app)
         .post("/api/cart/add")
-        .set(fixtures.scenarist.config.headers.testId, "isolation-test-B")
+        .set(SCENARIST_TEST_ID_HEADER, "isolation-test-B")
         .send({ item: "Cherry" });
 
       const responseA = await request(fixtures.app)
         .get("/api/cart")
-        .set(fixtures.scenarist.config.headers.testId, "isolation-test-A");
+        .set(SCENARIST_TEST_ID_HEADER, "isolation-test-A");
 
       const responseB = await request(fixtures.app)
         .get("/api/cart")
-        .set(fixtures.scenarist.config.headers.testId, "isolation-test-B");
+        .set(SCENARIST_TEST_ID_HEADER, "isolation-test-B");
 
       expect(responseA.body.items).toEqual(["Apple", "Banana"]);
       expect(responseA.body.count).toBe(2);

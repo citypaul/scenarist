@@ -26,7 +26,7 @@ import type { CreateUserInput } from '@/lib/repositories';
  * - tier: 'standard' | 'premium'
  */
 export async function POST(request: NextRequest) {
-  const testId = request.headers.get('x-test-id') ?? 'default-test';
+  const testId = request.headers.get('x-scenarist-test-id') ?? 'default-test';
 
   const body = (await request.json()) as CreateUserInput;
 
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
  * - x-test-id: Test ID for isolation
  */
 export async function GET(request: NextRequest) {
-  const testId = request.headers.get('x-test-id') ?? 'default-test';
+  const testId = request.headers.get('x-scenarist-test-id') ?? 'default-test';
 
   const users = await runWithTestId(testId, async () => {
     const userRepository = getUserRepository();
