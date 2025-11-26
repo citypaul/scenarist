@@ -13,5 +13,14 @@
   "access": "restricted",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": []
+  "ignore": [
+    "@scenarist/core",
+    "@scenarist/docs",
+    "@scenarist/express-example",
+    "@scenarist/nextjs-app-router-example",
+    "@scenarist/nextjs-pages-router-example",
+    "@scenarist/msw-adapter",
+    "@scenarist/eslint-config",
+    "@scenarist/typescript-config"
+  ]
 }
