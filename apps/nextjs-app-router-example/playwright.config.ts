@@ -31,6 +31,8 @@ export default defineConfig<ScenaristOptions>({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+      // Exclude custom-server-verification when not in custom server mode
+      testIgnore: useCustomServer ? undefined : '**/custom-server-verification.spec.ts',
     },
   ],
 

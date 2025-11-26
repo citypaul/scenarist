@@ -31,7 +31,10 @@ export default defineConfig<ScenaristOptions>({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      testIgnore: '**/*.comparison.spec.ts', // Exclude comparison tests from main suite
+      // Exclude comparison tests always, and custom-server-verification only when not in custom mode
+      testIgnore: useCustomServer
+        ? '**/*.comparison.spec.ts'
+        : ['**/*.comparison.spec.ts', '**/custom-server-verification.spec.ts'],
     },
     {
       name: 'comparison',
