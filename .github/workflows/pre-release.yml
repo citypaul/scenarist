@@ -38,17 +38,28 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Playwright for docs build
-        run: pnpm --filter=@scenarist/docs exec playwright install --with-deps chromium
+      - name: Install Playwright browsers
+        run: |
+          # For docs (mermaid rendering) and example apps (E2E tests)
+          pnpm --filter=@scenarist/docs exec playwright install --with-deps chromium
+          pnpm --filter=@scenarist/nextjs-pages-router-example exec playwright install chromium
 
       - name: Build packages
         run: pnpm build
 
+      # Note: Tests are required here because CI only runs on main branch.
+      # For release/* branches, this is the only validation before publish.
       - name: Type check
         run: pnpm typecheck
 
       - name: Run tests
         run: pnpm test
+
+      - name: Run production build tests
+        run: |
+          pnpm --filter=@scenarist/express-example test:production
+          pnpm --filter=@scenarist/nextjs-app-router-example test:production
+          pnpm --filter=@scenarist/nextjs-pages-router-example test:production
 
       - name: Determine pre-release tag
         id: tag
