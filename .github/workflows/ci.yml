@@ -263,3 +263,78 @@ jobs:
 
       - name: Run custom server tests
         run: pnpm --filter=${{ matrix.filter }} test:custom
+
+  # Job 9: Changeset Check (comments on PRs when changesets are missing)
+  changeset-check:
+    name: Changeset Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check for changesets
+        id: changeset-check
+        run: |
+          # Use changesets CLI to check if changesets are needed
+          if ! pnpm changeset status --since=origin/main 2>&1; then
+            echo "missing=true" >> $GITHUB_OUTPUT
+          else
+            echo "missing=false" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: Comment on PR if changeset missing
+        if: steps.changeset-check.outputs.missing == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = `## ⚠️ Missing Changeset
+
+            This PR appears to change packages but doesn't include a changeset.
+
+            If this PR should trigger a release, please run:
+            \`\`\`bash
+            pnpm changeset
+            \`\`\`
+
+            If this PR doesn't need a release (e.g., docs, tests, internal changes), you can ignore this message.
+
+            [Learn more about changesets](https://github.com/changesets/changesets/blob/main/docs/adding-a-changeset.md)`;
+
+            // Check if we already commented
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existingComment = comments.data.find(c =>
+              c.user.type === 'Bot' && c.body.includes('Missing Changeset')
+            );
+
+            if (!existingComment) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
