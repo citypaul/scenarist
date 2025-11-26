@@ -1,6 +1,9 @@
 # @scenarist/express-adapter
 
-Express.js adapter for [Scenarist](https://github.com/citypaul/scenarist) - manage MSW mock scenarios in your Express applications for testing **and** development.
+[![npm version](https://img.shields.io/npm/v/@scenarist/express-adapter.svg)](https://www.npmjs.com/package/@scenarist/express-adapter)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+Express.js adapter for [Scenarist](https://scenarist.io) - manage MSW mock scenarios in your Express applications for testing **and** development.
 
 ## What is Scenarist?
 
@@ -997,6 +1000,10 @@ The example includes:
 - 7 different scenario definitions
 - 20 passing E2E tests demonstrating all features
 - Comprehensive documentation and usage patterns
+
+## Documentation
+
+📖 **[Full Documentation](https://scenarist.io)** - Complete guides, API reference, and examples.
 
 ## Contributing
 
