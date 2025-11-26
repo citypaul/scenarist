@@ -9,7 +9,9 @@ Works with Express, Fastify, Next.js, Remix, tRPC, and any Node.js framework.
 [![Build Status](https://img.shields.io/github/workflow/status/citypaul/scenarist/CI)](https://github.com/citypaul/scenarist/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **Status**: 🚧 In development. Core packages complete, not yet published to npm.
+[![npm @scenarist/express-adapter](https://img.shields.io/npm/v/@scenarist/express-adapter.svg?label=@scenarist/express-adapter)](https://www.npmjs.com/package/@scenarist/express-adapter)
+[![npm @scenarist/nextjs-adapter](https://img.shields.io/npm/v/@scenarist/nextjs-adapter.svg?label=@scenarist/nextjs-adapter)](https://www.npmjs.com/package/@scenarist/nextjs-adapter)
+[![npm @scenarist/playwright-helpers](https://img.shields.io/npm/v/@scenarist/playwright-helpers.svg?label=@scenarist/playwright-helpers)](https://www.npmjs.com/package/@scenarist/playwright-helpers)
 
 ---
 
@@ -406,11 +408,45 @@ Scenarist uses **Hexagonal Architecture** (Ports & Adapters) for maximum flexibi
 
 ### Installation
 
-> **Note**: Not yet published to npm. For now, use this repository directly or wait for official release.
+Choose your framework adapter:
+
+**Express:**
 
 ```bash
-# Once published:
-npm install @scenarist/express-adapter msw express
+# npm
+npm install @scenarist/express-adapter msw
+
+# pnpm
+pnpm add @scenarist/express-adapter msw
+
+# yarn
+yarn add @scenarist/express-adapter msw
+```
+
+**Next.js:**
+
+```bash
+# npm
+npm install @scenarist/nextjs-adapter msw
+
+# pnpm
+pnpm add @scenarist/nextjs-adapter msw
+
+# yarn
+yarn add @scenarist/nextjs-adapter msw
+```
+
+**Playwright Helpers (for E2E tests):**
+
+```bash
+# npm
+npm install -D @scenarist/playwright-helpers
+
+# pnpm
+pnpm add -D @scenarist/playwright-helpers
+
+# yarn
+yarn add -D @scenarist/playwright-helpers
 ```
 
 ### Basic Setup
@@ -700,20 +736,51 @@ For more advanced usage patterns, see the [Express Adapter README](./packages/ex
 
 ## Framework Support
 
-### Express (Available Now ✅)
+### Express ✅
 
 ```typescript
 import { createScenarist } from "@scenarist/express-adapter";
 
 const scenarist = createScenarist({
   enabled: true,
-  defaultScenario: myDefaultScenario,
+  scenarios,
 });
 
 app.use(scenarist.middleware);
 ```
 
 See the [Express Adapter Documentation](./packages/express-adapter/README.md) for complete usage.
+
+### Next.js ✅
+
+```typescript
+// Pages Router
+import { createScenarist } from "@scenarist/nextjs-adapter/pages";
+
+// App Router
+import { createScenarist } from "@scenarist/nextjs-adapter/app";
+
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === "test",
+  scenarios,
+});
+```
+
+See the [Next.js Adapter Documentation](./packages/nextjs-adapter/README.md) for complete usage.
+
+### Playwright Helpers ✅
+
+```typescript
+import { test, expect } from "@scenarist/playwright-helpers";
+
+test("my test", async ({ page, switchScenario }) => {
+  await switchScenario(page, "premium-user");
+  await page.goto("/dashboard");
+  // ...
+});
+```
+
+See the [Playwright Helpers Documentation](./packages/playwright-helpers/README.md) for complete usage.
 
 ### Other Frameworks (Coming Soon)
 
@@ -722,9 +789,8 @@ Scenarist's hexagonal architecture makes it easy to create adapters for any fram
 - **Fastify** - Coming soon
 - **Koa** - Coming soon
 - **Hono** - Coming soon
-- **Next.js** - Coming soon
 
-Contributions welcome! See the [Express adapter](./packages/express-adapter/) as a reference implementation.
+Contributions welcome! See the existing adapters as reference implementations.
 
 ---
 
@@ -931,6 +997,8 @@ async function switchScenario(page: Page, scenario: string) {
 
 ## Documentation
 
+📖 **[Full Documentation](https://scenarist.io)** - Complete guides, API reference, and examples.
+
 ### Core Concepts
 
 - **[Core Functionality Guide](./docs/core-functionality.md)** - Understanding Scenarist's domain logic (framework-agnostic)
@@ -954,6 +1022,8 @@ async function switchScenario(page: Page, scenario: string) {
 ### Adapter Documentation
 
 - **[Express Adapter README](./packages/express-adapter/README.md)** - Express-specific usage and setup
+- **[Next.js Adapter README](./packages/nextjs-adapter/README.md)** - Next.js App Router and Pages Router setup
+- **[Playwright Helpers README](./packages/playwright-helpers/README.md)** - Playwright test helpers
 - **[MSW Adapter README](./internal/msw-adapter/README.md)** - MSW integration details (internal)
 
 ### Examples
@@ -1006,9 +1076,11 @@ pnpm test:watch
 
 ## Roadmap
 
-### v1.x - Framework Adapters
+### v1.x - Framework Adapters ✅
 
-- ✅ Express adapter (available)
+- ✅ Express adapter
+- ✅ Next.js adapter (App Router + Pages Router)
+- ✅ Playwright helpers
 - 🔜 Fastify adapter
 - 🔜 Koa adapter
 - 🔜 Hono adapter
@@ -1018,7 +1090,6 @@ pnpm test:watch
 - 🔮 Redis-based ScenarioStore
 - 🔮 Scenario recording/replay
 - 🔮 Visual scenario debugger
-- 🔮 Next.js App Router support
 
 ### v3.x - Advanced Features
 
