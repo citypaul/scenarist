@@ -277,6 +277,40 @@ importers:
         specifier: ^8.0.3
         version: 8.0.5
 
+  internal/core:
+    dependencies:
+      msw:
+        specifier: ^2.12.1
+        version: 2.12.1(@types/node@24.10.1)(typescript@5.9.3)
+      redos-detector:
+        specifier: ^6.1.2
+        version: 6.1.2
+      zod:
+        specifier: ^4.1.12
+        version: 4.1.12
+    devDependencies:
+      '@scenarist/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@scenarist/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@vitest/coverage-v8':
+        specifier: ^4.0.8
+        version: 4.0.8(vitest@4.0.8(@types/debug@4.1.12)(@types/node@24.10.1)(@vitest/ui@4.0.8)(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(msw@2.12.1(@types/node@24.10.1)(typescript@5.9.3))(tsx@4.20.6)(yaml@2.8.1))
+      '@vitest/ui':
+        specifier: ^4.0.8
+        version: 4.0.8(vitest@4.0.8)
+      eslint:
+        specifier: ^9.39.1
+        version: 9.39.1(jiti@2.6.1)
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^4.0.8
+        version: 4.0.8(@types/debug@4.1.12)(@types/node@24.10.1)(@vitest/ui@4.0.8)(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(msw@2.12.1(@types/node@24.10.1)(typescript@5.9.3))(tsx@4.20.6)(yaml@2.8.1)
+
   internal/eslint-config:
     devDependencies:
       '@eslint/js':
@@ -317,7 +351,7 @@ importers:
     dependencies:
       '@scenarist/core':
         specifier: workspace:*
-        version: link:../../packages/core
+        version: link:../core
       path-to-regexp:
         specifier: ^6.3.0
         version: 6.3.0
@@ -349,45 +383,11 @@ importers:
 
   internal/typescript-config: {}
 
-  packages/core:
-    dependencies:
-      msw:
-        specifier: ^2.12.1
-        version: 2.12.1(@types/node@24.10.1)(typescript@5.9.3)
-      redos-detector:
-        specifier: ^6.1.2
-        version: 6.1.2
-      zod:
-        specifier: ^4.1.12
-        version: 4.1.12
-    devDependencies:
-      '@scenarist/eslint-config':
-        specifier: workspace:*
-        version: link:../../internal/eslint-config
-      '@scenarist/typescript-config':
-        specifier: workspace:*
-        version: link:../../internal/typescript-config
-      '@vitest/coverage-v8':
-        specifier: ^4.0.8
-        version: 4.0.8(vitest@4.0.8(@types/debug@4.1.12)(@types/node@24.10.1)(@vitest/ui@4.0.8)(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(msw@2.12.1(@types/node@24.10.1)(typescript@5.9.3))(tsx@4.20.6)(yaml@2.8.1))
-      '@vitest/ui':
-        specifier: ^4.0.8
-        version: 4.0.8(vitest@4.0.8)
-      eslint:
-        specifier: ^9.39.1
-        version: 9.39.1(jiti@2.6.1)
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-      vitest:
-        specifier: ^4.0.8
-        version: 4.0.8(@types/debug@4.1.12)(@types/node@24.10.1)(@vitest/ui@4.0.8)(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(msw@2.12.1(@types/node@24.10.1)(typescript@5.9.3))(tsx@4.20.6)(yaml@2.8.1)
-
   packages/express-adapter:
     dependencies:
       '@scenarist/core':
         specifier: workspace:*
-        version: link:../core
+        version: link:../../internal/core
       '@scenarist/msw-adapter':
         specifier: workspace:*
         version: link:../../internal/msw-adapter
@@ -436,7 +436,7 @@ importers:
     dependencies:
       '@scenarist/core':
         specifier: workspace:*
-        version: link:../core
+        version: link:../../internal/core
       '@scenarist/msw-adapter':
         specifier: workspace:*
         version: link:../../internal/msw-adapter
@@ -479,7 +479,7 @@ importers:
         version: 1.56.1
       '@scenarist/core':
         specifier: workspace:*
-        version: link:../core
+        version: link:../../internal/core
     devDependencies:
       '@scenarist/eslint-config':
         specifier: workspace:*

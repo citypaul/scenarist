@@ -12,7 +12,16 @@
       "Bash(gh pr view:*)",
       "Bash(gh run list:*)",
       "Bash(cat:*)",
-      "Bash(pnpm turbo test:production:*)"
+      "Bash(pnpm turbo test:production:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm test:*)",
+      "Bash(mv:*)",
+      "Bash(pnpm check-types:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(git fetch:*)",
+      "Bash(git rebase:*)",
+      "Bash(git stash:*)"
     ],
     "deny": [],
     "ask": []

@@ -42,7 +42,7 @@ pnpm build
 pnpm test
 
 # Run tests in watch mode
-cd packages/core && pnpm test:watch
+cd internal/core && pnpm test:watch
 
 # Type check
 pnpm check-types
@@ -166,7 +166,7 @@ Schemas define domain validation rules → always in core, never duplicated in a
 
 ```typescript
 // ✅ CORRECT
-// packages/core/src/schemas/scenario-requests.ts
+// internal/core/src/schemas/scenario-requests.ts
 export const ScenarioRequestSchema = z.object({
   scenario: z.string().min(1),
   variant: z.string().optional(),
@@ -245,17 +245,17 @@ Is it a scenario definition concern?
 
 ```
 packages/                    (PUBLIC - users install these)
+├── express-adapter/         # Express middleware
+├── nextjs-adapter/          # Next.js App/Pages Router
+└── playwright-helpers/      # Playwright test utilities
+
+internal/                    (PRIVATE - workspace dependencies only)
 ├── core/                    # The hexagon (zero framework deps)
 │   ├── src/ports/           # Interfaces (use `interface`)
 │   ├── src/types/           # Data structures (use `type` + `readonly`)
 │   ├── src/schemas/         # Zod schemas (validation at trust boundaries)
 │   ├── src/domain/          # Business logic
 │   └── src/adapters/        # Default implementations (InMemory*)
-├── express-adapter/         # Express middleware
-├── nextjs-adapter/          # Next.js App/Pages Router
-└── playwright-helpers/      # Playwright test utilities
-
-internal/                    (PRIVATE - workspace dependencies only)
 ├── msw-adapter/             # MSW integration (framework-agnostic)
 ├── eslint-config/           # Shared linting
 └── typescript-config/       # Shared TypeScript config
