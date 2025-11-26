@@ -12,8 +12,8 @@ describe('Dynamic Content Matching E2E (Phase 1)', () => {
 
   
 
-  afterAll(() => {
-    fixtures.cleanup();
+  afterAll(async () => {
+    await fixtures.cleanup();
   });
 
   describe('Request Body Matching', () => {

@@ -7,8 +7,8 @@ import { createTestFixtures } from "./test-helpers.js";
 const fixtures = await createTestFixtures();
 
 describe("Scenario Persistence Across Multiple Requests E2E", () => {
-  afterAll(() => {
-    fixtures.cleanup();
+  afterAll(async () => {
+    await fixtures.cleanup();
   });
 
   describe("Single scenario across multiple API calls", () => {

@@ -33,8 +33,8 @@ describe('Regex Pattern Matching E2E (Server-Side)', () => {
 
   
 
-  afterAll(() => {
-    fixtures.cleanup();
+  afterAll(async () => {
+    await fixtures.cleanup();
   });
 
   it('should match premium user data when campaign contains "premium"', async () => {

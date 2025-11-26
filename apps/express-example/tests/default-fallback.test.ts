@@ -11,8 +11,8 @@ describe('Default Scenario Fallback E2E', () => {
 
   
 
-  afterAll(() => {
-    fixtures.cleanup();
+  afterAll(async () => {
+    await fixtures.cleanup();
   });
 
   describe('Partial scenario fallback', () => {

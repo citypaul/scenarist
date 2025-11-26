@@ -12,8 +12,8 @@ describe('Scenario Switching E2E', () => {
 
   
 
-  afterAll(() => {
-    fixtures.cleanup();
+  afterAll(async () => {
+    await fixtures.cleanup();
   });
 
   describe('Default scenario', () => {

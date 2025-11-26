@@ -52,6 +52,11 @@ ADRs capture the **context**, **decision**, **alternatives considered**, and **c
   - **Why**: When adapter has single responsibility and is direct API wrapper
   - **Impact**: Rare exception (≤10% of adapters), requires 5 strict criteria
 
+- **[ADR-0018: MSW Vitest File Parallelism Constraint](0018-msw-vitest-file-parallelism.md)** ✨ NEW (2025-11-26)
+  - **Decision**: Disable Vitest file parallelism for MSW-based tests
+  - **Why**: MSW's process-level HTTP interception creates race conditions when multiple processes have MSW servers
+  - **Impact**: Sequential file execution ensures reliable tests; NOT a Scenarist limitation
+
 ### State Management
 
 - **[ADR-0005: State & Sequence Reset on Scenario Switch](0005-state-sequence-reset-on-scenario-switch.md)** (2025-10-27)
@@ -122,6 +127,7 @@ ADRs capture the **context**, **decision**, **alternatives considered**, and **c
 - **Nov 14**: ADR-0013 (Declarative Constraint) - Enforcing declarative patterns through JSON serializability
 - **Nov 14**: ADR-0014 (Build Variants) - Variant generation utility
 - **Nov 14**: ADR-0015 (Sequences over Referer) - Multi-page journey pattern
+- **Nov 26**: ADR-0018 (MSW Vitest Parallelism) - MSW process-level interception constraint
 
 ## Key Decisions by Category
 
@@ -141,6 +147,7 @@ ADRs capture the **context**, **decision**, **alternatives considered**, and **c
 - [ADR-0003](0003-testing-strategy.md): Four-layer strategy with clear boundaries
 - [ADR-0004](0004-why-composition-tests-unnecessary.md): Architecture guarantees composition
 - [ADR-0006](0006-thin-adapters-real-integration-tests.md): Exception for thin adapters
+- [ADR-0018](0018-msw-vitest-file-parallelism.md): MSW requires sequential file execution in Vitest
 
 ### User Experience
 - [ADR-0002](0002-dynamic-response-system.md): Three-phase system enables realistic scenarios

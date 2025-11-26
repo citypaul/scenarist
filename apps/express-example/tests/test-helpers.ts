@@ -14,13 +14,17 @@ import { scenarios } from '../src/scenarios.js';
  * IMPORTANT: This is a test-only helper. Scenarist MUST be enabled in test environment.
  * If scenarist is undefined, this function will throw immediately.
  *
+ * CRITICAL: The cleanup function is async and MUST be awaited in afterAll.
+ * Not awaiting cleanup causes race conditions where the next test file starts
+ * before the MSW server is fully stopped.
+ *
  * Usage:
  * ```typescript
  * const fixtures = await createTestFixtures();
  *
  * describe('My Tests', () => {
- *   afterAll(() => {
- *     fixtures.cleanup();
+ *   afterAll(async () => {
+ *     await fixtures.cleanup();  // MUST await!
  *   });
  *
  *   it('should work', async () => {
@@ -35,7 +39,7 @@ import { scenarios } from '../src/scenarios.js';
 export const createTestFixtures = async (): Promise<{
   app: Express;
   scenarist: ExpressScenarist<typeof scenarios>;
-  cleanup: () => void;
+  cleanup: () => Promise<void>;
 }> => {
   const setup = await createApp();
 
@@ -50,8 +54,8 @@ export const createTestFixtures = async (): Promise<{
   return {
     app: setup.app,
     scenarist: setup.scenarist,
-    cleanup: () => {
-      setup.scenarist?.stop();
+    cleanup: async () => {
+      await setup.scenarist?.stop();
     },
   };
 };
