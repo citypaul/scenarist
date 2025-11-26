@@ -20,7 +20,7 @@ test.describe('Landing Page', () => {
     await expect(page.getByText(/npm install scenarist/i)).toBeVisible();
 
     // Verify tagline is visible
-    await expect(page.getByText(/Stop writing brittle mocks/i)).toBeVisible();
+    await expect(page.getByText(/Playwright tests that hit your real server/i)).toBeVisible();
   });
 
   test('has correct page title', async ({ page }) => {
