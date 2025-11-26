@@ -25,7 +25,7 @@ This architecture ensures your code runs in production-like conditions (real mid
 
 ## The Hexagon: Framework-Agnostic Core
 
-The core package (`@scenarist/core`) contains all domain logic with **zero dependencies** on any web framework:
+The internal core package contains all domain logic with **zero dependencies** on any web framework. Users interact with this through adapters - the core is not installed directly:
 
 ```mermaid
 graph TD
@@ -419,16 +419,17 @@ export const createScenarioManager = ({
 
 ### Default Implementations
 
-The core provides default in-memory implementations:
+The core provides default in-memory implementations. Note: This is internal implementation detail - users interact through adapters, not directly with core:
 
 ```typescript
+// Internal implementation (adapters use this, users don't import directly)
 import {
   createScenarioManager,
   InMemoryScenarioRegistry,
   InMemoryScenarioStore,
   InMemoryStateManager,
   InMemorySequenceTracker,
-} from '@scenarist/core';
+} from '@scenarist/core';  // Internal package
 
 const registry = new InMemoryScenarioRegistry();
 const store = new InMemoryScenarioStore();

@@ -10,7 +10,7 @@ Scenarist uses a **default-first** approach: define baseline mocks in a 'default
 Every scenarios object **must have a 'default' key** (enforced via schema validation):
 
 ```typescript
-import type { ScenaristScenarios } from '@scenarist/core';
+import type { ScenaristScenarios } from '@scenarist/express-adapter';
 
 export const scenarios = {
   default: defaultScenario,    // ✅ Required
