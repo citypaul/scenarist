@@ -58,7 +58,7 @@ MSW returning 500 instead of mocked premium pricing response.
    const response = await fetch('/api/products', {
      headers: {
        'x-user-tier': userTier,  // ✅ Present
-       // ❌ x-test-id NOT included - relies on setExtraHTTPHeaders
+       // ❌ x-scenarist-test-id NOT included - relies on setExtraHTTPHeaders
      },
    });
    ```
@@ -68,13 +68,13 @@ MSW returning 500 instead of mocked premium pricing response.
    // apps/nextjs-app-router-example/app/api/products/route.ts:27
    const response = await fetch('http://localhost:3001/products', {
      headers: {
-       ...scenarist.getHeaders(request),  // Extracts x-test-id from request
+       ...scenarist.getHeaders(request),  // Extracts x-scenarist-test-id from request
        'x-user-tier': userTier,
      },
    });
    ```
 
-   When x-test-id is missing from client request:
+   When x-scenarist-test-id is missing from client request:
    - `scenarist.getHeaders()` falls back to `defaultTestId`
    - Routes to 'default' scenario instead of test-specific scenario (e.g., 'premiumUser')
    - MSW returns wrong data or 500 error
@@ -84,16 +84,16 @@ MSW returning 500 instead of mocked premium pricing response.
 ```
 1. Test calls switchScenario(page, 'premiumUser')
    - Generates testId: 'test-premiumUser-abc123'
-   - Sets via page.setExtraHTTPHeaders({ 'x-test-id': 'test-premiumUser-abc123' })
+   - Sets via page.setExtraHTTPHeaders({ 'x-scenarist-test-id': 'test-premiumUser-abc123' })
 
 2. Test navigates to page: await page.goto('/')
-   - Navigation includes x-test-id header ✅ (setExtraHTTPHeaders works for navigation)
+   - Navigation includes x-scenarist-test-id header ✅ (setExtraHTTPHeaders works for navigation)
 
 3. Page renders, useEffect triggers fetch('/api/products')
-   - fetch() call does NOT include x-test-id header ❌ (setExtraHTTPHeaders doesn't affect fetch)
+   - fetch() call does NOT include x-scenarist-test-id header ❌ (setExtraHTTPHeaders doesn't affect fetch)
 
-4. API route receives request without x-test-id
-   - scenarist.getHeaders(request) returns: { 'x-test-id': 'default-test' }
+4. API route receives request without x-scenarist-test-id
+   - scenarist.getHeaders(request) returns: { 'x-scenarist-test-id': 'default-test' }
 
 5. API route forwards to external API with default test ID
    - MSW intercepts with 'default-test' test ID
@@ -136,7 +136,7 @@ The flakiness occurs because of subtle differences in how Playwright/browsers ha
 
 ### Option 1 (REVISED): Use Playwright Route Interception (RECOMMENDED)
 
-Use Playwright's `page.route()` to intercept ALL outgoing requests and add the x-test-id header:
+Use Playwright's `page.route()` to intercept ALL outgoing requests and add the x-scenarist-test-id header:
 
 ```typescript
 // packages/playwright-helpers/src/switch-scenario.ts
@@ -148,7 +148,7 @@ export const switchScenario = async (
 ): Promise<string> => {
   // ... existing setup ...
 
-  // Intercept ALL requests to inject x-test-id header
+  // Intercept ALL requests to inject x-scenarist-test-id header
   // This works for fetch(), XMLHttpRequest, and any HTTP library
   await page.route('**/*', async (route) => {
     const headers = {
@@ -178,23 +178,23 @@ export const switchScenario = async (
 - ⚠️ Slight performance overhead (request interception)
 - ⚠️ Must be set before page loads that make requests
 
-### Option 2: Add x-test-id to client-side fetch calls
+### Option 2: Add x-scenarist-test-id to client-side fetch calls
 
-Modify client-side code to explicitly include x-test-id:
+Modify client-side code to explicitly include x-scenarist-test-id:
 
 ```typescript
 // apps/nextjs-app-router-example/app/page.tsx
 
 // Get test ID from cookie or header set by Playwright
 const getTestId = () => {
-  const meta = document.querySelector('meta[name="x-test-id"]');
+  const meta = document.querySelector('meta[name="x-scenarist-test-id"]');
   return meta?.getAttribute('content') || 'default-test';
 };
 
 const response = await fetch('/api/products', {
   headers: {
     'x-user-tier': userTier,
-    'x-test-id': getTestId(),  // ✅ Explicit header
+    'x-scenarist-test-id': getTestId(),  // ✅ Explicit header
   },
 });
 ```
@@ -252,7 +252,7 @@ This is the most robust solution that:
 
 - `route.continue()` is async but was not awaited
 - Under parallel test load, header modification completed after navigation started
-- Some requests missed the x-test-id header → wrong scenario data → test failures
+- Some requests missed the x-scenarist-test-id header → wrong scenario data → test failures
 
 ### Fix Applied
 

@@ -276,25 +276,25 @@ sequenceDiagram
 
     rect rgb(220, 240, 255)
         Note over T1,Scenarist: Test 1: Set up Premium scenario
-        T1->>+Scenarist: POST /__scenario__<br/>Headers: x-test-id: abc-123<br/>Body: { scenario: "premium" }
+        T1->>+Scenarist: POST /__scenario__<br/>Headers: x-scenarist-test-id: abc-123<br/>Body: { scenario: "premium" }
         Scenarist-->>-T1: ✓ Scenario active for abc-123
     end
 
     rect rgb(255, 240, 220)
         Note over T2,Scenarist: Test 2: Set up Free scenario (simultaneous!)
-        T2->>+Scenarist: POST /__scenario__<br/>Headers: x-test-id: xyz-789<br/>Body: { scenario: "free" }
+        T2->>+Scenarist: POST /__scenario__<br/>Headers: x-scenarist-test-id: xyz-789<br/>Body: { scenario: "free" }
         Scenarist-->>-T2: ✓ Scenario active for xyz-789
     end
 
     rect rgb(220, 240, 255)
         Note over T1,Auth: Test 1: Complete journey uses Premium scenario
-        T1->>+Server: GET /dashboard<br/>Headers: x-test-id: abc-123
+        T1->>+Server: GET /dashboard<br/>Headers: x-scenarist-test-id: abc-123
         Server->>+Auth: Check user tier
         Scenarist->>Auth: Routes to Premium scenario<br/>(test-id: abc-123)
         Auth-->>-Server: { tier: "premium" }
         Server-->>-T1: Shows premium features ✓
 
-        T1->>+Server: POST /checkout<br/>Headers: x-test-id: abc-123
+        T1->>+Server: POST /checkout<br/>Headers: x-scenarist-test-id: abc-123
         Server->>+Stripe: Process payment
         Scenarist->>Stripe: Routes to Premium scenario<br/>(test-id: abc-123)
         Stripe-->>-Server: { status: "success" }
@@ -303,13 +303,13 @@ sequenceDiagram
 
     rect rgb(255, 240, 220)
         Note over T2,Auth: Test 2: Complete journey uses Free scenario
-        T2->>+Server: GET /dashboard<br/>Headers: x-test-id: xyz-789
+        T2->>+Server: GET /dashboard<br/>Headers: x-scenarist-test-id: xyz-789
         Server->>+Auth: Check user tier
         Scenarist->>Auth: Routes to Free scenario<br/>(test-id: xyz-789)
         Auth-->>-Server: { tier: "free" }
         Server-->>-T2: Shows limited features ✓
 
-        T2->>+Server: POST /upgrade<br/>Headers: x-test-id: xyz-789
+        T2->>+Server: POST /upgrade<br/>Headers: x-scenarist-test-id: xyz-789
         Server-->>-T2: Upgrade page ✓
     end
 
@@ -320,7 +320,7 @@ sequenceDiagram
 
 1. **Each test gets a unique ID** (generated automatically)
 2. **Test switches scenario once** via `POST /__scenario__` with its test ID
-3. **All subsequent requests** include the test ID in headers (`x-test-id: abc-123`)
+3. **All subsequent requests** include the test ID in headers (`x-scenarist-test-id: abc-123`)
 4. **Scenarist routes based on test ID** - same URL, different responses per test
 5. **Scenario persists** for the entire test journey (dashboard → checkout → confirmation)
 6. **Tests run in parallel** - Test 1 and Test 2 execute simultaneously without affecting each other

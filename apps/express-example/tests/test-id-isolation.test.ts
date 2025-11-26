@@ -1,3 +1,4 @@
+import { SCENARIST_TEST_ID_HEADER } from '@scenarist/express-adapter';
 import { describe, it, expect, afterAll } from 'vitest';
 import request from 'supertest';
 
@@ -15,25 +16,25 @@ describe('Test ID Isolation E2E', () => {
     // Test ID 1: Set to success scenario
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(fixtures.scenarist.config.headers.testId, 'test-id-1')
+      .set(SCENARIST_TEST_ID_HEADER, 'test-id-1')
       .send({ scenario: 'success' });
 
     // Test ID 2: Set to github-not-found scenario
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(fixtures.scenarist.config.headers.testId, 'test-id-2')
+      .set(SCENARIST_TEST_ID_HEADER, 'test-id-2')
       .send({ scenario: 'github-not-found' });
 
     // Test ID 3: Set to weather-error scenario
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(fixtures.scenarist.config.headers.testId, 'test-id-3')
+      .set(SCENARIST_TEST_ID_HEADER, 'test-id-3')
       .send({ scenario: 'weather-error' });
 
     // Verify Test ID 1 gets success scenario data
     const response1 = await request(fixtures.app)
       .get('/api/github/user/testuser')
-      .set(fixtures.scenarist.config.headers.testId, 'test-id-1');
+      .set(SCENARIST_TEST_ID_HEADER, 'test-id-1');
 
     expect(response1.status).toBe(200);
     expect(response1.body.login).toBe('testuser');
@@ -41,14 +42,14 @@ describe('Test ID Isolation E2E', () => {
     // Verify Test ID 2 gets not-found scenario data
     const response2 = await request(fixtures.app)
       .get('/api/github/user/testuser')
-      .set(fixtures.scenarist.config.headers.testId, 'test-id-2');
+      .set(SCENARIST_TEST_ID_HEADER, 'test-id-2');
 
     expect(response2.status).toBe(404);
 
     // Verify Test ID 3 gets error scenario data
     const response3 = await request(fixtures.app)
       .get('/api/weather/london')
-      .set(fixtures.scenarist.config.headers.testId, 'test-id-3');
+      .set(SCENARIST_TEST_ID_HEADER, 'test-id-3');
 
     expect(response3.status).toBe(500);
   });

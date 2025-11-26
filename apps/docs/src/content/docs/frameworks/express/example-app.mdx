@@ -182,13 +182,13 @@ describe('Scenario Switching', () => {
     // Switch to premiumUser scenario
     await request(app)
       .post('/__scenario__')
-      .set('x-test-id', testId)
+      .set('x-scenarist-test-id', testId)
       .send({ scenario: 'premiumUser' });
 
     // Request uses premium scenario
     const response = await request(app)
       .get('/api/user')
-      .set('x-test-id', testId);
+      .set('x-scenarist-test-id', testId);
 
     expect(response.body.tier).toBe('premium');
   });
@@ -203,25 +203,25 @@ describe('Test ID Isolation', () => {
     const testId1 = 'test-1';
     await request(app)
       .post('/__scenario__')
-      .set('x-test-id', testId1)
+      .set('x-scenarist-test-id', testId1)
       .send({ scenario: 'premiumUser' });
 
     // Test 2 uses standardUser
     const testId2 = 'test-2';
     await request(app)
       .post('/__scenario__')
-      .set('x-test-id', testId2)
+      .set('x-scenarist-test-id', testId2)
       .send({ scenario: 'standardUser' });
 
     // Requests are isolated
     const res1 = await request(app)
       .get('/api/user')
-      .set('x-test-id', testId1);
+      .set('x-scenarist-test-id', testId1);
     expect(res1.body.tier).toBe('premium');
 
     const res2 = await request(app)
       .get('/api/user')
-      .set('x-test-id', testId2);
+      .set('x-scenarist-test-id', testId2);
     expect(res2.body.tier).toBe('standard');
   });
 });
@@ -235,25 +235,25 @@ describe('Dynamic Sequences', () => {
 
     await request(app)
       .post('/__scenario__')
-      .set('x-test-id', testId)
+      .set('x-scenarist-test-id', testId)
       .send({ scenario: 'githubPolling' });
 
     // First request: pending
     const res1 = await request(app)
       .get('/api/poll')
-      .set('x-test-id', testId);
+      .set('x-scenarist-test-id', testId);
     expect(res1.body.status).toBe('pending');
 
     // Second request: processing
     const res2 = await request(app)
       .get('/api/poll')
-      .set('x-test-id', testId);
+      .set('x-scenarist-test-id', testId);
     expect(res2.body.status).toBe('processing');
 
     // Third request: complete
     const res3 = await request(app)
       .get('/api/poll')
-      .set('x-test-id', testId);
+      .set('x-scenarist-test-id', testId);
     expect(res3.body.status).toBe('complete');
   });
 });
@@ -267,19 +267,19 @@ describe('Stateful Scenarios', () => {
 
     await request(app)
       .post('/__scenario__')
-      .set('x-test-id', testId)
+      .set('x-scenarist-test-id', testId)
       .send({ scenario: 'shoppingCart' });
 
     // Add item - state captured
     await request(app)
       .post('/api/cart/add')
-      .set('x-test-id', testId)
+      .set('x-scenarist-test-id', testId)
       .send({ productId: 'prod-1' });
 
     // Get cart - state injected
     const response = await request(app)
       .get('/api/cart/items')
-      .set('x-test-id', testId);
+      .set('x-scenarist-test-id', testId);
 
     expect(response.body.items).toContain('prod-1');
   });
@@ -291,7 +291,7 @@ describe('Stateful Scenarios', () => {
 ### How It Works
 
 1. **Middleware Registration** - Scenarist middleware added to Express app
-2. **Test ID Extraction** - Middleware extracts `x-test-id` header from requests
+2. **Test ID Extraction** - Middleware extracts `x-scenarist-test-id` header from requests
 3. **Scenario Activation** - Test calls `POST /__scenario__` to set active scenario
 4. **Request Handling** - Express routes execute normally
 5. **External API Interception** - MSW intercepts external API calls
@@ -302,7 +302,7 @@ describe('Stateful Scenarios', () => {
 ```
 Incoming Request
       ↓
-[Scenarist Middleware] - Extracts x-test-id header
+[Scenarist Middleware] - Extracts x-scenarist-test-id header
       ↓
 [Express Route] - Executes normally
       ↓
@@ -356,12 +356,12 @@ describe('Auth Middleware', () => {
 
     await request(app)
       .post('/__scenario__')
-      .set('x-test-id', testId)
+      .set('x-scenarist-test-id', testId)
       .send({ scenario: 'premiumUser' });
 
     const response = await request(app)
       .get('/api/profile')
-      .set('x-test-id', testId);
+      .set('x-scenarist-test-id', testId);
 
     expect(response.body.user.tier).toBe('premium');
   });

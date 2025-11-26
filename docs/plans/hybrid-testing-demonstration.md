@@ -111,8 +111,8 @@ export default async function CheckoutExternalPage({ searchParams }) {
   const { userId } = await searchParams;
 
   const headersList = await headers();
-  const testId = headersList.get(scenarist.config.headers.testId);
-  const testHeaders = { [scenarist.config.headers.testId]: testId };
+  const testId = headersList.get(SCENARIST_TEST_ID_HEADER);
+  const testHeaders = { [SCENARIST_TEST_ID_HEADER]: testId };
 
   // All calls go through API routes that proxy external services
   const [userResponse, recsResponse, shippingResponse, paymentResponse] = await Promise.all([
@@ -148,13 +148,13 @@ export default async function CheckoutExternalPage({ searchParams }) {
 ```typescript
 // app/api/external/user/[id]/route.ts
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
-  const testId = request.headers.get('x-test-id');
+  const testId = request.headers.get('x-scenarist-test-id');
 
   // Proxy to external user service (Scenarist intercepts this)
   const response = await fetch(`https://api.users.example.com/users/${params.id}`, {
     headers: {
       'Authorization': `Bearer ${process.env.USER_SERVICE_API_KEY}`,
-      ...(testId && { 'x-test-id': testId }),
+      ...(testId && { 'x-scenarist-test-id': testId }),
     },
   });
 
@@ -164,14 +164,14 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 // app/api/external/recommendations/route.ts
 export async function GET(request: NextRequest) {
   const tier = request.nextUrl.searchParams.get('tier') || 'standard';
-  const testId = request.headers.get('x-test-id');
+  const testId = request.headers.get('x-scenarist-test-id');
 
   // Proxy to external recommendation engine (Scenarist intercepts this)
   const response = await fetch(`https://api.recommendations.example.com/products`, {
     headers: {
       'Authorization': `Bearer ${process.env.RECS_API_KEY}`,
       'X-User-Tier': tier,
-      ...(testId && { 'x-test-id': testId }),
+      ...(testId && { 'x-scenarist-test-id': testId }),
     },
   });
 
@@ -181,7 +181,7 @@ export async function GET(request: NextRequest) {
 // app/api/external/shipping/calculate/route.ts
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const testId = request.headers.get('x-test-id');
+  const testId = request.headers.get('x-scenarist-test-id');
 
   // Proxy to external shipping calculator (Scenarist intercepts this)
   const response = await fetch(`https://api.shipping.example.com/calculate`, {
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
     headers: {
       'Authorization': `Bearer ${process.env.SHIPPING_API_KEY}`,
       'Content-Type': 'application/json',
-      ...(testId && { 'x-test-id': testId }),
+      ...(testId && { 'x-scenarist-test-id': testId }),
     },
     body: JSON.stringify(body),
   });
@@ -359,12 +359,12 @@ export default async function CheckoutHybridPage({ searchParams }) {
 
   // External API call (Scenarist mocks this)
   const headersList = await headers();
-  const testId = headersList.get(scenarist.config.headers.testId);
+  const testId = headersList.get(SCENARIST_TEST_ID_HEADER);
   const recommendationsResponse = await fetch('https://api.recommendations.example.com/products', {
     headers: {
       'Authorization': `Bearer ${process.env.RECS_API_KEY}`,
       'X-User-Tier': user.tier,
-      ...(testId && { 'x-test-id': testId }),
+      ...(testId && { 'x-scenarist-test-id': testId }),
     },
   });
   const { products } = await recommendationsResponse.json();
@@ -629,11 +629,11 @@ import type { NextRequest } from 'next/server';
 import { runWithTestId } from './lib/container';
 
 export function middleware(request: NextRequest) {
-  const testId = request.headers.get('x-test-id') ?? 'default-test';
+  const testId = request.headers.get('x-scenarist-test-id') ?? 'default-test';
 
   // Store test ID for downstream use
   const response = NextResponse.next();
-  response.headers.set('x-test-id-internal', testId);
+  response.headers.set('x-scenarist-test-id-internal', testId);
 
   return response;
 }
@@ -649,7 +649,7 @@ import { scenarist } from '@/lib/scenarist';
 
 export default async function ProductsRepoPage() {
   const headersList = await headers();
-  const testId = headersList.get(scenarist.config.headers.testId) ?? 'default-test';
+  const testId = headersList.get(SCENARIST_TEST_ID_HEADER) ?? 'default-test';
 
   // Get repository (in-memory in test mode, Prisma in production)
   const { userRepository } = createRepositories();
@@ -660,7 +660,7 @@ export default async function ProductsRepoPage() {
   // External API call (Scenarist mocks this)
   const productsResponse = await fetch('http://localhost:3001/products', {
     headers: {
-      'x-test-id': testId,
+      'x-scenarist-test-id': testId,
       'x-user-tier': user?.tier ?? 'standard',
     },
   });
@@ -695,7 +695,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Not available' }, { status: 404 });
   }
 
-  const testId = request.headers.get('x-test-id') ?? 'default-test';
+  const testId = request.headers.get('x-scenarist-test-id') ?? 'default-test';
   const userData = await request.json();
 
   const user = await runWithTestId(testId, async () => {
@@ -722,7 +722,7 @@ test.describe('Products with Repository Pattern', () => {
     await page.request.post('http://localhost:3002/api/test/users', {
       headers: {
         'Content-Type': 'application/json',
-        'x-test-id': testId,
+        'x-scenarist-test-id': testId,
       },
       data: {
         email: 'premium@example.com',
@@ -748,7 +748,7 @@ test.describe('Products with Repository Pattern', () => {
     await page.request.post('http://localhost:3002/api/test/users', {
       headers: {
         'Content-Type': 'application/json',
-        'x-test-id': testId,
+        'x-scenarist-test-id': testId,
       },
       data: {
         email: 'standard@example.com',
@@ -765,8 +765,8 @@ test.describe('Products with Repository Pattern', () => {
   });
 
   // These tests run in PARALLEL with full isolation:
-  // - Test A (x-test-id: abc-123) → repository uses store['abc-123']
-  // - Test B (x-test-id: def-456) → repository uses store['def-456']
+  // - Test A (x-scenarist-test-id: abc-123) → repository uses store['abc-123']
+  // - Test B (x-scenarist-test-id: def-456) → repository uses store['def-456']
   // - Same user ID in different tests → no conflict
 });
 ```

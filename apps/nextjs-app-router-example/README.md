@@ -469,7 +469,7 @@ Use `getScenaristHeaders()` to extract both test ID and mock status:
 ```typescript
 import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
 
-// Returns: { 'x-test-id': '...', 'x-mock-enabled': 'true' }
+// Returns: { 'x-scenarist-test-id': '...', 'x-mock-enabled': 'true' }
 const headers = getScenaristHeaders(request, scenarist);
 ```
 

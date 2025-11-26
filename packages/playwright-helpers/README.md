@@ -194,7 +194,7 @@ test('premium user scenario', async ({ page }) => {
 type SwitchScenarioOptions = {
   readonly baseURL: string;           // Base URL of your application
   readonly endpoint?: string;         // Scenario endpoint path (default: '/__scenario__')
-  readonly testIdHeader?: string;     // Test ID header name (default: 'x-test-id')
+  readonly testIdHeader?: string;     // Test ID header name (default: 'x-scenarist-test-id')
   readonly variant?: string;          // Optional scenario variant
 };
 ```
@@ -213,11 +213,11 @@ This reduces scenario switching from 9 lines of boilerplate to 2 lines:
 ```typescript
 const testId = `test-premium-${Date.now()}`;
 const response = await page.request.post('http://localhost:3000/api/__scenario__', {
-  headers: { 'x-test-id': testId },
+  headers: { 'x-scenarist-test-id': testId },
   data: { scenario: 'premiumUser' },
 });
 expect(response.status()).toBe(200);
-await page.setExtraHTTPHeaders({ 'x-test-id': testId });
+await page.setExtraHTTPHeaders({ 'x-scenarist-test-id': testId });
 ```
 
 **With helper (2 lines):**

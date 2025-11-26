@@ -91,7 +91,7 @@ pnpm exec playwright test <test-file> --workers=4  # Parallel execution
 **Compare manual vs automated:**
 ```bash
 # Manual curl (usually works)
-curl -H "x-test-id: test-123" "http://localhost:3000/path"
+curl -H "x-scenarist-test-id: test-123" "http://localhost:3000/path"
 
 # Automated test (might fail)
 pnpm exec playwright test <test-file>

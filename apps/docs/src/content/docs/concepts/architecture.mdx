@@ -172,7 +172,7 @@ class ExpressRequestContext implements RequestContext {
   constructor(private req: Request) {}
 
   getTestId(): string {
-    return this.req.headers['x-test-id'] as string || 'default-test';
+    return this.req.headers['x-scenarist-test-id'] as string || 'default-test';
   }
 
   getBody(): unknown {
@@ -189,7 +189,7 @@ class NextAppRequestContext implements RequestContext {
   constructor(private request: Request) {}
 
   getTestId(): string {
-    return this.request.headers.get('x-test-id') || 'default-test';
+    return this.request.headers.get('x-scenarist-test-id') || 'default-test';
   }
 
   getBody(): unknown {
@@ -218,7 +218,7 @@ app.post('/__scenario__', async (req, res) => {
 
 // Next.js App Router
 export async function POST(request: Request) {
-  const testId = request.headers.get('x-test-id') || 'default-test';
+  const testId = request.headers.get('x-scenarist-test-id') || 'default-test';
   const { scenario } = await request.json();
 
   const result = scenarist.scenarioManager.switchScenario(testId, scenario);
@@ -331,14 +331,14 @@ sequenceDiagram
     participant M as MSW
 
     T->>B: switchScenario('premiumUser')
-    B->>A: POST /__scenario__ (x-test-id: uuid-123)
+    B->>A: POST /__scenario__ (x-scenarist-test-id: uuid-123)
     A->>C: ScenarioManager.switchScenario()
     C->>C: Store scenario for test ID
     C-->>A: {success: true}
     A-->>B: 200 OK
 
     B->>B: page.goto('/dashboard')
-    B->>A: GET /dashboard (x-test-id: uuid-123)
+    B->>A: GET /dashboard (x-scenarist-test-id: uuid-123)
     A->>A: Extract RequestContext
     Note over A: Your route handler executes
     A->>M: fetch('https://api.external.com/user')
@@ -360,7 +360,7 @@ sequenceDiagram
 - Core stores `{ testId: 'uuid-123', scenarioId: 'premiumUser' }`
 
 **2. Page Navigation**
-- Browser navigates to `/dashboard` with `x-test-id: uuid-123` header
+- Browser navigates to `/dashboard` with `x-scenarist-test-id: uuid-123` header
 - Adapter extracts `RequestContext` from framework request
 - **Your route handler/Server Component executes normally**
 

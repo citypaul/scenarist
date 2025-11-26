@@ -47,7 +47,7 @@ export const test = base.extend<{
         {
           headers: {
             'Content-Type': 'application/json',
-            'x-test-id': testId,
+            'x-scenarist-test-id': testId,
           },
           data: { scenario: scenarioId },
         }
@@ -65,7 +65,7 @@ export const test = base.extend<{
         {
           headers: {
             'Content-Type': 'application/json',
-            'x-test-id': testId,
+            'x-scenarist-test-id': testId,
           },
           data: { scenarioId },
         }
@@ -81,7 +81,7 @@ export const test = base.extend<{
       console.log('[switchScenario] testId:', testId, 'scenarioId:', scenarioId, 'seed result:', seedResult);
 
       // Set test ID header for subsequent page navigations
-      await targetPage.setExtraHTTPHeaders({ 'x-test-id': testId });
+      await targetPage.setExtraHTTPHeaders({ 'x-scenarist-test-id': testId });
 
       return testId;
     };

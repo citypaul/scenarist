@@ -349,13 +349,13 @@ it('fetches user successfully', async () => {
   // Set scenario for this test
   await fetch('http://localhost:3000/__scenario__', {
     method: 'POST',
-    headers: { 'x-test-id': 'test-1', 'content-type': 'application/json' },
+    headers: { 'x-scenarist-test-id': 'test-1', 'content-type': 'application/json' },
     body: JSON.stringify({ scenario: 'success' })
   });
 
   // Make request - MSW intercepts automatically
   const response = await fetch('http://localhost:3000/api/user', {
-    headers: { 'x-test-id': 'test-1' }
+    headers: { 'x-scenarist-test-id': 'test-1' }
   });
 
   expect(response.status).toBe(200);
@@ -491,7 +491,7 @@ describe('User API', () => {
     await fetch('http://localhost:3000/__scenario__', {
       method: 'POST',
       headers: {
-        'x-test-id': 'admin-test',
+        'x-scenarist-test-id': 'admin-test',
         'content-type': 'application/json',
       },
       body: JSON.stringify({ scenario: 'admin-user' }),
@@ -499,7 +499,7 @@ describe('User API', () => {
 
     // Make request - MSW intercepts automatically
     const response = await fetch('http://localhost:3000/api/user', {
-      headers: { 'x-test-id': 'admin-test' },
+      headers: { 'x-scenarist-test-id': 'admin-test' },
     });
 
     const user = await response.json();
@@ -579,7 +579,7 @@ type AdapterOptions<T extends ScenaristScenarios> = {
   scenarios: T;                        // REQUIRED - scenarios object (all scenarios registered upfront)
   strictMode?: boolean;                 // Return 501 for unmocked requests (default: false)
   headers?: {
-    testId?: string;                    // Header for test ID (default: 'x-test-id')
+    testId?: string;                    // Header for test ID (default: 'x-scenarist-test-id')
   };
   defaultTestId?: string;               // Default test ID (default: 'default-test')
   registry?: ScenarioRegistry;          // Custom registry (default: InMemoryScenarioRegistry)
@@ -647,7 +647,7 @@ The endpoint handler exposes these operations:
 await fetch('http://localhost:3000/__scenario__', {
   method: 'POST',
   headers: {
-    'x-test-id': 'test-123',
+    'x-scenarist-test-id': 'test-123',
     'content-type': 'application/json',
   },
   body: JSON.stringify({ scenario: 'user-logged-in' }),
@@ -677,7 +677,7 @@ await fetch('http://localhost:3000/__scenario__', {
 **Example:**
 ```typescript
 const response = await fetch('http://localhost:3000/__scenario__', {
-  headers: { 'x-test-id': 'test-123' },
+  headers: { 'x-scenarist-test-id': 'test-123' },
 });
 
 const data = await response.json();
@@ -692,14 +692,14 @@ Scenarist's core functionality is framework-agnostic. For deep understanding of 
 
 ### Test ID Isolation
 
-Each request includes an `x-test-id` header for parallel test isolation:
+Each request includes an `x-scenarist-test-id` header for parallel test isolation:
 
 ```typescript
 // Test 1
-headers: { 'x-test-id': 'test-1' } // Uses scenario A
+headers: { 'x-scenarist-test-id': 'test-1' } // Uses scenario A
 
 // Test 2 (parallel!)
-headers: { 'x-test-id': 'test-2' } // Uses scenario B
+headers: { 'x-scenarist-test-id': 'test-2' } // Uses scenario B
 ```
 
 Each test ID has completely isolated:
@@ -782,7 +782,7 @@ export default async function ProductsPage() {
 ```
 
 **What these helpers do:**
-- Extract test ID from request headers (`x-test-id` by default)
+- Extract test ID from request headers (`x-scenarist-test-id` by default)
 - Respect your configured `testIdHeaderName` and `defaultTestId`
 - Return object with Scenarist headers ready to spread
 - Safe to use in production (return empty object when scenarist is undefined)
@@ -792,7 +792,7 @@ export default async function ProductsPage() {
 - **`getScenaristHeadersFromReadonlyHeaders(headersList)`** - App Router Server Components (ReadonlyHeaders from `headers()`)
 
 **Key Distinction:**
-- **Scenarist headers** (`x-test-id`) - Infrastructure for test isolation
+- **Scenarist headers** (`x-scenarist-test-id`) - Infrastructure for test isolation
 - **Application headers** (`x-user-tier`, `content-type`) - Your app's business logic
 
 Only Scenarist headers need forwarding via helper functions. Your application headers are independent.
@@ -891,14 +891,14 @@ import { scenarios } from './scenarios';
 // ✅ Type-safe scenario switching
 await fetch('http://localhost:3000/__scenario__', {
   method: 'POST',
-  headers: { 'x-test-id': 'test-1', 'content-type': 'application/json' },
+  headers: { 'x-scenarist-test-id': 'test-1', 'content-type': 'application/json' },
   body: JSON.stringify({ scenario: 'success' }), // ✅ Autocomplete works!
 });
 
 // Or reference by object key for refactor-safety
 await fetch('http://localhost:3000/__scenario__', {
   method: 'POST',
-  headers: { 'x-test-id': 'test-1', 'content-type': 'application/json' },
+  headers: { 'x-scenarist-test-id': 'test-1', 'content-type': 'application/json' },
   body: JSON.stringify({ scenario: scenarios.success.id }), // ✅ Even safer!
 });
 ```
@@ -924,7 +924,7 @@ export const setScenario = async (testId: string, scenario: string, variant?: st
   await fetch(`${API_BASE}/__scenario__`, {
     method: 'POST',
     headers: {
-      'x-test-id': testId,
+      'x-scenarist-test-id': testId,
       'content-type': 'application/json',
     },
     body: JSON.stringify({ scenario, variant }),
@@ -936,7 +936,7 @@ export const makeRequest = (testId: string, path: string, options?: RequestInit)
     ...options,
     headers: {
       ...options?.headers,
-      'x-test-id': testId,
+      'x-scenarist-test-id': testId,
     },
   });
 };
@@ -1133,7 +1133,7 @@ afterAll(() => scenarist.stop());    // Stops MSW server
 
 **Problem:** Different tests are seeing each other's active scenarios.
 
-**Solution:** Ensure you're sending the `x-test-id` header with **every** request:
+**Solution:** Ensure you're sending the `x-scenarist-test-id` header with **every** request:
 
 ```typescript
 // ❌ Wrong - missing header on second request
@@ -1143,7 +1143,7 @@ const response = await fetch('http://localhost:3000/api/data'); // No test ID!
 // ✅ Correct - header on all requests
 await setScenario('test-1', 'my-scenario');
 const response = await fetch('http://localhost:3000/api/data', {
-  headers: { 'x-test-id': 'test-1' },
+  headers: { 'x-scenarist-test-id': 'test-1' },
 });
 ```
 

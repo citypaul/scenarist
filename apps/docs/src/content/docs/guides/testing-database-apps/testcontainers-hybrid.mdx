@@ -274,7 +274,7 @@ import { scenaristFixtures } from '@scenarist/playwright-helpers';
 import { execSync } from 'child_process';
 
 const { switchScenario } = scenaristFixtures({
-  testIdHeader: 'x-test-id',
+  testIdHeader: 'x-scenarist-test-id',
   scenarioEndpoint: 'http://localhost:3000/__scenario__',
 });
 

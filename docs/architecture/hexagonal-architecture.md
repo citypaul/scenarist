@@ -222,7 +222,7 @@ Always inject ports.
 ```typescript
 // ❌ WRONG - In core domain
 export const extractTestId = (req: Request) => {
-  return req.headers['x-test-id'];  // Express-specific!
+  return req.headers['x-scenarist-test-id'];  // Express-specific!
 };
 ```
 

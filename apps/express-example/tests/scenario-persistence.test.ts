@@ -1,3 +1,4 @@
+import { SCENARIST_TEST_ID_HEADER } from '@scenarist/express-adapter';
 import request from "supertest";
 import { afterAll, describe, expect, it } from "vitest";
 
@@ -17,13 +18,13 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Set scenario once
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(fixtures.scenarist.config.headers.testId, testId)
+        .set(SCENARIST_TEST_ID_HEADER, testId)
         .send({ scenario: "success" });
 
       // Request 1: GitHub API
       const githubResponse = await request(fixtures.app)
         .get("/api/github/user/testuser")
-        .set(fixtures.scenarist.config.headers.testId, testId);
+        .set(SCENARIST_TEST_ID_HEADER, testId);
 
       expect(githubResponse.status).toBe(200);
       expect(githubResponse.body.login).toBe("testuser");
@@ -32,7 +33,7 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Request 2: Weather API (same scenario, different endpoint)
       const weatherResponse = await request(fixtures.app)
         .get("/api/weather/sanfrancisco")
-        .set(fixtures.scenarist.config.headers.testId, testId);
+        .set(SCENARIST_TEST_ID_HEADER, testId);
 
       expect(weatherResponse.status).toBe(200);
       expect(weatherResponse.body.city).toBe("San Francisco");
@@ -41,7 +42,7 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Request 3: Stripe API (same scenario, third endpoint)
       const stripeResponse = await request(fixtures.app)
         .post("/api/payment")
-        .set(fixtures.scenarist.config.headers.testId, testId)
+        .set(SCENARIST_TEST_ID_HEADER, testId)
         .send({ amount: 5000, currency: "usd" });
 
       expect(stripeResponse.status).toBe(200);
@@ -55,13 +56,13 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Set scenario once
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(fixtures.scenarist.config.headers.testId, testId)
+        .set(SCENARIST_TEST_ID_HEADER, testId)
         .send({ scenario: "github-not-found" });
 
       // Request 1: GitHub API (defined in scenario)
       const githubResponse1 = await request(fixtures.app)
         .get("/api/github/user/user1")
-        .set(fixtures.scenarist.config.headers.testId, testId);
+        .set(SCENARIST_TEST_ID_HEADER, testId);
 
       expect(githubResponse1.status).toBe(404);
       expect(githubResponse1.body.message).toBe("Not Found");
@@ -69,7 +70,7 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Request 2: GitHub API again (same scenario, different user)
       const githubResponse2 = await request(fixtures.app)
         .get("/api/github/user/user2")
-        .set(fixtures.scenarist.config.headers.testId, testId);
+        .set(SCENARIST_TEST_ID_HEADER, testId);
 
       expect(githubResponse2.status).toBe(404);
       expect(githubResponse2.body.message).toBe("Not Found");
@@ -77,7 +78,7 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Request 3: Weather API (falls back to default)
       const weatherResponse = await request(fixtures.app)
         .get("/api/weather/tokyo")
-        .set(fixtures.scenarist.config.headers.testId, testId);
+        .set(SCENARIST_TEST_ID_HEADER, testId);
 
       expect(weatherResponse.status).toBe(200);
       expect(weatherResponse.body.city).toBe("London"); // Default scenario
@@ -86,7 +87,7 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Request 4: Stripe API (falls back to default)
       const stripeResponse = await request(fixtures.app)
         .post("/api/payment")
-        .set(fixtures.scenarist.config.headers.testId, testId)
+        .set(SCENARIST_TEST_ID_HEADER, testId)
         .send({ amount: 1000, currency: "usd" });
 
       expect(stripeResponse.status).toBe(200);
@@ -99,13 +100,13 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Set scenario once
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(fixtures.scenarist.config.headers.testId, testId)
+        .set(SCENARIST_TEST_ID_HEADER, testId)
         .send({ scenario: "mixed-results" });
 
       // Request 1: GitHub succeeds
       const githubResponse = await request(fixtures.app)
         .get("/api/github/user/testuser")
-        .set(fixtures.scenarist.config.headers.testId, testId);
+        .set(SCENARIST_TEST_ID_HEADER, testId);
 
       expect(githubResponse.status).toBe(200);
       expect(githubResponse.body.login).toBe("mixeduser");
@@ -113,7 +114,7 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Request 2: Weather fails
       const weatherResponse = await request(fixtures.app)
         .get("/api/weather/city")
-        .set(fixtures.scenarist.config.headers.testId, testId);
+        .set(SCENARIST_TEST_ID_HEADER, testId);
 
       expect(weatherResponse.status).toBe(503);
       expect(weatherResponse.body.error).toBe("Service Unavailable");
@@ -121,7 +122,7 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Request 3: Stripe succeeds
       const stripeResponse = await request(fixtures.app)
         .post("/api/payment")
-        .set(fixtures.scenarist.config.headers.testId, testId)
+        .set(SCENARIST_TEST_ID_HEADER, testId)
         .send({ amount: 2500, currency: "usd" });
 
       expect(stripeResponse.status).toBe(200);
@@ -130,7 +131,7 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Request 4: Weather fails again (consistent behavior)
       const weatherResponse2 = await request(fixtures.app)
         .get("/api/weather/anothercity")
-        .set(fixtures.scenarist.config.headers.testId, testId);
+        .set(SCENARIST_TEST_ID_HEADER, testId);
 
       expect(weatherResponse2.status).toBe(503);
       expect(weatherResponse2.body.error).toBe("Service Unavailable");
@@ -144,13 +145,13 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // User starts payment flow - set scenario
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(fixtures.scenarist.config.headers.testId, testId)
+        .set(SCENARIST_TEST_ID_HEADER, testId)
         .send({ scenario: "stripe-failure" });
 
       // Step 1: User views their profile (falls back to default)
       const profileResponse = await request(fixtures.app)
         .get("/api/github/user/customer")
-        .set(fixtures.scenarist.config.headers.testId, testId);
+        .set(SCENARIST_TEST_ID_HEADER, testId);
 
       expect(profileResponse.status).toBe(200);
       expect(profileResponse.body.login).toBe("octocat"); // Default
@@ -158,7 +159,7 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Step 2: User checks weather before ordering (falls back to default)
       const weatherResponse = await request(fixtures.app)
         .get("/api/weather/london")
-        .set(fixtures.scenarist.config.headers.testId, testId);
+        .set(SCENARIST_TEST_ID_HEADER, testId);
 
       expect(weatherResponse.status).toBe(200);
       expect(weatherResponse.body.city).toBe("London"); // Default
@@ -166,7 +167,7 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Step 3: User attempts payment (uses stripe-failure scenario)
       const paymentResponse = await request(fixtures.app)
         .post("/api/payment")
-        .set(fixtures.scenarist.config.headers.testId, testId)
+        .set(SCENARIST_TEST_ID_HEADER, testId)
         .send({ amount: 1000, currency: "usd" });
 
       expect(paymentResponse.status).toBe(402);
@@ -175,7 +176,7 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Step 4: User tries payment again (still fails consistently)
       const retryResponse = await request(fixtures.app)
         .post("/api/payment")
-        .set(fixtures.scenarist.config.headers.testId, testId)
+        .set(SCENARIST_TEST_ID_HEADER, testId)
         .send({ amount: 500, currency: "usd" });
 
       expect(retryResponse.status).toBe(402);
@@ -188,13 +189,13 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Set scenario at the start of the journey
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(fixtures.scenarist.config.headers.testId, testId)
+        .set(SCENARIST_TEST_ID_HEADER, testId)
         .send({ scenario: "success" });
 
       // Page 1: User profile page
       const profileResponse = await request(fixtures.app)
         .get("/api/github/user/activeuser")
-        .set(fixtures.scenarist.config.headers.testId, testId);
+        .set(SCENARIST_TEST_ID_HEADER, testId);
 
       expect(profileResponse.status).toBe(200);
       expect(profileResponse.body.login).toBe("testuser");
@@ -203,7 +204,7 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Page 2: Weather dashboard
       const weatherResponse = await request(fixtures.app)
         .get("/api/weather/newyork")
-        .set(fixtures.scenarist.config.headers.testId, testId);
+        .set(SCENARIST_TEST_ID_HEADER, testId);
 
       expect(weatherResponse.status).toBe(200);
       expect(weatherResponse.body.city).toBe("San Francisco");
@@ -212,7 +213,7 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Page 3: Payment page - first attempt
       const payment1 = await request(fixtures.app)
         .post("/api/payment")
-        .set(fixtures.scenarist.config.headers.testId, testId)
+        .set(SCENARIST_TEST_ID_HEADER, testId)
         .send({ amount: 3000, currency: "usd" });
 
       expect(payment1.status).toBe(200);
@@ -221,7 +222,7 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Page 4: Payment confirmation page - check user again
       const confirmProfile = await request(fixtures.app)
         .get("/api/github/user/activeuser")
-        .set(fixtures.scenarist.config.headers.testId, testId);
+        .set(SCENARIST_TEST_ID_HEADER, testId);
 
       expect(confirmProfile.status).toBe(200);
       expect(confirmProfile.body.login).toBe("testuser");
@@ -229,7 +230,7 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Page 5: Another payment (subscription perhaps)
       const payment2 = await request(fixtures.app)
         .post("/api/payment")
-        .set(fixtures.scenarist.config.headers.testId, testId)
+        .set(SCENARIST_TEST_ID_HEADER, testId)
         .send({ amount: 999, currency: "usd" });
 
       expect(payment2.status).toBe(200);
@@ -246,7 +247,7 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Request 1: GitHub
       const github1 = await request(fixtures.app)
         .get("/api/github/user/user1")
-        .set(fixtures.scenarist.config.headers.testId, testId);
+        .set(SCENARIST_TEST_ID_HEADER, testId);
 
       expect(github1.status).toBe(200);
       expect(github1.body.login).toBe("octocat"); // Default
@@ -254,7 +255,7 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Request 2: Weather
       const weather1 = await request(fixtures.app)
         .get("/api/weather/paris")
-        .set(fixtures.scenarist.config.headers.testId, testId);
+        .set(SCENARIST_TEST_ID_HEADER, testId);
 
       expect(weather1.status).toBe(200);
       expect(weather1.body.city).toBe("London"); // Default
@@ -262,7 +263,7 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Request 3: Payment
       const payment1 = await request(fixtures.app)
         .post("/api/payment")
-        .set(fixtures.scenarist.config.headers.testId, testId)
+        .set(SCENARIST_TEST_ID_HEADER, testId)
         .send({ amount: 1000, currency: "usd" });
 
       expect(payment1.status).toBe(200);
@@ -271,7 +272,7 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Request 4: GitHub again
       const github2 = await request(fixtures.app)
         .get("/api/github/user/user2")
-        .set(fixtures.scenarist.config.headers.testId, testId);
+        .set(SCENARIST_TEST_ID_HEADER, testId);
 
       expect(github2.status).toBe(200);
       expect(github2.body.login).toBe("octocat"); // Still default
@@ -279,7 +280,7 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Request 5: Weather again
       const weather2 = await request(fixtures.app)
         .get("/api/weather/berlin")
-        .set(fixtures.scenarist.config.headers.testId, testId);
+        .set(SCENARIST_TEST_ID_HEADER, testId);
 
       expect(weather2.status).toBe(200);
       expect(weather2.body.city).toBe("London"); // Still default
@@ -293,13 +294,13 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Start with success scenario
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(fixtures.scenarist.config.headers.testId, testId)
+        .set(SCENARIST_TEST_ID_HEADER, testId)
         .send({ scenario: "success" });
 
       // Request 1: GitHub with success
       const github1 = await request(fixtures.app)
         .get("/api/github/user/test")
-        .set(fixtures.scenarist.config.headers.testId, testId);
+        .set(SCENARIST_TEST_ID_HEADER, testId);
 
       expect(github1.status).toBe(200);
       expect(github1.body.login).toBe("testuser");
@@ -307,13 +308,13 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Switch to github-not-found scenario
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(fixtures.scenarist.config.headers.testId, testId)
+        .set(SCENARIST_TEST_ID_HEADER, testId)
         .send({ scenario: "github-not-found" });
 
       // Request 2: GitHub now returns 404
       const github2 = await request(fixtures.app)
         .get("/api/github/user/test")
-        .set(fixtures.scenarist.config.headers.testId, testId);
+        .set(SCENARIST_TEST_ID_HEADER, testId);
 
       expect(github2.status).toBe(404);
       expect(github2.body.message).toBe("Not Found");
@@ -321,7 +322,7 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Request 3: GitHub still returns 404 (new scenario persists)
       const github3 = await request(fixtures.app)
         .get("/api/github/user/anotheruser")
-        .set(fixtures.scenarist.config.headers.testId, testId);
+        .set(SCENARIST_TEST_ID_HEADER, testId);
 
       expect(github3.status).toBe(404);
       expect(github3.body.message).toBe("Not Found");
@@ -329,7 +330,7 @@ describe("Scenario Persistence Across Multiple Requests E2E", () => {
       // Request 4: Weather falls back to default (not in github-not-found scenario)
       const weather = await request(fixtures.app)
         .get("/api/weather/rome")
-        .set(fixtures.scenarist.config.headers.testId, testId);
+        .set(SCENARIST_TEST_ID_HEADER, testId);
 
       expect(weather.status).toBe(200);
       expect(weather.body.city).toBe("London"); // Default

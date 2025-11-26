@@ -24,7 +24,7 @@ describe('PagesRequestContext', () => {
     it('should extract test ID from x-test-id header', () => {
       const req = {
         headers: {
-          'x-test-id': 'my-test-id',
+          'x-scenarist-test-id': 'my-test-id',
         },
       } as NextApiRequest;
 
@@ -46,7 +46,7 @@ describe('PagesRequestContext', () => {
     it('should handle array header values by taking first element', () => {
       const req = {
         headers: {
-          'x-test-id': ['first-id', 'second-id'],
+          'x-scenarist-test-id': ['first-id', 'second-id'],
         },
       } as NextApiRequest;
 
@@ -60,7 +60,7 @@ describe('PagesRequestContext', () => {
     it('should return all request headers', () => {
       const req = {
         headers: {
-          'x-test-id': 'my-test',
+          'x-scenarist-test-id': 'my-test',
           'content-type': 'application/json',
         },
       } as NextApiRequest;
@@ -68,7 +68,7 @@ describe('PagesRequestContext', () => {
       const context = new PagesRequestContext(req, config);
 
       expect(context.getHeaders()).toEqual({
-        'x-test-id': 'my-test',
+        'x-scenarist-test-id': 'my-test',
         'content-type': 'application/json',
       });
     });

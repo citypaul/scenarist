@@ -7,7 +7,7 @@ type StrategyConfig = {
 };
 
 const buildTestIdHeader = (req: NextApiRequest): Record<string, string> => ({
-  "x-test-id": (req.headers["x-test-id"] as string) || "",
+  "x-scenarist-test-id": (req.headers["x-scenarist-test-id"] as string) || "",
 });
 
 const buildStrategyConfig = (

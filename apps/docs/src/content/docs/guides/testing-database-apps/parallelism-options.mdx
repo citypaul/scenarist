@@ -204,7 +204,7 @@ ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ```typescript
 // Set session variable per request
 app.use(async (req, res, next) => {
-  const testId = req.headers['x-test-id'];
+  const testId = req.headers['x-scenarist-test-id'];
   await prisma.$executeRaw`SELECT set_config('app.test_id', ${testId}, true)`;
   next();
 });

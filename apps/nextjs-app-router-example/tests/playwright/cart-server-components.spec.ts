@@ -48,13 +48,13 @@ test.describe("Cart Server Page - Stateful Mocks with Server Components", () => 
     const testId = await switchScenario(page, "cartWithState");
 
     // Add product through Next.js API route (not directly to json-server)
-    // page.request uses a separate context, so we must explicitly include x-test-id
+    // page.request uses a separate context, so we must explicitly include x-scenarist-test-id
     const response = await page.request.post(
       "http://localhost:3002/api/cart/add",
       {
         headers: {
           "Content-Type": "application/json",
-          "x-test-id": testId,
+          "x-scenarist-test-id": testId,
         },
         data: { productId: "prod-1" },
       }
@@ -96,7 +96,7 @@ test.describe("Cart Server Page - Stateful Mocks with Server Components", () => 
         {
           headers: {
             "Content-Type": "application/json",
-            "x-test-id": testId,
+            "x-scenarist-test-id": testId,
           },
           data: { productId: "prod-1" },
         }
@@ -134,7 +134,7 @@ test.describe("Cart Server Page - Stateful Mocks with Server Components", () => 
         {
           headers: {
             "Content-Type": "application/json",
-            "x-test-id": testId,
+            "x-scenarist-test-id": testId,
           },
           data,
         }
@@ -182,7 +182,7 @@ test.describe("Cart Server Page - Stateful Mocks with Server Components", () => 
     await page.request.post("http://localhost:3002/api/cart/add", {
       headers: {
         "Content-Type": "application/json",
-        "x-test-id": testId,
+        "x-scenarist-test-id": testId,
       },
       data: { productId: "prod-1" },
     });

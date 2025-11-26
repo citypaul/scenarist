@@ -1,6 +1,6 @@
 import type { IncomingMessage } from 'http';
 import type { BaseAdapterOptions, ScenaristAdapter, ScenarioRegistry, ScenarioStore } from '@scenarist/core';
-import { InMemoryScenarioRegistry, InMemoryScenarioStore } from '@scenarist/core';
+import { InMemoryScenarioRegistry, InMemoryScenarioStore, SCENARIST_TEST_ID_HEADER } from '@scenarist/core';
 import { createScenaristBase } from '../common/create-scenarist-base.js';
 import { createScenarioEndpoint } from './endpoints.js';
 
@@ -168,13 +168,11 @@ export const createScenaristImpl = (
     clearScenario: (testId) => manager.clearScenario(testId),
     createScenarioEndpoint: () => createScenarioEndpoint(manager, config),
     getHeaders: (req: RequestWithHeaders): Record<string, string> => {
-      const headerName = config.headers.testId;
-      const defaultTestId = config.defaultTestId;
-      const headerValue = req.headers[headerName.toLowerCase()];
-      const testId = (Array.isArray(headerValue) ? headerValue[0] : headerValue) || defaultTestId;
+      const headerValue = req.headers[SCENARIST_TEST_ID_HEADER];
+      const testId = (Array.isArray(headerValue) ? headerValue[0] : headerValue) || config.defaultTestId;
 
       return {
-        [headerName]: testId,
+        [SCENARIST_TEST_ID_HEADER]: testId,
       };
     },
     start: () => {

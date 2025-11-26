@@ -65,13 +65,13 @@
 
 ```
 1. curl sends: GET http://localhost:3000/?tier=premium
-   Headers: x-test-id: test-premium, x-user-tier: premium
+   Headers: x-scenarist-test-id: test-premium, x-user-tier: premium
 
 2. Next.js runs getServerSideProps
    - Extracts tier=premium from query
    - Calls scenarist.getHeaders(context.req)
-   - Returns { 'x-test-id': 'test-premium' }
-   - Creates headers: { 'x-test-id': 'test-premium', 'x-user-tier': 'premium' }
+   - Returns { 'x-scenarist-test-id': 'test-premium' }
+   - Creates headers: { 'x-scenarist-test-id': 'test-premium', 'x-user-tier': 'premium' }
 
 3. Fetches http://localhost:3001/products with headers
 
@@ -134,7 +134,7 @@
 **How to test:**
 - Log all incoming headers in getServerSideProps
 - Verify testId header is present
-- Check header name (x-test-id vs X-Test-Id)
+- Check header name (x-scenarist-test-id vs X-Test-Id)
 
 ### Hypothesis 3: MSW Not Intercepting
 
@@ -240,7 +240,7 @@ cd apps/nextjs-pages-router-example
 pnpm dev > /tmp/nextjs.log 2>&1 &
 PID=$!
 sleep 8
-curl -s -H "x-test-id: test-premium" -H "x-user-tier: premium" "http://localhost:3000/?tier=premium" | grep -o "£[0-9.]\+" | head -3
+curl -s -H "x-scenarist-test-id: test-premium" -H "x-user-tier: premium" "http://localhost:3000/?tier=premium" | grep -o "£[0-9.]\+" | head -3
 # Expected output: £99.99 £149.99 £79.99 (premium prices)
 kill $PID
 ```
@@ -314,7 +314,7 @@ If context is lost, read:
 **getServerSideProps receives correct headers:**
 ```
 [getServerSideProps] About to fetch products with headers: {
-  'x-test-id': '7303a536b19f9ee3cc0a...',
+  'x-scenarist-test-id': '7303a536b19f9ee3cc0a...',
   'x-user-tier': 'premium'
 }
 [getServerSideProps] tier param: premium

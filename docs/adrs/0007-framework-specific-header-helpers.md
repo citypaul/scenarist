@@ -10,7 +10,7 @@
 
 ## Context
 
-When implementing the Next.js Pages Router example app, we discovered that API routes need to forward the `x-test-id` header when making external API calls. This allows Scenarist's MSW integration to intercept requests with the correct scenario context.
+When implementing the Next.js Pages Router example app, we discovered that API routes need to forward the `x-scenarist-test-id` header when making external API calls. This allows Scenarist's MSW integration to intercept requests with the correct scenario context.
 
 **The Problem:**
 
@@ -19,10 +19,10 @@ In frameworks without middleware support (like Next.js Pages Router), routes mus
 ```typescript
 // pages/api/products.ts
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Need to forward x-test-id header to external API
+  // Need to forward x-scenarist-test-id header to external API
   const response = await fetch('http://localhost:3001/api/products', {
     headers: {
-      'x-test-id': req.headers['x-test-id'] || 'default-test',
+      'x-scenarist-test-id': req.headers['x-scenarist-test-id'] || 'default-test',
     },
   });
   // ...
@@ -182,12 +182,12 @@ const response = await fetch('http://api.com/data', {
 
 ```typescript
 // User code - no helper provided
-const testId = (Array.isArray(req.headers['x-test-id'])
-  ? req.headers['x-test-id'][0]
-  : req.headers['x-test-id']) || 'default-test';
+const testId = (Array.isArray(req.headers['x-scenarist-test-id'])
+  ? req.headers['x-scenarist-test-id'][0]
+  : req.headers['x-scenarist-test-id']) || 'default-test';
 
 const response = await fetch('http://api.com/data', {
-  headers: { 'x-test-id': testId },
+  headers: { 'x-scenarist-test-id': testId },
 });
 ```
 
@@ -282,33 +282,33 @@ Each adapter's helper should have behavior tests:
 ```typescript
 describe('getScenaristHeaders', () => {
   it('should extract test ID from request headers', () => {
-    const req = createMockRequest({ headers: { 'x-test-id': 'test-123' } });
-    const scenarist = createMockScenarist({ testIdHeaderName: 'x-test-id' });
+    const req = createMockRequest({ headers: { 'x-scenarist-test-id': 'test-123' } });
+    const scenarist = createMockScenarist({ testIdHeaderName: 'x-scenarist-test-id' });
 
     const headers = getScenaristHeaders(req, scenarist);
 
-    expect(headers).toEqual({ 'x-test-id': 'test-123' });
+    expect(headers).toEqual({ 'x-scenarist-test-id': 'test-123' });
   });
 
   it('should handle header as string array', () => {
-    const req = createMockRequest({ headers: { 'x-test-id': ['test-123', 'test-456'] } });
-    const scenarist = createMockScenarist({ testIdHeaderName: 'x-test-id' });
+    const req = createMockRequest({ headers: { 'x-scenarist-test-id': ['test-123', 'test-456'] } });
+    const scenarist = createMockScenarist({ testIdHeaderName: 'x-scenarist-test-id' });
 
     const headers = getScenaristHeaders(req, scenarist);
 
-    expect(headers).toEqual({ 'x-test-id': 'test-123' });
+    expect(headers).toEqual({ 'x-scenarist-test-id': 'test-123' });
   });
 
   it('should use default test ID when header missing', () => {
     const req = createMockRequest({ headers: {} });
     const scenarist = createMockScenarist({
-      testIdHeaderName: 'x-test-id',
+      testIdHeaderName: 'x-scenarist-test-id',
       defaultTestId: 'default-test',
     });
 
     const headers = getScenaristHeaders(req, scenarist);
 
-    expect(headers).toEqual({ 'x-test-id': 'default-test' });
+    expect(headers).toEqual({ 'x-scenarist-test-id': 'default-test' });
   });
 
   it('should respect configured header name', () => {
@@ -349,7 +349,7 @@ export default async function handler(req, res) {
 }
 \`\`\`
 
-This ensures the `x-test-id` header (or your configured test ID header) is forwarded, allowing Scenarist to apply the correct scenario for your test.
+This ensures the `x-scenarist-test-id` header (or your configured test ID header) is forwarded, allowing Scenarist to apply the correct scenario for your test.
 ```
 
 ### When Helper is NOT Needed

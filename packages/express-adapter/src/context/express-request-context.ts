@@ -1,5 +1,5 @@
 import type { Request } from 'express';
-import type { RequestContext, ScenaristConfig } from '@scenarist/core';
+import { SCENARIST_TEST_ID_HEADER, type RequestContext, type ScenaristConfig } from '@scenarist/core';
 
 export class ExpressRequestContext implements RequestContext {
   constructor(
@@ -8,8 +8,7 @@ export class ExpressRequestContext implements RequestContext {
   ) {}
 
   getTestId(): string {
-    const headerName = this.config.headers.testId.toLowerCase();
-    const header = this.req.headers[headerName];
+    const header = this.req.headers[SCENARIST_TEST_ID_HEADER];
 
     if (typeof header === 'string') {
       return header;

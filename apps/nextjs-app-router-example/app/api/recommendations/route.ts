@@ -13,12 +13,12 @@ export async function GET(request: NextRequest) {
   const tier = request.headers.get('x-user-tier') || 'standard';
 
   // Forward test ID header for scenario isolation
-  const testId = request.headers.get('x-test-id');
+  const testId = request.headers.get('x-scenarist-test-id');
   const headers: Record<string, string> = {
     'x-user-tier': tier,
   };
   if (testId) {
-    headers['x-test-id'] = testId;
+    headers['x-scenarist-test-id'] = testId;
   }
 
   // Call external recommendation service (Scenarist intercepts this)

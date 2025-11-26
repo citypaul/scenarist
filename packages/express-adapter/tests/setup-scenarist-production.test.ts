@@ -130,7 +130,6 @@ describe('setup-scenarist.ts - Production Tree-Shaking', () => {
       if (result) {
         expect(result.config.endpoints.setScenario).toBe('/__scenario__');
         expect(result.config.endpoints.getScenario).toBe('/__scenario__');
-        expect(result.config.headers.testId).toBe('x-test-id');
         expect(result.config.strictMode).toBe(false);
       }
     });

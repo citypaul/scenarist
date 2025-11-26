@@ -1,3 +1,4 @@
+import { SCENARIST_TEST_ID_HEADER } from '@scenarist/express-adapter';
 import { describe, it, expect, afterAll } from 'vitest';
 import request from 'supertest';
 
@@ -48,12 +49,12 @@ describe('URL Matching Strategies - Express', () => {
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(fixtures.scenarist.config.headers.testId, 'url-test-1')
+      .set(SCENARIST_TEST_ID_HEADER, 'url-test-1')
       .send({ scenario: scenarios.urlMatching.id });
 
     const response = await request(fixtures.app)
       .get('/api/test-url-match/numeric-id/1')
-      .set(fixtures.scenarist.config.headers.testId, 'url-test-1');
+      .set(SCENARIST_TEST_ID_HEADER, 'url-test-1');
 
     expect(response.status).toBe(200);
     expect(response.body.matchedBy).toBe('regexNumericId');
@@ -65,12 +66,12 @@ describe('URL Matching Strategies - Express', () => {
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(fixtures.scenarist.config.headers.testId, 'url-test-2')
+      .set(SCENARIST_TEST_ID_HEADER, 'url-test-2')
       .send({ scenario: scenarios.urlMatching.id });
 
     const response = await request(fixtures.app)
       .get('/api/test-url-match/numeric-id/octocat')
-      .set(fixtures.scenarist.config.headers.testId, 'url-test-2');
+      .set(SCENARIST_TEST_ID_HEADER, 'url-test-2');
 
     expect(response.status).toBe(200);
     // With path parameter mock present (last fallback wins), it extracts the username
@@ -94,12 +95,12 @@ describe('URL Matching Strategies - Express', () => {
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(fixtures.scenarist.config.headers.testId, 'url-test-3')
+      .set(SCENARIST_TEST_ID_HEADER, 'url-test-3')
       .send({ scenario: scenarios.urlMatching.id });
 
     const response = await request(fixtures.app)
       .get('/api/test-url-match/contains-api/london')
-      .set(fixtures.scenarist.config.headers.testId, 'url-test-3');
+      .set(SCENARIST_TEST_ID_HEADER, 'url-test-3');
 
     expect(response.status).toBe(200);
     expect(response.body.matchedBy).toBe('containsWeather');
@@ -123,12 +124,12 @@ describe('URL Matching Strategies - Express', () => {
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(fixtures.scenarist.config.headers.testId, 'url-test-4')
+      .set(SCENARIST_TEST_ID_HEADER, 'url-test-4')
       .send({ scenario: scenarios.urlMatching.id });
 
     const response = await request(fixtures.app)
       .get('/api/test-url-match/version/v2/newyork')
-      .set(fixtures.scenarist.config.headers.testId, 'url-test-4');
+      .set(SCENARIST_TEST_ID_HEADER, 'url-test-4');
 
     expect(response.status).toBe(200);
     expect(response.body.matchedBy).toBe('startsWithV2');
@@ -140,12 +141,12 @@ describe('URL Matching Strategies - Express', () => {
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(fixtures.scenarist.config.headers.testId, 'url-test-5')
+      .set(SCENARIST_TEST_ID_HEADER, 'url-test-5')
       .send({ scenario: scenarios.urlMatching.id });
 
     const response = await request(fixtures.app)
       .get('/api/test-url-match/version/v1/paris')
-      .set(fixtures.scenarist.config.headers.testId, 'url-test-5');
+      .set(SCENARIST_TEST_ID_HEADER, 'url-test-5');
 
     expect(response.status).toBe(200);
     expect(response.body.matchedBy).toBe('fallback');
@@ -168,12 +169,12 @@ describe('URL Matching Strategies - Express', () => {
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(fixtures.scenarist.config.headers.testId, 'url-test-6')
+      .set(SCENARIST_TEST_ID_HEADER, 'url-test-6')
       .send({ scenario: scenarios.urlMatching.id });
 
     const response = await request(fixtures.app)
       .get('/api/test-url-match/file-extension/config.json')
-      .set(fixtures.scenarist.config.headers.testId, 'url-test-6');
+      .set(SCENARIST_TEST_ID_HEADER, 'url-test-6');
 
     expect(response.status).toBe(200);
     expect(response.body.matchedBy).toBe('endsWithJson');
@@ -185,12 +186,12 @@ describe('URL Matching Strategies - Express', () => {
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(fixtures.scenarist.config.headers.testId, 'url-test-7')
+      .set(SCENARIST_TEST_ID_HEADER, 'url-test-7')
       .send({ scenario: scenarios.urlMatching.id });
 
     const response = await request(fixtures.app)
       .get('/api/test-url-match/file-extension/readme.txt')
-      .set(fixtures.scenarist.config.headers.testId, 'url-test-7');
+      .set(SCENARIST_TEST_ID_HEADER, 'url-test-7');
 
     expect(response.status).toBe(200);
     expect(response.body.matchedBy).toBe('fallback');
@@ -210,13 +211,13 @@ describe('URL Matching Strategies - Express', () => {
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(fixtures.scenarist.config.headers.testId, 'url-test-8')
+      .set(SCENARIST_TEST_ID_HEADER, 'url-test-8')
       .send({ scenario: scenarios.urlMatching.id });
 
     const response = await request(fixtures.app)
       .get('/api/test-url-match/combined')
       .query({ apiVersion: '2023-10-16' })
-      .set(fixtures.scenarist.config.headers.testId, 'url-test-8');
+      .set(SCENARIST_TEST_ID_HEADER, 'url-test-8');
 
     expect(response.status).toBe(200);
     expect(response.body.matchedBy).toBe('combinedUrlHeader');
@@ -227,13 +228,13 @@ describe('URL Matching Strategies - Express', () => {
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(fixtures.scenarist.config.headers.testId, 'url-test-9')
+      .set(SCENARIST_TEST_ID_HEADER, 'url-test-9')
       .send({ scenario: scenarios.urlMatching.id });
 
     const response = await request(fixtures.app)
       .get('/api/test-url-match/combined')
       .query({ apiVersion: '2022-11-15' }) // Different version
-      .set(fixtures.scenarist.config.headers.testId, 'url-test-9');
+      .set(SCENARIST_TEST_ID_HEADER, 'url-test-9');
 
     expect(response.status).toBe(200);
     expect(response.body.matchedBy).toBe('fallback');
@@ -252,12 +253,12 @@ describe('URL Matching Strategies - Express', () => {
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(fixtures.scenarist.config.headers.testId, 'url-test-10')
+      .set(SCENARIST_TEST_ID_HEADER, 'url-test-10')
       .send({ scenario: scenarios.urlMatching.id });
 
     const response = await request(fixtures.app)
       .get('/api/test-url-match/exact/exactuser')
-      .set(fixtures.scenarist.config.headers.testId, 'url-test-10');
+      .set(SCENARIST_TEST_ID_HEADER, 'url-test-10');
 
     expect(response.status).toBe(200);
     expect(response.body.matchedBy).toBe('exactUrl');
@@ -287,13 +288,13 @@ describe('URL Matching Strategies - Express', () => {
 
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(fixtures.scenarist.config.headers.testId, 'url-test-11')
+        .set(SCENARIST_TEST_ID_HEADER, 'url-test-11')
         .send({ scenario: scenarios.urlMatching.id });
 
       // Request user ID 123
       const response123 = await request(fixtures.app)
         .get('/api/test-url-match/path-param/123')
-        .set(fixtures.scenarist.config.headers.testId, 'url-test-11');
+        .set(SCENARIST_TEST_ID_HEADER, 'url-test-11');
 
       expect(response123.status).toBe(200);
       expect(response123.body.id).toBe('123');
@@ -302,7 +303,7 @@ describe('URL Matching Strategies - Express', () => {
       // Request different user ID 456
       const response456 = await request(fixtures.app)
         .get('/api/test-url-match/path-param/456')
-        .set(fixtures.scenarist.config.headers.testId, 'url-test-11');
+        .set(SCENARIST_TEST_ID_HEADER, 'url-test-11');
 
       expect(response456.status).toBe(200);
       expect(response456.body.id).toBe('456');
@@ -319,12 +320,12 @@ describe('URL Matching Strategies - Express', () => {
 
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(fixtures.scenarist.config.headers.testId, 'url-test-12')
+        .set(SCENARIST_TEST_ID_HEADER, 'url-test-12')
         .send({ scenario: scenarios.urlMatching.id });
 
       const response = await request(fixtures.app)
         .get('/api/test-url-match/multiple-params/alice/42')
-        .set(fixtures.scenarist.config.headers.testId, 'url-test-12');
+        .set(SCENARIST_TEST_ID_HEADER, 'url-test-12');
 
       expect(response.status).toBe(200);
       expect(response.body.userId).toBe('alice');

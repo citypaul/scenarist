@@ -59,7 +59,7 @@ await setScenario('test-1', 'admin');
 This package provides a complete Express integration for Scenarist's scenario management system. With one function call, you get:
 
 - **Runtime scenario switching** via HTTP endpoints (`/__scenario__`)
-- **Test isolation** using unique test IDs (`x-test-id` header)
+- **Test isolation** using unique test IDs (`x-scenarist-test-id` header)
 - **Automatic MSW integration** for request interception
 - **AsyncLocalStorage** for automatic test ID propagation
 - **Zero boilerplate** - everything wired automatically
@@ -194,13 +194,13 @@ describe('User API', () => {
     // Set scenario for this test
     await request(app)
       .post('/__scenario__')
-      .set('x-test-id', 'admin-test')
+      .set('x-scenarist-test-id', 'admin-test')
       .send({ scenario: 'admin-user' });
 
     // Make request - MSW intercepts automatically
     const response = await request(app)
       .get('/api/user')
-      .set('x-test-id', 'admin-test');
+      .set('x-scenarist-test-id', 'admin-test');
 
     expect(response.status).toBe(200);
     expect(response.body.role).toBe('admin');
@@ -221,7 +221,7 @@ type ExpressAdapterOptions<T extends ScenaristScenarios> = {
   scenarios: T;                        // REQUIRED - scenarios object
   strictMode?: boolean;                // Return 501 for unmocked requests (default: false)
   headers?: {
-    testId?: string;                   // Header for test ID (default: 'x-test-id')
+    testId?: string;                   // Header for test ID (default: 'x-scenarist-test-id')
   };
   endpoints?: {
     setScenario?: string;              // POST endpoint (default: '/__scenario__')
@@ -296,7 +296,7 @@ The middleware automatically exposes these endpoints:
 ```typescript
 await request(app)
   .post('/__scenario__')
-  .set('x-test-id', 'test-123')
+  .set('x-scenarist-test-id', 'test-123')
   .send({ scenario: 'user-logged-in' });
 ```
 
@@ -325,7 +325,7 @@ await request(app)
 // After setting a scenario
 const response = await request(app)
   .get('/__scenario__')
-  .set('x-test-id', 'test-123');
+  .set('x-scenarist-test-id', 'test-123');
 
 expect(response.status).toBe(200);
 expect(response.body.scenarioId).toBe('success');
@@ -333,7 +333,7 @@ expect(response.body.scenarioId).toBe('success');
 // Before setting a scenario
 const response2 = await request(app)
   .get('/__scenario__')
-  .set('x-test-id', 'new-test');
+  .set('x-scenarist-test-id', 'new-test');
 
 expect(response2.status).toBe(404);
 expect(response2.body.error).toBe('No active scenario for this test ID');
@@ -450,18 +450,18 @@ Scenarist provides 20+ powerful features for E2E testing. All capabilities work 
 
 ### Test ID Isolation
 
-Each request can include an `x-test-id` header. Scenarist uses this to isolate scenarios, enabling concurrent tests with different backend states:
+Each request can include an `x-scenarist-test-id` header. Scenarist uses this to isolate scenarios, enabling concurrent tests with different backend states:
 
 ```typescript
 // Test 1 uses scenario A
 await request(app)
   .get('/api/data')
-  .set('x-test-id', 'test-1'); // Uses scenario A
+  .set('x-scenarist-test-id', 'test-1'); // Uses scenario A
 
 // Test 2 uses scenario B (runs concurrently!)
 await request(app)
   .get('/api/data')
-  .set('x-test-id', 'test-2'); // Uses scenario B
+  .set('x-scenarist-test-id', 'test-2'); // Uses scenario B
 ```
 
 ### Automatic Test ID Propagation
@@ -469,7 +469,7 @@ await request(app)
 **Express advantage:** Unlike frameworks without middleware (like Next.js), Express uses **AsyncLocalStorage** to automatically propagate test IDs throughout the request lifecycle.
 
 **What this means:**
-- Middleware extracts test ID from `x-test-id` header **once**
+- Middleware extracts test ID from `x-scenarist-test-id` header **once**
 - Test ID stored in AsyncLocalStorage for the request duration
 - MSW handlers automatically access test ID from AsyncLocalStorage
 - **No manual header forwarding needed** when making external API calls
@@ -508,7 +508,7 @@ const response = await fetch('http://external-api.com/products');
 
 **Why this works:**
 - Express middleware runs before all routes
-- Middleware extracts `x-test-id` and stores in AsyncLocalStorage
+- Middleware extracts `x-scenarist-test-id` and stores in AsyncLocalStorage
 - MSW dynamic handler reads from AsyncLocalStorage
 - All external API calls intercepted with correct test ID
 
@@ -524,7 +524,7 @@ The `createScenarist()` function automatically:
 5. Returns mocked responses based on the scenario
 
 The `middleware` includes everything:
-- Test ID extraction from `x-test-id` header (stored in AsyncLocalStorage)
+- Test ID extraction from `x-scenarist-test-id` header (stored in AsyncLocalStorage)
 - Scenario control endpoints (`/__scenario__`)
 - All wired together - just add `app.use(scenarist.middleware)`
 
@@ -591,7 +591,7 @@ scenarist.switchScenario('test-123', 'invalid-name'); // ❌ TypeScript error!
 
 await request(app)
   .post(scenarist.config.endpoints.setScenario)
-  .set(scenarist.config.headers.testId, 'test-123')
+  .set(SCENARIST_TEST_ID_HEADER, 'test-123')
   .send({ scenario: 'success' }); // ✅ Type-safe!
 ```
 
@@ -615,12 +615,12 @@ import { app } from '../src/app';
 export const setScenario = async (testId: string, scenario: string, variant?: string) => {
   await request(app)
     .post('/__scenario__')
-    .set('x-test-id', testId)
+    .set('x-scenarist-test-id', testId)
     .send({ scenario, variant });
 };
 
 export const makeRequest = (testId: string) => {
-  return request(app).set('x-test-id', testId);
+  return request(app).set('x-scenarist-test-id', testId);
 };
 ```
 
@@ -920,7 +920,7 @@ afterAll(() => scenarist.stop());    // Stops MSW server
 
 **Problem:** Different tests are seeing each other's active scenarios.
 
-**Solution:** Ensure you're sending the `x-test-id` header with **every** request:
+**Solution:** Ensure you're sending the `x-scenarist-test-id` header with **every** request:
 
 ```typescript
 // ❌ Wrong - missing header on second request
@@ -931,7 +931,7 @@ const response = await request(app).get('/api/data'); // No test ID!
 await setScenario('test-1', 'my-scenario');
 const response = await request(app)
   .get('/api/data')
-  .set('x-test-id', 'test-1');
+  .set('x-scenarist-test-id', 'test-1');
 ```
 
 ### Scenario not found error

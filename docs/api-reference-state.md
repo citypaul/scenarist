@@ -196,11 +196,11 @@ Each test ID has completely independent state:
 
 ```typescript
 // Test A
-headers: { 'x-test-id': 'test-a' }
+headers: { 'x-scenarist-test-id': 'test-a' }
 // State for test-a: { items: ["Apple"] }
 
 // Test B
-headers: { 'x-test-id': 'test-b' }
+headers: { 'x-scenarist-test-id': 'test-b' }
 // State for test-b: { items: ["Banana"] }
 ```
 

@@ -19,7 +19,7 @@
 **Root Cause:** Missing `await` on `route.continue()` in `switch-scenario.ts:58`
 - `route.continue()` is async but wasn't awaited
 - Under parallel test load, header modification completed after navigation started
-- Some requests missed x-test-id header → wrong scenario data → test failures
+- Some requests missed x-scenarist-test-id header → wrong scenario data → test failures
 
 **Changes Applied:**
 1. Added `await page.unroute('**/*')` - prevents handler accumulation
@@ -151,7 +151,7 @@ pnpm exec playwright test tests/playwright/products-server-side.spec.ts --grep "
 ```bash
 pnpm dev > /tmp/nextjs.log 2>&1 &
 sleep 8
-curl -s -H "x-test-id: test-premium" -H "x-user-tier: premium" "http://localhost:3000/?tier=premium" | grep "£99.99"
+curl -s -H "x-scenarist-test-id: test-premium" -H "x-user-tier: premium" "http://localhost:3000/?tier=premium" | grep "£99.99"
 pkill -f "pnpm dev"
 ```
 

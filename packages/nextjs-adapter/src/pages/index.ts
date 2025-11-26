@@ -34,7 +34,8 @@ export { createScenarioEndpoint } from './endpoints.js';
 export { getScenaristHeaders } from './helpers.js';
 export type { PagesAdapterOptions, PagesScenarist } from './setup.js';
 
-// Re-export core types for user convenience (users should only install this adapter)
+// Re-export core types and constants for user convenience (users should only install this adapter)
+export { SCENARIST_TEST_ID_HEADER } from '@scenarist/core';
 export type {
   ScenaristScenario,
   ScenaristMock,

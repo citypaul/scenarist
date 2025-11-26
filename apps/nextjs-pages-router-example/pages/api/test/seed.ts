@@ -27,7 +27,7 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const testId = (req.headers['x-test-id'] as string) ?? 'default-test';
+  const testId = (req.headers['x-scenarist-test-id'] as string) ?? 'default-test';
 
   const parseResult = SeedRequestSchema.safeParse(req.body);
   if (!parseResult.success) {

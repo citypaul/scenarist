@@ -8,15 +8,17 @@
  *
  * @example
  * ```typescript
+ * import { SCENARIST_TEST_ID_HEADER } from '@scenarist/core';
+ *
  * class ExpressRequestContext implements RequestContext {
  *   constructor(
  *     private readonly req: Request,
- *     private readonly config: ScenaristConfig
+ *     private readonly defaultTestId: string
  *   ) {}
  *
  *   getTestId(): string {
- *     const header = this.req.headers[this.config.headers.testId];
- *     return typeof header === 'string' ? header : this.config.defaultTestId;
+ *     const header = this.req.headers[SCENARIST_TEST_ID_HEADER];
+ *     return typeof header === 'string' ? header : this.defaultTestId;
  *   }
  * }
  * ```

@@ -15,13 +15,13 @@ When testing applications that access multiple data sources (HTTP APIs + databas
 ┌─────────────────────────────────────────────────────────┐
 │                    Test Runner                          │
 ├─────────────────────────────────────────────────────────┤
-│  Test A (x-test-id: abc-123)                            │
+│  Test A (x-scenarist-test-id: abc-123)                            │
 │     │                                                   │
 │     ├─→ HTTP API ──→ Scenarist ──→ Mocks for "abc-123"  │
 │     │                                                   │
 │     └─→ Database ──→ Your Code ──→ Data for "abc-123"   │
 ├─────────────────────────────────────────────────────────┤
-│  Test B (x-test-id: xyz-789)                            │
+│  Test B (x-scenarist-test-id: xyz-789)                            │
 │     │                                                   │
 │     ├─→ HTTP API ──→ Scenarist ──→ Mocks for "xyz-789"  │
 │     │                                                   │
@@ -43,7 +43,7 @@ This is the same pattern used in distributed systems for request tracing, multi-
 
 **You handle database isolation** — you implement the mechanism to extract the test ID and partition database queries accordingly. Scenarist doesn't touch databases.
 
-The **connection point** is the `x-test-id` header. Both systems read the same header and use it as their partition key.
+The **connection point** is the `x-scenarist-test-id` header. Both systems read the same header and use it as their partition key.
 
 </Aside>
 
@@ -85,7 +85,7 @@ test('premium user sees discounts', async ({ page }) => {
 
   // Or seed via HTTP endpoint
   await page.request.post('/test/seed', {
-    headers: { 'x-test-id': testId },
+    headers: { 'x-scenarist-test-id': testId },
     data: { scenarioId: 'premiumUser' }
   });
 

@@ -19,7 +19,7 @@ test('can switch to premium scenario manually', async ({ page }) => {
 
   // VERBOSE: Manually call scenario endpoint
   const response = await page.request.post('http://localhost:3002/api/__scenario__', {
-    headers: { 'x-test-id': testId },
+    headers: { 'x-scenarist-test-id': testId },
     data: { scenario: 'premiumUser' },
   });
 
@@ -27,7 +27,7 @@ test('can switch to premium scenario manually', async ({ page }) => {
   expect(response.status()).toBe(200);
 
   // VERBOSE: Manually set test ID header for all subsequent requests
-  await page.setExtraHTTPHeaders({ 'x-test-id': testId });
+  await page.setExtraHTTPHeaders({ 'x-scenarist-test-id': testId });
 
   // Navigate to home page
   await page.goto('/');

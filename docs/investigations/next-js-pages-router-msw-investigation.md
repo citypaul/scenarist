@@ -35,7 +35,7 @@ The goal is to prove MSW can intercept external API calls made from getServerSid
 **Step 1: Manual Testing**
 Created `/tmp/test-msw.sh` to test with curl:
 ```bash
-curl -s -H "x-test-id: test-premium" -H "x-user-tier: premium" "http://localhost:3000/?tier=premium" | grep -o "£[0-9.]\+"
+curl -s -H "x-scenarist-test-id: test-premium" -H "x-user-tier: premium" "http://localhost:3000/?tier=premium" | grep -o "£[0-9.]\+"
 ```
 
 **Result:** ✅ SUCCESS - Returns £99.99 (premium pricing)
@@ -144,9 +144,9 @@ test('should render premium products server-side', async ({ page }) => {
 
 **Why manual curl works:**
 ```bash
-curl -H "x-test-id: test-premium" ...
+curl -H "x-scenarist-test-id: test-premium" ...
 ```
-The `-H "x-test-id: test-premium"` header likely triggers scenario switching via some other mechanism (not shown in test code), which activates premiumUserScenario.
+The `-H "x-scenarist-test-id: test-premium"` header likely triggers scenario switching via some other mechanism (not shown in test code), which activates premiumUserScenario.
 
 ### Pricing Reference
 
@@ -311,7 +311,7 @@ cd apps/nextjs-pages-router-example
 pnpm dev > /tmp/nextjs.log 2>&1 &
 PID=$!
 sleep 8
-curl -s -H "x-test-id: test-premium" -H "x-user-tier: premium" "http://localhost:3000/?tier=premium" | grep -o "£[0-9.]\+" | head -3
+curl -s -H "x-scenarist-test-id: test-premium" -H "x-user-tier: premium" "http://localhost:3000/?tier=premium" | grep -o "£[0-9.]\+" | head -3
 kill $PID
 ```
 
@@ -396,11 +396,11 @@ POST /api/__scenario__ 200 in 204ms
 
 **2. getServerSideProps Receives Correct Headers:**
 ```
-[getHeaders] headerName: x-test-id
+[getHeaders] headerName: x-scenarist-test-id
 [getHeaders] headerValue from request: 7303a536b19f9ee3cc0a-69ce08d219d2e1cd4cff-94f94aa5-ab97-4750-ac5c-2767efdc93a8
 [getHeaders] resolved testId: 7303a536b19f9ee3cc0a...
 [getServerSideProps] About to fetch products with headers: {
-  'x-test-id': '7303a536b19f9ee3cc0a-69ce08d219d2e1cd4cff-94f94aa5-ab97-4750-ac5c-2767efdc93a8',
+  'x-scenarist-test-id': '7303a536b19f9ee3cc0a-69ce08d219d2e1cd4cff-94f94aa5-ab97-4750-ac5c-2767efdc93a8',
   'x-user-tier': 'premium'
 }
 [getServerSideProps] tier param: premium
@@ -414,7 +414,7 @@ POST /api/__scenario__ 200 in 204ms
 [MSW] activeScenario: undefined  ← THE BUG
 [MSW] scenarioId to use: default  ← Falls back instead of using premiumUser
 [MSW] request headers: {
-  'x-test-id': '7303a536b19f9ee3cc0a-69ce08d219d2e1cd4cff-94f94aa5-ab97-4750-ac5c-2767efdc93a8',
+  'x-scenarist-test-id': '7303a536b19f9ee3cc0a-69ce08d219d2e1cd4cff-94f94aa5-ab97-4750-ac5c-2767efdc93a8',
   'x-user-tier': 'premium'
 }
 [MSW] Number of mocks to evaluate: 1  ← Only default scenario mocks (should be default + premiumUser)

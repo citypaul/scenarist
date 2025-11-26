@@ -220,25 +220,25 @@ describe('Scenario Switching', () => {
     // Test 1 uses success scenario
     await request(app)
       .post('/__scenario__')
-      .set('x-test-id', 'test-1')
+      .set('x-scenarist-test-id', 'test-1')
       .send({ scenario: 'success' });
 
     // Test 2 uses error scenario
     await request(app)
       .post('/__scenario__')
-      .set('x-test-id', 'test-2')
+      .set('x-scenarist-test-id', 'test-2')
       .send({ scenario: 'github-not-found' });
 
     // Test 1 gets success response
     const res1 = await request(app)
       .get('/api/github/user/testuser')
-      .set('x-test-id', 'test-1');
+      .set('x-scenarist-test-id', 'test-1');
     expect(res1.status).toBe(200);
 
     // Test 2 gets error response (no interference)
     const res2 = await request(app)
       .get('/api/github/user/testuser')
-      .set('x-test-id', 'test-2');
+      .set('x-scenarist-test-id', 'test-2');
     expect(res2.status).toBe(404);
   });
 });
@@ -283,7 +283,7 @@ post {
 }
 
 headers {
-  x-test-id: {{testId}}
+  x-scenarist-test-id: {{testId}}
 }
 
 body:json {

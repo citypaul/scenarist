@@ -674,7 +674,7 @@ When reviewing documentation PRs, AI agents should:
    - The `enabled` flag controls endpoint availability
    - When enabled: endpoints active, middleware extracts IDs, MSW registered
    - When disabled: endpoints return 404, middleware no-ops, zero overhead
-   - Test ID extraction mechanism (x-test-id header, configurable)
+   - Test ID extraction mechanism (x-scenarist-test-id header, configurable)
    - Unique test IDs enable parallel execution
    - How test IDs route to correct scenarios
    - Production safety guarantees

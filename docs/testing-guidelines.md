@@ -284,7 +284,7 @@ import request from 'supertest';
 import { extractRequestContext } from '../src/request-context';
 
 describe('Express Adapter - extractRequestContext', () => {
-  it('should extract test ID from x-test-id header', async () => {
+  it('should extract test ID from x-scenarist-test-id header', async () => {
     const app = express();
 
     app.get('/test', (req, res) => {
@@ -294,7 +294,7 @@ describe('Express Adapter - extractRequestContext', () => {
 
     const response = await request(app)
       .get('/test')
-      .set('x-test-id', 'my-test-123');
+      .set('x-scenarist-test-id', 'my-test-123');
 
     expect(response.body.testId).toBe('my-test-123');
   });
@@ -365,14 +365,14 @@ describe('Payment Flow Integration', () => {
     // 1. Start with success scenario
     await request(app)
       .post('/__scenario__')
-      .set('x-test-id', testId)
+      .set('x-scenarist-test-id', testId)
       .send({ scenario: 'success' })
       .expect(200);
 
     // 2. Create payment - should succeed
     const payment = await request(app)
       .post('/api/payment')
-      .set('x-test-id', testId)
+      .set('x-scenarist-test-id', testId)
       .send({ amount: 1000, currency: 'usd' })
       .expect(200);
 
@@ -381,14 +381,14 @@ describe('Payment Flow Integration', () => {
     // 3. Switch to failure scenario
     await request(app)
       .post('/__scenario__')
-      .set('x-test-id', testId)
+      .set('x-scenarist-test-id', testId)
       .send({ scenario: 'stripe-failure' })
       .expect(200);
 
     // 4. Create payment - should fail with 402
     const failedPayment = await request(app)
       .post('/api/payment')
-      .set('x-test-id', testId)
+      .set('x-scenarist-test-id', testId)
       .send({ amount: 1000, currency: 'usd' })
       .expect(402);
 
@@ -401,28 +401,28 @@ describe('Payment Flow Integration', () => {
     // Set test-1 to success
     await request(app)
       .post('/__scenario__')
-      .set('x-test-id', 'test-1')
+      .set('x-scenarist-test-id', 'test-1')
       .send({ scenario: 'success' })
       .expect(200);
 
     // Set test-2 to failure
     await request(app)
       .post('/__scenario__')
-      .set('x-test-id', 'test-2')
+      .set('x-scenarist-test-id', 'test-2')
       .send({ scenario: 'stripe-failure' })
       .expect(200);
 
     // test-1 still succeeds
     await request(app)
       .post('/api/payment')
-      .set('x-test-id', 'test-1')
+      .set('x-scenarist-test-id', 'test-1')
       .send({ amount: 1000, currency: 'usd' })
       .expect(200);
 
     // test-2 still fails
     await request(app)
       .post('/api/payment')
-      .set('x-test-id', 'test-2')
+      .set('x-scenarist-test-id', 'test-2')
       .send({ amount: 1000, currency: 'usd' })
       .expect(402);
   });
@@ -465,7 +465,7 @@ post {
 }
 
 headers {
-  x-test-id: {{testId}}
+  x-scenarist-test-id: {{testId}}
 }
 
 body:json {
@@ -559,7 +559,7 @@ export const getMockConfig = (
 ): ScenaristConfig => {
   return {
     enabled: true,
-    testIdHeader: 'x-test-id',
+    testIdHeader: 'x-scenarist-test-id',
     defaultTestId: 'default-test',
     ...overrides,
   };

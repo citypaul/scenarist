@@ -7,7 +7,7 @@ describe('ExpressRequestContext', () => {
     it('should read test ID from header when present', () => {
       const config = mockConfig();
       const req = mockRequest({
-        headers: { 'x-test-id': 'test-123' },
+        headers: { 'x-scenarist-test-id': 'test-123' },
       });
 
       const context = new ExpressRequestContext(req, config);
@@ -29,7 +29,7 @@ describe('ExpressRequestContext', () => {
     it('should handle array headers by using first value', () => {
       const config = mockConfig();
       const req = mockRequest({
-        headers: { 'x-test-id': ['test-first', 'test-second'] },
+        headers: { 'x-scenarist-test-id': ['test-first', 'test-second'] },
       });
 
       const context = new ExpressRequestContext(req, config);
@@ -40,7 +40,7 @@ describe('ExpressRequestContext', () => {
     it('should be case-insensitive for header names', () => {
       const config = mockConfig();
       const req = mockRequest({
-        headers: { 'X-Test-ID': 'test-456' },
+        headers: { 'X-Scenarist-Test-ID': 'test-456' },
       });
 
       const context = new ExpressRequestContext(req, config);
@@ -54,7 +54,7 @@ describe('ExpressRequestContext', () => {
       const config = mockConfig();
       const req = mockRequest({
         headers: {
-          'x-test-id': 'test-123',
+          'x-scenarist-test-id': 'test-123',
           'content-type': 'application/json',
         },
       });
@@ -62,7 +62,7 @@ describe('ExpressRequestContext', () => {
       const context = new ExpressRequestContext(req, config);
 
       expect(context.getHeaders()).toEqual({
-        'x-test-id': 'test-123',
+        'x-scenarist-test-id': 'test-123',
         'content-type': 'application/json',
       });
     });

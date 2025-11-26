@@ -164,7 +164,7 @@ describe('Pages Router production entry point', () => {
     it('should return empty object (no test headers in production)', () => {
       const mockRequest = {
         headers: {
-          'x-test-id': 'test-123',
+          'x-scenarist-test-id': 'test-123',
           'x-user-id': 'user-456',
         },
         method: 'GET',
@@ -201,7 +201,7 @@ describe('Pages Router production entry point', () => {
     it('should ignore NextApiRequest properties in production', () => {
       const mockRequest = {
         headers: {
-          'x-test-id': 'test-abc',
+          'x-scenarist-test-id': 'test-abc',
           'x-scenario': 'premium',
         },
         method: 'POST',
@@ -288,7 +288,7 @@ describe('Pages Router production entry point', () => {
 
     it('should return consistent results for same inputs', () => {
       const mockRequest = {
-        headers: { 'x-test-id': 'test-123' },
+        headers: { 'x-scenarist-test-id': 'test-123' },
         method: 'GET',
         url: '/api/test',
       } as unknown as NextApiRequest;
@@ -303,7 +303,7 @@ describe('Pages Router production entry point', () => {
       // Different request shapes should all work safely
       const requests = [
         { headers: {}, method: 'GET', url: '/' } as unknown as NextApiRequest,
-        { headers: { 'x-test-id': 'abc' }, method: 'POST', url: '/api/test' } as unknown as NextApiRequest,
+        { headers: { 'x-scenarist-test-id': 'abc' }, method: 'POST', url: '/api/test' } as unknown as NextApiRequest,
         { headers: { 'x-custom': 'value' }, method: 'PUT', url: '/api/update' } as unknown as NextApiRequest,
       ];
 

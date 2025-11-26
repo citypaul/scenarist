@@ -18,7 +18,7 @@ Switch the active scenario for a test ID.
 **Headers:**
 ```
 Content-Type: application/json
-x-test-id: <test-id>  (configurable via headers.testId)
+x-scenarist-test-id: <test-id>  
 ```
 
 **Body:**
@@ -106,7 +106,7 @@ test('my test', async ({ page, switchScenario }) => {
 ```bash
 curl -X POST http://localhost:3000/__scenario__ \
   -H "Content-Type: application/json" \
-  -H "x-test-id: test-123" \
+  -H "x-scenarist-test-id: test-123" \
   -d '{"scenario": "payment-error"}'
 ```
 
@@ -116,7 +116,7 @@ const response = await fetch('http://localhost:3000/__scenario__', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'x-test-id': 'test-123',
+    'x-scenarist-test-id': 'test-123',
   },
   body: JSON.stringify({ scenario: 'payment-error' }),
 });
@@ -132,7 +132,7 @@ import app from './app';
 
 const response = await request(app)
   .post('/__scenario__')
-  .set('x-test-id', 'test-123')
+  .set('x-scenarist-test-id', 'test-123')
   .send({ scenario: 'payment-error' });
 
 expect(response.status).toBe(200);
@@ -151,7 +151,7 @@ Retrieve the currently active scenario for a test ID.
 
 **Headers:**
 ```
-x-test-id: <test-id>  (configurable via headers.testId)
+x-scenarist-test-id: <test-id>  
 ```
 
 **No body required.**
@@ -200,7 +200,7 @@ x-test-id: <test-id>  (configurable via headers.testId)
 ```typescript
 const response = await fetch('http://localhost:3000/__scenario__', {
   headers: {
-    'x-test-id': 'test-123',
+    'x-scenarist-test-id': 'test-123',
   },
 });
 
@@ -211,14 +211,14 @@ const result = await response.json();
 **With curl:**
 ```bash
 curl http://localhost:3000/__scenario__ \
-  -H "x-test-id: test-123"
+  -H "x-scenarist-test-id: test-123"
 ```
 
 **With Playwright (supertest):**
 ```typescript
 const response = await request(app)
   .get('/__scenario__')
-  .set('x-test-id', 'test-123');
+  .set('x-scenarist-test-id', 'test-123');
 
 expect(response.status).toBe(200);
 expect(response.body.scenarioId).toBe('payment-error');
@@ -229,14 +229,9 @@ expect(response.body.scenarioId).toBe('payment-error');
 Both endpoints extract the test ID from the request header:
 
 ```typescript
-// Configuration
-const scenarist = createScenarist({
-  enabled: true,
-  scenarios,
-  headers: {
-    testId: 'x-test-id',  // Header name (configurable)
-  },
-});
+// The header name is standardized to 'x-scenarist-test-id'
+// Use SCENARIST_TEST_ID_HEADER constant from your adapter package
+import { SCENARIST_TEST_ID_HEADER } from '@scenarist/express-adapter';
 ```
 
 **Test ID behavior:**
@@ -247,7 +242,7 @@ const scenarist = createScenarist({
 **Example:**
 ```typescript
 // Request with header
-Headers: { 'x-test-id': 'test-123' }
+Headers: { 'x-scenarist-test-id': 'test-123' }
 // Uses test ID: 'test-123'
 
 // Request without header
@@ -369,7 +364,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
 ## Configuration
 
-Endpoint paths and headers are configurable:
+Endpoint paths are configurable:
 
 ```typescript
 const scenarist = createScenarist({
@@ -384,20 +379,15 @@ const scenarist = createScenarist({
     // setScenario: '/__test/switch',
     // getScenario: '/__test/status',
   },
-
-  // Customize headers
-  headers: {
-    testId: 'x-test-id',                 // Test ID header (default)
-    // Or customize:
-    // testId: 'x-scenarist-test-id',
-  },
 });
 ```
 
-**Why customize?**
+**Why customize endpoint paths?**
 - Security: Use non-standard paths in production (if `enabled: true` accidentally)
 - Compatibility: Avoid conflicts with existing routes
 - Convention: Match your team's naming standards
+
+**Note:** The test ID header is standardized to `'x-scenarist-test-id'` and is not configurable. Use the `SCENARIST_TEST_ID_HEADER` constant from your adapter package.
 
 ## Scenario Manager Coordination
 
@@ -463,7 +453,7 @@ await switchScenario(page, 'payment-error');
 - Test IDs should be unique (use UUIDs)
 
 **Header Validation:**
-- Test ID header validated (configurable name)
+- Test ID header validated (`x-scenarist-test-id`)
 - Missing header → uses default test ID
 - Empty header → uses default test ID
 
@@ -518,7 +508,7 @@ testWithScenarios('payment flow', async ({ page, switchScenario }) => {
 
   // 2. Verify active scenario (optional)
   const response = await page.request.get('http://localhost:3000/__scenario__', {
-    headers: { 'x-test-id': testId },
+    headers: { 'x-scenarist-test-id': testId },
   });
   const activeScenario = await response.json();
   // { testId: 'test-abc123', scenarioId: 'payment-success', scenarioName: '...' }

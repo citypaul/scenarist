@@ -333,12 +333,12 @@ describe('App Router createScenarist', () => {
     it('should extract test ID from request using default configured header name', async () => {
       clearAllGlobals();
       const { scenarist } = await createTestSetup();
-      const headers = new Headers({ 'x-test-id': 'test-123' });
+      const headers = new Headers({ 'x-scenarist-test-id': 'test-123' });
       const req = new Request('http://localhost:3000', { headers });
 
       const result = scenarist.getHeaders(req);
 
-      expect(result).toEqual({ 'x-test-id': 'test-123' });
+      expect(result).toEqual({ 'x-scenarist-test-id': 'test-123' });
     });
 
     it('should use default test ID when header is missing', async () => {
@@ -348,27 +348,7 @@ describe('App Router createScenarist', () => {
 
       const result = scenarist.getHeaders(req);
 
-      expect(result).toEqual({ 'x-test-id': 'default-test' });
-    });
-
-    it('should respect custom header name from config', async () => {
-      clearAllGlobals();
-      const scenarist = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-        headers: { testId: 'x-custom-test-id' },
-      });
-
-      if (!scenarist) {
-        throw new Error('Scenarist should not be undefined in tests');
-      }
-
-      const headers = new Headers({ 'x-custom-test-id': 'custom-123' });
-      const req = new Request('http://localhost:3000', { headers });
-
-      const result = scenarist.getHeaders(req);
-
-      expect(result).toEqual({ 'x-custom-test-id': 'custom-123' });
+      expect(result).toEqual({ 'x-scenarist-test-id': 'default-test' });
     });
 
     it('should respect custom default test ID from config', async () => {
@@ -387,38 +367,18 @@ describe('App Router createScenarist', () => {
 
       const result = scenarist.getHeaders(req);
 
-      expect(result).toEqual({ 'x-test-id': 'my-default' });
-    });
-
-    it('should handle both custom header name and custom default test ID', async () => {
-      clearAllGlobals();
-      const scenarist = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-        headers: { testId: 'x-my-header' },
-        defaultTestId: 'my-default',
-      });
-
-      if (!scenarist) {
-        throw new Error('Scenarist should not be undefined in tests');
-      }
-
-      const req = new Request('http://localhost:3000');
-
-      const result = scenarist.getHeaders(req);
-
-      expect(result).toEqual({ 'x-my-header': 'my-default' });
+      expect(result).toEqual({ 'x-scenarist-test-id': 'my-default' });
     });
 
     it('should handle case-insensitive header lookup', async () => {
       clearAllGlobals();
       const { scenarist } = await createTestSetup();
-      const headers = new Headers({ 'X-TEST-ID': 'test-123' }); // uppercase
+      const headers = new Headers({ 'X-SCENARIST-TEST-ID': 'test-123' }); // uppercase
       const req = new Request('http://localhost:3000', { headers });
 
       const result = scenarist.getHeaders(req);
 
-      expect(result).toEqual({ 'x-test-id': 'test-123' });
+      expect(result).toEqual({ 'x-scenarist-test-id': 'test-123' });
     });
   });
 
@@ -452,11 +412,11 @@ describe('App Router createScenarist', () => {
     it('should extract test ID from ReadonlyHeaders using default configured header name', async () => {
       clearAllGlobals();
       const { scenarist } = await createTestSetup();
-      const headers = new MockReadonlyHeaders({ 'x-test-id': 'test-456' });
+      const headers = new MockReadonlyHeaders({ 'x-scenarist-test-id': 'test-456' });
 
       const result = scenarist.getHeadersFromReadonlyHeaders(headers);
 
-      expect(result).toEqual({ 'x-test-id': 'test-456' });
+      expect(result).toEqual({ 'x-scenarist-test-id': 'test-456' });
     });
 
     it('should use default test ID when header is missing from ReadonlyHeaders', async () => {
@@ -466,52 +426,33 @@ describe('App Router createScenarist', () => {
 
       const result = scenarist.getHeadersFromReadonlyHeaders(headers);
 
-      expect(result).toEqual({ 'x-test-id': 'default-test' });
-    });
-
-    it('should respect custom header name from config with ReadonlyHeaders', async () => {
-      clearAllGlobals();
-      const scenarist = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-        headers: { testId: 'x-custom-test-id' },
-      });
-
-      if (!scenarist) {
-        throw new Error('Scenarist should not be undefined in tests');
-      }
-
-      const headers = new MockReadonlyHeaders({ 'x-custom-test-id': 'custom-789' });
-
-      const result = scenarist.getHeadersFromReadonlyHeaders(headers);
-
-      expect(result).toEqual({ 'x-custom-test-id': 'custom-789' });
+      expect(result).toEqual({ 'x-scenarist-test-id': 'default-test' });
     });
 
     it('should handle lowercase header names with ReadonlyHeaders', async () => {
       clearAllGlobals();
       const { scenarist } = await createTestSetup();
       // ReadonlyHeaders.get() is case-insensitive, store as uppercase
-      const headers = new MockReadonlyHeaders({ 'X-TEST-ID': 'test-uppercase' });
+      const headers = new MockReadonlyHeaders({ 'X-SCENARIST-TEST-ID': 'test-uppercase' });
 
       const result = scenarist.getHeadersFromReadonlyHeaders(headers);
 
       // Should still extract correctly despite uppercase input
-      expect(result).toEqual({ 'x-test-id': 'test-uppercase' });
+      expect(result).toEqual({ 'x-scenarist-test-id': 'test-uppercase' });
     });
 
     it('should return object with single header entry', async () => {
       clearAllGlobals();
       const { scenarist } = await createTestSetup();
       const headers = new MockReadonlyHeaders({
-        'x-test-id': 'test-single',
+        'x-scenarist-test-id': 'test-single',
         'x-other-header': 'other-value', // Should be ignored
       });
 
       const result = scenarist.getHeadersFromReadonlyHeaders(headers);
 
       // Should only contain test ID header, nothing else
-      expect(result).toEqual({ 'x-test-id': 'test-single' });
+      expect(result).toEqual({ 'x-scenarist-test-id': 'test-single' });
       expect(Object.keys(result)).toHaveLength(1);
     });
   });

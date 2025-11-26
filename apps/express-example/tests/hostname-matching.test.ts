@@ -1,3 +1,4 @@
+import { SCENARIST_TEST_ID_HEADER } from '@scenarist/express-adapter';
 import { describe, it, expect, afterAll } from 'vitest';
 import request from 'supertest';
 
@@ -33,12 +34,12 @@ describe('Hostname Matching - Express', () => {
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(fixtures.scenarist.config.headers.testId, 'hostname-test-1')
+      .set(SCENARIST_TEST_ID_HEADER, 'hostname-test-1')
       .send({ scenario: scenarios.hostnameMatching.id });
 
     const response = await request(fixtures.app)
       .get('/api/test-hostname-match/pathname-only')
-      .set(fixtures.scenarist.config.headers.testId, 'hostname-test-1');
+      .set(SCENARIST_TEST_ID_HEADER, 'hostname-test-1');
 
     expect(response.status).toBe(200);
     expect(response.body.patternType).toBe('pathname-only');
@@ -56,12 +57,12 @@ describe('Hostname Matching - Express', () => {
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(fixtures.scenarist.config.headers.testId, 'hostname-test-2')
+      .set(SCENARIST_TEST_ID_HEADER, 'hostname-test-2')
       .send({ scenario: scenarios.hostnameMatching.id });
 
     const response = await request(fixtures.app)
       .get('/api/test-hostname-match/github-full')
-      .set(fixtures.scenarist.config.headers.testId, 'hostname-test-2');
+      .set(SCENARIST_TEST_ID_HEADER, 'hostname-test-2');
 
     expect(response.status).toBe(200);
     expect(response.body.patternType).toBe('full-url');
@@ -80,12 +81,12 @@ describe('Hostname Matching - Express', () => {
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(fixtures.scenarist.config.headers.testId, 'hostname-test-3')
+      .set(SCENARIST_TEST_ID_HEADER, 'hostname-test-3')
       .send({ scenario: scenarios.hostnameMatching.id });
 
     const response = await request(fixtures.app)
       .get('/api/test-hostname-match/stripe-full')
-      .set(fixtures.scenarist.config.headers.testId, 'hostname-test-3');
+      .set(SCENARIST_TEST_ID_HEADER, 'hostname-test-3');
 
     expect(response.status).toBe(200);
     expect(response.body.patternType).toBe('full-url');
@@ -104,12 +105,12 @@ describe('Hostname Matching - Express', () => {
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(fixtures.scenarist.config.headers.testId, 'hostname-test-4')
+      .set(SCENARIST_TEST_ID_HEADER, 'hostname-test-4')
       .send({ scenario: scenarios.hostnameMatching.id });
 
     const response = await request(fixtures.app)
       .get('/api/test-hostname-match/regexp')
-      .set(fixtures.scenarist.config.headers.testId, 'hostname-test-4');
+      .set(SCENARIST_TEST_ID_HEADER, 'hostname-test-4');
 
     expect(response.status).toBe(200);
     expect(response.body.patternType).toBe('native-regexp');
@@ -127,12 +128,12 @@ describe('Hostname Matching - Express', () => {
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(fixtures.scenarist.config.headers.testId, 'hostname-test-5')
+      .set(SCENARIST_TEST_ID_HEADER, 'hostname-test-5')
       .send({ scenario: scenarios.hostnameMatching.id });
 
     const response = await request(fixtures.app)
       .get('/api/test-hostname-match/pathname-params/789/321')
-      .set(fixtures.scenarist.config.headers.testId, 'hostname-test-5');
+      .set(SCENARIST_TEST_ID_HEADER, 'hostname-test-5');
 
     expect(response.status).toBe(200);
     expect(response.body.patternType).toBe('pathname-only with params');
@@ -151,12 +152,12 @@ describe('Hostname Matching - Express', () => {
 
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(fixtures.scenarist.config.headers.testId, 'hostname-test-6')
+      .set(SCENARIST_TEST_ID_HEADER, 'hostname-test-6')
       .send({ scenario: scenarios.hostnameMatching.id });
 
     const response = await request(fixtures.app)
       .get('/api/test-hostname-match/full-params/999')
-      .set(fixtures.scenarist.config.headers.testId, 'hostname-test-6');
+      .set(SCENARIST_TEST_ID_HEADER, 'hostname-test-6');
 
     expect(response.status).toBe(200);
     expect(response.body.patternType).toBe('full-url with params');

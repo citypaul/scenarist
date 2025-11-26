@@ -8,7 +8,7 @@ describe('Test ID Middleware', () => {
     it('should store test ID in AsyncLocalStorage', () => {
       const config = mockConfig();
       const req = mockRequest({
-        headers: { 'x-test-id': 'test-123' },
+        headers: { 'x-scenarist-test-id': 'test-123' },
       });
       const res = mockResponse();
 
@@ -44,7 +44,7 @@ describe('Test ID Middleware', () => {
   describe('Middleware chain', () => {
     it('should call next() to continue middleware chain', () => {
       const config = mockConfig();
-      const req = mockRequest({ headers: { 'x-test-id': 'test-456' } });
+      const req = mockRequest({ headers: { 'x-scenarist-test-id': 'test-456' } });
       const res = mockResponse();
 
       let nextCalled = false;

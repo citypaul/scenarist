@@ -1,4 +1,4 @@
-import type { RequestContext, ScenaristConfig } from '@scenarist/core';
+import { SCENARIST_TEST_ID_HEADER, type RequestContext, type ScenaristConfig } from '@scenarist/core';
 
 /**
  * RequestContext implementation for Next.js App Router.
@@ -16,8 +16,7 @@ export class AppRequestContext implements RequestContext {
   ) {}
 
   getTestId(): string {
-    const headerName = this.config.headers.testId.toLowerCase();
-    const header = this.req.headers.get(headerName);
+    const header = this.req.headers.get(SCENARIST_TEST_ID_HEADER);
 
     if (header) {
       return header;

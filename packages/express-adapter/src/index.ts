@@ -10,7 +10,8 @@ export { ExpressRequestContext } from './context/express-request-context.js';
 export { createTestIdMiddleware, testIdStorage } from './middleware/test-id-middleware.js';
 export { createScenarioEndpoints } from './endpoints/scenario-endpoints.js';
 
-// Re-export core types for user convenience (users should only install this adapter)
+// Re-export core types and constants for user convenience (users should only install this adapter)
+export { SCENARIST_TEST_ID_HEADER } from '@scenarist/core';
 export type {
   ScenaristScenario,
   ScenaristMock,

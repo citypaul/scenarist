@@ -22,7 +22,7 @@ describe('AppRequestContext', () => {
   describe('getTestId', () => {
     it('should extract test ID from x-test-id header', () => {
       const headers = new Headers({
-        'x-test-id': 'my-test-id',
+        'x-scenarist-test-id': 'my-test-id',
       });
 
       const req = new Request('http://localhost:3000/api/test', { headers });
@@ -40,7 +40,7 @@ describe('AppRequestContext', () => {
 
     it('should be case-insensitive for header names', () => {
       const headers = new Headers({
-        'X-TEST-ID': 'uppercase-id',
+        'X-SCENARIST-TEST-ID': 'uppercase-id',
       });
 
       const req = new Request('http://localhost:3000/api/test', { headers });
@@ -53,7 +53,7 @@ describe('AppRequestContext', () => {
   describe('getHeaders', () => {
     it('should return all request headers as record', () => {
       const headers = new Headers({
-        'x-test-id': 'my-test',
+        'x-scenarist-test-id': 'my-test',
         'content-type': 'application/json',
       });
 
@@ -62,7 +62,7 @@ describe('AppRequestContext', () => {
 
       const result = context.getHeaders();
 
-      expect(result['x-test-id']).toBe('my-test');
+      expect(result['x-scenarist-test-id']).toBe('my-test');
       expect(result['content-type']).toBe('application/json');
     });
 

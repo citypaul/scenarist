@@ -72,25 +72,25 @@ import { test, expect } from '@playwright/test';
 test('add items to cart and retrieve them', async ({ page, request }) => {
   // Set the scenario
   await request.post('http://localhost:3000/__scenario__', {
-    headers: { 'x-test-id': 'cart-test-1' },
+    headers: { 'x-scenarist-test-id': 'cart-test-1' },
     data: { scenario: 'shopping-cart' },
   });
 
   // Add first item
   await request.post('http://localhost:3000/api/cart/items', {
-    headers: { 'x-test-id': 'cart-test-1' },
+    headers: { 'x-scenarist-test-id': 'cart-test-1' },
     data: { item: 'Apple' },
   });
 
   // Add second item
   await request.post('http://localhost:3000/api/cart/items', {
-    headers: { 'x-test-id': 'cart-test-1' },
+    headers: { 'x-scenarist-test-id': 'cart-test-1' },
     data: { item: 'Banana' },
   });
 
   // Get cart - should contain both items
   const cart = await request.get('http://localhost:3000/api/cart', {
-    headers: { 'x-test-id': 'cart-test-1' },
+    headers: { 'x-scenarist-test-id': 'cart-test-1' },
   });
 
   const cartData = await cart.json();
@@ -412,13 +412,13 @@ test('complete multi-step form', async ({ request }) => {
 
   // Set scenario
   await request.post('http://localhost:3000/__scenario__', {
-    headers: { 'x-test-id': testId },
+    headers: { 'x-scenarist-test-id': testId },
     data: { scenario: 'multi-step-form' },
   });
 
   // Step 1: Personal info
   await request.post('http://localhost:3000/api/form/step1', {
-    headers: { 'x-test-id': testId },
+    headers: { 'x-scenarist-test-id': testId },
     data: {
       name: 'Alice Johnson',
       email: 'alice@example.com',
@@ -428,7 +428,7 @@ test('complete multi-step form', async ({ request }) => {
 
   // Step 2: Address
   const step2 = await request.post('http://localhost:3000/api/form/step2', {
-    headers: { 'x-test-id': testId },
+    headers: { 'x-scenarist-test-id': testId },
     data: {
       street: '123 Main St',
       city: 'Portland',
@@ -441,13 +441,13 @@ test('complete multi-step form', async ({ request }) => {
 
   // Step 3: Payment
   await request.post('http://localhost:3000/api/form/step3', {
-    headers: { 'x-test-id': testId },
+    headers: { 'x-scenarist-test-id': testId },
     data: { cardNumber: '1234' },
   });
 
   // Get confirmation - all data injected
   const confirm = await request.get('http://localhost:3000/api/form/confirm', {
-    headers: { 'x-test-id': testId },
+    headers: { 'x-scenarist-test-id': testId },
   });
 
   const confirmData = await confirm.json();
@@ -474,25 +474,25 @@ Each test ID has **completely independent state**:
 ```typescript
 // Test A adds "Apple" to cart
 await request.post('/api/cart/items', {
-  headers: { 'x-test-id': 'test-A' },
+  headers: { 'x-scenarist-test-id': 'test-A' },
   data: { item: 'Apple' },
 });
 
 // Test B adds "Banana" to cart
 await request.post('/api/cart/items', {
-  headers: { 'x-test-id': 'test-B' },
+  headers: { 'x-scenarist-test-id': 'test-B' },
   data: { item: 'Banana' },
 });
 
 // Test A gets cart - only sees "Apple"
 const cartA = await request.get('/api/cart', {
-  headers: { 'x-test-id': 'test-A' },
+  headers: { 'x-scenarist-test-id': 'test-A' },
 });
 expect(cartA.items).toEqual(['Apple']);
 
 // Test B gets cart - only sees "Banana"
 const cartB = await request.get('/api/cart', {
-  headers: { 'x-test-id': 'test-B' },
+  headers: { 'x-scenarist-test-id': 'test-B' },
 });
 expect(cartB.items).toEqual(['Banana']);
 ```
@@ -506,29 +506,29 @@ When you switch scenarios, state is **automatically reset**:
 ```typescript
 // Set shopping cart scenario, add items
 await request.post('/__scenario__', {
-  headers: { 'x-test-id': 'test-1' },
+  headers: { 'x-scenarist-test-id': 'test-1' },
   data: { scenario: 'shopping-cart' },
 });
 
 await request.post('/api/cart/items', {
-  headers: { 'x-test-id': 'test-1' },
+  headers: { 'x-scenarist-test-id': 'test-1' },
   data: { item: 'Apple' },
 });
 
 // Switch to different scenario - state is reset
 await request.post('/__scenario__', {
-  headers: { 'x-test-id': 'test-1' },
+  headers: { 'x-scenarist-test-id': 'test-1' },
   data: { scenario: 'user-profile' },
 });
 
 // Switch back to shopping cart - state is empty (fresh start)
 await request.post('/__scenario__', {
-  headers: { 'x-test-id': 'test-1' },
+  headers: { 'x-scenarist-test-id': 'test-1' },
   data: { scenario: 'shopping-cart' },
 });
 
 const cart = await request.get('/api/cart', {
-  headers: { 'x-test-id': 'test-1' },
+  headers: { 'x-scenarist-test-id': 'test-1' },
 });
 expect(cart.items).toBeUndefined();  // State was reset
 ```
@@ -811,19 +811,19 @@ test('concurrent tests have independent state', async ({ request }) => {
   // Start both tests in parallel
   await Promise.all([
     request.post('/api/cart/items', {
-      headers: { 'x-test-id': 'test-A' },
+      headers: { 'x-scenarist-test-id': 'test-A' },
       data: { item: 'Apple' },
     }),
     request.post('/api/cart/items', {
-      headers: { 'x-test-id': 'test-B' },
+      headers: { 'x-scenarist-test-id': 'test-B' },
       data: { item: 'Banana' },
     }),
   ]);
 
   // Each test sees only its own data
   const [cartA, cartB] = await Promise.all([
-    request.get('/api/cart', { headers: { 'x-test-id': 'test-A' } }),
-    request.get('/api/cart', { headers: { 'x-test-id': 'test-B' } }),
+    request.get('/api/cart', { headers: { 'x-scenarist-test-id': 'test-A' } }),
+    request.get('/api/cart', { headers: { 'x-scenarist-test-id': 'test-B' } }),
   ]);
 
   expect((await cartA.json()).items).toEqual(['Apple']);
@@ -839,29 +839,29 @@ test('state resets on scenario switch', async ({ request }) => {
 
   // Add data in scenario A
   await request.post('/__scenario__', {
-    headers: { 'x-test-id': testId },
+    headers: { 'x-scenarist-test-id': testId },
     data: { scenario: 'shopping-cart' },
   });
 
   await request.post('/api/cart/items', {
-    headers: { 'x-test-id': testId },
+    headers: { 'x-scenarist-test-id': testId },
     data: { item: 'Apple' },
   });
 
   // Switch to scenario B
   await request.post('/__scenario__', {
-    headers: { 'x-test-id': testId },
+    headers: { 'x-scenarist-test-id': testId },
     data: { scenario: 'user-profile' },
   });
 
   // Switch back to scenario A - state should be empty
   await request.post('/__scenario__', {
-    headers: { 'x-test-id': testId },
+    headers: { 'x-scenarist-test-id': testId },
     data: { scenario: 'shopping-cart' },
   });
 
   const cart = await request.get('/api/cart', {
-    headers: { 'x-test-id': testId },
+    headers: { 'x-scenarist-test-id': testId },
   });
 
   const cartData = await cart.json();

@@ -1,3 +1,4 @@
+import { SCENARIST_TEST_ID_HEADER } from '@scenarist/express-adapter';
 import { describe, it, expect, afterAll } from 'vitest';
 import request from 'supertest';
 
@@ -20,13 +21,13 @@ describe('Default Scenario Fallback E2E', () => {
       // github-not-found only defines GitHub mock, not weather or stripe
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(fixtures.scenarist.config.headers.testId, 'fallback-test-1')
+        .set(SCENARIST_TEST_ID_HEADER, 'fallback-test-1')
         .send({ scenario: 'github-not-found' });
 
       // GitHub should use github-not-found scenario
       const githubResponse = await request(fixtures.app)
         .get('/api/github/user/testuser')
-        .set(fixtures.scenarist.config.headers.testId, 'fallback-test-1');
+        .set(SCENARIST_TEST_ID_HEADER, 'fallback-test-1');
 
       expect(githubResponse.status).toBe(404);
       expect(githubResponse.body.message).toBe('Not Found');
@@ -34,7 +35,7 @@ describe('Default Scenario Fallback E2E', () => {
       // Weather should fall back to default scenario
       const weatherResponse = await request(fixtures.app)
         .get('/api/weather/london')
-        .set(fixtures.scenarist.config.headers.testId, 'fallback-test-1');
+        .set(SCENARIST_TEST_ID_HEADER, 'fallback-test-1');
 
       expect(weatherResponse.status).toBe(200);
       expect(weatherResponse.body).toEqual({
@@ -47,7 +48,7 @@ describe('Default Scenario Fallback E2E', () => {
       // Stripe should also fall back to default scenario
       const stripeResponse = await request(fixtures.app)
         .post('/api/payment')
-        .set(fixtures.scenarist.config.headers.testId, 'fallback-test-1')
+        .set(SCENARIST_TEST_ID_HEADER, 'fallback-test-1')
         .send({ amount: 1000, currency: 'usd' });
 
       expect(stripeResponse.status).toBe(200);
@@ -59,13 +60,13 @@ describe('Default Scenario Fallback E2E', () => {
       // weather-error only defines weather mock, not GitHub or stripe
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(fixtures.scenarist.config.headers.testId, 'fallback-test-2')
+        .set(SCENARIST_TEST_ID_HEADER, 'fallback-test-2')
         .send({ scenario: 'weather-error' });
 
       // Weather should use weather-error scenario
       const weatherResponse = await request(fixtures.app)
         .get('/api/weather/tokyo')
-        .set(fixtures.scenarist.config.headers.testId, 'fallback-test-2');
+        .set(SCENARIST_TEST_ID_HEADER, 'fallback-test-2');
 
       expect(weatherResponse.status).toBe(500);
       expect(weatherResponse.body.error).toBe('Internal Server Error');
@@ -73,7 +74,7 @@ describe('Default Scenario Fallback E2E', () => {
       // GitHub should fall back to default scenario
       const githubResponse = await request(fixtures.app)
         .get('/api/github/user/testuser')
-        .set(fixtures.scenarist.config.headers.testId, 'fallback-test-2');
+        .set(SCENARIST_TEST_ID_HEADER, 'fallback-test-2');
 
       expect(githubResponse.status).toBe(200);
       expect(githubResponse.body.login).toBe('octocat');
@@ -81,7 +82,7 @@ describe('Default Scenario Fallback E2E', () => {
       // Stripe should also fall back to default
       const stripeResponse = await request(fixtures.app)
         .post('/api/payment')
-        .set(fixtures.scenarist.config.headers.testId, 'fallback-test-2')
+        .set(SCENARIST_TEST_ID_HEADER, 'fallback-test-2')
         .send({ amount: 1000, currency: 'usd' });
 
       expect(stripeResponse.status).toBe(200);
@@ -93,13 +94,13 @@ describe('Default Scenario Fallback E2E', () => {
       // stripe-failure only defines stripe mock, not GitHub or weather
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(fixtures.scenarist.config.headers.testId, 'fallback-test-3')
+        .set(SCENARIST_TEST_ID_HEADER, 'fallback-test-3')
         .send({ scenario: 'stripe-failure' });
 
       // Stripe should use stripe-failure scenario
       const stripeResponse = await request(fixtures.app)
         .post('/api/payment')
-        .set(fixtures.scenarist.config.headers.testId, 'fallback-test-3')
+        .set(SCENARIST_TEST_ID_HEADER, 'fallback-test-3')
         .send({ amount: 1000, currency: 'usd' });
 
       expect(stripeResponse.status).toBe(402);
@@ -108,7 +109,7 @@ describe('Default Scenario Fallback E2E', () => {
       // GitHub should fall back to default
       const githubResponse = await request(fixtures.app)
         .get('/api/github/user/testuser')
-        .set(fixtures.scenarist.config.headers.testId, 'fallback-test-3');
+        .set(SCENARIST_TEST_ID_HEADER, 'fallback-test-3');
 
       expect(githubResponse.status).toBe(200);
       expect(githubResponse.body.login).toBe('octocat');
@@ -116,7 +117,7 @@ describe('Default Scenario Fallback E2E', () => {
       // Weather should fall back to default
       const weatherResponse = await request(fixtures.app)
         .get('/api/weather/london')
-        .set(fixtures.scenarist.config.headers.testId, 'fallback-test-3');
+        .set(SCENARIST_TEST_ID_HEADER, 'fallback-test-3');
 
       expect(weatherResponse.status).toBe(200);
       expect(weatherResponse.body.city).toBe('London');
@@ -129,13 +130,13 @@ describe('Default Scenario Fallback E2E', () => {
       // mixed-results defines GitHub (success), weather (error), and stripe (success)
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(fixtures.scenarist.config.headers.testId, 'mixed-test')
+        .set(SCENARIST_TEST_ID_HEADER, 'mixed-test')
         .send({ scenario: 'mixed-results' });
 
       // GitHub should use mixed-results success data
       const githubResponse = await request(fixtures.app)
         .get('/api/github/user/testuser')
-        .set(fixtures.scenarist.config.headers.testId, 'mixed-test');
+        .set(SCENARIST_TEST_ID_HEADER, 'mixed-test');
 
       expect(githubResponse.status).toBe(200);
       expect(githubResponse.body.login).toBe('mixeduser');
@@ -144,7 +145,7 @@ describe('Default Scenario Fallback E2E', () => {
       // Weather should use mixed-results error
       const weatherResponse = await request(fixtures.app)
         .get('/api/weather/city')
-        .set(fixtures.scenarist.config.headers.testId, 'mixed-test');
+        .set(SCENARIST_TEST_ID_HEADER, 'mixed-test');
 
       expect(weatherResponse.status).toBe(503);
       expect(weatherResponse.body.error).toBe('Service Unavailable');
@@ -152,7 +153,7 @@ describe('Default Scenario Fallback E2E', () => {
       // Stripe should use mixed-results success data
       const stripeResponse = await request(fixtures.app)
         .post('/api/payment')
-        .set(fixtures.scenarist.config.headers.testId, 'mixed-test')
+        .set(SCENARIST_TEST_ID_HEADER, 'mixed-test')
         .send({ amount: 1000, currency: 'usd' });
 
       expect(stripeResponse.status).toBe(200);
@@ -169,21 +170,21 @@ describe('Default Scenario Fallback E2E', () => {
       // All requests should use default scenario
       const githubResponse = await request(fixtures.app)
         .get('/api/github/user/testuser')
-        .set(fixtures.scenarist.config.headers.testId, testId);
+        .set(SCENARIST_TEST_ID_HEADER, testId);
 
       expect(githubResponse.status).toBe(200);
       expect(githubResponse.body.login).toBe('octocat');
 
       const weatherResponse = await request(fixtures.app)
         .get('/api/weather/london')
-        .set(fixtures.scenarist.config.headers.testId, testId);
+        .set(SCENARIST_TEST_ID_HEADER, testId);
 
       expect(weatherResponse.status).toBe(200);
       expect(weatherResponse.body.city).toBe('London');
 
       const stripeResponse = await request(fixtures.app)
         .post('/api/payment')
-        .set(fixtures.scenarist.config.headers.testId, testId)
+        .set(SCENARIST_TEST_ID_HEADER, testId)
         .send({ amount: 1000, currency: 'usd' });
 
       expect(stripeResponse.status).toBe(200);
@@ -196,13 +197,13 @@ describe('Default Scenario Fallback E2E', () => {
 
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(fixtures.scenarist.config.headers.testId, 'override-fallback-test')
+        .set(SCENARIST_TEST_ID_HEADER, 'override-fallback-test')
         .send({ scenario: 'success' });
 
       // Success scenario defines all three APIs
       const githubResponse = await request(fixtures.app)
         .get('/api/github/user/testuser')
-        .set(fixtures.scenarist.config.headers.testId, 'override-fallback-test');
+        .set(SCENARIST_TEST_ID_HEADER, 'override-fallback-test');
 
       expect(githubResponse.status).toBe(200);
       expect(githubResponse.body.login).toBe('testuser'); // Success scenario
@@ -210,7 +211,7 @@ describe('Default Scenario Fallback E2E', () => {
 
       const weatherResponse = await request(fixtures.app)
         .get('/api/weather/city')
-        .set(fixtures.scenarist.config.headers.testId, 'override-fallback-test');
+        .set(SCENARIST_TEST_ID_HEADER, 'override-fallback-test');
 
       expect(weatherResponse.status).toBe(200);
       expect(weatherResponse.body.city).toBe('San Francisco'); // Success scenario
@@ -218,7 +219,7 @@ describe('Default Scenario Fallback E2E', () => {
 
       const stripeResponse = await request(fixtures.app)
         .post('/api/payment')
-        .set(fixtures.scenarist.config.headers.testId, 'override-fallback-test')
+        .set(SCENARIST_TEST_ID_HEADER, 'override-fallback-test')
         .send({ amount: 1000, currency: 'usd' });
 
       expect(stripeResponse.status).toBe(200);

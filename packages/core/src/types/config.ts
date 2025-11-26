@@ -26,14 +26,6 @@ export type ScenaristConfig = {
   readonly strictMode: boolean;
 
   /**
-   * HTTP header names for test isolation.
-   */
-  readonly headers: {
-    /** Header name for test ID (default: 'x-test-id') */
-    readonly testId: string;
-  };
-
-  /**
    * HTTP endpoint paths for scenario control.
    */
   readonly endpoints: {
@@ -44,7 +36,7 @@ export type ScenaristConfig = {
   };
 
   /**
-   * The default test ID to use when no x-test-id header is present.
+   * The default test ID to use when no x-scenarist-test-id header is present.
    */
   readonly defaultTestId: string;
 };
@@ -56,7 +48,6 @@ export type ScenaristConfig = {
 export type ScenaristConfigInput<T extends ScenaristScenarios = ScenaristScenarios> = {
   readonly enabled: boolean;
   readonly strictMode?: boolean;
-  readonly headers?: Partial<ScenaristConfig['headers']>;
   readonly endpoints?: Partial<ScenaristConfig['endpoints']>;
   /**
    * All scenarios defined as a named object.
