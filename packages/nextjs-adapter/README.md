@@ -1,6 +1,9 @@
 # @scenarist/nextjs-adapter
 
-Next.js adapter for [Scenarist](https://github.com/citypaul/scenarist) - test different backend states in your Next.js applications without restarting your dev server or maintaining multiple test environments.
+[![npm version](https://img.shields.io/npm/v/@scenarist/nextjs-adapter.svg)](https://www.npmjs.com/package/@scenarist/nextjs-adapter)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+Next.js adapter for [Scenarist](https://scenarist.io) - test different backend states in your Next.js applications without restarting your dev server or maintaining multiple test environments.
 
 **Problem it solves:** Testing error scenarios, loading states, and edge cases in Next.js is painful. You either restart your app repeatedly, maintain complex mock setups per test, or run tests serially to avoid conflicts. Scenarist lets you switch between complete API scenarios instantly via HTTP calls, enabling parallel testing with isolated backend states.
 
@@ -1443,6 +1446,10 @@ The Express adapter follows the same pattern:
 - Combined result: 100% coverage
 
 **This is the ONLY explicit exception to the 100% coverage rule in the project.**
+
+## Documentation
+
+📖 **[Full Documentation](https://scenarist.io)** - Complete guides, API reference, and examples.
 
 ## Contributing
 

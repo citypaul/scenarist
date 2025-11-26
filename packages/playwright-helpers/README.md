@@ -1,11 +1,21 @@
 # @scenarist/playwright-helpers
 
-Playwright test helpers for Scenarist scenario management with guaranteed test isolation.
+[![npm version](https://img.shields.io/npm/v/@scenarist/playwright-helpers.svg)](https://www.npmjs.com/package/@scenarist/playwright-helpers)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+Playwright test helpers for [Scenarist](https://scenarist.io) scenario management with guaranteed test isolation.
 
 ## Installation
 
 ```bash
+# npm
+npm install -D @scenarist/playwright-helpers
+
+# pnpm
 pnpm add -D @scenarist/playwright-helpers
+
+# yarn
+yarn add -D @scenarist/playwright-helpers
 ```
 
 ## Quick Start (Recommended: Fixtures API)
@@ -569,6 +579,14 @@ Before this helper, switching scenarios in Playwright tests required significant
 5. Set test ID header for all subsequent requests
 
 This 9-line pattern was repeated in every test, making tests verbose and error-prone. The `switchScenario` helper encapsulates this pattern into a single function call, reducing code by 77% while improving readability and maintainability.
+
+## Documentation
+
+📖 **[Full Documentation](https://scenarist.io)** - Complete guides, API reference, and examples.
+
+## Contributing
+
+See [CONTRIBUTING.md](../../CONTRIBUTING.md) for development setup and guidelines.
 
 ## License
 
