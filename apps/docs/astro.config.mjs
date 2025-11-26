@@ -1,4 +1,5 @@
 // @ts-check
+import sitemap from "@astrojs/sitemap";
 import starlight from "@astrojs/starlight";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "astro/config";
@@ -8,6 +9,7 @@ import cloudflare from "@astrojs/cloudflare";
 
 // https://astro.build/config
 export default defineConfig({
+  site: "https://scenarist.io",
   output: 'static',
 
   vite: {
@@ -27,26 +29,96 @@ export default defineConfig({
       title: "Scenarist",
       description: "E2E testing for Node.js with instant scenario switching. Run your real app—mock only external APIs.",
       head: [
+        // Open Graph
         {
           tag: "meta",
-          attrs: {
-            property: "og:image",
-            content: "https://scenarist.io/social-preview.png",
-          },
+          attrs: { property: "og:site_name", content: "Scenarist" },
+        },
+        {
+          tag: "meta",
+          attrs: { property: "og:type", content: "website" },
+        },
+        {
+          tag: "meta",
+          attrs: { property: "og:image", content: "https://scenarist.io/social-preview.png" },
+        },
+        {
+          tag: "meta",
+          attrs: { property: "og:image:width", content: "1238" },
+        },
+        {
+          tag: "meta",
+          attrs: { property: "og:image:height", content: "612" },
+        },
+        {
+          tag: "meta",
+          attrs: { property: "og:image:alt", content: "Scenarist - The Scenario-based Testing Framework for the Web" },
+        },
+        // Twitter Card
+        {
+          tag: "meta",
+          attrs: { name: "twitter:card", content: "summary_large_image" },
+        },
+        {
+          tag: "meta",
+          attrs: { name: "twitter:image", content: "https://scenarist.io/social-preview.png" },
+        },
+        // Additional SEO
+        {
+          tag: "meta",
+          attrs: { name: "author", content: "Scenarist Contributors" },
+        },
+        {
+          tag: "meta",
+          attrs: { name: "theme-color", content: "#6366f1" },
         },
         {
           tag: "meta",
           attrs: {
-            name: "twitter:image",
-            content: "https://scenarist.io/social-preview.png",
+            name: "keywords",
+            content: "testing, e2e testing, integration testing, playwright, msw, mock service worker, nodejs, typescript, express, nextjs, react server components",
           },
         },
+        // JSON-LD Structured Data
         {
-          tag: "meta",
-          attrs: {
-            name: "twitter:card",
-            content: "summary_large_image",
-          },
+          tag: "script",
+          attrs: { type: "application/ld+json" },
+          content: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "SoftwareSourceCode",
+            "name": "Scenarist",
+            "description": "E2E testing for Node.js with instant scenario switching. Run your real app—mock only external APIs.",
+            "url": "https://scenarist.io",
+            "codeRepository": "https://github.com/citypaul/scenarist",
+            "programmingLanguage": ["TypeScript", "JavaScript"],
+            "runtimePlatform": "Node.js",
+            "license": "https://opensource.org/licenses/MIT",
+            "keywords": ["testing", "e2e", "playwright", "msw", "nodejs", "typescript"],
+            "author": {
+              "@type": "Organization",
+              "name": "Scenarist Contributors",
+              "url": "https://github.com/citypaul/scenarist"
+            }
+          }),
+        },
+        {
+          tag: "script",
+          attrs: { type: "application/ld+json" },
+          content: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": "Scenarist Documentation",
+            "url": "https://scenarist.io",
+            "description": "Documentation for Scenarist - E2E testing for Node.js with instant scenario switching",
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": "https://scenarist.io/?search={search_term_string}"
+              },
+              "query-input": "required name=search_term_string"
+            }
+          }),
         },
       ],
       social: [
@@ -141,6 +213,7 @@ export default defineConfig({
       ],
       customCss: ["./src/styles/custom.css"],
     }),
+    sitemap(),
   ],
 
   adapter: cloudflare(),

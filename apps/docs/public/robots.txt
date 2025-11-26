@@ -1,0 +1,8 @@
+# Scenarist Documentation
+# https://scenarist.io
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://scenarist.io/sitemap-index.xml

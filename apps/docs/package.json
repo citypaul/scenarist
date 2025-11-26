@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.10",
+    "@astrojs/sitemap": "^3.6.0",
     "@astrojs/starlight": "^0.36.2",
     "astro": "^5.15.6",
     "rehype-mermaid": "^3.0.0",
