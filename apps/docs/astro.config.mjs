@@ -120,6 +120,16 @@ export default defineConfig({
             }
           }),
         },
+        // Plausible Analytics (proxied through Cloudflare)
+        {
+          tag: "script",
+          attrs: {
+            defer: true,
+            "data-domain": "scenarist.io",
+            "data-api": "/api/event",
+            src: "/js/script.js",
+          },
+        },
       ],
       social: [
         {
