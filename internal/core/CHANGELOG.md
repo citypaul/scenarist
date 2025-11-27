@@ -1,5 +1,15 @@
 # @scenarist/core
 
+## 0.1.2
+
+### Patch Changes
+
+- [#240](https://github.com/citypaul/scenarist/pull/240) [`8f8c85b`](https://github.com/citypaul/scenarist/commit/8f8c85bced0936ea6f6bbce26b52282bebdfe5ab) Thanks [@citypaul](https://github.com/citypaul)! - Security fixes for prototype pollution and ReDoS vulnerabilities
+  - **Prototype pollution prevention**: Guard against `__proto__`, `constructor`, and `prototype` keys in `InMemoryStateManager` state paths
+  - **ReDoS prevention**: Limit regex capture groups to 256 characters in template replacement to prevent catastrophic backtracking
+
+  These fixes address GitHub code scanning alerts #72, #73, and #92.
+
 ## 0.1.1
 
 ### Patch Changes
