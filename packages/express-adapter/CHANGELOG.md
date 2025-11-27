@@ -1,5 +1,11 @@
 # @scenarist/express-adapter
 
+## 0.1.4-beta.0
+
+### Patch Changes
+
+- [#235](https://github.com/citypaul/scenarist/pull/235) [`1b6d45f`](https://github.com/citypaul/scenarist/commit/1b6d45f645ae0f4b054826b042eed3b4510915d6) Thanks [@citypaul](https://github.com/citypaul)! - Beta release for testing
+
 ## 0.1.3
 
 ### Patch Changes
