@@ -42,3 +42,7 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+
+# SBOM (generated in CI, uploaded as artifacts)
+sbom.json
+sbom.json.bundle
