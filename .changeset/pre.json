@@ -1,0 +1,18 @@
+{
+  "mode": "pre",
+  "tag": "beta",
+  "initialVersions": {
+    "@scenarist/docs": "0.0.1",
+    "@scenarist/express-example": "0.0.0",
+    "@scenarist/nextjs-app-router-example": "0.1.0",
+    "@scenarist/nextjs-pages-router-example": "0.1.0",
+    "@scenarist/core": "0.1.0",
+    "@scenarist/eslint-config": "0.0.0",
+    "@scenarist/msw-adapter": "0.1.0",
+    "@scenarist/typescript-config": "0.0.0",
+    "@scenarist/express-adapter": "0.1.3",
+    "@scenarist/nextjs-adapter": "0.1.3",
+    "@scenarist/playwright-helpers": "0.1.3"
+  },
+  "changesets": []
+}
