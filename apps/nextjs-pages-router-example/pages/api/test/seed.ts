@@ -11,6 +11,20 @@
  */
 
 import type { NextApiRequest, NextApiResponse } from 'next';
+
+/**
+ * Sanitizes a string for safe logging to prevent log injection attacks.
+ * Removes control characters and limits length.
+ *
+ * @see https://github.com/citypaul/scenarist/security/code-scanning/95
+ * @see https://github.com/citypaul/scenarist/security/code-scanning/96
+ */
+const sanitizeForLog = (value: string, maxLength = 100): string => {
+  return value
+    .replace(/[\x00-\x1F\x7F]/g, '') // Remove control characters
+    .replace(/[\r\n]/g, ' ')          // Replace newlines with spaces
+    .slice(0, maxLength);             // Limit length
+};
 import { z } from 'zod';
 import { getUserRepository, runWithTestId } from '@/lib/container';
 import { scenarioRepositoryData } from '@/lib/repository-data';
@@ -36,7 +50,7 @@ export default async function handler(
 
   const { scenarioId } = parseResult.data;
 
-  console.log('[Seed] testId:', testId, 'scenarioId:', scenarioId);
+  console.log('[Seed] testId:', sanitizeForLog(testId), 'scenarioId:', sanitizeForLog(scenarioId));
 
   // Get the repository data for this scenario
   const seedData = scenarioRepositoryData[scenarioId];
@@ -60,7 +74,7 @@ export default async function handler(
           tier: userData.tier,
         });
         created.push({ id: user.id, name: user.name });
-        console.log('[Seed] Created user:', user.id, user.name, 'in partition:', testId);
+        console.log('[Seed] Created user:', sanitizeForLog(user.id), sanitizeForLog(user.name), 'in partition:', sanitizeForLog(testId));
       }
     }
     return created;

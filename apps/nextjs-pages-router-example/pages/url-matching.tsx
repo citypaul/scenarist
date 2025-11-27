@@ -84,6 +84,15 @@ type PageProps = {
   readonly result: FetchResult;
 };
 
+/**
+ * Security: Safely encodes a path parameter to prevent path traversal
+ * @see https://github.com/citypaul/scenarist/security/code-scanning/83-91
+ */
+const encodePathParam = (val: string | string[] | undefined): string => {
+  const str = Array.isArray(val) ? val[0] : val || "";
+  return encodeURIComponent(str);
+};
+
 const fetchTestData = async (
   test: string,
   query: Record<string, string | string[] | undefined>,
@@ -96,7 +105,7 @@ const fetchTestData = async (
     switch (test) {
       case "numericId":
       case "exact": {
-        const userId = getString(query.userId) || "123";
+        const userId = encodePathParam(query.userId) || "123";
         const response = await fetch(
           `http://localhost:3001/api/users/${userId}`,
           { headers: scenaristHeaders }
@@ -106,7 +115,7 @@ const fetchTestData = async (
       }
 
       case "contains": {
-        const city = getString(query.city) || "london";
+        const city = encodePathParam(query.city) || "london";
         const response = await fetch(
           `http://localhost:3001/api/weather/v1/${city}`,
           { headers: scenaristHeaders }
@@ -116,8 +125,8 @@ const fetchTestData = async (
       }
 
       case "startsWith": {
-        const version = getString(query.version) || "v2";
-        const city = getString(query.city) || "newyork";
+        const version = encodePathParam(query.version) || "v2";
+        const city = encodePathParam(query.city) || "newyork";
         const response = await fetch(
           `http://localhost:3001/api/weather/${version}/${city}`,
           { headers: scenaristHeaders }
@@ -127,7 +136,7 @@ const fetchTestData = async (
       }
 
       case "endsWith": {
-        const filename = getString(query.filename) || "data.json";
+        const filename = encodePathParam(query.filename) || "data.json";
         const response = await fetch(
           `http://localhost:3001/api/files/${filename}`,
           { headers: scenaristHeaders }
@@ -152,7 +161,7 @@ const fetchTestData = async (
       }
 
       case "pathParam": {
-        const userId = getString(query.userId) || "123";
+        const userId = encodePathParam(query.userId) || "123";
         const response = await fetch(
           `http://localhost:3001/api/users/${userId}`,
           { headers: scenaristHeaders }
@@ -162,8 +171,8 @@ const fetchTestData = async (
       }
 
       case "multipleParams": {
-        const userId = getString(query.userId) || "alice";
-        const postId = getString(query.postId) || "42";
+        const userId = encodePathParam(query.userId) || "alice";
+        const postId = encodePathParam(query.postId) || "42";
         const response = await fetch(
           `http://localhost:3001/api/users/${userId}/posts/${postId}`,
           { headers: scenaristHeaders }
@@ -173,7 +182,7 @@ const fetchTestData = async (
       }
 
       case "optional": {
-        const filename = getString(query.filename);
+        const filename = encodePathParam(query.filename);
         const url = filename
           ? `http://localhost:3001/api/optional-files/${filename}`
           : "http://localhost:3001/api/optional-files";
@@ -183,7 +192,7 @@ const fetchTestData = async (
       }
 
       case "repeating": {
-        const path = getString(query.path) || "folder/subfolder/file.txt";
+        const path = encodePathParam(query.path) || "folder/subfolder/file.txt";
         const response = await fetch(
           `http://localhost:3001/api/nested-files/${path}`,
           { headers: scenaristHeaders }
@@ -193,7 +202,7 @@ const fetchTestData = async (
       }
 
       case "customRegex": {
-        const orderId = getString(query.orderId) || "12345";
+        const orderId = encodePathParam(query.orderId) || "12345";
         const response = await fetch(
           `http://localhost:3001/api/orders/${orderId}`,
           { headers: scenaristHeaders }

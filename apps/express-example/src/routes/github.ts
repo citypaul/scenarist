@@ -22,7 +22,10 @@ export const setupGitHubRoutes = (router: Router): void => {
         headers['x-campaign'] = campaign;
       }
 
-      const response = await fetch(`https://api.github.com/users/${username}`, {
+      // Security: Encode path parameter to prevent path traversal
+      // @see https://github.com/citypaul/scenarist/security/code-scanning/75
+      const encodedUsername = encodeURIComponent(username ?? '');
+      const response = await fetch(`https://api.github.com/users/${encodedUsername}`, {
         headers
       });
       const data = await response.json();

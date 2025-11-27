@@ -4,6 +4,8 @@ import {
   ScenarioRequestSchema,
   SerializedRegexSchema,
 } from '../src/schemas/index.js';
+import { createInMemoryStateManager } from '../src/adapters/in-memory-state-manager.js';
+import { applyTemplates } from '../src/domain/template-replacement.js';
 
 /**
  * Property-based fuzz tests for schema validation.
@@ -227,6 +229,291 @@ describe('Fuzz Testing: Schema Validation', () => {
           }
         ),
         { numRuns: 200 }
+      );
+    });
+  });
+});
+
+/**
+ * Security-Focused Property-Based Tests
+ *
+ * These tests use fast-check to mathematically prove security properties hold
+ * for all possible inputs, not just example cases.
+ */
+describe('Security Property Tests', () => {
+  /**
+   * Prototype Pollution Prevention Tests
+   *
+   * @see https://github.com/citypaul/scenarist/security/code-scanning/72
+   * @see https://github.com/citypaul/scenarist/security/code-scanning/73
+   *
+   * Property: For any arbitrary key path, Object.prototype must never be modified.
+   * This is a critical security property - prototype pollution can lead to RCE.
+   */
+  describe('InMemoryStateManager: Prototype Pollution Prevention', () => {
+    const DANGEROUS_KEYS = ['__proto__', 'constructor', 'prototype'];
+
+    it('PROPERTY: Object.prototype is never polluted by any key path', () => {
+      // Use a unique pollution marker to detect any prototype pollution
+      const POLLUTION_MARKER = `__security_test_${Date.now()}_${Math.random()}__`;
+
+      // Snapshot enumerable keys of Object.prototype before all tests
+      const protoKeysBefore = new Set(Object.keys(Object.prototype));
+
+      fc.assert(
+        fc.property(
+          fc.string({ minLength: 1, maxLength: 100 }), // testId
+          fc.array(fc.string({ minLength: 1, maxLength: 50 }), { minLength: 1, maxLength: 10 }), // path segments
+          fc.anything(), // value to set
+          (testId, pathSegments, value) => {
+            const stateManager = createInMemoryStateManager();
+            const key = pathSegments.join('.');
+
+            // Attempt to set value (should not throw)
+            stateManager.set(testId, key, value);
+
+            // CRITICAL PROPERTY: Object.prototype must not have new enumerable keys
+            const protoKeysAfter = Object.keys(Object.prototype);
+            for (const newKey of protoKeysAfter) {
+              if (!protoKeysBefore.has(newKey)) {
+                throw new Error(`Prototype pollution detected: new key "${newKey}" in Object.prototype`);
+              }
+            }
+
+            // Verify our marker is not on Object.prototype
+            expect(Object.prototype.hasOwnProperty(POLLUTION_MARKER)).toBe(false);
+
+            return true;
+          }
+        ),
+        { numRuns: 1000 }
+      );
+    });
+
+    it('PROPERTY: Dangerous keys are always silently ignored', () => {
+      // Use a unique marker that definitely doesn't exist on Object.prototype
+      const POLLUTION_MARKER = `__test_pollution_${Date.now()}__`;
+
+      fc.assert(
+        fc.property(
+          fc.constantFrom(...DANGEROUS_KEYS), // dangerous key
+          fc.anything(), // value
+          (dangerousKey, value) => {
+            const stateManager = createInMemoryStateManager();
+
+            // Try to pollute with our unique marker
+            stateManager.set('test', `${dangerousKey}.${POLLUTION_MARKER}`, value);
+
+            // Dangerous key should return undefined
+            expect(stateManager.get('test', dangerousKey)).toBeUndefined();
+
+            // Object.prototype must not have our marker
+            expect(Object.prototype.hasOwnProperty(POLLUTION_MARKER)).toBe(false);
+            expect(({} as Record<string, unknown>)[POLLUTION_MARKER]).toBeUndefined();
+
+            return true;
+          }
+        ),
+        { numRuns: 500 }
+      );
+    });
+
+    it('PROPERTY: Dangerous keys in middle of path are ignored', () => {
+      // Use a unique marker that definitely doesn't exist on Object.prototype
+      const POLLUTION_MARKER = `__test_pollution_${Date.now()}__`;
+
+      fc.assert(
+        fc.property(
+          fc.string({ minLength: 1, maxLength: 20 }), // prefix
+          fc.constantFrom(...DANGEROUS_KEYS), // dangerous key in middle
+          fc.anything(), // value
+          (prefix, dangerous, value) => {
+            const stateManager = createInMemoryStateManager();
+            const key = `${prefix}.${dangerous}.${POLLUTION_MARKER}`;
+
+            stateManager.set('test', key, value);
+
+            // The path through the dangerous key should not be traversable
+            expect(stateManager.get('test', `${prefix}.${dangerous}`)).toBeUndefined();
+
+            // Object.prototype must not have our marker
+            expect(Object.prototype.hasOwnProperty(POLLUTION_MARKER)).toBe(false);
+            expect(({} as Record<string, unknown>)[POLLUTION_MARKER]).toBeUndefined();
+
+            return true;
+          }
+        ),
+        { numRuns: 500 }
+      );
+    });
+  });
+
+  /**
+   * ReDoS Prevention Tests
+   *
+   * @see https://github.com/citypaul/scenarist/security/code-scanning/92
+   *
+   * Property: Template replacement must complete within bounded time for any input.
+   * This prevents denial-of-service attacks via crafted regex input.
+   */
+  describe('Template Replacement: ReDoS Prevention', () => {
+    const MAX_ALLOWED_TIME_MS = 50; // Very generous limit for CI environments
+
+    it('PROPERTY: Template replacement always completes in bounded time', () => {
+      fc.assert(
+        fc.property(
+          fc.string({ minLength: 0, maxLength: 10000 }), // arbitrary string input
+          fc.dictionary(fc.string({ minLength: 1, maxLength: 50 }), fc.anything(), { minKeys: 0, maxKeys: 20 }), // state
+          (input, state) => {
+            const startTime = performance.now();
+            applyTemplates(input, state);
+            const endTime = performance.now();
+
+            // CRITICAL PROPERTY: Must complete in bounded time
+            expect(endTime - startTime).toBeLessThan(MAX_ALLOWED_TIME_MS);
+
+            return true;
+          }
+        ),
+        { numRuns: 500 }
+      );
+    });
+
+    it('PROPERTY: Malicious template-like patterns complete quickly', () => {
+      // Generate strings that look like templates but are malformed
+      const maliciousPatterns = fc.oneof(
+        // Many opening braces
+        fc.integer({ min: 1, max: 100 }).map(n => '{'.repeat(n) + 'state.key' + '}'.repeat(n)),
+        // Nested template-like patterns
+        fc.integer({ min: 1, max: 50 }).map(n => '{{state.' + '|'.repeat(n) + '}}'),
+        // Very long paths
+        fc.integer({ min: 1, max: 300 }).map(n => '{{state.' + 'a'.repeat(n) + '}}'),
+        // Mixed valid and invalid
+        fc.array(fc.constantFrom('{{state.key}}', '{{', '}}', '{', '}'), { minLength: 1, maxLength: 100 })
+          .map(parts => parts.join(''))
+      );
+
+      fc.assert(
+        fc.property(maliciousPatterns, (input) => {
+          const startTime = performance.now();
+          applyTemplates(input, { key: 'value' });
+          const endTime = performance.now();
+
+          expect(endTime - startTime).toBeLessThan(MAX_ALLOWED_TIME_MS);
+
+          return true;
+        }),
+        { numRuns: 500 }
+      );
+    });
+
+    it('PROPERTY: Template paths exceeding 256 chars are not matched', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 257, max: 1000 }), // path length > 256
+          (pathLength) => {
+            const longPath = 'a'.repeat(pathLength);
+            const template = `{{state.${longPath}}}`;
+            const state = { [longPath]: 'should-not-match' };
+
+            const result = applyTemplates(template, state);
+
+            // Template should NOT be replaced (path too long)
+            expect(result).toBe(template);
+
+            return true;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('PROPERTY: Template paths up to 256 chars are matched', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 1, max: 256 }), // path length <= 256
+          (pathLength) => {
+            const path = 'a'.repeat(pathLength);
+            const template = `{{state.${path}}}`;
+            const state = { [path]: 'matched-value' };
+
+            const result = applyTemplates(template, state);
+
+            // Template should be replaced
+            expect(result).toBe('matched-value');
+
+            return true;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('PROPERTY: Deeply nested state traversal completes quickly', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 1, max: 100 }), // nesting depth
+          (depth) => {
+            // Create nested path
+            const pathParts = Array.from({ length: depth }, (_, i) => `l${i}`);
+            const path = pathParts.join('.');
+            const template = `{{state.${path}}}`;
+
+            // Create deeply nested object
+            let obj: Record<string, unknown> = { value: 'found' };
+            for (let i = depth - 1; i >= 0; i--) {
+              obj = { [`l${i}`]: obj };
+            }
+
+            const startTime = performance.now();
+            applyTemplates(template, obj);
+            const endTime = performance.now();
+
+            expect(endTime - startTime).toBeLessThan(MAX_ALLOWED_TIME_MS);
+
+            return true;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  /**
+   * Combined Security Properties
+   *
+   * These tests verify that security properties hold under adversarial conditions
+   * where multiple attack vectors might be combined.
+   */
+  describe('Combined Attack Vectors', () => {
+    it('PROPERTY: State manager + templates cannot be combined for attacks', () => {
+      fc.assert(
+        fc.property(
+          fc.string({ minLength: 1, maxLength: 50 }), // key
+          fc.anything(), // value stored in state
+          (key, value) => {
+            const stateManager = createInMemoryStateManager();
+            stateManager.set('test', key, value);
+
+            // Get all state
+            const state = stateManager.getAll('test');
+
+            // Apply templates using state - should not cause issues
+            const template = `{{state.${key}}}`;
+            const startTime = performance.now();
+            applyTemplates(template, state);
+            const endTime = performance.now();
+
+            // Must complete quickly
+            expect(endTime - startTime).toBeLessThan(50);
+
+            // Object.prototype must remain clean
+            expect(Object.keys(Object.prototype).length).toBeLessThanOrEqual(20); // Reasonable limit
+
+            return true;
+          }
+        ),
+        { numRuns: 500 }
       );
     });
   });

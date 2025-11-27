@@ -36,11 +36,13 @@ const handleProxyRequest = async (
   }
 };
 
+// Security: Encode path parameters to prevent path traversal
+// @see https://github.com/citypaul/scenarist/security/code-scanning/77
 export const setupStringMatchingRoutes = (router: Router): void => {
   router.get('/api/test-string-match/contains/:username', async (req: Request, res: Response) => {
     return handleProxyRequest(
       (req) => ({
-        url: `https://api.github.com/users/${req.params.username}`,
+        url: `https://api.github.com/users/${encodeURIComponent(req.params.username ?? '')}`,
         headers: buildHeaders({ 'x-campaign': req.query.campaign as string }),
       }),
       req,
@@ -48,6 +50,10 @@ export const setupStringMatchingRoutes = (router: Router): void => {
     );
   });
 
+  // NOTE: This endpoint intentionally uses a query parameter for API key to demonstrate
+  // Scenarist's header-based content matching capabilities. In production, use headers
+  // for sensitive data. This is a test endpoint, not a security pattern.
+  // @see https://github.com/citypaul/scenarist/security/code-scanning/74
   router.get('/api/test-string-match/starts-with', async (req: Request, res: Response) => {
     return handleProxyRequest(
       () => ({
@@ -65,13 +71,15 @@ export const setupStringMatchingRoutes = (router: Router): void => {
 
     return handleProxyRequest(
       (req) => ({
-        url: `https://api.github.com/users/${req.params.username}/repos${queryString}`,
+        url: `https://api.github.com/users/${encodeURIComponent(req.params.username ?? '')}/repos${queryString}`,
       }),
       req,
       res
     );
   });
 
+  // NOTE: This endpoint intentionally uses a query parameter to demonstrate
+  // Scenarist's exact match capabilities. This is a test endpoint only.
   router.get('/api/test-string-match/equals', async (req: Request, res: Response) => {
     return handleProxyRequest(
       () => ({
