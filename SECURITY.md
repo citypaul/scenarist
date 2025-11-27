@@ -66,6 +66,7 @@ Scenarist is designed with security in mind:
 
 - **OIDC Trusted Publishing**: npm packages are published using OIDC tokens (no stored credentials)
 - **Provenance**: npm packages include provenance attestation
+- **SBOM with Sigstore Signing**: Software Bill of Materials generated for each release, signed with Sigstore for tamper-evidence
 - **Frozen Lockfile**: CI enforces `pnpm install --frozen-lockfile`
 - **Dependency Auditing**: Automated vulnerability scanning in CI
 
