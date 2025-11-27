@@ -11,6 +11,7 @@ export const POST: APIRoute = async ({ request }) => {
       headers: {
         'Content-Type': 'application/json',
         'User-Agent': request.headers.get('User-Agent') ?? '',
+        // CF-Connecting-IP is Cloudflare-specific header for client IP (used on Cloudflare Pages)
         'X-Forwarded-For': request.headers.get('CF-Connecting-IP') ?? '',
       },
       body,
