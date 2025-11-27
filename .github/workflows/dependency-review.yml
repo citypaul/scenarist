@@ -40,6 +40,6 @@ jobs:
             BlueOak-1.0.0
           # Allow specific packages with compound SPDX licenses that aren't parsed correctly
           # bowser: MIT AND MITNFA (browser detection library, both licenses are permissive)
-          allow-dependencies: pkg:npm/bowser
+          allow-dependencies-licenses: pkg:npm/bowser
           # Comment on PR with findings
           comment-summary-in-pr: on-failure
