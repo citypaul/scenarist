@@ -12,6 +12,7 @@ on:
     paths:
       - "apps/docs/**"
       - ".github/workflows/deploy-docs.yml"
+      - "packages/express-adapter/package.json"
   workflow_dispatch:
 
 concurrency:
