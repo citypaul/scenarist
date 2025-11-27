@@ -54,18 +54,18 @@
     "typecheck": "tsc --project tsconfig.typecheck.json --noEmit"
   },
   "dependencies": {
-    "msw": "^2.12.1",
+    "msw": "^2.12.3",
     "redos-detector": "^6.1.2",
-    "zod": "^4.1.12"
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@scenarist/eslint-config": "workspace:*",
     "@scenarist/typescript-config": "workspace:*",
-    "@vitest/coverage-v8": "^4.0.8",
-    "@vitest/ui": "^4.0.8",
+    "@vitest/coverage-v8": "^4.0.14",
+    "@vitest/ui": "^4.0.14",
     "eslint": "^9.39.1",
     "fast-check": "^4.3.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.8"
+    "vitest": "^4.0.14"
   }
 }
