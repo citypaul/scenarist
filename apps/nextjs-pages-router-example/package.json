@@ -24,29 +24,29 @@
     "@scenarist/nextjs-adapter": "workspace:*",
     "@types/express": "^5.0.5",
     "express": "^5.1.0",
-    "msw": "^2.12.1",
+    "msw": "^2.12.3",
     "next": "^15.0.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "zod": "^4.1.12"
+    "zod": "^4.1.13"
   },
   "devDependencies": {
-    "@playwright/test": "^1.40.0",
-    "express4": "npm:express@^4.21.0",
+    "@playwright/test": "^1.57.0",
     "@scenarist/eslint-config": "workspace:*",
     "@scenarist/playwright-helpers": "workspace:*",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/node": "^24.10.1",
-    "@types/react": "^19.2.4",
+    "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@types/wait-on": "^5.3.4",
     "autoprefixer": "^10.4.22",
     "eslint": "^9.39.1",
+    "express4": "npm:express@^4.21.0",
     "json-server": "^1.0.0-beta.3",
     "postcss": "^8.4.0",
     "tailwindcss": "^4.1.17",
     "tsx": "^4.7.0",
     "typescript": "^5.9.3",
-    "wait-on": "^8.0.3"
+    "wait-on": "^9.0.3"
   }
 }

@@ -22,7 +22,10 @@
       "Bash(git fetch:*)",
       "Bash(git rebase:*)",
       "Bash(git stash:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)",
+      "Bash(pnpm --filter=@scenarist/docs typecheck:*)",
+      "Bash(pnpm --filter=@scenarist/docs test)"
     ],
     "deny": [],
     "ask": []

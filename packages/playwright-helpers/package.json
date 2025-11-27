@@ -49,14 +49,14 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@playwright/test": "^1.48.2",
+    "@playwright/test": "^1.57.0",
     "@scenarist/core": "workspace:*"
   },
   "devDependencies": {
     "@scenarist/eslint-config": "workspace:*",
     "@scenarist/typescript-config": "workspace:*",
     "@types/node": "^24.10.1",
-    "msw": "^2.12.1",
+    "msw": "^2.12.3",
     "typescript": "^5.9.3"
   },
   "publishConfig": {
