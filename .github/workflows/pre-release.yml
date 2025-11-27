@@ -11,14 +11,16 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
-  pull-requests: write
-  id-token: write
+  contents: read
 
 jobs:
   pre-release:
     name: Pre-Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
@@ -81,9 +83,11 @@ jobs:
           git diff --staged --quiet || git commit -m "chore: version packages for ${{ steps.tag.outputs.tag }}"
           git push
 
+      # Pin npm version for supply chain security
+      # @see https://github.com/citypaul/scenarist/security/code-scanning/56
       - name: Upgrade npm for OIDC trusted publishing
         run: |
-          npm install -g npm@latest
+          npm install -g npm@11.6.4
           echo "npm version: $(npm --version)"
 
       - name: Publish to npm

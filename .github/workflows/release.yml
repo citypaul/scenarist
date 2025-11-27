@@ -13,14 +13,16 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
-  pull-requests: write
-  id-token: write
+  contents: read
 
 jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
     # Only run if CI succeeded
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
@@ -48,9 +50,11 @@ jobs:
       - name: Build packages
         run: pnpm build
 
+      # Pin npm version for supply chain security
+      # @see https://github.com/citypaul/scenarist/security/code-scanning/57
       - name: Upgrade npm for OIDC trusted publishing
         run: |
-          npm install -g npm@latest
+          npm install -g npm@11.6.4
           echo "npm version: $(npm --version)"
 
       - name: Create Release Pull Request or Publish
