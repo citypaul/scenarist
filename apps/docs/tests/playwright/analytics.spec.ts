@@ -50,7 +50,18 @@ test.describe('Analytics', () => {
       expect(body.length).toBeGreaterThan(0);
     });
 
-    test('/api/event accepts POST requests', async ({ request }) => {
+    test('/js/script.js forwards cache headers from upstream', async ({
+      request,
+    }) => {
+      const response = await request.get('/js/script.js');
+
+      // Should have cache-control header (either from Plausible or fallback)
+      const cacheControl = response.headers()['cache-control'];
+      expect(cacheControl).toBeTruthy();
+      expect(cacheControl).toContain('max-age');
+    });
+
+    test('/api/event accepts valid events', async ({ request }) => {
       const response = await request.post('/api/event', {
         headers: {
           'Content-Type': 'application/json',
@@ -63,8 +74,21 @@ test.describe('Analytics', () => {
       });
 
       // Plausible returns 202 Accepted for valid events
-      // or 400 for invalid payload - either confirms our proxy works
-      expect([200, 202, 400]).toContain(response.status());
+      expect(response.status()).toBe(202);
+    });
+
+    test('/api/event rejects invalid events', async ({ request }) => {
+      const response = await request.post('/api/event', {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        data: {
+          invalid: 'data',
+        },
+      });
+
+      // Plausible returns 400 for invalid payload
+      expect(response.status()).toBe(400);
     });
 
     test('/api/event handles malformed JSON gracefully', async ({ request }) => {
