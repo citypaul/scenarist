@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test';
  *
  * Verifies Plausible analytics is properly configured:
  * - Script tag present on all pages with correct attributes
- * - Cloudflare Worker proxy endpoints respond correctly
+ * - Astro API route proxy endpoints respond correctly
  */
 
 test.describe('Analytics', () => {
