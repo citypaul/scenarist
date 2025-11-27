@@ -9,6 +9,10 @@ on:
     # Run weekly on Sundays
     - cron: "0 1 * * 0"
 
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   semgrep:
     name: Scan
@@ -28,7 +32,7 @@ jobs:
         run: semgrep scan --config auto --sarif --output semgrep.sarif .
 
       - name: Upload SARIF results
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: semgrep.sarif
