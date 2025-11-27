@@ -4,4 +4,4 @@
 "@scenarist/playwright-helpers": patch
 ---
 
-Beta release for testing
+Fix CI workflow to prevent SBOM artifacts from being committed to release PRs
