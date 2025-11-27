@@ -6,6 +6,8 @@ on:
     paths:
       - "apps/docs/**"
       - ".github/workflows/deploy-docs.yml"
+      # Redeploy docs when package versions change (for version badge)
+      - "packages/express-adapter/package.json"
   pull_request:
     paths:
       - "apps/docs/**"
