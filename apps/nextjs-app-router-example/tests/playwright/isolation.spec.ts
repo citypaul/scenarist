@@ -53,15 +53,16 @@ test.describe('Parallel Test Isolation', () => {
     // Switch to standard scenario
     await switchScenario(page, 'standardUser');
 
-    // Navigate to products page
-    await page.goto('/');
-
-    // Click standard tier button and wait for API response
+    // Navigate to products page and wait for initial products fetch
+    // Note: The page loads with userTier='standard' by default, so the initial
+    // fetch IS the standard tier fetch. We wait for it during navigation rather
+    // than on button click, since clicking 'standard' when already on 'standard'
+    // doesn't trigger a new fetch (no state change).
     await Promise.all([
       page.waitForResponse(
         (resp) => resp.url().includes('/api/products') && resp.ok()
       ),
-      page.getByRole('button', { name: 'Select standard tier' }).click(),
+      page.goto('/'),
     ]);
 
     // Verify standard pricing appears
