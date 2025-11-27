@@ -48,28 +48,6 @@ jobs:
       - name: Build packages
         run: pnpm build
 
-      - name: Generate SBOM
-        uses: anchore/sbom-action@8e94d75ddd33f69f691467e42275782e4bfefe84 # v0.20.9
-        with:
-          format: cyclonedx-json
-          output-file: sbom.json
-          upload-artifact: false
-
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
-
-      - name: Sign SBOM with Sigstore
-        run: cosign sign-blob --yes --bundle sbom.json.bundle sbom.json
-
-      - name: Upload SBOM artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v5.0.0
-        with:
-          name: sbom
-          path: |
-            sbom.json
-            sbom.json.bundle
-          retention-days: 365
-
       - name: Upgrade npm for OIDC trusted publishing
         run: |
           npm install -g npm@latest
@@ -88,3 +66,30 @@ jobs:
           # Use PAT instead of GITHUB_TOKEN to trigger CI workflows on changeset PR
           GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}
           NPM_CONFIG_PROVENANCE: true
+
+      # SBOM generation only runs after successful publish (not when creating release PR)
+      - name: Generate SBOM
+        if: steps.changesets.outputs.published == 'true'
+        uses: anchore/sbom-action@8e94d75ddd33f69f691467e42275782e4bfefe84 # v0.20.9
+        with:
+          format: cyclonedx-json
+          output-file: sbom.json
+          upload-artifact: false
+
+      - name: Install Cosign
+        if: steps.changesets.outputs.published == 'true'
+        uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
+
+      - name: Sign SBOM with Sigstore
+        if: steps.changesets.outputs.published == 'true'
+        run: cosign sign-blob --yes --bundle sbom.json.bundle sbom.json
+
+      - name: Upload SBOM artifact
+        if: steps.changesets.outputs.published == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v5.0.0
+        with:
+          name: sbom
+          path: |
+            sbom.json
+            sbom.json.bundle
+          retention-days: 365
