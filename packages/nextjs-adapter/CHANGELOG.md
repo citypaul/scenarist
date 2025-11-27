@@ -1,5 +1,15 @@
 # @scenarist/nextjs-adapter
 
+## 0.1.4
+
+### Patch Changes
+
+- [#235](https://github.com/citypaul/scenarist/pull/235) [`1b6d45f`](https://github.com/citypaul/scenarist/commit/1b6d45f645ae0f4b054826b042eed3b4510915d6) Thanks [@citypaul](https://github.com/citypaul)! - Security dependency updates and CI workflow fix to prevent SBOM artifacts from being committed to release PRs
+
+- Updated dependencies [[`1b6d45f`](https://github.com/citypaul/scenarist/commit/1b6d45f645ae0f4b054826b042eed3b4510915d6)]:
+  - @scenarist/core@0.1.1
+  - @scenarist/msw-adapter@0.1.1
+
 ## 0.1.3
 
 ### Patch Changes
