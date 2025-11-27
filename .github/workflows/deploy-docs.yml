@@ -26,6 +26,8 @@ jobs:
     name: Build and Deploy Docs
     timeout-minutes: 15
     runs-on: ubuntu-latest
+    # Skip Dependabot PRs - they don't have access to secrets and won't change docs content
+    if: github.actor != 'dependabot[bot]'
 
     steps:
       - name: Check out code
