@@ -1,4 +1,8 @@
-export const onRequest: PagesFunction = async () => {
+import type { APIRoute } from 'astro';
+
+export const prerender = false;
+
+export const GET: APIRoute = async () => {
   const response = await fetch('https://plausible.io/js/script.js');
   const body = await response.text();
 
