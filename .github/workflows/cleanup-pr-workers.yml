@@ -15,7 +15,8 @@ permissions:
 jobs:
   cleanup-closed-pr:
     name: Delete Worker for Closed PR
-    if: github.event_name == 'pull_request'
+    # Skip Dependabot PRs - they don't have preview workers and don't have access to secrets
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
 
     steps:
