@@ -27,7 +27,6 @@ jobs:
           allow-licenses: >-
             MIT,
             MIT-0,
-            MIT AND MITNFA,
             Apache-2.0,
             ISC,
             BSD-2-Clause,
@@ -39,5 +38,8 @@ jobs:
             Unlicense,
             Python-2.0,
             BlueOak-1.0.0
+          # Allow specific packages with compound SPDX licenses that aren't parsed correctly
+          # bowser: MIT AND MITNFA (browser detection library, both licenses are permissive)
+          allow-dependencies: pkg:npm/bowser
           # Comment on PR with findings
           comment-summary-in-pr: on-failure
