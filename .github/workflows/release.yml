@@ -49,7 +49,11 @@ jobs:
         run: pnpm build
 
       - name: Generate SBOM
-        run: npx @cyclonedx/cdxgen -o sbom.json --format json
+        uses: anchore/sbom-action@v0
+        with:
+          format: cyclonedx-json
+          output-file: sbom.json
+          upload-artifact: false
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3
@@ -64,7 +68,6 @@ jobs:
           path: |
             sbom.json
             sbom.json.bundle
-          # Extended retention for compliance/audit purposes
           retention-days: 365
 
       - name: Upgrade npm for OIDC trusted publishing
