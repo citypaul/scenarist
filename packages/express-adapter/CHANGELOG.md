@@ -1,5 +1,13 @@
 # @scenarist/express-adapter
 
+## 0.1.2
+
+### Patch Changes
+
+- Updated dependencies [[`e66d285`](https://github.com/citypaul/scenarist/commit/e66d285848ad9c3b58e72db0e653d6a41c37b9ba)]:
+  - @scenarist/core@0.0.2
+  - @scenarist/msw-adapter@0.0.2
+
 ## 0.1.1
 
 ### Patch Changes
