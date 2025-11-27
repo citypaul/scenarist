@@ -32,7 +32,7 @@ jobs:
         run: semgrep scan --config auto --sarif --output semgrep.sarif .
 
       - name: Upload SARIF results
-        uses: github/codeql-action/upload-sarif@c00e4aee0547167576bc6663920491135a3dee27 # v4
+        uses: github/codeql-action/upload-sarif@fdbfb4d2750291e159f0156def62b853c2798ca2 # v4
         if: always()
         with:
           sarif_file: semgrep.sarif
