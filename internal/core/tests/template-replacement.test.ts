@@ -377,7 +377,8 @@ describe('Template Replacement', () => {
       }
 
       const startTime = performance.now();
-      const result = applyTemplates(value, { ...state, state });
+      // Result intentionally unused - test verifies timing, not output
+      applyTemplates(value, { ...state, state });
       const endTime = performance.now();
 
       expect(endTime - startTime).toBeLessThan(100);
