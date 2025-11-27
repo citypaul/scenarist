@@ -1,5 +1,14 @@
 # @scenarist/core
 
+## 0.1.0
+
+### Minor Changes
+
+- [#187](https://github.com/citypaul/scenarist/pull/187) [`628061f`](https://github.com/citypaul/scenarist/commit/628061f9b0b00f37be03a8a91d4a906e33056776) Thanks [@citypaul](https://github.com/citypaul)! - Sync internal package versions and republish with OIDC
+
+  Bumps internal packages to 0.1.0 to align with adapter package versions (0.1.x).
+  Previous 0.0.2 publish failed due to OIDC not being configured on npm.
+
 ## 0.0.2
 
 ### Patch Changes
