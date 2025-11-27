@@ -56,7 +56,8 @@ jobs:
         with:
           name: sbom
           path: sbom.json
-          retention-days: 90
+          # Extended retention for compliance/audit purposes
+          retention-days: 365
 
       - name: Upgrade npm for OIDC trusted publishing
         run: |

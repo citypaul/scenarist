@@ -53,7 +53,7 @@ Scenarist is designed with security in mind:
 
 ### Built-in Protections
 
-- **ReDoS Protection**: All regex patterns are validated against ReDoS vulnerabilities using `redos-detector` with timeout guards (100ms max execution)
+- **ReDoS Protection**: All regex patterns are validated against ReDoS vulnerabilities using `redos-detector` at schema validation time (patterns with catastrophic backtracking potential are rejected)
 - **Schema Validation**: Zod schemas validate all inputs at trust boundaries
 - **Type Safety**: TypeScript strict mode enforced throughout the codebase
 - **Immutable Data**: No data mutations - all operations use immutable patterns
