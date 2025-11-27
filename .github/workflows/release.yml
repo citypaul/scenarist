@@ -62,7 +62,7 @@ jobs:
         run: cosign sign-blob --yes --bundle sbom.json.bundle sbom.json
 
       - name: Upload SBOM artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: sbom
           path: |
