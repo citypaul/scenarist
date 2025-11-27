@@ -4,8 +4,9 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.x.x   | :white_check_mark: |
-| < 1.0   | :x:                |
+| 0.1.x   | :white_check_mark: |
+
+> **Note:** Scenarist is currently in pre-1.0 development. Once v1.0 is released, we will maintain security support for the latest minor version.
 
 ## Reporting a Vulnerability
 
