@@ -1,0 +1,41 @@
+name: Dependency Review
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  dependency-review:
+    name: Review Dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          # Block PRs introducing high or critical vulnerabilities
+          fail-on-severity: high
+          # Allow specific licenses (same as license-checker)
+          allow-licenses: >-
+            MIT,
+            Apache-2.0,
+            ISC,
+            BSD-2-Clause,
+            BSD-3-Clause,
+            0BSD,
+            CC0-1.0,
+            CC-BY-3.0,
+            CC-BY-4.0,
+            Unlicense,
+            Python-2.0,
+            BlueOak-1.0.0
+          # Comment on PR with findings
+          comment-summary-in-pr: on-failure

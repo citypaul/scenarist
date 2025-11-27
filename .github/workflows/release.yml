@@ -48,6 +48,17 @@ jobs:
       - name: Build packages
         run: pnpm build
 
+      - name: Generate SBOM
+        run: npx @cyclonedx/cyclonedx-npm --output-format JSON --output-file sbom.json
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.json
+          # Extended retention for compliance/audit purposes
+          retention-days: 365
+
       - name: Upgrade npm for OIDC trusted publishing
         run: |
           npm install -g npm@latest
