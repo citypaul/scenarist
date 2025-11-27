@@ -19,8 +19,6 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 2. Click "Report a vulnerability"
 3. Fill out the form with details about the vulnerability
 
-Alternatively, you can email security concerns to: **security@scenarist.io**
-
 ### What to Include
 
 - Description of the vulnerability
