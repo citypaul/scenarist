@@ -17,7 +17,8 @@ export const applyTemplates = (value: unknown, templateData: Record<string, unkn
   if (typeof value === 'string') {
     // Check if entire string is a single pure template (no surrounding text)
     // Supports both {{state.key}} and {{params.key}}
-    const pureTemplateMatch = /^\{\{(state|params)\.([^}]+)\}\}$/.exec(value);
+    // Using {1,256} limit to prevent ReDoS attacks with malicious input
+    const pureTemplateMatch = /^\{\{(state|params)\.([^}]{1,256})\}\}$/.exec(value);
 
     if (pureTemplateMatch) {
       // Pure template: return raw value (preserves type - arrays, numbers, objects)
@@ -32,7 +33,8 @@ export const applyTemplates = (value: unknown, templateData: Record<string, unkn
 
     // Mixed template (has surrounding text): use string replacement
     // Supports both {{state.key}} and {{params.key}}
-    return value.replace(/\{\{(state|params)\.([^}]+)\}\}/g, (match, prefix: string, path: string) => {
+    // Using {1,256} limit to prevent ReDoS attacks with malicious input
+    return value.replace(/\{\{(state|params)\.([^}]{1,256})\}\}/g, (match, prefix: string, path: string) => {
       const resolvedValue = resolveTemplatePath(normalizedData, prefix, path);
 
       // Guard: Missing keys remain as template

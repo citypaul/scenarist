@@ -63,12 +63,18 @@ export class InMemoryStateManager implements StateManager {
   }
 
   private setNestedValue(obj: Record<string, unknown>, path: string[], value: unknown): void {
-    if (path.length === 1) {
-      obj[path[0]!] = value;
+    const key = path[0]!;
+
+    // Guard: Prevent prototype pollution attacks
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
       return;
     }
 
-    const key = path[0]!;
+    if (path.length === 1) {
+      obj[key] = value;
+      return;
+    }
+
     if (typeof obj[key] !== 'object' || obj[key] === null || Array.isArray(obj[key])) {
       obj[key] = {};
     }
@@ -77,11 +83,17 @@ export class InMemoryStateManager implements StateManager {
   }
 
   private getNestedValue(obj: Record<string, unknown>, path: readonly string[]): unknown {
-    if (path.length === 1) {
-      return obj[path[0]!];
+    const key = path[0]!;
+
+    // Guard: Prevent prototype pollution attacks
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+      return undefined;
     }
 
-    const key = path[0]!;
+    if (path.length === 1) {
+      return obj[key];
+    }
+
     const nested = obj[key];
     if (typeof nested !== 'object' || nested === null || Array.isArray(nested)) {
       return undefined;

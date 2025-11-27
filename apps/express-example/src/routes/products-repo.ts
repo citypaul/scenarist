@@ -12,6 +12,20 @@
  */
 
 import { Router } from "express";
+
+/**
+ * Sanitizes a string for safe logging to prevent log injection attacks.
+ * Removes control characters and limits length.
+ *
+ * @see https://github.com/citypaul/scenarist/security/code-scanning/93
+ * @see https://github.com/citypaul/scenarist/security/code-scanning/94
+ */
+const sanitizeForLog = (value: string, maxLength = 100): string => {
+  return value
+    .replace(/[\x00-\x1F\x7F]/g, '') // Remove control characters
+    .replace(/[\r\n]/g, ' ')          // Replace newlines with spaces
+    .slice(0, maxLength);             // Limit length
+};
 import { z } from "zod";
 import { getUserRepository, runWithTestId } from "../container.js";
 import { scenarioRepositoryData } from "../repository-data.js";
@@ -38,7 +52,7 @@ export const setupProductsRepoRoutes = (router: Router): void => {
 
       const { scenarioId } = parseResult.data;
 
-      console.log("[Seed] testId:", testId, "scenarioId:", scenarioId);
+      console.log("[Seed] testId:", sanitizeForLog(testId), "scenarioId:", sanitizeForLog(scenarioId));
 
       // Get the repository data for this scenario
       const seedData = scenarioRepositoryData[scenarioId];
@@ -64,10 +78,10 @@ export const setupProductsRepoRoutes = (router: Router): void => {
             created.push({ id: user.id, name: user.name });
             console.log(
               "[Seed] Created user:",
-              user.id,
-              user.name,
+              sanitizeForLog(user.id),
+              sanitizeForLog(user.name),
               "in partition:",
-              testId
+              sanitizeForLog(testId)
             );
           }
         }

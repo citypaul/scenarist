@@ -12,9 +12,13 @@ export const setupWeatherRoutes = (router: Router): void => {
       // Forward query parameters for content matching
       const queryParams = new URLSearchParams(req.query as Record<string, string>);
       const queryString = queryParams.toString();
+
+      // Security: Encode path parameter to prevent path traversal
+      // @see https://github.com/citypaul/scenarist/security/code-scanning/78
+      const encodedCity = encodeURIComponent(city ?? '');
       const url = queryString
-        ? `https://api.weather.com/v1/weather/${city}?${queryString}`
-        : `https://api.weather.com/v1/weather/${city}`;
+        ? `https://api.weather.com/v1/weather/${encodedCity}?${queryString}`
+        : `https://api.weather.com/v1/weather/${encodedCity}`;
 
       const response = await fetch(url);
       const data = await response.json();
