@@ -1,5 +1,5 @@
 type PlausibleEventOptions = {
-  readonly props?: Readonly<Record<string, string | number | boolean>>;
+  readonly props?: Record<string, string | number | boolean>;
   readonly callback?: () => void;
 };
 
