@@ -26,6 +26,8 @@ jobs:
           # Allow specific licenses (same as license-checker)
           allow-licenses: >-
             MIT,
+            MIT-0,
+            MIT AND MITNFA,
             Apache-2.0,
             ISC,
             BSD-2-Clause,
