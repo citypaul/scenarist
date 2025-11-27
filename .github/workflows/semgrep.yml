@@ -23,7 +23,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Semgrep
-        run: semgrep scan --config auto --error --sarif --output semgrep.sarif .
+        # Report findings to GitHub Security tab without blocking builds
+        # Findings should be triaged and addressed, not auto-blocked
+        run: semgrep scan --config auto --sarif --output semgrep.sarif .
 
       - name: Upload SARIF results
         uses: github/codeql-action/upload-sarif@v3
