@@ -22,7 +22,8 @@ export const GET: APIRoute = async () => {
     return new Response(body, {
       headers: {
         'Content-Type': 'application/javascript',
-        'Cache-Control': 'public, max-age=86400',
+        'Cache-Control':
+          response.headers.get('Cache-Control') ?? 'public, max-age=86400',
       },
     });
   } catch (error) {
