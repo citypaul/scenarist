@@ -43,7 +43,7 @@ jobs:
 
       - name: Checkout repository
         if: steps.workflow-changed.outputs.skip != 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
