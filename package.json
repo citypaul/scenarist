@@ -8,11 +8,13 @@
     "test:bruno:ci": "turbo run test:bruno:ci",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "license:check": "license-checker --summary --excludePrivatePackages --onlyAllow 'MIT;Apache-2.0;ISC;BSD-2-Clause;BSD-3-Clause;0BSD;CC0-1.0;CC-BY-3.0;CC-BY-4.0;Unlicense;Python-2.0;BlueOak-1.0.0'"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.1",
     "@changesets/cli": "^2.29.7",
+    "license-checker": "^25.0.1",
     "prettier": "^3.6.2",
     "turbo": "^2.6.1",
     "typescript": "5.9.3"

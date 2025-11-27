@@ -1,0 +1,46 @@
+# Gitleaks Configuration for Scenarist
+# https://github.com/gitleaks/gitleaks
+
+title = "Scenarist Gitleaks Configuration"
+
+[extend]
+# Use the default ruleset as a base
+useDefault = true
+
+[allowlist]
+description = "Allowlisted paths and patterns"
+
+# Paths to ignore (not scanned for secrets)
+paths = [
+    '''node_modules''',
+    '''pnpm-lock\.yaml''',
+    '''\.changeset''',
+    '''dist''',
+    '''\.next''',
+    '''coverage''',
+    '''\.turbo''',
+]
+
+# Regex patterns to ignore (false positives)
+regexes = [
+    # Test fixture tokens (intentionally fake)
+    '''test-token-[a-z0-9]+''',
+    '''mock-api-key-[a-z0-9]+''',
+    '''fake-secret-[a-z0-9]+''',
+    # Example placeholder tokens in documentation
+    '''sk_test_[A-Za-z0-9]+''',
+    '''pk_test_[A-Za-z0-9]+''',
+]
+
+# Specific commits to ignore (if needed)
+# commits = []
+
+# Stop words - strings that if found in the secret will cause the finding to be ignored
+stopwords = [
+    "example",
+    "placeholder",
+    "changeme",
+    "your-",
+    "insert-",
+    "replace-",
+]

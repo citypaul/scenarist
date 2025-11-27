@@ -1,0 +1,32 @@
+name: Semgrep
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run weekly on Sundays
+    - cron: "0 1 * * 0"
+
+jobs:
+  semgrep:
+    name: Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    container:
+      image: semgrep/semgrep
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        run: semgrep scan --config auto --error --sarif --output semgrep.sarif .
+
+      - name: Upload SARIF results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep.sarif

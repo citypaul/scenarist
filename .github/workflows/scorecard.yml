@@ -1,0 +1,42 @@
+name: OpenSSF Scorecard
+
+on:
+  # Run on branch protection rule changes
+  branch_protection_rule:
+  # Run weekly on Sundays
+  schedule:
+    - cron: "0 0 * * 0"
+  # Run on pushes to main
+  push:
+    branches: [main]
+
+permissions: read-all
+
+jobs:
+  analysis:
+    name: Scorecard analysis
+    runs-on: ubuntu-latest
+    permissions:
+      # Needed for Code Scanning upload
+      security-events: write
+      # Needed for GitHub OIDC token
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Run analysis
+        uses: ossf/scorecard-action@v2.4.0
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          # Publish results to OpenSSF REST API
+          publish_results: true
+
+      - name: Upload to code-scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
