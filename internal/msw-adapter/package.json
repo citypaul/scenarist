@@ -1,10 +1,31 @@
 {
   "name": "@scenarist/msw-adapter",
   "version": "0.0.0",
-  "description": "Internal MSW integration layer for Scenarist framework adapters",
+  "description": "Internal: MSW integration layer for Scenarist framework adapters",
   "author": "Paul Hammond (citypaul) <paul@packsoftware.co.uk>",
   "license": "MIT",
-  "private": true,
+  "homepage": "https://github.com/citypaul/scenarist#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/citypaul/scenarist.git",
+    "directory": "internal/msw-adapter"
+  },
+  "bugs": {
+    "url": "https://github.com/citypaul/scenarist/issues"
+  },
+  "keywords": [
+    "msw",
+    "mock-service-worker",
+    "testing",
+    "scenarist",
+    "internal"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -14,6 +35,11 @@
       "import": "./dist/index.js"
     }
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
