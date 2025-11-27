@@ -64,6 +64,7 @@
     "@vitest/coverage-v8": "^4.0.8",
     "@vitest/ui": "^4.0.8",
     "eslint": "^9.39.1",
+    "fast-check": "^4.3.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.8"
   }

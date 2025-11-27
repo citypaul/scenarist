@@ -20,11 +20,11 @@ jobs:
     timeout-minutes: 15
 
     container:
-      image: semgrep/semgrep
+      image: semgrep/semgrep@sha256:2b10bb6c3502cad7775542283050b632c13bde1cfdfad7f8230859767a58a078
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
 
       - name: Run Semgrep
         # Report findings to GitHub Security tab without blocking builds
@@ -32,7 +32,7 @@ jobs:
         run: semgrep scan --config auto --sarif --output semgrep.sarif .
 
       - name: Upload SARIF results
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@c00e4aee0547167576bc6663920491135a3dee27 # v4
         if: always()
         with:
           sarif_file: semgrep.sarif
