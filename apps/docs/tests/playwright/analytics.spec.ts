@@ -66,5 +66,31 @@ test.describe('Analytics', () => {
       // or 400 for invalid payload - either confirms our proxy works
       expect([200, 202, 400]).toContain(response.status());
     });
+
+    test('/api/event handles malformed JSON gracefully', async ({ request }) => {
+      const response = await request.post('/api/event', {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        data: 'not valid json {{{',
+      });
+
+      // Should return a client or server error, not crash
+      expect(response.status()).toBeGreaterThanOrEqual(400);
+      expect(response.status()).toBeLessThan(600);
+    });
+
+    test('/api/event handles empty body gracefully', async ({ request }) => {
+      const response = await request.post('/api/event', {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        data: '',
+      });
+
+      // Should return a client or server error, not crash
+      expect(response.status()).toBeGreaterThanOrEqual(400);
+      expect(response.status()).toBeLessThan(600);
+    });
   });
 });
