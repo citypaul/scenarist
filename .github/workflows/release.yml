@@ -49,7 +49,7 @@ jobs:
         run: pnpm build
 
       - name: Generate SBOM
-        run: npx @cyclonedx/cyclonedx-npm --output-format JSON --output-file sbom.json
+        run: npx @cyclonedx/cdxgen -o sbom.json --format json
 
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@v4
