@@ -9,15 +9,21 @@ on:
     # Run weekly on Sundays
     - cron: "0 1 * * 0"
 
+# Minimal permissions at workflow level
+# @see https://github.com/citypaul/scenarist/security/code-scanning/103
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   semgrep:
     name: Scan
     runs-on: ubuntu-latest
     timeout-minutes: 15
+
+    # Grant security-events permission only at job level where needed
+    permissions:
+      contents: read
+      security-events: write
 
     container:
       image: semgrep/semgrep@sha256:2b10bb6c3502cad7775542283050b632c13bde1cfdfad7f8230859767a58a078

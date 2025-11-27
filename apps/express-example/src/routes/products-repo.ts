@@ -12,6 +12,7 @@
  */
 
 import { Router } from "express";
+
 import { z } from "zod";
 import { getUserRepository, runWithTestId } from "../container.js";
 import { scenarioRepositoryData } from "../repository-data.js";
@@ -38,7 +39,9 @@ export const setupProductsRepoRoutes = (router: Router): void => {
 
       const { scenarioId } = parseResult.data;
 
-      console.log("[Seed] testId:", testId, "scenarioId:", scenarioId);
+      // Security: Don't log user-provided values to prevent log injection
+      // @see https://github.com/citypaul/scenarist/security/code-scanning/93
+      console.log("[Seed] Processing seed request");
 
       // Get the repository data for this scenario
       const seedData = scenarioRepositoryData[scenarioId];
@@ -62,13 +65,9 @@ export const setupProductsRepoRoutes = (router: Router): void => {
               tier: userData.tier,
             });
             created.push({ id: user.id, name: user.name });
-            console.log(
-              "[Seed] Created user:",
-              user.id,
-              user.name,
-              "in partition:",
-              testId
-            );
+            // Security: Don't log user-provided values to prevent log injection
+            // @see https://github.com/citypaul/scenarist/security/code-scanning/94
+            console.log("[Seed] Created user in partition");
           }
         }
         return created;

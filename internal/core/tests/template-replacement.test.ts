@@ -289,4 +289,99 @@ describe('Template Replacement', () => {
       });
     });
   });
+
+  /**
+   * Security Tests - ReDoS Prevention
+   *
+   * @see https://github.com/citypaul/scenarist/security/code-scanning/92
+   *
+   * These tests verify that the template regex is protected against
+   * Regular Expression Denial of Service (ReDoS) attacks where malicious
+   * input could cause exponential backtracking.
+   */
+  describe('Security: ReDoS Prevention', () => {
+    it('should handle very long template paths without performance degradation', () => {
+      // Create a path with 256 characters (at the limit)
+      const longPath = 'a'.repeat(256);
+      const value = `{{state.${longPath}}}`;
+      const state = { [longPath]: 'found' };
+
+      const startTime = performance.now();
+      const result = applyTemplates(value, state);
+      const endTime = performance.now();
+
+      // Should complete in under 100ms (generous limit for CI)
+      expect(endTime - startTime).toBeLessThan(100);
+      expect(result).toBe('found');
+    });
+
+    it('should not match template paths exceeding 256 characters', () => {
+      // Create a path with 257 characters (exceeds limit)
+      const tooLongPath = 'a'.repeat(257);
+      const value = `{{state.${tooLongPath}}}`;
+      const state = { [tooLongPath]: 'found' };
+
+      const result = applyTemplates(value, state);
+
+      // Template should not match (path too long), so string is returned as-is
+      expect(result).toBe(value);
+    });
+
+    it('should handle malicious input pattern without exponential backtracking', () => {
+      // Pattern that could cause ReDoS without length limit:
+      // Multiple nested braces designed to trigger backtracking
+      const maliciousInput = '{{{{state.' + '|'.repeat(100) + '}}}}';
+      const state = {};
+
+      const startTime = performance.now();
+      const result = applyTemplates(maliciousInput, state);
+      const endTime = performance.now();
+
+      // Should complete quickly without excessive backtracking
+      expect(endTime - startTime).toBeLessThan(100);
+      // Malformed template should be returned as-is
+      expect(result).toBe(maliciousInput);
+    });
+
+    it('should handle repeated template patterns efficiently', () => {
+      // Many templates in one string
+      const templateCount = 100;
+      const templates = Array.from(
+        { length: templateCount },
+        (_, i) => `{{state.key${i}}}`
+      ).join(' ');
+      const state = Object.fromEntries(
+        Array.from({ length: templateCount }, (_, i) => [`key${i}`, `value${i}`])
+      );
+
+      const startTime = performance.now();
+      const result = applyTemplates(templates, state);
+      const endTime = performance.now();
+
+      // Should complete in reasonable time
+      expect(endTime - startTime).toBeLessThan(200);
+      expect(result).toContain('value0');
+      expect(result).toContain('value99');
+    });
+
+    it('should handle deeply nested objects in state without performance issues', () => {
+      // Create deeply nested path
+      const depth = 50;
+      const path = Array.from({ length: depth }, (_, i) => `level${i}`).join('.');
+      const value = `{{state.${path}}}`;
+
+      // Create deeply nested state object
+      let state: Record<string, unknown> = { finalValue: 'found' };
+      for (let i = depth - 1; i >= 0; i--) {
+        state = { [`level${i}`]: state };
+      }
+
+      const startTime = performance.now();
+      // Result intentionally unused - test verifies timing, not output
+      applyTemplates(value, { ...state, state });
+      const endTime = performance.now();
+
+      expect(endTime - startTime).toBeLessThan(100);
+    });
+  });
 });

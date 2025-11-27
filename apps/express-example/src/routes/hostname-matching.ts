@@ -83,10 +83,12 @@ export const setupHostnameMatchingRoutes = (router: Router): void => {
   // Test 5: Pathname with path parameters - origin-agnostic + param extraction
   // Pattern: '/api/users/:userId/posts/:postId'
   // Should extract params AND match ANY hostname
+  // Security: Encode path parameters to prevent path traversal
+  // @see https://github.com/citypaul/scenarist/security/code-scanning/76
   router.get('/api/test-hostname-match/pathname-params/:userId/:postId', async (req: Request, res: Response) => {
     return handleProxyRequest(
       (req) => ({
-        url: `http://localhost:3000/api/users/${req.params.userId}/posts/${req.params.postId}`,
+        url: `http://localhost:3000/api/users/${encodeURIComponent(req.params.userId ?? '')}/posts/${encodeURIComponent(req.params.postId ?? '')}`,
       }),
       req,
       res
@@ -96,10 +98,11 @@ export const setupHostnameMatchingRoutes = (router: Router): void => {
   // Test 6: Full URL with path parameters - hostname-specific + param extraction
   // Pattern: 'https://api.github.com/api/github-users/:userId'
   // Should extract params but ONLY match api.github.com
+  // Security: Encode path parameters to prevent path traversal
   router.get('/api/test-hostname-match/full-params/:userId', async (req: Request, res: Response) => {
     return handleProxyRequest(
       (req) => ({
-        url: `https://api.github.com/api/github-users/${req.params.userId}`,
+        url: `https://api.github.com/api/github-users/${encodeURIComponent(req.params.userId ?? '')}`,
       }),
       req,
       res

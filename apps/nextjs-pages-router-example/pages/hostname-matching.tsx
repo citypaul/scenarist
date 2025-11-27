@@ -96,11 +96,21 @@ export default function HostnameMatchingPage({ testType, result, error }: PagePr
   );
 }
 
+/**
+ * Security: Safely encodes a path parameter to prevent path traversal
+ * @see https://github.com/citypaul/scenarist/security/code-scanning/81
+ * @see https://github.com/citypaul/scenarist/security/code-scanning/82
+ */
+const encodePathParam = (val: string | string[] | undefined, defaultVal: string): string => {
+  const str = Array.isArray(val) ? val[0] : val ?? defaultVal;
+  return encodeURIComponent(str);
+};
+
 export const getServerSideProps: GetServerSideProps<PageProps> = async (context) => {
   const { query } = context;
   const testType = (query.test as string) || "unknown";
-  const userId = (query.userId as string) || "123";
-  const postId = (query.postId as string) || "456";
+  const userId = encodePathParam(query.userId, "123");
+  const postId = encodePathParam(query.postId, "456");
 
   // Get Scenarist headers for test ID propagation
   const scenaristHeaders = getScenaristHeaders(context.req);

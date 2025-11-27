@@ -156,7 +156,6 @@ describe('InMemoryStateManager', () => {
     const result = stateManager.get('test-1', 'data.field');
     expect(result).toBe('value');
   });
-});
 
   it('should overwrite null value with object when setting nested path through it', () => {
     const stateManager = createInMemoryStateManager();
@@ -186,3 +185,97 @@ describe('InMemoryStateManager', () => {
     expect(stateManager.get('test-1', 'user.profile.age')).toBe(30);
     expect(stateManager.get('test-1', 'user.profile.email')).toBe('alice@example.com');
   });
+
+  /**
+   * Security Tests - Prototype Pollution Prevention
+   *
+   * @see https://github.com/citypaul/scenarist/security/code-scanning/72
+   * @see https://github.com/citypaul/scenarist/security/code-scanning/73
+   *
+   * These tests verify that the state manager is not vulnerable to prototype
+   * pollution attacks where malicious keys like '__proto__', 'constructor',
+   * or 'prototype' could modify Object.prototype and affect all objects.
+   */
+  describe('Security: Prototype Pollution Prevention', () => {
+    it('should ignore __proto__ key when setting state', () => {
+      const stateManager = createInMemoryStateManager();
+
+      // Attempt prototype pollution via __proto__
+      stateManager.set('test-1', '__proto__.polluted', 'malicious');
+
+      // Verify Object.prototype was not polluted
+      expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+
+      // Verify the key was silently ignored (no error thrown)
+      expect(stateManager.get('test-1', '__proto__')).toBeUndefined();
+    });
+
+    it('should ignore constructor key when setting state', () => {
+      const stateManager = createInMemoryStateManager();
+
+      // Attempt prototype pollution via constructor
+      stateManager.set('test-1', 'constructor.prototype.polluted', 'malicious');
+
+      // Verify Object.prototype was not polluted
+      expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+
+      // Verify the key was silently ignored
+      expect(stateManager.get('test-1', 'constructor')).toBeUndefined();
+    });
+
+    it('should ignore prototype key when setting state', () => {
+      const stateManager = createInMemoryStateManager();
+
+      // Attempt prototype pollution via prototype
+      stateManager.set('test-1', 'prototype.polluted', 'malicious');
+
+      // Verify Object.prototype was not polluted
+      expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+
+      // Verify the key was silently ignored
+      expect(stateManager.get('test-1', 'prototype')).toBeUndefined();
+    });
+
+    it('should return undefined when getting __proto__ key', () => {
+      const stateManager = createInMemoryStateManager();
+
+      // Even if somehow set, getting __proto__ should return undefined
+      const result = stateManager.get('test-1', '__proto__');
+
+      expect(result).toBeUndefined();
+    });
+
+    it('should return undefined when getting constructor key', () => {
+      const stateManager = createInMemoryStateManager();
+
+      const result = stateManager.get('test-1', 'constructor');
+
+      expect(result).toBeUndefined();
+    });
+
+    it('should return undefined when getting prototype key', () => {
+      const stateManager = createInMemoryStateManager();
+
+      const result = stateManager.get('test-1', 'prototype');
+
+      expect(result).toBeUndefined();
+    });
+
+    it('should ignore dangerous keys in nested paths', () => {
+      const stateManager = createInMemoryStateManager();
+
+      // Attempt to set nested path with dangerous key in the middle
+      stateManager.set('test-1', 'safe.__proto__.nested', 'malicious');
+      stateManager.set('test-1', 'safe.constructor.nested', 'malicious');
+      stateManager.set('test-1', 'safe.prototype.nested', 'malicious');
+
+      // Verify Object.prototype was not polluted
+      expect(({} as Record<string, unknown>).nested).toBeUndefined();
+
+      // Verify the paths were not created
+      expect(stateManager.get('test-1', 'safe.__proto__')).toBeUndefined();
+      expect(stateManager.get('test-1', 'safe.constructor')).toBeUndefined();
+      expect(stateManager.get('test-1', 'safe.prototype')).toBeUndefined();
+    });
+  });
+});
