@@ -576,6 +576,71 @@ type ScenarioId = keyof typeof scenarios;
 // 'default' | 'success' | 'error' | 'premiumUser'
 ```
 
+### Why `as const satisfies` is Required
+
+The `as const satisfies ScenaristScenarios` pattern is essential for type-safe scenario switching. Each part serves a distinct purpose:
+
+**`as const`** preserves the literal types of your scenario keys:
+
+```typescript
+// WITHOUT as const - scenario IDs become generic 'string'
+const scenarios = {
+  default: defaultScenario,
+  premiumUser: premiumUserScenario,
+};
+type ScenarioId = keyof typeof scenarios;
+// Result: string (not useful for autocomplete)
+
+// WITH as const - scenario IDs are preserved as literal types
+const scenarios = {
+  default: defaultScenario,
+  premiumUser: premiumUserScenario,
+} as const;
+type ScenarioId = keyof typeof scenarios;
+// Result: 'default' | 'premiumUser' (enables autocomplete!)
+```
+
+**`satisfies ScenaristScenarios`** validates the structure without widening types:
+
+```typescript
+// Using : type annotation WIDENS the type (loses literals)
+const scenarios: ScenaristScenarios = {
+  default: defaultScenario,
+  premiumUser: premiumUserScenario,
+};
+type ScenarioId = keyof typeof scenarios;
+// Result: string (annotation widened the type)
+
+// Using satisfies VALIDATES without widening
+const scenarios = {
+  default: defaultScenario,
+  premiumUser: premiumUserScenario,
+} as const satisfies ScenaristScenarios;
+type ScenarioId = keyof typeof scenarios;
+// Result: 'default' | 'premiumUser' (validated AND preserved!)
+```
+
+**Together they enable:**
+
+1. **Autocomplete in tests** - `switchScenario(page, '...')` suggests valid scenario IDs
+2. **Compile-time errors** - `switchScenario(page, 'typo')` fails with TypeScript error
+3. **Structure validation** - Missing required fields caught at compile time
+
+```typescript
+// In your Playwright tests:
+await switchScenario(page, 'premiumUser');  // ✅ Autocomplete works
+await switchScenario(page, 'typo');          // ❌ TypeScript error: 'typo' not in scenarios
+```
+
+**Summary:**
+
+| Pattern | Autocomplete | Validation | Result |
+|---------|-------------|------------|--------|
+| `as const satisfies ScenaristScenarios` | ✅ | ✅ | **Use this** |
+| `as const` only | ✅ | ❌ | No structure validation |
+| `satisfies` only | ❌ | ✅ | Loses literal types |
+| `: ScenaristScenarios` annotation | ❌ | ✅ | Loses literal types |
+
 ### The 'default' Scenario: Happy Path Foundation
 
 Every scenarios object **must** have a 'default' key (enforced by schema validation). This isn't just a fallback—it's the **foundation** for all your scenarios.
