@@ -20,7 +20,7 @@ Where do Server Components fit in the testing pyramid? They don't fit neatly int
 This same gap applies to other server-side Next.js code: **middleware**, **server-side session logic**, **Route Handlers with authentication**, and **data validation layers**. All of this code runs on the server and interacts with external services - but traditional testing tools weren't designed for it.
 
 <Aside type="note" title="Broader Context">
-This testing gap isn't unique to RSC - it applies to all modern full-stack frameworks. See [Why Scenarist?](/introduction/why-scenarist) for the complete picture of how Scenarist addresses server-side HTTP testing across Express, Next.js, Remix, and other frameworks.
+This testing gap isn't unique to RSC - it applies to all modern full-stack frameworks. See [Why Scenarist?](/introduction/why-scenarist) for the complete picture, or explore the [Philosophy](/concepts/philosophy) for the core beliefs that guide Scenarist's design.
 </Aside>
 
 ### The Jest Problem
@@ -950,6 +950,7 @@ These patterns require example implementations that are being added in Milestone
 
 - **[Next.js App Router Getting Started](/frameworks/nextjs-app-router/getting-started)** - Complete setup guide
 - **[Example App](/frameworks/nextjs-app-router/example-app)** - Full working example with all patterns
+- **[Philosophy](/concepts/philosophy)** - Core beliefs behind Scenarist's testing approach
 - **[Request Matching](/introduction/scenario-format#request-matching)** - Deep dive into matching options
 - **[Sequences](/introduction/scenario-format#sequences)** - Complete sequence documentation
 - **[Stateful Mocks](/introduction/scenario-format#stateful-mocks)** - State capture and injection
