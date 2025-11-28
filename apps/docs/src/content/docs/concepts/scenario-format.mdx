@@ -4,7 +4,7 @@ description: Complete syntax and structure for writing Scenarist scenarios
 ---
 
 :::tip[Feature Examples]
-This page shows **how to write** scenarios. For feature explanations and use cases, see [Dynamic Capabilities →](/introduction/capabilities).
+This page shows **how to write** scenarios. For feature explanations and use cases, see [Dynamic Capabilities →](/concepts/dynamic-responses).
 :::
 
 Scenarist scenarios are **declarative TypeScript objects** that compile to **JSON-serializable data structures**. This gives you type safety during development and portability at runtime - scenarios can be version controlled, sent over HTTP, or stored in databases.
@@ -298,7 +298,7 @@ match: {
 
 Scenarist supports five matching strategies for flexible pattern matching. Regex patterns include ReDoS protection and 100ms timeout.
 
-[See detailed regex examples and security considerations →](/introduction/capabilities#pattern-matching-with-regex)
+[See detailed regex examples and security considerations →](/concepts/dynamic-responses/content-matching#pattern-matching-with-regex)
 
 **Combined Matching** (all criteria must match):
 ```typescript

@@ -1,0 +1,210 @@
+---
+title: Response Sequences
+description: Simulate multi-step processes like polling where each request advances through responses
+---
+
+Simulate multi-step processes like polling, where each request advances through a sequence of responses.
+
+## Basic Sequence
+
+```typescript
+import type { ScenaristMock } from '@scenarist/express-adapter';
+
+const mock: ScenaristMock = {
+  method: 'GET',
+  url: '/api/job/status',
+  sequence: {
+    responses: [
+      { status: 200, body: { status: 'pending' } },
+      { status: 200, body: { status: 'processing' } },
+      { status: 200, body: { status: 'complete' } }
+    ],
+    repeat: 'last'  // Options: 'last' | 'cycle' | 'none'
+  }
+};
+```
+
+**Behavior:**
+1. First request → returns 'pending'
+2. Second request → returns 'processing'
+3. Third request → returns 'complete'
+4. Fourth+ requests → returns 'complete' (repeats last)
+
+## Repeat Modes
+
+### `repeat: 'last'`
+
+Repeat the last response indefinitely (most common):
+
+```typescript
+sequence: {
+  responses: [
+    { status: 200, body: { status: 'pending' } },
+    { status: 200, body: { status: 'complete' } }
+  ],
+  repeat: 'last'
+}
+// Request 1: pending
+// Request 2: complete
+// Request 3+: complete (keeps repeating)
+```
+
+### `repeat: 'cycle'`
+
+Loop back to the beginning:
+
+```typescript
+sequence: {
+  responses: [
+    { status: 200, body: { weather: 'sunny' } },
+    { status: 200, body: { weather: 'cloudy' } },
+    { status: 200, body: { weather: 'rainy' } }
+  ],
+  repeat: 'cycle'
+}
+// Request 1: sunny
+// Request 2: cloudy
+// Request 3: rainy
+// Request 4: sunny (cycles back)
+// Request 5: cloudy
+```
+
+### `repeat: 'none'`
+
+After sequence exhausts, fall through to next mock:
+
+```typescript
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
+const scenario: ScenaristScenario = {
+  id: 'payment-sequence',
+  mocks: [
+    {
+      method: 'POST',
+      url: '/api/payment',
+      sequence: {
+        responses: [
+          { status: 200, body: { id: 'ch_1', status: 'pending' } },
+          { status: 200, body: { id: 'ch_2', status: 'pending' } },
+          { status: 200, body: { id: 'ch_3', status: 'succeeded' } }
+        ],
+        repeat: 'none'  // After 3rd request, sequence exhausted
+      }
+    },
+    {
+      method: 'POST',
+      url: '/api/payment',
+      response: { status: 429, body: { error: 'Rate limit exceeded' } }
+    }
+  ]
+};
+// Request 1-3: Sequence responses
+// Request 4+: Rate limit error (sequence exhausted, falls through to next mock)
+```
+
+## Combining Sequences with Matching
+
+Sequences can be combined with match criteria:
+
+```typescript
+import type { ScenaristMock } from '@scenarist/express-adapter';
+
+const mock: ScenaristMock = {
+  method: 'GET',
+  url: '/api/onboarding/step',
+  match: {
+    headers: { 'x-tier': 'premium' }
+  },
+  sequence: {
+    responses: [
+      { status: 200, body: { step: 1, message: 'Welcome!' } },
+      { status: 200, body: { step: 2, message: 'Configure...' } },
+      { status: 200, body: { step: 3, message: 'Complete!' } }
+    ],
+    repeat: 'last'
+  }
+};
+```
+
+**Important:** Only matching requests advance the sequence. Non-matching requests don't affect sequence position.
+
+## Common Use Cases
+
+### Job Polling
+
+```typescript
+import type { ScenaristMock } from '@scenarist/express-adapter';
+
+const mock: ScenaristMock = {
+  method: 'GET',
+  url: '/api/job/:id/status',
+  sequence: {
+    responses: [
+      { status: 200, body: { status: 'queued', progress: 0 } },
+      { status: 200, body: { status: 'running', progress: 50 } },
+      { status: 200, body: { status: 'complete', progress: 100 } }
+    ],
+    repeat: 'last'
+  }
+};
+```
+
+### Retry Simulation
+
+```typescript
+import type { ScenaristMock } from '@scenarist/express-adapter';
+
+const mock: ScenaristMock = {
+  method: 'POST',
+  url: '/api/submit',
+  sequence: {
+    responses: [
+      { status: 503, body: { error: 'Service unavailable' } },
+      { status: 503, body: { error: 'Service unavailable' } },
+      { status: 200, body: { success: true } }
+    ],
+    repeat: 'last'
+  }
+};
+// First two attempts fail, third succeeds
+```
+
+### Rate Limiting
+
+```typescript
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
+const scenario: ScenaristScenario = {
+  id: 'rate-limit',
+  mocks: [
+    {
+      method: 'GET',
+      url: '/api/data',
+      sequence: {
+        responses: [
+          { status: 200, body: { data: 'first' } },
+          { status: 200, body: { data: 'second' } },
+          { status: 200, body: { data: 'third' } }
+        ],
+        repeat: 'none'
+      }
+    },
+    {
+      method: 'GET',
+      url: '/api/data',
+      response: {
+        status: 429,
+        body: { error: 'Rate limit exceeded' },
+        headers: { 'Retry-After': '60' }
+      }
+    }
+  ]
+};
+// After 3 successful calls, returns 429
+```
+
+## Next Steps
+
+- [Stateful Mocks →](/concepts/dynamic-responses/stateful-mocks) - Capture and inject state
+- [Request Content Matching →](/concepts/dynamic-responses/content-matching) - Match based on request content
+- [Scenario Format Reference →](/concepts/scenario-format) - Complete syntax

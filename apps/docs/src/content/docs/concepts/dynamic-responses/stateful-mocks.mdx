@@ -1,0 +1,270 @@
+---
+title: Stateful Mocks
+description: Capture data from requests and inject it into subsequent responses
+---
+
+Capture data from requests and inject it into subsequent responses, enabling stateful scenarios like shopping carts.
+
+## Basic State Capture and Injection
+
+```typescript
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
+const scenario: ScenaristScenario = {
+  id: 'cart-state',
+  mocks: [
+    // Capture state from POST request
+    {
+      method: 'POST',
+      url: '/api/cart/add',
+      captureState: {
+        cartItems: { from: 'body', path: 'productId' }
+      },
+      response: { status: 201 }
+    },
+    // Inject state into GET response
+    {
+      method: 'GET',
+      url: '/api/cart',
+      response: {
+        status: 200,
+        body: {
+          items: '{{state.cartItems}}'
+        }
+      }
+    }
+  ]
+};
+```
+
+**How it works:**
+
+1. POST to `/api/cart/add` with body `{ productId: 'prod-1' }`
+2. Scenarist captures `productId` value and stores as `cartItems`
+3. GET to `/api/cart` returns `{ items: 'prod-1' }`
+
+## Array Append Syntax
+
+Use `stateKey[]` to append values to an array:
+
+```typescript
+import type { ScenaristMock } from '@scenarist/express-adapter';
+
+const mock: ScenaristMock = {
+  method: 'POST',
+  url: '/api/cart/add',
+  captureState: {
+    'cartItems[]': { from: 'body', path: 'productId' }  // Note the [] suffix
+  },
+  response: { status: 201 }
+};
+```
+
+**Behavior:**
+
+```typescript
+// Request 1: { productId: 'prod-1' }
+// State: { cartItems: ['prod-1'] }
+
+// Request 2: { productId: 'prod-2' }
+// State: { cartItems: ['prod-1', 'prod-2'] }
+
+// Request 3: { productId: 'prod-3' }
+// State: { cartItems: ['prod-1', 'prod-2', 'prod-3'] }
+```
+
+## Nested Path Support
+
+Capture deeply nested values using dot notation:
+
+```typescript
+import type { ScenaristMock } from '@scenarist/express-adapter';
+
+const mock: ScenaristMock = {
+  method: 'POST',
+  url: '/api/profile/update',
+  captureState: {
+    userName: { from: 'body', path: 'user.profile.name' }
+  },
+  response: { status: 200 }
+};
+
+// Request body:
+// {
+//   user: {
+//     profile: {
+//       name: 'John Doe',
+//       email: 'john@example.com'
+//     }
+//   }
+// }
+
+// Captured: userName = 'John Doe'
+```
+
+## Template Replacement
+
+Use `{{state.key}}` syntax to inject captured state into responses:
+
+```typescript
+import type { ScenaristMock } from '@scenarist/express-adapter';
+
+const mock: ScenaristMock = {
+  method: 'GET',
+  url: '/api/profile',
+  response: {
+    status: 200,
+    body: {
+      username: '{{state.userName}}',
+      items: '{{state.cartItems}}',
+      itemCount: '{{state.cartItems.length}}'  // Can access array length
+    }
+  }
+};
+```
+
+## State Isolation Per Test ID
+
+State is isolated per test ID, ensuring parallel tests don't interfere:
+
+```typescript
+// Test 1 (test-id: abc-123)
+POST /api/cart/add { productId: 'prod-1' }
+GET /api/cart  // Returns { items: ['prod-1'] }
+
+// Test 2 (test-id: xyz-789) - runs simultaneously
+POST /api/cart/add { productId: 'prod-999' }
+GET /api/cart  // Returns { items: ['prod-999'] }
+
+// No interference - each test has isolated state
+```
+
+## State Reset on Scenario Switch
+
+When a test switches scenarios, all state for that test ID is cleared:
+
+```typescript
+test('cart workflow', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'cart-scenario');
+
+  // Add items...
+  await fetch('/api/cart/add', { body: { productId: 'prod-1' } });
+
+  // Switch to different scenario
+  await switchScenario(page, 'different-scenario');
+
+  // State is cleared when switching - cart is now empty
+});
+```
+
+## Common Use Cases
+
+### Shopping Cart
+
+```typescript
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
+const scenario: ScenaristScenario = {
+  id: 'shopping-cart',
+  mocks: [
+    {
+      method: 'POST',
+      url: '/api/cart/add',
+      captureState: {
+        'cartItems[]': { from: 'body', path: 'item' }
+      },
+      response: { status: 201, body: { success: true } }
+    },
+    {
+      method: 'DELETE',
+      url: '/api/cart/clear',
+      captureState: {
+        cartItems: { value: [] }  // Reset to empty array
+      },
+      response: { status: 200 }
+    },
+    {
+      method: 'GET',
+      url: '/api/cart',
+      response: {
+        status: 200,
+        body: {
+          items: '{{state.cartItems}}',
+          count: '{{state.cartItems.length}}'
+        }
+      }
+    }
+  ]
+};
+```
+
+### User Session
+
+```typescript
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
+const scenario: ScenaristScenario = {
+  id: 'user-session',
+  mocks: [
+    {
+      method: 'POST',
+      url: '/api/login',
+      captureState: {
+        userId: { from: 'body', path: 'userId' },
+        userEmail: { from: 'body', path: 'email' }
+      },
+      response: { status: 200, body: { token: 'mock-token' } }
+    },
+    {
+      method: 'GET',
+      url: '/api/profile',
+      response: {
+        status: 200,
+        body: {
+          id: '{{state.userId}}',
+          email: '{{state.userEmail}}'
+        }
+      }
+    }
+  ]
+};
+```
+
+### Order Workflow
+
+```typescript
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
+const scenario: ScenaristScenario = {
+  id: 'order-workflow',
+  mocks: [
+    {
+      method: 'POST',
+      url: '/api/order/create',
+      captureState: {
+        orderId: { from: 'body', path: 'orderId' },
+        'orderItems[]': { from: 'body', path: 'items' }
+      },
+      response: { status: 201, body: { status: 'created' } }
+    },
+    {
+      method: 'GET',
+      url: '/api/order/:id',
+      response: {
+        status: 200,
+        body: {
+          orderId: '{{state.orderId}}',
+          items: '{{state.orderItems}}',
+          status: 'confirmed'
+        }
+      }
+    }
+  ]
+};
+```
+
+## Next Steps
+
+- [Request Content Matching →](/concepts/dynamic-responses/content-matching) - Match based on request content
+- [Response Sequences →](/concepts/dynamic-responses/sequences) - Multi-step processes
+- [Scenario Format Reference →](/concepts/scenario-format) - Complete syntax

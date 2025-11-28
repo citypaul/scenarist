@@ -20,7 +20,7 @@ This creates a testing challenge:
 | If you want to... | Go to... |
 |-------------------|----------|
 | See how Scenarist works | [How it works](/concepts/how-it-works) |
-| Learn about dynamic capabilities | [Capabilities](/introduction/capabilities) |
+| Learn about dynamic capabilities | [Capabilities](/concepts/dynamic-responses) |
 | Compare with unit/E2E tests | [Comparison](#comparison-with-other-testing-approaches) |
 | Understand limitations | [Limitations](#limitations-and-trade-offs) |
 | Start implementing | [Getting Started](#getting-started) |
@@ -186,6 +186,6 @@ Choose your framework to see specific installation and usage instructions:
 Or explore core concepts that apply to all frameworks:
 
 - [Overview: How It Works →](/concepts/how-it-works)
-- [Capabilities: Dynamic Responses →](/introduction/capabilities)
+- [Capabilities: Dynamic Responses →](/concepts/dynamic-responses)
 - [Scenarios & Format →](/concepts/scenario-format)
 - [Architecture →](/concepts/architecture)

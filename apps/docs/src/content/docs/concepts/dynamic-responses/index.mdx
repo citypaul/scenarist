@@ -1,0 +1,166 @@
+---
+title: Dynamic Response Capabilities
+description: Request matching, sequences, and stateful mocks for realistic test scenarios
+---
+
+:::tip[Syntax Reference]
+This page explains **what Scenarist can do**. For syntax reference, see [Scenario Format Reference →](/concepts/scenario-format).
+:::
+
+Scenarist supports three types of dynamic responses for realistic test scenarios. These capabilities work together to simulate complex external API behaviors.
+
+## Overview
+
+| Capability | Purpose | Use Case |
+|------------|---------|----------|
+| **[Request Content Matching](/concepts/dynamic-responses/content-matching)** | Return different responses based on request content | User tiers, regional pricing, feature flags |
+| **[Response Sequences](/concepts/dynamic-responses/sequences)** | Advance through responses on each call | Polling, multi-step workflows, retries |
+| **[Stateful Mocks](/concepts/dynamic-responses/stateful-mocks)** | Capture and inject state across requests | Shopping carts, user sessions, workflows |
+
+## Request Content Matching
+
+Return different responses based on request body, headers, or query parameters. Scenarist uses specificity-based selection when multiple mocks match.
+
+```typescript
+import type { ScenaristMock } from '@scenarist/express-adapter';
+
+const mock: ScenaristMock = {
+  method: 'POST',
+  url: '/api/checkout',
+  match: {
+    body: { tier: 'premium' },
+    headers: { 'x-api-version': 'v2' }
+  },
+  response: { status: 200, body: { discount: 20 } }
+};
+```
+
+**Features:**
+- Partial body matching (only specified fields must match)
+- Exact header and query parameter matching
+- Pattern matching with regex (contains, startsWith, endsWith)
+- Specificity scoring (more fields = higher priority)
+
+[Learn more about content matching →](/concepts/dynamic-responses/content-matching)
+
+## Response Sequences
+
+Simulate multi-step processes where each request advances through a sequence of responses.
+
+```typescript
+import type { ScenaristMock } from '@scenarist/express-adapter';
+
+const mock: ScenaristMock = {
+  method: 'GET',
+  url: '/api/job/status',
+  sequence: {
+    responses: [
+      { status: 200, body: { status: 'pending' } },
+      { status: 200, body: { status: 'processing' } },
+      { status: 200, body: { status: 'complete' } }
+    ],
+    repeat: 'last'
+  }
+};
+```
+
+**Repeat modes:**
+- `'last'` - Repeat final response indefinitely
+- `'cycle'` - Loop back to the beginning
+- `'none'` - Fall through to next mock when exhausted
+
+[Learn more about sequences →](/concepts/dynamic-responses/sequences)
+
+## Stateful Mocks
+
+Capture data from requests and inject it into subsequent responses.
+
+```typescript
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
+const scenario: ScenaristScenario = {
+  id: 'cart-state',
+  mocks: [
+    {
+      method: 'POST',
+      url: '/api/cart/add',
+      captureState: {
+        'cartItems[]': { from: 'body', path: 'productId' }
+      },
+      response: { status: 201 }
+    },
+    {
+      method: 'GET',
+      url: '/api/cart',
+      response: {
+        status: 200,
+        body: { items: '{{state.cartItems}}' }
+      }
+    }
+  ]
+};
+```
+
+**Features:**
+- Array append syntax (`cartItems[]`)
+- Nested path support (`user.profile.name`)
+- Template injection (`{{state.key}}`)
+- Isolated per test ID
+
+[Learn more about stateful mocks →](/concepts/dynamic-responses/stateful-mocks)
+
+## Combining All Three Capabilities
+
+The power comes from combining request matching, sequences, and state together:
+
+```typescript
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
+const scenario: ScenaristScenario = {
+  id: 'premium-onboarding',
+  mocks: [
+    {
+      method: 'POST',
+      url: '/api/onboarding',
+      match: {
+        headers: { 'x-tier': 'premium' }
+      },
+      sequence: {
+        responses: [
+          { status: 200, body: { step: 1, message: 'Welcome premium user!' } },
+          { status: 200, body: { step: 2, message: 'Set up your profile' } },
+          { status: 200, body: { step: 3, message: 'You are all set!' } }
+        ],
+        repeat: 'last'
+      },
+      captureState: {
+        'completedSteps[]': { from: 'body', path: 'stepNumber' }
+      }
+    },
+    {
+      method: 'GET',
+      url: '/api/dashboard',
+      response: {
+        status: 200,
+        body: {
+          completedSteps: '{{state.completedSteps}}',
+          onboardingComplete: '{{state.completedSteps.length >= 3}}'
+        }
+      }
+    }
+  ]
+};
+```
+
+**This enables:**
+- Request with premium header triggers premium onboarding sequence
+- Each step is captured in state
+- Dashboard shows progress based on captured steps
+- All isolated per test ID for parallel execution
+
+## Next Steps
+
+- [Scenario Format Reference →](/concepts/scenario-format) - Complete schema and syntax
+- [Declarative Design Philosophy →](/introduction/declarative-design) - Why scenarios are pure data
+- [Example Apps →](/frameworks/express/example-app) - See capabilities in action
+- [Framework Guides →](/frameworks/nextjs-app-router/getting-started) - Start building tests
