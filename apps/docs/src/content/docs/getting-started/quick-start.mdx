@@ -14,6 +14,9 @@ Scenarist lets you test your real server code with controlled external API respo
 3. **Switch scenarios per test** — Each test can use different API responses, running in parallel
 
 ```typescript
+import type { ScenaristScenarios } from '@scenarist/express-adapter';
+// Or: import type { ScenaristScenarios } from '@scenarist/nextjs-adapter/app';
+
 // Define scenarios as data (not functions)
 const scenarios = {
   default: {
@@ -36,7 +39,7 @@ const scenarios = {
       },
     ],
   },
-} as const;
+} as const satisfies ScenaristScenarios;
 ```
 
 ## Choose Your Framework
