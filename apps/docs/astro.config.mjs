@@ -143,7 +143,6 @@ export default defineConfig({
           label: "Introduction",
           items: [
             { label: "Quick Start", slug: "getting-started/quick-start" },
-            { label: "First Scenario", slug: "getting-started/first-scenario" },
             { label: "Philosophy", slug: "concepts/philosophy" },
             { label: "Why Scenarist?", slug: "introduction/why-scenarist" },
             { label: "How it works", slug: "introduction/overview" },
