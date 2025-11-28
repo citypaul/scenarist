@@ -1,0 +1,74 @@
+diff --git a/build/src/client.js b/build/src/client.js
+index 3747349306f0826a9423127114b461e08a77fa56..5e2520cb46fc29d559a13085e8fff434da8a2d34 100644
+--- a/build/src/client.js
++++ b/build/src/client.js
+@@ -28,7 +28,7 @@ const descriptor_1 = require("./descriptor");
+ const services = __importStar(require("./reflection_grpc_pb"));
+ const reflection_pb_1 = require("./reflection_pb");
+ const descriptor_2 = require("protobufjs/ext/descriptor");
+-const lodash_set_1 = __importDefault(require("lodash.set"));
++const lodash_1 = __importDefault(require("lodash"));
+ class Client {
+     constructor(url, credentials, options, metadata) {
+         this.fileDescriptorCache = new Map();
+@@ -80,7 +80,7 @@ class Client {
+     async resolveFileDescriptorSet(fileDescriptorProtos) {
+         const fileDescriptorMap = await this.resolveDescriptorRecursive(fileDescriptorProtos);
+         const fileDescriptorSet = descriptor_2.FileDescriptorSet.create();
+-        lodash_set_1.default(fileDescriptorSet, 'file', Array.from(fileDescriptorMap.values()));
++        lodash_1.default.set(fileDescriptorSet, 'file', Array.from(fileDescriptorMap.values()));
+         return descriptor_1.getDescriptorRootFromDescriptorSet(fileDescriptorSet);
+     }
+     async resolveDescriptorRecursive(fileDescriptorProtos = [], fileDescriptorMap = new Map()) {
+diff --git a/build/src/descriptor.js b/build/src/descriptor.js
+index a00a919af3582090df92aa71b599fd485d9f1f2a..fb479a06375700ddb42c8ca9fa27869f6a997135 100644
+--- a/build/src/descriptor.js
++++ b/build/src/descriptor.js
+@@ -3,7 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.getDescriptorRootFromDescriptorSet = exports.getDescriptorRoot = void 0;
+ const protobuf = require('protobufjs');
+ const Descriptor = require('protobufjs/ext/descriptor');
+-const set = require('lodash.set');
++const lodash = require('lodash');
++const set = lodash.set;
+ /**
+  * @typedef {import('protobufjs').Root} Root
+  * @typedef {import('protobufjs').Message} Message
+diff --git a/build/test/descriptor.test.js b/build/test/descriptor.test.js
+index 98dc08837f33a983b8ee8b99ae5e26296e167fee..e0dac782b7ad340ed7d9a80cab0062386be5c5f3 100644
+--- a/build/test/descriptor.test.js
++++ b/build/test/descriptor.test.js
+@@ -7,7 +7,7 @@ const descriptor_1 = require("../src/descriptor");
+ // eslint-disable-next-line node/no-unpublished-import
+ const chai_1 = require("chai");
+ const descriptor_2 = require("protobufjs/ext/descriptor");
+-const lodash_set_1 = __importDefault(require("lodash.set"));
++const lodash_1 = __importDefault(require("lodash"));
+ // eslint-disable-next-line prettier/prettier
+ const protoBytes = Buffer.from([10, 11, 112, 104, 111, 110, 101, 46, 112, 114, 111, 116, 111, 18, 5, 112, 104, 111, 110, 101, 34, 55, 10, 11, 84, 101, 120, 116, 82, 101, 113, 117, 101, 115, 116, 18, 14, 10, 2, 105, 100, 24, 1, 32, 1, 40, 9, 82, 2, 105, 100, 18, 24, 10, 7, 109, 101, 115, 115, 97, 103, 101, 24, 2, 32, 1, 40, 9, 82, 7, 109, 101, 115, 115, 97, 103, 101, 34, 40, 10, 12, 84, 101, 120, 116, 82, 101, 115, 112, 111, 110, 115, 101, 18, 24, 10, 7, 115, 117, 99, 99, 101, 115, 115, 24, 1, 32, 1, 40, 8, 82, 7, 115, 117, 99, 99, 101, 115, 115, 50, 63, 10, 9, 77, 101, 115, 115, 101, 110, 103, 101, 114, 18, 50, 10, 7, 77, 101, 115, 115, 97, 103, 101, 18, 18, 46, 112, 104, 111, 110, 101, 46, 84, 101, 120, 116, 82, 101, 113, 117, 101, 115, 116, 26, 19, 46, 112, 104, 111, 110, 101, 46, 84, 101, 120, 116, 82, 101, 115, 112, 111, 110, 115, 101, 98, 6, 112, 114, 111, 116, 111, 51]);
+ // eslint-disable-next-line no-undef
+@@ -23,7 +23,7 @@ describe('getDescriptorRootFromDescriptorSet', () => {
+     // eslint-disable-next-line no-undef
+     it('should return Root', () => {
+         const descriptorSet = descriptor_2.FileDescriptorSet.create();
+-        lodash_set_1.default(descriptorSet, 'file[0]', descriptor_2.FileDescriptorProto.decode(protoBytes));
++        lodash_1.default.set(descriptorSet, 'file[0]', descriptor_2.FileDescriptorProto.decode(protoBytes));
+         const root = descriptor_1.getDescriptorRootFromDescriptorSet(descriptorSet);
+         chai_1.assert.deepEqual(root.files, ['phone.proto']);
+     });
+diff --git a/package.json b/package.json
+index 23df8fa669b00046920723efe75e702f7b04c6f7..1b5117f7625aa4a415557e4c261db8c6ba4fc116 100644
+--- a/package.json
++++ b/package.json
+@@ -7,9 +7,9 @@
+   "license": "MIT",
+   "dependencies": {
+     "@types/google-protobuf": "^3.7.2",
+-    "@types/lodash.set": "^4.3.6",
++    "@types/lodash": "^4.17.0",
+     "google-protobuf": "^3.12.2",
+-    "lodash.set": "^4.3.2",
++    "lodash": "^4.17.21",
+     "protobufjs": "^7.2.2"
+   },
+   "devDependencies": {
