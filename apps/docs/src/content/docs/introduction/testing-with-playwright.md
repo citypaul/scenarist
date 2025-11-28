@@ -330,6 +330,6 @@ test('my test', async ({ page }) => {
 
 ## Next Steps
 
-- [Scenario Format →](/introduction/scenario-format) - Learn how to define scenarios
+- [Scenario Format →](/concepts/scenario-format) - Learn how to define scenarios
 - [Ephemeral Endpoints →](/introduction/ephemeral-endpoints) - Understand how scenario switching works
 - [Default Mocks →](/introduction/default-mocks) - Set up default fallback patterns

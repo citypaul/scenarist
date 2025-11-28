@@ -187,5 +187,5 @@ Or explore core concepts that apply to all frameworks:
 
 - [Overview: How It Works →](/concepts/how-it-works)
 - [Capabilities: Dynamic Responses →](/introduction/capabilities)
-- [Scenarios & Format →](/introduction/scenario-format)
+- [Scenarios & Format →](/concepts/scenario-format)
 - [Architecture →](/concepts/architecture)

@@ -350,6 +350,6 @@ Supported frameworks: Express and Next.js (Pages and App Router). Additional ada
 ## Next Steps
 
 - [Dynamic Capabilities →](/introduction/capabilities) - Request matching, sequences, stateful mocks
-- [Scenario Format →](/introduction/scenario-format) - Complete scenario structure reference
+- [Scenario Format →](/concepts/scenario-format) - Complete scenario structure reference
 - [Framework Guides →](/frameworks/express/getting-started) - Integrating with your framework
 - [Architecture Details →](/concepts/architecture) - Deep dive into hexagonal architecture
