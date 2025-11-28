@@ -261,6 +261,8 @@ test('middleware executes', async ({ page, switchScenario }) => {
 **Check your test setup:**
 
 ```typescript
+import type { ScenaristScenarios } from '@scenarist/express-adapter';
+
 // ✅ GOOD - Only external APIs mocked
 const scenarios = {
   stripe: {
@@ -270,10 +272,10 @@ const scenarios = {
       response: { /* ... */ }
     }]
   }
-};
+} as const satisfies ScenaristScenarios;
 
 // ❌ BAD - Mocking framework internals
-const scenarios = {
+const badScenarios = {
   nextjs: {
     mocks: [{
       method: 'GET',
@@ -281,7 +283,7 @@ const scenarios = {
       response: { /* ... */ }
     }]
   }
-};
+};  // Don't do this - mocking your own routes defeats the purpose
 ```
 
 **What to mock:**

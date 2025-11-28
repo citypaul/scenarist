@@ -1,5 +1,5 @@
 ---
-title: Testing with Playwright
+title: Playwright Integration
 description: Set up type-safe Playwright tests with Scenarist fixtures and helpers
 ---
 
@@ -31,28 +31,28 @@ export { expect };
 
 ### 3. Use in Tests
 
-**✅ CORRECT - Import from fixtures:**
+**Import from fixtures:**
 
 ```typescript
 // tests/my-feature.spec.ts
-import { test, expect } from './fixtures'; // ✅ Import from your fixtures file
+import { test, expect } from './fixtures'; // Import from your fixtures file
 
 test('premium users see advanced features', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'premiumUser'); // ✅ Type-safe! Autocomplete works
+  await switchScenario(page, 'premiumUser'); // Type-safe! Autocomplete works
 
   await page.goto('/dashboard');
   await expect(page.getByText('Advanced Analytics')).toBeVisible();
 });
 ```
 
-**❌ WRONG - Direct import from @playwright/test:**
+**Do not import directly from @playwright/test:**
 
 ```typescript
-// ❌ DON'T DO THIS
+// DON'T DO THIS
 import { test, expect } from '@playwright/test'; // No Scenarist fixtures!
 
 test('my test', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'premiumUser'); // ❌ Error: switchScenario doesn't exist
+  await switchScenario(page, 'premiumUser'); // Error: switchScenario doesn't exist
 });
 ```
 
@@ -60,20 +60,22 @@ test('my test', async ({ page, switchScenario }) => {
 
 The fixtures pattern provides several benefits:
 
-### 1. Type-Safe Scenario IDs
+### Type-Safe Scenario IDs
 
 TypeScript knows which scenario IDs exist and provides autocomplete:
 
 ```typescript
-await switchScenario(page, 'premiumUser'); // ✅ Autocomplete suggests: 'default', 'premiumUser', 'error', etc.
-await switchScenario(page, 'typo');        // ❌ TypeScript error: 'typo' not in scenarios
+await switchScenario(page, 'premiumUser'); // Autocomplete suggests: 'default', 'premiumUser', 'error', etc.
+await switchScenario(page, 'typo');        // TypeScript error: 'typo' not in scenarios
 ```
 
-### 2. Automatic Test ID Management
+### Automatic Test ID Management
 
 Each test gets a guaranteed unique test ID to prevent state collisions during parallel execution. You don't need to manage test IDs yourself - the fixture handles it automatically.
 
-### 3. Centralized Configuration
+For more details on parallel test execution and test isolation, see [Parallel Testing](/testing/parallel-testing).
+
+### Centralized Configuration
 
 Configure the scenario endpoint once in your fixtures file or `playwright.config.ts`:
 
@@ -85,18 +87,18 @@ import type { ScenaristOptions } from '@scenarist/playwright-helpers';
 export default defineConfig<ScenaristOptions>({
   use: {
     baseURL: 'http://localhost:3000',
-    scenaristEndpoint: '/api/__scenario__', // ✅ Default, can be customized
+    scenaristEndpoint: '/api/__scenario__', // Default, can be customized
   },
 });
 ```
 
-### 4. Clean Test Organization
+### Clean Test Organization
 
 All tests import from the same fixtures file, ensuring consistency:
 
 ```
 tests/
-  fixtures.ts          # ✅ Single source of truth
+  fixtures.ts          # Single source of truth
   auth.spec.ts         # import { test, expect } from './fixtures';
   checkout.spec.ts     # import { test, expect } from './fixtures';
   dashboard.spec.ts    # import { test, expect } from './fixtures';
@@ -111,7 +113,7 @@ tests/
 import type { ScenaristScenarios } from '@scenarist/express-adapter';
 
 export const scenarios = {
-  // ✅ RECOMMENDED - Default scenario with complete happy path
+  // Default scenario with complete happy path
   default: {
     id: 'default',
     name: 'Happy Path',
@@ -135,24 +137,14 @@ export const scenarios = {
           body: { sub: 'user_123', email: 'john@example.com', tier: 'standard' },
         },
       },
-      // SendGrid: Email sent successfully
-      {
-        method: 'POST',
-        url: 'https://api.sendgrid.com/v3/mail/send',
-        response: {
-          status: 202,
-          body: { message_id: 'msg_123' },
-        },
-      },
     ],
   },
-  // Specialized scenario: Override ONLY Auth0 for premium user
+  // Specialized scenario: Override Auth0 for premium user
   premiumUser: {
     id: 'premiumUser',
     name: 'Premium User',
     description: 'Premium tier user, everything else succeeds',
     mocks: [
-      // Override: Auth0 returns premium tier
       {
         method: 'GET',
         url: 'https://api.auth0.com/userinfo',
@@ -161,16 +153,14 @@ export const scenarios = {
           body: { sub: 'user_456', email: 'premium@example.com', tier: 'premium' },
         },
       },
-      // Stripe and SendGrid automatically fall back to default (happy path)
     ],
   },
-  // Specialized scenario: Override ONLY Stripe for payment failure
+  // Specialized scenario: Stripe payment failure
   paymentFails: {
     id: 'paymentFails',
     name: 'Payment Declined',
     description: 'Stripe declines payment, everything else succeeds',
     mocks: [
-      // Override: Stripe declines payment
       {
         method: 'POST',
         url: 'https://api.stripe.com/v1/charges',
@@ -179,7 +169,6 @@ export const scenarios = {
           body: { error: { code: 'card_declined', message: 'Card was declined' } },
         },
       },
-      // Auth0 and SendGrid automatically fall back to default (happy path)
     ],
   },
 } as const satisfies ScenaristScenarios;
@@ -217,7 +206,7 @@ test('standard users see upgrade prompt', async ({ page, switchScenario }) => {
 });
 ```
 
-## Advanced: Composing with Custom Fixtures
+## Composing with Custom Fixtures
 
 If you already have custom Playwright fixtures, extend the Scenarist test object:
 
@@ -261,7 +250,7 @@ test('authenticated user sees dashboard', async ({ authenticatedPage, switchScen
 });
 ```
 
-## Advanced: Per-Test Configuration Overrides
+## Per-Test Configuration Overrides
 
 Override endpoint or baseURL for specific tests:
 
@@ -330,6 +319,7 @@ test('my test', async ({ page }) => {
 
 ## Next Steps
 
-- [Scenario Format →](/introduction/scenario-format) - Learn how to define scenarios
-- [Ephemeral Endpoints →](/introduction/ephemeral-endpoints) - Understand how scenario switching works
-- [Default Mocks →](/introduction/default-mocks) - Set up default fallback patterns
+- [Parallel Testing](/testing/parallel-testing) - Test isolation and concurrent test execution
+- [Testing Best Practices](/testing/best-practices) - Patterns for organizing tests and scenarios
+- [Scenario Format](/concepts/scenario-format) - Learn how to define scenarios
+- [API Reference](/reference/api) - Complete API documentation and endpoint details

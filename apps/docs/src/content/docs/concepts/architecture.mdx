@@ -412,10 +412,10 @@ export const createScenarioManager = ({
 ```
 
 **Why dependency injection matters:**
-- ✅ Enables any port implementation (in-memory, Redis, files, remote)
-- ✅ Testable (inject mocks for testing)
+- ✅ Testable (inject mocks for unit testing)
 - ✅ True hexagonal architecture
 - ✅ Follows dependency inversion principle
+- ✅ Clean separation between domain logic and infrastructure
 
 ### Default Implementations
 
@@ -444,65 +444,76 @@ const scenarioManager = createScenarioManager({
 });
 ```
 
-### Alternative Implementations
+## Declarative Patterns: Why Scenarios Are Data, Not Functions
 
-Because ports are injected, you can swap implementations:
-
-```typescript
-// Redis-backed scenario store for distributed testing
-class RedisScenarioStore implements ScenarioStore {
-  constructor(private client: RedisClient) {}
-
-  set(testId: string, scenario: ActiveScenario): void {
-    this.client.set(`scenario:${testId}`, JSON.stringify(scenario));
-  }
-
-  get(testId: string): ActiveScenario | undefined {
-    const data = this.client.get(`scenario:${testId}`);
-    return data ? JSON.parse(data) : undefined;
-  }
-}
-
-const store = new RedisScenarioStore(redisClient);
-const scenarioManager = createScenarioManager({ registry, store });
-```
-
-## Serialization: Why Scenarios Are Plain Objects
-
-All scenario definitions are **JSON-serializable** (no functions, regex, or closures):
+Scenarist enforces **declarative patterns** - scenarios describe WHAT to return, not HOW to decide. This is an intentional constraint that leads to better test scenarios.
 
 ```typescript
-// ✅ SERIALIZABLE - Pure data
+// ✅ DECLARATIVE - Pure data describing intent
 type ScenaristMock = {
   readonly method: 'GET' | 'POST';
-  readonly url: string;  // String, not RegExp
+  readonly url: string | RegExp;  // String or RegExp pattern
+  readonly match?: {              // Explicit match criteria
+    body?: Record<string, unknown>;
+    headers?: Record<string, string>;
+  };
   readonly response: {
     readonly status: number;
-    readonly body?: unknown;  // JSON-serializable
+    readonly body?: unknown;
   };
 };
 
-// ❌ NOT SERIALIZABLE - Contains functions
-type MSWHandler = HttpHandler;  // Has functions, closures, regex
+// ❌ IMPERATIVE - Hidden logic in functions
+const handler = (req: Request) => {
+  if (req.headers.get('x-tier') === 'premium') {
+    return premiumResponse;
+  }
+  return standardResponse;  // Logic hidden in function body
+};
 ```
 
-**Why serialization matters:**
+**Why declarative patterns matter:**
 
-Without serialization, port interfaces can only have in-memory implementations, severely limiting their utility:
+| Imperative (Functions) | Declarative (Data) |
+|----------------------|-------------------|
+| Logic hidden in function bodies | Intent visible in match criteria |
+| Can't inspect without executing | Can validate statically |
+| Manual if/else ordering | Automatic specificity-based selection |
+| Closures capture external state | No hidden dependencies |
+| Routing hacks possible | No routing hacks |
 
-- ❌ `RedisScenarioRegistry` - Impossible (can't serialize functions)
-- ❌ `FileSystemScenarioRegistry` - Impossible (can't JSON.stringify regex)
-- ❌ `RemoteScenarioRegistry` - Impossible (can't send closures over HTTP)
+**The constraint in action:**
 
-With serialization, multiple implementations become possible:
+```typescript
+// ❌ IMPERATIVE - What we prevent
+const handler = (request) => {
+  const tier = request.headers.get('x-tier');
+  const referer = request.headers.get('referer');
+  if (referer?.includes('/premium')) {
+    return premiumResponse;  // Hidden routing hack!
+  }
+  if (tier === 'premium') return premiumResponse;
+  return standardResponse;
+};
 
-- ✅ `InMemoryScenarioRegistry` - Fast, single process
-- ✅ `RedisScenarioRegistry` - Distributed testing across processes
-- ✅ `FileSystemScenarioRegistry` - Version control scenarios as JSON/YAML
-- ✅ `RemoteScenarioRegistry` - Fetch scenarios from REST API
-- ✅ `DatabaseScenarioRegistry` - Store in PostgreSQL/MongoDB
+// ✅ DECLARATIVE - What Scenarist enforces
+const mocks = [
+  {
+    url: '/api/products',
+    match: { headers: { 'x-tier': 'premium' } },
+    response: premiumResponse
+  },
+  {
+    url: '/api/products',
+    response: standardResponse  // Fallback (no match criteria)
+  }
+];
+// Intent is visible: "premium tier header → premium response"
+```
 
-**Runtime conversion:** MSW handlers are created at runtime from serializable definitions:
+This mirrors React's design philosophy: React could allow imperative DOM manipulation, but enforces declarative JSX because it's clearer, more composable, and easier to reason about. Scenarist makes the same choice for test scenarios.
+
+**Runtime conversion:** MSW handlers are created at runtime from declarative definitions:
 
 ```typescript
 const toMSWHandler = (mock: ScenaristMock): HttpHandler => {

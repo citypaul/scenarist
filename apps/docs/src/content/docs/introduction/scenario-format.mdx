@@ -7,11 +7,11 @@ description: Complete syntax and structure for writing Scenarist scenarios
 This page shows **how to write** scenarios. For feature explanations and use cases, see [Dynamic Capabilities →](/introduction/capabilities).
 :::
 
-Scenarist scenarios are **declarative TypeScript objects** that compile to **JSON-serializable data structures**. This gives you type safety during development and portability at runtime - scenarios can be version controlled, sent over HTTP, or stored in databases.
+Scenarist scenarios are **declarative TypeScript objects** - pure data that describes what responses to return, not imperative code that decides how to return them. This gives you type safety during development and clear, inspectable test configurations.
 
 **What you can do with scenarios:**
 - Define once, use across all tests (shared scenario definitions)
-- Version control as TypeScript files in git
+- Version control as TypeScript files
 - Switch between scenarios at runtime (no app restarts)
 - Compose features: request matching + sequences + state
 
@@ -24,10 +24,10 @@ Scenarist scenarios are **declarative TypeScript objects** that compile to **JSO
 
 The declarative design enforces clear, maintainable test scenarios.
 
-:::tip[Why Serializable?]
-Scenarist scenarios are pure data (no functions) to enforce **declarative design patterns**. This constraint leads to clearer, more maintainable tests.
+:::tip[Why Declarative?]
+Scenarist enforces **declarative patterns** - scenarios describe WHAT to return, not HOW to decide. No imperative functions with hidden if/else logic. This constraint leads to clearer, more maintainable tests where intent is always visible.
 
-[Learn why scenarios are data, not code →](/concepts/philosophy#3-declarative-beats-imperative-for-test-setup)
+[Learn why declarative beats imperative →](/concepts/philosophy#3-declarative-beats-imperative-for-test-setup)
 :::
 
 ## Basic Scenario Structure
@@ -176,7 +176,7 @@ export const responseExample: ScenaristScenario = {
       url: 'https://api.example.com/data',
       response: {
         status: 200,          // HTTP status code (100-599, required)
-        body: {               // Response body (any JSON-serializable value, optional)
+        body: {               // Response body (any value, optional)
           id: 1,
           data: 'example',
         },
@@ -576,6 +576,71 @@ type ScenarioId = keyof typeof scenarios;
 // 'default' | 'success' | 'error' | 'premiumUser'
 ```
 
+### Why `as const satisfies` is Required
+
+The `as const satisfies ScenaristScenarios` pattern is essential for type-safe scenario switching. Each part serves a distinct purpose:
+
+**`as const`** preserves the literal types of your scenario keys:
+
+```typescript
+// WITHOUT as const - scenario IDs become generic 'string'
+const scenarios = {
+  default: defaultScenario,
+  premiumUser: premiumUserScenario,
+};
+type ScenarioId = keyof typeof scenarios;
+// Result: string (not useful for autocomplete)
+
+// WITH as const - scenario IDs are preserved as literal types
+const scenarios = {
+  default: defaultScenario,
+  premiumUser: premiumUserScenario,
+} as const;
+type ScenarioId = keyof typeof scenarios;
+// Result: 'default' | 'premiumUser' (enables autocomplete!)
+```
+
+**`satisfies ScenaristScenarios`** validates the structure without widening types:
+
+```typescript
+// Using : type annotation WIDENS the type (loses literals)
+const scenarios: ScenaristScenarios = {
+  default: defaultScenario,
+  premiumUser: premiumUserScenario,
+};
+type ScenarioId = keyof typeof scenarios;
+// Result: string (annotation widened the type)
+
+// Using satisfies VALIDATES without widening
+const scenarios = {
+  default: defaultScenario,
+  premiumUser: premiumUserScenario,
+} as const satisfies ScenaristScenarios;
+type ScenarioId = keyof typeof scenarios;
+// Result: 'default' | 'premiumUser' (validated AND preserved!)
+```
+
+**Together they enable:**
+
+1. **Autocomplete in tests** - `switchScenario(page, '...')` suggests valid scenario IDs
+2. **Compile-time errors** - `switchScenario(page, 'typo')` fails with TypeScript error
+3. **Structure validation** - Missing required fields caught at compile time
+
+```typescript
+// In your Playwright tests:
+await switchScenario(page, 'premiumUser');  // ✅ Autocomplete works
+await switchScenario(page, 'typo');          // ❌ TypeScript error: 'typo' not in scenarios
+```
+
+**Summary:**
+
+| Pattern | Autocomplete | Validation | Result |
+|---------|-------------|------------|--------|
+| `as const satisfies ScenaristScenarios` | ✅ | ✅ | **Use this** |
+| `as const` only | ✅ | ❌ | No structure validation |
+| `satisfies` only | ❌ | ✅ | Loses literal types |
+| `: ScenaristScenarios` annotation | ❌ | ✅ | Loses literal types |
+
 ### The 'default' Scenario: Happy Path Foundation
 
 Every scenarios object **must** have a 'default' key (enforced by schema validation). This isn't just a fallback—it's the **foundation** for all your scenarios.
@@ -756,17 +821,30 @@ export const contentMatchingScenario: ScenaristScenario = {
 };
 ```
 
-## Why Serializable?
+## Why Declarative?
 
-Scenarios are pure JSON data (no functions, closures, regex, or classes) to enable future flexibility:
+Scenarios use **declarative patterns** - they describe WHAT to return, not HOW to decide. This is an intentional architectural constraint that leads to better test scenarios.
 
-1. **Version Control**: Store scenarios as TypeScript definitions in git
-2. **Future Remote Storage**: Architecture supports Redis, PostgreSQL, or remote APIs (not yet implemented)
-3. **File System**: Read/write scenarios from configuration files
-4. **Distribution**: Send scenarios over HTTP between services
-5. **Testing**: Easy to generate test scenarios programmatically
+**What's allowed (declarative patterns):**
+- Primitives, objects, arrays (data structures)
+- Native RegExp patterns (`/\/users\/\d+/`)
+- Match criteria objects (`{ body: { tier: 'premium' } }`)
+- Sequence definitions (`{ responses: [...], repeat: 'last' }`)
+- State templates (`'{{state.userId}}'`)
 
-**This is fundamental:** If scenarios contained functions, you could only ever have in-memory implementations. The serializable rule is in place now to give flexibility for future distributed testing features without breaking changes.
+**What's NOT allowed (imperative functions):**
+- Functions with hidden if/else logic
+- Closures that capture external scope
+- Callbacks that execute at runtime
+
+**Why this matters:**
+
+1. **Intent is visible** - Match criteria show what matters (`headers: { 'x-tier': 'premium' }`) instead of hiding logic in function bodies
+2. **Composition works** - Specificity-based selection, automatic fallback, scenario merging all work because scenarios are inspectable data
+3. **No routing hacks** - Can't hide referer checks or manual counters in closures
+4. **Testable without execution** - Can validate scenarios statically with TypeScript and Zod schemas
+
+This mirrors React's design philosophy: React could allow imperative DOM manipulation, but enforces declarative JSX because it's clearer, more composable, and easier to reason about. Scenarist makes the same choice for test scenarios.
 
 ## Next Steps
 
