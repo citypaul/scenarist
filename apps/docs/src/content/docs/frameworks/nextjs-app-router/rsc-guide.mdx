@@ -9,7 +9,15 @@ React Server Components (RSC) represent a fundamental shift in how React applica
 
 ## Why Server Components Need Different Testing
 
-React Server Components run **exclusively on the server** as async functions. This creates a fundamental incompatibility with traditional React testing tools:
+### The Testing Gap
+
+Where do Server Components fit in the testing pyramid? They don't fit neatly into traditional categories:
+
+- **Not isolated units** - They fetch data, read cookies, access headers, and depend on server infrastructure
+- **Not traditional integration tests** - They render UI, not just return data
+- **Full E2E is too slow** - Spinning up browsers for every scenario combination doesn't scale
+
+This same gap applies to other server-side Next.js code: **middleware**, **server-side session logic**, **Route Handlers with authentication**, and **data validation layers**. All of this code runs on the server and interacts with external services - but traditional testing tools weren't designed for it.
 
 ### The Jest Problem
 
@@ -35,26 +43,48 @@ From the [Next.js Testing Documentation](https://nextjs.org/docs/app/building-yo
 
 ### The Scenarist Solution
 
-Scenarist + Playwright solves these problems by testing Server Components **as they actually run** - in a real Next.js environment with actual server-side rendering:
+Scenarist + Playwright fills this gap by testing your server-side code **as it actually runs** - in a real Next.js environment with actual server-side rendering, middleware execution, and session handling:
 
 ```typescript
 // This WORKS with Scenarist + Playwright:
-test('renders premium products', async ({ page, switchScenario }) => {
+import { test, expect } from './fixtures';
+
+test('premium users see discounted pricing', async ({ page, switchScenario }) => {
   await switchScenario(page, 'premiumUser');
 
   await page.goto('/products?tier=premium');
 
-  // Server Component executes, fetches from mocked API, renders HTML
+  // Everything executes: middleware, session checks, RSC data fetching, rendering
   await expect(page.getByText('£99.99')).toBeVisible();
 });
 ```
 
-**Why this approach is better:**
+### Higher Confidence Testing
 
-- **Real execution** - Your Server Component code actually runs
-- **Real rendering** - HTML is generated server-side, just like production
-- **No mocking Next.js** - No stubbing `headers()`, `cookies()`, or other internals
-- **Fast feedback** - Scenario switching is instant, no server restarts
+This approach gives you confidence that traditional unit tests cannot provide:
+
+| What's Tested | Unit Tests | Scenarist + Playwright |
+|---------------|------------|------------------------|
+| Server Component rendering | ❌ Can't test | ✅ Full rendering |
+| Middleware execution | ❌ Requires mocking | ✅ Real execution |
+| Session/cookie handling | ❌ Requires mocking | ✅ Real cookies |
+| Header forwarding | ❌ Requires mocking | ✅ Real headers |
+| Data fetching | ❌ Requires mocking fetch | ✅ Real fetch, mocked API |
+| Error boundaries | ❌ Requires mocking | ✅ Real error handling |
+| Route protection | ❌ Requires mocking auth | ✅ Real auth flow |
+
+**Why this level of confidence matters:**
+
+- **Real execution** - Your actual code runs, not mocked approximations
+- **Real rendering** - HTML is generated server-side, exactly like production
+- **Real middleware** - Authentication, redirects, and header manipulation all execute
+- **Real session logic** - Cookies, tokens, and session state work as expected
+- **No mocking Next.js internals** - No stubbing `headers()`, `cookies()`, or other APIs
+- **Fast feedback** - Scenario switching is instant, no server restarts needed
+
+<Aside type="tip" title="The Best of Both Worlds">
+Scenarist gives you the **confidence of E2E tests** (real code execution) with the **speed of integration tests** (no browser automation for API calls, instant scenario switching). You can test dozens of scenarios in the time it takes to run a few traditional E2E tests.
+</Aside>
 
 ## Setup Requirements for App Router
 
