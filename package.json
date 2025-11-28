@@ -22,6 +22,9 @@
   "pnpm": {
     "overrides": {
       "body-parser": ">=2.2.1"
+    },
+    "patchedDependencies": {
+      "grpc-reflection-js@0.3.0": "patches/grpc-reflection-js@0.3.0.patch"
     }
   },
   "packageManager": "pnpm@9.0.0",
