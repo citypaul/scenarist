@@ -143,6 +143,7 @@ export default defineConfig({
           label: "Introduction",
           items: [
             { label: "Quick Start", slug: "introduction/quick-start" },
+            { label: "Philosophy", slug: "concepts/philosophy" },
             { label: "Why Scenarist?", slug: "introduction/why-scenarist" },
             { label: "How it works", slug: "introduction/overview" },
             { label: "Dynamic Capabilities", slug: "introduction/capabilities" },
@@ -212,7 +213,6 @@ export default defineConfig({
           collapsed: true,
           items: [
             { label: "Architecture", slug: "concepts/architecture" },
-            { label: "Philosophy", slug: "concepts/philosophy" },
           ],
         },
         {
