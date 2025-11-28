@@ -1,5 +1,15 @@
 # @scenarist/express-adapter
 
+## 0.1.6
+
+### Patch Changes
+
+- [#251](https://github.com/citypaul/scenarist/pull/251) [`5503ae5`](https://github.com/citypaul/scenarist/commit/5503ae51f4833616cc62db7d154368e3c2a0d696) Thanks [@citypaul](https://github.com/citypaul)! - docs: improve documentation and terminology consistency
+  - Replace "E2E testing" terminology with "scenario-based testing" for clarity
+  - Add documentation links to scenarist.io in all adapter READMEs
+  - Highlight React Server Components testing capability in Next.js adapter
+  - Add links to parallel testing, philosophy, and getting started guides
+
 ## 0.1.5
 
 ### Patch Changes
