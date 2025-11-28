@@ -1,5 +1,15 @@
 # @scenarist/nextjs-adapter
 
+## 0.1.7
+
+### Patch Changes
+
+- [#254](https://github.com/citypaul/scenarist/pull/254) [`a21aaed`](https://github.com/citypaul/scenarist/commit/a21aaed8ee4bc1daade6af53a513e90b24a3c676) Thanks [@citypaul](https://github.com/citypaul)! - fix(security): add prototype pollution guards and Object.hasOwn checks
+  - Add `isDangerousKey` guard to block `__proto__`, `constructor`, `prototype` keys
+  - Use `Object.hasOwn` before reading object properties to prevent inherited property access
+  - Replace direct property assignment with `Object.defineProperty` for safer writes
+  - Add fuzz tests verifying security properties hold for arbitrary inputs
+
 ## 0.1.6
 
 ### Patch Changes
