@@ -189,14 +189,19 @@ for detailed implementation phases and progress tracking.
 
 | Plan | Status | Related ADR |
 |------|--------|-------------|
-| [Documentation Site](./documentation-site.md) | ⏳ Next Up (Ready to Start) | N/A |
+| [Regex Support](./regex-support-implementation.md) | 🚧 In Progress (Phase 2.5.1) | [ADR-0016](../adrs/0016-native-regexp-in-declarative-patterns.md) |
+| [Documentation Site](./documentation-site.md) | 🚧 Phase 3 In Progress | N/A |
 | [Next Stages](./next-stages.md) | 📍 Active Roadmap (Updated Nov 2025) | N/A |
-| [Automatic Default Fallback](./automatic-default-fallback.md) | ✅ Complete (Merged) | [ADR-0011](../adrs/0011-domain-constants-location.md) |
+| [Test ID Header Simplification](./issue-123-simplify-test-id-header.md) | ⏳ Ready for Implementation | N/A |
+| [Template Helpers](./template-helpers-implementation.md) | ⏳ Planned | N/A |
 
 ## Completed & Archived Plans
 
 | Plan | Status | Completion Date | Location |
 |------|--------|-----------------|----------|
+| Automatic Default Fallback | ✅ Complete | 2025-11-26 | Removed (merged) |
+| RSC Helper Readonly Headers | ✅ Complete | 2025-11-26 | Removed (PR #111) |
+| Hybrid Testing Demonstration | ✅ Complete | 2025-11-25 | Removed (PRs #1, #2, #107, #108) |
 | Next.js RSC Examples | ✅ Complete | 2025-11-09 | [archive/](../archive/nextjs-rsc-examples.md) |
 | Next.js Pages Router + Playwright Helpers | ✅ Complete | 2025-11-08 | [archive/](../archive/nextjs-pages-and-playwright-helpers.md) |
 | Dynamic Response System | ✅ Complete | 2025-10-27 | Implemented in core |
