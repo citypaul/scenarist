@@ -1,0 +1,802 @@
+---
+title: Testing React Server Components
+description: Complete guide to testing React Server Components with Scenarist - data fetching, stateful mocks, sequences, and request matching
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+React Server Components (RSC) represent a fundamental shift in how React applications render - but they also create new testing challenges. This guide shows you how to effectively test RSC using Scenarist and Playwright.
+
+## Why Server Components Need Different Testing
+
+React Server Components run **exclusively on the server** as async functions. This creates a fundamental incompatibility with traditional React testing tools:
+
+### The Jest Problem
+
+```typescript
+// This FAILS in Jest:
+import { render } from '@testing-library/react';
+import ProductsPage from './app/products/page';
+
+test('renders products', async () => {
+  render(<ProductsPage />);  // Error: Objects are not valid as a React child (found: [object Promise])
+});
+```
+
+Jest and React Testing Library cannot render async Server Components because:
+
+1. **Server Components return Promises** - RTL expects synchronous React elements
+2. **Server-only APIs** - `headers()`, `cookies()` from `next/headers` throw outside Next.js
+3. **No browser environment** - Server Components have no DOM to render into
+
+From the [Next.js Testing Documentation](https://nextjs.org/docs/app/building-your-application/testing):
+
+> "Since async Server Components are new to the React ecosystem, some tools do not fully support them. In the meantime, we recommend using End-to-End Testing over Unit Testing for async components."
+
+### The Scenarist Solution
+
+Scenarist + Playwright solves these problems by testing Server Components **as they actually run** - in a real Next.js environment with actual server-side rendering:
+
+```typescript
+// This WORKS with Scenarist + Playwright:
+test('renders premium products', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'premiumUser');
+
+  await page.goto('/products?tier=premium');
+
+  // Server Component executes, fetches from mocked API, renders HTML
+  await expect(page.getByText('£99.99')).toBeVisible();
+});
+```
+
+**Why this approach is better:**
+
+- **Real execution** - Your Server Component code actually runs
+- **Real rendering** - HTML is generated server-side, just like production
+- **No mocking Next.js** - No stubbing `headers()`, `cookies()`, or other internals
+- **Fast feedback** - Scenario switching is instant, no server restarts
+
+## Setup Requirements for App Router
+
+Before testing RSC patterns, ensure your setup includes header forwarding. This is critical because Server Components need to forward the test ID header to external APIs.
+
+### Header Forwarding in Server Components
+
+Server Components use `headers()` from `next/headers`, which returns `ReadonlyHeaders`. Use the dedicated helper:
+
+```typescript
+// app/products/page.tsx
+import { headers } from 'next/headers';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+
+export default async function ProductsPage() {
+  const headersList = await headers();
+
+  const response = await fetch('https://api.stripe.com/v1/products', {
+    headers: {
+      ...getScenaristHeadersFromReadonlyHeaders(headersList), // Forward test ID
+      'Authorization': `Bearer ${process.env.STRIPE_KEY}`,
+    },
+  });
+
+  const products = await response.json();
+  return <ProductList products={products} />;
+}
+```
+
+<Aside type="tip" title="Why Header Forwarding Matters">
+Each Playwright test has a unique test ID (`x-scenarist-test-id`). This header tells MSW which scenario to use for each request. Without forwarding, your Server Component's fetch calls won't be associated with the correct test scenario.
+</Aside>
+
+For complete setup instructions, see [Getting Started with Next.js App Router](/frameworks/nextjs-app-router/getting-started).
+
+---
+
+## Pattern 1: Data Fetching in Server Components
+
+The most common RSC pattern is fetching data server-side. Scenarist makes this testable by intercepting the fetch calls and returning scenario-defined responses.
+
+### Example: Products Page
+
+**Server Component:** [`app/products/page.tsx`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/app/products/page.tsx)
+
+```typescript
+// app/products/page.tsx
+import { headers } from 'next/headers';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+
+type ProductsPageProps = {
+  searchParams: Promise<{ tier?: string }>;
+};
+
+async function fetchProducts(tier: string = 'standard'): Promise<ProductsResponse> {
+  const headersList = await headers();
+
+  const response = await fetch('http://localhost:3001/products', {
+    headers: {
+      ...getScenaristHeadersFromReadonlyHeaders(headersList),
+      'x-user-tier': tier,  // Application context for API
+    },
+    cache: 'no-store',
+  });
+
+  return response.json();
+}
+
+export default async function ProductsPage({ searchParams }: ProductsPageProps) {
+  const { tier = 'standard' } = await searchParams;
+  const data = await fetchProducts(tier);
+
+  return (
+    <div>
+      <h1>Products</h1>
+      {data.products.map((product) => (
+        <div key={product.id}>
+          <h2>{product.name}</h2>
+          <span>£{product.price.toFixed(2)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### Scenario Definition
+
+**Scenarios:** [`lib/scenarios.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/lib/scenarios.ts)
+
+```typescript
+// lib/scenarios.ts
+export const premiumUserScenario: ScenaristScenario = {
+  id: 'premiumUser',
+  name: 'Premium User',
+  description: 'Premium tier pricing',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/products',
+      match: {
+        headers: { 'x-user-tier': 'premium' },
+      },
+      response: {
+        status: 200,
+        body: {
+          products: [
+            { id: 1, name: 'Product A', price: 99.99, tier: 'premium' },
+            { id: 2, name: 'Product B', price: 199.99, tier: 'premium' },
+          ],
+        },
+      },
+    },
+  ],
+};
+
+export const standardUserScenario: ScenaristScenario = {
+  id: 'standardUser',
+  name: 'Standard User',
+  description: 'Standard tier pricing',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/products',
+      match: {
+        headers: { 'x-user-tier': 'standard' },
+      },
+      response: {
+        status: 200,
+        body: {
+          products: [
+            { id: 1, name: 'Product A', price: 149.99, tier: 'standard' },
+            { id: 2, name: 'Product B', price: 249.99, tier: 'standard' },
+          ],
+        },
+      },
+    },
+  ],
+};
+```
+
+### Test Implementation
+
+**Test:** [`tests/playwright/products-server-components.spec.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/tests/playwright/products-server-components.spec.ts)
+
+```typescript
+// tests/playwright/products-server-components.spec.ts
+import { test, expect } from './fixtures';
+
+test.describe('Products Page - React Server Components', () => {
+  test('should render products with premium tier pricing', async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, 'premiumUser');
+
+    await page.goto('/products?tier=premium');
+
+    // Verify Server Component rendered
+    await expect(page.getByRole('heading', { name: 'Products' })).toBeVisible();
+
+    // Verify premium pricing from mocked API
+    await expect(page.getByText('£99.99')).toBeVisible();
+  });
+
+  test('should render products with standard tier pricing', async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, 'standardUser');
+
+    await page.goto('/products?tier=standard');
+
+    // Verify standard pricing from mocked API
+    await expect(page.getByText('£149.99')).toBeVisible();
+  });
+
+  test('should switch tiers at runtime without app restart', async ({
+    page,
+    switchScenario,
+  }) => {
+    // Start with premium
+    await switchScenario(page, 'premiumUser');
+    await page.goto('/products?tier=premium');
+    await expect(page.getByText('£99.99')).toBeVisible();
+
+    // Switch to standard - no restart needed!
+    await switchScenario(page, 'standardUser');
+    await page.goto('/products?tier=standard');
+    await expect(page.getByText('£149.99')).toBeVisible();
+  });
+});
+```
+
+---
+
+## Pattern 2: Stateful Mocks with RSC
+
+Stateful mocks capture data from one request and inject it into later responses. This is essential for testing flows like shopping carts where state builds up across multiple requests.
+
+### Example: Server-Side Cart
+
+**Server Component:** [`app/cart-server/page.tsx`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/app/cart-server/page.tsx)
+
+```typescript
+// app/cart-server/page.tsx
+import { headers } from 'next/headers';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+
+type CartResponse = {
+  readonly items?: ReadonlyArray<string>;
+};
+
+async function fetchCart(): Promise<CartResponse> {
+  const headersList = await headers();
+
+  const response = await fetch('http://localhost:3001/cart', {
+    headers: {
+      ...getScenaristHeadersFromReadonlyHeaders(headersList),
+    },
+    cache: 'no-store',
+  });
+
+  return response.json();
+}
+
+export default async function CartServerPage() {
+  const cartData = await fetchCart();
+  const cartItems = aggregateCartItems(cartData.items);
+
+  return (
+    <div>
+      <h1>Shopping Cart</h1>
+      {cartItems.length === 0 ? (
+        <p>Your cart is empty</p>
+      ) : (
+        <div>
+          {cartItems.map((item) => (
+            <div key={item.id}>
+              <h3>{item.name}</h3>
+              <p>Quantity: {item.quantity}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Stateful Scenario Definition
+
+```typescript
+// lib/scenarios.ts
+export const cartWithStateScenario: ScenaristScenario = {
+  id: 'cartWithState',
+  name: 'Shopping Cart with State',
+  description: 'Stateful cart that captures and injects items',
+  mocks: [
+    // GET /cart - Inject cartItems from state (null initially)
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/cart',
+      response: {
+        status: 200,
+        body: {
+          items: '{{state.cartItems}}',  // Template injection from state
+        },
+      },
+    },
+    // PATCH /cart - Capture full items array into state
+    {
+      method: 'PATCH',
+      url: 'http://localhost:3001/cart',
+      captureState: {
+        cartItems: 'body.items',  // Capture from request body
+      },
+      response: {
+        status: 200,
+        body: {
+          items: '{{body.items}}',  // Echo back
+        },
+      },
+    },
+  ],
+};
+```
+
+### Test Implementation
+
+**Test:** [`tests/playwright/cart-server-components.spec.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/tests/playwright/cart-server-components.spec.ts)
+
+```typescript
+// tests/playwright/cart-server-components.spec.ts
+import { test, expect } from './fixtures';
+
+test.describe('Cart Server Page - Stateful Mocks', () => {
+  test('should show empty cart initially', async ({ page, switchScenario }) => {
+    await switchScenario(page, 'cartWithState');
+    await page.goto('/cart-server');
+
+    await expect(page.getByText('Your cart is empty')).toBeVisible();
+  });
+
+  test('should display cart item after adding product', async ({
+    page,
+    switchScenario,
+  }) => {
+    const testId = await switchScenario(page, 'cartWithState');
+
+    // Add product through API route
+    // Note: page.request uses a separate context, so include test ID header
+    await page.request.post('http://localhost:3002/api/cart/add', {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-scenarist-test-id': testId,
+      },
+      data: { productId: 'prod-1' },
+    });
+
+    // Navigate to cart - Server Component fetches with same test ID
+    await page.goto('/cart-server');
+
+    // State was captured from POST and injected into GET response
+    await expect(page.getByText('Product A')).toBeVisible();
+    await expect(page.getByText('Quantity: 1')).toBeVisible();
+  });
+
+  test('should aggregate quantities for same product', async ({
+    page,
+    switchScenario,
+  }) => {
+    const testId = await switchScenario(page, 'cartWithState');
+
+    // Add same product 3 times
+    for (let i = 0; i < 3; i++) {
+      await page.request.post('http://localhost:3002/api/cart/add', {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-scenarist-test-id': testId,
+        },
+        data: { productId: 'prod-1' },
+      });
+    }
+
+    await page.goto('/cart-server');
+
+    // Should show aggregated quantity
+    await expect(page.getByText('Quantity: 3')).toBeVisible();
+  });
+});
+```
+
+<Aside type="note" title="State Isolation">
+Each test gets its own isolated state via the test ID. Parallel tests won't interfere with each other's cart contents.
+</Aside>
+
+---
+
+## Pattern 3: Polling & Sequences in RSC
+
+Sequences return different responses on successive requests - perfect for testing polling scenarios, retry logic, or multi-step workflows.
+
+### Example: Job Polling Page
+
+**Server Component:** [`app/polling/page.tsx`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/app/polling/page.tsx)
+
+```typescript
+// app/polling/page.tsx
+import { headers } from 'next/headers';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+
+type JobStatus = {
+  readonly jobId: string;
+  readonly status: 'pending' | 'processing' | 'complete';
+  readonly progress: number;
+};
+
+async function fetchJobStatus(jobId: string): Promise<JobStatus> {
+  const headersList = await headers();
+
+  const response = await fetch(`http://localhost:3001/github/jobs/${jobId}`, {
+    headers: {
+      ...getScenaristHeadersFromReadonlyHeaders(headersList),
+    },
+    cache: 'no-store',
+  });
+
+  return response.json();
+}
+
+export default async function PollingPage({ searchParams }) {
+  const { jobId = '123' } = await searchParams;
+  const job = await fetchJobStatus(jobId);
+
+  return (
+    <div>
+      <h1>Job Status</h1>
+      <span>{job.status.toUpperCase()}</span>
+      <div>Progress: {job.progress}%</div>
+    </div>
+  );
+}
+```
+
+### Sequence Scenario Definition
+
+```typescript
+// lib/scenarios.ts
+export const githubPollingScenario: ScenaristScenario = {
+  id: 'githubPolling',
+  name: 'GitHub Job Polling',
+  description: 'Polling sequence: pending → processing → complete',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/github/jobs/:id',
+      sequence: {
+        responses: [
+          {
+            status: 200,
+            body: { jobId: '123', status: 'pending', progress: 0 },
+          },
+          {
+            status: 200,
+            body: { jobId: '123', status: 'processing', progress: 50 },
+          },
+          {
+            status: 200,
+            body: { jobId: '123', status: 'complete', progress: 100 },
+          },
+        ],
+        repeat: 'last',  // After exhaustion, keep returning 'complete'
+      },
+    },
+  ],
+};
+```
+
+### Test Implementation
+
+**Test:** [`tests/playwright/polling-server-components.spec.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/tests/playwright/polling-server-components.spec.ts)
+
+```typescript
+// tests/playwright/polling-server-components.spec.ts
+import { test, expect } from './fixtures';
+
+test.describe('Polling Page - Sequences with Server Components', () => {
+  test('should show pending status on first request', async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, 'githubPolling');
+
+    await page.goto('/polling?jobId=123');
+
+    // First sequence position: pending
+    await expect(page.getByText('PENDING')).toBeVisible();
+    await expect(page.getByText('0%')).toBeVisible();
+  });
+
+  test('should advance through sequence on page reloads', async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, 'githubPolling');
+
+    // First request: pending
+    await page.goto('/polling?jobId=123');
+    await expect(page.getByText('PENDING')).toBeVisible();
+
+    // Second request: processing
+    await page.reload();
+    await expect(page.getByText('PROCESSING')).toBeVisible();
+    await expect(page.getByText('50%')).toBeVisible();
+
+    // Third request: complete
+    await page.reload();
+    await expect(page.getByText('COMPLETE')).toBeVisible();
+    await expect(page.getByText('100%')).toBeVisible();
+  });
+
+  test('should repeat last response after sequence exhaustion', async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, 'githubPolling');
+
+    // Advance through all sequence positions
+    await page.goto('/polling?jobId=123');  // pending
+    await page.reload();  // processing
+    await page.reload();  // complete
+
+    // Verify complete
+    await expect(page.getByText('COMPLETE')).toBeVisible();
+
+    // Fourth request - should still be complete (repeat: 'last')
+    await page.reload();
+    await expect(page.getByText('COMPLETE')).toBeVisible();
+  });
+});
+```
+
+### Sequence Repeat Modes
+
+| Mode | Behavior | Use Case |
+|------|----------|----------|
+| `'last'` | Repeat final response forever | Polling until completion |
+| `'cycle'` | Loop back to first response | Cyclical patterns (weather) |
+| `'none'` | Fall through to next mock | Rate limiting after N attempts |
+
+---
+
+## Pattern 4: Request Matching for Tier-Based Responses
+
+Request matching lets you return different responses based on request content - headers, query params, or body. This is perfect for tier-based pricing, A/B testing, or personalization.
+
+### Scenario with Request Matching
+
+```typescript
+// lib/scenarios.ts
+export const premiumUserScenario: ScenaristScenario = {
+  id: 'premiumUser',
+  name: 'Premium User',
+  description: 'Premium tier pricing based on header',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/products',
+      match: {
+        headers: { 'x-user-tier': 'premium' },  // Match on header
+      },
+      response: {
+        status: 200,
+        body: {
+          products: [
+            { id: 1, name: 'Product A', price: 99.99, tier: 'premium' },
+          ],
+        },
+      },
+    },
+  ],
+};
+```
+
+### Match Criteria Options
+
+<Tabs>
+<TabItem label="Headers">
+
+```typescript
+{
+  match: {
+    headers: { 'x-user-tier': 'premium' },
+  },
+}
+```
+
+</TabItem>
+<TabItem label="Query Params">
+
+```typescript
+{
+  match: {
+    query: { campaign: 'summer-sale' },
+  },
+}
+```
+
+</TabItem>
+<TabItem label="Body">
+
+```typescript
+{
+  match: {
+    body: { country: 'UK' },
+  },
+}
+```
+
+</TabItem>
+<TabItem label="URL (Regex)">
+
+```typescript
+{
+  match: {
+    url: /\/users\/\d+$/,  // Match numeric IDs
+  },
+}
+```
+
+</TabItem>
+</Tabs>
+
+### String Matching Strategies
+
+Beyond exact matching, Scenarist supports flexible string matching:
+
+```typescript
+// Contains substring
+match: { headers: { 'x-campaign': { contains: 'premium' } } }
+
+// Starts with prefix
+match: { headers: { 'x-api-key': { startsWith: 'sk_' } } }
+
+// Ends with suffix
+match: { query: { email: { endsWith: '@company.com' } } }
+
+// Regex pattern
+match: { headers: { 'x-campaign': { regex: { source: 'premium|vip', flags: 'i' } } } }
+```
+
+---
+
+## Common Pitfalls and Debugging
+
+### Pitfall 1: Missing Header Forwarding
+
+**Symptom:** Tests fail with "no mock matched" or default responses instead of scenario-specific ones.
+
+**Cause:** Server Component fetches don't include the test ID header.
+
+**Fix:** Always forward headers:
+
+```typescript
+// ✅ Correct
+const headersList = await headers();
+const response = await fetch(url, {
+  headers: {
+    ...getScenaristHeadersFromReadonlyHeaders(headersList),
+  },
+});
+
+// ❌ Wrong - missing header forwarding
+const response = await fetch(url);
+```
+
+### Pitfall 2: page.request Doesn't Include Test ID
+
+**Symptom:** API calls from `page.request.post()` don't use the correct scenario.
+
+**Cause:** `page.request` uses a separate HTTP context from the browser page.
+
+**Fix:** Explicitly include the test ID header:
+
+```typescript
+test('adds item to cart', async ({ page, switchScenario }) => {
+  const testId = await switchScenario(page, 'cartWithState');  // ✅ Capture testId
+
+  await page.request.post('http://localhost:3002/api/cart/add', {
+    headers: {
+      'Content-Type': 'application/json',
+      'x-scenarist-test-id': testId,  // ✅ Explicitly include
+    },
+    data: { productId: 'prod-1' },
+  });
+});
+```
+
+### Pitfall 3: Next.js Caching
+
+**Symptom:** Same response returned despite scenario changes.
+
+**Cause:** Next.js caches fetch responses by default.
+
+**Fix:** Disable caching for testable fetches:
+
+```typescript
+const response = await fetch(url, {
+  headers: { ... },
+  cache: 'no-store',  // ✅ Disable caching
+});
+```
+
+### Pitfall 4: Sequence Not Advancing
+
+**Symptom:** Same response returned on every request.
+
+**Cause:** Requests going to a different mock or different test ID.
+
+**Fix:** Ensure URL matches exactly and headers are forwarded:
+
+```typescript
+// Scenario mock
+{ method: 'GET', url: 'http://localhost:3001/github/jobs/:id', sequence: {...} }
+
+// Component fetch - must match URL pattern
+await fetch(`http://localhost:3001/github/jobs/${jobId}`, {  // ✅ Matches pattern
+  headers: { ...getScenaristHeadersFromReadonlyHeaders(headersList) },
+});
+```
+
+### Debugging Tips
+
+1. **Check MSW logs** - Set `DEBUG=msw:*` environment variable
+2. **Verify test ID** - Log `testId` from `switchScenario()` return value
+3. **Inspect network** - Use Playwright's network recording
+4. **Check scenario endpoint** - Verify `/__scenario__` returns success
+
+---
+
+## Coming Soon
+
+The following advanced RSC patterns will be covered in upcoming documentation:
+
+### Server Actions (Milestone 2)
+
+Testing form submissions and mutations with Server Actions:
+
+```typescript
+// Future pattern preview
+test('submits form via Server Action', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'formSubmission');
+  await page.goto('/checkout');
+  await page.fill('[name="email"]', 'test@example.com');
+  await page.click('button[type="submit"]');
+  await expect(page.getByText('Order confirmed')).toBeVisible();
+});
+```
+
+### Authentication Flows (Milestone 2)
+
+Testing authenticated RSC with different user states.
+
+### Streaming & Suspense (Milestone 2)
+
+Testing Server Components with streaming responses and Suspense boundaries.
+
+### Error Boundaries (Milestone 2)
+
+Testing error handling in Server Components with error boundaries.
+
+<Aside type="note" title="Milestone 2 Examples">
+These patterns require example implementations that are being added in Milestone 2. Once available, this guide will be updated with complete working examples and tests.
+</Aside>
+
+---
+
+## Next Steps
+
+- **[Next.js App Router Getting Started](/frameworks/nextjs-app-router/getting-started)** - Complete setup guide
+- **[Example App](/frameworks/nextjs-app-router/example-app)** - Full working example with all patterns
+- **[Request Matching](/introduction/scenario-format#request-matching)** - Deep dive into matching options
+- **[Sequences](/introduction/scenario-format#sequences)** - Complete sequence documentation
+- **[Stateful Mocks](/introduction/scenario-format#stateful-mocks)** - State capture and injection
