@@ -30,12 +30,12 @@ Testing full-stack applications is hard:
 - **Traditional mocking** → Requires app restarts, tests conflict, framework lock-in
 - **MSW alone** → No scenario management, manual setup per test
 
-**Scenarist gives you fast, reliable E2E testing:**
+**Scenarist gives you scenario-based testing where your real code runs:**
 
-✅ **Your application code runs** - Express routes, Next.js Server Components, middleware, business logic
-✅ **Only external HTTP APIs are mocked** - Stripe, Auth0, SendGrid, AWS—mock only what you don't control
+✅ **Your application code executes** - Express routes, Next.js Server Components, middleware, business logic—all run for real
+✅ **External APIs return what you need** - Control Stripe, Auth0, SendGrid responses per test scenario
 ✅ **Switch scenarios instantly** - Test success, errors, edge cases without restarting your app
-✅ **Parallel tests that don't conflict** - Each test gets isolated scenarios via unique test IDs
+✅ **Tests run in parallel** - Each test gets its own isolated scenario via unique test IDs
 ✅ **Express and Next.js adapters** - Works with Server Components, API routes, and traditional backends
 
 ### Framework Support
@@ -180,11 +180,11 @@ app.use((req, res, next) => {
 
 ---
 
-## The Solution: Full-Stack Integration Testing with Scenario Management
+## The Solution: Scenario-Based Testing with Real Application Execution
 
-**Scenarist** transforms your Playwright/Cypress tests into true integration tests where **your entire application runs**—just like production—while giving you complete control over external API responses.
+**Scenarist** lets you test your real application—Express routes, Next.js Server Components, middleware, business logic—while controlling exactly what external APIs return.
 
-**The Magic:** Switch between test scenarios (success, errors, edge cases) at runtime without restarting your app, and run hundreds of isolated tests in parallel.
+**The key insight:** Your code runs for real. Only external HTTP calls (Stripe, Auth0, SendGrid) are mocked. Switch scenarios at runtime without restarting, and run hundreds of isolated tests in parallel.
 
 **The Architecture:** Built on MSW (Mock Service Worker) and hexagonal design principles for framework independence and extensibility.
 
