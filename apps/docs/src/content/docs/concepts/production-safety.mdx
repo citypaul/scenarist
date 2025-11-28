@@ -1,0 +1,218 @@
+---
+title: Production Safety
+description: How Scenarist ensures zero test code in production bundles
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Scenarist is **safe to use in production** - your test mocking code will never reach production users.
+
+## How It Works
+
+When you deploy to production with `NODE_ENV=production`, Scenarist automatically returns `undefined` without loading any test code. Your bundler (Webpack, Vite, esbuild, etc.) then performs **tree-shaking** to eliminate all Scenarist code from your production bundle.
+
+```typescript
+import { createScenarist } from '@scenarist/express-adapter';
+import { scenarios } from './scenarios';
+
+// In production: returns undefined
+// In development/test: returns working Scenarist instance
+export const scenarist = createScenarist({
+  enabled: true,
+  scenarios,
+});
+```
+
+### The Production Wrapper Pattern
+
+All Scenarist adapters use a **production wrapper** that checks `NODE_ENV` before loading any test code:
+
+```typescript
+// Simplified view of what happens inside createScenarist()
+export const createScenarist = (options) => {
+  if (process.env.NODE_ENV === 'production') {
+    return undefined;  // ← Returns immediately, no test code loaded
+  }
+
+  // Development/test: load implementation
+  return createScenaristImpl(options);
+};
+```
+
+This pattern ensures:
+- **Zero runtime impact** - Production code paths never execute test logic
+- **Automatic tree-shaking** - Bundlers eliminate dead code
+- **No configuration needed** - Works automatically based on NODE_ENV
+- **Type-safe** - TypeScript enforces null checks via `| undefined` return type
+
+## Bundle Size Impact
+
+Production bundles contain **zero Scenarist code** - the production wrapper pattern combined with tree-shaking completely eliminates all test code from your production builds.
+
+### Quick Verification
+
+The fastest way to verify tree-shaking by searching for **MSW runtime functions**:
+
+```bash
+# Build for production
+NODE_ENV=production npm run build
+
+# Search for MSW runtime code (should find nothing)
+! grep -rE '(setupWorker|startWorker|http\.(get|post|put|delete|patch)|HttpResponse\.json)' dist/ .next/static/ build/
+```
+
+**Expected result:** No matches found.
+
+<Aside type="tip">
+For comprehensive verification methods including bundle analysis, CI/CD automation, and troubleshooting, see [Production Tree-Shaking Verification →](/reference/verification#production-tree-shaking-verification)
+</Aside>
+
+## Type Safety
+
+The return type `ExpressScenarist<T> | undefined` (or equivalent for your adapter) forces you to handle the production case:
+
+```typescript
+// TypeScript enforces null checks
+if (!scenarist) {
+  // Production mode - scenarist is undefined
+  return;
+}
+
+// Development/test mode - scenarist is defined
+scenarist.start();
+```
+
+This prevents accidentally calling test methods in production code.
+
+## Framework-Specific Notes
+
+### Express
+
+```typescript
+import { createScenarist } from '@scenarist/express-adapter';
+
+export const scenarist = await createScenarist({
+  enabled: true,
+  scenarios,
+});
+
+// Type-safe null check required
+if (scenarist) {
+  scenarist.start();  // Only runs in development/test
+}
+```
+
+<Aside type="tip">
+**Most Express apps deploy unbundled code** and get automatic tree-shaking with zero configuration. Only bundled deployments require additional bundler setup.
+</Aside>
+
+### Next.js (App Router & Pages Router)
+
+Both Next.js adapters use the **synchronous pattern** with conditional exports for production safety:
+
+```typescript
+// lib/scenarist.ts
+import { createScenarist } from '@scenarist/nextjs-adapter/app';
+// or: import { createScenarist } from '@scenarist/nextjs-adapter/pages';
+
+// Synchronous - no async/await needed
+export const scenarist = createScenarist({
+  enabled: true,
+  scenarios,
+});
+
+// MSW auto-starts in development/test (when scenarist is defined)
+if (typeof window === 'undefined' && scenarist) {
+  scenarist.start();
+}
+```
+
+**Production behavior:**
+- **Conditional exports** resolve to `production.js` which returns `undefined` immediately
+- **Zero imports** in production.js guarantees tree-shaking
+- **Zero configuration:** Works automatically based on `NODE_ENV`
+
+### Safe Helper Functions
+
+To avoid `scenarist?.method() ?? fallback` patterns everywhere, both adapters export safe helper functions:
+
+```typescript
+// App Router API Route
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
+
+export async function GET(request: Request) {
+  const response = await fetch('http://localhost:3001/products', {
+    headers: {
+      ...getScenaristHeaders(request),  // Always safe, no guards needed
+      'x-user-tier': 'premium',
+    },
+  });
+}
+```
+
+```typescript
+// Pages Router API Route
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
+
+export default async function handler(req, res) {
+  const response = await fetch('http://localhost:3001/products', {
+    headers: getScenaristHeaders(req),
+  });
+}
+```
+
+These helpers return safe defaults in production (empty objects for headers, `'default-test'` for test IDs), eliminating the need for manual undefined checks.
+
+## Common Questions
+
+### Does Scenarist run in production if I forget NODE_ENV?
+
+**No.** Even without `NODE_ENV=production`, Scenarist only activates when explicitly started. However, **you should always set NODE_ENV=production** for optimal performance and automatic tree-shaking.
+
+### What about CI/CD environments?
+
+CI/CD environments should use:
+- `NODE_ENV=test` for running tests
+- `NODE_ENV=production` for building production bundles
+
+### What if tree-shaking fails?
+
+1. **Check NODE_ENV:** Ensure `NODE_ENV=production` during build
+2. **Check bundler config:** Verify tree-shaking is enabled
+3. **Check sideEffects:** Scenarist marks itself as side-effect-free
+4. **File an issue:** [Open an issue](https://github.com/citypaul/scenarist/issues) with your bundler details
+
+For detailed troubleshooting, see [Production Tree-Shaking Verification →](/reference/verification#production-tree-shaking-verification)
+
+## Best Practices
+
+1. **Always use `NODE_ENV=production` for production builds**
+   ```bash
+   NODE_ENV=production npm run build
+   ```
+
+2. **Add null checks where you use Scenarist**
+   ```typescript
+   if (scenarist) {
+     scenarist.start();
+   }
+   ```
+
+3. **Verify bundle in CI/CD**
+   ```bash
+   npm run verify:production
+   ```
+
+4. **Monitor production bundles** - Set up bundle size budgets and alert on unexpected increases
+
+## Summary
+
+| Aspect | Guarantee |
+|--------|-----------|
+| Production runtime | Zero test code execution |
+| Bundle size | Zero Scenarist code after tree-shaking |
+| Configuration | No environment-specific config needed |
+| Type safety | TypeScript enforces null checks |
+| Performance | No runtime overhead in production |
+
+**The bottom line:** Scenarist's production wrapper + tree-shaking = zero production impact.

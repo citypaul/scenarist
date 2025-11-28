@@ -148,7 +148,7 @@ export default defineConfig({
             { label: "How it works", slug: "concepts/how-it-works" },
             { label: "Dynamic Capabilities", slug: "concepts/dynamic-responses" },
             { label: "Installation", slug: "introduction/installation" },
-            { label: "Production Safety", slug: "introduction/production-safety" },
+            { label: "Production Safety", slug: "concepts/production-safety" },
             { label: "Testing with Playwright", slug: "introduction/testing-with-playwright" },
             { label: "Scenario Format", slug: "concepts/scenario-format" },
             { label: "Default Mocks & Overrides", slug: "concepts/default-mocks" },

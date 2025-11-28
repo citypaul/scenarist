@@ -687,7 +687,7 @@ If verification fails:
 1. Check bundler configuration for code splitting support
 2. Verify DefinePlugin is replacing `process.env.NODE_ENV`
 3. Ensure you're using dynamic imports (not static imports)
-4. Review [Production Safety Guide](/introduction/production-safety) for detailed configuration
+4. Review [Production Safety Guide](/concepts/production-safety) for detailed configuration
 
 If verification succeeds:
 ✅ Your production deployment is safe - Scenarist implementation code is completely tree-shaken!
