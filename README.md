@@ -104,7 +104,7 @@ export default async function CheckoutPage({ params }) {
 
 ## The Problem
 
-You want to test your full-stack application end-to-end, but you face impossible tradeoffs:
+You want to thoroughly test your full-stack application, but you face impossible tradeoffs:
 
 ### The Pain Points
 
