@@ -85,14 +85,14 @@ Scenarist enforces **declarative scenario definitions**—you describe **what** 
 
 ```typescript
 // ✅ Declarative - describes what response to return
-{
+const paymentSuccessMock = {
   method: 'POST',
   url: 'https://api.stripe.com/v1/charges',
   response: {
     status: 200,
     body: { id: 'ch_123', status: 'succeeded' },
   },
-}
+};
 ```
 
 ### Imperative: Describe the Steps
