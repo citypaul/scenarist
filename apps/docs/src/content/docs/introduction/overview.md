@@ -64,6 +64,8 @@ Notice how each scenario defines the complete behavior: in `paymentFails`, only 
 Define a `default` scenario with your **happy path** responses for all external APIs. Then create specialized scenarios that override only what changes:
 
 ```typescript
+import type { ScenaristScenarios } from '@scenarist/nextjs-adapter/app';
+
 const scenarios = {
   default: {  // Happy path - all APIs succeed
     mocks: [
@@ -77,7 +79,7 @@ const scenarios = {
       { url: 'https://api.stripe.com/...', response: { status: 'declined' } }
     ]
   }
-};
+} as const satisfies ScenaristScenarios;
 ```
 
 When you switch to `paymentFails`, Scenarist uses that scenario's mocks (Stripe declines) **and automatically falls back to the default scenario** for any APIs not defined (Auth0 and SendGrid succeed). This eliminates duplication—you only define what changes.
@@ -135,6 +137,8 @@ export const { GET, POST } = createScenarist({
 
 ```typescript
 // scenarios.ts
+import type { ScenaristScenarios } from '@scenarist/nextjs-adapter/app';
+
 export const scenarios = {
   premiumUser: {
     id: 'premiumUser',
@@ -148,7 +152,7 @@ export const scenarios = {
       }
     }]
   }
-} as const;
+} as const satisfies ScenaristScenarios;
 ```
 
 **Step 3: Set up Playwright fixtures** (one-time setup)

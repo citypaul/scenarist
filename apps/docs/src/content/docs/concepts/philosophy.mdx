@@ -146,7 +146,7 @@ const scenarios = {
   'checkout-success': { /* describes what happens */ },
   'card-declined': { /* describes what happens */ },
   'stripe-timeout': { /* describes what happens */ },
-} satisfies ScenaristScenarios;
+} as const satisfies ScenaristScenarios;
 ```
 
 Scenario names describe **business outcomes**, not technical implementations.
@@ -173,7 +173,7 @@ const scenarios = {
   'payment-success': { /* only stripe */ },
   'payment-declined': { /* only stripe, declined */ },
   'email-failure': { /* stripe success, email failure */ },
-} satisfies ScenaristScenarios;
+} as const satisfies ScenaristScenarios;
 ```
 
 Focused scenarios make failures clear: when `payment-declined` fails, you know it's a payment handling issue.

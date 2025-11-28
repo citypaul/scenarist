@@ -371,6 +371,8 @@ describe('Auth Middleware', () => {
 ### Testing with Request Matching
 
 ```typescript
+import type { ScenaristScenarios } from '@scenarist/express-adapter';
+
 // Different responses based on request body
 const scenarios = {
   checkout: {
@@ -390,7 +392,7 @@ const scenarios = {
       }
     ]
   }
-};
+} as const satisfies ScenaristScenarios;
 ```
 
 ### Testing Default Fallback
