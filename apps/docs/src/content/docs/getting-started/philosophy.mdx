@@ -33,9 +33,12 @@ it('should call stripe.charges.create with correct params', () => {
 ```
 
 **Problems:**
-- Breaks if you switch from `stripe.charges.create` to `stripe.paymentIntents.create`
-- Breaks if you add a wrapper function
-- Tests internal structure, not user experience
+
+<ul>
+<li>Breaks if you switch from `stripe.charges.create` to `stripe.paymentIntents.create`</li>
+<li>Breaks if you add a wrapper function</li>
+<li>Tests internal structure, not user experience</li>
+</ul>
   </TabItem>
   <TabItem label="Behavior (Robust)">
 ```typescript
@@ -52,9 +55,12 @@ it('displays success message after valid payment', async ({ page, switchScenario
 ```
 
 **Benefits:**
-- Tests what users actually see
-- Survives internal refactoring
-- Documents expected behavior
+
+<ul>
+<li>Tests what users actually see</li>
+<li>Survives internal refactoring</li>
+<li>Documents expected behavior</li>
+</ul>
   </TabItem>
 </Tabs>
 
