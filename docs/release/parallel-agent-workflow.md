@@ -15,24 +15,28 @@ Each workstream is assigned to a dedicated git worktree and Claude agent. Agents
 cd /Users/paulhammond/personal/scenarist
 
 # Create worktrees for each workstream
-git worktree add ../scenarist-workstream-a release-plan -b workstream-a
-git worktree add ../scenarist-workstream-b release-plan -b workstream-b
-git worktree add ../scenarist-workstream-c release-plan -b workstream-c
-git worktree add ../scenarist-workstream-d release-plan -b workstream-d
-git worktree add ../scenarist-workstream-e release-plan -b workstream-e
-git worktree add ../scenarist-workstream-f release-plan -b workstream-f
+git worktree add ../scenarist-ws1 main -b workstream-1
+git worktree add ../scenarist-ws2 main -b workstream-2
+git worktree add ../scenarist-ws3 main -b workstream-3
+git worktree add ../scenarist-ws4 main -b workstream-4
+git worktree add ../scenarist-ws5 main -b workstream-5
+git worktree add ../scenarist-ws6 main -b workstream-6
+git worktree add ../scenarist-ws7 main -b workstream-7
+git worktree add ../scenarist-ws8 main -b workstream-8
 ```
 
 ### Worktree Assignment
 
 | Worktree | Branch | Workstream | Issues |
 |----------|--------|------------|--------|
-| `scenarist-workstream-a` | `workstream-a` | Changesets Setup | #142, #143, #144 |
-| `scenarist-workstream-b` | `workstream-b` | Package Metadata | #147, #148, #149 |
-| `scenarist-workstream-c` | `workstream-c` | Documentation | #150, #151, #152, #153 |
-| `scenarist-workstream-d` | `workstream-d` | GitHub Actions | #154, #155, #156 |
-| `scenarist-workstream-e` | `workstream-e` | Repository Prep | #157, #158, #159 |
-| `scenarist-workstream-f` | `workstream-f` | Move Core | #145, #146 |
+| `scenarist-ws1` | `workstream-1` | Getting Started Section | #191, #192, #193, #194 |
+| `scenarist-ws2` | `workstream-2` | Core Concepts Section | #195, #196, #197, #198, #199 |
+| `scenarist-ws3` | `workstream-3` | RSC Guide | #200 |
+| `scenarist-ws4` | `workstream-4` | Testing Patterns | #201, #202, #203 |
+| `scenarist-ws5` | `workstream-5` | Reference Section | #204, #205 |
+| `scenarist-ws6` | `workstream-6` | Sidebar & Link Fixes | #206, #207 |
+| `scenarist-ws7` | `workstream-7` | App Router Examples (M2) | #208, #209, #210, #211 |
+| `scenarist-ws8` | `workstream-8` | RSC Guide Updates (M2) | #212, #213, #214, #215 |
 
 ---
 
@@ -59,12 +63,14 @@ Agents must pick up tickets in dependency order within their workstream.
 
 | Workstream | Order | Rationale |
 |------------|-------|-----------|
-| **A (Changesets)** | #142 → #143 → #144 | Sequential dependency chain |
-| **B (Metadata)** | #147, #148, #149 (any order) | All marked `parallel` |
-| **C (Docs)** | #150, #151, #152, #153 (any order) | All marked `parallel` |
-| **D (Actions)** | #154 → #155 → #156 | D2 depends on D1; D3 can parallel D1/D2 |
-| **E (Repo Prep)** | #157, #158 (parallel) → #159 | E3 depends on B* completing |
-| **F (Move Core)** | #145 → #146 | F2 depends on F1 |
+| **WS1 (Getting Started)** | #191, #192, #193, #194 (any order) | All independent |
+| **WS2 (Core Concepts)** | #195, #196, #197, #198, #199 (any order) | All independent |
+| **WS3 (RSC Guide)** | #200 | Single issue |
+| **WS4 (Testing Patterns)** | #201, #202, #203 (any order) | All independent |
+| **WS5 (Reference)** | #204, #205 (any order) | All independent |
+| **WS6 (Sidebar/Links)** | #206, #207 (any order) | Must wait for WS1-WS5 |
+| **WS7 (App Router Examples)** | #208, #209, #210, #211 (any order) | All independent, TDD required |
+| **WS8 (RSC Guide Updates)** | Each depends on WS7 | See cross-workstream deps |
 
 #### Cross-Workstream Dependencies
 
@@ -72,10 +78,12 @@ Some tickets depend on other workstreams completing:
 
 | Ticket | Depends On | Action |
 |--------|------------|--------|
-| #154 (D1) | #143 (A2) | D agent must wait for A to merge A2 |
-| #159 (E3) | All B* issues | E agent must wait for B to complete |
-| #160 (I1) | All A*, B*, D*, E1, E2, F* | Integration phase - after all workstreams |
-| #161 (I2) | #160 (I1) | Final step |
+| #206 (WS6) | All WS1-WS5 issues | WS6 agent must wait for docs restructure to complete |
+| #207 (WS6) | All WS1-WS5 issues | WS6 agent must wait for docs restructure to complete |
+| #212 (WS8) | #208 (WS7) | WS8 agent must wait for Server Actions example |
+| #213 (WS8) | #209 (WS7) | WS8 agent must wait for Auth example |
+| #214 (WS8) | #210 (WS7) | WS8 agent must wait for Streaming example |
+| #215 (WS8) | #211 (WS7) | WS8 agent must wait for Error Boundary example |
 
 **How to check if a dependency is met:**
 ```bash
@@ -163,17 +171,21 @@ After completing all commits for a ticket:
 
 ```bash
 # Push branch
-git push -u origin workstream-a
+git push -u origin workstream-1
 
 # Create PR
 gh pr create \
-  --title "A1: Install and initialize Changesets" \
-  --body "Closes #142
+  --title "docs: Rewrite installation.md with actual content" \
+  --body "Closes #191
 
 ## Summary
-- Installed @changesets/cli and @changesets/changelog-github
-- Initialized changesets with \`pnpm changeset init\`
-- Verified .changeset/ directory created
+- Fixed broken links to framework guides
+- Added actual installation content with pnpm/npm/yarn commands
+- Added framework-specific installation sections
+
+## Pages Changed
+- https://scenarist.io/introduction/installation (before restructure)
+- https://scenarist.io/getting-started/installation (after restructure)
 
 ## Plan
 [Include plan from Rule 4]
@@ -187,6 +199,7 @@ gh pr create \
 - Body includes "Closes #XXX" to auto-close issue
 - All CI checks pass
 - Plan included in description
+- **Page Links Required**: Include links to affected pages on https://scenarist.io so changes can be inspected
 
 #### Merging Strategy
 
@@ -252,30 +265,58 @@ If you encounter merge conflicts:
 ## Quick Reference: Ticket Dependencies Graph
 
 ```
-                    #142 (A1)
-                       │
-                       ▼
-                    #143 (A2)
-                       │
-          ┌────────────┼────────────┐
-          │            │            │
-          ▼            ▼            ▼
-       #144 (A3)   #154 (D1)   #156 (D3)
-                       │
-                       ▼
-                   #155 (D2)
+PHASE 1 - Documentation Restructure (can run in parallel):
 
-#145 (F1) ──► #146 (F2)
+WS1: #191, #192, #193, #194 ─┐
+WS2: #195, #196, #197, #198, #199 ─┼─► WS6: #206, #207
+WS3: #200 ─┤                           (Sidebar & Links)
+WS4: #201, #202, #203 ─┤
+WS5: #204, #205 ─┘
 
-#147 (B1) ─┐
-#148 (B2) ─┼──► #159 (E3)
-#149 (B3) ─┘
 
-#157 (E1) ─┬──► #160 (I1) ──► #161 (I2)
-#158 (E2) ─┘
+PHASE 2 - App Router Examples (Milestone 2):
 
-#150, #151, #152, #153 (C1-C4): All independent
+WS7 (all can run in parallel):
+#208 (Server Actions) ──► #212 (Docs: Server Actions)
+#209 (Auth Flow) ──► #213 (Docs: Auth)
+#210 (Streaming) ──► #214 (Docs: Streaming)      } WS8
+#211 (Error Boundary) ──► #215 (Docs: Error)
+
+
+Notes:
+- WS1-WS5 can all run simultaneously
+- WS6 must wait for WS1-WS5 to complete
+- WS7 can run in parallel with WS1-WS5
+- WS8 issues depend on their corresponding WS7 issue
 ```
+
+---
+
+## URL Mapping for Page Links
+
+Documentation pages map from file paths to URLs as follows:
+
+**Base URL:** `https://scenarist.io`
+
+**Mapping Rule:**
+```
+apps/docs/src/content/docs/{path}.md  →  https://scenarist.io/{path}
+apps/docs/src/content/docs/{path}.mdx →  https://scenarist.io/{path}
+```
+
+**Examples:**
+| File Path | URL |
+|-----------|-----|
+| `introduction/installation.md` | https://scenarist.io/introduction/installation |
+| `getting-started/philosophy.mdx` | https://scenarist.io/getting-started/philosophy |
+| `concepts/how-it-works.md` | https://scenarist.io/concepts/how-it-works |
+| `concepts/dynamic-responses/index.mdx` | https://scenarist.io/concepts/dynamic-responses |
+| `frameworks/nextjs-app-router/rsc-guide.mdx` | https://scenarist.io/frameworks/nextjs-app-router/rsc-guide |
+| `testing/playwright-integration.mdx` | https://scenarist.io/testing/playwright-integration |
+| `reference/api.mdx` | https://scenarist.io/reference/api |
+
+**For new pages:** Include the URL where the page WILL appear after merge.
+**For moved pages:** Include BOTH the old URL (if still live) and new URL.
 
 ---
 

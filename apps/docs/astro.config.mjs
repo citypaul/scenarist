@@ -143,6 +143,7 @@ export default defineConfig({
           label: "Introduction",
           items: [
             { label: "Quick Start", slug: "introduction/quick-start" },
+            { label: "Philosophy", slug: "concepts/philosophy" },
             { label: "Why Scenarist?", slug: "introduction/why-scenarist" },
             { label: "How it works", slug: "introduction/overview" },
             { label: "Dynamic Capabilities", slug: "introduction/capabilities" },
@@ -150,7 +151,6 @@ export default defineConfig({
             { label: "Production Safety", slug: "introduction/production-safety" },
             { label: "Testing with Playwright", slug: "introduction/testing-with-playwright" },
             { label: "Scenario Format", slug: "introduction/scenario-format" },
-            { label: "Declarative Design", slug: "introduction/declarative-design" },
             { label: "Default Mocks & Overrides", slug: "introduction/default-mocks" },
             { label: "Ephemeral Endpoints", slug: "introduction/ephemeral-endpoints" },
             { label: "Endpoint APIs", slug: "introduction/endpoint-apis" },
@@ -176,6 +176,7 @@ export default defineConfig({
                   items: [
                     { label: "Overview", slug: "frameworks/nextjs-app-router" },
                     { label: "Getting Started", slug: "frameworks/nextjs-app-router/getting-started" },
+                    { label: "Testing RSC", slug: "frameworks/nextjs-app-router/rsc-guide" },
                     { label: "Example App", slug: "frameworks/nextjs-app-router/example-app" },
                   ],
                 },
@@ -212,7 +213,6 @@ export default defineConfig({
           collapsed: true,
           items: [
             { label: "Architecture", slug: "concepts/architecture" },
-            { label: "Coming Soon", slug: "guides/example" },
           ],
         },
         {
