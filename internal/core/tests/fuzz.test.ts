@@ -6,6 +6,8 @@ import {
 } from '../src/schemas/index.js';
 import { createInMemoryStateManager } from '../src/adapters/in-memory-state-manager.js';
 import { applyTemplates } from '../src/domain/template-replacement.js';
+import { extractFromPath } from '../src/domain/path-extraction.js';
+import type { HttpRequestContext } from '../src/types/scenario.js';
 
 /**
  * Property-based fuzz tests for schema validation.
@@ -340,6 +342,121 @@ describe('Security Property Tests', () => {
             expect(Object.prototype.hasOwnProperty(POLLUTION_MARKER)).toBe(false);
             expect(({} as Record<string, unknown>)[POLLUTION_MARKER]).toBeUndefined();
 
+            return true;
+          }
+        ),
+        { numRuns: 500 }
+      );
+    });
+  });
+
+  /**
+   * Path Extraction Security Tests
+   *
+   * Property: extractFromPath must never access dangerous keys or inherited properties.
+   * This prevents prototype pollution via path traversal attacks.
+   */
+  describe('extractFromPath: Prototype Pollution Prevention', () => {
+    const DANGEROUS_KEYS = ['__proto__', 'constructor', 'prototype'];
+
+    const createContext = (body: unknown): HttpRequestContext => ({
+      method: 'POST',
+      url: '/test',
+      body,
+      headers: {},
+      query: {},
+    });
+
+    it('PROPERTY: Dangerous keys always return undefined', () => {
+      fc.assert(
+        fc.property(
+          fc.constantFrom(...DANGEROUS_KEYS),
+          fc.anything(),
+          (dangerousKey, value) => {
+            const context = createContext({ [dangerousKey]: value });
+            const result = extractFromPath(context, `body.${dangerousKey}`);
+
+            expect(result).toBeUndefined();
+            return true;
+          }
+        ),
+        { numRuns: 500 }
+      );
+    });
+
+    it('PROPERTY: Dangerous keys in nested paths return undefined', () => {
+      fc.assert(
+        fc.property(
+          fc.string({ minLength: 1, maxLength: 20 }),
+          fc.constantFrom(...DANGEROUS_KEYS),
+          fc.anything(),
+          (safeKey, dangerousKey, value) => {
+            const context = createContext({
+              [safeKey]: { [dangerousKey]: value },
+            });
+            const result = extractFromPath(context, `body.${safeKey}.${dangerousKey}`);
+
+            expect(result).toBeUndefined();
+            return true;
+          }
+        ),
+        { numRuns: 500 }
+      );
+    });
+
+    it('PROPERTY: Inherited properties are never accessible', () => {
+      const inheritedProps = ['hasOwnProperty', 'toString', 'valueOf', 'isPrototypeOf'];
+
+      fc.assert(
+        fc.property(
+          fc.constantFrom(...inheritedProps),
+          (inheritedProp) => {
+            const context = createContext({});
+            const result = extractFromPath(context, `body.${inheritedProp}`);
+
+            expect(result).toBeUndefined();
+            return true;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('PROPERTY: Arbitrary paths never throw exceptions', () => {
+      fc.assert(
+        fc.property(
+          fc.array(fc.string({ minLength: 0, maxLength: 50 }), { minLength: 0, maxLength: 10 }),
+          fc.anything(),
+          (pathSegments, bodyValue) => {
+            const path = ['body', ...pathSegments].join('.');
+            const context = createContext(bodyValue);
+
+            // Should never throw, always return undefined or the value
+            const result = extractFromPath(context, path);
+            expect(result === undefined || result !== undefined).toBe(true);
+
+            return true;
+          }
+        ),
+        { numRuns: 1000 }
+      );
+    });
+
+    it('PROPERTY: Only own properties are accessible', () => {
+      // Generate keys without dots (dots are path separators)
+      const safeKeyArb = fc.string({ minLength: 1, maxLength: 50 })
+        .filter(k => !k.includes('.') && !['__proto__', 'constructor', 'prototype'].includes(k));
+
+      fc.assert(
+        fc.property(
+          safeKeyArb,
+          fc.anything(),
+          (key, value) => {
+            const context = createContext({ [key]: value });
+            const result = extractFromPath(context, `body.${key}`);
+
+            // Own property should be accessible
+            expect(result).toBe(value);
             return true;
           }
         ),
