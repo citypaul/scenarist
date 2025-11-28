@@ -17,10 +17,8 @@ Where do Server Components fit in the testing pyramid? They don't fit neatly int
 - **Not traditional integration tests** - They render UI, not just return data
 - **Full E2E is too slow** - Spinning up browsers for every scenario combination doesn't scale
 
-This same gap applies to other server-side Next.js code: **middleware**, **server-side session logic**, **Route Handlers with authentication**, and **data validation layers**. All of this code runs on the server and interacts with external services - but traditional testing tools weren't designed for it.
-
 <Aside type="note" title="Broader Context">
-This testing gap isn't unique to RSC - it applies to all modern full-stack frameworks. See [Why Scenarist?](/introduction/why-scenarist) for the complete picture of how Scenarist addresses server-side HTTP testing across Express, Next.js, Remix, and other frameworks.
+This testing gap applies to all modern server-side code. See [Why Scenarist?](/introduction/why-scenarist) for how Scenarist addresses middleware, session handling, and other server-side testing challenges, or explore the [Philosophy](/concepts/philosophy) for the core beliefs that guide Scenarist's design.
 </Aside>
 
 ### The Jest Problem
@@ -63,31 +61,26 @@ test('premium users see discounted pricing', async ({ page, switchScenario }) =>
 });
 ```
 
-### Higher Confidence Testing
+### What This Enables for RSC
 
-This approach gives you confidence that traditional unit tests cannot provide:
+Testing Server Components with Scenarist gives you capabilities that unit tests cannot provide:
 
-| What's Tested | Unit Tests | Scenarist + Playwright |
+| RSC Challenge | Unit Tests | Scenarist + Playwright |
 |---------------|------------|------------------------|
-| Server Component rendering | ❌ Can't test | ✅ Full rendering |
-| Middleware execution | ❌ Requires mocking | ✅ Real execution |
-| Session/cookie handling | ❌ Requires mocking | ✅ Real cookies |
-| Header forwarding | ❌ Requires mocking | ✅ Real headers |
-| Data fetching | ❌ Requires mocking fetch | ✅ Real fetch, mocked API |
-| Error boundaries | ❌ Requires mocking | ✅ Real error handling |
-| Route protection | ❌ Requires mocking auth | ✅ Real auth flow |
+| Async component rendering | ❌ RTL can't render Promises | ✅ Full server-side rendering |
+| `headers()` / `cookies()` APIs | ❌ Throw outside Next.js | ✅ Real Next.js execution |
+| Data fetching in components | ❌ Must mock fetch globally | ✅ Real fetch, mocked external APIs |
+| Error boundaries | ❌ Must mock error conditions | ✅ Real error propagation |
 
-**Why this level of confidence matters:**
+**Why this matters for RSC specifically:**
 
-- **Real execution** - Your actual code runs, not mocked approximations
-- **Real rendering** - HTML is generated server-side, exactly like production
-- **Real middleware** - Authentication, redirects, and header manipulation all execute
-- **Real session logic** - Cookies, tokens, and session state work as expected
-- **No mocking Next.js internals** - No stubbing `headers()`, `cookies()`, or other APIs
-- **Fast feedback** - Scenario switching is instant, no server restarts needed
+- **No mocking Next.js internals** - `headers()`, `cookies()`, and other server APIs work naturally
+- **Real server-side rendering** - HTML is generated exactly as in production
+- **Actual component composition** - Parent/child RSC relationships execute correctly
+- **Fast scenario switching** - Test many data fetching scenarios without server restarts
 
-<Aside type="tip" title="The Best of Both Worlds">
-Scenarist gives you the **confidence of E2E tests** (real code execution) with the **speed of integration tests** (no browser automation for API calls, instant scenario switching). You can test dozens of scenarios in the time it takes to run a few traditional E2E tests.
+<Aside type="tip" title="Speed + Confidence">
+Test dozens of RSC data fetching scenarios in the time it takes to run a few traditional E2E tests. Scenario switching is instant - no server restarts needed.
 </Aside>
 
 ## Setup Requirements for App Router
@@ -231,6 +224,10 @@ export const standardUserScenario: ScenaristScenario = {
   ],
 };
 ```
+
+<Aside type="tip" title="Request Matching">
+The `match` criteria above route requests to different responses based on headers. Scenarist supports matching on headers, query params, body content, and regex patterns. See [Dynamic Capabilities](/introduction/capabilities) for the complete reference.
+</Aside>
 
 ### Test Implementation
 
@@ -608,220 +605,6 @@ test.describe('Polling Page - Sequences with Server Components', () => {
 
 ---
 
-## Pattern 4: Request Matching for Tier-Based Responses
-
-Request matching lets you return different responses based on request content - headers, query params, or body. This is perfect for tier-based pricing, A/B testing, or personalization.
-
-### Scenario with Request Matching
-
-```typescript
-// lib/scenarios.ts
-import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
-
-export const premiumUserScenario: ScenaristScenario = {
-  id: 'premiumUser',
-  name: 'Premium User',
-  description: 'Premium tier pricing based on header',
-  mocks: [
-    {
-      method: 'GET',
-      url: 'http://localhost:3001/products',
-      match: {
-        headers: { 'x-user-tier': 'premium' },  // Match on header
-      },
-      response: {
-        status: 200,
-        body: {
-          products: [
-            { id: 1, name: 'Product A', price: 99.99, tier: 'premium' },
-          ],
-        },
-      },
-    },
-  ],
-};
-```
-
-### Match Criteria Options
-
-<Tabs>
-<TabItem label="Headers">
-
-```typescript
-// lib/scenarios.ts
-import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
-
-export const premiumUserScenario: ScenaristScenario = {
-  id: 'premiumUser',
-  name: 'Premium User',
-  description: 'Match requests with premium tier header',
-  mocks: [
-    {
-      method: 'GET',
-      url: 'http://localhost:3001/products',
-      match: {
-        headers: { 'x-user-tier': 'premium' },
-      },
-      response: {
-        status: 200,
-        body: { products: [{ id: 1, name: 'Premium Product', price: 99.99 }] },
-      },
-    },
-  ],
-};
-```
-
-</TabItem>
-<TabItem label="Query Params">
-
-```typescript
-// lib/scenarios.ts
-import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
-
-export const campaignScenario: ScenaristScenario = {
-  id: 'summerSale',
-  name: 'Summer Sale Campaign',
-  description: 'Match requests with campaign query parameter',
-  mocks: [
-    {
-      method: 'GET',
-      url: 'http://localhost:3001/products',
-      match: {
-        query: { campaign: 'summer-sale' },
-      },
-      response: {
-        status: 200,
-        body: { products: [{ id: 1, name: 'Sale Item', price: 49.99, discount: 50 }] },
-      },
-    },
-  ],
-};
-```
-
-</TabItem>
-<TabItem label="Body">
-
-```typescript
-// lib/scenarios.ts
-import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
-
-export const ukShippingScenario: ScenaristScenario = {
-  id: 'ukShipping',
-  name: 'UK Shipping',
-  description: 'Match requests with UK country in body',
-  mocks: [
-    {
-      method: 'POST',
-      url: 'http://localhost:3001/checkout/shipping',
-      match: {
-        body: { country: 'UK' },
-      },
-      response: {
-        status: 200,
-        body: { shippingCost: 0, message: 'Free UK shipping' },
-      },
-    },
-  ],
-};
-```
-
-</TabItem>
-<TabItem label="URL (Regex)">
-
-```typescript
-// lib/scenarios.ts
-import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
-
-export const numericUserIdScenario: ScenaristScenario = {
-  id: 'numericUserId',
-  name: 'Numeric User ID',
-  description: 'Match URLs with numeric user IDs using regex',
-  mocks: [
-    {
-      method: 'GET',
-      url: 'http://localhost:3001/api/users/:username',
-      match: {
-        url: /\/users\/\d+$/,  // Match numeric IDs only
-      },
-      response: {
-        status: 200,
-        body: { id: 12345, name: 'Numeric ID User', type: 'system' },
-      },
-    },
-  ],
-};
-```
-
-</TabItem>
-</Tabs>
-
-### String Matching Strategies
-
-Beyond exact matching, Scenarist supports flexible string matching:
-
-```typescript
-// lib/scenarios.ts
-import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
-
-export const stringMatchingScenario: ScenaristScenario = {
-  id: 'stringMatching',
-  name: 'String Matching Examples',
-  description: 'Demonstrates all string matching strategies',
-  mocks: [
-    // Contains substring - matches 'premium-2024', 'vip-premium', etc.
-    {
-      method: 'GET',
-      url: 'http://localhost:3001/products',
-      match: {
-        headers: { 'x-campaign': { contains: 'premium' } },
-      },
-      response: {
-        status: 200,
-        body: { products: [{ id: 1, name: 'Premium Product', price: 99.99 }] },
-      },
-    },
-    // Starts with prefix - matches 'sk_live_xxx', 'sk_test_xxx', etc.
-    {
-      method: 'GET',
-      url: 'http://localhost:3001/api-keys',
-      match: {
-        headers: { 'x-api-key': { startsWith: 'sk_' } },
-      },
-      response: {
-        status: 200,
-        body: { valid: true, keyType: 'secret' },
-      },
-    },
-    // Ends with suffix - matches 'john@company.com', 'jane@company.com', etc.
-    {
-      method: 'GET',
-      url: 'http://localhost:3001/users',
-      match: {
-        query: { email: { endsWith: '@company.com' } },
-      },
-      response: {
-        status: 200,
-        body: { users: [{ id: 1, email: 'john@company.com', role: 'admin' }] },
-      },
-    },
-    // Regex pattern - matches 'premium', 'vip', 'PREMIUM', 'VIP', etc.
-    {
-      method: 'GET',
-      url: 'http://localhost:3001/pricing',
-      match: {
-        headers: { 'x-campaign': { regex: { source: 'premium|vip', flags: 'i' } } },
-      },
-      response: {
-        status: 200,
-        body: { tier: 'premium', discount: 20 },
-      },
-    },
-  ],
-};
-```
-
----
-
 ## Common Pitfalls and Debugging
 
 ### Pitfall 1: Missing Header Forwarding
@@ -950,6 +733,5 @@ These patterns require example implementations that are being added in Milestone
 
 - **[Next.js App Router Getting Started](/frameworks/nextjs-app-router/getting-started)** - Complete setup guide
 - **[Example App](/frameworks/nextjs-app-router/example-app)** - Full working example with all patterns
-- **[Request Matching](/introduction/scenario-format#request-matching)** - Deep dive into matching options
-- **[Sequences](/introduction/scenario-format#sequences)** - Complete sequence documentation
-- **[Stateful Mocks](/introduction/scenario-format#stateful-mocks)** - State capture and injection
+- **[Dynamic Capabilities](/introduction/capabilities)** - Request matching, sequences, and stateful mocks in depth
+- **[Philosophy](/concepts/philosophy)** - Core beliefs behind Scenarist's testing approach
