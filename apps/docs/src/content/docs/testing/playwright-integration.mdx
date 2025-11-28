@@ -1,0 +1,325 @@
+---
+title: Playwright Integration
+description: Set up type-safe Playwright tests with Scenarist fixtures and helpers
+---
+
+Scenarist provides Playwright helpers that enable type-safe scenario switching with autocomplete, automatic test ID management, and clean test organization.
+
+## Quick Start
+
+### 1. Install Playwright Helpers
+
+```bash
+npm install --save-dev @scenarist/playwright-helpers
+# or
+pnpm add -D @scenarist/playwright-helpers
+```
+
+### 2. Create Fixtures File
+
+Create a `tests/fixtures.ts` file that exports a typed `test` object:
+
+```typescript
+// tests/fixtures.ts
+import { withScenarios, expect } from '@scenarist/playwright-helpers';
+import { scenarios } from '../lib/scenarios'; // Your scenario definitions
+
+// Create type-safe test object with scenario IDs
+export const test = withScenarios(scenarios);
+export { expect };
+```
+
+### 3. Use in Tests
+
+**Import from fixtures:**
+
+```typescript
+// tests/my-feature.spec.ts
+import { test, expect } from './fixtures'; // Import from your fixtures file
+
+test('premium users see advanced features', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'premiumUser'); // Type-safe! Autocomplete works
+
+  await page.goto('/dashboard');
+  await expect(page.getByText('Advanced Analytics')).toBeVisible();
+});
+```
+
+**Do not import directly from @playwright/test:**
+
+```typescript
+// DON'T DO THIS
+import { test, expect } from '@playwright/test'; // No Scenarist fixtures!
+
+test('my test', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'premiumUser'); // Error: switchScenario doesn't exist
+});
+```
+
+## Why Use Fixtures?
+
+The fixtures pattern provides several benefits:
+
+### Type-Safe Scenario IDs
+
+TypeScript knows which scenario IDs exist and provides autocomplete:
+
+```typescript
+await switchScenario(page, 'premiumUser'); // Autocomplete suggests: 'default', 'premiumUser', 'error', etc.
+await switchScenario(page, 'typo');        // TypeScript error: 'typo' not in scenarios
+```
+
+### Automatic Test ID Management
+
+Each test gets a guaranteed unique test ID to prevent state collisions during parallel execution. You don't need to manage test IDs yourself - the fixture handles it automatically.
+
+For more details on parallel test execution and test isolation, see [Parallel Testing](/testing/parallel-testing).
+
+### Centralized Configuration
+
+Configure the scenario endpoint once in your fixtures file or `playwright.config.ts`:
+
+```typescript
+// playwright.config.ts
+import { defineConfig } from '@playwright/test';
+import type { ScenaristOptions } from '@scenarist/playwright-helpers';
+
+export default defineConfig<ScenaristOptions>({
+  use: {
+    baseURL: 'http://localhost:3000',
+    scenaristEndpoint: '/api/__scenario__', // Default, can be customized
+  },
+});
+```
+
+### Clean Test Organization
+
+All tests import from the same fixtures file, ensuring consistency:
+
+```
+tests/
+  fixtures.ts          # Single source of truth
+  auth.spec.ts         # import { test, expect } from './fixtures';
+  checkout.spec.ts     # import { test, expect } from './fixtures';
+  dashboard.spec.ts    # import { test, expect } from './fixtures';
+```
+
+## Complete Example
+
+**1. Define Scenarios:**
+
+```typescript
+// lib/scenarios.ts
+import type { ScenaristScenarios } from '@scenarist/express-adapter';
+
+export const scenarios = {
+  // Default scenario with complete happy path
+  default: {
+    id: 'default',
+    name: 'Happy Path',
+    description: 'All external APIs succeed with valid responses',
+    mocks: [
+      // Stripe: Successful payment
+      {
+        method: 'POST',
+        url: 'https://api.stripe.com/v1/charges',
+        response: {
+          status: 200,
+          body: { id: 'ch_123', status: 'succeeded', amount: 5000 },
+        },
+      },
+      // Auth0: Authenticated standard user
+      {
+        method: 'GET',
+        url: 'https://api.auth0.com/userinfo',
+        response: {
+          status: 200,
+          body: { sub: 'user_123', email: 'john@example.com', tier: 'standard' },
+        },
+      },
+    ],
+  },
+  // Specialized scenario: Override Auth0 for premium user
+  premiumUser: {
+    id: 'premiumUser',
+    name: 'Premium User',
+    description: 'Premium tier user, everything else succeeds',
+    mocks: [
+      {
+        method: 'GET',
+        url: 'https://api.auth0.com/userinfo',
+        response: {
+          status: 200,
+          body: { sub: 'user_456', email: 'premium@example.com', tier: 'premium' },
+        },
+      },
+    ],
+  },
+  // Specialized scenario: Stripe payment failure
+  paymentFails: {
+    id: 'paymentFails',
+    name: 'Payment Declined',
+    description: 'Stripe declines payment, everything else succeeds',
+    mocks: [
+      {
+        method: 'POST',
+        url: 'https://api.stripe.com/v1/charges',
+        response: {
+          status: 402,
+          body: { error: { code: 'card_declined', message: 'Card was declined' } },
+        },
+      },
+    ],
+  },
+} as const satisfies ScenaristScenarios;
+```
+
+**2. Create Fixtures:**
+
+```typescript
+// tests/fixtures.ts
+import { withScenarios, expect } from '@scenarist/playwright-helpers';
+import { scenarios } from '../lib/scenarios';
+
+export const test = withScenarios(scenarios);
+export { expect };
+```
+
+**3. Write Tests:**
+
+```typescript
+// tests/auth.spec.ts
+import { test, expect } from './fixtures';
+
+test('premium users access advanced features', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'premiumUser');
+
+  await page.goto('/dashboard');
+  await expect(page.getByText('Advanced Analytics')).toBeVisible();
+});
+
+test('standard users see upgrade prompt', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'default');
+
+  await page.goto('/dashboard');
+  await expect(page.getByText('Upgrade to Premium')).toBeVisible();
+});
+```
+
+## Composing with Custom Fixtures
+
+If you already have custom Playwright fixtures, extend the Scenarist test object:
+
+```typescript
+// tests/fixtures.ts
+import { withScenarios, expect } from '@scenarist/playwright-helpers';
+import { scenarios } from '../lib/scenarios';
+
+type CustomFixtures = {
+  authenticatedPage: Page;
+  apiToken: string;
+};
+
+export const test = withScenarios(scenarios).extend<CustomFixtures>({
+  authenticatedPage: async ({ page }, use) => {
+    await page.goto('/login');
+    await page.fill('[name="email"]', 'test@example.com');
+    await page.fill('[name="password"]', 'password');
+    await page.click('button[type="submit"]');
+    await use(page);
+  },
+
+  apiToken: async ({}, use) => {
+    const token = await generateTestToken();
+    await use(token);
+  },
+});
+
+export { expect };
+```
+
+Then use custom fixtures in tests:
+
+```typescript
+import { test, expect } from './fixtures';
+
+test('authenticated user sees dashboard', async ({ authenticatedPage, switchScenario }) => {
+  await switchScenario(authenticatedPage, 'premiumUser');
+
+  await expect(authenticatedPage.getByText('Welcome Back')).toBeVisible();
+});
+```
+
+## Per-Test Configuration Overrides
+
+Override endpoint or baseURL for specific tests:
+
+```typescript
+import { test, expect } from './fixtures';
+
+test('staging environment test', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'premiumUser', {
+    baseURL: 'https://staging.example.com',
+    endpoint: '/api/custom-endpoint',
+  });
+
+  await page.goto('/dashboard');
+  // Test runs against staging with custom endpoint
+});
+```
+
+## API Reference
+
+### `withScenarios(scenarios)`
+
+Creates a typed Playwright test object with Scenarist fixtures.
+
+**Parameters:**
+- `scenarios` - Scenarios object (must satisfy `ScenaristScenarios` type)
+
+**Returns:**
+- Extended Playwright test object with `switchScenario` fixture
+
+**Example:**
+```typescript
+const test = withScenarios(scenarios);
+```
+
+### `switchScenario(page, scenarioId, options?)`
+
+Switch to a scenario for the current test.
+
+**Parameters:**
+- `page: Page` - Playwright Page object
+- `scenarioId: string` - ID of scenario to activate (type-safe based on your scenarios)
+- `options?: { endpoint?: string; baseURL?: string }` - Optional overrides
+
+**Returns:**
+- `Promise<string>` - The test ID (for explicit `page.request` calls)
+
+**Example:**
+```typescript
+test('my test', async ({ page, switchScenario }) => {
+  const testId = await switchScenario(page, 'premiumUser');
+  // testId can be used for explicit page.request calls
+});
+```
+
+### `expect`
+
+Re-exported from `@playwright/test` for convenience. Use the same `expect` you're familiar with.
+
+```typescript
+import { test, expect } from './fixtures';
+
+test('my test', async ({ page }) => {
+  await expect(page.getByText('Hello')).toBeVisible();
+});
+```
+
+## Next Steps
+
+- [Parallel Testing](/testing/parallel-testing) - Test isolation and concurrent test execution
+- [Testing Best Practices](/testing/best-practices) - Patterns for organizing tests and scenarios
+- [Scenario Format](/introduction/scenario-format) - Learn how to define scenarios
+- [Ephemeral Endpoints](/introduction/ephemeral-endpoints) - Understand how scenario switching works
