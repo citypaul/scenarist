@@ -149,7 +149,6 @@ export default defineConfig({
             { label: "Dynamic Capabilities", slug: "introduction/capabilities" },
             { label: "Installation", slug: "introduction/installation" },
             { label: "Production Safety", slug: "introduction/production-safety" },
-            { label: "Testing with Playwright", slug: "testing/playwright-integration" },
             { label: "Scenario Format", slug: "introduction/scenario-format" },
             { label: "Default Mocks & Overrides", slug: "introduction/default-mocks" },
             { label: "Ephemeral Endpoints", slug: "introduction/ephemeral-endpoints" },
@@ -192,6 +191,14 @@ export default defineConfig({
             },
             { label: "Remix", slug: "frameworks/remix" },
             { label: "SvelteKit", slug: "frameworks/sveltekit" },
+          ],
+        },
+        {
+          label: "Testing Patterns",
+          items: [
+            { label: "Playwright Integration", slug: "testing/playwright-integration" },
+            { label: "Parallel Testing", slug: "testing/parallel-testing" },
+            { label: "Best Practices", slug: "testing/best-practices" },
           ],
         },
         {

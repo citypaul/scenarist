@@ -4,7 +4,7 @@ This file provides guidance to Claude Code when working with this repository. Fo
 
 ## Project Overview
 
-**Scenarist** is a hexagonal architecture library for MSW-based mock scenarios in E2E testing. It enables concurrent tests with different backend states via test IDs, allowing runtime scenario switching without application restarts.
+**Scenarist** is a hexagonal architecture library for MSW-based mock scenarios in scenario-based testing. It enables concurrent tests with different backend states via test IDs, allowing runtime scenario switching without application restarts. Your real application code executes while external API responses are controlled by scenarios.
 
 **Status:** Production-ready v1.0 candidate. 314 tests passing across all packages with 100% coverage. TypeScript strict mode enforced throughout.
 

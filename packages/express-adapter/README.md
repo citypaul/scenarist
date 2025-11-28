@@ -7,7 +7,7 @@ Express.js adapter for [Scenarist](https://scenarist.io) - manage MSW mock scena
 
 ## What is Scenarist?
 
-**Scenarist** enables concurrent E2E tests to run with different backend states by switching mock scenarios at runtime via test IDs. No application restarts needed, no complex per-test mocking, just simple scenario switching.
+**Scenarist** enables concurrent tests to run with different backend states by switching mock scenarios at runtime via test IDs. Your real application code executes while external API responses are controlled by scenarios. No application restarts needed, no complex per-test mocking, just simple scenario switching.
 
 **Before Scenarist:**
 ```typescript
@@ -85,6 +85,18 @@ yarn add -D @scenarist/express-adapter msw
 **Peer Dependencies:**
 - `express` ^4.18.0 || ^5.0.0
 - `msw` ^2.0.0
+
+## 📖 Documentation
+
+**Full documentation at [scenarist.io](https://scenarist.io)**
+
+| Topic | Link |
+|-------|------|
+| **Why Scenarist?** | [scenarist.io/introduction/why-scenarist](https://scenarist.io/introduction/why-scenarist) |
+| **Getting Started (Express)** | [scenarist.io/frameworks/express/getting-started](https://scenarist.io/frameworks/express/getting-started) |
+| **Parallel Testing** | [scenarist.io/testing/parallel-testing](https://scenarist.io/testing/parallel-testing) |
+| **Testing Philosophy** | [scenarist.io/concepts/philosophy](https://scenarist.io/concepts/philosophy) |
+| **Architecture** | [scenarist.io/concepts/architecture](https://scenarist.io/concepts/architecture) |
 
 ## Quick Start
 
@@ -343,7 +355,7 @@ expect(response2.body.error).toBe('No active scenario for this test ID');
 
 ## Core Capabilities
 
-Scenarist provides 20+ powerful features for E2E testing. All capabilities work seamlessly with Express via automatic test ID propagation.
+Scenarist provides 20+ powerful features for scenario-based testing. All capabilities work seamlessly with Express via automatic test ID propagation.
 
 ### Request Matching (6 capabilities)
 
@@ -990,7 +1002,7 @@ import type {
 See the [**Express Example App**](../../apps/express-example) for a complete working example demonstrating:
 
 - ✅ **Runtime scenario switching** - Change API behavior without restart
-- ✅ **Test ID isolation** - 20 E2E tests with concurrent scenarios
+- ✅ **Test ID isolation** - 20 tests with concurrent scenarios
 - ✅ **Default fallback** - Partial scenarios automatically falling back
 - ✅ **Real API integration** - Actual Express routes calling external APIs
 - ✅ **Multiple scenarios** - Success, errors, timeouts, mixed results
