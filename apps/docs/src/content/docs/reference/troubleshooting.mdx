@@ -1,0 +1,398 @@
+---
+title: Troubleshooting
+description: Common issues, debugging strategies, and fixes for Scenarist
+---
+
+When Scenarist isn't working as expected, this guide helps you identify and fix common issues. For verifying that Scenarist is correctly configured, see the [Verification Guide](/reference/verification).
+
+## Parallel Test Failures
+
+### Symptoms
+
+The most common issue is tests passing individually but failing when run in parallel:
+
+- Tests pass with `--workers=1`
+- Tests fail with `--workers=4` or higher
+- Flaky results that change between runs
+- Wrong data appearing in tests (from different scenario)
+
+### Root Cause: Missing Header Propagation
+
+When your server-side code makes internal fetch calls, headers don't automatically propagate. The test ID header must be explicitly included in every request.
+
+**What happens without header propagation:**
+1. Test A sets scenario to "premium-user"
+2. Test B sets scenario to "free-user" (parallel)
+3. Test A's server component makes internal fetch
+4. Internal fetch has no test ID header
+5. Scenarist uses default scenario
+6. Test A sees wrong data (not premium)
+
+### Next.js Fix: Use getScenaristHeaders()
+
+```typescript
+// Problem: Headers not propagated to internal fetch
+export async function Page() {
+  const response = await fetch('http://localhost:3001/api/products');
+  const data = await response.json();
+  return <div>{/* render */}</div>;
+}
+
+// Solution: Explicitly include headers
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
+
+export async function Page() {
+  const headers = getScenaristHeaders();
+
+  const response = await fetch('http://localhost:3001/api/products', {
+    headers,
+  });
+
+  const data = await response.json();
+  return <div>{/* render */}</div>;
+}
+```
+
+**What `getScenaristHeaders()` does:**
+- Extracts test ID from current request context (AsyncLocalStorage)
+- Returns `{ 'x-scenarist-test-id': 'generated-uuid' }` object
+- Safe to call even when Scenarist is disabled (returns empty object)
+- Works in both App Router and Pages Router
+
+### Express Fix: Include Test ID Header
+
+Express adapter uses AsyncLocalStorage to automatically track test IDs per request. But internal fetch calls still need headers:
+
+```typescript
+import { SCENARIST_TEST_ID_HEADER } from '@scenarist/express-adapter';
+
+app.get('/api/dashboard', async (req, res) => {
+  const testId = req.get(SCENARIST_TEST_ID_HEADER);
+
+  const response = await fetch('http://localhost:3001/api/user', {
+    headers: {
+      [SCENARIST_TEST_ID_HEADER]: testId || 'default-test',
+    },
+  });
+
+  const data = await response.json();
+  res.json(data);
+});
+```
+
+### Fix Checklist
+
+When parallel tests fail:
+
+1. **Next.js:** Add `getScenaristHeaders()` before all internal fetch calls
+2. **Express:** Include test ID header in internal fetch calls
+3. **Playwright:** Verify tests switch scenarios before navigation
+4. **Logging:** Add debug logs to confirm headers are present
+5. **Isolation:** Ensure each test calls `switchScenario()` independently
+
+## Red Flags
+
+### Tests Only Fail in Parallel
+
+```bash
+# Pass individually
+pnpm exec playwright test --workers=1
+# All tests pass
+
+# Fail in parallel
+pnpm exec playwright test --workers=4
+# Some tests fail with wrong data
+```
+
+**Root cause:** Missing header propagation. Tests interfere because they're all using the default scenario.
+
+### Wrong Data in Tests
+
+```typescript
+// Test expects premium pricing
+await expect(page.getByText('£99.99')).toBeVisible();
+// Error: element not found
+
+// But sees standard pricing instead
+await expect(page.getByText('£149.99')).toBeVisible();
+// This passes (wrong scenario!)
+```
+
+**Root cause:** Internal fetch didn't include test ID header, used default scenario instead of premium scenario.
+
+### Flaky Test Results
+
+- Sometimes premium pricing, sometimes standard
+- Different results on different runs
+- Race conditions between parallel tests
+
+**Root cause:** Tests sharing scenarios due to missing header propagation.
+
+### Scenario Switches Not Taking Effect
+
+- Need to restart server to change scenarios
+- Scenario changes don't take effect
+- Old scenario behavior persists
+
+**Check:**
+- Verify `/__scenario__` endpoint is registered
+- Check that `enabled: true` in config
+- Ensure test ID headers are being sent
+
+### State Leaking Between Tests
+
+- Tests pass individually but fail in parallel
+- Results depend on test execution order
+- Need to manually clean up state
+
+**Fix:**
+```typescript
+// Each test should switch scenario independently
+test('test 1', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'scenario1');  // Isolates this test
+  // ...
+});
+
+// Don't share scenario IDs across tests
+const scenarioId = 'shared';
+test('test 1', async ({ page, switchScenario }) => {
+  await switchScenario(page, scenarioId);  // Don't share!
+  // ...
+});
+```
+
+### Middleware Not Executing
+
+**Symptoms:**
+- Middleware doesn't execute
+- Business logic is bypassed
+- Tests don't reflect production behavior
+
+**Root cause:** You're mocking your own routes instead of external APIs.
+
+```typescript
+// BAD - Mocking your own routes
+{
+  url: 'http://localhost:3000/api/my-route',  // Your app!
+  response: { /* ... */ }
+}
+
+// GOOD - Mocking external APIs only
+{
+  url: 'https://api.stripe.com/v1/charges',  // External!
+  response: { /* ... */ }
+}
+```
+
+### Tests Are Slow
+
+**Symptoms:**
+- Tests slower than expected
+- Long wait times for responses
+- Unsuitable for watch mode
+
+**Check:**
+- Look for unnecessary `delay` in mock responses
+- Check for browser interactions that could be HTTP-only
+- Verify parallel execution is enabled
+
+**Fix:**
+```typescript
+// Remove unnecessary delays
+{
+  response: {
+    status: 200,
+    body: { /* ... */ },
+    // delay: 5000  // Remove this
+  }
+}
+
+// Use parallel execution
+test.describe.parallel('Fast tests', () => {
+  // Tests run concurrently
+});
+```
+
+## Debugging Strategies
+
+### Verify Header Propagation
+
+Create a test that explicitly checks headers are present:
+
+```typescript
+test('headers propagate through server-side fetch', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'premium-user');
+
+  await page.goto('/dashboard');
+
+  // If headers propagated correctly, should see premium content
+  await expect(page.getByText('Premium Features')).toBeVisible();
+});
+```
+
+### Add Logging
+
+Temporarily add logging to see which scenario is active:
+
+```typescript
+// In your server-side code
+console.log('Test ID:', req.get('x-scenarist-test-id'));
+
+// In your scenario manager (for debugging)
+console.log('Active scenario:', manager.getActiveScenario(testId));
+```
+
+### Check Server Logs
+
+1. Add logging to see which scenario is active
+2. Check server logs for test ID headers
+3. Verify `getScenaristHeaders()` is called before fetch
+4. Confirm headers object includes test ID
+
+### Isolate the Problem
+
+1. Run failing test individually (`--workers=1`)
+2. If it passes, issue is test isolation
+3. Add header propagation to internal fetches
+4. Run in parallel again to verify fix
+
+## Common Issues Reference
+
+### Issue: Tests Interfere With Each Other
+
+**Symptoms:**
+- Tests pass individually but fail in parallel
+- Flaky results
+- State leaking between tests
+
+**Check:**
+- Verify each test calls `switchScenario()` before actions
+- Ensure test IDs are unique (generated automatically by helper)
+- Check that state is isolated per test ID
+
+**Fix:**
+```typescript
+// GOOD - Each test switches scenario
+test('test 1', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'scenario1');
+  // ...
+});
+
+test('test 2', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'scenario2');
+  // ...
+});
+```
+
+### Issue: Framework Internals Are Mocked
+
+**Symptoms:**
+- Middleware doesn't execute
+- Business logic is bypassed
+- Tests don't reflect production behavior
+
+**Check:**
+- Review mock URLs - should all be external APIs
+- Verify your route handlers execute normally
+- Check that middleware chains run
+
+**What to mock:**
+- Stripe API calls
+- Auth0 API calls
+- SendGrid API calls
+- Any external HTTP service
+
+**What NOT to mock:**
+- Your own API routes
+- Framework request/response objects
+- Internal middleware
+
+### Issue: Scenarios Can't Switch at Runtime
+
+**Symptoms:**
+- Need to restart server to change scenarios
+- Scenario changes don't take effect
+- Old scenario behavior persists
+
+**Check:**
+- Verify `/__scenario__` endpoint is registered
+- Check that `enabled: true` in config
+- Ensure test ID headers are being sent
+
+**Fix:**
+- Check adapter setup in your application
+- Verify Playwright helpers are configured correctly
+- Check for errors in scenario registration
+
+### Issue: Tests Are Slow
+
+**Symptoms:**
+- Tests slower than expected
+- Long wait times for responses
+- Unsuitable for watch mode
+
+**Benchmarks to aim for:**
+- Test setup (scenario switch): < 100ms
+- HTTP requests to your backend: Same speed as without Scenarist
+- Mock response time: < 10ms
+- Full test suite: Suitable for watch mode during development
+
+**Fix:**
+- Remove unnecessary `delay` in mock responses
+- Use parallel execution (`test.describe.parallel`)
+- Check for browser interactions that could be HTTP-only
+
+## Production Tree-Shaking Issues
+
+### Implementation Code in Entry Point
+
+```bash
+$ grep 'createScenaristImpl' dist/server.js
+# Found matches  # BAD: Implementation bundled inline
+```
+
+**Fix:** Enable code splitting:
+- esbuild: Add `--splitting --outdir=dist` (requires ESM format)
+- webpack: Check that dynamic imports aren't being forced inline
+- Vite: Code splitting should be automatic (check build config)
+
+### Implementation Chunk Loads into Memory
+
+```bash
+$ lsof -p $SERVER_PID | grep 'impl-.*\.js'
+dist/impl-ABC123.js  # BAD: Chunk is being loaded!
+```
+
+**Fix:** Check that `process.env.NODE_ENV` is being set to `'production'`:
+- Verify DefinePlugin configuration
+- Check that `if (process.env.NODE_ENV === 'production')` branch is unreachable
+- Ensure bundler is actually replacing `process.env.NODE_ENV` with literal value
+
+### No Code Splitting
+
+```bash
+$ ls dist/
+server.js  # Only one file, no chunks
+
+$ ls -lh dist/server.js
+618kb  # Much larger than expected
+```
+
+**Fix:** Enable code splitting in your bundler configuration.
+
+## Next Steps
+
+If troubleshooting doesn't resolve your issue:
+
+1. **Review framework guides** - Ensure adapter is set up correctly
+   - [Next.js Guide](/frameworks/nextjs-app-router/getting-started)
+   - [Express Guide](/frameworks/express/getting-started)
+
+2. **Check scenario definitions** - Verify mocks match external APIs
+   - [Scenario Format](/concepts/scenarios)
+
+3. **Examine test setup** - Ensure test isolation is working
+   - [How it works](/concepts/how-it-works)
+
+4. **Verify your setup** - Use the verification guide
+   - [Verification Guide](/reference/verification)
