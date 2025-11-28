@@ -92,7 +92,7 @@ yarn add -D @scenarist/express-adapter msw
 
 | Topic | Link |
 |-------|------|
-| **Why Scenarist?** | [scenarist.io/introduction/why-scenarist](https://scenarist.io/introduction/why-scenarist) |
+| **Why Scenarist?** | [scenarist.io/getting-started/why-scenarist](https://scenarist.io/getting-started/why-scenarist) |
 | **Getting Started (Express)** | [scenarist.io/frameworks/express/getting-started](https://scenarist.io/frameworks/express/getting-started) |
 | **Parallel Testing** | [scenarist.io/testing/parallel-testing](https://scenarist.io/testing/parallel-testing) |
 | **Testing Philosophy** | [scenarist.io/concepts/philosophy](https://scenarist.io/concepts/philosophy) |

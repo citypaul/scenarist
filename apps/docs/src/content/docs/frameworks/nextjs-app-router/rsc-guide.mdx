@@ -18,7 +18,7 @@ Where do Server Components fit in the testing pyramid? They don't fit neatly int
 - **Full E2E is too slow** - Spinning up browsers for every scenario combination doesn't scale
 
 <Aside type="note" title="Broader Context">
-This testing gap applies to all modern server-side code. See [Why Scenarist?](/introduction/why-scenarist) for how Scenarist addresses middleware, session handling, and other server-side testing challenges, or explore the [Philosophy](/concepts/philosophy) for the core beliefs that guide Scenarist's design.
+This testing gap applies to all modern server-side code. See [Why Scenarist?](/getting-started/why-scenarist) for how Scenarist addresses middleware, session handling, and other server-side testing challenges, or explore the [Philosophy](/concepts/philosophy) for the core beliefs that guide Scenarist's design.
 </Aside>
 
 ### The Jest Problem
@@ -226,7 +226,7 @@ export const standardUserScenario: ScenaristScenario = {
 ```
 
 <Aside type="tip" title="Request Matching">
-The `match` criteria above route requests to different responses based on headers. Scenarist supports matching on headers, query params, body content, and regex patterns. See [Dynamic Capabilities](/introduction/capabilities) for the complete reference.
+The `match` criteria above route requests to different responses based on headers. Scenarist supports matching on headers, query params, body content, and regex patterns. See [Dynamic Capabilities](/concepts/dynamic-responses) for the complete reference.
 </Aside>
 
 ### Test Implementation
@@ -733,5 +733,5 @@ These patterns require example implementations that are being added in Milestone
 
 - **[Next.js App Router Getting Started](/frameworks/nextjs-app-router/getting-started)** - Complete setup guide
 - **[Example App](/frameworks/nextjs-app-router/example-app)** - Full working example with all patterns
-- **[Dynamic Capabilities](/introduction/capabilities)** - Request matching, sequences, and stateful mocks in depth
+- **[Dynamic Capabilities](/concepts/dynamic-responses)** - Request matching, sequences, and stateful mocks in depth
 - **[Philosophy](/concepts/philosophy)** - Core beliefs behind Scenarist's testing approach

@@ -201,8 +201,6 @@ test('premium users access advanced features', async ({ page, switchScenario }) 
 **Framework-specific guides:**
 - [Next.js setup →](/frameworks/nextjs-app-router/getting-started)
 - [Express setup →](/frameworks/express/getting-started)
-- [Remix setup →](/frameworks/remix) (coming soon)
-- [SvelteKit setup →](/frameworks/sveltekit) (coming soon)
 
 ## Ephemeral Endpoints: Test-Only Activation
 
@@ -235,7 +233,7 @@ const scenarist = createScenarist({
 
 This ensures scenario switching infrastructure **never leaks into production**, even if you accidentally deploy with `enabled: true`.
 
-[Learn more about ephemeral endpoints →](/introduction/ephemeral-endpoints)
+[Learn more about ephemeral endpoints →](/reference/ephemeral-endpoints)
 
 ## Runtime Scenario Switching
 
@@ -353,7 +351,7 @@ Supported frameworks: Express and Next.js (Pages and App Router). Additional ada
 
 ## Next Steps
 
-- [Dynamic Capabilities →](/introduction/capabilities) - Request matching, sequences, stateful mocks
-- [Scenario Format →](/introduction/scenario-format) - Complete scenario structure reference
+- [Dynamic Capabilities →](/concepts/dynamic-responses) - Request matching, sequences, stateful mocks
+- [Scenario Format →](/concepts/scenario-format) - Complete scenario structure reference
 - [Framework Guides →](/frameworks/express/getting-started) - Integrating with your framework
 - [Architecture Details →](/concepts/architecture) - Deep dive into hexagonal architecture
