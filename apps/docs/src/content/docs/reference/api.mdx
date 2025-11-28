@@ -1,0 +1,401 @@
+---
+title: API Reference
+description: Complete reference for Scenarist's HTTP endpoints and configuration
+---
+
+Scenarist provides HTTP endpoints for scenario management that work consistently across Express, Next.js, and all supported frameworks. These endpoints are **ephemeral** - they only exist when testing is enabled and return 404 in production.
+
+## POST /__scenario__ - Switch Scenario
+
+Switch the active scenario for a test ID.
+
+### Request
+
+**Method:** `POST`
+
+**URL:** `/__scenario__` (configurable via `endpoints.setScenario`)
+
+**Headers:**
+```
+Content-Type: application/json
+x-scenarist-test-id: <test-id>
+```
+
+**Body:**
+```typescript
+{
+  scenario: string;    // Required: scenario ID to activate
+  variant?: string;    // Optional: variant name within scenario
+}
+```
+
+### Responses
+
+**Success (200):**
+```typescript
+{
+  success: true;
+  testId: string;         // The test ID used for routing
+  scenarioId: string;     // The activated scenario ID
+  variant?: string;       // The variant name (if provided)
+}
+```
+
+**Example:**
+```json
+{
+  "success": true,
+  "testId": "test-abc123",
+  "scenarioId": "payment-error",
+  "variant": "visa-declined"
+}
+```
+
+**Validation Error (400):**
+```typescript
+{
+  error: string;         // Error message
+  details?: unknown;     // Validation error details (Zod errors)
+}
+```
+
+**Scenario Not Found (400):**
+```typescript
+{
+  error: string;  // "Scenario 'xyz' not found. Did you forget to register it?"
+}
+```
+
+### Example Usage
+
+**With Playwright helpers:**
+```typescript
+import { test } from '@scenarist/playwright-helpers';
+
+test('my test', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'payment-error');
+  // Helper handles POST request automatically
+});
+```
+
+**Manual (curl):**
+```bash
+curl -X POST http://localhost:3000/__scenario__ \
+  -H "Content-Type: application/json" \
+  -H "x-scenarist-test-id: test-123" \
+  -d '{"scenario": "payment-error"}'
+```
+
+**Manual (fetch):**
+```typescript
+const response = await fetch('http://localhost:3000/__scenario__', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'x-scenarist-test-id': 'test-123',
+  },
+  body: JSON.stringify({ scenario: 'payment-error' }),
+});
+
+const result = await response.json();
+// { success: true, testId: 'test-123', scenarioId: 'payment-error' }
+```
+
+## GET /__scenario__ - Get Active Scenario
+
+Retrieve the currently active scenario for a test ID.
+
+### Request
+
+**Method:** `GET`
+
+**URL:** `/__scenario__` (configurable via `endpoints.getScenario`)
+
+**Headers:**
+```
+x-scenarist-test-id: <test-id>
+```
+
+**No body required.**
+
+### Responses
+
+**Success (200):**
+```typescript
+{
+  testId: string;           // The test ID
+  scenarioId: string;       // The active scenario ID
+  scenarioName?: string;    // The scenario's human-readable name (if found)
+}
+```
+
+**No Active Scenario (404):**
+```typescript
+{
+  error: string;    // "No active scenario for this test ID"
+  testId: string;   // The test ID that was queried
+}
+```
+
+### Example Usage
+
+```typescript
+const response = await fetch('http://localhost:3000/__scenario__', {
+  headers: {
+    'x-scenarist-test-id': 'test-123',
+  },
+});
+
+const result = await response.json();
+// { testId: 'test-123', scenarioId: 'payment-error', scenarioName: '...' }
+```
+
+## Test ID Header
+
+The test ID header is standardized to `'x-scenarist-test-id'`. Use the `SCENARIST_TEST_ID_HEADER` constant from your adapter package:
+
+```typescript
+import { SCENARIST_TEST_ID_HEADER } from '@scenarist/express-adapter';
+// SCENARIST_TEST_ID_HEADER === 'x-scenarist-test-id'
+```
+
+**Test ID behavior:**
+- **Header present:** Uses value from header (e.g., `'test-abc123'`)
+- **Header missing:** Uses default test ID (e.g., `'default-test'`)
+- **Empty string:** Treated as missing, uses default
+
+### Automatic Propagation with Playwright
+
+Playwright helpers automatically include the test ID header:
+
+```typescript
+import { withScenarios, expect } from '@scenarist/playwright-helpers';
+import { scenarios } from './scenarios';
+
+export const test = withScenarios(scenarios);
+
+test('my test', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'success');
+  // Helper automatically:
+  // 1. Generates unique test ID
+  // 2. Calls POST /__scenario__ with test ID header
+  // 3. Sets page.setExtraHTTPHeaders({ 'x-scenarist-test-id': testId })
+
+  await page.goto('/profile');
+  // All navigation requests include x-scenarist-test-id header
+});
+```
+
+## Configuration
+
+Configure endpoint paths and behavior:
+
+```typescript
+const scenarist = createScenarist({
+  // Enable/disable testing infrastructure
+  enabled: process.env.NODE_ENV === 'test',
+
+  // Scenario definitions
+  scenarios: {
+    default: defaultScenario,
+    // ... other scenarios
+  },
+
+  // Endpoint paths (configurable)
+  endpoints: {
+    setScenario: '/__scenario__',     // POST: switch scenario
+    getScenario: '/__scenario__',     // GET: get active scenario
+  },
+});
+```
+
+**Why customize endpoint paths?**
+- Security: Use non-standard paths if `enabled: true` accidentally
+- Compatibility: Avoid conflicts with existing routes
+- Convention: Match your team's naming standards
+
+## The `enabled` Flag
+
+The `enabled` flag controls whether Scenarist's testing infrastructure is active:
+
+```typescript
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  scenarios,
+});
+```
+
+### When `enabled: true` (Test Mode)
+
+- Endpoints accept scenario switch requests
+- Middleware extracts test IDs from headers
+- MSW handlers created from scenario definitions
+
+### When `enabled: false` (Production Mode)
+
+- Endpoints return 404
+- Middleware passes requests through unchanged
+- MSW is not registered
+- **Zero production overhead**
+
+## Test ID Isolation
+
+Each test gets a unique test ID that routes requests to the correct scenario, enabling parallel test execution:
+
+```typescript
+// Test 1
+test('handles success', async ({ page, switchScenario }) => {
+  const testId = await switchScenario(page, 'success');
+  // testId = 'test-abc123'
+
+  await page.goto('/api/payment');
+  // Request includes header: x-scenarist-test-id: test-abc123
+  // Scenarist routes to 'success' scenario
+});
+
+// Test 2 (runs in parallel)
+test('handles error', async ({ page, switchScenario }) => {
+  const testId = await switchScenario(page, 'error');
+  // testId = 'test-def456'
+
+  await page.goto('/api/payment');
+  // Request includes header: x-scenarist-test-id: test-def456
+  // Scenarist routes to 'error' scenario
+});
+```
+
+**Benefits:**
+- Tests run in parallel without interference
+- Each test has isolated state and sequences
+- 10x faster test suites compared to sequential execution
+
+## State and Sequence Reset
+
+When switching scenarios, state and sequences are reset:
+
+```typescript
+manager.switchScenario(testId, scenarioId);
+// Internally calls:
+// - sequenceTracker.reset(testId)  // All sequence positions cleared
+// - stateManager.reset(testId)     // All captured state cleared
+```
+
+**Why reset?**
+- Clean slate for new scenario
+- Prevents state bleeding between scenarios
+- Ensures idempotent test execution
+
+## Request Validation
+
+The `POST /__scenario__` endpoint validates the request body using Zod:
+
+```typescript
+const ScenarioRequestSchema = z.object({
+  scenario: z.string().min(1),  // Required, non-empty string
+  variant: z.string().optional(),  // Optional string
+});
+```
+
+**Valid requests:**
+```json
+{ "scenario": "payment-error" }
+{ "scenario": "payment-error", "variant": "visa-declined" }
+```
+
+**Invalid requests:**
+```json
+{}  // Missing 'scenario'
+{ "scenario": "" }  // Empty string
+{ "scenario": 123 }  // Wrong type
+```
+
+## Error Handling
+
+All endpoints return structured errors:
+
+```typescript
+// Validation error
+{
+  error: 'Invalid request body',
+  details: [/* Zod validation errors */]
+}
+
+// Scenario not found
+{
+  error: "Scenario 'xyz' not found. Did you forget to register it?"
+}
+
+// No active scenario
+{
+  error: 'No active scenario for this test ID',
+  testId: 'test-123'
+}
+
+// Internal error
+{
+  error: 'Internal server error'
+}
+```
+
+**Best practice:** Always check response status before parsing body.
+
+## Production Safety
+
+Scenarist provides multiple layers of production safety:
+
+### Configuration Check
+
+```typescript
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV !== 'production',
+  scenarios,
+});
+```
+
+### Endpoint Availability
+
+When `enabled: false`, endpoints return 404 and have zero overhead.
+
+### MSW Registration
+
+MSW handlers are only registered when `enabled: true`. In production, no handlers are created and external APIs are called normally.
+
+## Complete Example
+
+Full workflow with both endpoints:
+
+```typescript
+import { test } from '@scenarist/playwright-helpers';
+
+test('payment flow', async ({ page, switchScenario }) => {
+  // 1. Switch to payment success scenario
+  const testId = await switchScenario(page, 'payment-success');
+  // POST /__scenario__ with { scenario: 'payment-success' }
+
+  // 2. Verify active scenario (optional)
+  const response = await page.request.get('http://localhost:3000/__scenario__', {
+    headers: { 'x-scenarist-test-id': testId },
+  });
+  const activeScenario = await response.json();
+  // { testId: '...', scenarioId: 'payment-success', scenarioName: '...' }
+
+  // 3. Test with success scenario
+  await page.goto('/checkout');
+  await page.click('button:has-text("Pay")');
+  await expect(page.getByText('Payment successful')).toBeVisible();
+
+  // 4. Switch to error scenario (state and sequences reset)
+  await switchScenario(page, 'payment-error');
+
+  // 5. Test with error scenario
+  await page.goto('/checkout');
+  await page.click('button:has-text("Pay")');
+  await expect(page.getByText('Payment failed')).toBeVisible();
+});
+```
+
+## Next Steps
+
+- [Scenario Format](/concepts/scenarios) - Learn the complete scenario structure
+- [How It Works](/concepts/how-it-works) - Understand the architecture
+- [Verification Guide](/reference/verification) - Verify your setup
