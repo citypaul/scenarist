@@ -158,7 +158,7 @@ You should see the installed packages and their versions listed.
 
 ## Next Steps
 
-- Follow the [Quick Start](/introduction/quick-start) to set up your first scenario
+- Follow the [Quick Start](/getting-started/quick-start) to set up your first scenario
 - Read the framework-specific guides for detailed configuration:
   - [Next.js App Router](/frameworks/nextjs-app-router/getting-started)
   - [Next.js Pages Router](/frameworks/nextjs-pages-router/getting-started)

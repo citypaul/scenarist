@@ -52,7 +52,7 @@ test.describe('Theme Switching', () => {
 
     // Navigate to docs
     await page.getByRole('link', { name: 'Docs', exact: true }).click();
-    await expect(page).toHaveURL(/introduction\/quick-start/);
+    await expect(page).toHaveURL(/getting-started\/quick-start/);
 
     // Theme should still be light in docs (Starlight)
     await expect(page.locator('html')).not.toHaveClass(/dark/);
@@ -60,7 +60,7 @@ test.describe('Theme Switching', () => {
 
   test('theme persists from docs to landing page', async ({ page }) => {
     // Start on docs page - don't use addInitScript as it persists across navigations
-    await page.goto('/introduction/quick-start');
+    await page.goto('/getting-started/quick-start');
 
     // Set dark theme initially via evaluate (only for this page load)
     await page.evaluate(() => localStorage.setItem('starlight-theme', 'dark'));
