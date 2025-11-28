@@ -5,6 +5,8 @@
 
 Next.js adapter for [Scenarist](https://scenarist.io) - test different backend states in your Next.js applications without restarting your dev server or maintaining multiple test environments.
 
+**🎯 Key capability: Test React Server Components with real execution.** Your Server Components, Route Handlers, and Server Actions all run exactly as they would in production - only external API calls are mocked.
+
 **Problem it solves:** Testing error scenarios, loading states, and edge cases in Next.js is painful. You either restart your app repeatedly, maintain complex mock setups per test, or run tests serially to avoid conflicts. Scenarist lets you switch between complete API scenarios instantly via HTTP calls, enabling parallel testing with isolated backend states.
 
 ## What is this?
@@ -55,9 +57,22 @@ This package provides complete Next.js integration for Scenarist's scenario mana
 | See full API reference | [API Reference](#api-reference) |
 | Learn about advanced features | [Core Functionality Docs](../../docs/core-functionality.md) |
 
+## 📖 Documentation
+
+**Full documentation at [scenarist.io](https://scenarist.io)**
+
+| Topic | Link |
+|-------|------|
+| **Why Scenarist?** | [scenarist.io/introduction/why-scenarist](https://scenarist.io/introduction/why-scenarist) |
+| **Getting Started (App Router)** | [scenarist.io/frameworks/nextjs-app-router/getting-started](https://scenarist.io/frameworks/nextjs-app-router/getting-started) |
+| **Getting Started (Pages Router)** | [scenarist.io/frameworks/nextjs-pages-router/getting-started](https://scenarist.io/frameworks/nextjs-pages-router/getting-started) |
+| **🎯 React Server Components Guide** | [scenarist.io/frameworks/nextjs-app-router/rsc-guide](https://scenarist.io/frameworks/nextjs-app-router/rsc-guide) |
+| **Parallel Testing** | [scenarist.io/testing/parallel-testing](https://scenarist.io/testing/parallel-testing) |
+| **Testing Philosophy** | [scenarist.io/concepts/philosophy](https://scenarist.io/concepts/philosophy) |
+
 ## Core Capabilities
 
-Scenarist provides 20+ powerful features for E2E testing. All capabilities work with Next.js (both Pages Router and App Router).
+Scenarist provides 20+ powerful features for scenario-based testing. All capabilities work with Next.js (both Pages Router and App Router).
 
 ### Request Matching (6 capabilities)
 

@@ -1,0 +1,463 @@
+---
+title: Testing Best Practices
+description: Practical patterns for organizing scenarios, structuring tests, and avoiding common pitfalls
+---
+
+import { Aside, Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
+
+This guide covers practical patterns that make Scenarist tests maintainable as your test suite grows. For the underlying philosophy, see [Testing Philosophy](/concepts/philosophy).
+
+## Scenario Organization
+
+### Group by Business Domain, Not by API
+
+Organize scenarios around **what users experience**, not which APIs you're mocking:
+
+```
+lib/scenarios/
+├── checkout/
+│   ├── success.ts          # Complete checkout flow succeeds
+│   ├── payment-declined.ts # Card declined at payment step
+│   └── inventory-error.ts  # Item goes out of stock
+├── user-tiers/
+│   ├── free-user.ts        # Limited features
+│   ├── premium-user.ts     # All features unlocked
+│   └── enterprise-user.ts  # Admin + team features
+└── errors/
+    ├── api-timeout.ts      # External APIs are slow
+    ├── rate-limited.ts     # API returns 429
+    └── server-error.ts     # Generic 500 responses
+```
+
+**Why this matters:**
+- Scenarios describe **user journeys**, not technical details
+- Easy to find the right scenario when writing a test
+- New team members understand the test intent immediately
+
+### The Default Scenario Pattern
+
+Your `default` scenario should represent the **happy path baseline**—everything works:
+
+```typescript
+// lib/scenarios/default.ts
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/core';
+
+const defaultScenario: ScenaristScenario = {
+  id: 'default',
+  name: 'Happy Path',
+  description: 'All external APIs succeed with valid responses',
+  mocks: [
+    // Stripe: Payment succeeds
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      response: {
+        status: 200,
+        body: { id: 'ch_default', status: 'succeeded', amount: 5000 },
+      },
+    },
+    // Auth0: Standard authenticated user
+    {
+      method: 'GET',
+      url: 'https://api.auth0.com/userinfo',
+      response: {
+        status: 200,
+        body: { sub: 'user_default', email: 'user@example.com', tier: 'standard' },
+      },
+    },
+    // SendGrid: Email sent successfully
+    {
+      method: 'POST',
+      url: 'https://api.sendgrid.com/v3/mail/send',
+      response: { status: 202, body: { message_id: 'msg_default' } },
+    },
+  ],
+};
+
+export const scenarios = {
+  default: defaultScenario,
+  // Other scenarios inherit from default automatically
+} as const satisfies ScenaristScenarios;
+```
+
+**Key insight:** Specialized scenarios only need to define **what changes**. Unmocked endpoints automatically fall back to the default scenario.
+
+### Minimal Override Scenarios
+
+Don't duplicate mocks. Override only what changes:
+
+```typescript
+// ✅ GOOD - Override only Auth0, others fall back to default
+const premiumUserScenario: ScenaristScenario = {
+  id: 'premiumUser',
+  name: 'Premium User',
+  description: 'Premium tier user with all features',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.auth0.com/userinfo',
+      response: {
+        status: 200,
+        body: { sub: 'user_premium', email: 'premium@example.com', tier: 'premium' },
+      },
+    },
+    // Stripe and SendGrid automatically use default scenario
+  ],
+};
+
+// ❌ BAD - Duplicates all mocks even when unchanged
+const premiumUserScenarioBad: ScenaristScenario = {
+  id: 'premiumUser',
+  mocks: [
+    { method: 'GET', url: 'https://api.auth0.com/userinfo', response: { /* ... */ } },
+    { method: 'POST', url: 'https://api.stripe.com/v1/charges', response: { /* same as default */ } },
+    { method: 'POST', url: 'https://api.sendgrid.com/v3/mail/send', response: { /* same as default */ } },
+  ],
+};
+```
+
+**Benefits of minimal overrides:**
+- Less code to maintain
+- Clear about what the scenario actually tests
+- Default scenario changes propagate automatically
+
+## Feature Selection Guide
+
+### When to Use Request Matching
+
+Use **match criteria** when response depends on request content:
+
+```typescript
+// Different prices based on user tier header
+{
+  method: 'GET',
+  url: '/api/pricing',
+  match: { headers: { 'x-user-tier': 'premium' } },
+  response: { status: 200, body: { price: 79.99 } },
+}
+
+// Filter products by query parameter
+{
+  method: 'GET',
+  url: '/api/products',
+  match: { query: { category: 'electronics' } },
+  response: { status: 200, body: { products: [/* electronics */] } },
+}
+```
+
+<Aside type="tip" title="Specificity-Based Selection">
+When multiple mocks match, the **most specific** wins. You don't need to carefully order mocks—Scenarist picks the best match automatically.
+</Aside>
+
+### When to Use Sequences
+
+Use **sequences** for APIs that return different responses on subsequent calls:
+
+```typescript
+// Polling API: pending → processing → complete
+{
+  method: 'GET',
+  url: '/api/job/:id/status',
+  sequence: {
+    responses: [
+      { status: 200, body: { status: 'pending' } },
+      { status: 200, body: { status: 'processing' } },
+      { status: 200, body: { status: 'complete', result: { /* ... */ } } },
+    ],
+    repeat: 'last', // Stay at "complete" for all subsequent calls
+  },
+}
+```
+
+**Common sequence patterns:**
+
+| Pattern | `repeat` mode | Use case |
+|---------|--------------|----------|
+| Progress indicator | `'last'` | Show final state forever |
+| Retry logic | `'cycle'` | Keep failing then succeeding |
+| Rate limiting | `'none'` | First N requests succeed, then fail |
+
+### When to Use Stateful Mocks
+
+Use **state capture** when responses depend on previous requests:
+
+```typescript
+// Capture item added to cart
+{
+  method: 'POST',
+  url: '/api/cart/items',
+  captureState: { 'cartItems[]': 'body.item' },
+  response: { status: 200, body: { success: true } },
+}
+
+// Return captured items in cart
+{
+  method: 'GET',
+  url: '/api/cart',
+  response: {
+    status: 200,
+    body: {
+      items: '{{state.cartItems}}',
+      itemCount: '{{state.cartItems.length}}',
+    },
+  },
+}
+```
+
+<Aside type="caution" title="State Resets on Scenario Switch">
+All captured state is cleared when switching scenarios. This ensures tests are isolated—each test starts fresh.
+</Aside>
+
+## Test Structure Patterns
+
+### Factory Functions for Test Data
+
+Use factory functions instead of `let` and `beforeEach`:
+
+<Tabs>
+  <TabItem label="✅ Good - Factory Function">
+```typescript
+// tests/fixtures.ts
+const createTestContext = () => ({
+  testId: `test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  baseURL: 'http://localhost:3000',
+});
+
+// tests/checkout.spec.ts
+test('processes payment successfully', async ({ page, switchScenario }) => {
+  const ctx = createTestContext();
+  await switchScenario(page, 'default');
+
+  await page.goto(`${ctx.baseURL}/checkout`);
+  // ... test code
+});
+```
+  </TabItem>
+  <TabItem label="❌ Bad - Shared State">
+```typescript
+// Shared mutable state leads to test pollution
+let testId: string;
+
+beforeEach(() => {
+  testId = `test-${Date.now()}`;
+});
+
+test('processes payment', async ({ page }) => {
+  // testId could be modified by parallel tests
+});
+```
+  </TabItem>
+</Tabs>
+
+### One Scenario Switch Per Test
+
+Switch scenarios at the beginning of each test, not multiple times:
+
+```typescript
+// ✅ GOOD - Single scenario for entire test journey
+test('premium checkout flow', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'premiumUser');
+
+  await page.goto('/products');
+  await page.click('[data-testid="add-to-cart"]');
+  await page.goto('/checkout');
+  await page.click('[data-testid="submit-payment"]');
+
+  await expect(page.getByText('Order Confirmed')).toBeVisible();
+});
+
+// ❌ AVOID - Multiple scenario switches mid-test
+test('confusing flow', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'premiumUser');
+  await page.goto('/products');
+
+  await switchScenario(page, 'paymentError'); // Why switch here?
+  await page.goto('/checkout');
+  // What is this test actually verifying?
+});
+```
+
+**Exception:** Testing scenario transitions explicitly (e.g., "user upgrades mid-session") may warrant multiple switches, but make the intent clear.
+
+### Descriptive Test Names
+
+Test names should describe the **user experience**, not the scenario:
+
+```typescript
+// ✅ GOOD - Describes what user sees
+test('premium users see 20% discount on checkout', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'premiumUser');
+  // ...
+});
+
+test('declined card shows clear error message', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'paymentDeclined');
+  // ...
+});
+
+// ❌ BAD - Describes implementation
+test('premiumUser scenario works', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'premiumUser');
+  // ...
+});
+```
+
+## Anti-Patterns to Avoid
+
+### Over-Mocking
+
+Don't mock every API in every scenario:
+
+```typescript
+// ❌ BAD - Mocking APIs not relevant to this test
+const checkoutErrorScenario = {
+  id: 'checkoutError',
+  mocks: [
+    { method: 'POST', url: '/api/charges', response: { status: 402 } }, // Relevant
+    { method: 'GET', url: '/api/user', response: { /* ... */ } },       // Not needed
+    { method: 'GET', url: '/api/products', response: { /* ... */ } },   // Not needed
+    { method: 'POST', url: '/api/analytics', response: { /* ... */ } }, // Not needed
+  ],
+};
+
+// ✅ GOOD - Only mock what the test cares about
+const checkoutErrorScenario = {
+  id: 'checkoutError',
+  mocks: [
+    { method: 'POST', url: '/api/charges', response: { status: 402 } },
+    // Other APIs use default scenario
+  ],
+};
+```
+
+### Testing Implementation Details
+
+Don't verify internal behavior—verify user outcomes:
+
+```typescript
+// ❌ BAD - Testing that Stripe was called
+test('calls Stripe API', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'default');
+  await page.goto('/checkout');
+  await page.click('button[type="submit"]');
+
+  // How would you even verify this without coupling to implementation?
+});
+
+// ✅ GOOD - Testing what user sees
+test('displays success message after payment', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'default');
+  await page.goto('/checkout');
+  await page.click('button[type="submit"]');
+
+  await expect(page.getByText('Payment successful')).toBeVisible();
+});
+```
+
+### Scenarios with Hidden Logic
+
+Avoid creating scenarios that require understanding hidden conditional logic:
+
+```typescript
+// ❌ BAD - What does this scenario do? Need to read source.
+const scenario = {
+  id: 'complex',
+  mocks: [{
+    method: 'GET',
+    url: '/api/data',
+    match: {
+      headers: { 'x-flag-a': 'true' },
+      query: { mode: { contains: 'special' } },
+      body: { nested: { field: { startsWith: 'prefix' } } },
+    },
+    response: { status: 200, body: { /* ... */ } },
+  }],
+};
+
+// ✅ GOOD - Name explains what it tests
+const scenario = {
+  id: 'specialModeWithFeatureFlagA',
+  name: 'Special Mode with Feature Flag A Enabled',
+  description: 'Tests the special mode behavior when feature flag A is active',
+  mocks: [{
+    method: 'GET',
+    url: '/api/data',
+    match: {
+      headers: { 'x-feature-flag': 'flagA' },
+      query: { mode: 'special' },
+    },
+    response: { status: 200, body: { /* ... */ } },
+  }],
+};
+```
+
+## Scaling Your Test Suite
+
+### Scenario Composition
+
+For complex tests, compose smaller scenarios:
+
+```typescript
+// Base scenarios
+const authMocks = {
+  authenticated: { method: 'GET', url: '/api/user', response: { status: 200, body: { /* ... */ } } },
+  unauthenticated: { method: 'GET', url: '/api/user', response: { status: 401 } },
+};
+
+const paymentMocks = {
+  success: { method: 'POST', url: '/api/charges', response: { status: 200, body: { /* ... */ } } },
+  declined: { method: 'POST', url: '/api/charges', response: { status: 402 } },
+};
+
+// Compose into full scenarios
+const scenarios = {
+  default: {
+    id: 'default',
+    mocks: [authMocks.authenticated, paymentMocks.success],
+  },
+  paymentDeclined: {
+    id: 'paymentDeclined',
+    mocks: [authMocks.authenticated, paymentMocks.declined],
+  },
+  unauthenticatedCheckout: {
+    id: 'unauthenticatedCheckout',
+    mocks: [authMocks.unauthenticated, paymentMocks.success],
+  },
+} as const satisfies ScenaristScenarios;
+```
+
+### Documentation
+
+Document non-obvious scenarios:
+
+```typescript
+const rateLimitedScenario: ScenaristScenario = {
+  id: 'rateLimited',
+  name: 'API Rate Limited',
+  description: `
+    Simulates hitting API rate limits after 3 successful requests.
+    Use for testing retry logic and rate limit handling UI.
+
+    Sequence: 200 → 200 → 200 → 429 (repeats 429)
+  `,
+  mocks: [{
+    method: 'POST',
+    url: '/api/data',
+    sequence: {
+      responses: [
+        { status: 200, body: { success: true } },
+        { status: 200, body: { success: true } },
+        { status: 200, body: { success: true } },
+        { status: 429, body: { error: 'Rate limited', retryAfter: 60 } },
+      ],
+      repeat: 'last',
+    },
+  }],
+};
+```
+
+## Next Steps
+
+- [Parallel Testing](/testing/parallel-testing) - Run tests concurrently with isolated scenarios
+- [Playwright Integration](/testing/playwright-integration) - Set up type-safe fixtures
+- [Testing Philosophy](/concepts/philosophy) - Core principles behind Scenarist

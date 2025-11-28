@@ -379,7 +379,7 @@ const activeScenario = scenarioStore.get('test-abc123');
 // { scenarioId: 'payment-error' }
 ```
 
-**Why in-memory?** This is the right choice for E2E testing - scenarios only need to persist for the duration of a test run. The test ID isolation ensures parallel tests don't interfere with each other.
+**Why in-memory?** This is the right choice for scenario-based testing - scenarios only need to persist for the duration of a test run. The test ID isolation ensures parallel tests don't interfere with each other.
 
 ### State and Sequence Isolation
 

@@ -4,7 +4,7 @@
 
 ## What is Scenarist?
 
-**Scenarist** enables concurrent E2E tests to run with different backend states by switching mock scenarios at runtime via test IDs. No application restarts needed, no complex per-test mocking, just simple scenario switching.
+**Scenarist** enables concurrent tests to run with different backend states by switching mock scenarios at runtime via test IDs. Your real application code executes while external API responses are controlled by scenarios. No application restarts needed, no complex per-test mocking, just simple scenario switching.
 
 **Before Scenarist:**
 ```typescript
@@ -147,7 +147,7 @@ it('fetches user successfully', async () => {
 
 ## Core Capabilities
 
-Scenarist provides 20+ powerful features for E2E testing. All capabilities work with [Framework].
+Scenarist provides 20+ powerful features for scenario-based testing. All capabilities work with [Framework].
 
 ### Request Matching (6 capabilities)
 

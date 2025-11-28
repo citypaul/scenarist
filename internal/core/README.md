@@ -7,11 +7,11 @@
 >
 > All types are re-exported from adapters for convenience. See the [full documentation](https://scenarist.io) for usage guides.
 
-The core domain logic for Scenarist - a framework-agnostic library for managing MSW mock scenarios in E2E testing environments.
+The core domain logic for Scenarist - a framework-agnostic library for managing MSW mock scenarios for scenario-based testing where your real code runs.
 
 ## What is Scenarist?
 
-**Scenarist** enables concurrent E2E tests to run with different backend states by switching mock scenarios at runtime via test IDs. No application restarts needed, no complex per-test mocking, just simple scenario switching.
+**Scenarist** enables concurrent tests to run with different backend states by switching mock scenarios at runtime via test IDs. Your real application code executes while external API responses are controlled by scenarios. No application restarts needed, no complex per-test mocking, just simple scenario switching.
 
 **Problem it solves:**
 
@@ -99,7 +99,7 @@ src/
 
 ## Core Capabilities
 
-Scenarist provides 20+ powerful features for E2E testing. All capabilities are framework-agnostic and available via any adapter (Express, Next.js, etc.).
+Scenarist provides 20+ powerful features for scenario-based testing. All capabilities are framework-agnostic and available via any adapter (Express, Next.js, etc.).
 
 ### Request Matching (11 capabilities)
 

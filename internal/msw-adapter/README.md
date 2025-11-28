@@ -36,7 +36,7 @@ Your App
 
 ## What is Scenarist?
 
-**Scenarist** enables concurrent E2E tests to run with different backend states by switching mock scenarios at runtime via test IDs. This package provides the MSW integration layer that makes it all work.
+**Scenarist** enables concurrent tests to run with different backend states by switching mock scenarios at runtime via test IDs. Your real application code executes while external API responses are controlled by scenarios. This package provides the MSW integration layer that makes it all work.
 
 **The big picture:**
 
