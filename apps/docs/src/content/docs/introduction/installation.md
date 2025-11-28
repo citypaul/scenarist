@@ -3,7 +3,7 @@ title: Installation
 description: How to install Scenarist in your project
 ---
 
-Scenarist is distributed as a set of packages. Install the adapter for your framework and the Playwright helpers for your tests.
+Scenarist is distributed as a set of packages. Install the adapter for your framework and the appropriate testing tools.
 
 ## Package Overview
 
@@ -11,11 +11,57 @@ Scenarist is distributed as a set of packages. Install the adapter for your fram
 |---------|---------|
 | `@scenarist/express-adapter` | Express middleware integration |
 | `@scenarist/nextjs-adapter` | Next.js App Router and Pages Router integration |
-| `@scenarist/playwright-helpers` | Test utilities for Playwright |
+| `@scenarist/playwright-helpers` | Test utilities for Playwright (browser-based testing) |
 
 ## Express
 
-Install the Express adapter and Playwright helpers:
+### API Testing with Supertest (Recommended)
+
+For testing Express APIs directly without a browser, use **Supertest** with **Vitest**:
+
+```bash
+# pnpm
+pnpm add @scenarist/express-adapter msw
+pnpm add -D vitest supertest @types/supertest
+
+# npm
+npm install @scenarist/express-adapter msw
+npm install -D vitest supertest @types/supertest
+
+# yarn
+yarn add @scenarist/express-adapter msw
+yarn add -D vitest supertest @types/supertest
+```
+
+This is the recommended approach for Express API testing—fast, parallel test execution without browser overhead.
+
+**Example test with Supertest:**
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import request from 'supertest';
+import { SCENARIST_TEST_ID_HEADER } from '@scenarist/express-adapter';
+
+it('processes payment successfully', async () => {
+  await request(app)
+    .post('/__scenario__')
+    .set(SCENARIST_TEST_ID_HEADER, 'test-1')
+    .send({ scenario: 'default' });
+
+  const response = await request(app)
+    .post('/api/checkout')
+    .set(SCENARIST_TEST_ID_HEADER, 'test-1')
+    .send({ amount: 5000 });
+
+  expect(response.status).toBe(200);
+});
+```
+
+See the [complete Express example tests](https://github.com/citypaul/scenarist/tree/main/apps/express-example/tests) for comprehensive patterns including scenario switching, test isolation, and dynamic responses.
+
+### Full-Stack Testing with Playwright (Optional)
+
+If you have a **full-stack application** with an Express backend and want browser-based E2E testing, add the Playwright helpers:
 
 ```bash
 # pnpm
@@ -30,6 +76,8 @@ npm install -D @scenarist/playwright-helpers @playwright/test
 yarn add @scenarist/express-adapter msw
 yarn add -D @scenarist/playwright-helpers @playwright/test
 ```
+
+Use Playwright helpers when you need to test user interactions through a browser (clicks, form submissions, visual verification).
 
 **Peer dependencies:** `express@^4.18.0 || ^5.0.0`, `msw@^2.0.0`
 
