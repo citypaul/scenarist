@@ -120,7 +120,7 @@ Scenarist enables behavior-focused testing by letting you test your server's res
 
 This follows Test-Driven Development principles: tests document expected behavior, implementation details can change as long as behavior stays consistent.
 
-[Learn about declarative design →](/concepts/declarative-design)
+[Learn about declarative design →](/concepts/philosophy)
 
 ## Comparison with Other Testing Approaches
 

@@ -212,7 +212,7 @@ export default defineConfig({
           collapsed: true,
           items: [
             { label: "Architecture", slug: "concepts/architecture" },
-            { label: "Testing Philosophy", slug: "concepts/declarative-design" },
+            { label: "Philosophy", slug: "concepts/philosophy" },
           ],
         },
         {
