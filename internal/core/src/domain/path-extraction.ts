@@ -1,5 +1,9 @@
 import type { HttpRequestContext } from '../types/scenario.js';
 
+const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+const isDangerousKey = (key: string): boolean => DANGEROUS_KEYS.has(key);
+
 /**
  * Extracts a value from HttpRequestContext based on a path expression.
  *
@@ -31,13 +35,7 @@ export const extractFromPath = (context: HttpRequestContext, path: string): unkn
 
   const remainingPath = segments.slice(1);
 
-  const sourceMap = {
-    body: context.body,
-    headers: context.headers,
-    query: context.query,
-  };
-
-  const source = sourceMap[prefix];
+  const source = getSourceForPrefix(context, prefix);
 
   // Guard: Source must exist
   if (source === undefined || source === null) {
@@ -45,6 +43,22 @@ export const extractFromPath = (context: HttpRequestContext, path: string): unkn
   }
 
   return traversePath(source, remainingPath);
+};
+
+type ValidPrefix = 'body' | 'headers' | 'query';
+
+const getSourceForPrefix = (
+  context: HttpRequestContext,
+  prefix: ValidPrefix
+): unknown => {
+  switch (prefix) {
+    case 'body':
+      return context.body;
+    case 'headers':
+      return context.headers;
+    case 'query':
+      return context.query;
+  }
 };
 
 /**
@@ -66,6 +80,17 @@ const traversePath = (obj: unknown, path: readonly string[]): unknown => {
   }
 
   const key = path[0]!;
+
+  // Guard: Prevent prototype pollution attacks
+  if (isDangerousKey(key)) {
+    return undefined;
+  }
+
+  // Guard: Only access own properties, not inherited ones
+  if (!Object.hasOwn(obj, key)) {
+    return undefined;
+  }
+
   const record = obj as Record<string, unknown>;
   const value = record[key];
 

@@ -133,4 +133,88 @@ describe('Path Extraction', () => {
 
     expect(result).toBeUndefined();
   });
+
+  /**
+   * Security Tests - Prototype Pollution Prevention
+   *
+   * These tests verify that the path extraction is not vulnerable to prototype
+   * pollution attacks where malicious keys like '__proto__', 'constructor',
+   * or 'prototype' could access or modify Object.prototype.
+   */
+  describe('Security: Prototype Pollution Prevention', () => {
+    it('should return undefined when accessing __proto__ key', () => {
+      const context: HttpRequestContext = {
+        method: 'POST',
+        url: '/api/test',
+        body: { __proto__: { polluted: 'malicious' } },
+        headers: {},
+        query: {},
+      };
+
+      const result = extractFromPath(context, 'body.__proto__');
+
+      expect(result).toBeUndefined();
+    });
+
+    it('should return undefined when accessing constructor key', () => {
+      const context: HttpRequestContext = {
+        method: 'POST',
+        url: '/api/test',
+        body: { constructor: { polluted: 'malicious' } },
+        headers: {},
+        query: {},
+      };
+
+      const result = extractFromPath(context, 'body.constructor');
+
+      expect(result).toBeUndefined();
+    });
+
+    it('should return undefined when accessing prototype key', () => {
+      const context: HttpRequestContext = {
+        method: 'POST',
+        url: '/api/test',
+        body: { prototype: { polluted: 'malicious' } },
+        headers: {},
+        query: {},
+      };
+
+      const result = extractFromPath(context, 'body.prototype');
+
+      expect(result).toBeUndefined();
+    });
+
+    it('should return undefined when dangerous key is in nested path', () => {
+      const context: HttpRequestContext = {
+        method: 'POST',
+        url: '/api/test',
+        body: {
+          safe: {
+            __proto__: { nested: 'malicious' },
+          },
+        },
+        headers: {},
+        query: {},
+      };
+
+      const result = extractFromPath(context, 'body.safe.__proto__.nested');
+
+      expect(result).toBeUndefined();
+    });
+
+    it('should not allow access to inherited properties', () => {
+      const context: HttpRequestContext = {
+        method: 'POST',
+        url: '/api/test',
+        body: {},
+        headers: {},
+        query: {},
+      };
+
+      // hasOwnProperty exists on all objects via prototype chain
+      const result = extractFromPath(context, 'body.hasOwnProperty');
+
+      expect(result).toBeUndefined();
+    });
+  });
 });

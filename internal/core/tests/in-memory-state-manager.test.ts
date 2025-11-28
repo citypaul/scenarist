@@ -277,5 +277,17 @@ describe('InMemoryStateManager', () => {
       expect(stateManager.get('test-1', 'safe.constructor')).toBeUndefined();
       expect(stateManager.get('test-1', 'safe.prototype')).toBeUndefined();
     });
+
+    it('should not access inherited properties when getting', () => {
+      const stateManager = createInMemoryStateManager();
+
+      // Set up some state first
+      stateManager.set('test-1', 'key', 'value');
+
+      // hasOwnProperty exists on all objects via prototype chain
+      const result = stateManager.get('test-1', 'hasOwnProperty');
+
+      expect(result).toBeUndefined();
+    });
   });
 });

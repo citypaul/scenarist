@@ -1,5 +1,9 @@
 import type { StateManager } from '../ports/driven/state-manager.js';
 
+const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+const isDangerousKey = (key: string): boolean => DANGEROUS_KEYS.has(key);
+
 /**
  * In-memory implementation of StateManager port.
  * Fast, single-process state storage for stateful mocks.
@@ -66,40 +70,58 @@ export class InMemoryStateManager implements StateManager {
     const key = path[0]!;
 
     // Guard: Prevent prototype pollution attacks
-    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+    if (isDangerousKey(key)) {
       return;
     }
 
     if (path.length === 1) {
-      obj[key] = value;
+      Object.defineProperty(obj, key, {
+        value,
+        writable: true,
+        enumerable: true,
+        configurable: true,
+      });
       return;
     }
 
-    if (typeof obj[key] !== 'object' || obj[key] === null || Array.isArray(obj[key])) {
-      obj[key] = {};
+    const existingValue = Object.hasOwn(obj, key) ? obj[key] : undefined;
+    if (typeof existingValue !== 'object' || existingValue === null || Array.isArray(existingValue)) {
+      Object.defineProperty(obj, key, {
+        value: {},
+        writable: true,
+        enumerable: true,
+        configurable: true,
+      });
     }
 
-    this.setNestedValue(obj[key] as Record<string, unknown>, path.slice(1), value);
+    const nested = obj[key] as Record<string, unknown>;
+    this.setNestedValue(nested, path.slice(1), value);
   }
 
   private getNestedValue(obj: Record<string, unknown>, path: readonly string[]): unknown {
     const key = path[0]!;
 
     // Guard: Prevent prototype pollution attacks
-    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+    if (isDangerousKey(key)) {
       return undefined;
     }
+
+    // Guard: Only access own properties, not inherited ones
+    if (!Object.hasOwn(obj, key)) {
+      return undefined;
+    }
+
+    const value = obj[key];
 
     if (path.length === 1) {
-      return obj[key];
+      return value;
     }
 
-    const nested = obj[key];
-    if (typeof nested !== 'object' || nested === null || Array.isArray(nested)) {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
       return undefined;
     }
 
-    return this.getNestedValue(nested as Record<string, unknown>, path.slice(1));
+    return this.getNestedValue(value as Record<string, unknown>, path.slice(1));
   }
 }
 
