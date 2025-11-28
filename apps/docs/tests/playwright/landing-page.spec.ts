@@ -51,7 +51,7 @@ test.describe('Landing Page', () => {
     await page.getByRole('link', { name: 'Docs', exact: true }).click();
 
     // Should navigate to quick-start page
-    await expect(page).toHaveURL(/introduction\/quick-start/);
+    await expect(page).toHaveURL(/getting-started\/quick-start/);
 
     // Verify we're on the docs page (Starlight layout)
     await expect(page.getByRole('heading', { name: /Quick Start/i })).toBeVisible();
