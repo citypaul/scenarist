@@ -26,7 +26,7 @@ test.describe('Analytics', () => {
     test('docs pages include analytics script with correct attributes', async ({
       page,
     }) => {
-      await page.goto('/introduction/quick-start');
+      await page.goto('/getting-started/quick-start');
 
       const analyticsScript = page.locator(
         'script[data-domain="scenarist.io"]'

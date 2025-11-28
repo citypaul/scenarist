@@ -1,279 +1,185 @@
 ---
-title: Philosophy
-description: The core beliefs and principles that guide Scenarist's design
+title: Testing Philosophy
+description: Test behavior, not implementation - the core principle behind Scenarist
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
 
-Scenarist is built on a set of core beliefs about testing. These beliefs guide every design decision - from the scenario format to the architecture to what we deliberately don't support. Understanding them helps you use Scenarist effectively and evaluate whether it's right for your needs.
+Scenarist is built on a core testing principle: **test behavior, not implementation**. This philosophy shapes everything about how you write scenarios and structure your tests.
 
-## Core Beliefs
+## Test Behavior, Not Implementation
 
-### 1. Tests Should Verify Behavior, Not Implementation
+Traditional testing often focuses on implementation details—mocking internal functions, spying on method calls, verifying that specific code paths execute. This creates **fragile tests** that break whenever you refactor, even when the external behavior stays exactly the same.
 
-The purpose of a test is to verify that your system **does the right thing**. Not that it calls the right functions. Not that it uses the right libraries. Not that it structures code a certain way.
+Behavior-focused testing asks a different question: **"What does the user experience?"**
 
-**A good test passes when behavior is correct and fails when behavior is wrong.** Nothing else should affect it.
-
-This sounds obvious, but most test suites violate it constantly:
-
+<Tabs>
+  <TabItem label="Implementation (Fragile)">
 ```typescript
-// This test is coupled to implementation
-test('processes payment', () => {
-  const spy = jest.spyOn(stripeClient, 'createCharge');
+// Tests are coupled to internal structure
+it('should call stripe.charges.create with correct params', () => {
+  const stripeMock = jest.spyOn(stripe.charges, 'create');
 
-  processPayment({ amount: 5000 });
+  await processPayment({ amount: 100 });
 
-  expect(spy).toHaveBeenCalledWith({ amount: 5000 });
+  expect(stripeMock).toHaveBeenCalledWith({
+    amount: 10000,
+    currency: 'usd',
+    source: expect.any(String),
+  });
 });
 ```
 
-This test will break if you:
-- Rename `createCharge` to `create`
-- Switch from Stripe SDK to raw HTTP calls
-- Add a payment abstraction layer
-- Change the internal parameter format
+**Problems:**
 
-None of these changes affect what the system **does** - they only change **how** it does it. Yet the test breaks.
-
-**Scenarist tests behavior:**
-
+<ul>
+<li>Breaks if you switch from `stripe.charges.create` to `stripe.paymentIntents.create`</li>
+<li>Breaks if you add a wrapper function</li>
+<li>Tests internal structure, not user experience</li>
+</ul>
+  </TabItem>
+  <TabItem label="Behavior (Robust)">
 ```typescript
-test('successful payment shows confirmation', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'paymentSucceeds');
+// Tests describe user-visible outcomes
+it('displays success message after valid payment', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'payment-success');
 
   await page.goto('/checkout');
+  await page.fill('[name="card"]', '4242424242424242');
   await page.click('button[type="submit"]');
 
-  await expect(page.getByText('Payment confirmed')).toBeVisible();
+  await expect(page.locator('.success')).toContainText('Payment complete');
 });
 ```
 
-This test verifies: "When payment succeeds, user sees confirmation." It passes regardless of how your payment code is structured internally.
+**Benefits:**
 
-**The principle:** Mock at the boundary between your system and external services - the HTTP contract. Everything inside that boundary is your code, and it should run for real.
+<ul>
+<li>Tests what users actually see</li>
+<li>Survives internal refactoring</li>
+<li>Documents expected behavior</li>
+</ul>
+  </TabItem>
+</Tabs>
 
----
+The shift from implementation to behavior testing changes how you think:
 
-### 2. Real Execution Builds Confidence
+| Instead of asking... | Ask... |
+|---------------------|--------|
+| "Did the Stripe SDK get called?" | "Can users complete a purchase?" |
+| "Was the auth token validated?" | "Are unauthorized users blocked?" |
+| "Did the email service return 200?" | "Does the user see a confirmation?" |
 
-Every line of code you mock is a line you're **not testing**.
+Your tests become **documentation of expected behavior**, not a specification of internal mechanisms.
 
-When you mock extensively, you're testing your mocks - verifying that fake things behave the way you configured them to behave. This builds false confidence.
+## Why Declarative Patterns Matter
 
-```typescript
-// What are you actually testing here?
-const mockAuth = jest.fn().mockReturnValue({ user: { id: 1, tier: 'premium' } });
-const mockPricing = jest.fn().mockReturnValue({ discount: 0.2 });
-const mockCart = jest.fn().mockImplementation((items, discount) =>
-  items.reduce((sum, i) => sum + i.price, 0) * (1 - discount)
-);
-
-test('premium discount', () => {
-  const result = calculateTotal(mockAuth, mockPricing, mockCart, items);
-  expect(result).toBe(80);
-});
-```
-
-If `mockCart` has a bug in its implementation, your test passes but production fails. You're testing your mock's arithmetic, not your system's.
-
-**With Scenarist, your real code runs:**
-
-- Your real authentication middleware
-- Your real pricing logic
-- Your real cart calculations
-- Your real error handling
-- Your real data validation
-
-Only the external API responses are controlled. Everything else executes exactly as it would in production.
-
-**The principle:** Maximize real execution. The gap between your test environment and production is where bugs hide.
-
----
-
-### 3. Declarative Beats Imperative for Test Setup
-
-Test scenarios should be **scannable**, not **traceable**.
-
-When you look at a scenario, you should immediately understand what it does. You shouldn't need to step through code, trace execution paths, or debug your test setup.
-
-**Imperative scenarios hide intent:**
+Scenarist enforces **declarative scenario definitions**—you describe **what** should happen, not **how** to make it happen. This isn't an arbitrary constraint; it's fundamental to maintainable testing.
 
 ```typescript
-const scenario = (req, res) => {
-  const user = getUserFromHeader(req);
-  if (user?.tier === 'premium') {
-    if (req.url.includes('/pricing')) {
-      const basePrice = getBasePrice(req.body.product);
-      const discount = calculatePremiumDiscount(user.history);
-      return res.json({ price: basePrice * (1 - discount) });
-    }
+// ✅ Declarative - describes what response to return
+const paymentSuccessMock = {
+  method: 'POST',
+  url: 'https://api.stripe.com/v1/charges',
+  response: {
+    status: 200,
+    body: { id: 'ch_123', status: 'succeeded' },
+  },
+};
+
+// ❌ Imperative - describes how to generate response
+server.use('/api/charges', (req, res) => {
+  const amount = req.body.amount;
+  if (amount > 10000) {
+    return res.status(402).json({ error: 'amount_too_large' });
   }
-  // ... 50 more lines
-};
+  return res.status(200).json({ id: generateId(), status: 'succeeded' });
+});
 ```
 
-To understand this scenario, you must trace execution. What does `calculatePremiumDiscount` do? What's in `user.history`? You're debugging your test setup.
+<CardGrid>
+  <Card title="Inspectable" icon="magnifier">
+    Declarative scenarios are data. You can see exactly what response will be returned—no tracing through conditionals.
+  </Card>
+  <Card title="Composable" icon="puzzle">
+    Add request matching, sequences, or state capture without rewriting procedural logic.
+  </Card>
+</CardGrid>
 
-**Declarative scenarios reveal intent:**
+### Constraints Guide Better Design
 
-```typescript
-const scenario = {
-  id: 'premiumUser',
-  name: 'Premium User with Discount',
-  mocks: [{
-    method: 'GET',
-    url: 'https://api.example.com/pricing',
-    match: { headers: { 'x-user-tier': 'premium' } },
-    response: { status: 200, body: { price: 80, discount: 0.2 } },
-  }],
-};
-```
-
-You can scan this and immediately understand: "Premium users get price 80 with 20% discount." No tracing required.
-
-**The principle:** Scenarios are data, not code. Data is inspectable. Code is opaque.
-
----
-
-### 4. Constraints Guide Better Design
-
-Scenarist deliberately prevents you from writing functions in scenarios. This isn't a limitation - it's a feature.
-
-When you can't write arbitrary code, you must find the right abstraction. This mirrors successful patterns across software:
+Scenarist deliberately prevents functions in scenarios. When you're tempted to write `if (req.something)`, the constraint forces you to ask: "What pattern am I actually trying to express?"
 
 | System | Constraint | What It Forces |
 |--------|-----------|----------------|
 | SQL | No procedural loops | Think in set operations |
-| CSS | No programmatic positioning | Think in layout patterns |
 | React | No imperative DOM updates | Think in component composition |
 | **Scenarist** | **No functions in scenarios** | **Think in match/sequence/state patterns** |
 
-Every time you're tempted to write `if (req.something)`, the constraint forces you to ask: "What pattern am I actually trying to express?"
+The answer is usually one of:
+- **Match criteria** — Different responses based on request content
+- **Sequences** — Ordered progression through states
+- **State capture** — Values that flow between requests
 
-Usually the answer is one of:
-- **Match criteria** - Different responses based on request content
-- **Sequences** - Ordered progression through states
-- **State capture** - Values that flow between requests
+These patterns are explicit, composable, and debuggable.
 
-These patterns are explicit, composable, and debuggable. The imperative code you wanted to write would have hidden the same logic in conditionals.
+## Applying the Philosophy
 
-**The principle:** Constraints aren't limitations. They're guides toward better abstractions.
+### Start with Behavior Questions
 
----
+When writing tests, ask:
 
-### 5. The Testing Pyramid Has a Missing Layer
+1. **What does the user see?** Focus on visible outcomes, not internal state.
+2. **What scenarios matter?** List the external conditions that affect behavior.
+3. **What could go wrong?** Error cases are often more important than happy paths.
 
-The traditional testing pyramid assumes:
-- **Unit tests** at the bottom (fast, isolated, many)
-- **Integration tests** in the middle (slower, some dependencies)
-- **E2E tests** at the top (slow, full system, few)
+### Think in Scenarios, Not Mocks
 
-But modern frameworks break this model. Where does a Server Component fit?
+Don't think of definitions as "mocking Stripe"—think of them as **describing scenarios**:
 
-- It's not a pure function (it fetches data)
-- It's not a traditional "unit" (it depends on Next.js internals)
-- It renders UI (so it's not just a service)
-- But full E2E is too slow for comprehensive coverage
+```typescript
+// ❌ Thinking in mocks
+const stripeMock = { /* ... */ };
 
-The same applies to middleware, route handlers, and server actions. They live in a gap the traditional pyramid doesn't address.
-
-**Scenarist fills this gap:**
-
-```
-         /\
-        /  \      E2E (few)
-       /    \     Complete user journeys
-      /------\
-     /        \   Scenarist (many)
-    /          \  HTTP-level behavior
-   /            \ Real server execution
-  /--------------\
-       Unit       Pure functions
-    (foundation)  Isolated logic
+// ✅ Thinking in scenarios
+const scenarios = {
+  'checkout-success': { /* describes what happens */ },
+  'card-declined': { /* describes what happens */ },
+  'stripe-timeout': { /* describes what happens */ },
+} satisfies ScenaristScenarios;
 ```
 
-**The principle:** New paradigms need new testing approaches. Server-side rendering created a gap; Scenarist fills it.
+Scenario names describe **business outcomes**, not technical implementations.
 
----
+### Keep Scenarios Focused
 
-### 6. Architecture Enables Testability
+Each scenario should test **one thing**:
 
-Testability isn't something you add to code. It's a property of well-designed systems.
+```typescript
+// ❌ Kitchen sink scenario
+const scenarios = {
+  'everything': {
+    id: 'everything',
+    mocks: [
+      { /* stripe success */ },
+      { /* auth success */ },
+      { /* email success */ },
+    ],
+  },
+};
 
-Scenarist works because it operates at a natural boundary - the HTTP interface between your application and external services. This boundary exists whether you use Scenarist or not.
+// ✅ Focused scenarios
+const scenarios = {
+  'payment-success': { /* only stripe */ },
+  'payment-declined': { /* only stripe, declined */ },
+  'email-failure': { /* stripe success, email failure */ },
+} satisfies ScenaristScenarios;
+```
 
-Good architecture has clear boundaries:
-- Your code vs. external services
-- Your domain logic vs. framework code
-- Your business rules vs. infrastructure
+Focused scenarios make failures clear: when `payment-declined` fails, you know it's a payment handling issue.
 
-When these boundaries are clear, testing becomes natural. You test your side of the boundary with the other side controlled.
+## Next Steps
 
-**The principle:** If something is hard to test, the design might be the problem, not the testing approach.
-
----
-
-## What Scenarist Is Not
-
-Understanding the philosophy also means understanding what Scenarist deliberately doesn't do:
-
-**Not a mocking library.** Mocking libraries let you fake anything. Scenarist only intercepts HTTP to external services. This constraint keeps you honest - your code runs for real.
-
-**Not a unit testing tool.** Unit tests verify isolated functions. Scenarist verifies HTTP-level behavior with real server execution. Different tools for different purposes.
-
-**Not a replacement for E2E tests.** E2E tests verify complete user journeys including visual rendering. Scenarist verifies server-side behavior. You need both.
-
-**Not framework-specific.** The same scenarios work across Express, Next.js, and other frameworks. Your test definitions shouldn't be coupled to your framework choice.
-
----
-
-## Practical Consequences
-
-These beliefs have practical consequences for how you use Scenarist:
-
-**Write scenarios that describe API behavior, not internal implementation.**
-Good: "Stripe returns declined" → Bad: "stripeClient.charges.create throws"
-
-**Let your real code run. Don't mock your own modules.**
-Scenarist mocks external APIs so your code can execute for real.
-
-**Use declarative patterns even when imperative feels easier.**
-Match criteria, sequences, and state capture cover most needs. If you're fighting the constraint, reconsider your approach.
-
-**Test at the right level.**
-Unit test pure logic. Scenarist test HTTP behavior. E2E test user journeys. Each layer has its purpose.
-
-**Design for testability.**
-If testing is painful, examine your architecture. Clear boundaries make testing natural.
-
----
-
-## Influences
-
-Scenarist's philosophy draws from established traditions:
-
-**Test-Driven Development (Kent Beck)** - Tests verify behavior. Red-green-refactor. Tests as documentation.
-
-**Behavior-Driven Development (Dan North)** - Describe behavior in domain terms. Scenarios over test cases.
-
-**Hexagonal Architecture (Alistair Cockburn)** - Ports and adapters. Dependencies point inward. Framework independence.
-
-**Functional Programming** - Data over functions. Composition over inheritance. Explicit over implicit.
-
-**The Testing Pyramid (Mike Cohn)** - Different tests serve different purposes. Balance speed and confidence.
-
-These aren't new ideas. Scenarist applies them to the specific challenge of testing modern server-side code.
-
----
-
-## Summary
-
-1. **Behavior over implementation** - Test what the system does, not how
-2. **Real execution over mocking** - Your code should run for real
-3. **Declarative over imperative** - Scenarios are data, not code
-4. **Constraints over freedom** - Limitations guide better design
-5. **Fill the gap** - Server-side code needs HTTP-level testing
-6. **Architecture matters** - Testability comes from good design
-
-These beliefs guide every decision in Scenarist. When you understand them, the tool makes sense. When you share them, the tool fits naturally into how you work.
+- [Quick Start](/getting-started/quick-start) — Choose your framework and get started
+- [Scenario Format](/introduction/scenario-format) — All the declarative patterns available
+- [Dynamic Capabilities](/introduction/capabilities) — Request matching, sequences, stateful mocks

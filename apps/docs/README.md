@@ -65,7 +65,7 @@ sidebar: [
   {
     label: 'Introduction',
     items: [
-      { label: 'Quick Start', slug: 'introduction/quick-start' },
+      { label: 'Quick Start', slug: 'getting-started/quick-start' },
       { label: 'Why Scenarist?', slug: 'introduction/why-scenarist' },
       // ...
     ],

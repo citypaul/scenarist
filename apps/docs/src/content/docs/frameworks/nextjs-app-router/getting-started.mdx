@@ -7,6 +7,12 @@ import { Aside } from '@astrojs/starlight/components';
 
 Test your Next.js App Router application with Server Components, Route Handlers, and Server Actions all executing. No mocking of Next.js internals required.
 
+<Aside type="tip" title="See It Working">
+**[View the complete Next.js App Router example on GitHub →](https://github.com/citypaul/scenarist/tree/main/apps/nextjs-app-router-example)**
+
+Clone it, run the tests, and explore working code for Server Components, sequences, and stateful mocks.
+</Aside>
+
 ## Installation
 
 ```bash
@@ -20,7 +26,7 @@ If your Next.js app uses **direct database access** (PostgreSQL, MongoDB, Prisma
 
 **[→ Read the Database Testing Guide](/guides/testing-database-apps)** to learn how to test database-heavy Next.js applications with Scenarist.
 
-**[→ See what Scenarist can and cannot mock](/introduction/why-scenarist#what-scenarist-intercepts)**
+**[→ See what Scenarist can and cannot mock](/introduction/why-scenarist#what-cannot-be-intercepted)**
 
 </Aside>
 
@@ -313,6 +319,6 @@ Both helpers extract the test ID header (`x-scenarist-test-id`) for forwarding t
 
 ## Next Steps
 
+- **[Example App on GitHub →](https://github.com/citypaul/scenarist/tree/main/apps/nextjs-app-router-example)** - Clone and run the complete working example
 - **[Testing Database Apps →](/guides/testing-database-apps)** - Learn how to test Next.js apps with database access using API route abstraction
-- **[Example App →](/frameworks/nextjs-app-router/example-app)** - See a complete working example with Server Components, sequences, and stateful mocks
 - **[Architecture →](/concepts/architecture)** - Learn how Scenarist works under the hood

@@ -1,0 +1,111 @@
+---
+title: Quick Start
+description: Get up and running with Scenarist in 5 minutes
+---
+
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+Scenarist lets you test your real server code with controlled external API responses. Your routes, middleware, Server Components, and business logic all execute normally—only external HTTP calls (Stripe, Auth0, SendGrid, etc.) are mocked.
+
+## How It Works
+
+1. **Define scenarios** — Declarative objects describing what external APIs should return
+2. **Add middleware** — One line to integrate with your framework
+3. **Switch scenarios per test** — Each test can use different API responses, running in parallel
+
+```typescript
+import type { ScenaristScenarios } from '@scenarist/express-adapter';
+// Or: import type { ScenaristScenarios } from '@scenarist/nextjs-adapter/app';
+
+// Define scenarios as data (not functions)
+const scenarios = {
+  default: {
+    id: 'default',
+    mocks: [
+      {
+        method: 'POST',
+        url: 'https://api.stripe.com/v1/charges',
+        response: { status: 200, body: { id: 'ch_123', status: 'succeeded' } },
+      },
+    ],
+  },
+  cardDeclined: {
+    id: 'cardDeclined',
+    mocks: [
+      {
+        method: 'POST',
+        url: 'https://api.stripe.com/v1/charges',
+        response: { status: 402, body: { error: { code: 'card_declined' } } },
+      },
+    ],
+  },
+} as const satisfies ScenaristScenarios;
+```
+
+## Choose Your Framework
+
+Pick your framework to get started with a complete, working setup:
+
+<CardGrid>
+  <LinkCard
+    title="Express"
+    description="API testing with Supertest + Vitest. Fast parallel execution."
+    href="/frameworks/express/getting-started"
+  />
+  <LinkCard
+    title="Next.js App Router"
+    description="Server Components, Route Handlers, Server Actions."
+    href="/frameworks/nextjs-app-router/getting-started"
+  />
+  <LinkCard
+    title="Next.js Pages Router"
+    description="API routes, getServerSideProps, getStaticProps."
+    href="/frameworks/nextjs-pages-router/getting-started"
+  />
+</CardGrid>
+
+## Example Apps
+
+Each framework has a complete, working example you can clone and run:
+
+| Framework | Example App |
+|-----------|-------------|
+| Express | [apps/express-example](https://github.com/citypaul/scenarist/tree/main/apps/express-example) |
+| Next.js App Router | [apps/nextjs-app-router-example](https://github.com/citypaul/scenarist/tree/main/apps/nextjs-app-router-example) |
+| Next.js Pages Router | [apps/nextjs-pages-router-example](https://github.com/citypaul/scenarist/tree/main/apps/nextjs-pages-router-example) |
+
+## What You'll Learn
+
+Each framework guide covers:
+
+- **Installation** — Package setup for your framework
+- **Scenario definition** — How to structure mocks with default fallbacks
+- **App integration** — Framework-specific middleware/endpoint setup
+- **Test patterns** — Real test examples using your framework's tools
+- **Header forwarding** — How to propagate test IDs to external APIs
+- **Production safety** — Tree-shaking and deployment considerations
+
+## Core Concepts
+
+Before diving into your framework guide, here's what makes Scenarist different:
+
+<CardGrid>
+  <Card title="Test Real Code" icon="rocket">
+    Your routes, middleware, and business logic execute normally. Only external HTTP calls are mocked.
+  </Card>
+  <Card title="Declarative Scenarios" icon="document">
+    Scenarios are data structures, not functions. Inspectable, composable, and versionable.
+  </Card>
+  <Card title="Parallel Execution" icon="random">
+    Each test gets isolated scenario state via test IDs. Run hundreds of tests simultaneously.
+  </Card>
+  <Card title="Zero Production Code" icon="approve-check">
+    Conditional exports eliminate all Scenarist code from production builds.
+  </Card>
+</CardGrid>
+
+## Next Steps
+
+1. **[Choose your framework](#choose-your-framework)** — Follow the complete getting-started guide
+2. **[Read the philosophy](/concepts/philosophy)** — Understand the "test behavior, not implementation" approach
+3. **[Explore dynamic capabilities](/introduction/capabilities)** — Request matching, sequences, stateful mocks
