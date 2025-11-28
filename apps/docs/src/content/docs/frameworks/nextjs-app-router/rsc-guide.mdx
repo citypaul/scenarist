@@ -19,6 +19,10 @@ Where do Server Components fit in the testing pyramid? They don't fit neatly int
 
 This same gap applies to other server-side Next.js code: **middleware**, **server-side session logic**, **Route Handlers with authentication**, and **data validation layers**. All of this code runs on the server and interacts with external services - but traditional testing tools weren't designed for it.
 
+<Aside type="note" title="Broader Context">
+This testing gap isn't unique to RSC - it applies to all modern full-stack frameworks. See [Why Scenarist?](/introduction/why-scenarist) for the complete picture of how Scenarist addresses server-side HTTP testing across Express, Next.js, Remix, and other frameworks.
+</Aside>
+
 ### The Jest Problem
 
 ```typescript

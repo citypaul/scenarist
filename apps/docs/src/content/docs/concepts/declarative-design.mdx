@@ -1,0 +1,104 @@
+---
+title: Why Declarative Design?
+description: Understanding why Scenarist enforces declarative patterns over imperative functions
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Scenarist scenarios are **declarative data structures**, not imperative functions. This is a deliberate constraint that leads to clearer, more maintainable test scenarios.
+
+<Aside type="tip" title="Looking for How to Write Scenarios?">
+This page explains **why** Scenarist uses declarative patterns. For practical guidance on **how** to write scenarios, see [Scenario Format Reference →](/introduction/scenario-format).
+</Aside>
+
+## The Core Distinction
+
+**Imperative:** You describe **how** to do something (step-by-step procedures, if/else logic, function calls)
+
+**Declarative:** You describe **what** you want (data structures that express intent, patterns that compose)
+
+```typescript
+// ❌ IMPERATIVE - Hidden logic in procedures
+server.use('/api/status', (req, res) => {
+  if (req.headers.referer?.includes('/step1')) {
+    return res.json({ status: 'pending' });
+  }
+  if (req.headers.referer?.includes('/step2')) {
+    return res.json({ status: 'processing' });
+  }
+  return res.json({ status: 'complete' });
+});
+
+// ✅ DECLARATIVE - Intent is visible as data
+{
+  method: 'GET',
+  url: '/api/status',
+  sequence: {
+    responses: [
+      { status: 200, body: { status: 'pending' } },
+      { status: 200, body: { status: 'processing' } },
+      { status: 200, body: { status: 'complete' } },
+    ],
+    repeat: 'last',
+  },
+}
+```
+
+**The declarative version is:**
+- **Scannable** - Intent visible at a glance
+- **Debuggable** - Inspect structure, not trace execution
+- **Composable** - Add match criteria, state capture without rewriting
+
+## Why Constraint Matters
+
+When you can't write functions, you must:
+1. Identify the **pattern** you're trying to express
+2. Find the **declarative equivalent** in Scenarist's feature set
+3. Compose **existing primitives** instead of inventing custom logic
+
+This mirrors constraint-driven design across successful technologies:
+
+| System | Constraint | Pattern Discovered |
+|--------|-----------|-------------------|
+| React | No imperative DOM manipulation | Component composition |
+| SQL | No procedural loops | Query patterns (WHERE, JOIN) |
+| CSS | No programmatic positioning | Layout patterns (flexbox, grid) |
+| **Scenarist** | **No functions/closures** | **Match, sequence, state patterns** |
+
+**The insight:** When you're forced to express logic as data, you naturally discover clearer patterns.
+
+## What This Enables
+
+**For Test Maintainability:**
+- Scenarios are **scannable** (see intent at a glance)
+- Patterns are **composable** (match + sequence + state work together)
+- Logic is **explicit** (no hidden procedures)
+
+**For Team Collaboration:**
+- Junior developers understand scenarios without tracing execution
+- Patterns are **documented by existence** (sequence = ordered responses)
+- Mental models align across the team
+
+**For Future Flexibility:**
+- Scenarios can be **versioned** (JSON diffs in git)
+- Scenarios can be **stored remotely** (Redis, PostgreSQL, HTTP APIs)
+- Scenarios can be **generated** (from OpenAPI specs, contract tests)
+
+## The Design Principle
+
+> **"If you can't express it as data, you haven't found the right abstraction yet."**
+
+Scenarist provides four declarative primitives that cover most testing needs:
+
+1. **Simple responses** - Static data (most common)
+2. **Request matching** - Conditional logic based on request content
+3. **Sequences** - Ordered progression through responses
+4. **State capture/injection** - Dynamic values flowing between requests
+
+When you're tempted to write imperative code, that's the moment to discover which declarative pattern fits your use case.
+
+## Next Steps
+
+- [Scenario Format →](/introduction/scenario-format) - Learn all declarative patterns in detail
+- [Dynamic Capabilities →](/introduction/capabilities) - See what you can express declaratively
+- [Architecture →](/concepts/architecture) - Understand how hexagonal architecture enables this design
