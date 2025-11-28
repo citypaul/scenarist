@@ -147,6 +147,8 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
 ```typescript
 // lib/scenarios.ts
+import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
+
 export const premiumUserScenario: ScenaristScenario = {
   id: 'premiumUser',
   name: 'Premium User',
@@ -309,6 +311,8 @@ export default async function CartServerPage() {
 
 ```typescript
 // lib/scenarios.ts
+import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
+
 export const cartWithStateScenario: ScenaristScenario = {
   id: 'cartWithState',
   name: 'Shopping Cart with State',
@@ -464,6 +468,8 @@ export default async function PollingPage({ searchParams }) {
 
 ```typescript
 // lib/scenarios.ts
+import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
+
 export const githubPollingScenario: ScenaristScenario = {
   id: 'githubPolling',
   name: 'GitHub Job Polling',
@@ -576,6 +582,8 @@ Request matching lets you return different responses based on request content - 
 
 ```typescript
 // lib/scenarios.ts
+import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
+
 export const premiumUserScenario: ScenaristScenario = {
   id: 'premiumUser',
   name: 'Premium User',
@@ -606,44 +614,108 @@ export const premiumUserScenario: ScenaristScenario = {
 <TabItem label="Headers">
 
 ```typescript
-{
-  match: {
-    headers: { 'x-user-tier': 'premium' },
-  },
-}
+// lib/scenarios.ts
+import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
+
+export const premiumUserScenario: ScenaristScenario = {
+  id: 'premiumUser',
+  name: 'Premium User',
+  description: 'Match requests with premium tier header',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/products',
+      match: {
+        headers: { 'x-user-tier': 'premium' },
+      },
+      response: {
+        status: 200,
+        body: { products: [{ id: 1, name: 'Premium Product', price: 99.99 }] },
+      },
+    },
+  ],
+};
 ```
 
 </TabItem>
 <TabItem label="Query Params">
 
 ```typescript
-{
-  match: {
-    query: { campaign: 'summer-sale' },
-  },
-}
+// lib/scenarios.ts
+import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
+
+export const campaignScenario: ScenaristScenario = {
+  id: 'summerSale',
+  name: 'Summer Sale Campaign',
+  description: 'Match requests with campaign query parameter',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/products',
+      match: {
+        query: { campaign: 'summer-sale' },
+      },
+      response: {
+        status: 200,
+        body: { products: [{ id: 1, name: 'Sale Item', price: 49.99, discount: 50 }] },
+      },
+    },
+  ],
+};
 ```
 
 </TabItem>
 <TabItem label="Body">
 
 ```typescript
-{
-  match: {
-    body: { country: 'UK' },
-  },
-}
+// lib/scenarios.ts
+import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
+
+export const ukShippingScenario: ScenaristScenario = {
+  id: 'ukShipping',
+  name: 'UK Shipping',
+  description: 'Match requests with UK country in body',
+  mocks: [
+    {
+      method: 'POST',
+      url: 'http://localhost:3001/checkout/shipping',
+      match: {
+        body: { country: 'UK' },
+      },
+      response: {
+        status: 200,
+        body: { shippingCost: 0, message: 'Free UK shipping' },
+      },
+    },
+  ],
+};
 ```
 
 </TabItem>
 <TabItem label="URL (Regex)">
 
 ```typescript
-{
-  match: {
-    url: /\/users\/\d+$/,  // Match numeric IDs
-  },
-}
+// lib/scenarios.ts
+import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
+
+export const numericUserIdScenario: ScenaristScenario = {
+  id: 'numericUserId',
+  name: 'Numeric User ID',
+  description: 'Match URLs with numeric user IDs using regex',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/api/users/:username',
+      match: {
+        url: /\/users\/\d+$/,  // Match numeric IDs only
+      },
+      response: {
+        status: 200,
+        body: { id: 12345, name: 'Numeric ID User', type: 'system' },
+      },
+    },
+  ],
+};
 ```
 
 </TabItem>
@@ -654,17 +726,64 @@ export const premiumUserScenario: ScenaristScenario = {
 Beyond exact matching, Scenarist supports flexible string matching:
 
 ```typescript
-// Contains substring
-match: { headers: { 'x-campaign': { contains: 'premium' } } }
+// lib/scenarios.ts
+import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
 
-// Starts with prefix
-match: { headers: { 'x-api-key': { startsWith: 'sk_' } } }
-
-// Ends with suffix
-match: { query: { email: { endsWith: '@company.com' } } }
-
-// Regex pattern
-match: { headers: { 'x-campaign': { regex: { source: 'premium|vip', flags: 'i' } } } }
+export const stringMatchingScenario: ScenaristScenario = {
+  id: 'stringMatching',
+  name: 'String Matching Examples',
+  description: 'Demonstrates all string matching strategies',
+  mocks: [
+    // Contains substring - matches 'premium-2024', 'vip-premium', etc.
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/products',
+      match: {
+        headers: { 'x-campaign': { contains: 'premium' } },
+      },
+      response: {
+        status: 200,
+        body: { products: [{ id: 1, name: 'Premium Product', price: 99.99 }] },
+      },
+    },
+    // Starts with prefix - matches 'sk_live_xxx', 'sk_test_xxx', etc.
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/api-keys',
+      match: {
+        headers: { 'x-api-key': { startsWith: 'sk_' } },
+      },
+      response: {
+        status: 200,
+        body: { valid: true, keyType: 'secret' },
+      },
+    },
+    // Ends with suffix - matches 'john@company.com', 'jane@company.com', etc.
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/users',
+      match: {
+        query: { email: { endsWith: '@company.com' } },
+      },
+      response: {
+        status: 200,
+        body: { users: [{ id: 1, email: 'john@company.com', role: 'admin' }] },
+      },
+    },
+    // Regex pattern - matches 'premium', 'vip', 'PREMIUM', 'VIP', etc.
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/pricing',
+      match: {
+        headers: { 'x-campaign': { regex: { source: 'premium|vip', flags: 'i' } } },
+      },
+      response: {
+        status: 200,
+        body: { tier: 'premium', discount: 20 },
+      },
+    },
+  ],
+};
 ```
 
 ---
