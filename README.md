@@ -1,10 +1,10 @@
 # Scenarist 🎭
 
-**Integration Testing for Node.js Applications with Instant Scenario Switching**
+**Mock External APIs in E2E Tests. Switch Scenarios Instantly. Run Tests in Parallel.**
 
-Test your complete application—business logic, database queries, API routes—while mocking only external third-party APIs. Built on MSW with runtime scenario management and parallel test isolation.
+Test your Next.js Server Components, Express routes, and API handlers with controlled external API responses. No app restarts. No test conflicts. Built on MSW with runtime scenario management and test ID isolation.
 
-Adapter-based architecture with Express and Next.js adapters available.
+Express and Next.js adapters available—your real application code runs, only external HTTP calls are mocked.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/citypaul/scenarist/ci.yml?branch=main&label=CI)](https://github.com/citypaul/scenarist/actions)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/citypaul/scenarist/badge)](https://securityscorecards.dev/viewer/?uri=github.com/citypaul/scenarist)
@@ -20,7 +20,7 @@ Adapter-based architecture with Express and Next.js adapters available.
 
 ## Test Your Real Application with Mocked External APIs
 
-Scenarist lets you write **true integration tests** where **your actual application code executes**—Express routes, business logic, database queries, Next.js Server Components—all of it runs for real. Only external API calls to third-party services are mocked.
+Scenarist lets you write **E2E tests** where **your actual application code executes**—Express routes, Next.js Server Components, API handlers, middleware, business logic—all of it runs for real. Only external HTTP calls to third-party services (Stripe, Auth0, SendGrid, AWS) are mocked.
 
 ### Why This Matters
 
@@ -30,13 +30,13 @@ Testing full-stack applications is hard:
 - **Traditional mocking** → Requires app restarts, tests conflict, framework lock-in
 - **MSW alone** → No scenario management, manual setup per test
 
-**Scenarist gives you fast, reliable integration testing:**
+**Scenarist gives you fast, reliable E2E testing:**
 
-✅ **Your application code runs** - Express routes, business logic, database queries, middleware
-✅ **Only external APIs are mocked** - Stripe, Auth0, SendGrid, AWS—mock only what you don't control
+✅ **Your application code runs** - Express routes, Next.js Server Components, middleware, business logic
+✅ **Only external HTTP APIs are mocked** - Stripe, Auth0, SendGrid, AWS—mock only what you don't control
 ✅ **Switch scenarios instantly** - Test success, errors, edge cases without restarting your app
-✅ **Parallel tests that don't conflict** - tests run simultaneously with different scenarios
-✅ **Adapter architecture** - Express and Next.js adapters available
+✅ **Parallel tests that don't conflict** - Each test gets isolated scenarios via unique test IDs
+✅ **Express and Next.js adapters** - Works with Server Components, API routes, and traditional backends
 
 ### Framework Support
 
@@ -52,65 +52,51 @@ Testing full-stack applications is hard:
 ```typescript
 // Your actual Express route runs
 app.post("/api/checkout", async (req, res) => {
-  const { items, userId } = req.body;
+  const { items, userId, tier } = req.body;
 
-  // ✅ This code ACTUALLY EXECUTES in your test
-  const user = await db.users.findById(userId);
-  const total = calculateTotal(items, user.tier);
+  // ✅ Your business logic ACTUALLY EXECUTES
+  const total = calculateTotal(items, tier);
+  const discount = tier === 'premium' ? 0.2 : 0;
 
-  // ✅ Only THIS external call is mocked by Scenarist
-  const payment = await stripe.charges.create({
-    amount: total,
-    currency: "usd",
+  // ✅ This external API call is mocked by Scenarist
+  const payment = await fetch('https://api.stripe.com/v1/charges', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${process.env.STRIPE_KEY}` },
+    body: JSON.stringify({ amount: total * (1 - discount) }),
   });
 
-  // ✅ This code ACTUALLY EXECUTES too
-  await db.orders.create({
-    userId,
-    items,
-    total,
-    paymentId: payment.id,
-  });
-
-  res.json({ success: true });
+  const result = await payment.json();
+  res.json({ success: result.status === 'succeeded' });
 });
 ```
 
-**Example 2: Next.js App Router**
+**Example 2: Next.js Server Component**
 
 ```typescript
-// Your actual Next.js app/checkout/route.ts runs
-export async function POST(request: Request) {
-  const { items, userId } = await request.json();
+// Your actual Next.js Server Component runs
+export default async function CheckoutPage({ params }) {
+  // ✅ Your rendering logic ACTUALLY EXECUTES
 
-  // ✅ This code ACTUALLY EXECUTES in your test
-  const user = await db.users.findById(userId);
-  const total = calculateTotal(items, user.tier);
-
-  // ✅ Only THIS external call is mocked by Scenarist
-  const payment = await stripe.charges.create({
-    amount: total,
-    currency: "usd",
+  // ✅ This external API call is mocked by Scenarist
+  const userResponse = await fetch('https://api.auth0.com/userinfo', {
+    headers: { 'Authorization': `Bearer ${cookies().get('token')}` },
   });
+  const user = await userResponse.json();
 
-  // ✅ This code ACTUALLY EXECUTES too
-  await db.orders.create({
-    userId,
-    items,
-    total,
-    paymentId: payment.id,
-  });
+  // ✅ This external API call is also mocked
+  const productsResponse = await fetch('https://api.stripe.com/v1/products');
+  const products = await productsResponse.json();
 
-  return Response.json({ success: true });
+  return <CheckoutForm user={user} products={products} />;
 }
 ```
 
 **With Scenarist:**
 
-- Your database queries run (use test database or in-memory)
 - Your business logic executes (`calculateTotal`, validation, etc.)
 - Your routing and middleware run
-- Only external API calls (Stripe) are mocked
+- Your Server Components render on the server
+- Only **external HTTP API calls** (Stripe, Auth0, SendGrid) are mocked
 
 **You're testing the actual application behavior**, not a fake simulation.
 
@@ -276,9 +262,9 @@ test("payment fails", async ({ page }) => {
 
 ## Key Features
 
-### 🚀 True End-to-End Integration Testing
+### 🚀 Real Application Code Executes
 
-Your complete application stack executes—frontend, backend, database, business logic. Test the real user experience, not mocked simulations. Perfect for Next.js Server Components, Express routes, and any Node.js application.
+Your complete application stack executes—Server Components, API routes, middleware, business logic. Test the real user experience, not mocked simulations. Perfect for Next.js Server Components, Express routes, and any Node.js application that calls external HTTP APIs.
 
 ### 🎯 Test Isolation with Parallel Execution
 
@@ -312,9 +298,9 @@ Leverage the power of MSW's battle-tested HTTP interception. Scenarist adds runt
 
 Capture state from requests and inject it into subsequent responses. Perfect for testing shopping carts, multi-step forms, user sessions, and any flow where responses depend on previous requests. State is isolated per test ID for parallel execution.
 
-### 🗄️ Serializable Scenarios for Distributed Testing
+### 🎯 Declarative Scenario Definitions
 
-Scenarios are pure JSON—store them in Redis for distributed testing, save to files for version control, or fetch from remote APIs. No functions or closures means scenarios work across processes, containers, and even different machines.
+Scenarios are **declarative patterns**—they describe WHAT responses to return, not HOW to decide. No imperative functions hiding if/else logic. This makes scenarios inspectable, composable, and easy to maintain. Your test intent is always visible.
 
 ---
 
@@ -359,8 +345,8 @@ Scenarist uses **Hexagonal Architecture** (Ports & Adapters) for maximum flexibi
         │  Drive the application   │   │  Driven by core        │
         │                          │   │                        │
         │  • Express Middleware    │   │  • InMemoryStore       │
-        │  • Next.js Adapter       │   │  • RedisStore (future) │
-        │  • (More coming soon)    │   │                        │
+        │  • Next.js Adapter       │   │  • MSW Integration     │
+        │  • Playwright Helpers    │   │                        │
         │                          │   │                        │
         └──────────────────────────┘   └────────────────────────┘
 ```
@@ -382,7 +368,7 @@ Scenarist uses **Hexagonal Architecture** (Ports & Adapters) for maximum flexibi
 **Extensibility**
 
 - ✅ Add new framework adapters without touching core
-- ✅ Add new storage backends (Redis, PostgreSQL) easily
+- ✅ Extend scenario capabilities in core, all adapters benefit
 - ✅ Community can contribute adapters
 
 **Testability**
@@ -839,9 +825,9 @@ async function switchScenario(page: Page, scenario: string) {
 
 ✅ **Test Real Application Behavior**
 
-- Your Express/Next.js code actually runs—no fake mocks
-- Database queries, middleware, routing—all execute normally
-- Only external APIs are mocked
+- Your Express/Next.js code actually runs—including Server Components
+- Middleware, routing, business logic—all execute normally
+- Only external HTTP APIs are mocked (Stripe, Auth0, etc.)
 - Catch integration bugs where components interact
 
 ✅ **Fast Test Development**
@@ -915,12 +901,12 @@ async function switchScenario(page: Page, scenario: string) {
 | Feature                       | Traditional Mocking  | MSW Without Scenarist | Scenarist (MSW + Management) | E2E with Real APIs |
 | ----------------------------- | -------------------- | --------------------- | ---------------------------- | ------------------ |
 | **Your App Code Runs**        | ✅ Yes               | ✅ Yes                | ✅ Yes                       | ✅ Yes             |
-| **External APIs Mocked**      | ✅ Yes               | ✅ Yes                | ✅ Yes                       | ❌ Real            |
-| **Test Express Routes**       | ✅ Yes               | ✅ Yes                | ✅ Yes                       | ✅ Yes             |
-| **Test Database Integration** | ✅ Real (test DB)    | ✅ Real (test DB)     | ✅ Real (test DB)            | ✅ Real            |
+| **External HTTP APIs Mocked** | ✅ Yes               | ✅ Yes                | ✅ Yes                       | ❌ Real            |
+| **Test Express/Next.js**      | ✅ Yes               | ✅ Yes                | ✅ Yes                       | ✅ Yes             |
+| **Server Components**         | ⚠️ Complex mocking   | ✅ Yes                | ✅ Yes                       | ✅ Yes             |
 | **Scenario Switching**        | ⚠️ Restart required  | ⚠️ Restart required   | ✅ Runtime                   | Manual setup       |
 | **Parallel Test Isolation**   | ❌ Conflicts         | ❌ Conflicts          | ✅ Test ID isolation         | ❌ Very hard       |
-| **Framework Agnostic**        | ⚠️ DIY per framework | ⚠️ DIY per framework  | ✅ Built-in adapters         | ✅ Yes             |
+| **Framework Adapters**        | ⚠️ DIY per framework | ⚠️ DIY per framework  | ✅ Built-in adapters         | ✅ Yes             |
 | **Type Safety**               | ⚠️ Manual            | ⚠️ Manual             | ✅ Full TypeScript           | ✅ If typed        |
 | **Flakiness**                 | ⚠️ Timing issues     | ⚠️ Timing issues      | ✅ Stable                    | ⚠️ Can be flaky    |
 | **Setup Complexity**          | ⚠️ DIY               | ⚠️ DIY                | ✅ Declarative               | ⚠️ Complex         |
@@ -999,7 +985,6 @@ pnpm test:watch
 ### Areas for Contribution
 
 - 🔌 **Framework Adapters** - Fastify, Hono, Koa, Remix (see existing adapters as patterns)
-- 💾 **Storage Adapters** - Redis, PostgreSQL, DynamoDB
 - 📚 **Documentation** - Examples, tutorials, blog posts
 - 🐛 **Bug Fixes** - Check our [issues](https://github.com/citypaul/scenarist/issues)
 - ✨ **Features** - See existing packages for patterns
@@ -1171,9 +1156,9 @@ A: Yes! Scenarist provides server-side scenario management, which complements Pl
 
 A: Absolutely! Scenarist works with Cypress, Puppeteer, Selenium, or any test framework that can make HTTP requests. Even `curl` works!
 
-**Q: What about my database? Does it need to be mocked?**
+**Q: What about my database? Does Scenarist help with that?**
 
-A: No! Use a real test database (or in-memory database like SQLite). Your database queries run normally. Only external HTTP APIs are mocked.
+A: No. Scenarist only intercepts **external HTTP requests** (Stripe, Auth0, etc.). Database calls are not HTTP requests—they go directly to your database. If your app uses databases, use a test database or tools like Testcontainers. See our [Testing Database Apps](/guides/testing-database-apps) guide for strategies.
 
 **Q: How fast is scenario switching?**
 
