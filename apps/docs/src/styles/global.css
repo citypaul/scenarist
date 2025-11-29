@@ -45,11 +45,25 @@
   html {
     font-family: var(--font-sans);
     scroll-behavior: smooth;
+    /* Prevent iOS overscroll bounce that causes nav bar jank */
+    overscroll-behavior: none;
   }
 
   body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Prevent iOS overscroll bounce on body */
+    overscroll-behavior-y: none;
+    /* Disable double-tap zoom for faster interactions */
+    touch-action: manipulation;
+  }
+
+  /* iOS Safari: ensure fixed elements don't jank during address bar animation */
+  @supports (-webkit-touch-callout: none) {
+    body {
+      /* Use min-height with -webkit-fill-available for iOS viewport stability */
+      min-height: -webkit-fill-available;
+    }
   }
 
   /* Prevent layout shift during font loading by ensuring text rendering is stable */

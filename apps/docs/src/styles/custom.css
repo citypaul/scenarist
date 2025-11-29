@@ -4,6 +4,28 @@
 @import '@fontsource-variable/inter';
 @import '@fontsource-variable/jetbrains-mono';
 
+/* ===== iOS SCROLLING FIX ===== */
+/* Prevents janky scrolling and nav bar snapping on iOS Safari */
+html {
+  /* Prevent iOS overscroll bounce that causes nav bar jank */
+  overscroll-behavior: none;
+}
+
+body {
+  /* Prevent iOS overscroll bounce on body */
+  overscroll-behavior-y: none;
+  /* Disable double-tap zoom for faster interactions */
+  touch-action: manipulation;
+}
+
+/* iOS Safari: ensure fixed/sticky elements don't jank during address bar animation */
+@supports (-webkit-touch-callout: none) {
+  body {
+    /* Use min-height with -webkit-fill-available for iOS viewport stability */
+    min-height: -webkit-fill-available;
+  }
+}
+
 /* ===== DESIGN TOKENS ===== */
 :root {
   /* Typography - using variable fonts for performance */
