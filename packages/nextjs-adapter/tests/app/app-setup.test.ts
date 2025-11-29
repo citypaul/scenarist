@@ -1,11 +1,16 @@
-import { describe, it, expect } from "vitest";
 import {
-  createInMemoryStateManager,
   createInMemorySequenceTracker,
+  createInMemoryStateManager,
   SCENARIST_TEST_ID_HEADER,
   type ScenaristScenarios,
 } from "@scenarist/core";
+import { describe, expect, it } from "vitest";
 import { createScenarist } from "../../src/app/setup.js";
+
+const requireDefined = <T>(value: T | undefined): T => {
+  expect(value).toBeDefined();
+  return value as T;
+};
 
 // Define all test scenarios upfront
 const testScenarios = {
@@ -29,17 +34,13 @@ const testScenarios = {
   },
 } as const satisfies ScenaristScenarios;
 
-const createTestSetup = async () => {
-  const scenarist = createScenarist({
-    enabled: true,
-    scenarios: testScenarios,
-  });
-
-  // Should never be undefined in tests (NODE_ENV !== 'production')
-  if (!scenarist) {
-    throw new Error("createScenarist returned undefined in test environment");
-  }
-
+const createTestSetup = () => {
+  const scenarist = requireDefined(
+    createScenarist({
+      enabled: true,
+      scenarios: testScenarios,
+    }),
+  );
   return { scenarist };
 };
 
@@ -181,19 +182,19 @@ describe("App Router createScenarist", () => {
     });
 
     it("should share scenario registry across all instances", async () => {
-      const instance1 = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
+      const instance1 = requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+        }),
+      );
 
-      const instance2 = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
-
-      if (!instance1 || !instance2) {
-        throw new Error("Instances should not be undefined in tests");
-      }
+      const instance2 = requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+        }),
+      );
 
       // Both instances should see the same scenarios
       const scenarios1 = instance1.listScenarios();
@@ -204,19 +205,19 @@ describe("App Router createScenarist", () => {
     });
 
     it("should share scenario store across all instances", async () => {
-      const instance1 = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
+      const instance1 = requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+        }),
+      );
 
-      const instance2 = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
-
-      if (!instance1 || !instance2) {
-        throw new Error("Instances should not be undefined in tests");
-      }
+      const instance2 = requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+        }),
+      );
 
       // Switch scenario using instance1
       instance1.switchScenario("test-singleton-store", "premium");
@@ -235,29 +236,26 @@ describe("App Router createScenarist", () => {
       });
 
       // Even with different config, should return same instance
-      const instance2 = createScenarist({
-        enabled: false, // Different enabled flag
-        scenarios: testScenarios,
-      });
+      const instance2 = requireDefined(
+        createScenarist({
+          enabled: false, // Different enabled flag
+          scenarios: testScenarios,
+        }),
+      );
 
       expect(instance1).toBe(instance2);
-      if (!instance2) {
-        throw new Error("Instance should not be undefined in tests");
-      }
       // Original config should be preserved
       expect(instance2.config.enabled).toBe(true); // Not false!
     });
 
     it("should reuse existing registry/store when instance is cleared but globals persist", async () => {
       // First call creates everything
-      const instance1 = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
-
-      if (!instance1) {
-        throw new Error("Instance should not be undefined in tests");
-      }
+      requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+        }),
+      );
 
       // Store references to the global registry and store
       const originalRegistry = (global as unknown as Record<string, unknown>)
@@ -271,14 +269,12 @@ describe("App Router createScenarist", () => {
         .__scenarist_instance;
 
       // Second call should reuse existing registry and store
-      const instance2 = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
-
-      if (!instance2) {
-        throw new Error("Instance should not be undefined in tests");
-      }
+      const instance2 = requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+        }),
+      );
 
       // Verify the same registry and store are being used
       expect(
@@ -312,14 +308,12 @@ describe("App Router createScenarist", () => {
       delete (global as unknown as Record<string, unknown>).__scenarist_store;
 
       // Second call should reuse registry and create new store
-      const instance2 = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
-
-      if (!instance2) {
-        throw new Error("Instance should not be undefined in tests");
-      }
+      requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+        }),
+      );
 
       // Registry should be reused, store should be new
       expect(
@@ -347,14 +341,12 @@ describe("App Router createScenarist", () => {
         .__scenarist_registry;
 
       // Second call should create new registry and reuse store
-      const instance2 = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
-
-      if (!instance2) {
-        throw new Error("Instance should not be undefined in tests");
-      }
+      requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+        }),
+      );
 
       // Store should be reused, registry should be new
       expect(
@@ -383,18 +375,18 @@ describe("App Router createScenarist", () => {
 
     it("should skip MSW initialization on subsequent start() calls from different instances", async () => {
       clearGlobalFlag();
-      const scenarist1 = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
-      const scenarist2 = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
-
-      if (!scenarist1 || !scenarist2) {
-        throw new Error("Instances should not be undefined in tests");
-      }
+      const scenarist1 = requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+        }),
+      );
+      const scenarist2 = requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+        }),
+      );
 
       scenarist1.start(); // First call - should start MSW
 
@@ -404,18 +396,18 @@ describe("App Router createScenarist", () => {
 
     it("should share scenario store across multiple instances", async () => {
       clearGlobalFlag();
-      const scenarist1 = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
-      const scenarist2 = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
-
-      if (!scenarist1 || !scenarist2) {
-        throw new Error("Instances should not be undefined in tests");
-      }
+      const scenarist1 = requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+        }),
+      );
+      const scenarist2 = requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+        }),
+      );
 
       scenarist1.start();
       scenarist2.start();
@@ -463,15 +455,13 @@ describe("App Router createScenarist", () => {
       stateManager.set("test-di-1", "userId", "user-123");
       stateManager.set("test-di-1", "cartItems", "item1,item2");
 
-      const scenarist = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-        stateManager,
-      });
-
-      if (!scenarist) {
-        throw new Error("createScenarist returned undefined in test");
-      }
+      const scenarist = requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+          stateManager,
+        }),
+      );
 
       // Verify state exists before switch
       expect(stateManager.get("test-di-1", "userId")).toBe("user-123");
@@ -489,15 +479,13 @@ describe("App Router createScenarist", () => {
       sequenceTracker.advance("test-di-2", "login-sequence");
       sequenceTracker.advance("test-di-2", "login-sequence");
 
-      const scenarist = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-        sequenceTracker,
-      });
-
-      if (!scenarist) {
-        throw new Error("createScenarist returned undefined in test");
-      }
+      const scenarist = requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+          sequenceTracker,
+        }),
+      );
 
       // Verify sequence is advanced before switch
       expect(
@@ -556,15 +544,13 @@ describe("App Router createScenarist", () => {
     it("should route requests to correct scenario based on test ID header", async () => {
       clearAllGlobals();
 
-      const scenarist = createScenarist({
-        enabled: true,
-        scenarios: httpTestScenarios,
-        defaultTestId: "fallback-test",
-      });
-
-      if (!scenarist) {
-        throw new Error("createScenarist returned undefined in test");
-      }
+      const scenarist = requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: httpTestScenarios,
+          defaultTestId: "fallback-test",
+        }),
+      );
 
       scenarist.start();
 
