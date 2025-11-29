@@ -746,7 +746,17 @@ See the [Next.js Adapter Documentation](./packages/nextjs-adapter/README.md) for
 ### Playwright Helpers ✅
 
 ```typescript
-import { test, expect } from "@scenarist/playwright-helpers";
+// tests/fixtures.ts
+import { withScenarios, expect } from "@scenarist/playwright-helpers";
+import { scenarios } from "../lib/scenarios";
+
+export const test = withScenarios(scenarios);
+export { expect };
+```
+
+```typescript
+// tests/my-test.spec.ts
+import { test, expect } from "./fixtures";
 
 test("my test", async ({ page, switchScenario }) => {
   await switchScenario(page, "premium-user");

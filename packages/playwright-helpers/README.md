@@ -54,14 +54,28 @@ export default defineConfig<ScenaristOptions>({
 
 **Note:** The `<ScenaristOptions>` type parameter enables TypeScript to recognize `scenaristEndpoint` as a valid configuration option.
 
-### 2. Use in Tests
+### 2. Create a Fixtures File
+
+Create `tests/fixtures.ts` with your scenarios:
 
 ```typescript
-import { test, expect } from "@scenarist/playwright-helpers";
+// tests/fixtures.ts
+import { withScenarios, expect } from "@scenarist/playwright-helpers";
+import { scenarios } from "../lib/scenarios"; // Your scenario definitions
+
+export const test = withScenarios(scenarios);
+export { expect };
+```
+
+### 3. Use in Tests
+
+```typescript
+// tests/my-test.spec.ts
+import { test, expect } from "./fixtures"; // Import from YOUR fixtures file
 
 test("premium user sees premium pricing", async ({ page, switchScenario }) => {
   // Configuration read from playwright.config.ts - no repetition!
-  await switchScenario(page, "premiumUser");
+  await switchScenario(page, "premiumUser"); // Type-safe! Autocomplete works
 
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Premium" })).toBeVisible();
@@ -76,14 +90,16 @@ If your team already has custom Playwright fixtures, you can easily compose them
 
 ```typescript
 // tests/fixtures.ts
-import { test as scenaristTest } from "@scenarist/playwright-helpers";
+import { withScenarios, expect } from "@scenarist/playwright-helpers";
+import { scenarios } from "../lib/scenarios";
+import type { Page } from "@playwright/test";
 
 type MyFixtures = {
   authenticatedPage: Page;
   database: Database;
 };
 
-export const test = scenaristTest.extend<MyFixtures>({
+export const test = withScenarios(scenarios).extend<MyFixtures>({
   authenticatedPage: async ({ page }, use) => {
     // Your custom fixture logic
     await page.goto("/login");
@@ -100,7 +116,7 @@ export const test = scenaristTest.extend<MyFixtures>({
   },
 });
 
-export { expect } from "@scenarist/playwright-helpers";
+export { expect };
 ```
 
 Now use your extended test object:
@@ -123,35 +139,32 @@ test("authenticated premium user flow", async ({
 });
 ```
 
-## Type-Safe Scenario IDs (Optional but Recommended)
+## Type-Safe Scenario IDs (Automatic)
 
-Get autocomplete and type checking for scenario names:
+Type safety is **automatic** when you use `withScenarios(scenarios)`. The function infers scenario IDs from your scenarios object.
 
-### 1. Define Scenarios with Type Export
+### 1. Define Scenarios
 
 ```typescript
 // lib/scenarios.ts
-import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/core';
+import type { ScenaristScenarios } from '@scenarist/core';
 
 export const scenarios = {
-  cartWithState: { id: 'cartWithState', name: 'Cart with State', ... },
-  premiumUser: { id: 'premiumUser', name: 'Premium User', ... },
-  standardUser: { id: 'standardUser', name: 'Standard User', ... },
+  cartWithState: { id: 'cartWithState', name: 'Cart with State', mocks: [...] },
+  premiumUser: { id: 'premiumUser', name: 'Premium User', mocks: [...] },
+  standardUser: { id: 'standardUser', name: 'Standard User', mocks: [...] },
 } as const satisfies ScenaristScenarios;
-
-// Derive type from actual scenarios (or use ScenarioIds<typeof scenarios>)
-export type ScenarioId = keyof typeof scenarios;
 ```
 
 ### 2. Create Typed Test Object
 
 ```typescript
 // tests/fixtures.ts
-import { createTest, expect } from "@scenarist/playwright-helpers";
-import type { ScenarioId } from "../lib/scenarios";
+import { withScenarios, expect } from "@scenarist/playwright-helpers";
+import { scenarios } from "../lib/scenarios";
 
-// Create typed test object with your scenario IDs
-export const test = createTest<ScenarioId>();
+// Type-safe test object - scenario IDs are inferred automatically!
+export const test = withScenarios(scenarios);
 export { expect };
 ```
 
@@ -267,12 +280,22 @@ await switchScenario(page, "premiumUser", {
 
 ### Fixtures API (Recommended)
 
-#### `test`
+#### `withScenarios(scenarios)`
 
-Extended Playwright test object with Scenarist fixtures.
+Creates a type-safe Playwright test object with Scenarist fixtures.
 
 ```typescript
-import { test } from "@scenarist/playwright-helpers";
+// tests/fixtures.ts
+import { withScenarios, expect } from "@scenarist/playwright-helpers";
+import { scenarios } from "../lib/scenarios";
+
+export const test = withScenarios(scenarios);
+export { expect };
+```
+
+```typescript
+// tests/my-test.spec.ts
+import { test, expect } from "./fixtures";
 
 test("my test", async ({ page, switchScenario, scenaristTestId }) => {
   // Your test code
@@ -289,7 +312,7 @@ test("my test", async ({ page, switchScenario, scenaristTestId }) => {
 Re-exported from `@playwright/test` for convenience:
 
 ```typescript
-import { test, expect } from "@scenarist/playwright-helpers";
+import { withScenarios, expect } from "@scenarist/playwright-helpers";
 ```
 
 #### Configuration Options
@@ -361,7 +384,7 @@ await switchScenario(page, scenarioId, {
 ### ❌ Don't: Switch scenarios after navigation
 
 ```typescript
-import { test } from "@scenarist/playwright-helpers";
+import { test, expect } from "./fixtures"; // Import from YOUR fixtures file
 
 test("bad example", async ({ page, switchScenario }) => {
   await page.goto("/"); // BAD - Navigating first
@@ -374,6 +397,8 @@ test("bad example", async ({ page, switchScenario }) => {
 **Solution**: ✅ Switch scenario BEFORE navigating:
 
 ```typescript
+import { test, expect } from "./fixtures";
+
 test("good example", async ({ page, switchScenario }) => {
   await switchScenario(page, "premium"); // Set headers first
   await page.goto("/"); // Now requests use test ID header
@@ -428,7 +453,7 @@ test("bad example", async ({ page }) => {
 **Solution**: ✅ Use the fixture API (auto-generates unique IDs):
 
 ```typescript
-import { test } from "@scenarist/playwright-helpers";
+import { test, expect } from "./fixtures"; // Import from YOUR fixtures file
 
 test("good example", async ({ page, switchScenario }) => {
   await switchScenario(page, "premium");
