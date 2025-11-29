@@ -18,11 +18,6 @@ const FALLBACK_DEFAULT_TEST_ID = "default-test";
  * - Safe to spread in fetch headers without guards
  * - Zero runtime overhead (tree-shaken in production builds)
  *
- * **Why use this instead of scenarist.getHeaders()?**
- * - No need to check if scenarist is defined (`scenarist?.getHeaders(req) ?? {}`)
- * - Works automatically by accessing the global singleton
- * - Consistent API across development, test, and production
- *
  * @param req - The Web standard Request object
  * @returns Object with single entry: configured test ID header name → value from request or default
  *          Returns `{}` in production when scenarist is undefined
@@ -58,11 +53,6 @@ export function getScenaristHeaders(req: Request): Record<string, string> {
  * - Returns `{}` (empty object) when scenarist is undefined
  * - Safe to spread in fetch headers without guards
  * - Zero runtime overhead (tree-shaken in production builds)
- *
- * **Why use this instead of scenarist.getHeadersFromReadonlyHeaders()?**
- * - No need to check if scenarist is defined
- * - Works automatically by accessing the global singleton
- * - Consistent API across development, test, and production
  *
  * @param headers - The ReadonlyHeaders object from headers() in 'next/headers'
  * @returns Object with single entry: configured test ID header name → value from headers or default
