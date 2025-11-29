@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect } from "./fixtures";
 
 /**
  * Polling Server Components Page - Sequences with React Server Components
@@ -24,55 +24,61 @@ import { test, expect } from './fixtures';
  * - Tests verify React Server Component renders correctly at each sequence position
  */
 
-test.describe('Polling Page - Sequences with Server Components', () => {
-  test('should show pending status on first request', async ({
+test.describe("Polling Page - Sequences with Server Components", () => {
+  test("should show pending status on first request", async ({
     page,
     switchScenario,
   }) => {
     // Switch to GitHub polling scenario
-    await switchScenario(page, 'githubPolling');
+    await switchScenario(page, "githubPolling");
 
     // Navigate to polling page - first sequence position
-    await page.goto('/polling?jobId=123');
+    await page.goto("/polling?jobId=123");
 
     // Verify server component rendered
     await expect(
-      page.getByRole('heading', { name: 'Job Polling (React Server Component)' })
+      page.getByRole("heading", {
+        name: "Job Polling (React Server Component)",
+      }),
     ).toBeVisible();
 
     // Verify first sequence response: pending (0%)
-    await expect(page.getByText('PENDING', { exact: true })).toBeVisible();
-    await expect(page.getByText('0%', { exact: true })).toBeVisible();
-    await expect(page.getByText('Job is queued and waiting to start...')).toBeVisible();
+    await expect(page.getByText("PENDING", { exact: true })).toBeVisible();
+    await expect(page.getByText("0%", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("Job is queued and waiting to start..."),
+    ).toBeVisible();
   });
 
-  test('should show processing status on second request', async ({
+  test("should show processing status on second request", async ({
     page,
     switchScenario,
   }) => {
-    await switchScenario(page, 'githubPolling');
+    await switchScenario(page, "githubPolling");
 
     // First request (pending)
-    await page.goto('/polling?jobId=123');
-    await expect(page.getByText('PENDING', { exact: true })).toBeVisible();
+    await page.goto("/polling?jobId=123");
+    await expect(page.getByText("PENDING", { exact: true })).toBeVisible();
 
     // Reload page - advances to second sequence position
     await page.reload();
 
     // Verify second sequence response: processing (50%)
-    await expect(page.getByText('PROCESSING', { exact: true })).toBeVisible();
-    await expect(page.getByText('50%', { exact: true })).toBeVisible();
-    await expect(page.getByText('Job is currently being processed...')).toBeVisible();
+    await expect(page.getByText("PROCESSING", { exact: true })).toBeVisible();
+    await expect(page.getByText("50%", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("Job is currently being processed..."),
+    ).toBeVisible();
   });
 
-  test('should show complete status on third request', async ({
+  test("should show complete status on third request", async ({
     page,
     switchScenario,
   }) => {
-    await switchScenario(page, 'githubPolling');
+    await switchScenario(page, "githubPolling");
 
     // First request (pending)
-    await page.goto('/polling?jobId=123');
+    await page.goto("/polling?jobId=123");
 
     // Second request (processing)
     await page.reload();
@@ -81,48 +87,50 @@ test.describe('Polling Page - Sequences with Server Components', () => {
     await page.reload();
 
     // Verify third sequence response: complete (100%)
-    await expect(page.getByText('COMPLETE', { exact: true })).toBeVisible();
-    await expect(page.getByText('100%', { exact: true })).toBeVisible();
-    await expect(page.getByText('Job completed successfully!')).toBeVisible();
+    await expect(page.getByText("COMPLETE", { exact: true })).toBeVisible();
+    await expect(page.getByText("100%", { exact: true })).toBeVisible();
+    await expect(page.getByText("Job completed successfully!")).toBeVisible();
   });
 
-  test('should keep showing complete status after sequence exhaustion (repeat: last)', async ({
+  test("should keep showing complete status after sequence exhaustion (repeat: last)", async ({
     page,
     switchScenario,
   }) => {
-    await switchScenario(page, 'githubPolling');
+    await switchScenario(page, "githubPolling");
 
     // Advance through all sequence positions
-    await page.goto('/polling?jobId=123'); // pending
+    await page.goto("/polling?jobId=123"); // pending
     await page.reload(); // processing
     await page.reload(); // complete
 
     // Verify complete status
-    await expect(page.getByText('COMPLETE', { exact: true })).toBeVisible();
+    await expect(page.getByText("COMPLETE", { exact: true })).toBeVisible();
 
     // Fourth request - sequence exhausted, should repeat last (complete)
     await page.reload();
 
     // Verify STILL showing complete (not cycling back to pending)
-    await expect(page.getByText('COMPLETE', { exact: true })).toBeVisible();
-    await expect(page.getByText('100%', { exact: true })).toBeVisible();
-    await expect(page.getByText('Job completed successfully!')).toBeVisible();
+    await expect(page.getByText("COMPLETE", { exact: true })).toBeVisible();
+    await expect(page.getByText("100%", { exact: true })).toBeVisible();
+    await expect(page.getByText("Job completed successfully!")).toBeVisible();
   });
 
-  test('should demonstrate sequence advancement with server components', async ({
+  test("should demonstrate sequence advancement with server components", async ({
     page,
     switchScenario,
   }) => {
-    await switchScenario(page, 'githubPolling');
-    await page.goto('/polling?jobId=123');
+    await switchScenario(page, "githubPolling");
+    await page.goto("/polling?jobId=123");
 
     // Verify explanatory text about sequences
     await expect(
-      page.getByText('Each page refresh advances the sequence')
+      page.getByText("Each page refresh advances the sequence"),
     ).toBeVisible();
     await expect(page.getByText("Repeat Mode: 'last'")).toBeVisible();
     await expect(
-      page.getByText('This proves Scenarist sequences work with Server Components!')
+      page.getByText(
+        "This proves Scenarist sequences work with Server Components!",
+      ),
     ).toBeVisible();
   });
 });

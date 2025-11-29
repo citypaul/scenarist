@@ -1,8 +1,17 @@
-import type { IncomingMessage } from 'http';
-import type { BaseAdapterOptions, ScenaristAdapter, ScenarioRegistry, ScenarioStore } from '@scenarist/core';
-import { InMemoryScenarioRegistry, InMemoryScenarioStore, SCENARIST_TEST_ID_HEADER } from '@scenarist/core';
-import { createScenaristBase } from '../common/create-scenarist-base.js';
-import { createScenarioEndpoint } from './endpoints.js';
+import type { IncomingMessage } from "http";
+import type {
+  BaseAdapterOptions,
+  ScenaristAdapter,
+  ScenarioRegistry,
+  ScenarioStore,
+} from "@scenarist/core";
+import {
+  InMemoryScenarioRegistry,
+  InMemoryScenarioStore,
+  SCENARIST_TEST_ID_HEADER,
+} from "@scenarist/core";
+import { createScenaristBase } from "../common/create-scenarist-base.js";
+import { createScenarioEndpoint } from "./endpoints.js";
 
 /**
  * Global state for Next.js Pages Router adapter.
@@ -37,7 +46,7 @@ declare global {
  * Compatible with both NextApiRequest and GetServerSidePropsContext.req
  */
 type RequestWithHeaders = {
-  headers: IncomingMessage['headers'];
+  headers: IncomingMessage["headers"];
 };
 
 /**
@@ -53,7 +62,7 @@ export type PagesAdapterOptions = BaseAdapterOptions;
  * Provides MSW server lifecycle management and scenario endpoint factory.
  * Unlike Express adapter, doesn't provide middleware (Next.js doesn't have global middleware for Pages Router).
  */
-export type PagesScenarist = Omit<ScenaristAdapter<never>, 'middleware'> & {
+export type PagesScenarist = Omit<ScenaristAdapter<never>, "middleware"> & {
   /**
    * Create scenario endpoint handler for use in pages/api/__scenario__.ts
    *
@@ -132,7 +141,7 @@ export type PagesScenarist = Omit<ScenaristAdapter<never>, 'middleware'> & {
  * ```
  */
 export const createScenaristImpl = (
-  options: PagesAdapterOptions
+  options: PagesAdapterOptions,
 ): PagesScenarist => {
   // Singleton guard - return existing instance if already created
   // This prevents duplicate scenario registration errors when Next.js creates multiple module instances
@@ -169,7 +178,9 @@ export const createScenaristImpl = (
     createScenarioEndpoint: () => createScenarioEndpoint(manager, config),
     getHeaders: (req: RequestWithHeaders): Record<string, string> => {
       const headerValue = req.headers[SCENARIST_TEST_ID_HEADER];
-      const testId = (Array.isArray(headerValue) ? headerValue[0] : headerValue) || config.defaultTestId;
+      const testId =
+        (Array.isArray(headerValue) ? headerValue[0] : headerValue) ||
+        config.defaultTestId;
 
       return {
         [SCENARIST_TEST_ID_HEADER]: testId,

@@ -5,17 +5,23 @@
  * Tests the home page renders with expected content.
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test.describe('Smoke Tests', () => {
-  test('home page loads and displays title', async ({ page }) => {
+test.describe("Smoke Tests", () => {
+  test("home page loads and displays title", async ({ page }) => {
     // Navigate to home page
-    await page.goto('/');
+    await page.goto("/");
 
     // Verify page title
-    await expect(page.getByRole('heading', { name: /Scenarist - Next.js App Router Example/i })).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        name: /Scenarist - Next.js App Router Example/i,
+      }),
+    ).toBeVisible();
 
     // Verify description text
-    await expect(page.getByText(/E-commerce demo showcasing all Scenarist features/i)).toBeVisible();
+    await expect(
+      page.getByText(/E-commerce demo showcasing all Scenarist features/i),
+    ).toBeVisible();
   });
 });

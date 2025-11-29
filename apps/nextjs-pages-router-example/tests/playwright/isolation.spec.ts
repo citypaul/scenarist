@@ -82,7 +82,9 @@ test.describe("Parallel Test Isolation", () => {
     await page.getByRole("button", { name: "Calculate Shipping" }).click();
 
     // Verify UK gets FREE shipping (£0.00)
-    const shippingCost = page.getByRole("status").filter({ hasText: "Shipping" });
+    const shippingCost = page
+      .getByRole("status")
+      .filter({ hasText: "Shipping" });
     await expect(shippingCost).toContainText("£0.00");
 
     // Verify we're NOT seeing paid shipping (would indicate interference)
@@ -110,7 +112,9 @@ test.describe("Parallel Test Isolation", () => {
     await page.getByRole("button", { name: "Calculate Shipping" }).click();
 
     // Verify US gets £10 shipping
-    const shippingCost = page.getByRole("status").filter({ hasText: "Shipping" });
+    const shippingCost = page
+      .getByRole("status")
+      .filter({ hasText: "Shipping" });
     await expect(shippingCost).toContainText("£10.00");
 
     // Verify we're NOT seeing free or EU shipping (would indicate interference)
@@ -132,7 +136,9 @@ test.describe("Parallel Test Isolation", () => {
     await expect(page.getByRole("article").first()).toBeVisible();
 
     // Add first product to cart using the proper button pattern
-    const addButton = page.getByRole("button", { name: /Add .* to cart/ }).first();
+    const addButton = page
+      .getByRole("button", { name: /Add .* to cart/ })
+      .first();
     await addButton.click();
 
     // Verify cart count shows 1 (not items from other concurrent tests)

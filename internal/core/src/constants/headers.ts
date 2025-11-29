@@ -6,4 +6,4 @@
  *
  * This is a fixed constant - not configurable by users.
  */
-export const SCENARIST_TEST_ID_HEADER = 'x-scenarist-test-id';
+export const SCENARIST_TEST_ID_HEADER = "x-scenarist-test-id";

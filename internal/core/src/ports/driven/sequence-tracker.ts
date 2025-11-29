@@ -30,7 +30,7 @@ export interface SequenceTracker {
   getPosition(
     testId: string,
     scenarioId: string,
-    mockIndex: number
+    mockIndex: number,
   ): SequencePosition;
 
   /**
@@ -47,7 +47,7 @@ export interface SequenceTracker {
     scenarioId: string,
     mockIndex: number,
     totalResponses: number,
-    repeatMode: 'last' | 'cycle' | 'none'
+    repeatMode: "last" | "cycle" | "none",
   ): void;
 
   /**

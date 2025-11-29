@@ -14,12 +14,12 @@
  * Run with: pnpm test:production
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from "vitest";
 
-describe('Production Build Verification', () => {
-  const baseURL = 'http://localhost:3000';
+describe("Production Build Verification", () => {
+  const baseURL = "http://localhost:3000";
 
-  it('health endpoint works in production', async () => {
+  it("health endpoint works in production", async () => {
     // SEMANTIC GOAL: Prove Express app runs without errors in production
     // - App starts successfully with production build
     // - Basic endpoints respond correctly
@@ -29,10 +29,10 @@ describe('Production Build Verification', () => {
 
     expect(response.status).toBe(200);
     const data = await response.json();
-    expect(data).toHaveProperty('status', 'ok');
+    expect(data).toHaveProperty("status", "ok");
   });
 
-  it('scenario endpoint is NOT available (tree-shaken)', async () => {
+  it("scenario endpoint is NOT available (tree-shaken)", async () => {
     // SEMANTIC GOAL: Prove Scenarist is completely absent in production
     // - scenarist.createScenarioEndpoint() returns undefined
     // - Express doesn't register the route (unlike Next.js which returns 405)
@@ -40,9 +40,9 @@ describe('Production Build Verification', () => {
     // - No MSW, no scenario switching, no test-id routing in production
 
     const postResponse = await fetch(`${baseURL}/__scenario__`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scenario: 'test', testId: 'test-123' }),
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scenario: "test", testId: "test-123" }),
     });
 
     expect(postResponse.status).toBe(404);
@@ -51,7 +51,7 @@ describe('Production Build Verification', () => {
     expect(getResponse.status).toBe(404);
   });
 
-  it('cart CRUD operations work with json-server backend', async () => {
+  it("cart CRUD operations work with json-server backend", async () => {
     // SEMANTIC GOAL: Prove same API routes work in both mocked and production states
     // - In dev/test: MSW intercepts /api/cart routes with mock scenarios
     // - In production: Real calls go through to json-server on port 3001
@@ -60,9 +60,9 @@ describe('Production Build Verification', () => {
 
     // Explicitly reset cart for this test (making test self-contained)
     // This is a REAL http call to json-server - proving no mocking in production
-    await fetch('http://localhost:3001/cart', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+    await fetch("http://localhost:3001/cart", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ items: [] }),
     });
 
@@ -74,9 +74,9 @@ describe('Production Build Verification', () => {
 
     // Add Product 1 to cart (CREATE operation via POST /api/cart/add → json-server PATCH)
     const addProduct1Response = await fetch(`${baseURL}/api/cart/add`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ item: 1 }),
     });
@@ -93,9 +93,9 @@ describe('Production Build Verification', () => {
 
     // Add Product 2 (UPDATE operation - accumulating items)
     const addProduct2Response = await fetch(`${baseURL}/api/cart/add`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ item: 2 }),
     });
@@ -110,9 +110,9 @@ describe('Production Build Verification', () => {
 
     // Add Product 1 again to test accumulation
     const addProduct1AgainResponse = await fetch(`${baseURL}/api/cart/add`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ item: 1 }),
     });

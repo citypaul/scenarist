@@ -21,13 +21,18 @@ class ScenarioNotFoundError extends Error {
 
 class DuplicateScenarioError extends Error {
   constructor(scenarioId: string) {
-    super(`Scenario '${scenarioId}' is already registered. Each scenario must have a unique ID.`);
+    super(
+      `Scenario '${scenarioId}' is already registered. Each scenario must have a unique ID.`,
+    );
     this.name = "DuplicateScenarioError";
   }
 }
 
 class ScenarioValidationError extends Error {
-  constructor(message: string, public readonly validationErrors: string[]) {
+  constructor(
+    message: string,
+    public readonly validationErrors: string[],
+  ) {
     super(message);
     this.name = "ScenarioValidationError";
   }
@@ -63,12 +68,12 @@ export const createScenarioManager = ({
 
       if (!validationResult.success) {
         const errorMessages = validationResult.error.issues.map(
-          (err) => `${err.path.join('.')}: ${err.message}`
+          (err) => `${err.path.join(".")}: ${err.message}`,
         );
-        const scenarioId = (definition as any)?.id || '<unknown>';
+        const scenarioId = (definition as any)?.id || "<unknown>";
         throw new ScenarioValidationError(
-          `Invalid scenario definition for '${scenarioId}': ${errorMessages.join(', ')}`,
-          errorMessages
+          `Invalid scenario definition for '${scenarioId}': ${errorMessages.join(", ")}`,
+          errorMessages,
         );
       }
 
@@ -89,7 +94,7 @@ export const createScenarioManager = ({
 
     switchScenario(
       testId: string,
-      scenarioId: string
+      scenarioId: string,
     ): ScenaristResult<void, Error> {
       const definition = registry.get(scenarioId);
 

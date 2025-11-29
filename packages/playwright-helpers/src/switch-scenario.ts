@@ -1,5 +1,5 @@
-import type { Page } from '@playwright/test';
-import { SCENARIST_TEST_ID_HEADER } from '@scenarist/core';
+import type { Page } from "@playwright/test";
+import { SCENARIST_TEST_ID_HEADER } from "@scenarist/core";
 
 /**
  * Options for switchScenario helper
@@ -40,10 +40,10 @@ const establishTestIdInterception = async (
   testId: string,
 ): Promise<void> => {
   // Clear any existing handlers to prevent accumulation
-  await page.unroute('**/*');
+  await page.unroute("**/*");
 
   // Intercept all routes to inject test ID header
-  await page.route('**/*', async (route) => {
+  await page.route("**/*", async (route) => {
     const headers = route.request().headers();
     headers[SCENARIST_TEST_ID_HEADER] = testId;
     await route.continue({ headers });
@@ -92,7 +92,7 @@ export const switchScenario = async (
 ): Promise<string> => {
   const {
     baseURL,
-    endpoint = '/__scenario__',
+    endpoint = "/__scenario__",
     testId: providedTestId,
   } = options;
 

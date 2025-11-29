@@ -9,17 +9,20 @@
 Scenarist is **80% ready for production release**. The core architecture, testing, and documentation are solid. The primary blockers are npm package configuration, licensing, and dependency management. Most gaps can be addressed in 2-3 weeks of focused work.
 
 **Critical Blockers (Must Fix Before v1.0):**
+
 - Missing LICENSE files across all packages
 - Missing package metadata (keywords, repository, homepage, author)
 - No Changesets workflow for versioning
 
 **High Priority (Should Fix Before v1.0):**
+
 - Security audit and dependency updates
 - Migration guides for breaking changes
 - Performance benchmarking
 - Example applications need cleanup/documentation
 
 **Good News:**
+
 - ✅ 100% test coverage in core package (314 passing tests)
 - ✅ Comprehensive documentation site (deployed to Cloudflare)
 - ✅ CI/CD pipeline working (GitHub Actions)
@@ -37,6 +40,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 ### A. Package Management
 
 #### ✅ What's Ready
+
 - Proper monorepo structure with pnpm workspaces
 - Turborepo configuration for build orchestration
 - All packages have proper TypeScript builds
@@ -47,11 +51,13 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 - Verification scripts integrated into Turborepo pipeline
 
 #### ❌ What's Missing
+
 - **No Changesets workflow** - Version management not set up
 
 #### 📋 Action Items
 
 **CRITICAL (Block Publication):**
+
 1. ✅ **COMPLETED** - Add MIT LICENSE file to root and all packages (2 hours)
    - Root: `/LICENSE`
    - Each package: `/packages/*/LICENSE`
@@ -92,6 +98,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
    GitHub Issue #118 proposed core-level tree-shaking to eliminate Zod (~150kb), but this is based on a fundamental misunderstanding of how conditional exports work at different layers.
 
    **The Dependency Chain:**
+
    ```
    User Application (production build)
      ↓ imports @scenarist/express-adapter
@@ -112,53 +119,56 @@ Scenarist is **80% ready for production release**. The core architecture, testin
    **Key Insight:** Core-level conditional exports have NO EFFECT because Core is never imported when adapter pattern is correct. Each adapter MUST have its own production.ts for total elimination.
 
    **Verification Command (IMPORTANT):**
+
    ```bash
    ! grep -rE '(setupWorker|startWorker|http\.(get|post|put|delete|patch)|HttpResponse\.json)' dist/
    ```
 
    This searches for MSW runtime functions (not just strings), ensuring no false positives from variable names or comments.
 
-**HIGH PRIORITY:**
-4. ✅ **COMPLETED** - Phase 2: Add production.ts to Next.js Adapters (completed 2025-11-22):
-   - ✅ Applied the Express adapter pattern to Next.js adapters
-   - ✅ Created `packages/nextjs-adapter/src/app/production.ts` (App Router)
-   - ✅ Created `packages/nextjs-adapter/src/pages/production.ts` (Pages Router)
-   - ✅ Updated package.json exports with "production" condition for both entry points
-   - ✅ Added verification scripts to both Next.js example apps
-   - ✅ Result achieved: 100% elimination in production (~320kb → 0kb)
-   - ✅ Benefits delivered:
-     - Complete elimination of Next.js adapter + Core + MSW in production
-     - Consistent pattern across all adapters
-     - Same bundle size reduction as Express (100% elimination)
-   - ✅ Testing completed:
-     - Unit tests for both production entry points (8 new tests, all passing)
-     - Verification tests with Next.js example apps (both passing)
-     - Bundled apps verified working correctly
-   - ✅ Documentation updates completed:
-     - Next.js adapter README (new Production Tree-Shaking section)
-     - CLAUDE.md updated with Next.js patterns
-   - **Verification:** Both Next.js example apps (App Router & Pages Router) successfully verified with `pnpm verify:treeshaking` - zero MSW code in production bundles
+**HIGH PRIORITY:** 4. ✅ **COMPLETED** - Phase 2: Add production.ts to Next.js Adapters (completed 2025-11-22):
+
+- ✅ Applied the Express adapter pattern to Next.js adapters
+- ✅ Created `packages/nextjs-adapter/src/app/production.ts` (App Router)
+- ✅ Created `packages/nextjs-adapter/src/pages/production.ts` (Pages Router)
+- ✅ Updated package.json exports with "production" condition for both entry points
+- ✅ Added verification scripts to both Next.js example apps
+- ✅ Result achieved: 100% elimination in production (~320kb → 0kb)
+- ✅ Benefits delivered:
+  - Complete elimination of Next.js adapter + Core + MSW in production
+  - Consistent pattern across all adapters
+  - Same bundle size reduction as Express (100% elimination)
+- ✅ Testing completed:
+  - Unit tests for both production entry points (8 new tests, all passing)
+  - Verification tests with Next.js example apps (both passing)
+  - Bundled apps verified working correctly
+- ✅ Documentation updates completed:
+  - Next.js adapter README (new Production Tree-Shaking section)
+  - CLAUDE.md updated with Next.js patterns
+- **Verification:** Both Next.js example apps (App Router & Pages Router) successfully verified with `pnpm verify:treeshaking` - zero MSW code in production bundles
 
 5. Set up Changesets workflow (4 hours):
    ```bash
    pnpm add -Dw @changesets/cli
    pnpm changeset init
    ```
+
    - Configure `.changeset/config.json`
    - Add GitHub Action for automatic versioning
    - Create initial changeset for v1.0.0
 
-**HIGH PRIORITY:**
-5. Add `publishConfig` to all packages (1 hour):
-   ```json
-   {
-     "publishConfig": {
-       "access": "public"
-     }
-   }
-   ```
+**HIGH PRIORITY:** 5. Add `publishConfig` to all packages (1 hour):
+
+```json
+{
+  "publishConfig": {
+    "access": "public"
+  }
+}
+```
 
 5. Add `engines` field to packages (matches root) (30 minutes):
+
    ```json
    {
      "engines": {
@@ -171,6 +181,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
    ```bash
    pnpm --filter=@scenarist/core exec npm publish --dry-run
    ```
+
    - Verify files included
    - Check package size
    - Ensure no secrets/test files
@@ -184,6 +195,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 ### B. Documentation
 
 #### ✅ What's Ready
+
 - Comprehensive main README.md with examples
 - All packages have READMEs
 - Documentation site built with Astro/Starlight (deployed to Cloudflare)
@@ -202,6 +214,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
   - ✅ All examples use correct naming conventions
 
 #### ❌ What's Missing
+
 - **Migration guides** - No guidance for breaking changes
 - **Troubleshooting guide** - Common issues not documented
 - **Performance guide** - No benchmarks or optimization tips
@@ -212,6 +225,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 #### 📋 Action Items
 
 **CRITICAL (User Success):**
+
 1. Create troubleshooting guide (4 hours):
    - Common setup issues
    - TypeScript errors
@@ -224,11 +238,11 @@ Scenarist is **80% ready for production release**. The core architecture, testin
    - Copy-paste example
    - Verify it works end-to-end
 
-**HIGH PRIORITY:**
-3. Create migration guides (3 hours):
-   - From MSW alone to Scenarist
-   - From manual mocking to Scenarist
-   - Breaking changes (if any from beta)
+**HIGH PRIORITY:** 3. Create migration guides (3 hours):
+
+- From MSW alone to Scenarist
+- From manual mocking to Scenarist
+- Breaking changes (if any from beta)
 
 4. Add performance benchmarks (4 hours):
    - Scenario switch time (<100ms claim)
@@ -236,12 +250,12 @@ Scenarist is **80% ready for production release**. The core architecture, testin
    - Memory usage per test
    - Parallel test scaling
 
-**NICE TO HAVE:**
-5. Comparison table expansion (2 hours):
-   - vs Playwright mock API
-   - vs Cypress intercept
-   - vs Custom MSW setup
-   - vs Real API testing
+**NICE TO HAVE:** 5. Comparison table expansion (2 hours):
+
+- vs Playwright mock API
+- vs Cypress intercept
+- vs Custom MSW setup
+- vs Real API testing
 
 6. Video walkthrough (8 hours):
    - 10-minute intro video
@@ -255,6 +269,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 ### C. Testing
 
 #### ✅ What's Ready
+
 - Core: 314 passing tests, 100% coverage
 - MSW Adapter: 192 passing tests, high coverage
 - All packages follow TDD
@@ -265,6 +280,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 - CI running all tests on every PR
 
 #### ❌ What's Missing
+
 - No performance/benchmark tests
 - No load testing (parallel scenario switching)
 - Coverage not enforced for all packages (only core has 100% threshold)
@@ -272,17 +288,18 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 #### 📋 Action Items
 
 **CRITICAL:**
+
 1. Add coverage thresholds to all packages (3 hours):
    - Update vitest.config.ts in each package
    - Enforce 100% coverage like core
    - Fix any coverage gaps
 
-**HIGH PRIORITY:**
-3. Add performance tests (6 hours):
-   - Scenario switch time measurement
-   - Request overhead measurement
-   - Memory usage tracking
-   - Parallel test scaling (10, 50, 100 tests)
+**HIGH PRIORITY:** 3. Add performance tests (6 hours):
+
+- Scenario switch time measurement
+- Request overhead measurement
+- Memory usage tracking
+- Parallel test scaling (10, 50, 100 tests)
 
 4. Add load testing suite (4 hours):
    - 100 parallel tests with different scenarios
@@ -297,6 +314,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 ### D. Code Quality
 
 #### ✅ What's Ready
+
 - TypeScript strict mode enforced everywhere
 - All linting rules passing
 - Zero TODOs/FIXMEs found in packages
@@ -306,6 +324,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 - Pure functions used consistently
 
 #### ❌ What's Missing
+
 - No explicit code formatting configuration (Prettier)
 - No pre-commit hooks (husky/lint-staged)
 - No automated dependency updates (Renovate/Dependabot)
@@ -313,10 +332,13 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 #### 📋 Action Items
 
 **HIGH PRIORITY:**
+
 1. Add pre-commit hooks (2 hours):
+
    ```bash
    pnpm add -Dw husky lint-staged
    ```
+
    - Format on commit
    - Lint on commit
    - Type check on commit
@@ -326,11 +348,11 @@ Scenarist is **80% ready for production release**. The core architecture, testin
    - Add `.prettierrc` to enforce consistency
    - Add to pre-commit hooks
 
-**NICE TO HAVE:**
-3. Set up Renovate or Dependabot (1 hour):
-   - Automated dependency updates
-   - Weekly update PRs
-   - Auto-merge minor/patch updates
+**NICE TO HAVE:** 3. Set up Renovate or Dependabot (1 hour):
+
+- Automated dependency updates
+- Weekly update PRs
+- Auto-merge minor/patch updates
 
 **Total Estimate: 4 hours**
 
@@ -339,6 +361,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 ### E. CI/CD
 
 #### ✅ What's Ready
+
 - GitHub Actions CI running on all PRs
 - Tests run on every push
 - Linting and type checking automated
@@ -347,6 +370,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 - Playwright browser caching
 
 #### ❌ What's Missing
+
 - No automated npm publishing
 - No automated release notes generation
 - No automated versioning workflow
@@ -356,7 +380,9 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 #### 📋 Action Items
 
 **CRITICAL:**
+
 1. Add npm publish workflow (4 hours):
+
    ```yaml
    # .github/workflows/publish.yml
    name: Publish Packages
@@ -386,11 +412,11 @@ Scenarist is **80% ready for production release**. The core architecture, testin
        - Publish when merged
    ```
 
-**HIGH PRIORITY:**
-3. Add security scanning (2 hours):
-   - Enable CodeQL in GitHub
-   - Add `pnpm audit` to CI
-   - Set up vulnerability alerts
+**HIGH PRIORITY:** 3. Add security scanning (2 hours):
+
+- Enable CodeQL in GitHub
+- Add `pnpm audit` to CI
+- Set up vulnerability alerts
 
 4. Document branch protection rules (1 hour):
    - Require PR reviews
@@ -398,11 +424,11 @@ Scenarist is **80% ready for production release**. The core architecture, testin
    - No force push to main
    - Required status checks
 
-**NICE TO HAVE:**
-5. Add automated release notes (2 hours):
-   - Generate from Changesets
-   - GitHub Releases automation
-   - Tweet automation (optional)
+**NICE TO HAVE:** 5. Add automated release notes (2 hours):
+
+- Generate from Changesets
+- GitHub Releases automation
+- Tweet automation (optional)
 
 **Total Estimate: 11 hours (1.5 days)**
 
@@ -411,6 +437,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 ### F. Security
 
 #### ✅ What's Ready
+
 - Proper .gitignore (no secrets committed)
 - ReDoS protection for regex patterns
 - Zod validation at trust boundaries
@@ -418,6 +445,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 - Peer dependencies properly declared
 
 #### ❌ What's Missing
+
 - No LICENSE file (legal vulnerability)
 - No security policy (SECURITY.md)
 - No vulnerability scanning in CI
@@ -427,18 +455,22 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 #### 📋 Action Items
 
 **CRITICAL:**
+
 1. Add LICENSE files (covered in Package Management)
 
 2. Add SECURITY.md (1 hour):
+
    ```markdown
    # Security Policy
 
    ## Supported Versions
+
    | Version | Supported |
-   |---------|-----------|
+   | ------- | --------- |
    | 1.x     | ✅        |
 
    ## Reporting a Vulnerability
+
    Email: security@example.com
    Response time: 48 hours
    ```
@@ -449,12 +481,12 @@ Scenarist is **80% ready for production release**. The core architecture, testin
    pnpm update --latest
    ```
 
-**HIGH PRIORITY:**
-4. Add vulnerability scanning to CI (1 hour):
-   ```yaml
-   - name: Security Audit
-     run: pnpm audit --production --audit-level moderate
-   ```
+**HIGH PRIORITY:** 4. Add vulnerability scanning to CI (1 hour):
+
+```yaml
+- name: Security Audit
+  run: pnpm audit --production --audit-level moderate
+```
 
 5. Enable GitHub security features (30 minutes):
    - Dependabot alerts
@@ -468,6 +500,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 ### G. User Experience
 
 #### ✅ What's Ready
+
 - Clear error messages from Zod validation
 - Type-safe API with excellent IntelliSense
 - Comprehensive examples in README
@@ -476,6 +509,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 - Intuitive API design (following MSW patterns)
 
 #### ❌ What's Missing
+
 - Error messages could be more actionable
 - No interactive playground/sandbox
 - No CLI tool for scenario generation
@@ -485,6 +519,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 #### 📋 Action Items
 
 **HIGH PRIORITY:**
+
 1. Improve error messages (3 hours):
    - Add error codes
    - Add "How to fix" suggestions
@@ -492,11 +527,11 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 
 2. Create troubleshooting guide (covered in Documentation)
 
-**NICE TO HAVE:**
-3. Create CodeSandbox/StackBlitz templates (4 hours):
-   - Express + Scenarist
-   - Next.js + Scenarist
-   - One-click try it
+**NICE TO HAVE:** 3. Create CodeSandbox/StackBlitz templates (4 hours):
+
+- Express + Scenarist
+- Next.js + Scenarist
+- One-click try it
 
 4. Create VS Code snippets (2 hours):
    - Scenario definition snippet
@@ -666,17 +701,20 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 ## Estimated Timeline to Production Readiness
 
 **Optimistic (Full Focus):** 1.5 weeks
+
 - Critical items: 3-4 days
 - Important items: 5 days
 - Testing/polish: 2-3 days
 
 **Realistic (Normal Pace):** 2-3 weeks
+
 - Critical items: 1 week
 - Important items: 1-1.5 weeks
 - Testing/polish: 3-4 days
 - Buffer for unexpected issues: 2-3 days
 
 **Conservative (Part-Time):** 4-6 weeks
+
 - Critical items: 2 weeks
 - Important items: 2-3 weeks
 - Testing/polish: 1 week
@@ -689,12 +727,14 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 Before publishing v1.0.0 to npm:
 
 ### Legal & Licensing
+
 - [ ] MIT LICENSE file in root
 - [ ] LICENSE file in all published packages
 - [ ] SECURITY.md created
 - [ ] All package.json have author/license fields
 
 ### Package Configuration
+
 - [ ] All packages have complete metadata (keywords, repository, etc.)
 - [ ] All packages have `files` field
 - [ ] All packages have `publishConfig.access: "public"`
@@ -702,12 +742,14 @@ Before publishing v1.0.0 to npm:
 - [ ] Dry-run publish successful for all packages
 
 ### Versioning & Releases
+
 - [ ] Changesets workflow configured
 - [ ] Initial changeset created for v1.0.0
 - [ ] GitHub Action for publishing configured
 - [ ] Release notes template created
 
 ### Testing
+
 - [ ] All tests passing (no failures)
 - [ ] 100% coverage threshold enforced on all packages
 - [ ] Performance tests added and passing
@@ -715,6 +757,7 @@ Before publishing v1.0.0 to npm:
 - [ ] E2E tests in example apps all passing
 
 ### Security
+
 - [ ] Security audit run and vulnerabilities fixed
 - [ ] CodeQL enabled
 - [ ] Dependabot enabled
@@ -722,6 +765,7 @@ Before publishing v1.0.0 to npm:
 - [ ] No secrets in git history
 
 ### Documentation
+
 - [ ] Quick Start added to README
 - [ ] Troubleshooting guide created
 - [ ] Migration guides created
@@ -730,12 +774,14 @@ Before publishing v1.0.0 to npm:
 - [ ] Example apps documented
 
 ### CI/CD
+
 - [ ] All CI checks passing
 - [ ] Branch protection rules configured
 - [ ] Security scanning in CI
 - [ ] Publish workflow tested (dry-run)
 
 ### Quality
+
 - [ ] TypeScript strict mode everywhere
 - [ ] All linting passing
 - [ ] No TODOs/FIXMEs in production code
@@ -743,6 +789,7 @@ Before publishing v1.0.0 to npm:
 - [ ] Code formatted consistently
 
 ### Final Steps
+
 - [ ] Version bumped to 1.0.0
 - [ ] CHANGELOG generated
 - [ ] Git tag created
@@ -756,17 +803,20 @@ Before publishing v1.0.0 to npm:
 ## Risk Assessment
 
 **Low Risk:**
+
 - Architecture is solid (hexagonal)
 - Test coverage is excellent
 - TypeScript strict mode prevents issues
 - Documentation is comprehensive
 
 **Medium Risk:**
+
 - First npm publish (dry-run mitigates)
 - Express adapter has failing test
 - No performance baselines yet
 
 **High Risk:**
+
 - No LICENSE files (legal blocker)
 - Package metadata missing (npm rejection possible)
 - No security audit (unknown vulnerabilities)
@@ -779,6 +829,7 @@ Focus on Critical items first (legal, package config, security). These are quick
 ## Recommendations
 
 ### Immediate Actions (This Week)
+
 1. Add LICENSE files (2 hours) - **DO THIS FIRST**
 2. Complete package.json metadata (3 hours)
 3. Run security audit and fix (2 hours)
@@ -788,6 +839,7 @@ Focus on Critical items first (legal, package config, security). These are quick
 This removes all legal blockers and security vulnerabilities.
 
 ### Next Week
+
 1. Set up Changesets (4 hours)
 2. Add npm publish workflow (4 hours)
 3. Create troubleshooting guide (4 hours)
@@ -800,11 +852,13 @@ This removes all legal blockers and security vulnerabilities.
 This sets up release infrastructure and essential documentation.
 
 ### Following Week
+
 1. Complete all Important items (37 hours → spread over 5 days)
 2. Final testing and polish
 3. Prepare announcement materials
 
 ### Release Week
+
 1. Final checklist review
 2. Publish v1.0.0
 3. Announce on Twitter, Reddit, HN
@@ -817,6 +871,7 @@ This sets up release infrastructure and essential documentation.
 Scenarist is **very close to production ready**. The core product is solid - excellent architecture, comprehensive testing, and great documentation. The gaps are primarily in packaging, legal compliance, and release automation.
 
 **Strengths:**
+
 - Hexagonal architecture properly implemented
 - 100% test coverage in core package
 - Comprehensive documentation site
@@ -825,12 +880,14 @@ Scenarist is **very close to production ready**. The core product is solid - exc
 - TypeScript strict mode throughout
 
 **Gaps:**
+
 - Missing LICENSE files (critical legal blocker)
 - Incomplete package metadata (blocks npm publication)
 - No versioning workflow (manual is error-prone)
 - One failing test needs investigation
 
 **Timeline to v1.0:**
+
 - Optimistic: 1.5 weeks
 - Realistic: 2-3 weeks
 - Conservative: 4-6 weeks

@@ -34,7 +34,7 @@ test.describe("Cart Server Page - Stateful Mocks with Server Components", () => 
     await expect(
       page.getByRole("heading", {
         name: "Shopping Cart (React Server Component)",
-      })
+      }),
     ).toBeVisible();
 
     // Empty cart should show empty message
@@ -57,7 +57,7 @@ test.describe("Cart Server Page - Stateful Mocks with Server Components", () => 
           "x-scenarist-test-id": testId,
         },
         data: { productId: "prod-1" },
-      }
+      },
     );
 
     if (!response.ok()) {
@@ -65,7 +65,7 @@ test.describe("Cart Server Page - Stateful Mocks with Server Components", () => 
       console.log(
         "❌ Cart add failed:",
         response.status(),
-        JSON.stringify(body, null, 2)
+        JSON.stringify(body, null, 2),
       );
     }
 
@@ -99,7 +99,7 @@ test.describe("Cart Server Page - Stateful Mocks with Server Components", () => 
             "x-scenarist-test-id": testId,
           },
           data: { productId: "prod-1" },
-        }
+        },
       );
       expect(response.ok()).toBe(true);
     }
@@ -137,7 +137,7 @@ test.describe("Cart Server Page - Stateful Mocks with Server Components", () => 
             "x-scenarist-test-id": testId,
           },
           data,
-        }
+        },
       );
       expect(response.ok()).toBe(true);
     }
@@ -195,18 +195,18 @@ test.describe("Cart Server Page - Stateful Mocks with Server Components", () => 
     // Verify the explanatory text is present
     await expect(
       page.getByText(
-        "State Capture: POST /cart/add captures productId from request body"
-      )
+        "State Capture: POST /cart/add captures productId from request body",
+      ),
     ).toBeVisible();
     await expect(
       page.getByText(
-        "State Injection: GET /cart injects captured items via templates"
-      )
+        "State Injection: GET /cart injects captured items via templates",
+      ),
     ).toBeVisible();
     await expect(
       page.getByText(
-        "This proves Scenarist stateful mocks work with Server Components!"
-      )
+        "This proves Scenarist stateful mocks work with Server Components!",
+      ),
     ).toBeVisible();
   });
 });

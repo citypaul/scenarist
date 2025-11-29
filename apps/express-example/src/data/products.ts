@@ -62,6 +62,8 @@ const standardProducts: ReadonlyArray<Product> = [
   },
 ];
 
-export const buildProducts = (tier: "premium" | "standard"): ReadonlyArray<Product> => {
+export const buildProducts = (
+  tier: "premium" | "standard",
+): ReadonlyArray<Product> => {
   return tier === "premium" ? premiumProducts : standardProducts;
 };

@@ -76,17 +76,25 @@ export default function SequencesDemo() {
         <nav aria-label="Main navigation" className="mb-4">
           <ul className="flex gap-4">
             <li>
-              <Link href="/" className="text-blue-600 hover:text-blue-700 underline">
+              <Link
+                href="/"
+                className="text-blue-600 hover:text-blue-700 underline"
+              >
                 Products
               </Link>
             </li>
             <li>
-              <Link href="/cart" className="text-blue-600 hover:text-blue-700 underline">
+              <Link
+                href="/cart"
+                className="text-blue-600 hover:text-blue-700 underline"
+              >
                 Shopping Cart
               </Link>
             </li>
             <li>
-              <span className="text-blue-600 font-semibold">Sequences Demo</span>
+              <span className="text-blue-600 font-semibold">
+                Sequences Demo
+              </span>
             </li>
           </ul>
         </nav>
@@ -168,8 +176,8 @@ export default function SequencesDemo() {
           </h2>
           <p className="text-sm text-gray-600 mb-4">
             Repeat mode:{" "}
-            <code className="bg-gray-100 px-2 py-1 rounded">cycle</code> -
-            Loops back to first response
+            <code className="bg-gray-100 px-2 py-1 rounded">cycle</code> - Loops
+            back to first response
           </p>
 
           <button

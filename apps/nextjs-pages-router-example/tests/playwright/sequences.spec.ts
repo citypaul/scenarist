@@ -32,7 +32,7 @@ test.describe("Response Sequences - Phase 2 Feature Parity", () => {
 
     // Verify page loaded with correct heading
     await expect(
-      page.getByRole("heading", { name: "GitHub Job Polling" })
+      page.getByRole("heading", { name: "GitHub Job Polling" }),
     ).toBeVisible();
 
     // First click - User sees "pending" status
@@ -80,7 +80,7 @@ test.describe("Response Sequences - Phase 2 Feature Parity", () => {
 
     // Verify page loaded with correct heading
     await expect(
-      page.getByRole("heading", { name: "Weather Cycle" })
+      page.getByRole("heading", { name: "Weather Cycle" }),
     ).toBeVisible();
 
     const weatherButton = page.getByRole("button", { name: "Get Weather" });
@@ -124,7 +124,7 @@ test.describe("Response Sequences - Phase 2 Feature Parity", () => {
 
     // Verify page loaded with correct heading
     await expect(
-      page.getByRole("heading", { name: "Payment Rate Limiting" })
+      page.getByRole("heading", { name: "Payment Rate Limiting" }),
     ).toBeVisible();
 
     const paymentButton = page.getByRole("button", { name: "Submit Payment" });
@@ -156,7 +156,9 @@ test.describe("Response Sequences - Phase 2 Feature Parity", () => {
 
     // Error shown in alert region (role="alert" for immediate screen reader announcement)
     // Filter to get our payment alert (Next.js has a route announcer with role="alert")
-    const errorAlert = page.getByRole("alert").filter({ hasText: "Payment Failed" });
+    const errorAlert = page
+      .getByRole("alert")
+      .filter({ hasText: "Payment Failed" });
     await expect(errorAlert).toBeVisible();
     await expect(errorAlert).toContainText("Payment Failed");
     await expect(errorAlert).toContainText("Rate limit exceeded");

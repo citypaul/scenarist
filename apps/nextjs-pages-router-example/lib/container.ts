@@ -10,9 +10,9 @@
  * Learn more: https://scenarist.io/guides/testing-database-apps/repository-pattern
  */
 
-import { AsyncLocalStorage } from 'node:async_hooks';
-import type { UserRepository } from './repositories/user-repository';
-import { InMemoryUserRepository } from './repositories/in-memory-user-repository';
+import { AsyncLocalStorage } from "node:async_hooks";
+import type { UserRepository } from "./repositories/user-repository";
+import { InMemoryUserRepository } from "./repositories/in-memory-user-repository";
 
 // Global declarations for Next.js module isolation workaround
 declare global {
@@ -22,14 +22,16 @@ declare global {
 
 // AsyncLocalStorage carries test ID through async request lifecycle
 // CRITICAL: Must use global to share across different Next.js code paths
-const testIdStorage = global.__test_id_storage ?? (global.__test_id_storage = new AsyncLocalStorage<string>());
+const testIdStorage =
+  global.__test_id_storage ??
+  (global.__test_id_storage = new AsyncLocalStorage<string>());
 
 /**
  * Get the current test ID from AsyncLocalStorage.
  * Returns 'default-test' if no test ID is set.
  */
 export const getTestId = (): string => {
-  return testIdStorage.getStore() ?? 'default-test';
+  return testIdStorage.getStore() ?? "default-test";
 };
 
 /**

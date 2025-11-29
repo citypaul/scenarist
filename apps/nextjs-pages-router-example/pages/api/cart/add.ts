@@ -11,8 +11,8 @@
  * No environment branching - same code everywhere for true production parity.
  */
 
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
+import type { NextApiRequest, NextApiResponse } from "next";
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/pages";
 
 type AddToCartRequest = {
   readonly productId: number;
@@ -24,23 +24,23 @@ type AddToCartResponse = {
 };
 
 // Always use real json-server endpoint (MSW intercepts in test/dev)
-const CART_BACKEND_URL = 'http://localhost:3001/cart';
+const CART_BACKEND_URL = "http://localhost:3001/cart";
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<AddToCartResponse | { error: string }>
+  res: NextApiResponse<AddToCartResponse | { error: string }>,
 ) {
   // Only allow POST requests
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
     const body: AddToCartRequest = req.body;
 
     // Validate request body
-    if (!body.productId || typeof body.productId !== 'number') {
-      return res.status(400).json({ error: 'Invalid productId' });
+    if (!body.productId || typeof body.productId !== "number") {
+      return res.status(400).json({ error: "Invalid productId" });
     }
 
     // Always use GET-then-PATCH pattern
@@ -66,10 +66,10 @@ export default async function handler(
 
     // PATCH cart with updated items array
     const patchResponse = await fetch(CART_BACKEND_URL, {
-      method: 'PATCH',
+      method: "PATCH",
       headers: {
         ...getScenaristHeaders(req),
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ items: updatedItems }),
     });
@@ -83,7 +83,7 @@ export default async function handler(
     return res.status(200).json({ success: true, items: data.items });
   } catch (error) {
     return res.status(500).json({
-      error: error instanceof Error ? error.message : 'Failed to add to cart',
+      error: error instanceof Error ? error.message : "Failed to add to cart",
     });
   }
 }

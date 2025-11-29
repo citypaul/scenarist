@@ -11,7 +11,7 @@ const buildTestIdHeader = (req: NextApiRequest): Record<string, string> => ({
 });
 
 const buildStrategyConfig = (
-  req: NextApiRequest
+  req: NextApiRequest,
 ): Record<string, StrategyConfig> => {
   const { campaign, apiKey, email, exact } = req.query;
 
@@ -36,7 +36,7 @@ const buildStrategyConfig = (
 
 const fetchWithTestId = async (
   config: StrategyConfig,
-  testIdHeader: Record<string, string>
+  testIdHeader: Record<string, string>,
 ): Promise<unknown> => {
   const response = await fetch(config.url, {
     headers: { ...testIdHeader, ...config.headers },
@@ -46,7 +46,7 @@ const fetchWithTestId = async (
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   const { strategy } = req.query;
   const strategyConfig = buildStrategyConfig(req);

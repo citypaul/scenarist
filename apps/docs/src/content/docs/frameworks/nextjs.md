@@ -9,9 +9,10 @@ Scenarist provides first-class support for testing Next.js applications, address
 
 ### The Challenge
 
-Next.js recommends end-to-end testing for Server Components because *"async Server Components are new to the React ecosystem."* Unit testing requires mocking Next.js internals (fetch, cookies, headers), creating distance from production execution.
+Next.js recommends end-to-end testing for Server Components because _"async Server Components are new to the React ecosystem."_ Unit testing requires mocking Next.js internals (fetch, cookies, headers), creating distance from production execution.
 
 Traditional testing approaches face similar challenges across both routing paradigms:
+
 - Mocking framework internals creates distance from production behavior
 - Testing server-side logic requires complex setup
 - End-to-end tests are too slow for comprehensive scenario coverage
@@ -42,6 +43,7 @@ The App Router introduces React Server Components, allowing server-side renderin
 [**Get started with App Router →**](/frameworks/nextjs-app-router)
 
 **Best for:**
+
 - New Next.js projects (Next.js 13+)
 - Server Components and streaming
 - Server Actions for mutations
@@ -54,6 +56,7 @@ The Pages Router uses the traditional pages directory with API routes and data f
 [**Get started with Pages Router →**](/frameworks/nextjs-pages-router)
 
 **Best for:**
+
 - Existing Next.js projects
 - Traditional API routes
 - getServerSideProps and getStaticProps

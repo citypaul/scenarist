@@ -9,8 +9,8 @@
  * Never wrap in a function or default export - module duplication requires this pattern.
  */
 
-import { createScenarist } from '@scenarist/nextjs-adapter/app';
-import { scenarios } from './scenarios';
+import { createScenarist } from "@scenarist/nextjs-adapter/app";
+import { scenarios } from "./scenarios";
 
 export const scenarist = createScenarist({
   enabled: true,
@@ -18,6 +18,6 @@ export const scenarist = createScenarist({
 });
 
 // Start MSW in Node.js environment
-if (typeof window === 'undefined' && scenarist) {
+if (typeof window === "undefined" && scenarist) {
   scenarist.start();
 }

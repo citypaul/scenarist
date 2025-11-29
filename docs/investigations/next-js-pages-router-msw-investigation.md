@@ -11,6 +11,7 @@ The goal is to prove MSW can intercept external API calls made from getServerSid
 ### Expected Behavior
 
 **What should happen:**
+
 1. Playwright test navigates to `/?tier=premium`
 2. Next.js runs getServerSideProps on the server
 3. getServerSideProps extracts `tier` query param and adds `'x-user-tier': 'premium'` header
@@ -23,6 +24,7 @@ The goal is to prove MSW can intercept external API calls made from getServerSid
 ### Actual Behavior
 
 **What's actually happening:**
+
 1. Playwright test navigates to `/?tier=premium`
 2. Page loads and products render
 3. BUT products show STANDARD pricing: Product A £149.99, Product B £199.99, Product C £99.99
@@ -34,6 +36,7 @@ The goal is to prove MSW can intercept external API calls made from getServerSid
 
 **Step 1: Manual Testing**
 Created `/tmp/test-msw.sh` to test with curl:
+
 ```bash
 curl -s -H "x-scenarist-test-id: test-premium" -H "x-user-tier: premium" "http://localhost:3000/?tier=premium" | grep -o "£[0-9.]\+"
 ```
@@ -44,16 +47,17 @@ curl -s -H "x-scenarist-test-id: test-premium" -H "x-user-tier: premium" "http:/
 
 **Step 2: Examined Playwright Error Context**
 Playwright's error-context.md shows the page snapshot:
+
 ```yaml
 - article [ref=e26]:
-  - generic [ref=e31]: £149.99   ← STANDARD price (expected £99.99)
-  - generic [ref=e32]: standard   ← STANDARD tier
+    - generic [ref=e31]: £149.99   ← STANDARD price (expected £99.99)
+    - generic [ref=e32]: standard   ← STANDARD tier
 - article [ref=e34]:
-  - generic [ref=e39]: £199.99   ← STANDARD price (expected £149.99)
-  - generic [ref=e40]: standard   ← STANDARD tier
+    - generic [ref=e39]: £199.99   ← STANDARD price (expected £149.99)
+    - generic [ref=e40]: standard   ← STANDARD tier
 - article [ref=e42]:
-  - generic [ref=e47]: £99.99    ← STANDARD price (expected £79.99)
-  - generic [ref=e48]: standard   ← STANDARD tier
+    - generic [ref=e47]: £99.99    ← STANDARD price (expected £79.99)
+    - generic [ref=e48]: standard   ← STANDARD tier
 ```
 
 **Key Finding:** Products ARE rendering, but with STANDARD pricing instead of PREMIUM pricing.
@@ -63,6 +67,7 @@ Playwright's error-context.md shows the page snapshot:
 Examined `lib/scenarios.ts`:
 
 **Default Scenario (always active):**
+
 ```typescript
 export const defaultScenario: ScenaristScenario = {
   id: "default",
@@ -70,7 +75,8 @@ export const defaultScenario: ScenaristScenario = {
     {
       method: "GET",
       url: "http://localhost:3001/products",
-      response: {  // Fallback with NO match criteria (specificity = 0)
+      response: {
+        // Fallback with NO match criteria (specificity = 0)
         status: 200,
         body: { products: buildProducts("standard") },
       },
@@ -80,6 +86,7 @@ export const defaultScenario: ScenaristScenario = {
 ```
 
 **Premium User Scenario (NOT active in test):**
+
 ```typescript
 export const premiumUserScenario: ScenaristScenario = {
   id: "premiumUser",
@@ -87,7 +94,8 @@ export const premiumUserScenario: ScenaristScenario = {
     {
       method: "GET",
       url: "http://localhost:3001/products",
-      match: {  // WITH match criteria (specificity = 1)
+      match: {
+        // WITH match criteria (specificity = 1)
         headers: { "x-user-tier": "premium" },
       },
       response: {
@@ -102,18 +110,21 @@ export const premiumUserScenario: ScenaristScenario = {
 **Step 4: Analyzed Test Code**
 
 The failing test:
+
 ```typescript
-test('should render premium products server-side', async ({ page }) => {
+test("should render premium products server-side", async ({ page }) => {
   // DON'T switch scenarios - rely on automatic default fallback + header matching
   // Default scenario is active, premium mock matches via x-user-tier header
 
-  console.log('[TEST] Testing premium products WITHOUT explicit scenario switch');
-  console.log('[TEST] Relying on automatic default fallback + header matching');
+  console.log(
+    "[TEST] Testing premium products WITHOUT explicit scenario switch",
+  );
+  console.log("[TEST] Relying on automatic default fallback + header matching");
 
-  await page.goto('/?tier=premium');
+  await page.goto("/?tier=premium");
 
-  const firstProduct = page.getByRole('article').first();
-  await expect(firstProduct.getByText('£99.99')).toBeVisible();
+  const firstProduct = page.getByRole("article").first();
+  await expect(firstProduct.getByText("£99.99")).toBeVisible();
 });
 ```
 
@@ -124,6 +135,7 @@ test('should render premium products server-side', async ({ page }) => {
 **The test has a fundamental misunderstanding of how automatic default fallback works.**
 
 **How Automatic Default Fallback Actually Works:**
+
 1. When you switch to scenario X, MSW collects mocks from BOTH:
    - Default scenario (collected first)
    - Scenario X (collected second)
@@ -131,6 +143,7 @@ test('should render premium products server-side', async ({ page }) => {
 3. Specific mocks (with match criteria) override fallback mocks
 
 **What the test is doing:**
+
 1. NOT switching scenarios
 2. Only default scenario is active
 3. Default scenario only has standard pricing fallback (no match criteria)
@@ -138,24 +151,29 @@ test('should render premium products server-side', async ({ page }) => {
 5. MSW returns standard pricing
 
 **What the test THINKS it's doing:**
+
 - Expecting ALL scenarios to be merged automatically
 - Expecting premium mock to be available without switching
 - Misunderstanding "automatic default fallback" as "all scenarios always active"
 
 **Why manual curl works:**
+
 ```bash
 curl -H "x-scenarist-test-id: test-premium" ...
 ```
+
 The `-H "x-scenarist-test-id: test-premium"` header likely triggers scenario switching via some other mechanism (not shown in test code), which activates premiumUserScenario.
 
 ### Pricing Reference
 
 **Premium Prices (buildProducts("premium")):**
+
 - Product A (id=1): £99.99
 - Product B (id=2): £149.99
 - Product C (id=3): £79.99
 
 **Standard Prices (buildProducts("standard")):**
+
 - Product A (id=1): £149.99
 - Product B (id=2): £199.99
 - Product C (id=3): £99.99
@@ -168,21 +186,25 @@ The `-H "x-scenarist-test-id: test-premium"` header likely triggers scenario swi
 #### Option 1: Switch to Premium Scenario (Recommended)
 
 ```typescript
-test('should render premium products server-side', async ({ page, switchScenario }) => {
+test("should render premium products server-side", async ({
+  page,
+  switchScenario,
+}) => {
   // Switch to premiumUserScenario FIRST
-  await switchScenario(page, 'premiumUser');
+  await switchScenario(page, "premiumUser");
 
   // Now navigate - automatic default fallback will combine:
   // - Default scenario mocks (collected first)
   // - Premium scenario mocks (collected second, includes premium match)
-  await page.goto('/?tier=premium');
+  await page.goto("/?tier=premium");
 
-  const firstProduct = page.getByRole('article').first();
-  await expect(firstProduct.getByText('£99.99')).toBeVisible();
+  const firstProduct = page.getByRole("article").first();
+  await expect(firstProduct.getByText("£99.99")).toBeVisible();
 });
 ```
 
 **Why this works:**
+
 - Explicitly activates premiumUserScenario
 - Automatic default fallback combines default + premium mocks
 - Premium mock has specificity 1 (header match)
@@ -221,6 +243,7 @@ export const defaultScenario: ScenaristScenario = {
 ```
 
 **Why this works:**
+
 - Both mocks always present in default scenario
 - No scenario switching needed
 - Specificity-based selection chooses premium when header matches
@@ -231,22 +254,28 @@ export const defaultScenario: ScenaristScenario = {
 ### Files Involved
 
 **Test file:**
+
 - `/apps/nextjs-pages-router-example/tests/playwright/products-server-side.spec.ts`
 
 **Scenario definitions:**
+
 - `/apps/nextjs-pages-router-example/lib/scenarios.ts`
 
 **Product data:**
+
 - `/apps/nextjs-pages-router-example/data/products.ts`
 
 **getServerSideProps implementation:**
+
 - `/apps/nextjs-pages-router-example/pages/index.tsx:178-220`
 
 **MSW setup:**
+
 - `/apps/nextjs-pages-router-example/lib/scenarist.ts` (auto-start)
 - `/apps/nextjs-pages-router-example/tests/playwright/globalSetup.ts` (Playwright config)
 
 **Manual test script:**
+
 - `/tmp/test-msw.sh`
 
 ### Key Learnings
@@ -300,12 +329,14 @@ export const defaultScenario: ScenaristScenario = {
 ### Debug Commands
 
 **Run single test:**
+
 ```bash
 cd apps/nextjs-pages-router-example
 pnpm exec playwright test tests/playwright/products-server-side.spec.ts --grep "premium"
 ```
 
 **Manual test (known working):**
+
 ```bash
 cd apps/nextjs-pages-router-example
 pnpm dev > /tmp/nextjs.log 2>&1 &
@@ -316,11 +347,13 @@ kill $PID
 ```
 
 **Check MSW logs:**
+
 ```bash
 cat /tmp/nextjs.log | grep -E '\[MSW\]|\[Scenarist\]|\[getServerSideProps\]'
 ```
 
 **View Playwright error context:**
+
 ```bash
 find apps/nextjs-pages-router-example/test-results -name "error-context.md" | head -1 | xargs cat
 ```
@@ -332,6 +365,7 @@ find apps/nextjs-pages-router-example/test-results -name "error-context.md" | he
 **Root Cause:** Next.js dev mode with Hot Module Replacement (HMR) loaded the `lib/scenarist.ts` module multiple times, causing `createScenarist()` to be called multiple times. Each call created new instances of `InMemoryScenarioStore`, resulting in scenarios being stored in one instance while lookups happened in different instances.
 
 **Evidence from ScenarioStore logging:**
+
 ```
 [ScenarioStore.set] Store now has 1 scenarios
 [ScenarioStore.get] Store has 0 scenarios  ← Different instance!
@@ -342,6 +376,7 @@ find apps/nextjs-pages-router-example/test-results -name "error-context.md" | he
 The store alternated between empty (0 scenarios) and populated (1 scenario), proving multiple instances existed and were being hit in rotation.
 
 **The Fix:** Added singleton guards to Pages Router adapter (`packages/nextjs-adapter/src/pages/setup.ts`):
+
 1. **Global singleton stores:** `__scenarist_registry_pages`, `__scenarist_store_pages`
 2. **Global instance cache:** `__scenarist_instance_pages`
 3. **Early return:** If instance already exists, return cached instance
@@ -352,6 +387,7 @@ This ensures all module instances share the same stores and MSW server, even whe
 **Result:** ✅ Test passes consistently - Premium pricing displays correctly (£99.99)
 
 **Files Modified:**
+
 - `packages/nextjs-adapter/src/pages/setup.ts` - Added singleton pattern
 - `packages/core/src/adapters/in-memory-store.ts` - Added temporary debug logging (removed after fix confirmed)
 
@@ -362,17 +398,20 @@ This ensures all module instances share the same stores and MSW server, even whe
 **Critical Finding:** Server-side console.log statements are NOT appearing in Playwright test output.
 
 This means:
+
 - `[getHeaders]` logs - NOT visible
 - `[getServerSideProps]` logs - NOT visible
 - `[MSW]` logs - NOT visible
 
 **This prevents us from seeing:**
+
 1. Whether getServerSideProps is even running
 2. What headers are being extracted
 3. What testId is being used
 4. Whether MSW is intercepting the fetch call
 
 **Hypothesis:** Playwright doesn't capture server-side console output by default. We need to:
+
 1. Either capture Next.js server logs separately
 2. Or use a different debugging approach (network inspection, MSW event logging to file)
 
@@ -385,6 +424,7 @@ This means:
 ### Complete Evidence Trail
 
 **1. Scenario Successfully Activated:**
+
 ```
 [Scenario Endpoint POST] Switching scenario
 [Scenario Endpoint POST] testId: 7303a536b19f9ee3cc0a-69ce08d219d2e1cd4cff-94f94aa5-ab97-4750-ac5c-2767efdc93a8
@@ -395,6 +435,7 @@ POST /api/__scenario__ 200 in 204ms
 ```
 
 **2. getServerSideProps Receives Correct Headers:**
+
 ```
 [getHeaders] headerName: x-scenarist-test-id
 [getHeaders] headerValue from request: 7303a536b19f9ee3cc0a-69ce08d219d2e1cd4cff-94f94aa5-ab97-4750-ac5c-2767efdc93a8
@@ -407,6 +448,7 @@ POST /api/__scenario__ 200 in 204ms
 ```
 
 **3. MSW Intercepts But Fails Scenario Lookup:**
+
 ```
 [MSW] Request intercepted: GET http://localhost:3001/products
 [MSW] Intercepted request: GET http://localhost:3001/products
@@ -421,6 +463,7 @@ POST /api/__scenario__ 200 in 204ms
 ```
 
 **4. Request Counts:**
+
 ```
 Tier parameter breakdown:
 - tier param: standard - 3 occurrences (wrong)
@@ -432,6 +475,7 @@ Tier parameter breakdown:
 **File:** `internal/msw-adapter/src/handlers/dynamic-handler.ts` (or wherever MSW calls `getActiveScenario`)
 
 **Code flow:**
+
 1. Request intercepted with testId: `7303a536b19f9ee3cc0a...`
 2. Calls `manager.getActiveScenario(testId)`
 3. Returns `undefined` (should return `{ scenarioId: 'premiumUser', variantName: undefined }`)
@@ -440,7 +484,7 @@ Tier parameter breakdown:
 
 ### Key Questions to Answer
 
-1. **Is scenario being stored?** 
+1. **Is scenario being stored?**
    - Does `switchScenario()` actually call `store.set(testId, activeScenario)`?
    - Add logging to InMemoryScenarioStore.set()
 
@@ -459,6 +503,7 @@ Tier parameter breakdown:
 ### Next Debugging Steps
 
 1. Add logging to `InMemoryScenarioStore`:
+
    ```typescript
    set(testId: string, scenario: ActiveScenario): void {
      console.log('[ScenarioStore.set] Storing scenario for testId:', testId);

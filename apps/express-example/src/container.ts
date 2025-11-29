@@ -10,9 +10,9 @@
  * Learn more: https://scenarist.io/guides/testing-database-apps/repository-pattern
  */
 
-import { AsyncLocalStorage } from 'node:async_hooks';
-import type { UserRepository } from './repositories/user-repository.js';
-import { InMemoryUserRepository } from './repositories/in-memory-user-repository.js';
+import { AsyncLocalStorage } from "node:async_hooks";
+import type { UserRepository } from "./repositories/user-repository.js";
+import { InMemoryUserRepository } from "./repositories/in-memory-user-repository.js";
 
 // AsyncLocalStorage carries test ID through async request lifecycle
 const testIdStorage = new AsyncLocalStorage<string>();
@@ -25,7 +25,7 @@ let userRepositoryInstance: UserRepository | undefined;
  * Returns 'default-test' if no test ID is set.
  */
 export const getTestId = (): string => {
-  return testIdStorage.getStore() ?? 'default-test';
+  return testIdStorage.getStore() ?? "default-test";
 };
 
 /**

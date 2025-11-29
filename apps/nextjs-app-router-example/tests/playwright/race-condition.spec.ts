@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect } from "./fixtures";
 
 /**
  * Race Condition Prevention Tests
@@ -29,8 +29,11 @@ import { test, expect } from './fixtures';
  * - Premium scenario mocks override default mocks (specificity-based selection)
  */
 
-test.describe('Race Condition Prevention', () => {
-  test('should intercept Client Component API calls fired immediately on mount', async ({ page, switchScenario }) => {
+test.describe("Race Condition Prevention", () => {
+  test("should intercept Client Component API calls fired immediately on mount", async ({
+    page,
+    switchScenario,
+  }) => {
     /**
      * This test proves the race condition fix (commit 7d55aac) works correctly.
      *
@@ -61,24 +64,27 @@ test.describe('Race Condition Prevention', () => {
      * This is the MOST CRITICAL test for the race condition fix because it tests
      * the immediate-on-mount case without any user interaction.
      */
-    await switchScenario(page, 'premiumUser');
+    await switchScenario(page, "premiumUser");
 
     // Navigate to root page
     // Client Component will mount and IMMEDIATELY fire useEffect()
     // which fetches products (before any user interaction)
-    await page.goto('/');
+    await page.goto("/");
 
     // Wait for products to load
     // If race condition exists, this will timeout because API call bypassed MSW
-    await page.waitForSelector('article');
+    await page.waitForSelector("article");
 
     // Verify at least one product is displayed
     // (Initial render fetches with default 'standard' tier)
-    const products = page.getByRole('article');
+    const products = page.getByRole("article");
     await expect(products.first()).toBeVisible();
   });
 
-  test('should handle tier change causing immediate re-fetch', async ({ page, switchScenario }) => {
+  test("should handle tier change causing immediate re-fetch", async ({
+    page,
+    switchScenario,
+  }) => {
     /**
      * Additional verification: tier change triggers immediate useEffect
      *
@@ -90,22 +96,27 @@ test.describe('Race Condition Prevention', () => {
      *
      * The fix must handle BOTH mount-time AND update-time immediate calls.
      */
-    await switchScenario(page, 'premiumUser');
+    await switchScenario(page, "premiumUser");
 
-    await page.goto('/');
+    await page.goto("/");
 
     // Click premium tier button (triggers immediate useEffect due to userTier change)
     await Promise.all([
-      page.waitForResponse((resp) => resp.url().includes('/api/products') && resp.ok()),
-      page.getByRole('button', { name: 'Select premium tier' }).click(),
+      page.waitForResponse(
+        (resp) => resp.url().includes("/api/products") && resp.ok(),
+      ),
+      page.getByRole("button", { name: "Select premium tier" }).click(),
     ]);
 
     // Verify premium pricing displayed (proves immediate re-fetch was intercepted)
-    const firstProduct = page.getByRole('article').first();
-    await expect(firstProduct.getByText('£99.99')).toBeVisible();
+    const firstProduct = page.getByRole("article").first();
+    await expect(firstProduct.getByText("£99.99")).toBeVisible();
   });
 
-  test('should intercept cart count fetch on mount', async ({ page, switchScenario }) => {
+  test("should intercept cart count fetch on mount", async ({
+    page,
+    switchScenario,
+  }) => {
     /**
      * Additional verification: multiple useEffect hooks firing on mount
      *
@@ -116,16 +127,16 @@ test.describe('Race Condition Prevention', () => {
      * Both fire immediately when component mounts. This test verifies
      * route interception handles multiple simultaneous API calls.
      */
-    await switchScenario(page, 'cartWithState');
+    await switchScenario(page, "cartWithState");
 
-    await page.goto('/');
+    await page.goto("/");
 
     // Wait for page to load
-    await page.waitForSelector('article');
+    await page.waitForSelector("article");
 
     // Verify cart count is displayed (proves /api/cart was intercepted)
     // cartWithState scenario should have items in cart
-    const cartCount = page.getByLabel('Cart item count');
+    const cartCount = page.getByLabel("Cart item count");
     await expect(cartCount).toBeVisible();
   });
 });

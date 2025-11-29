@@ -7,12 +7,14 @@
 ## Current Status
 
 ✅ **Core Features Complete:**
+
 - Phase 1: Request Content Matching (specificity-based selection)
 - Phase 2: Response Sequences (repeat modes, idempotency)
 - Phase 3: Stateful Mocks (capture, templates, reset)
 - Phase 4: Composition (guaranteed by architecture, no implementation needed)
 
 ✅ **Adapters & Examples Complete:**
+
 - Express adapter + example app with comprehensive E2E tests
 - Next.js adapter (Pages Router + App Router with singleton pattern)
 - Playwright helpers package (70% boilerplate reduction)
@@ -23,6 +25,7 @@
 ✅ **Documentation:** Complete (core-functionality.md, stateful-mocks.md, 12 ADRs, CLAUDE.md)
 
 **What's Missing for v1.0 Release:**
+
 - Consumer-facing documentation site (PRIORITY 1 - Next Up)
 - Package metadata and licensing (PRIORITY 2)
 - Security vulnerability fixes (PRIORITY 2)
@@ -46,6 +49,7 @@ These items MUST be complete before v1.0 release.
 **Status:** ✅ COMPLETE - Shipped with singleton pattern for HMR compatibility
 
 **What it provides:**
+
 - Middleware for Pages Router API routes
 - Middleware for App Router Route Handlers
 - Test ID extraction from Next.js requests
@@ -56,16 +60,17 @@ These items MUST be complete before v1.0 release.
 **Similar to:** `@scenarist/express-adapter` (follow same patterns)
 
 **API Design:**
+
 ```typescript
 // For Pages Router
-import { createScenarist } from '@scenarist/nextjs-adapter/pages';
-import { scenarios } from './scenarios';
+import { createScenarist } from "@scenarist/nextjs-adapter/pages";
+import { scenarios } from "./scenarios";
 
 export const scenarist = createScenarist({
   scenarios,
   config: {
-    enabled: process.env.NODE_ENV === 'development'
-  }
+    enabled: process.env.NODE_ENV === "development",
+  },
 });
 
 // Use in API routes
@@ -75,11 +80,12 @@ export default async function handler(req, res) {
 }
 
 // For App Router
-import { createScenarist } from '@scenarist/nextjs-adapter/app';
+import { createScenarist } from "@scenarist/nextjs-adapter/app";
 // Similar pattern but for Route Handlers
 ```
 
 **Tasks:**
+
 - [x] Create package structure
 - [x] Implement Pages Router middleware
 - [x] Implement App Router middleware
@@ -100,6 +106,7 @@ import { createScenarist } from '@scenarist/nextjs-adapter/app';
 **Status:** ✅ COMPLETE - Shipped with auto test ID generation and scenario switching
 
 **What it provides:**
+
 - Reusable Playwright test utilities
 - Auto test ID generation and injection
 - Scenario switching helper (`scenarist.switchScenario()`)
@@ -109,31 +116,34 @@ import { createScenarist } from '@scenarist/nextjs-adapter/app';
 **Value Proposition:** 70% reduction in test boilerplate
 
 **Before (without helpers):**
+
 ```typescript
-test('my test', async ({ page }) => {
+test("my test", async ({ page }) => {
   const testId = `test-${Date.now()}-${Math.random()}`;
-  await page.request.post('http://localhost:3000/__scenario__', {
-    headers: { 'x-scenarist-test-id': testId },
-    data: { scenarioId: 'premium' }
+  await page.request.post("http://localhost:3000/__scenario__", {
+    headers: { "x-scenarist-test-id": testId },
+    data: { scenarioId: "premium" },
   });
-  await page.setExtraHTTPHeaders({ 'x-scenarist-test-id': testId });
-  await page.goto('/');
+  await page.setExtraHTTPHeaders({ "x-scenarist-test-id": testId });
+  await page.goto("/");
   // 6 lines of boilerplate
 });
 ```
 
 **After (with helpers):**
-```typescript
-import { test } from '@scenarist/playwright-helpers';
 
-test('my test', async ({ page, scenarist }) => {
-  await scenarist.switchScenario('premium');
-  await page.goto('/');
+```typescript
+import { test } from "@scenarist/playwright-helpers";
+
+test("my test", async ({ page, scenarist }) => {
+  await scenarist.switchScenario("premium");
+  await page.goto("/");
   // 2 lines, focused on intent
 });
 ```
 
 **Tasks:**
+
 - [x] Create package structure
 - [x] Implement ScenaristFixtures type
 - [x] Implement auto test ID generation
@@ -152,6 +162,7 @@ test('my test', async ({ page, scenarist }) => {
 **Status:** ✅ COMPLETE - Full e-commerce flow with comprehensive E2E tests
 
 **What it demonstrates:**
+
 - Full Next.js Pages Router integration
 - All three Scenarist features (matching, sequences, stateful)
 - Playwright E2E testing with helpers
@@ -160,6 +171,7 @@ test('my test', async ({ page, scenarist }) => {
 **Example App:** E-commerce checkout flow (products → cart → checkout → payment)
 
 **Test Scenarios:**
+
 1. **Premium/Standard User:** Different pricing tiers (request matching)
 2. **Shopping Cart:** Item accumulation (stateful mocks)
 3. **Free Shipping:** UK vs US shipping (matching + stateful)
@@ -168,6 +180,7 @@ test('my test', async ({ page, scenarist }) => {
 6. **Parallel Isolation:** Multiple tests with different scenarios concurrently
 
 **Implementation Phases:**
+
 - [x] Phase 0: Setup (Next.js app + adapter integration)
 - [x] Phase 1: Scenarist integration + first helper
 - [x] Phase 2: Products page (request matching demo)
@@ -178,6 +191,7 @@ test('my test', async ({ page, scenarist }) => {
 - [x] Phase 7: Documentation & polish
 
 **Deliverables:**
+
 - [x] Full e-commerce app using @scenarist/nextjs-adapter
 - [x] 20+ Playwright E2E tests using @scenarist/playwright-helpers
 - [x] 100% API route coverage (Vitest)
@@ -194,6 +208,7 @@ test('my test', async ({ page, scenarist }) => {
 **Status:** ✅ COMPLETE - Server Components with stateful mocks and sequences
 
 **What it demonstrates:**
+
 - Next.js App Router integration (modern, recommended approach)
 - Server Components + Server Actions
 - Route Handlers
@@ -201,12 +216,14 @@ test('my test', async ({ page, scenarist }) => {
 - Reuses @scenarist/nextjs-adapter (App Router mode)
 
 **Why After Pages Router:**
+
 - Pages Router is simpler, better for initial demonstration
 - App Router can reuse scenarios and patterns from Pages Router
 - Shows migration path (Pages → App Router)
 - Playwright helpers package already exists and works with both
 
 **Tasks:**
+
 - [x] Create Next.js app (App Router with `app/` directory)
 - [x] Adapt e-commerce flow to Server Components
 - [x] Use Server Actions for mutations (where applicable)
@@ -221,6 +238,7 @@ test('my test', async ({ page, scenarist }) => {
 **Key Achievement:** Proves Scenarist handles React Server Components without Jest issues
 
 **Combined Time for Next.js Work (1a-1d):** COMPLETE
+
 - Next.js adapter: ✅ Done
 - Playwright helpers: ✅ Done
 - Pages Router example: ✅ Done
@@ -237,6 +255,7 @@ test('my test', async ({ page, scenarist }) => {
 **Why Now:** All adapters and examples are complete. Documentation can reference real working code.
 
 **Technology Choice:** Nextra (Next.js + MDX)
+
 - Fast, modern
 - MDX support (interactive examples)
 - Built-in search
@@ -244,6 +263,7 @@ test('my test', async ({ page, scenarist }) => {
 - Good TypeScript support
 
 **Content Structure:**
+
 ```
 docs-site/
 ├── pages/
@@ -288,6 +308,7 @@ docs-site/
 ```
 
 **Tasks:**
+
 1. [ ] Create Nextra site (scaffold)
 2. [ ] Migrate existing docs to MDX
 3. [ ] Add navigation and search
@@ -310,11 +331,13 @@ docs-site/
 **Tasks:**
 
 **Licensing:**
+
 - [ ] Add LICENSE file (MIT) to repo root
 - [ ] Add LICENSE to each package
 - [ ] Update package.json license field
 
 **Package.json Updates:**
+
 ```json
 {
   "name": "@scenarist/core",
@@ -345,21 +368,19 @@ docs-site/
       "import": "./dist/index.js"
     }
   },
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE"
-  ]
+  "files": ["dist", "README.md", "LICENSE"]
 }
 ```
 
 **README.md Per Package:**
+
 - [ ] @scenarist/core - Core functionality overview
 - [ ] @scenarist/msw-adapter - MSW integration
 - [ ] @scenarist/express-adapter - Express setup
 - [ ] @scenarist/playwright-helpers - Playwright test utilities
 
 **Tasks:**
+
 1. [ ] Create LICENSE files
 2. [ ] Update all package.json files
 3. [ ] Write package READMEs
@@ -378,10 +399,12 @@ docs-site/
 **Goal:** Fix known issues, ensure production readiness
 
 **Known Issues:**
+
 - 1 high severity Dependabot alert
 - 1 moderate severity Dependabot alert
 
 **Tasks:**
+
 1. [ ] Run `npm audit` across all packages
 2. [ ] Fix Dependabot vulnerabilities (1 high, 1 moderate)
 3. [ ] Review all dependencies (remove unused)
@@ -424,17 +447,20 @@ Currently, users can configure a custom test ID header name via `headers.testId`
 4. Update all documentation and examples
 
 **Breaking Changes:**
+
 - Applications using default `'x-scenarist-test-id'` must update to `'x-scenarist-test-id'`
 - Custom `headers.testId` configuration option removed
 - All documentation examples require updates
 
 **Benefits:**
+
 - Simpler API (one less configuration option)
 - Consistent behavior across all helpers
 - Clearer intent (`'x-scenarist-test-id'` makes Scenarist ownership obvious)
 - Reduced code complexity
 
 **Why Now (Before v1.0):**
+
 - No real users yet - perfect time for breaking changes
 - Cleaner API for v1.0 launch
 - Avoids migration burden later
@@ -490,11 +516,13 @@ Response:
 ```
 
 **Use Cases:**
+
 - Playwright/Cypress debugging
 - Bruno collection inspection
 - Development mode visibility
 
 **Tasks:**
+
 1. Create `ScenarioInspection` types
 2. Add `inspect(testId)` to ScenarioManager port
 3. Implement inspection logic
@@ -516,26 +544,31 @@ Response:
 **Priority Order:**
 
 **6.1 Fastify Adapter** (v1.1)
+
 - High demand after Express
 - Similar middleware pattern
 - Estimated: 1-2 days
 
 **6.2 Hono Adapter** (v1.2)
+
 - Edge runtime compatible (CloudFlare Workers, Deno, Bun)
 - Growing popularity
 - Estimated: 1-2 days
 
 **6.3 Koa Adapter** (v1.3)
+
 - Middleware pattern
 - Less popular but requested
 - Estimated: 1 day
 
 **6.4 Remix Adapter** (v2.0?)
+
 - Different architecture (loaders, actions)
 - May require adapter pattern changes
 - Estimated: 2-3 days
 
 **Each Adapter Requires:**
+
 - Adapter package creation
 - Example application
 - Integration tests
@@ -549,24 +582,28 @@ Response:
 **Tasks:**
 
 **Content:**
+
 - Blog posts on common patterns
 - Video tutorials (YouTube)
 - Conference talks?
 - Podcast appearances?
 
 **Community Platforms:**
+
 - GitHub Discussions (free, integrated)
 - Discord server (if demand warrants)
 - Twitter/X presence
 - Dev.to articles
 
 **Examples Repository:**
+
 - Real-world applications
 - Different frameworks
 - Complex scenarios
 - Performance benchmarks
 
 **Contributor Guide:**
+
 - CONTRIBUTING.md
 - CODE_OF_CONDUCT.md
 - Issue templates
@@ -582,6 +619,7 @@ Response:
 **Current Status:** ✅ All technical work COMPLETE. Ready for documentation + polish.
 
 **✅ COMPLETED: Weeks 1-3 - Next.js Adapter + Examples + Playwright Helpers**
+
 - ✅ Next.js adapter package (Pages Router + App Router)
 - ✅ Playwright helpers (70% boilerplate reduction)
 - ✅ Pages Router example (e-commerce with all features)
@@ -590,12 +628,14 @@ Response:
 - ✅ 300+ tests passing, 100% coverage maintained
 
 **🚧 IN PROGRESS: Weeks 4-5 - Documentation Site**
+
 - [ ] Days 1-2: Nextra setup, structure
 - [ ] Days 3-5: Migrate existing docs to MDX
 - [ ] Days 6-7: Add Next.js adapter/examples documentation
 - [ ] Days 8-10: Cookbook recipes, polish, deploy to **Cloudflare Pages**
 
 **⏳ REMAINING: Week 6 - Polish & Release Prep**
+
 - [ ] Days 1-2: Fix security vulnerabilities (2 Dependabot alerts)
 - [ ] Day 3: Package metadata & licensing (MIT)
 - [ ] Days 4-5: Package READMEs verification
@@ -606,6 +646,7 @@ Response:
 ### v1.0 Release
 
 **Release Checklist:**
+
 - [x] All 300+ tests passing (core features complete)
 - [x] Express adapter complete (with example app + Bruno tests)
 - [x] Next.js adapter package complete (Pages Router + App Router)
@@ -620,6 +661,7 @@ Response:
 - [ ] Changesets configured
 
 **Release Process:**
+
 1. Create v1.0.0 changeset
 2. Version bump all packages
 3. Build all packages
@@ -630,16 +672,19 @@ Response:
 ### Post-v1.0 Releases
 
 **v1.1 (4-6 weeks after v1.0):**
+
 - Phase 5 debugging features
 - Fastify adapter
 - Community feedback items
 
 **v1.2 (8-12 weeks after v1.0):**
+
 - Hono adapter
 - Additional examples
 - Performance optimizations
 
 **v2.0 (6-12 months after v1.0):**
+
 - Breaking changes (if needed)
 - Remix adapter
 - Advanced features based on usage
@@ -649,6 +694,7 @@ Response:
 ## Success Metrics
 
 **v1.0 Goals:**
+
 - 📦 Published to npm
 - 📚 Documentation site live
 - ⭐ 100+ GitHub stars (organic)
@@ -657,6 +703,7 @@ Response:
 - 💬 Active GitHub Discussions
 
 **v1.1 Goals:**
+
 - 📥 500+ weekly npm downloads
 - ⭐ 500+ GitHub stars
 - 🎯 2+ framework adapters
@@ -664,6 +711,7 @@ Response:
 - 🤝 10+ contributors
 
 **Long-term Goals:**
+
 - 📥 5,000+ weekly npm downloads
 - ⭐ 2,000+ GitHub stars
 - 🎯 5+ framework adapters
@@ -680,11 +728,13 @@ Response:
 **Current:** Separate packages (`@scenarist/express-adapter`, etc.)
 
 **Pros:**
+
 - ✅ Install only what you need
 - ✅ Independent versioning
 - ✅ Clear boundaries
 
 **Cons:**
+
 - ❌ More packages to maintain
 - ❌ Version coordination
 
@@ -709,20 +759,24 @@ Response:
 ## Risk Mitigation
 
 **Risk 1: Documentation site takes too long**
-- *Mitigation:* Use Nextra (fast), migrate existing content (already written)
-- *Fallback:* Use GitHub Pages with minimal styling if needed
+
+- _Mitigation:_ Use Nextra (fast), migrate existing content (already written)
+- _Fallback:_ Use GitHub Pages with minimal styling if needed
 
 **Risk 2: Next.js integration is complex**
-- *Mitigation:* Start simple (API routes only), expand to App Router
-- *Fallback:* Ship v1.0 with Express only, add Next.js in v1.1
+
+- _Mitigation:_ Start simple (API routes only), expand to App Router
+- _Fallback:_ Ship v1.0 with Express only, add Next.js in v1.1
 
 **Risk 3: Security issues are complex**
-- *Mitigation:* Upgrade dependencies, use automated tools
-- *Fallback:* Document known issues, plan fixes for v1.0.1
+
+- _Mitigation:_ Upgrade dependencies, use automated tools
+- _Fallback:_ Document known issues, plan fixes for v1.0.1
 
 **Risk 4: Low adoption**
-- *Mitigation:* Strong documentation, clear value proposition, examples
-- *Fallback:* Gather feedback, iterate based on real needs
+
+- _Mitigation:_ Strong documentation, clear value proposition, examples
+- _Fallback:_ Gather feedback, iterate based on real needs
 
 ---
 
@@ -735,15 +789,17 @@ Response:
 ### npm Organization
 
 Options:
-- @scenarist/* (recommended - clean, short)
-- @scenarist-testing/*
-- @paul-hammond/scenarist-*
+
+- @scenarist/\* (recommended - clean, short)
+- @scenarist-testing/\*
+- @paul-hammond/scenarist-\*
 
 **Decision needed:** Create @scenarist org on npm?
 
 ### Logo/Branding
 
 Do we need:
+
 - Logo?
 - Color scheme?
 - Mascot?
@@ -755,6 +811,7 @@ Do we need:
 ## Next Actions (Current State)
 
 **Recently Completed:**
+
 - ✅ Next.js adapter package (Pages Router + App Router with singleton pattern)
 - ✅ Playwright helpers package (70% boilerplate reduction achieved)
 - ✅ Next.js Pages Router example (full e-commerce flow)
@@ -764,12 +821,14 @@ Do we need:
 - ✅ Documentation cleanup (PR #80)
 
 **Current Priority: Documentation Site**
+
 - Status: ⏳ Not Started - Ready to begin
 - Timeline: 5-7 days
 - Technology: Nextra + Cloudflare Pages
 - Content: Migrate existing docs, add API references, cookbook recipes
 
 **Up Next (Final v1.0 Steps):**
+
 1. **Build documentation site** (Nextra + Cloudflare Pages, ~5-7 days)
    - Setup Nextra
    - Migrate existing markdown docs to MDX

@@ -1,4 +1,4 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices } from "@playwright/test";
 
 /**
  * Playwright configuration for development/UI mode
@@ -9,27 +9,27 @@ import { defineConfig, devices } from '@playwright/test';
  * @see https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
-  testDir: './tests/playwright',
+  testDir: "./tests/playwright",
   fullyParallel: true,
   forbidOnly: false,
   retries: 0,
   workers: undefined,
-  reporter: 'list',
+  reporter: "list",
   use: {
-    baseURL: 'http://localhost:4321',
-    trace: 'on-first-retry',
+    baseURL: "http://localhost:4321",
+    trace: "on-first-retry",
   },
 
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
     },
   ],
 
   webServer: {
-    command: 'pnpm dev',
-    url: 'http://localhost:4321',
+    command: "pnpm dev",
+    url: "http://localhost:4321",
     reuseExistingServer: true,
   },
 });

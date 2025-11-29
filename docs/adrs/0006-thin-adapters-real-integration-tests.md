@@ -14,6 +14,7 @@ The Scenarist testing strategy (ADR-0003) prescribes **four testing layers** ali
 4. **Bruno Tests** - API documentation (selective happy paths)
 
 **Layer 2 (Adapter Tests) General Rule:**
+
 > "**Fast** - Mock framework req/res, no full server (milliseconds)"
 > "**Focused** - Only translation, not domain logic"
 > "**Framework-specific** - Tests Express/Fastify/etc. quirks"
@@ -23,6 +24,7 @@ This rule works well for adapters with significant translation logic (`@scenaris
 ### The Playwright Helpers Package
 
 **Characteristics:**
+
 - **~40 lines** of production code
 - **Single responsibility** - scenario switching helper
 - **Zero complex logic** - just API calls and header manipulation
@@ -31,6 +33,7 @@ This rule works well for adapters with significant translation logic (`@scenaris
 
 **Initial Implementation:**
 The package was implemented with **13 real integration tests** using:
+
 - ✅ Real Playwright (`@playwright/test` with actual Page objects)
 - ✅ MSW Node server for HTTP responses
 - ✅ No mocking of Playwright API
@@ -51,6 +54,7 @@ The testing strategy prescribes mocking external dependencies in adapter tests, 
 4. **Confidence matters** - Real Playwright integration provides higher confidence than mocks
 
 **Without clear guidance**, future contributors might:
+
 - ❌ Mock stable dependencies unnecessarily (tests become less valuable)
 - ❌ Use real dependencies for complex adapters (tests become slow)
 - ❌ Debate this decision on every PR (wastes time)
@@ -64,6 +68,7 @@ We need **clear criteria** for when the general rule applies vs. when real depen
 **Adapter packages MUST mock external dependencies.** This is the standard approach for testing adapter translation layers.
 
 **Why mocking is the default:**
+
 - ⚡ **Fast feedback** - Millisecond execution, no framework overhead
 - 🎯 **Focused tests** - Tests translation logic only, not framework behavior
 - 🔒 **Isolation** - Framework bugs don't cause adapter test failures
@@ -71,6 +76,7 @@ We need **clear criteria** for when the general rule applies vs. when real depen
 - ✅ **Aligns with Layer 2** - Per ADR-0003 testing strategy
 
 **When to use mocks (DEFAULT for most adapters):**
+
 - ✅ Package has multiple responsibilities (middleware + endpoints + context)
 - ✅ Complex translation logic (header parsing, type conversion, validation)
 - ✅ External API is unstable or experimental
@@ -79,6 +85,7 @@ We need **clear criteria** for when the general rule applies vs. when real depen
 - ✅ Framework requires complex initialization/teardown
 
 **Examples following default rule:**
+
 - `@scenarist/express-adapter` - Complex translation, multiple concerns (middleware, endpoints, context)
 - `@scenarist/nextjs-adapter` - Framework-specific routing, multiple adapters (Pages/App Router)
 - `@scenarist/fastify-adapter` (future) - Plugin system, hooks, complex lifecycle
@@ -121,6 +128,7 @@ In rare cases (target ≤10% of adapters), real dependencies MAY be used **IF AN
 **If ANY criterion is false → use mocked tests (follow default rule)**
 
 **Current exception status:**
+
 - Total adapters: 4 packages
 - Adapters using exception: 1 (`@scenarist/playwright-helpers`)
 - **Exception rate: 25%** ⚠️
@@ -143,27 +151,28 @@ In rare cases (target ≤10% of adapters), real dependencies MAY be used **IF AN
 
 ```typescript
 // packages/express-adapter/tests/request-translation.test.ts
-import { describe, it, expect } from 'vitest';
-import { extractRequestContext } from '../src/utils/request-translation';
-import { mockExpressRequest } from './mocks'; // ← Mock Request object
+import { describe, it, expect } from "vitest";
+import { extractRequestContext } from "../src/utils/request-translation";
+import { mockExpressRequest } from "./mocks"; // ← Mock Request object
 
-describe('Express Adapter - Request Translation', () => {
-  it('should extract all RequestContext fields from Express request', () => {
+describe("Express Adapter - Request Translation", () => {
+  it("should extract all RequestContext fields from Express request", () => {
     const req = mockExpressRequest({
-      method: 'POST',
-      url: '/api/items',
-      body: { itemId: 'premium' },
+      method: "POST",
+      url: "/api/items",
+      body: { itemId: "premium" },
     });
 
     const context = extractRequestContext(req);
 
-    expect(context.method).toBe('POST');
-    expect(context.body).toEqual({ itemId: 'premium' });
+    expect(context.method).toBe("POST");
+    expect(context.body).toEqual({ itemId: "premium" });
   });
 });
 ```
 
 **Why mocking works here:**
+
 - Complex translation logic (headers, query params, body parsing)
 - Many edge cases (missing fields, malformed data)
 - Fast (milliseconds)
@@ -183,20 +192,23 @@ describe('Express Adapter - Request Translation', () => {
 
 ```typescript
 // packages/playwright-helpers/tests/switch-scenario.spec.ts
-import { test, expect } from '@playwright/test'; // ← Real Playwright
-import { setupServer } from 'msw/node';
-import { switchScenario } from '../src/switch-scenario';
+import { test, expect } from "@playwright/test"; // ← Real Playwright
+import { setupServer } from "msw/node";
+import { switchScenario } from "../src/switch-scenario";
 
-test('should throw error when scenario switch fails with 404', async ({ page }) => {
+test("should throw error when scenario switch fails with 404", async ({
+  page,
+}) => {
   await expect(
-    switchScenario(page, 'error-404', {
-      baseURL: 'http://localhost:9876',
-    })
+    switchScenario(page, "error-404", {
+      baseURL: "http://localhost:9876",
+    }),
   ).rejects.toThrow(/Failed to switch scenario: 404/);
 });
 ```
 
 **Why real Playwright is better here:**
+
 - ✅ Adapter is thin (~40 lines) - mocking would be overkill
 - ✅ Playwright API is stable - not changing frequently
 - ✅ Tests are fast (1.7s) - comparable to mocked tests
@@ -204,6 +216,7 @@ test('should throw error when scenario switch fails with 404', async ({ page }) 
 - ✅ Minimal logic - just API calls, no complex transformation
 
 **What would mocking test?**
+
 ```typescript
 // Hypothetical mocked version (NOT what we did)
 const mockPage = {
@@ -213,7 +226,7 @@ const mockPage = {
   setExtraHTTPHeaders: vi.fn(),
 };
 
-await switchScenario(mockPage, 'premium', { baseURL });
+await switchScenario(mockPage, "premium", { baseURL });
 
 expect(mockPage.request.post).toHaveBeenCalled();
 expect(mockPage.setExtraHTTPHeaders).toHaveBeenCalled();
@@ -226,22 +239,27 @@ expect(mockPage.setExtraHTTPHeaders).toHaveBeenCalled();
 **When adding adapter tests, ask these questions in order:**
 
 #### Question 1: Does the package have a single responsibility?
+
 - **Multiple concerns** (middleware + endpoints + context) → ❌ Follow general rule (mock dependencies)
 - **Single responsibility** (one clear purpose) → Continue to Question 2
 
 #### Question 2: How complex is the translation logic?
+
 - **Complex transformations** (header parsing, type conversion, validation) → ❌ Follow general rule
 - **Minimal transformation** (direct API wrappers) → Continue to Question 3
 
 #### Question 3: Is the external API stable and well-tested?
+
 - **Experimental or unstable** → ❌ Follow general rule
 - **Stable** (Playwright, Node.js core) → Continue to Question 4
 
 #### Question 4: Would tests provide adequate feedback speed with real dependencies?
+
 - **Slow enough to cause friction** → ❌ Follow general rule (mock for faster feedback)
 - **Fast enough for rapid iteration** → Continue to Question 5
 
 #### Question 5: Does real integration provide significantly more confidence?
+
 - **Mocks are sufficient** → ❌ Follow general rule
 - **Real integration catches important issues** → ✅ **Exception case - use real dependencies**
 
@@ -255,17 +273,18 @@ expect(mockPage.setExtraHTTPHeaders).toHaveBeenCalled();
 
 **Meets ALL exception criteria:**
 
-| Criterion | Playwright Helpers | Evidence |
-|-----------|-------------------|----------|
-| **Single responsibility** | ✅ One purpose | "Provides scenario switching helper for Playwright tests" |
-| **Minimal logic** | ✅ API calls only | Direct wrapper around `Page.request` and `Page.setExtraHTTPHeaders` |
-| **Stable API** | ✅ Playwright | Mature, well-tested framework |
-| **Fast tests** | ✅ 1.7 seconds | MSW + Playwright is fast |
-| **Higher confidence** | ✅ Real integration | Proves actual Playwright API works, catches API quirks |
+| Criterion                 | Playwright Helpers  | Evidence                                                            |
+| ------------------------- | ------------------- | ------------------------------------------------------------------- |
+| **Single responsibility** | ✅ One purpose      | "Provides scenario switching helper for Playwright tests"           |
+| **Minimal logic**         | ✅ API calls only   | Direct wrapper around `Page.request` and `Page.setExtraHTTPHeaders` |
+| **Stable API**            | ✅ Playwright       | Mature, well-tested framework                                       |
+| **Fast tests**            | ✅ 1.7 seconds      | MSW + Playwright is fast                                            |
+| **Higher confidence**     | ✅ Real integration | Proves actual Playwright API works, catches API quirks              |
 
 **Result:** Use real Playwright in tests ✅
 
 **Test characteristics:**
+
 - 13 tests covering all behaviors
 - Real `@playwright/test` with actual Page objects
 - MSW Node server for HTTP responses
@@ -276,17 +295,18 @@ expect(mockPage.setExtraHTTPHeaders).toHaveBeenCalled();
 
 **Fails multiple exception criteria:**
 
-| Criterion | Express Adapter | Evidence |
-|-----------|----------------|----------|
-| **Single responsibility** | ❌ Multiple concerns | Middleware + endpoints + context extraction + request translation |
-| **Minimal logic** | ❌ Complex translation | Headers normalization, query parsing, body extraction, type conversion |
-| **Stable API** | ✅ Express | Well-tested framework |
-| **Fast tests** | ⚠️ Could be slow | Full server adds overhead |
-| **Higher confidence** | ⚠️ Mocks sufficient | Translation logic is testable in isolation with fast feedback |
+| Criterion                 | Express Adapter        | Evidence                                                               |
+| ------------------------- | ---------------------- | ---------------------------------------------------------------------- |
+| **Single responsibility** | ❌ Multiple concerns   | Middleware + endpoints + context extraction + request translation      |
+| **Minimal logic**         | ❌ Complex translation | Headers normalization, query parsing, body extraction, type conversion |
+| **Stable API**            | ✅ Express             | Well-tested framework                                                  |
+| **Fast tests**            | ⚠️ Could be slow       | Full server adds overhead                                              |
+| **Higher confidence**     | ⚠️ Mocks sufficient    | Translation logic is testable in isolation with fast feedback          |
 
 **Result:** Mock Express Request/Response objects ✅
 
 **Test characteristics:**
+
 - Mock `Request` and `Response` objects
 - Test translation functions in isolation
 - Fast (milliseconds)
@@ -297,13 +317,13 @@ expect(mockPage.setExtraHTTPHeaders).toHaveBeenCalled();
 
 **Even if single responsibility, fails other criteria:**
 
-| Criterion | Database Adapter | Evidence |
-|-----------|-----------------|----------|
-| **Single responsibility** | ✅ One purpose | Simple CRUD operations for scenarios |
-| **Minimal logic** | ✅ Direct calls | No transformation, just pass-through |
-| **Stable API** | ❌ **Database-specific** | PostgreSQL vs MySQL vs Redis differ |
-| **Fast tests** | ❌ **Database startup** | Containers slow, state management complex |
-| **Higher confidence** | ⚠️ Integration tests better | Real DB tests belong in app layer, not adapter layer |
+| Criterion                 | Database Adapter            | Evidence                                             |
+| ------------------------- | --------------------------- | ---------------------------------------------------- |
+| **Single responsibility** | ✅ One purpose              | Simple CRUD operations for scenarios                 |
+| **Minimal logic**         | ✅ Direct calls             | No transformation, just pass-through                 |
+| **Stable API**            | ❌ **Database-specific**    | PostgreSQL vs MySQL vs Redis differ                  |
+| **Fast tests**            | ❌ **Database startup**     | Containers slow, state management complex            |
+| **Higher confidence**     | ⚠️ Integration tests better | Real DB tests belong in app layer, not adapter layer |
 
 **Result:** Mock database client ✅
 
@@ -331,26 +351,29 @@ Even though the adapter has single responsibility and minimal logic, database se
 
 ❌ **Judgment required** - Contributors must evaluate criteria (not always obvious)
 
-*Mitigation:* Decision framework provides clear yes/no questions. When in doubt, follow general rule.
+_Mitigation:_ Decision framework provides clear yes/no questions. When in doubt, follow general rule.
 
 ❌ **Potential for misuse** - Future adapters might claim exception incorrectly
 
-*Mitigation:* PR review checklist. Reviewers verify ALL exception criteria met, not just some.
+_Mitigation:_ PR review checklist. Reviewers verify ALL exception criteria met, not just some.
 
 ❌ **Inconsistency** - Different adapter packages have different test styles
 
-*Mitigation:* This is intentional! Different adapters have different needs. Consistency would be forcing the wrong approach on some adapters.
+_Mitigation:_ This is intentional! Different adapters have different needs. Consistency would be forcing the wrong approach on some adapters.
 
 ### Risks & Mitigation
 
 **Risk 1: Contributors use exception as default**
-- *Mitigation:* Documentation emphasizes general rule is default. Exception is narrow and requires ALL criteria.
+
+- _Mitigation:_ Documentation emphasizes general rule is default. Exception is narrow and requires ALL criteria.
 
 **Risk 2: "Single responsibility" boundary becomes blurred**
-- *Mitigation:* **One-sentence test.** If you can't describe the package's purpose in a single, clear sentence, it has multiple responsibilities. Use mocks. Evaluate package scope carefully during PR review.
+
+- _Mitigation:_ **One-sentence test.** If you can't describe the package's purpose in a single, clear sentence, it has multiple responsibilities. Use mocks. Evaluate package scope carefully during PR review.
 
 **Risk 3: Tests become slow as package grows**
-- *Mitigation:* **Monitor feedback speed.** If tests become slow enough to cause friction during development, immediately refactor to use mocks. Evaluate regularly during PR reviews.
+
+- _Mitigation:_ **Monitor feedback speed.** If tests become slow enough to cause friction during development, immediately refactor to use mocks. Evaluate regularly during PR reviews.
 
 ## Implementation Guidelines
 
@@ -361,29 +384,36 @@ Even though the adapter has single responsibility and minimal logic, database se
 **Step 2:** Evaluate if exception criteria apply:
 
 **Ask:** Can you describe what this package does in one sentence?
+
 - If no → Multiple responsibilities → Use mocks
 - If yes → Continue
 
 **Ask:** Does it transform data or just pass through to external API?
+
 - If transforms → Complex translation → Use mocks
 - If pass-through → Continue
 
 **Ask:** Is the external API stable?
+
 - If experimental/unstable → Use mocks
 - If stable → Continue
 
 **Ask:** Run tests - do they provide adequate feedback speed?
+
 ```bash
 time pnpm test
 ```
+
 - If slow enough to cause friction → Use mocks (faster feedback)
 - If fast enough for rapid iteration → Continue
 
 **Ask:** Does real integration provide significantly more confidence than mocks?
+
 - If mocks are sufficient → Use mocks
 - If real integration catches important issues → Exception applies
 
 **Step 3:** Evaluate all 5 exception criteria:
+
 - [ ] Single responsibility (one-sentence test passes)
 - [ ] Minimal translation logic (direct API wrappers)
 - [ ] Stable external API
@@ -393,12 +423,14 @@ time pnpm test
 **Step 4:** Document decision in package README
 
 **Example README section:**
+
 ```markdown
 ## Testing Strategy
 
 This package uses **real Playwright integration** in tests (exception to ADR-0003 Layer 2).
 
 **Rationale** (per ADR-0006):
+
 - ✅ Single responsibility (scenario switching helper)
 - ✅ Minimal translation logic (API wrappers only)
 - ✅ Stable API (Playwright)
@@ -411,14 +443,17 @@ See [ADR-0006](../../docs/adrs/0006-thin-adapters-real-integration-tests.md)
 ### For Existing Adapter Packages
 
 **Express Adapter (General Rule):**
+
 - ✅ Keep mocked tests (complex translation logic)
 - ✅ Integration tests in `apps/express-example/tests/`
 
 **Next.js Adapter (General Rule):**
+
 - ✅ Keep mocked tests (multiple adapters, complex routing)
 - ✅ Integration tests in `apps/nextjs-*-example/tests/`
 
 **Playwright Helpers (Exception Case):**
+
 - ✅ Keep real Playwright tests (meets all exception criteria)
 - ✅ Document decision in README ✅ (already done)
 
@@ -445,9 +480,11 @@ See [ADR-0006](../../docs/adrs/0006-thin-adapters-real-integration-tests.md)
    - **If unstable API** → ❌ REJECT - Unstable APIs should be mocked
 
 4. **MEASURE FEEDBACK SPEED**:
+
    ```bash
    cd packages/[adapter] && time pnpm test
    ```
+
    - [ ] Tests fast enough for rapid iteration
    - [ ] No significant friction compared to mocked tests
    - **If slow enough to cause friction** → ❌ REJECT - Slow tests must use mocks
@@ -466,6 +503,7 @@ See [ADR-0006](../../docs/adrs/0006-thin-adapters-real-integration-tests.md)
 **IF ANY CRITERION FAILS → REJECT.** Request mocked tests following ADR-0003 Layer 2.
 
 **After approval:**
+
 - Update exception count in ADR-0006 (line 121-122)
 - Monitor exception rate (target ≤10%)
 
@@ -488,6 +526,7 @@ This decision should be reconsidered if:
 6. **Pattern causes confusion** - If contributors struggle to apply decision framework correctly
 
 **Signs decision is still valid:**
+
 - Exception rate stays ≤10% (currently 25%, should decrease as more adapters added)
 - Tests using real dependencies remain fast (<2s)
 - No regressions from real API changes
@@ -495,6 +534,7 @@ This decision should be reconsidered if:
 
 **Exception rate tracking:**
 Update after each new adapter:
+
 - ✅ Express adapter (mocked) - 25%
 - ✅ MSW adapter (mocked) - 25%
 - ✅ Next.js adapter (mocked) - 25%

@@ -17,10 +17,12 @@ Scenarist's stateful mocks support **template replacement** where response value
 When a pure template references a state key that doesn't exist, what should be returned?
 
 **Original behavior (ADR-0002 decision, line 292):**
+
 - Pure template with missing state → returned unreplaced template string `"{{state.cartItems}}"`
-- This was documented as: *"Undefined keys remain as templates"*
+- This was documented as: _"Undefined keys remain as templates"_
 
 **Real-world impact:**
+
 ```typescript
 // Response definition
 {
@@ -42,9 +44,10 @@ When a pure template references a state key that doesn't exist, what should be r
 3. **Required workarounds**: Applications needed defensive code to detect and handle unreplaced templates:
    ```typescript
    // Workaround code required in application
-   const items = typeof data.items === 'string' && data.items.includes('{{')
-     ? []
-     : data.items;
+   const items =
+     typeof data.items === "string" && data.items.includes("{{")
+       ? []
+       : data.items;
    ```
 4. **Inconsistent with JavaScript semantics**: Accessing missing property returns `undefined`, not a string representation
 
@@ -72,11 +75,13 @@ This led to **Bug #2 fix** (commit 6272b3e) which changed the behavior.
 ```
 
 **Implementation:**
+
 - Pure template `"{{state.missing}}"` with no `state.missing` → returns `undefined`
 - Mixed template `"Count: {{state.missing}}"` → returns `"Count: {{state.missing}}"` (unchanged)
 - Pure template with valid state → returns actual state value (unchanged)
 
 **Scope:**
+
 - Only affects **pure templates** (entire value is template)
 - **Mixed templates** retain original behavior (keep unreplaced template in string)
 - This distinction is intentional: mixed templates are strings by nature
@@ -88,11 +93,13 @@ This led to **Bug #2 fix** (commit 6272b3e) which changed the behavior.
 **Approach:** Return `"{{state.key}}"` when state key missing
 
 **Pros:**
+
 - ✅ Makes missing state visible in responses
 - ✅ Explicit failure mode (can see what's broken)
 - ✅ Already implemented in ADR-0002
 
 **Cons:**
+
 - ❌ Type safety violation (expecting T, get string)
 - ❌ Leaks implementation details (template syntax exposed)
 - ❌ Requires application-level workarounds
@@ -106,11 +113,13 @@ This led to **Bug #2 fix** (commit 6272b3e) which changed the behavior.
 **Approach:** Throw exception when pure template references missing state
 
 **Pros:**
+
 - ✅ Fail-fast behavior
 - ✅ Forces developers to handle missing state explicitly
 - ✅ Clear error messages
 
 **Cons:**
+
 - ❌ Breaks scenarios where missing state is expected (e.g., before first capture)
 - ❌ Requires try-catch wrappers everywhere
 - ❌ Too strict for optional state
@@ -123,11 +132,13 @@ This led to **Bug #2 fix** (commit 6272b3e) which changed the behavior.
 **Approach:** Return empty string for missing pure templates
 
 **Pros:**
+
 - ✅ Falsy value (easy to check)
 - ✅ No type errors if expecting string
 - ✅ Doesn't leak template syntax
 
 **Cons:**
+
 - ❌ Type violation for non-string types (numbers, arrays, objects)
 - ❌ Confusing: is it "missing" or "actually empty string"?
 - ❌ Still requires defensive code for non-string types
@@ -139,11 +150,13 @@ This led to **Bug #2 fix** (commit 6272b3e) which changed the behavior.
 **Approach:** Return `null` instead of `undefined`
 
 **Pros:**
+
 - ✅ Explicitly represents "no value"
 - ✅ JSON-serializable (unlike undefined)
 - ✅ Semantically clear (null = intentionally missing)
 
 **Cons:**
+
 - ❌ Inconsistent with JavaScript property access (`obj.missing` → `undefined`, not `null`)
 - ❌ Requires explicit null checks (`if (value === null)` vs `if (value == null)`)
 - ❌ TypeScript types need explicit `| null` (more verbose than optional)
@@ -155,6 +168,7 @@ This led to **Bug #2 fix** (commit 6272b3e) which changed the behavior.
 **Approach:** Return `undefined` when pure template references missing state
 
 **Pros:**
+
 - ✅ Type-safe: `items?: Array<Item>` naturally handles undefined
 - ✅ Programmatically detectable: `if (items !== undefined)`
 - ✅ Consistent with JavaScript: `obj.missing` → `undefined`
@@ -164,6 +178,7 @@ This led to **Bug #2 fix** (commit 6272b3e) which changed the behavior.
 - ✅ Standard TypeScript pattern: `field?: Type`
 
 **Cons:**
+
 - ❌ Less visible in responses (undefined often serializes to null or omitted)
 - ❌ Requires explicit check to detect missing state
 - ❌ JSON.stringify omits undefined values (may be unexpected)
@@ -212,17 +227,17 @@ Applications that had workarounds for unreplaced template strings can now remove
 
 ```typescript
 // BEFORE (workaround needed)
-const items = typeof data.items === 'string' && data.items.includes('{{')
-  ? []
-  : data.items;
+const items =
+  typeof data.items === "string" && data.items.includes("{{") ? [] : data.items;
 
 // AFTER (no workaround needed)
-const items = data.items ?? [];  // or: data.items || []
+const items = data.items ?? []; // or: data.items || []
 ```
 
 **Test updates required:**
 
 3 test files needed updates across 2 packages:
+
 - `packages/core/tests/template-replacement.test.ts` (new behavior test added)
 - `packages/express-adapter/tests/setup-scenarist.test.ts` (2 expectations updated)
 - `apps/express-example/tests/stateful-scenarios.test.ts` (1 expectation updated)
@@ -232,6 +247,7 @@ Pattern: Changed `.toBe('{{state.key}}')` → `.toBeUndefined()`
 ## Implementation Notes
 
 **Change made:**
+
 ```typescript
 // packages/core/src/domain/template-replacement.ts (line 21)
 
@@ -243,11 +259,12 @@ return stateValue !== undefined ? stateValue : undefined;
 ```
 
 **Test added:**
+
 ```typescript
 // packages/core/tests/template-replacement.test.ts
-it('should return undefined when pure template state key is missing', () => {
-  const template = '{{state.missing}}';
-  const state = { other: 'value' };
+it("should return undefined when pure template state key is missing", () => {
+  const template = "{{state.missing}}";
+  const state = { other: "value" };
 
   const result = applyTemplates(template, state);
 
@@ -256,17 +273,20 @@ it('should return undefined when pure template state key is missing', () => {
 ```
 
 **Test coverage:**
+
 - 19 template replacement tests (up from 18)
 - 100% coverage maintained
 - All 159 core tests passing
 
 **Workaround removed:**
+
 ```typescript
 // apps/nextjs-app-router-example/app/cart-server/page.tsx
 // REMOVED: Defensive code no longer needed
-const items = typeof cartData.items === 'string' && cartData.items.includes('{{')
-  ? []
-  : cartData.items;
+const items =
+  typeof cartData.items === "string" && cartData.items.includes("{{")
+    ? []
+    : cartData.items;
 ```
 
 ## Design Rationale: Pure vs Mixed Templates
@@ -275,10 +295,10 @@ const items = typeof cartData.items === 'string' && cartData.items.includes('{{'
 
 ```typescript
 // Pure template (entire value is template)
-items: "{{state.cartItems}}"  // → undefined (if missing)
+items: "{{state.cartItems}}"; // → undefined (if missing)
 
 // Mixed template (template in surrounding text)
-message: "You have {{state.count}} items"  // → "You have {{state.count}} items" (if missing)
+message: "You have {{state.count}} items"; // → "You have {{state.count}} items" (if missing)
 ```
 
 **Rationale:**
@@ -308,20 +328,26 @@ message: "You have {{state.count}} items"  // → "You have {{state.count}} item
 ### ADR-0002 Update Needed
 
 Line 292 currently states:
+
 > ✅ **Template edge cases** - Handled through graceful degradation:
+>
 > - Undefined keys remain as templates (e.g., `{{state.missing}}`)
 
 **Should be updated to:**
+
 > ✅ **Template edge cases** - Handled through graceful degradation:
+>
 > - Pure templates with missing keys return `undefined` (see [ADR-0012](./0012-template-missing-state-undefined.md))
 > - Mixed templates with missing keys keep unreplaced template in string (e.g., `"Count: {{state.missing}}"`)
 
 ### docs/stateful-mocks.md Update Needed
 
 Line 766 currently states:
+
 > Templates with missing keys remain as templates (`'{{state.missing}}'`). This is useful for debugging but can be confusing if you expect an error.
 
 **Should be updated to:**
+
 > **Pure templates** with missing keys return `undefined`. **Mixed templates** keep unreplaced template strings (e.g., `"Count: {{state.missing}}"`). See [Template Types](#template-types) for distinction.
 
 ### docs/api-reference-state.md

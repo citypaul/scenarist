@@ -29,11 +29,11 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 
 ### Response Timeline
 
-| Action | Timeline |
-| ------ | -------- |
+| Action                 | Timeline        |
+| ---------------------- | --------------- |
 | Initial acknowledgment | Within 48 hours |
-| Status update | Within 7 days |
-| Resolution target | Within 90 days |
+| Status update          | Within 7 days   |
+| Resolution target      | Within 90 days  |
 
 We will work with you to understand and validate the issue, then develop and release a fix.
 

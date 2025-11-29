@@ -73,7 +73,15 @@ type Order = {
   readonly items: ReadonlyArray<unknown>;
 };
 
-type TestResult = User | Weather | FileInfo | Charge | Post | OptionalFile | NestedPath | Order;
+type TestResult =
+  | User
+  | Weather
+  | FileInfo
+  | Charge
+  | Post
+  | OptionalFile
+  | NestedPath
+  | Order;
 
 type FetchResult =
   | { readonly success: true; readonly data: TestResult }
@@ -96,7 +104,7 @@ const encodePathParam = (val: string | string[] | undefined): string => {
 const fetchTestData = async (
   test: string,
   query: Record<string, string | string[] | undefined>,
-  scenaristHeaders: Record<string, string>
+  scenaristHeaders: Record<string, string>,
 ): Promise<FetchResult> => {
   const getString = (val: string | string[] | undefined): string =>
     Array.isArray(val) ? val[0] : val || "";
@@ -108,7 +116,7 @@ const fetchTestData = async (
         const userId = encodePathParam(query.userId) || "123";
         const response = await fetch(
           `http://localhost:3001/api/users/${userId}`,
-          { headers: scenaristHeaders }
+          { headers: scenaristHeaders },
         );
         const data = (await response.json()) as User;
         return { success: true, data };
@@ -118,7 +126,7 @@ const fetchTestData = async (
         const city = encodePathParam(query.city) || "london";
         const response = await fetch(
           `http://localhost:3001/api/weather/v1/${city}`,
-          { headers: scenaristHeaders }
+          { headers: scenaristHeaders },
         );
         const data = (await response.json()) as Weather;
         return { success: true, data };
@@ -129,7 +137,7 @@ const fetchTestData = async (
         const city = encodePathParam(query.city) || "newyork";
         const response = await fetch(
           `http://localhost:3001/api/weather/${version}/${city}`,
-          { headers: scenaristHeaders }
+          { headers: scenaristHeaders },
         );
         const data = (await response.json()) as Weather;
         return { success: true, data };
@@ -139,7 +147,7 @@ const fetchTestData = async (
         const filename = encodePathParam(query.filename) || "data.json";
         const response = await fetch(
           `http://localhost:3001/api/files/${filename}`,
-          { headers: scenaristHeaders }
+          { headers: scenaristHeaders },
         );
         const data = (await response.json()) as FileInfo;
         return { success: true, data };
@@ -164,7 +172,7 @@ const fetchTestData = async (
         const userId = encodePathParam(query.userId) || "123";
         const response = await fetch(
           `http://localhost:3001/api/users/${userId}`,
-          { headers: scenaristHeaders }
+          { headers: scenaristHeaders },
         );
         const data = (await response.json()) as User;
         return { success: true, data };
@@ -175,7 +183,7 @@ const fetchTestData = async (
         const postId = encodePathParam(query.postId) || "42";
         const response = await fetch(
           `http://localhost:3001/api/users/${userId}/posts/${postId}`,
-          { headers: scenaristHeaders }
+          { headers: scenaristHeaders },
         );
         const data = (await response.json()) as any;
         return { success: true, data };
@@ -195,7 +203,7 @@ const fetchTestData = async (
         const path = encodePathParam(query.path) || "folder/subfolder/file.txt";
         const response = await fetch(
           `http://localhost:3001/api/nested-files/${path}`,
-          { headers: scenaristHeaders }
+          { headers: scenaristHeaders },
         );
         const data = (await response.json()) as any;
         return { success: true, data };
@@ -205,7 +213,7 @@ const fetchTestData = async (
         const orderId = encodePathParam(query.orderId) || "12345";
         const response = await fetch(
           `http://localhost:3001/api/orders/${orderId}`,
-          { headers: scenaristHeaders }
+          { headers: scenaristHeaders },
         );
         const data = (await response.json()) as any;
         return { success: true, data };
@@ -397,10 +405,12 @@ export default function URLMatchingPage({ test, result }: PageProps) {
 }
 
 export const getServerSideProps: GetServerSideProps<PageProps> = async (
-  context
+  context,
 ) => {
   const testParam = context.query.test;
-  const test = Array.isArray(testParam) ? testParam[0] : testParam || "numericId";
+  const test = Array.isArray(testParam)
+    ? testParam[0]
+    : testParam || "numericId";
 
   const scenaristHeaders = getScenaristHeaders(context.req);
   const result = await fetchTestData(test, context.query, scenaristHeaders);

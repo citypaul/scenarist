@@ -10,7 +10,7 @@
 
 import { headers } from "next/headers";
 
-import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+import { getScenaristHeadersFromReadonlyHeaders } from "@scenarist/nextjs-adapter/app";
 
 type Props = {
   searchParams: Promise<{
@@ -61,7 +61,7 @@ const fetchStrategyResult = async (
     readonly email?: string;
     readonly exact?: string;
   },
-  scenaristHeaders: Record<string, string>
+  scenaristHeaders: Record<string, string>,
 ): Promise<StrategyResult> => {
   try {
     switch (strategy) {
@@ -92,7 +92,7 @@ const fetchStrategyResult = async (
           `http://localhost:3001/users?email=${params.email || ""}`,
           {
             headers: scenaristHeaders,
-          }
+          },
         );
         const data = await response.json();
         return { success: true, data };
@@ -129,7 +129,7 @@ export default async function StringMatchingPage({ searchParams }: Props) {
   const result = await fetchStrategyResult(
     strategy,
     { campaign, apiKey, email, exact },
-    getScenaristHeadersFromReadonlyHeaders(headersList)
+    getScenaristHeadersFromReadonlyHeaders(headersList),
   );
 
   return (
@@ -174,7 +174,9 @@ export default async function StringMatchingPage({ searchParams }: Props) {
                   <div key={product.id} className="p-2 bg-white rounded">
                     <p className="font-semibold">{product.name}</p>
                     <p className="text-lg">£{product.price.toFixed(2)}</p>
-                    <p className="text-sm text-gray-600">Tier: {product.tier}</p>
+                    <p className="text-sm text-gray-600">
+                      Tier: {product.tier}
+                    </p>
                   </div>
                 ))}
               </div>

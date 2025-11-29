@@ -11,6 +11,7 @@ Scenarist follows hexagonal architecture with a strict separation between domain
 ### The Testing Challenge
 
 Without a clear testing strategy, projects often suffer from:
+
 - **Logic duplication in tests**: Testing the same domain logic at multiple layers (unit, integration, E2E)
 - **Slow feedback loops**: Over-reliance on slow E2E tests for fast unit test scenarios
 - **Brittle tests**: Testing implementation details instead of behavior
@@ -51,6 +52,7 @@ We adopt a **four-layer testing strategy** where each layer tests its own respon
 **Purpose:** Comprehensive unit testing of ALL domain logic
 
 **What to test:**
+
 - Domain services (business logic orchestration)
 - Port implementations (in-memory, etc.)
 - Type guards and validators
@@ -60,48 +62,51 @@ We adopt a **four-layer testing strategy** where each layer tests its own respon
 - Pure functions and transformations
 
 **Characteristics:**
+
 - ✅ **Fast** - Pure TypeScript, no framework overhead (milliseconds)
 - ✅ **Isolated** - Tests pure business logic, no external dependencies
 - ✅ **Comprehensive** - 100% coverage of domain logic
 - ✅ **Single source of truth** - Domain behavior defined here
 
 **Example:**
+
 ```typescript
 // packages/core/tests/scenario-manager.test.ts
-import { describe, it, expect } from 'vitest';
-import { createScenarioManager } from '../src/domain/scenario-manager';
-import { createInMemoryScenarioStore } from '../src/domain/in-memory-scenario-store';
+import { describe, it, expect } from "vitest";
+import { createScenarioManager } from "../src/domain/scenario-manager";
+import { createInMemoryScenarioStore } from "../src/domain/in-memory-scenario-store";
 
-describe('ScenarioManager - switchScenario', () => {
-  it('should switch scenario for given test ID', () => {
+describe("ScenarioManager - switchScenario", () => {
+  it("should switch scenario for given test ID", () => {
     const store = createInMemoryScenarioStore();
     const manager = createScenarioManager({ store, config: { enabled: true } });
 
-    const scenario = { id: 'test-scenario', mocks: [] };
+    const scenario = { id: "test-scenario", mocks: [] };
     manager.registerScenario(scenario);
 
-    const result = manager.switchScenario('test-1', 'test-scenario');
+    const result = manager.switchScenario("test-1", "test-scenario");
 
     expect(result.success).toBe(true);
 
-    const active = manager.getActiveScenario('test-1');
+    const active = manager.getActiveScenario("test-1");
     expect(active.success).toBe(true);
-    expect(active.data?.scenarioId).toBe('test-scenario');
+    expect(active.data?.scenarioId).toBe("test-scenario");
   });
 
-  it('should return error when scenario does not exist', () => {
+  it("should return error when scenario does not exist", () => {
     const store = createInMemoryScenarioStore();
     const manager = createScenarioManager({ store, config: { enabled: true } });
 
-    const result = manager.switchScenario('test-1', 'nonexistent');
+    const result = manager.switchScenario("test-1", "nonexistent");
 
     expect(result.success).toBe(false);
-    expect(result.error.message).toContain('not found');
+    expect(result.error.message).toContain("not found");
   });
 });
 ```
 
 **What NOT to test here:**
+
 - ❌ Express-specific request handling
 - ❌ Framework type conversions
 - ❌ HTTP-level integration
@@ -114,6 +119,7 @@ describe('ScenarioManager - switchScenario', () => {
 **Purpose:** Focused testing of translation layer between framework and domain
 
 **What to test:**
+
 - Request context extraction from framework (req → domain types)
 - Response application to framework (domain types → res)
 - Integration with core domain services (calling, not implementing!)
@@ -122,41 +128,43 @@ describe('ScenarioManager - switchScenario', () => {
 - Error handling in translation layer
 
 **Characteristics:**
+
 - ✅ **Fast** - Mock framework req/res, no full server (milliseconds)
 - ✅ **Focused** - Only translation, not domain logic
 - ✅ **Framework-specific** - Tests Express/Fastify/etc. quirks
 - ❌ **No duplication** - Doesn't re-test core logic
 
 **Example:**
+
 ```typescript
 // packages/express-adapter/tests/request-translation.test.ts
-import { describe, it, expect } from 'vitest';
-import { extractRequestContext } from '../src/utils/request-translation';
-import { mockExpressRequest } from './mocks';
+import { describe, it, expect } from "vitest";
+import { extractRequestContext } from "../src/utils/request-translation";
+import { mockExpressRequest } from "./mocks";
 
-describe('Express Adapter - Request Translation', () => {
-  it('should extract all RequestContext fields from Express request', () => {
+describe("Express Adapter - Request Translation", () => {
+  it("should extract all RequestContext fields from Express request", () => {
     const req = mockExpressRequest({
-      method: 'POST',
-      url: '/api/items',
-      body: { itemId: 'premium' },
-      query: { filter: 'active' },
-      headers: { 'x-user-tier': 'gold' }
+      method: "POST",
+      url: "/api/items",
+      body: { itemId: "premium" },
+      query: { filter: "active" },
+      headers: { "x-user-tier": "gold" },
     });
 
     const context = extractRequestContext(req);
 
     expect(context).toEqual({
-      method: 'POST',
-      url: '/api/items',
-      body: { itemId: 'premium' },
-      query: { filter: 'active' },
-      headers: expect.objectContaining({ 'x-user-tier': 'gold' })
+      method: "POST",
+      url: "/api/items",
+      body: { itemId: "premium" },
+      query: { filter: "active" },
+      headers: expect.objectContaining({ "x-user-tier": "gold" }),
     });
   });
 
-  it('should handle missing optional fields gracefully', () => {
-    const req = mockExpressRequest({ method: 'GET', url: '/api/data' });
+  it("should handle missing optional fields gracefully", () => {
+    const req = mockExpressRequest({ method: "GET", url: "/api/data" });
     const context = extractRequestContext(req);
 
     expect(context.body).toBeUndefined();
@@ -166,6 +174,7 @@ describe('Express Adapter - Request Translation', () => {
 ```
 
 **What NOT to test here:**
+
 - ❌ Match criteria logic (core's responsibility)
 - ❌ Sequence advancement (core's responsibility)
 - ❌ State management (core's responsibility)
@@ -177,6 +186,7 @@ For extremely thin adapters (≤50 lines, minimal logic), real dependencies MAY 
 **This exception is rare** (target ≤10% of adapters). Most adapters should follow the mocking guideline above.
 
 **Examples:**
+
 - **General rule (mocks)**: Express, Next.js adapters - complex translation logic (90%+ of adapters)
 - **Exception (real deps)**: Playwright helpers - thin wrapper, 40 lines, stable API
 
@@ -187,6 +197,7 @@ For extremely thin adapters (≤50 lines, minimal logic), real dependencies MAY 
 **Purpose:** End-to-end testing of real-world user journeys with full framework
 
 **What to test:**
+
 - Complete flows from HTTP request to response
 - Real-world scenarios and user journeys
 - Scenario switching with test ID isolation
@@ -195,19 +206,21 @@ For extremely thin adapters (≤50 lines, minimal logic), real dependencies MAY 
 - Edge cases in full context
 
 **Characteristics:**
+
 - ✅ **Realistic** - Full server, real HTTP (supertest, Playwright, Cypress)
 - ✅ **Comprehensive flows** - Tests complete user journeys
 - ✅ **Confidence** - Validates entire stack integration
 - ❌ **Slower** - Full server startup/teardown (seconds)
 
 **Example:**
+
 ```typescript
 // apps/express-example/tests/scenario-switching.test.ts
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import request from 'supertest';
-import { app, scenarist } from '../src/server';
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import request from "supertest";
+import { app, scenarist } from "../src/server";
 
-describe('Scenario Switching', () => {
+describe("Scenario Switching", () => {
   beforeAll(() => {
     scenarist.start();
   });
@@ -216,35 +229,36 @@ describe('Scenario Switching', () => {
     scenarist.stop();
   });
 
-  it('should switch scenarios per test ID without interference', async () => {
+  it("should switch scenarios per test ID without interference", async () => {
     // Test 1 uses success scenario
     await request(app)
-      .post('/__scenario__')
-      .set('x-scenarist-test-id', 'test-1')
-      .send({ scenario: 'success' });
+      .post("/__scenario__")
+      .set("x-scenarist-test-id", "test-1")
+      .send({ scenario: "success" });
 
     // Test 2 uses error scenario
     await request(app)
-      .post('/__scenario__')
-      .set('x-scenarist-test-id', 'test-2')
-      .send({ scenario: 'github-not-found' });
+      .post("/__scenario__")
+      .set("x-scenarist-test-id", "test-2")
+      .send({ scenario: "github-not-found" });
 
     // Test 1 gets success response
     const res1 = await request(app)
-      .get('/api/github/user/testuser')
-      .set('x-scenarist-test-id', 'test-1');
+      .get("/api/github/user/testuser")
+      .set("x-scenarist-test-id", "test-1");
     expect(res1.status).toBe(200);
 
     // Test 2 gets error response (no interference)
     const res2 = await request(app)
-      .get('/api/github/user/testuser')
-      .set('x-scenarist-test-id', 'test-2');
+      .get("/api/github/user/testuser")
+      .set("x-scenarist-test-id", "test-2");
     expect(res2.status).toBe(404);
   });
 });
 ```
 
 **What NOT to test here:**
+
 - ❌ Translation edge cases (faster to test in adapter tests)
 - ❌ Domain logic edge cases (faster to test in core tests)
 - ❌ Every permutation (use core tests for exhaustive coverage)
@@ -256,18 +270,21 @@ describe('Scenario Switching', () => {
 **Purpose:** Executable API documentation with selective automated tests
 
 **What to test:**
+
 - Happy path scenarios (success flows)
 - Common patterns (2-3 examples per feature)
 - Key user journeys (not every edge case)
 - API contract validation
 
 **Characteristics:**
+
 - ✅ **Human-readable** - Non-developers can understand
 - ✅ **Executable docs** - Tests are documentation
 - ✅ **CI-ready** - Run via `bru run` in CI pipeline
 - ❌ **Selective** - Not comprehensive like Vitest
 
 **Example:**
+
 ```javascript
 // apps/express-example/bruno/Scenarios/Set Scenario - Success.bru
 
@@ -319,33 +336,37 @@ docs {
 
 ### Testing Strategy Decision Matrix
 
-| Layer | Tests | Doesn't Test | Speed | Coverage | Tools |
-|-------|-------|--------------|-------|----------|-------|
-| **Core** | Domain logic | Framework integration | Fast (ms) | 100% of domain | Vitest |
-| **Adapter** | Translation (req↔domain) | Domain logic | Fast (ms) | Translation layer | Vitest |
-| **Integration** | Full flows, user journeys | Translation details | Slow (sec) | Real scenarios | Vitest + supertest |
-| **Bruno** | Key flows, API docs | Every edge case | Medium (sec) | Happy paths | Bruno CLI |
+| Layer           | Tests                     | Doesn't Test          | Speed        | Coverage          | Tools              |
+| --------------- | ------------------------- | --------------------- | ------------ | ----------------- | ------------------ |
+| **Core**        | Domain logic              | Framework integration | Fast (ms)    | 100% of domain    | Vitest             |
+| **Adapter**     | Translation (req↔domain)  | Domain logic          | Fast (ms)    | Translation layer | Vitest             |
+| **Integration** | Full flows, user journeys | Translation details   | Slow (sec)   | Real scenarios    | Vitest + supertest |
+| **Bruno**       | Key flows, API docs       | Every edge case       | Medium (sec) | Happy paths       | Bruno CLI          |
 
 ### Why This Strategy Works
 
 **No Duplication:**
+
 - Each layer tests its **own responsibility**
 - Core tests domain logic, adapters test translation, E2E tests flows
 - Bruno documents key patterns without duplicating Vitest tests
 
 **Clear Debugging:**
+
 - Core test failure → domain logic bug
 - Adapter test failure → translation bug (req/res handling)
 - Integration test failure → integration issue or missed scenario
 - Bruno test failure → API contract change
 
 **Fast Feedback:**
+
 - Core tests run in milliseconds (pure TypeScript, no frameworks)
 - Adapter tests run in milliseconds (mocked req/res)
 - Integration tests run in seconds (full server)
 - Bruno tests run in seconds (real HTTP in CI)
 
 **Maintainability:**
+
 - Domain logic changes only affect core tests
 - Framework changes only affect adapter tests
 - New scenarios just need integration + selective Bruno tests
@@ -354,61 +375,67 @@ docs {
 ### Anti-Patterns to Avoid
 
 ❌ **Testing domain logic in adapter tests**
+
 ```typescript
 // WRONG - This belongs in core tests
-describe('Express Adapter', () => {
-  it('should match on body fields', () => {
+describe("Express Adapter", () => {
+  it("should match on body fields", () => {
     // Testing match criteria logic in adapter layer
   });
 });
 ```
 
 ❌ **Testing translation in core tests**
+
 ```typescript
 // WRONG - This belongs in adapter tests
-describe('Core Domain', () => {
-  it('should extract Express query params', () => {
+describe("Core Domain", () => {
+  it("should extract Express query params", () => {
     // Testing Express-specific behavior in core
   });
 });
 ```
 
 ❌ **Duplicating all Vitest tests in Bruno**
+
 ```javascript
 // WRONG - Bruno should be selective, not comprehensive
 // Don't create Bruno test for every single edge case
 ```
 
 ❌ **E2E testing translation edge cases**
+
 ```typescript
 // WRONG - This should be in adapter tests (faster feedback)
-describe('Integration', () => {
-  it('should handle missing headers in Express request', () => {
+describe("Integration", () => {
+  it("should handle missing headers in Express request", () => {
     // Testing adapter translation behavior in slow E2E test
   });
 });
 ```
 
 ❌ **Testing implementation details**
+
 ```typescript
 // WRONG - Testing how, not what
-describe('ScenarioManager', () => {
-  it('should call store.set internally', () => {
-    const spy = vi.spyOn(store, 'set');
-    manager.switchScenario('test', 'scenario');
+describe("ScenarioManager", () => {
+  it("should call store.set internally", () => {
+    const spy = vi.spyOn(store, "set");
+    manager.switchScenario("test", "scenario");
     expect(spy).toHaveBeenCalled(); // Testing implementation!
   });
 });
 ```
 
 ✅ **Testing behavior through public API**
+
 ```typescript
 // CORRECT - Testing observable behavior
-describe('ScenarioManager', () => {
-  it('should make scenario active when switched', () => {
-    manager.switchScenario('test', 'scenario');
-    const active = manager.getActiveScenario('test');
-    expect(active.data?.scenarioId).toBe('scenario');
+describe("ScenarioManager", () => {
+  it("should make scenario active when switched", () => {
+    manager.switchScenario("test", "scenario");
+    const active = manager.getActiveScenario("test");
+    expect(active.data?.scenarioId).toBe("scenario");
   });
 });
 ```
@@ -418,15 +445,17 @@ describe('ScenarioManager', () => {
 Every feature must follow TDD:
 
 **1. RED - Write Failing Test**
+
 ```typescript
 // Write test FIRST - it fails (no implementation)
-it('should return error when scenario not found', () => {
-  const result = manager.switchScenario('test', 'nonexistent');
+it("should return error when scenario not found", () => {
+  const result = manager.switchScenario("test", "nonexistent");
   expect(result.success).toBe(false);
 });
 ```
 
 **2. GREEN - Minimum Implementation**
+
 ```typescript
 // Write MINIMUM code to pass test
 switchScenario(testId: string, scenarioId: string): ScenaristResult<void> {
@@ -438,6 +467,7 @@ switchScenario(testId: string, scenarioId: string): ScenaristResult<void> {
 ```
 
 **3. REFACTOR - Improve Structure**
+
 ```typescript
 // Extract, clean up, keep tests green
 const validateScenario = (registry: Map, scenarioId: string): ScenaristResult<void> => {
@@ -463,6 +493,7 @@ switchScenario(testId: string, scenarioId: string): ScenaristResult<void> {
 **Approach:** Put all tests in one location, mix unit/integration/E2E
 
 **Why rejected:**
+
 - ❌ Unclear what each test validates
 - ❌ Slow feedback (can't run fast tests separately)
 - ❌ High maintenance (unclear where to add new tests)
@@ -473,6 +504,7 @@ switchScenario(testId: string, scenarioId: string): ScenaristResult<void> {
 **Approach:** Rely primarily on E2E tests, minimal unit tests
 
 **Why rejected:**
+
 - ❌ Slow feedback loop (seconds instead of milliseconds)
 - ❌ Brittle (tests break when framework changes)
 - ❌ Hard to debug (large surface area)
@@ -483,6 +515,7 @@ switchScenario(testId: string, scenarioId: string): ScenaristResult<void> {
 **Approach:** Test internal methods, private functions, implementation choices
 
 **Why rejected:**
+
 - ❌ Brittle tests (break during refactoring)
 - ❌ Doesn't test actual behavior
 - ❌ Couples tests to implementation
@@ -493,6 +526,7 @@ switchScenario(testId: string, scenarioId: string): ScenaristResult<void> {
 **Approach:** Skip adapter tests, rely on core + integration
 
 **Why rejected:**
+
 - ❌ Translation bugs caught late (in slow integration tests)
 - ❌ Framework-specific issues unclear
 - ❌ Type conversion bugs harder to debug
@@ -539,16 +573,20 @@ switchScenario(testId: string, scenarioId: string): ScenaristResult<void> {
 ### Risks & Mitigation
 
 **Risk 1: Developers test domain logic in adapter tests**
-- *Mitigation*: PR review checklist, clear documentation, linting rules, examples
+
+- _Mitigation_: PR review checklist, clear documentation, linting rules, examples
 
 **Risk 2: Slow integration tests become bottleneck**
-- *Mitigation*: Run core tests first in CI, parallel test execution, test splitting
+
+- _Mitigation_: Run core tests first in CI, parallel test execution, test splitting
 
 **Risk 3: Coverage gaps between layers**
-- *Mitigation*: Integration tests verify layers work together, PR checklist
+
+- _Mitigation_: Integration tests verify layers work together, PR checklist
 
 **Risk 4: Bruno tests duplicating Vitest**
-- *Mitigation*: Clear guidance that Bruno is selective (happy paths only)
+
+- _Mitigation_: Clear guidance that Bruno is selective (happy paths only)
 
 ## Implementation Guidelines
 
@@ -557,6 +595,7 @@ switchScenario(testId: string, scenarioId: string): ScenaristResult<void> {
 **Location:** `packages/core/tests/`
 
 **File Structure:**
+
 ```
 packages/core/
 ├── src/
@@ -579,6 +618,7 @@ packages/core/
 **Location:** `packages/{adapter}-adapter/tests/`
 
 **File Structure:**
+
 ```
 packages/express-adapter/
 ├── src/
@@ -599,6 +639,7 @@ packages/express-adapter/
 **Location:** `apps/{app}/tests/`
 
 **File Structure:**
+
 ```
 apps/express-example/
 ├── src/
@@ -618,6 +659,7 @@ apps/express-example/
 **Location:** `apps/{app}/bruno/`
 
 **File Structure:**
+
 ```
 apps/express-example/bruno/
 ├── bruno.json

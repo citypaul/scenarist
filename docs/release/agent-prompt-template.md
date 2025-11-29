@@ -396,7 +396,7 @@ Start by reading the workflow document, then begin with any ticket.
 
 ## Workstream 6 (Sidebar & Link Fixes)
 
-```
+````
 You are working on the Scenarist documentation restructure. You have been assigned to **Workstream 6: Sidebar & Link Fixes**.
 
 ## Your Assignment
@@ -426,7 +426,7 @@ gh issue view 202 --json state
 gh issue view 203 --json state
 gh issue view 204 --json state  # WS5
 gh issue view 205 --json state
-```
+````
 
 If any are still open, **wait** until they are merged.
 
@@ -463,13 +463,16 @@ If any are still open, **wait** until they are merged.
 ## PR Template
 
 ## Summary
+
 - [Bullet points describing changes]
 
 ## Pages Changed
+
 - All pages (sidebar restructure) OR
 - [List specific pages with fixed links]
 
 ## Dependencies Verified
+
 - [x] WS1 complete (#191, #192, #193, #194 closed)
 - [x] WS2 complete (#195, #196, #197, #198, #199 closed)
 - [x] WS3 complete (#200 closed)
@@ -477,6 +480,7 @@ If any are still open, **wait** until they are merged.
 - [x] WS5 complete (#204, #205 closed)
 
 ## Checklist
+
 - [ ] All new paths exist
 - [ ] No 404s when navigating
 - [ ] Sidebar renders correctly
@@ -484,6 +488,7 @@ If any are still open, **wait** until they are merged.
 closes #[issue-number]
 
 Start by verifying dependencies, then begin work.
+
 ```
 
 ---
@@ -491,6 +496,7 @@ Start by verifying dependencies, then begin work.
 ## Workstream 7 (App Router Examples - Milestone 2)
 
 ```
+
 You are working on the Scenarist App Router Example Enhancements (Milestone 2). You have been assigned to **Workstream 7: App Router Examples**.
 
 ## Your Assignment
@@ -568,13 +574,16 @@ You are working on the Scenarist App Router Example Enhancements (Milestone 2). 
 ## PR Template
 
 ## Summary
+
 - [Bullet points describing feature]
 
 ## TDD Evidence
+
 - Tests written first in commit [hash]
 - Implementation in commit [hash]
 
 ## Files Changed
+
 - `app/[feature]/page.tsx` - [description]
 - `tests/playwright/[feature].spec.ts` - [description]
 
@@ -583,6 +592,7 @@ You are working on the Scenarist App Router Example Enhancements (Milestone 2). 
 [Paste test results showing all tests pass]
 
 ## Checklist
+
 - [ ] Tests written before implementation
 - [ ] All tests pass
 - [ ] TypeScript strict mode satisfied
@@ -591,6 +601,7 @@ You are working on the Scenarist App Router Example Enhancements (Milestone 2). 
 closes #[issue-number]
 
 Start by reading the workflow document, then begin with any ticket using TDD.
+
 ```
 
 ---
@@ -598,6 +609,7 @@ Start by reading the workflow document, then begin with any ticket using TDD.
 ## Workstream 8 (RSC Guide Updates - Milestone 2)
 
 ```
+
 You are working on the Scenarist RSC Guide Updates (Milestone 2). You have been assigned to **Workstream 8: RSC Guide Updates**.
 
 ## Your Assignment
@@ -610,12 +622,12 @@ You are working on the Scenarist RSC Guide Updates (Milestone 2). You have been 
 
 Each ticket depends on a specific WS7 ticket completing first:
 
-| Your Ticket | Depends On | Check Command |
-|-------------|------------|---------------|
-| #212 | #208 (Server Actions) | `gh issue view 208 --json state` |
-| #213 | #209 (Auth Flow) | `gh issue view 209 --json state` |
-| #214 | #210 (Streaming) | `gh issue view 210 --json state` |
-| #215 | #211 (Error Boundary) | `gh issue view 211 --json state` |
+| Your Ticket | Depends On            | Check Command                    |
+| ----------- | --------------------- | -------------------------------- |
+| #212        | #208 (Server Actions) | `gh issue view 208 --json state` |
+| #213        | #209 (Auth Flow)      | `gh issue view 209 --json state` |
+| #214        | #210 (Streaming)      | `gh issue view 210 --json state` |
+| #215        | #211 (Error Boundary) | `gh issue view 211 --json state` |
 
 **Only start a ticket after its dependency is merged.**
 
@@ -677,17 +689,21 @@ Each ticket depends on a specific WS7 ticket completing first:
 ## PR Template
 
 ## Summary
+
 - Added [pattern name] section to RSC guide
 - Links to example code at [GitHub path]
 - Links to test file at [GitHub path]
 
 ## Pages Changed
+
 - https://scenarist.io/frameworks/nextjs-app-router/rsc-guide
 
 ## Dependency Verified
+
 - [x] #[WS7-issue] merged to main
 
 ## Checklist
+
 - [ ] Links to correct GitHub files
 - [ ] Code examples accurate
 - [ ] Pattern clearly explained
@@ -695,6 +711,7 @@ Each ticket depends on a specific WS7 ticket completing first:
 closes #[issue-number]
 
 Start by checking which dependencies are met, then work on available tickets.
+
 ```
 
 ---
@@ -725,3 +742,4 @@ Start by checking which dependencies are met, then work on available tickets.
 1. Start WS1, WS2, WS3, WS4, WS5, WS7 simultaneously
 2. Start WS6 when WS1-WS5 complete
 3. Start WS8 tickets as their WS7 dependencies complete
+```

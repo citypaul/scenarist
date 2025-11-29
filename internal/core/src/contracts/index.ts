@@ -4,4 +4,4 @@
 export type {
   ScenaristAdapter,
   BaseAdapterOptions,
-} from './framework-adapter.js';
+} from "./framework-adapter.js";

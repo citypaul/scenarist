@@ -5,6 +5,7 @@ description: Scaffold a new port interface with proper hexagonal architecture st
 Create a new port interface following Scenarist's hexagonal architecture patterns.
 
 **Ask the user:**
+
 1. What is the port name? (e.g., "ScenarioRegistry", "RequestContext")
 2. What is the port's purpose? (brief description)
 3. Is this a primary or secondary port?

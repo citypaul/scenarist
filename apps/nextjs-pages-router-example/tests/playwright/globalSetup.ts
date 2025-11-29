@@ -11,8 +11,10 @@
 
 export default async function globalSetup(): Promise<void> {
   // Skip MSW for comparison tests (they should hit real json-server)
-  if (process.env.SKIP_MSW === 'true') {
-    console.log('⏭️  Skipping MSW server (comparison tests use real json-server)');
+  if (process.env.SKIP_MSW === "true") {
+    console.log(
+      "⏭️  Skipping MSW server (comparison tests use real json-server)",
+    );
     return;
   }
 

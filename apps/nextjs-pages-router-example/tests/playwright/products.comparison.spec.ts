@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
 /**
  * Products Page - Comparison Tests (WITHOUT Scenarist)
@@ -33,24 +33,26 @@ import { test, expect } from '@playwright/test';
  * - MSW global setup disabled for comparison project
  */
 
-test.describe('Products Page - Comparison (without Scenarist)', () => {
-  test('products display with json-server (basic functionality only)', async ({ page }) => {
+test.describe("Products Page - Comparison (without Scenarist)", () => {
+  test("products display with json-server (basic functionality only)", async ({
+    page,
+  }) => {
     // REQUIRES: json-server running on port 3001 (pnpm fake-api)
     // This test hits real json-server (NO Scenarist mocking)
 
     // Navigate to products page (will hit real json-server)
-    await page.goto('/');
+    await page.goto("/");
 
     // Wait for page to fully load
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState("networkidle");
 
     // Verify products are displayed
-    const productCards = page.getByRole('article');
+    const productCards = page.getByRole("article");
     await expect(productCards.first()).toBeVisible();
 
     // Verify product fields (using semantic selectors)
     const firstProduct = productCards.first();
-    await expect(firstProduct.getByRole('heading', { level: 3 })).toBeVisible();
+    await expect(firstProduct.getByRole("heading", { level: 3 })).toBeVisible();
     await expect(firstProduct.getByText(/£\d+\.\d{2}/)).toBeVisible();
 
     // Note: json-server data doesn't include category field
@@ -61,7 +63,9 @@ test.describe('Products Page - Comparison (without Scenarist)', () => {
     // This is what Scenarist solves!
   });
 
-  test('demonstrates limitation: cannot test premium pricing scenario', async ({ page }) => {
+  test("demonstrates limitation: cannot test premium pricing scenario", async ({
+    page,
+  }) => {
     // This test demonstrates what's IMPOSSIBLE without Scenarist
 
     // There's no way to switch scenarios with json-server
@@ -72,14 +76,18 @@ test.describe('Products Page - Comparison (without Scenarist)', () => {
     // With Scenarist: await scenarist.switchScenario('premiumUser')
     // Without Scenarist: ❌ Not possible
 
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
     // Verify we have products
-    await expect(page.getByRole('article').first()).toBeVisible();
+    await expect(page.getByRole("article").first()).toBeVisible();
 
     // Get the first product price (using semantic selector)
-    const firstPrice = await page.getByRole('article').first().getByText(/£\d+\.\d{2}/).textContent();
+    const firstPrice = await page
+      .getByRole("article")
+      .first()
+      .getByText(/£\d+\.\d{2}/)
+      .textContent();
 
     // We can't assert a specific price because json-server returns static data
     // Tier switching has NO EFFECT without Scenarist request matching
@@ -87,21 +95,27 @@ test.describe('Products Page - Comparison (without Scenarist)', () => {
     expect(firstPrice).toBeTruthy(); // Just verify price exists
   });
 
-  test('demonstrates limitation: cannot test standard pricing scenario', async ({ page }) => {
+  test("demonstrates limitation: cannot test standard pricing scenario", async ({
+    page,
+  }) => {
     // Same limitation as above - no scenario switching
     // This is the pain point Scenarist solves
 
     // With Scenarist: await scenarist.switchScenario('standardUser')
     // Without Scenarist: ❌ Not possible
 
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
     // Verify we have products
-    await expect(page.getByRole('article').first()).toBeVisible();
+    await expect(page.getByRole("article").first()).toBeVisible();
 
     // Get the first product price (using semantic selector)
-    const firstPrice = await page.getByRole('article').first().getByText(/£\d+\.\d{2}/).textContent();
+    const firstPrice = await page
+      .getByRole("article")
+      .first()
+      .getByText(/£\d+\.\d{2}/)
+      .textContent();
 
     // Same limitation: json-server ignores tier headers
     // Static data for all requests - no control over scenarios

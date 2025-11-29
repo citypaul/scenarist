@@ -16,18 +16,18 @@
  * Scenarist approach: ✅ Playwright + scenario switching
  */
 
-import { headers } from 'next/headers';
-import type { ProductsResponse } from '@/types/product';
+import { headers } from "next/headers";
+import type { ProductsResponse } from "@/types/product";
 
-import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+import { getScenaristHeadersFromReadonlyHeaders } from "@scenarist/nextjs-adapter/app";
 
 type ProductsPageProps = {
   searchParams: Promise<{ tier?: string; campaign?: string }>;
 };
 
 async function fetchProducts(
-  tier: string = 'standard',
-  campaign?: string
+  tier: string = "standard",
+  campaign?: string,
 ): Promise<ProductsResponse> {
   // Production: External API (Stripe) needs tier to return correct pricing
   // Tests: Same code runs, MSW intercepts based on tier header
@@ -35,17 +35,17 @@ async function fetchProducts(
   // Get ReadonlyHeaders from Next.js Server Component
   const headersList = await headers();
 
-  const url = new URL('http://localhost:3002/api/products');
+  const url = new URL("http://localhost:3002/api/products");
   if (campaign) {
-    url.searchParams.set('campaign', campaign);
+    url.searchParams.set("campaign", campaign);
   }
 
   const response = await fetch(url.toString(), {
     headers: {
       ...getScenaristHeadersFromReadonlyHeaders(headersList), // Scenarist infrastructure (x-test-id)
-      'x-user-tier': tier, // Application context (external API needs this!)
+      "x-user-tier": tier, // Application context (external API needs this!)
     },
-    cache: 'no-store', // Disable Next.js caching for demo
+    cache: "no-store", // Disable Next.js caching for demo
   });
 
   if (!response.ok) {
@@ -62,8 +62,10 @@ async function fetchProducts(
  * Jest cannot test this - throws: "Objects are not valid as a React child"
  * Scenarist + Playwright CAN test this - works perfectly!
  */
-export default async function ProductsPage({ searchParams }: ProductsPageProps) {
-  const { tier = 'standard', campaign } = await searchParams;
+export default async function ProductsPage({
+  searchParams,
+}: ProductsPageProps) {
+  const { tier = "standard", campaign } = await searchParams;
   const data = await fetchProducts(tier, campaign);
 
   return (
@@ -116,18 +118,22 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       </div>
 
       <div className="mt-12 p-6 bg-blue-50 rounded-lg">
-        <h2 className="text-xl font-semibold mb-3">Testing RSC with Scenarist</h2>
+        <h2 className="text-xl font-semibold mb-3">
+          Testing RSC with Scenarist
+        </h2>
         <div className="space-y-2 text-sm">
           <p>
             <strong>❌ Traditional (Jest):</strong>
             <code className="ml-2 bg-gray-200 px-2 py-1 rounded">
-              render(&lt;ProductsPage /&gt;) // Error: Objects are not valid as a React child
+              render(&lt;ProductsPage /&gt;) // Error: Objects are not valid as
+              a React child
             </code>
           </p>
           <p>
             <strong>✅ Scenarist (Playwright):</strong>
             <code className="ml-2 bg-gray-200 px-2 py-1 rounded">
-              await setScenario('premiumUser'); await page.goto('/products?tier=premium');
+              await setScenario('premiumUser'); await
+              page.goto('/products?tier=premium');
             </code>
           </p>
         </div>

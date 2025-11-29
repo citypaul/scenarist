@@ -1,4 +1,4 @@
-import type { ScenaristMock, ScenaristScenario } from '@scenarist/core';
+import type { ScenaristMock, ScenaristScenario } from "@scenarist/core";
 
 /**
  * Test data factory for ScenaristMock with sensible defaults.
@@ -7,10 +7,10 @@ import type { ScenaristMock, ScenaristScenario } from '@scenarist/core';
  * @returns Complete ScenaristMock for testing
  */
 export const mockDefinition = (
-  overrides?: Partial<ScenaristMock>
+  overrides?: Partial<ScenaristMock>,
 ): ScenaristMock => ({
-  method: 'GET',
-  url: 'https://api.example.com/users',
+  method: "GET",
+  url: "https://api.example.com/users",
   response: {
     status: 200,
   },
@@ -25,9 +25,9 @@ export const mockDefinition = (
  * @returns Complete ScenaristScenario for testing
  */
 export const mockScenario = (
-  overrides?: Partial<ScenaristScenario>
+  overrides?: Partial<ScenaristScenario>,
 ): ScenaristScenario => {
-  const id = overrides?.id ?? 'test-scenario';
+  const id = overrides?.id ?? "test-scenario";
   return {
     id,
     name: overrides?.name ?? `${id} scenario`,

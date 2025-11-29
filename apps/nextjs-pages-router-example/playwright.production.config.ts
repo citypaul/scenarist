@@ -1,4 +1,4 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig } from "@playwright/test";
 
 /**
  * Playwright Configuration for Production Tests
@@ -13,24 +13,24 @@ import { defineConfig } from '@playwright/test';
  * @see https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
-  testDir: './tests/production',
+  testDir: "./tests/production",
   fullyParallel: false, // Run production tests sequentially (shared json-server state)
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1, // Single worker (json-server has shared state)
-  reporter: 'html',
+  reporter: "html",
   use: {
-    baseURL: 'http://localhost:3000', // Production server port
-    trace: 'on-first-retry',
+    baseURL: "http://localhost:3000", // Production server port
+    trace: "on-first-retry",
   },
 
   // Global setup: build + start servers
-  globalSetup: './tests/production/global-setup.ts',
+  globalSetup: "./tests/production/global-setup.ts",
 
   projects: [
     {
-      name: 'api-tests',
-      testMatch: '**/*.spec.ts',
+      name: "api-tests",
+      testMatch: "**/*.spec.ts",
     },
   ],
 

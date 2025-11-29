@@ -208,10 +208,7 @@ test.describe("URL Matching Strategies - ATDD", () => {
    *
    * Should match only the exact URL
    */
-  test("should match exact URL string", async ({
-    page,
-    switchScenario,
-  }) => {
+  test("should match exact URL string", async ({ page, switchScenario }) => {
     await switchScenario(page, "urlMatching");
 
     // Navigate with exact user
@@ -272,7 +269,9 @@ test.describe("URL Matching Strategies - ATDD", () => {
       await switchScenario(page, "urlMatching");
 
       // Request specific user and post
-      await page.goto("/url-matching?test=multipleParams&userId=alice&postId=42");
+      await page.goto(
+        "/url-matching?test=multipleParams&userId=alice&postId=42",
+      );
       await expect(page.getByText("User ID: alice")).toBeVisible();
       await expect(page.getByText("Post ID: 42")).toBeVisible();
       await expect(page.getByText("Title: Post 42 by alice")).toBeVisible();
@@ -319,8 +318,12 @@ test.describe("URL Matching Strategies - ATDD", () => {
       await switchScenario(page, "urlMatching");
 
       // Request nested path
-      await page.goto("/url-matching?test=repeating&path=folder/subfolder/file.txt");
-      await expect(page.getByText("Path: folder/subfolder/file.txt")).toBeVisible();
+      await page.goto(
+        "/url-matching?test=repeating&path=folder/subfolder/file.txt",
+      );
+      await expect(
+        page.getByText("Path: folder/subfolder/file.txt"),
+      ).toBeVisible();
       await expect(page.getByText("Segments: 3")).toBeVisible();
     });
 

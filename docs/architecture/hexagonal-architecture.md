@@ -54,6 +54,7 @@ Scenarist uses hexagonal architecture (ports & adapters pattern) to remain compl
 ### 1. Dependency Direction
 
 Dependencies flow INWARD only:
+
 - Adapters depend on Core (✅)
 - Core depends on Ports (✅)
 - Ports have no dependencies (✅)
@@ -62,6 +63,7 @@ Dependencies flow INWARD only:
 ### 2. Port Definition
 
 **Use `interface` for ports:**
+
 ```typescript
 // ✅ CORRECT
 export interface ScenarioStore {
@@ -72,6 +74,7 @@ export interface ScenarioStore {
 ```
 
 **Use `type` for data:**
+
 ```typescript
 // ✅ CORRECT
 export type ActiveScenario = {
@@ -106,18 +109,21 @@ export const createScenarioManager = ({
 Adapters translate between frameworks and core:
 
 **Express Adapter:**
+
 - Extract test ID from request headers
 - Provide Express middleware
 - Create scenario control endpoints
 - Handle AsyncLocalStorage context
 
 **Next.js Adapter:**
+
 - Extract test ID from Next.js request objects
 - Handle App Router vs Pages Router differences
 - Provide Next.js-specific helpers
 - Manage singleton instances (Next.js module duplication)
 
 **MSW Adapter:**
+
 - Convert scenario definitions to MSW handlers
 - Implement dynamic handler with fallback
 - Match requests against active scenarios
@@ -157,6 +163,7 @@ packages/core/
 ### 1. Framework Independence
 
 Core logic works with ANY framework:
+
 - Express
 - Next.js
 - Fastify
@@ -168,6 +175,7 @@ Just implement a new adapter.
 ### 2. Testability
 
 Core can be tested with no framework:
+
 ```typescript
 const registry = createInMemoryScenarioRegistry();
 const store = createInMemoryScenarioStore();
@@ -189,6 +197,7 @@ const manager = createScenarioManager({ registry, store });
 ### 4. Clear Boundaries
 
 Each layer has specific responsibilities:
+
 - Core: Business rules
 - Ports: Contracts
 - Adapters: Framework integration
@@ -200,7 +209,7 @@ Each layer has specific responsibilities:
 
 ```typescript
 // ❌ WRONG
-import { ExpressScenarist } from '@scenarist/express-adapter';
+import { ExpressScenarist } from "@scenarist/express-adapter";
 ```
 
 Core should never know about adapters.
@@ -210,7 +219,7 @@ Core should never know about adapters.
 ```typescript
 // ❌ WRONG
 export const createScenarioManager = () => {
-  const store = new Map();  // Creating implementation!
+  const store = new Map(); // Creating implementation!
   // ...
 };
 ```
@@ -222,7 +231,7 @@ Always inject ports.
 ```typescript
 // ❌ WRONG - In core domain
 export const extractTestId = (req: Request) => {
-  return req.headers['x-scenarist-test-id'];  // Express-specific!
+  return req.headers["x-scenarist-test-id"]; // Express-specific!
 };
 ```
 
@@ -233,8 +242,9 @@ Framework-specific logic belongs in adapters.
 ```typescript
 // ❌ WRONG - In Express adapter
 export const registerScenario = (scenario) => {
-  if (!scenario.mocks.length) {  // Business rule!
-    throw new Error('Scenario must have mocks');
+  if (!scenario.mocks.length) {
+    // Business rule!
+    throw new Error("Scenario must have mocks");
   }
 };
 ```

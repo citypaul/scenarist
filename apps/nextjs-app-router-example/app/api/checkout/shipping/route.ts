@@ -8,9 +8,9 @@
  * shipping costs while simultaneously capturing address via state.
  */
 
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
 
 type ShippingRequest = {
   readonly country: string;
@@ -29,10 +29,10 @@ export async function POST(request: Request) {
     const body: ShippingRequest = await request.json();
 
     // Proxy to json-server (MSW will intercept on server-side)
-    const response = await fetch('http://localhost:3001/checkout/shipping', {
-      method: 'POST',
+    const response = await fetch("http://localhost:3001/checkout/shipping", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...getScenaristHeaders(request), // ✅ Pass test ID to MSW
       },
       body: JSON.stringify(body),
@@ -47,9 +47,12 @@ export async function POST(request: Request) {
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'Failed to calculate shipping',
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to calculate shipping",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -10,13 +10,15 @@ import { getScenaristHeaders } from "@scenarist/nextjs-adapter/pages";
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   const { city } = req.query;
 
   // Security: Encode path parameter to prevent path traversal
   // @see https://github.com/citypaul/scenarist/security/code-scanning/80
-  const encodedCity = encodeURIComponent(Array.isArray(city) ? city[0] : city ?? '');
+  const encodedCity = encodeURIComponent(
+    Array.isArray(city) ? city[0] : (city ?? ""),
+  );
 
   // Proxy to json-server (MSW will intercept on server-side)
   const response = await fetch(`http://localhost:3001/weather/${encodedCity}`, {

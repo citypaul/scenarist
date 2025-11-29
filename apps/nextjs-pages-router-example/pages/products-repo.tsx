@@ -16,20 +16,23 @@
  * Learn more: https://scenarist.io/guides/testing-database-apps/repository-pattern
  */
 
-import type { GetServerSideProps } from 'next';
-import type { ProductsResponse } from '@/types/product';
-import { getUserRepository, runWithTestId } from '@/lib/container';
-import type { User } from '@/lib/repositories';
+import type { GetServerSideProps } from "next";
+import type { ProductsResponse } from "@/types/product";
+import { getUserRepository, runWithTestId } from "@/lib/container";
+import type { User } from "@/lib/repositories";
 
 type ProductsRepoPageProps = {
   user: User | null;
-  products: ProductsResponse['products'];
+  products: ProductsResponse["products"];
   testId: string;
 };
 
-export const getServerSideProps: GetServerSideProps<ProductsRepoPageProps> = async (context) => {
-  const { userId = 'user-1' } = context.query;
-  const testId = (context.req.headers['x-scenarist-test-id'] as string) ?? 'default-test';
+export const getServerSideProps: GetServerSideProps<
+  ProductsRepoPageProps
+> = async (context) => {
+  const { userId = "user-1" } = context.query;
+  const testId =
+    (context.req.headers["x-scenarist-test-id"] as string) ?? "default-test";
 
   // 1. Get user from repository (in-memory with test ID isolation)
   const user = await runWithTestId(testId, async () => {
@@ -38,11 +41,11 @@ export const getServerSideProps: GetServerSideProps<ProductsRepoPageProps> = asy
   });
 
   // 2. Get products from external API (mocked by Scenarist)
-  const tier = user?.tier ?? 'standard';
-  const response = await fetch('http://localhost:3001/products', {
+  const tier = user?.tier ?? "standard";
+  const response = await fetch("http://localhost:3001/products", {
     headers: {
-      'x-scenarist-test-id': testId,
-      'x-user-tier': tier,
+      "x-scenarist-test-id": testId,
+      "x-user-tier": tier,
     },
   });
 
@@ -61,7 +64,10 @@ export const getServerSideProps: GetServerSideProps<ProductsRepoPageProps> = asy
   };
 };
 
-export default function ProductsRepoPage({ user, products }: ProductsRepoPageProps) {
+export default function ProductsRepoPage({
+  user,
+  products,
+}: ProductsRepoPageProps) {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
@@ -86,12 +92,12 @@ export default function ProductsRepoPage({ user, products }: ProductsRepoPagePro
               <strong>Email:</strong> {user.email}
             </p>
             <p>
-              <strong>Tier:</strong>{' '}
+              <strong>Tier:</strong>{" "}
               <span
                 className={`px-2 py-1 rounded text-sm ${
-                  user.tier === 'premium'
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : 'bg-gray-100 text-gray-800'
+                  user.tier === "premium"
+                    ? "bg-yellow-100 text-yellow-800"
+                    : "bg-gray-100 text-gray-800"
                 }`}
               >
                 {user.tier}

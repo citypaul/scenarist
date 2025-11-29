@@ -1,7 +1,16 @@
-import type { BaseAdapterOptions, ScenaristAdapter, ScenarioRegistry, ScenarioStore } from '@scenarist/core';
-import { InMemoryScenarioRegistry, InMemoryScenarioStore, SCENARIST_TEST_ID_HEADER } from '@scenarist/core';
-import { createScenaristBase } from '../common/create-scenarist-base.js';
-import { createScenarioEndpoint } from './endpoints.js';
+import type {
+  BaseAdapterOptions,
+  ScenaristAdapter,
+  ScenarioRegistry,
+  ScenarioStore,
+} from "@scenarist/core";
+import {
+  InMemoryScenarioRegistry,
+  InMemoryScenarioStore,
+  SCENARIST_TEST_ID_HEADER,
+} from "@scenarist/core";
+import { createScenaristBase } from "../common/create-scenarist-base.js";
+import { createScenarioEndpoint } from "./endpoints.js";
 
 /**
  * Global state for Next.js App Router adapter.
@@ -44,7 +53,7 @@ export type AppAdapterOptions = BaseAdapterOptions;
  * Provides MSW server lifecycle management and scenario endpoint factory.
  * Unlike Express adapter, doesn't provide middleware (Next.js doesn't have global middleware for App Router).
  */
-export type AppScenarist = Omit<ScenaristAdapter<never>, 'middleware'> & {
+export type AppScenarist = Omit<ScenaristAdapter<never>, "middleware"> & {
   /**
    * Create scenario endpoint handler for use in app/api/%5F%5Fscenario%5F%5F/route.ts
    *
@@ -123,7 +132,9 @@ export type AppScenarist = Omit<ScenaristAdapter<never>, 'middleware'> & {
    * }
    * ```
    */
-  getHeadersFromReadonlyHeaders: (headers: { get(name: string): string | null }) => Record<string, string>;
+  getHeadersFromReadonlyHeaders: (headers: {
+    get(name: string): string | null;
+  }) => Record<string, string>;
 };
 
 /**
@@ -161,7 +172,9 @@ export type AppScenarist = Omit<ScenaristAdapter<never>, 'middleware'> & {
  * }
  * ```
  */
-export const createScenaristImpl = (options: AppAdapterOptions): AppScenarist => {
+export const createScenaristImpl = (
+  options: AppAdapterOptions,
+): AppScenarist => {
   // Singleton guard - return existing instance if already created
   // This prevents duplicate scenario registration errors when Next.js creates multiple module instances
   if (global.__scenarist_instance) {
@@ -196,13 +209,17 @@ export const createScenaristImpl = (options: AppAdapterOptions): AppScenarist =>
     clearScenario: (testId) => manager.clearScenario(testId),
     createScenarioEndpoint: () => createScenarioEndpoint(manager, config),
     getHeaders: (req: Request): Record<string, string> => {
-      const testId = req.headers.get(SCENARIST_TEST_ID_HEADER) || config.defaultTestId;
+      const testId =
+        req.headers.get(SCENARIST_TEST_ID_HEADER) || config.defaultTestId;
       return {
         [SCENARIST_TEST_ID_HEADER]: testId,
       };
     },
-    getHeadersFromReadonlyHeaders: (headers: { get(name: string): string | null }): Record<string, string> => {
-      const testId = headers.get(SCENARIST_TEST_ID_HEADER) || config.defaultTestId;
+    getHeadersFromReadonlyHeaders: (headers: {
+      get(name: string): string | null;
+    }): Record<string, string> => {
+      const testId =
+        headers.get(SCENARIST_TEST_ID_HEADER) || config.defaultTestId;
       return {
         [SCENARIST_TEST_ID_HEADER]: testId,
       };

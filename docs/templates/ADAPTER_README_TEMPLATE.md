@@ -7,48 +7,58 @@
 **Scenarist** enables concurrent tests to run with different backend states by switching mock scenarios at runtime via test IDs. Your real application code executes while external API responses are controlled by scenarios. No application restarts needed, no complex per-test mocking, just simple scenario switching.
 
 **Before Scenarist:**
+
 ```typescript
 // Every test has fragile per-test mocking
 beforeEach(() => {
-  server.use(
-    http.get('/api/user', () => HttpResponse.json({ role: 'admin' }))
-  );
+  server.use(http.get("/api/user", () => HttpResponse.json({ role: "admin" })));
 });
 // Repeat 100 times across test files, hope they don't conflict
 ```
 
 **With Scenarist:**
+
 ```typescript
 // Define scenario once
-const adminScenario = { id: 'admin', mocks: [/* complete backend state */] };
+const adminScenario = {
+  id: "admin",
+  mocks: [
+    /* complete backend state */
+  ],
+};
 
 // Use in any test with one line
-await setScenario('test-1', 'admin');
+await setScenario("test-1", "admin");
 // Test runs with complete "admin" backend state, isolated from other tests
 ```
 
 ## Why Use Scenarist with [Framework]?
 
 **Runtime Scenario Switching**
+
 - Change entire backend state with one API call
 - No server restarts between tests
 - Instant feedback during development
 
 **True Parallel Testing**
+
 - 100+ tests run concurrently with different scenarios
 - Each test ID has isolated scenario state
 - No conflicts, no serialization needed
 
 **[Framework-Specific Advantage]**
+
 - [Explain the unique benefit for this framework]
 - [E.g., AsyncLocalStorage for Express, type-safe API routes for Next.js, etc.]
 
 **Reusable Scenarios**
+
 - Define scenarios once, use across all tests
 - Version control your mock scenarios
 - Share scenarios across teams
 
 **Zero Boilerplate** (or appropriate messaging)
+
 - [Explain setup complexity: one function call, or explicit wiring, etc.]
 - [Highlight what's automated vs. manual]
 
@@ -75,6 +85,7 @@ yarn add -D @scenarist/[framework]-adapter @scenarist/core msw
 ```
 
 **Peer Dependencies:**
+
 - `[framework]` [version range]
 - `msw` ^2.0.0
 
@@ -86,16 +97,18 @@ yarn add -D @scenarist/[framework]-adapter @scenarist/core msw
 
 ```typescript
 // [appropriate file location]
-import type { ScenaristScenario } from '@scenarist/core';
+import type { ScenaristScenario } from "@scenarist/core";
 
 export const successScenario: ScenaristScenario = {
-  id: 'success',
-  name: 'API Success',
-  mocks: [{
-    method: 'GET',
-    url: 'https://api.example.com/user',
-    response: { status: 200, body: { name: 'Alice', role: 'user' } }
-  }]
+  id: "success",
+  name: "API Success",
+  mocks: [
+    {
+      method: "GET",
+      url: "https://api.example.com/user",
+      response: { status: 200, body: { name: "Alice", role: "user" } },
+    },
+  ],
 };
 ```
 
@@ -103,11 +116,11 @@ export const successScenario: ScenaristScenario = {
 
 ```typescript
 // [appropriate file location]
-import { createScenarist } from '@scenarist/[framework]-adapter';
-import { successScenario } from './scenarios';
+import { createScenarist } from "@scenarist/[framework]-adapter";
+import { successScenario } from "./scenarios";
 
 export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
+  enabled: process.env.NODE_ENV === "test",
   defaultScenario: successScenario,
 });
 ```
@@ -138,6 +151,7 @@ it('fetches user successfully', async () => {
 **That's it!** You've got runtime scenario switching.
 
 **Next steps:**
+
 - [Add more scenarios](#full-setup-guide) for different backend states
 - [Use test helpers](#common-patterns) to reduce boilerplate
 - [Learn about test isolation](#test-id-isolation) for parallel tests
@@ -152,6 +166,7 @@ Scenarist provides 20+ powerful features for scenario-based testing. All capabil
 ### Request Matching (6 capabilities)
 
 **Body matching (partial match)** - Match requests based on request body fields
+
 ```typescript
 {
   method: 'POST',
@@ -162,6 +177,7 @@ Scenarist provides 20+ powerful features for scenario-based testing. All capabil
 ```
 
 **Header matching (exact match)** - Perfect for user tier testing
+
 ```typescript
 {
   method: 'GET',
@@ -180,6 +196,7 @@ Scenarist provides 20+ powerful features for scenario-based testing. All capabil
 
 **Single responses** - Return same response every time
 **Response sequences (ordered)** - Perfect for polling APIs
+
 ```typescript
 {
   method: 'GET',
@@ -202,6 +219,7 @@ Scenarist provides 20+ powerful features for scenario-based testing. All capabil
 
 **State capture from requests** - Extract values from body/headers/query
 **State injection via templates** - Inject captured state using `{{state.X}}`
+
 ```typescript
 // Capture from POST
 {

@@ -1,5 +1,5 @@
 // Re-export types from setup for public API
-export type { AppAdapterOptions, AppScenarist } from './setup.js';
+export type { AppAdapterOptions, AppScenarist } from "./setup.js";
 
 /**
  * Production-only entry point that returns undefined without loading test dependencies.
@@ -13,8 +13,8 @@ export type { AppAdapterOptions, AppScenarist } from './setup.js';
  * application code can import and use them without production guards.
  */
 export const createScenarist = (
-  _options: import('./setup.js').AppAdapterOptions
-): import('./setup.js').AppScenarist | undefined => {
+  _options: import("./setup.js").AppAdapterOptions,
+): import("./setup.js").AppScenarist | undefined => {
   return undefined;
 };
 
@@ -28,9 +28,9 @@ export function getScenaristHeaders(_req: Request): Record<string, string> {
 /**
  * Production stub: Returns empty object (no test headers needed in production)
  */
-export function getScenaristHeadersFromReadonlyHeaders(
-  _headers: { get(name: string): string | null }
-): Record<string, string> {
+export function getScenaristHeadersFromReadonlyHeaders(_headers: {
+  get(name: string): string | null;
+}): Record<string, string> {
   return {};
 }
 
@@ -38,14 +38,14 @@ export function getScenaristHeadersFromReadonlyHeaders(
  * Production stub: Returns fallback test ID
  */
 export function getScenaristTestId(_req: Request): string {
-  return 'default-test';
+  return "default-test";
 }
 
 /**
  * Production stub: Returns fallback test ID
  */
-export function getScenaristTestIdFromReadonlyHeaders(
-  _headers: { get(name: string): string | null }
-): string {
-  return 'default-test';
+export function getScenaristTestIdFromReadonlyHeaders(_headers: {
+  get(name: string): string | null;
+}): string {
+  return "default-test";
 }

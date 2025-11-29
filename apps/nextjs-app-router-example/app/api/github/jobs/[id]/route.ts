@@ -7,9 +7,9 @@
  * Sequence: pending → processing → complete → complete (repeat: 'last')
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -37,9 +37,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'Failed to fetch job status',
+        error:
+          error instanceof Error ? error.message : "Failed to fetch job status",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

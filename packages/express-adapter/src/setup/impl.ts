@@ -1,5 +1,5 @@
-import { Router } from 'express';
-import { setupServer } from 'msw/node';
+import { Router } from "express";
+import { setupServer } from "msw/node";
 import {
   buildConfig,
   createScenarioManager,
@@ -11,11 +11,11 @@ import {
   type BaseAdapterOptions,
   type ScenaristAdapter,
   type ScenaristScenarios,
-} from '@scenarist/core';
-import { createDynamicHandler } from '@scenarist/msw-adapter';
-import { testIdStorage } from '../middleware/test-id-middleware.js';
-import { createTestIdMiddleware } from '../middleware/test-id-middleware.js';
-import { createScenarioEndpoints } from '../endpoints/scenario-endpoints.js';
+} from "@scenarist/core";
+import { createDynamicHandler } from "@scenarist/msw-adapter";
+import { testIdStorage } from "../middleware/test-id-middleware.js";
+import { createTestIdMiddleware } from "../middleware/test-id-middleware.js";
+import { createScenarioEndpoints } from "../endpoints/scenario-endpoints.js";
 
 /**
  * Express-specific adapter options.
@@ -24,8 +24,9 @@ import { createScenarioEndpoints } from '../endpoints/scenario-endpoints.js';
  *
  * @template T - Scenarios object for type-safe scenario IDs
  */
-export type ExpressAdapterOptions<T extends ScenaristScenarios = ScenaristScenarios> =
-  BaseAdapterOptions<T>;
+export type ExpressAdapterOptions<
+  T extends ScenaristScenarios = ScenaristScenarios,
+> = BaseAdapterOptions<T>;
 
 /**
  * Express adapter instance.
@@ -34,8 +35,9 @@ export type ExpressAdapterOptions<T extends ScenaristScenarios = ScenaristScenar
  *
  * @template T - Scenarios object for type-safe scenario IDs
  */
-export type ExpressScenarist<T extends ScenaristScenarios = ScenaristScenarios> =
-  ScenaristAdapter<Router, T>;
+export type ExpressScenarist<
+  T extends ScenaristScenarios = ScenaristScenarios,
+> = ScenaristAdapter<Router, T>;
 
 /**
  * Create a Scenarist instance for Express.
@@ -68,7 +70,7 @@ export type ExpressScenarist<T extends ScenaristScenarios = ScenaristScenarios> 
  * ```
  */
 export const createScenaristImpl = <T extends ScenaristScenarios>(
-  options: ExpressAdapterOptions<T>
+  options: ExpressAdapterOptions<T>,
 ): ExpressScenarist<T> => {
   const config = buildConfig(options);
   const registry = options.registry ?? new InMemoryScenarioRegistry();
@@ -77,14 +79,22 @@ export const createScenaristImpl = <T extends ScenaristScenarios>(
   const stateManager = createInMemoryStateManager();
   const sequenceTracker = createInMemorySequenceTracker();
 
-  const manager = createScenarioManager({ registry, store, stateManager, sequenceTracker });
+  const manager = createScenarioManager({
+    registry,
+    store,
+    stateManager,
+    sequenceTracker,
+  });
 
   // Register all scenarios upfront from the scenarios object
   Object.values(options.scenarios).forEach((scenario) => {
     manager.registerScenario(scenario);
   });
 
-  const responseSelector = createResponseSelector({ sequenceTracker, stateManager });
+  const responseSelector = createResponseSelector({
+    sequenceTracker,
+    stateManager,
+  });
 
   const handler = createDynamicHandler({
     getTestId: (_request) => testIdStorage.getStore() ?? config.defaultTestId,

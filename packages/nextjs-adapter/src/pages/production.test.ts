@@ -116,22 +116,22 @@
  * 4. No imports from test dependencies (tree-shaking verification)
  */
 
-import { describe, it, expect } from 'vitest';
-import type { NextApiRequest } from 'next';
-import * as production from './production.js';
+import { describe, it, expect } from "vitest";
+import type { NextApiRequest } from "next";
+import * as production from "./production.js";
 
-describe('Pages Router production entry point', () => {
-  describe('createScenarist', () => {
-    it('should return undefined (Scenarist disabled in production)', () => {
+describe("Pages Router production entry point", () => {
+  describe("createScenarist", () => {
+    it("should return undefined (Scenarist disabled in production)", () => {
       // In production builds, Scenarist should not exist at all
       // API routes check: if (scenarist) { return scenarist.createScenarioEndpoint() }
       const scenarist = production.createScenarist({
         enabled: true,
         scenarios: {
           test: {
-            id: 'test',
-            name: 'Test Scenario',
-            description: 'A test scenario',
+            id: "test",
+            name: "Test Scenario",
+            description: "A test scenario",
             mocks: [],
           },
         },
@@ -140,35 +140,35 @@ describe('Pages Router production entry point', () => {
       expect(scenarist).toBeUndefined();
     });
 
-    it('should accept same options as development version (type safety)', () => {
+    it("should accept same options as development version (type safety)", () => {
       // This ensures the production stub has the same TypeScript signature
       // as the real implementation, preventing type errors in user code
       const scenarist = production.createScenarist({
         enabled: false,
         scenarios: {
           default: {
-            id: 'default',
-            name: 'Default Scenario',
-            description: 'Default test scenario',
+            id: "default",
+            name: "Default Scenario",
+            description: "Default test scenario",
             mocks: [],
           },
         },
-        defaultTestId: 'test-123',
+        defaultTestId: "test-123",
       });
 
       expect(scenarist).toBeUndefined();
     });
   });
 
-  describe('getScenaristHeaders', () => {
-    it('should return empty object (no test headers in production)', () => {
+  describe("getScenaristHeaders", () => {
+    it("should return empty object (no test headers in production)", () => {
       const mockRequest = {
         headers: {
-          'x-scenarist-test-id': 'test-123',
-          'x-user-id': 'user-456',
+          "x-scenarist-test-id": "test-123",
+          "x-user-id": "user-456",
         },
-        method: 'GET',
-        url: '/api/test',
+        method: "GET",
+        url: "/api/test",
       } as unknown as NextApiRequest;
 
       const headers = production.getScenaristHeaders(mockRequest);
@@ -178,35 +178,35 @@ describe('Pages Router production entry point', () => {
       expect(Object.keys(headers)).toHaveLength(0);
     });
 
-    it('should be safe to spread in fetch headers', () => {
+    it("should be safe to spread in fetch headers", () => {
       const mockRequest = {
         headers: {},
-        method: 'GET',
-        url: '/api/test',
+        method: "GET",
+        url: "/api/test",
       } as unknown as NextApiRequest;
 
       const headers = production.getScenaristHeaders(mockRequest);
 
       // This pattern works in all environments without guards
       const fetchHeaders = {
-        'content-type': 'application/json',
+        "content-type": "application/json",
         ...headers, // Spreading {} is a no-op
       };
 
       expect(fetchHeaders).toEqual({
-        'content-type': 'application/json',
+        "content-type": "application/json",
       });
     });
 
-    it('should ignore NextApiRequest properties in production', () => {
+    it("should ignore NextApiRequest properties in production", () => {
       const mockRequest = {
         headers: {
-          'x-scenarist-test-id': 'test-abc',
-          'x-scenario': 'premium',
+          "x-scenarist-test-id": "test-abc",
+          "x-scenario": "premium",
         },
-        method: 'POST',
-        url: '/api/cart/add',
-        body: { item: 'product-1' },
+        method: "POST",
+        url: "/api/cart/add",
+        body: { item: "product-1" },
       } as unknown as NextApiRequest;
 
       const headers = production.getScenaristHeaders(mockRequest);
@@ -216,25 +216,25 @@ describe('Pages Router production entry point', () => {
     });
   });
 
-  describe('tree-shaking verification', () => {
-    it('should export only stub functions with no test dependencies', () => {
+  describe("tree-shaking verification", () => {
+    it("should export only stub functions with no test dependencies", () => {
       // Verify all expected exports exist
       expect(production.createScenarist).toBeDefined();
       expect(production.getScenaristHeaders).toBeDefined();
 
       // Verify stubs are simple functions (not complex objects)
-      expect(typeof production.createScenarist).toBe('function');
-      expect(typeof production.getScenaristHeaders).toBe('function');
+      expect(typeof production.createScenarist).toBe("function");
+      expect(typeof production.getScenaristHeaders).toBe("function");
     });
 
-    it('should not have any Scenarist instance methods', () => {
+    it("should not have any Scenarist instance methods", () => {
       const scenarist = production.createScenarist({
         enabled: true,
         scenarios: {
           default: {
-            id: 'default',
-            name: 'Default',
-            description: 'Default scenario',
+            id: "default",
+            name: "Default",
+            description: "Default scenario",
             mocks: [],
           },
         },
@@ -250,33 +250,33 @@ describe('Pages Router production entry point', () => {
       expect(scenarist?.createScenarioEndpoint).toBeUndefined();
     });
 
-    it('should have fewer exports than App Router (simpler API surface)', () => {
+    it("should have fewer exports than App Router (simpler API surface)", () => {
       const exports = Object.keys(production);
 
       // Pages Router only needs:
       // - createScenarist
       // - getScenaristHeaders
       // (No ReadonlyHeaders variants, no getTestId variants)
-      expect(exports).toContain('createScenarist');
-      expect(exports).toContain('getScenaristHeaders');
+      expect(exports).toContain("createScenarist");
+      expect(exports).toContain("getScenaristHeaders");
 
       // App Router has these additional exports:
       // - getScenaristHeadersFromReadonlyHeaders
       // - getScenaristTestId
       // - getScenaristTestIdFromReadonlyHeaders
-      expect(exports).not.toContain('getScenaristHeadersFromReadonlyHeaders');
-      expect(exports).not.toContain('getScenaristTestId');
-      expect(exports).not.toContain('getScenaristTestIdFromReadonlyHeaders');
+      expect(exports).not.toContain("getScenaristHeadersFromReadonlyHeaders");
+      expect(exports).not.toContain("getScenaristTestId");
+      expect(exports).not.toContain("getScenaristTestIdFromReadonlyHeaders");
     });
   });
 
-  describe('production safety', () => {
-    it('should handle being called multiple times without errors', () => {
+  describe("production safety", () => {
+    it("should handle being called multiple times without errors", () => {
       // Production code might call these helpers frequently
       const mockRequest = {
         headers: {},
-        method: 'GET',
-        url: '/api/test',
+        method: "GET",
+        url: "/api/test",
       } as unknown as NextApiRequest;
 
       expect(() => {
@@ -286,11 +286,11 @@ describe('Pages Router production entry point', () => {
       }).not.toThrow();
     });
 
-    it('should return consistent results for same inputs', () => {
+    it("should return consistent results for same inputs", () => {
       const mockRequest = {
-        headers: { 'x-scenarist-test-id': 'test-123' },
-        method: 'GET',
-        url: '/api/test',
+        headers: { "x-scenarist-test-id": "test-123" },
+        method: "GET",
+        url: "/api/test",
       } as unknown as NextApiRequest;
 
       const headers1 = production.getScenaristHeaders(mockRequest);
@@ -299,12 +299,20 @@ describe('Pages Router production entry point', () => {
       expect(headers1).toEqual(headers2);
     });
 
-    it('should work with various NextApiRequest shapes', () => {
+    it("should work with various NextApiRequest shapes", () => {
       // Different request shapes should all work safely
       const requests = [
-        { headers: {}, method: 'GET', url: '/' } as unknown as NextApiRequest,
-        { headers: { 'x-scenarist-test-id': 'abc' }, method: 'POST', url: '/api/test' } as unknown as NextApiRequest,
-        { headers: { 'x-custom': 'value' }, method: 'PUT', url: '/api/update' } as unknown as NextApiRequest,
+        { headers: {}, method: "GET", url: "/" } as unknown as NextApiRequest,
+        {
+          headers: { "x-scenarist-test-id": "abc" },
+          method: "POST",
+          url: "/api/test",
+        } as unknown as NextApiRequest,
+        {
+          headers: { "x-custom": "value" },
+          method: "PUT",
+          url: "/api/update",
+        } as unknown as NextApiRequest,
       ];
 
       requests.forEach((req) => {
@@ -313,15 +321,15 @@ describe('Pages Router production entry point', () => {
     });
   });
 
-  describe('Pages Router specific behavior', () => {
-    it('should be compatible with Pages Router API route pattern', () => {
+  describe("Pages Router specific behavior", () => {
+    it("should be compatible with Pages Router API route pattern", () => {
       // Typical Pages Router API route usage
       const mockRequest = {
         headers: {
-          'content-type': 'application/json',
+          "content-type": "application/json",
         },
-        method: 'POST',
-        url: '/api/cart/add',
+        method: "POST",
+        url: "/api/cart/add",
         body: { productId: 1 },
       } as unknown as NextApiRequest;
 
@@ -329,23 +337,23 @@ describe('Pages Router production entry point', () => {
 
       // In production, this should be a no-op
       const requestHeaders = {
-        'content-type': 'application/json',
+        "content-type": "application/json",
         ...scenaristHeaders,
       };
 
       expect(requestHeaders).toEqual({
-        'content-type': 'application/json',
+        "content-type": "application/json",
       });
     });
 
-    it('should not interfere with existing headers', () => {
+    it("should not interfere with existing headers", () => {
       const mockRequest = {
         headers: {
-          authorization: 'Bearer token123',
-          'x-api-key': 'secret',
+          authorization: "Bearer token123",
+          "x-api-key": "secret",
         },
-        method: 'GET',
-        url: '/api/protected',
+        method: "GET",
+        url: "/api/protected",
       } as unknown as NextApiRequest;
 
       const scenaristHeaders = production.getScenaristHeaders(mockRequest);
@@ -356,8 +364,8 @@ describe('Pages Router production entry point', () => {
 
       // Production stub shouldn't modify or remove existing headers
       expect(allHeaders).toEqual({
-        authorization: 'Bearer token123',
-        'x-api-key': 'secret',
+        authorization: "Bearer token123",
+        "x-api-key": "secret",
       });
     });
   });

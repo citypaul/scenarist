@@ -1,6 +1,6 @@
-import { test, chromium } from '@playwright/test';
-import { playAudit } from 'playwright-lighthouse';
-import type { Result } from 'lighthouse';
+import { test, chromium } from "@playwright/test";
+import { playAudit } from "playwright-lighthouse";
+import type { Result } from "lighthouse";
 
 /**
  * Lighthouse Audit Tests
@@ -23,21 +23,21 @@ const LIGHTHOUSE_PORT = 9222;
 const DESKTOP_THRESHOLDS = {
   performance: 95,
   accessibility: 100,
-  'best-practices': 100,
+  "best-practices": 100,
   seo: 100,
 };
 
 const MOBILE_THRESHOLDS = {
   performance: 95,
   accessibility: 100,
-  'best-practices': 100,
+  "best-practices": 100,
   seo: 100,
 };
 
 const DESKTOP_CONFIG = {
-  extends: 'lighthouse:default',
+  extends: "lighthouse:default",
   settings: {
-    formFactor: 'desktop' as const,
+    formFactor: "desktop" as const,
     screenEmulation: {
       mobile: false,
       width: 1350,
@@ -54,14 +54,14 @@ const DESKTOP_CONFIG = {
       uploadThroughputKbps: 0,
     },
     emulatedUserAgent:
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
   },
 };
 
 const MOBILE_CONFIG = {
-  extends: 'lighthouse:default',
+  extends: "lighthouse:default",
   settings: {
-    formFactor: 'mobile' as const,
+    formFactor: "mobile" as const,
     screenEmulation: {
       mobile: true,
       width: 412,
@@ -78,7 +78,7 @@ const MOBILE_CONFIG = {
       uploadThroughputKbps: 675,
     },
     emulatedUserAgent:
-      'Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+      "Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
   },
 };
 
@@ -91,20 +91,20 @@ const formatScores = (lhr: Result): string => {
   return [
     `Performance: ${Math.round((categories.performance?.score ?? 0) * 100)}`,
     `Accessibility: ${Math.round((categories.accessibility?.score ?? 0) * 100)}`,
-    `Best Practices: ${Math.round((categories['best-practices']?.score ?? 0) * 100)}`,
+    `Best Practices: ${Math.round((categories["best-practices"]?.score ?? 0) * 100)}`,
     `SEO: ${Math.round((categories.seo?.score ?? 0) * 100)}`,
-  ].join(' | ');
+  ].join(" | ");
 };
 
-test.describe('Lighthouse Audits - Landing Page', () => {
-  test('Desktop - Perfect scores', async () => {
+test.describe("Lighthouse Audits - Landing Page", () => {
+  test("Desktop - Perfect scores", async () => {
     const browser = await chromium.launch({
       args: [`--remote-debugging-port=${LIGHTHOUSE_PORT}`],
     });
 
     const page = await browser.newPage();
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
     const result = (await playAudit({
       page,
@@ -113,8 +113,8 @@ test.describe('Lighthouse Audits - Landing Page', () => {
       config: DESKTOP_CONFIG,
       reports: {
         formats: { html: true },
-        name: 'landing-desktop',
-        directory: 'lighthouse-reports',
+        name: "landing-desktop",
+        directory: "lighthouse-reports",
       },
     })) as AuditResult;
 
@@ -123,14 +123,14 @@ test.describe('Lighthouse Audits - Landing Page', () => {
     await browser.close();
   });
 
-  test('Mobile - Perfect scores', async () => {
+  test("Mobile - Perfect scores", async () => {
     const browser = await chromium.launch({
       args: [`--remote-debugging-port=${LIGHTHOUSE_PORT}`],
     });
 
     const page = await browser.newPage();
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
     const result = (await playAudit({
       page,
@@ -139,8 +139,8 @@ test.describe('Lighthouse Audits - Landing Page', () => {
       config: MOBILE_CONFIG,
       reports: {
         formats: { html: true },
-        name: 'landing-mobile',
-        directory: 'lighthouse-reports',
+        name: "landing-mobile",
+        directory: "lighthouse-reports",
       },
     })) as AuditResult;
 
@@ -150,15 +150,15 @@ test.describe('Lighthouse Audits - Landing Page', () => {
   });
 });
 
-test.describe('Lighthouse Audits - Quick Start Page', () => {
-  test('Desktop - Perfect scores', async () => {
+test.describe("Lighthouse Audits - Quick Start Page", () => {
+  test("Desktop - Perfect scores", async () => {
     const browser = await chromium.launch({
       args: [`--remote-debugging-port=${LIGHTHOUSE_PORT}`],
     });
 
     const page = await browser.newPage();
-    await page.goto('/getting-started/quick-start');
-    await page.waitForLoadState('networkidle');
+    await page.goto("/getting-started/quick-start");
+    await page.waitForLoadState("networkidle");
 
     const result = (await playAudit({
       page,
@@ -167,8 +167,8 @@ test.describe('Lighthouse Audits - Quick Start Page', () => {
       config: DESKTOP_CONFIG,
       reports: {
         formats: { html: true },
-        name: 'quickstart-desktop',
-        directory: 'lighthouse-reports',
+        name: "quickstart-desktop",
+        directory: "lighthouse-reports",
       },
     })) as AuditResult;
 
@@ -177,14 +177,14 @@ test.describe('Lighthouse Audits - Quick Start Page', () => {
     await browser.close();
   });
 
-  test('Mobile - Perfect scores', async () => {
+  test("Mobile - Perfect scores", async () => {
     const browser = await chromium.launch({
       args: [`--remote-debugging-port=${LIGHTHOUSE_PORT}`],
     });
 
     const page = await browser.newPage();
-    await page.goto('/getting-started/quick-start');
-    await page.waitForLoadState('networkidle');
+    await page.goto("/getting-started/quick-start");
+    await page.waitForLoadState("networkidle");
 
     const result = (await playAudit({
       page,
@@ -193,8 +193,8 @@ test.describe('Lighthouse Audits - Quick Start Page', () => {
       config: MOBILE_CONFIG,
       reports: {
         formats: { html: true },
-        name: 'quickstart-mobile',
-        directory: 'lighthouse-reports',
+        name: "quickstart-mobile",
+        directory: "lighthouse-reports",
       },
     })) as AuditResult;
 

@@ -32,9 +32,9 @@ Every line of production code must be written in response to a failing test.
 
 ```typescript
 // 1. RED - Write failing test
-describe('calculateDiscount', () => {
-  it('should apply 10% discount to order total', () => {
-    const order = { total: 100, customerTier: 'standard' };
+describe("calculateDiscount", () => {
+  it("should apply 10% discount to order total", () => {
+    const order = { total: 100, customerTier: "standard" };
     const result = calculateDiscount(order);
     expect(result).toBe(90);
   });
@@ -43,7 +43,10 @@ describe('calculateDiscount', () => {
 // Run test - it fails (function doesn't exist)
 
 // 2. GREEN - Minimal implementation
-const calculateDiscount = (order: { total: number; customerTier: string }): number => {
+const calculateDiscount = (order: {
+  total: number;
+  customerTier: string;
+}): number => {
   return order.total * 0.9;
 };
 
@@ -52,7 +55,10 @@ const calculateDiscount = (order: { total: number; customerTier: string }): numb
 // 3. REFACTOR - Improve if valuable
 const STANDARD_DISCOUNT_RATE = 0.1;
 
-const calculateDiscount = (order: { total: number; customerTier: string }): number => {
+const calculateDiscount = (order: {
+  total: number;
+  customerTier: string;
+}): number => {
   return order.total * (1 - STANDARD_DISCOUNT_RATE);
 };
 
@@ -70,12 +76,14 @@ const calculateDiscount = (order: { total: number; customerTier: string }): numb
 **Coverage:** 100% of domain behavior
 
 **What to test:**
+
 - Business logic correctness
 - Edge cases and error conditions
 - Type safety and contracts
 - Result type success/failure paths
 
 **Anti-patterns to avoid:**
+
 - ❌ Testing implementation details
 - ❌ Mocking internal functions
 - ❌ Testing framework-specific behavior
@@ -84,47 +92,51 @@ const calculateDiscount = (order: { total: number; customerTier: string }): numb
 
 ```typescript
 // packages/core/tests/scenario-manager.test.ts
-import { createScenarioManager } from '../src/domain/scenario-manager';
-import { createInMemoryScenarioStore } from '../../in-memory-store/src';
+import { createScenarioManager } from "../src/domain/scenario-manager";
+import { createInMemoryScenarioStore } from "../../in-memory-store/src";
 
-describe('ScenarioManager - registerScenario', () => {
-  it('should register a scenario and make it available', () => {
+describe("ScenarioManager - registerScenario", () => {
+  it("should register a scenario and make it available", () => {
     const store = createInMemoryScenarioStore();
     const registry = createInMemoryScenarioRegistry();
     const manager = createScenarioManager({
       registry,
       store,
-      config: { enabled: true }
+      config: { enabled: true },
     });
 
     const scenario = {
-      id: 'test-scenario',
-      name: 'Test Scenario',
-      mocks: []
+      id: "test-scenario",
+      name: "Test Scenario",
+      mocks: [],
     };
 
     const result = manager.registerScenario(scenario);
 
     expect(result.success).toBe(true);
 
-    const retrieved = manager.getScenario('test-scenario');
+    const retrieved = manager.getScenario("test-scenario");
     expect(retrieved.success).toBe(true);
-    expect(retrieved.data?.id).toBe('test-scenario');
+    expect(retrieved.data?.id).toBe("test-scenario");
   });
 
-  it('should return error when registering duplicate scenario ID', () => {
+  it("should return error when registering duplicate scenario ID", () => {
     const store = createInMemoryScenarioStore();
     const registry = createInMemoryScenarioRegistry();
-    const manager = createScenarioManager({ registry, store, config: { enabled: true } });
+    const manager = createScenarioManager({
+      registry,
+      store,
+      config: { enabled: true },
+    });
 
-    const scenario = { id: 'duplicate', name: 'First', mocks: [] };
+    const scenario = { id: "duplicate", name: "First", mocks: [] };
     manager.registerScenario(scenario);
 
-    const duplicate = { id: 'duplicate', name: 'Second', mocks: [] };
+    const duplicate = { id: "duplicate", name: "Second", mocks: [] };
     const result = manager.registerScenario(duplicate);
 
     expect(result.success).toBe(false);
-    expect(result.error.message).toContain('already registered');
+    expect(result.error.message).toContain("already registered");
   });
 });
 ```
@@ -136,12 +148,14 @@ describe('ScenarioManager - registerScenario', () => {
 **Answer:** It depends on the adapter's complexity and whether it could have multiple implementations.
 
 **Test port implementations when:**
+
 1. **Multiple implementations are expected** (InMemoryStateManager, RedisStateManager, FileSystemStateManager)
 2. **Complex contracts** (nested paths, array append syntax, test ID isolation)
 3. **Similar to existing adapter patterns** (InMemoryScenarioStore, InMemoryScenarioRegistry have tests)
 4. **Behavior can't be fully tested until later PRs** (e.g., capture without injection in incremental work)
 
 **Don't test port implementations when:**
+
 1. **Simple implementation** (trivial mapping or delegation)
 2. **Only one realistic implementation** (unlikely to have Redis/file variants)
 3. **Behavior is fully testable through domain logic** (no need for separate adapter tests)
@@ -149,6 +163,7 @@ describe('ScenarioManager - registerScenario', () => {
 **Example: StateManager Decision**
 
 In Phase 3 (Stateful Mocks), we split implementation across incremental PRs:
+
 - **PR #31**: State capture (but no template injection yet)
 - **PR #32**: Template injection (completes the feature)
 
@@ -160,37 +175,37 @@ In Phase 3 (Stateful Mocks), we split implementation across incremental PRs:
 // packages/core/tests/in-memory-state-manager.test.ts (PR #31)
 // Adapter contract tests - proves adapter implements port correctly
 
-describe('InMemoryStateManager', () => {
+describe("InMemoryStateManager", () => {
   // These test the adapter, not business behavior
 
-  it('should isolate state between test IDs', () => {
+  it("should isolate state between test IDs", () => {
     const manager = createInMemoryStateManager();
 
-    manager.set('test-1', 'userId', '123');
-    manager.set('test-2', 'userId', '456');
+    manager.set("test-1", "userId", "123");
+    manager.set("test-2", "userId", "456");
 
-    expect(manager.get('test-1', 'userId')).toBe('123');
-    expect(manager.get('test-2', 'userId')).toBe('456');
+    expect(manager.get("test-1", "userId")).toBe("123");
+    expect(manager.get("test-2", "userId")).toBe("456");
   });
 
-  it('should handle array append syntax', () => {
+  it("should handle array append syntax", () => {
     const manager = createInMemoryStateManager();
 
-    manager.set('test-1', 'items[]', 'item1');
-    manager.set('test-1', 'items[]', 'item2');
+    manager.set("test-1", "items[]", "item1");
+    manager.set("test-1", "items[]", "item2");
 
-    expect(manager.get('test-1', 'items')).toEqual(['item1', 'item2']);
+    expect(manager.get("test-1", "items")).toEqual(["item1", "item2"]);
   });
 
-  it('should reset all state for test ID', () => {
+  it("should reset all state for test ID", () => {
     const manager = createInMemoryStateManager();
-    manager.set('test-1', 'key1', 'value1');
-    manager.set('test-1', 'key2', 'value2');
+    manager.set("test-1", "key1", "value1");
+    manager.set("test-1", "key2", "value2");
 
-    manager.reset('test-1');
+    manager.reset("test-1");
 
-    expect(manager.get('test-1', 'key1')).toBeUndefined();
-    expect(manager.get('test-1', 'key2')).toBeUndefined();
+    expect(manager.get("test-1", "key1")).toBeUndefined();
+    expect(manager.get("test-1", "key2")).toBeUndefined();
   });
 
   // ... more adapter contract tests
@@ -199,40 +214,48 @@ describe('InMemoryStateManager', () => {
 // packages/core/tests/response-selector.test.ts (PR #32)
 // Full behavior tests - proves capture + injection works end-to-end
 
-describe('ResponseSelector - State Capture and Injection', () => {
-  it('should capture value from first request and inject into second request', () => {
+describe("ResponseSelector - State Capture and Injection", () => {
+  it("should capture value from first request and inject into second request", () => {
     const selector = createResponseSelector({
-      stateManager: createInMemoryStateManager()
+      stateManager: createInMemoryStateManager(),
     });
 
-    const mocks: ScenaristMock[] = [{
-      method: 'POST',
-      url: '/api/cart/add',
-      captureState: { 'cartItems[]': 'body.item' },
-      response: { status: 200, body: { added: true } }
-    }, {
-      method: 'GET',
-      url: '/api/cart',
-      response: {
-        status: 200,
-        body: { items: '{{state.cartItems}}' }  // Template injection
-      }
-    }];
+    const mocks: ScenaristMock[] = [
+      {
+        method: "POST",
+        url: "/api/cart/add",
+        captureState: { "cartItems[]": "body.item" },
+        response: { status: 200, body: { added: true } },
+      },
+      {
+        method: "GET",
+        url: "/api/cart",
+        response: {
+          status: 200,
+          body: { items: "{{state.cartItems}}" }, // Template injection
+        },
+      },
+    ];
 
     // First request: capture item
     const addContext = {
-      method: 'POST',
-      url: '/api/cart/add',
-      body: { item: 'Widget' }
+      method: "POST",
+      url: "/api/cart/add",
+      body: { item: "Widget" },
     };
-    selector.selectResponse('test-1', 'cart-scenario', addContext, mocks);
+    selector.selectResponse("test-1", "cart-scenario", addContext, mocks);
 
     // Second request: should see captured item injected
-    const getContext = { method: 'GET', url: '/api/cart' };
-    const result = selector.selectResponse('test-1', 'cart-scenario', getContext, mocks);
+    const getContext = { method: "GET", url: "/api/cart" };
+    const result = selector.selectResponse(
+      "test-1",
+      "cart-scenario",
+      getContext,
+      mocks,
+    );
 
     expect(result.success).toBe(true);
-    expect(result.data.body).toEqual({ items: ['Widget'] });  // Captured value injected!
+    expect(result.data.body).toEqual({ items: ["Widget"] }); // Captured value injected!
   });
 });
 ```
@@ -265,12 +288,14 @@ Simple port implementations with obvious behavior → Test through domain logic 
 **Coverage:** Translation correctness only
 
 **What to test:**
+
 - Request parsing (headers, body, params)
 - Response formatting
 - Error translation
 - Framework-specific edge cases
 
 **Anti-patterns to avoid:**
+
 - ❌ Re-testing domain logic
 - ❌ Testing mock behavior
 - ❌ Complex business scenarios (those belong in integration tests)
@@ -279,53 +304,51 @@ Simple port implementations with obvious behavior → Test through domain logic 
 
 ```typescript
 // packages/express-adapter/tests/request-context.test.ts
-import express from 'express';
-import request from 'supertest';
-import { extractRequestContext } from '../src/request-context';
+import express from "express";
+import request from "supertest";
+import { extractRequestContext } from "../src/request-context";
 
-describe('Express Adapter - extractRequestContext', () => {
-  it('should extract test ID from x-scenarist-test-id header', async () => {
+describe("Express Adapter - extractRequestContext", () => {
+  it("should extract test ID from x-scenarist-test-id header", async () => {
     const app = express();
 
-    app.get('/test', (req, res) => {
+    app.get("/test", (req, res) => {
       const context = extractRequestContext(req);
       res.json({ testId: context.testId });
     });
 
     const response = await request(app)
-      .get('/test')
-      .set('x-scenarist-test-id', 'my-test-123');
+      .get("/test")
+      .set("x-scenarist-test-id", "my-test-123");
 
-    expect(response.body.testId).toBe('my-test-123');
+    expect(response.body.testId).toBe("my-test-123");
   });
 
-  it('should use default test ID when header is missing', async () => {
+  it("should use default test ID when header is missing", async () => {
     const app = express();
 
-    app.get('/test', (req, res) => {
+    app.get("/test", (req, res) => {
       const context = extractRequestContext(req);
       res.json({ testId: context.testId });
     });
 
-    const response = await request(app).get('/test');
+    const response = await request(app).get("/test");
 
-    expect(response.body.testId).toBe('default-test');
+    expect(response.body.testId).toBe("default-test");
   });
 
-  it('should extract request body', async () => {
+  it("should extract request body", async () => {
     const app = express();
     app.use(express.json());
 
-    app.post('/test', (req, res) => {
+    app.post("/test", (req, res) => {
       const context = extractRequestContext(req);
       res.json({ body: context.body });
     });
 
-    const response = await request(app)
-      .post('/test')
-      .send({ foo: 'bar' });
+    const response = await request(app).post("/test").send({ foo: "bar" });
 
-    expect(response.body.body).toEqual({ foo: 'bar' });
+    expect(response.body.body).toEqual({ foo: "bar" });
   });
 });
 ```
@@ -339,6 +362,7 @@ describe('Express Adapter - extractRequestContext', () => {
 **Coverage:** Critical user flows
 
 **What to test:**
+
 - Complete scenario lifecycles
 - Multiple requests in sequence
 - State management across requests
@@ -346,6 +370,7 @@ describe('Express Adapter - extractRequestContext', () => {
 - Real-world user journeys
 
 **Anti-patterns to avoid:**
+
 - ❌ Testing every edge case (core tests cover that)
 - ❌ Testing framework internals
 - ❌ Duplicate coverage of core behavior
@@ -354,76 +379,76 @@ describe('Express Adapter - extractRequestContext', () => {
 
 ```typescript
 // apps/express-example/tests/integration/payment-flow.test.ts
-import { setupTestApp } from '../helpers/test-app';
-import request from 'supertest';
+import { setupTestApp } from "../helpers/test-app";
+import request from "supertest";
 
-describe('Payment Flow Integration', () => {
-  it('should complete full payment journey with scenario switching', async () => {
+describe("Payment Flow Integration", () => {
+  it("should complete full payment journey with scenario switching", async () => {
     const { app, scenarist } = await setupTestApp();
-    const testId = 'payment-test-001';
+    const testId = "payment-test-001";
 
     // 1. Start with success scenario
     await request(app)
-      .post('/__scenario__')
-      .set('x-scenarist-test-id', testId)
-      .send({ scenario: 'success' })
+      .post("/__scenario__")
+      .set("x-scenarist-test-id", testId)
+      .send({ scenario: "success" })
       .expect(200);
 
     // 2. Create payment - should succeed
     const payment = await request(app)
-      .post('/api/payment')
-      .set('x-scenarist-test-id', testId)
-      .send({ amount: 1000, currency: 'usd' })
+      .post("/api/payment")
+      .set("x-scenarist-test-id", testId)
+      .send({ amount: 1000, currency: "usd" })
       .expect(200);
 
-    expect(payment.body.status).toBe('succeeded');
+    expect(payment.body.status).toBe("succeeded");
 
     // 3. Switch to failure scenario
     await request(app)
-      .post('/__scenario__')
-      .set('x-scenarist-test-id', testId)
-      .send({ scenario: 'stripe-failure' })
+      .post("/__scenario__")
+      .set("x-scenarist-test-id", testId)
+      .send({ scenario: "stripe-failure" })
       .expect(200);
 
     // 4. Create payment - should fail with 402
     const failedPayment = await request(app)
-      .post('/api/payment')
-      .set('x-scenarist-test-id', testId)
-      .send({ amount: 1000, currency: 'usd' })
+      .post("/api/payment")
+      .set("x-scenarist-test-id", testId)
+      .send({ amount: 1000, currency: "usd" })
       .expect(402);
 
-    expect(failedPayment.body.error.code).toBe('insufficient_funds');
+    expect(failedPayment.body.error.code).toBe("insufficient_funds");
   });
 
-  it('should isolate scenarios between different test IDs', async () => {
+  it("should isolate scenarios between different test IDs", async () => {
     const { app } = await setupTestApp();
 
     // Set test-1 to success
     await request(app)
-      .post('/__scenario__')
-      .set('x-scenarist-test-id', 'test-1')
-      .send({ scenario: 'success' })
+      .post("/__scenario__")
+      .set("x-scenarist-test-id", "test-1")
+      .send({ scenario: "success" })
       .expect(200);
 
     // Set test-2 to failure
     await request(app)
-      .post('/__scenario__')
-      .set('x-scenarist-test-id', 'test-2')
-      .send({ scenario: 'stripe-failure' })
+      .post("/__scenario__")
+      .set("x-scenarist-test-id", "test-2")
+      .send({ scenario: "stripe-failure" })
       .expect(200);
 
     // test-1 still succeeds
     await request(app)
-      .post('/api/payment')
-      .set('x-scenarist-test-id', 'test-1')
-      .send({ amount: 1000, currency: 'usd' })
+      .post("/api/payment")
+      .set("x-scenarist-test-id", "test-1")
+      .send({ amount: 1000, currency: "usd" })
       .expect(200);
 
     // test-2 still fails
     await request(app)
-      .post('/api/payment')
-      .set('x-scenarist-test-id', 'test-2')
-      .send({ amount: 1000, currency: 'usd' })
+      .post("/api/payment")
+      .set("x-scenarist-test-id", "test-2")
+      .send({ amount: 1000, currency: "usd" })
       .expect(402);
   });
 });
@@ -438,12 +463,14 @@ describe('Payment Flow Integration', () => {
 **Coverage:** Selective (key scenarios only)
 
 **What to test:**
+
 - Happy path scenarios
 - Common error cases
 - Developer onboarding examples
 - API exploration workflows
 
 **Anti-patterns to avoid:**
+
 - ❌ Comprehensive test coverage (not the goal)
 - ❌ Automated CI execution (keep manual)
 - ❌ Complex assertions (simple validations only)
@@ -543,34 +570,35 @@ Use factory functions with optional overrides for consistent test data:
 ```typescript
 // packages/core/tests/helpers/factories.ts
 export const getMockScenario = (
-  overrides?: Partial<ScenaristScenario>
+  overrides?: Partial<ScenaristScenario>,
 ): ScenaristScenario => {
   return {
-    id: 'test-scenario',
-    name: 'Test Scenario',
-    description: 'A test scenario',
+    id: "test-scenario",
+    name: "Test Scenario",
+    description: "A test scenario",
     mocks: [],
     ...overrides,
   };
 };
 
 export const getMockConfig = (
-  overrides?: Partial<ScenaristConfig>
+  overrides?: Partial<ScenaristConfig>,
 ): ScenaristConfig => {
   return {
     enabled: true,
-    testIdHeader: 'x-scenarist-test-id',
-    defaultTestId: 'default-test',
+    testIdHeader: "x-scenarist-test-id",
+    defaultTestId: "default-test",
     ...overrides,
   };
 };
 
 // Usage
-const scenario = getMockScenario({ name: 'Custom Name' });
+const scenario = getMockScenario({ name: "Custom Name" });
 const config = getMockConfig({ enabled: false });
 ```
 
 **Factory guidelines:**
+
 - Always return complete, valid objects
 - Accept optional `Partial<T>` for overrides
 - Provide sensible defaults
@@ -583,27 +611,27 @@ const config = getMockConfig({ enabled: false });
 
 ```typescript
 // ✅ Good - Test through public API
-describe('ScenarioManager', () => {
-  it('should retrieve active scenario for test ID', () => {
+describe("ScenarioManager", () => {
+  it("should retrieve active scenario for test ID", () => {
     const manager = createScenarioManager({ store, config });
 
-    manager.switchScenario('test-1', 'scenario-a');
-    const result = manager.getActiveScenario('test-1');
+    manager.switchScenario("test-1", "scenario-a");
+    const result = manager.getActiveScenario("test-1");
 
     expect(result.success).toBe(true);
-    expect(result.data?.scenarioId).toBe('scenario-a');
+    expect(result.data?.scenarioId).toBe("scenario-a");
   });
 });
 
 // ❌ Bad - Testing implementation details
-describe('ScenarioManager', () => {
-  it('should call store.get internally', () => {
+describe("ScenarioManager", () => {
+  it("should call store.get internally", () => {
     const mockStore = { get: vi.fn() };
     const manager = createScenarioManager({ store: mockStore, config });
 
-    manager.getActiveScenario('test-1');
+    manager.getActiveScenario("test-1");
 
-    expect(mockStore.get).toHaveBeenCalledWith('test-1');
+    expect(mockStore.get).toHaveBeenCalledWith("test-1");
   });
 });
 ```
@@ -612,19 +640,19 @@ describe('ScenarioManager', () => {
 
 ```typescript
 // ✅ Good - Tests business behavior
-describe('Payment validation', () => {
-  it('should reject negative payment amounts', () => {
-    const result = processPayment({ amount: -100, currency: 'usd' });
+describe("Payment validation", () => {
+  it("should reject negative payment amounts", () => {
+    const result = processPayment({ amount: -100, currency: "usd" });
 
     expect(result.success).toBe(false);
-    expect(result.error.message).toContain('amount must be positive');
+    expect(result.error.message).toContain("amount must be positive");
   });
 });
 
 // ❌ Bad - Tests implementation structure
-describe('Payment validation', () => {
-  it('should have a validateAmount function', () => {
-    expect(typeof validateAmount).toBe('function');
+describe("Payment validation", () => {
+  it("should have a validateAmount function", () => {
+    expect(typeof validateAmount).toBe("function");
   });
 });
 ```
@@ -648,8 +676,8 @@ it('should work correctly', () => { ... });
 ### Testing Result Types
 
 ```typescript
-describe('Result type handling', () => {
-  it('should return success result with data', () => {
+describe("Result type handling", () => {
+  it("should return success result with data", () => {
     const result = someOperation();
 
     expect(result.success).toBe(true);
@@ -658,12 +686,12 @@ describe('Result type handling', () => {
     }
   });
 
-  it('should return error result when validation fails', () => {
+  it("should return error result when validation fails", () => {
     const result = someOperation(invalidInput);
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.message).toContain('expected error');
+      expect(result.error.message).toContain("expected error");
     }
   });
 });
@@ -672,15 +700,15 @@ describe('Result type handling', () => {
 ### Testing Immutability
 
 ```typescript
-describe('Immutability', () => {
-  it('should not mutate original object', () => {
-    const original = { id: '1', name: 'Original' };
+describe("Immutability", () => {
+  it("should not mutate original object", () => {
+    const original = { id: "1", name: "Original" };
     const originalCopy = { ...original };
 
-    const updated = updateName(original, 'New Name');
+    const updated = updateName(original, "New Name");
 
     expect(original).toEqual(originalCopy); // Original unchanged
-    expect(updated.name).toBe('New Name');
+    expect(updated.name).toBe("New Name");
     expect(updated).not.toBe(original); // Different object
   });
 });
@@ -689,18 +717,18 @@ describe('Immutability', () => {
 ### Testing Edge Cases
 
 ```typescript
-describe('Edge cases', () => {
-  it('should handle empty array', () => {
+describe("Edge cases", () => {
+  it("should handle empty array", () => {
     const result = processItems([]);
     expect(result).toEqual([]);
   });
 
-  it('should handle undefined input', () => {
+  it("should handle undefined input", () => {
     const result = processItem(undefined);
     expect(result.success).toBe(false);
   });
 
-  it('should handle boundary values', () => {
+  it("should handle boundary values", () => {
     expect(isValidAmount(0)).toBe(false);
     expect(isValidAmount(0.01)).toBe(true);
     expect(isValidAmount(10000)).toBe(true);
@@ -714,6 +742,7 @@ describe('Edge cases', () => {
 ### Core Package: 100% Behavior Coverage
 
 All business logic must have tests covering:
+
 - Happy path
 - Error conditions
 - Edge cases
@@ -727,6 +756,7 @@ pnpm test:coverage
 ```
 
 Look for:
+
 - **Statements:** 100%
 - **Branches:** 100%
 - **Functions:** 100%
@@ -737,11 +767,13 @@ Look for:
 ### Adapter Packages: Translation Coverage
 
 Adapters should have tests covering:
+
 - All request parsing paths
 - All response formatting paths
 - Error translation cases
 
 **Not required:**
+
 - Re-testing core domain logic
 - Testing MSW internals
 - Complex business scenarios
@@ -749,11 +781,13 @@ Adapters should have tests covering:
 ### Integration Tests: Critical Flows Only
 
 Focus on:
+
 - Common user journeys (3-5 key flows)
 - Scenario switching mechanics
 - Test isolation verification
 
 **Not required:**
+
 - Every possible scenario combination
 - Every edge case (core tests cover those)
 
@@ -786,9 +820,9 @@ pnpm test:watch scenario-manager.test.ts
 
 ```typescript
 // Add console.log for debugging
-it('should process scenario', () => {
+it("should process scenario", () => {
   const result = processScenario(scenario);
-  console.log('Result:', JSON.stringify(result, null, 2));
+  console.log("Result:", JSON.stringify(result, null, 2));
   expect(result.success).toBe(true);
 });
 ```
@@ -801,6 +835,7 @@ pnpm test --ui
 ```
 
 Opens browser interface for:
+
 - Viewing test hierarchy
 - Filtering tests
 - Seeing console output
@@ -813,11 +848,11 @@ All test code must follow strict TypeScript rules:
 ```typescript
 // ✅ Good - Fully typed
 const getMockScenario = (
-  overrides?: Partial<ScenaristScenario>
+  overrides?: Partial<ScenaristScenario>,
 ): ScenaristScenario => {
   return {
-    id: 'test',
-    name: 'Test',
+    id: "test",
+    name: "Test",
     mocks: [],
     ...overrides,
   };
@@ -859,14 +894,14 @@ See `.github/workflows/` for full CI configuration.
 
 ```typescript
 // ❌ Don't do this
-it('should call validateAmount function', () => {
-  const spy = vi.spyOn(validator, 'validateAmount');
+it("should call validateAmount function", () => {
+  const spy = vi.spyOn(validator, "validateAmount");
   processPayment({ amount: 100 });
   expect(spy).toHaveBeenCalled();
 });
 
 // ✅ Do this instead
-it('should reject invalid payment amounts', () => {
+it("should reject invalid payment amounts", () => {
   const result = processPayment({ amount: -100 });
   expect(result.success).toBe(false);
 });
@@ -889,7 +924,7 @@ it('should reject invalid payment amounts', () => {
 
 ```typescript
 // ❌ Don't mock everything
-it('should process payment', () => {
+it("should process payment", () => {
   const mockValidator = { validate: vi.fn(() => true) };
   const mockProcessor = { process: vi.fn(() => ({ success: true })) };
   const mockLogger = { log: vi.fn() };
@@ -898,7 +933,7 @@ it('should process payment', () => {
 });
 
 // ✅ Use real implementations where possible
-it('should process payment', () => {
+it("should process payment", () => {
   const manager = createPaymentManager({
     validator: createRealValidator(),
     processor: createRealProcessor(),
@@ -913,21 +948,21 @@ it('should process payment', () => {
 
 ```typescript
 // ❌ Only testing happy path
-it('should calculate total', () => {
+it("should calculate total", () => {
   expect(calculateTotal([10, 20])).toBe(30);
 });
 
 // ✅ Test edge cases too
-it('should handle empty array', () => {
+it("should handle empty array", () => {
   expect(calculateTotal([])).toBe(0);
 });
 
-it('should handle negative numbers', () => {
+it("should handle negative numbers", () => {
   expect(calculateTotal([-10, 20])).toBe(10);
 });
 
-it('should handle decimals correctly', () => {
-  expect(calculateTotal([10.50, 20.75])).toBe(31.25);
+it("should handle decimals correctly", () => {
+  expect(calculateTotal([10.5, 20.75])).toBe(31.25);
 });
 ```
 
@@ -942,6 +977,7 @@ it('should handle decimals correctly', () => {
 ## Summary
 
 **Remember:**
+
 1. **Always TDD** - No production code without a failing test
 2. **Test behavior** - Not implementation details
 3. **Four layers** - Core, Adapter, Integration, Bruno

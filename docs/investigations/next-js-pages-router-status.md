@@ -3,6 +3,7 @@
 **Last Updated:** 2025-11-12
 **Branch:** fix/playwright-test-flakiness
 **Files Preserved:**
+
 - `/docs/investigations/next-js-pages-router-msw-investigation.md` - Detailed investigation
 - `/docs/investigations/next-js-pages-router-status.md` - This file (current status)
 - CLAUDE.md (section appended at end)
@@ -31,6 +32,7 @@
 **Problem:** Playwright test shows standard pricing even after switching to premiumUserScenario
 
 **Evidence from error context:**
+
 ```yaml
 - article: Product A
   - price: £149.99  ← STANDARD (expected £99.99 PREMIUM)
@@ -48,6 +50,7 @@
 **Critical Issue:** Server-side console.log output is NOT captured by Playwright
 
 **Missing Information:**
+
 - Whether getServerSideProps is running at all
 - What headers scenarist.getHeaders() is extracting
 - What testId MSW is using
@@ -55,6 +58,7 @@
 - Whether MSW is matching the premium mock or falling back to default
 
 **Debug logs added but not visible:**
+
 - `[getHeaders]` logs in packages/nextjs-adapter/src/pages/setup.ts:128-131
 - `[getServerSideProps]` logs in apps/nextjs-pages-router-example/pages/index.tsx:190-191
 - `[MSW]` event logs in packages/nextjs-adapter/src/pages/setup.ts:141-150
@@ -115,11 +119,13 @@
 ### Hypothesis 1: getServerSideProps Not Running
 
 **Possible causes:**
+
 - Next.js caching the page
 - Playwright navigation not triggering SSR
 - Page already rendered by client-side navigation
 
 **How to test:**
+
 - Add file logging in getServerSideProps
 - Check Next.js dev server logs separately
 - Verify page.goto() triggers server request
@@ -127,11 +133,13 @@
 ### Hypothesis 2: Headers Not Being Forwarded
 
 **Possible causes:**
+
 - scenarist.getHeaders() not extracting testId correctly
 - Playwright's injected header not reaching Next.js server
 - Header name case sensitivity issue
 
 **How to test:**
+
 - Log all incoming headers in getServerSideProps
 - Verify testId header is present
 - Check header name (x-scenarist-test-id vs X-Test-Id)
@@ -139,11 +147,13 @@
 ### Hypothesis 3: MSW Not Intercepting
 
 **Possible causes:**
+
 - MSW server not started for Playwright tests
 - Undici (Next.js 15) interception issue
 - Network request bypassing MSW
 
 **How to test:**
+
 - Check MSW server lifecycle in globalSetup
 - Add MSW event logging to file
 - Verify fetch() is being intercepted
@@ -151,11 +161,13 @@
 ### Hypothesis 4: Wrong Scenario Active
 
 **Possible causes:**
+
 - switchScenario not persisting correctly
 - Different Next.js process has different scenario state
 - Test ID mismatch between switch and navigation
 
 **How to test:**
+
 - Log active scenario in dynamic handler
 - Verify testId matches between steps
 - Check scenario state in MSW handler
@@ -163,12 +175,14 @@
 ## Files Modified (This Session)
 
 ### Tests
+
 - `/apps/nextjs-pages-router-example/tests/playwright/products-server-side.spec.ts`
   - Added switchScenario call
   - Updated comments to reflect actual behavior
   - Added console capture (but server logs not visible)
 
 ### Documentation
+
 - `/Users/paulhammond/personal/scenarist/CLAUDE.md`
   - Appended complete investigation section
 - `/docs/investigations/next-js-pages-router-msw-investigation.md`
@@ -177,6 +191,7 @@
   - This file
 
 ### Debug Instrumentation (Already Present)
+
 - `/packages/nextjs-adapter/src/pages/setup.ts:128-131` - getHeaders logging
 - `/apps/nextjs-pages-router-example/pages/index.tsx:190-191` - getServerSideProps logging
 - `/packages/nextjs-adapter/src/pages/setup.ts:141-150` - MSW event logging
@@ -188,6 +203,7 @@
 **Action:** Run Playwright test with separate Next.js dev server log capture
 
 **Command:**
+
 ```bash
 # Terminal 1: Start Next.js with logging
 cd apps/nextjs-pages-router-example
@@ -201,6 +217,7 @@ cat /tmp/nextjs-server.log | grep -E '\[getHeaders\]|\[getServerSideProps\]|\[MS
 ```
 
 **Expected to reveal:**
+
 - Whether getServerSideProps runs
 - What headers are extracted
 - What testId is used
@@ -209,11 +226,13 @@ cat /tmp/nextjs-server.log | grep -E '\[getHeaders\]|\[getServerSideProps\]|\[MS
 ### 2. Verify MSW Interception
 
 If logs show MSW is NOT intercepting:
+
 - Check MSW server lifecycle in globalSetup
 - Verify undici interception is working
 - Check if fetch() is actually being called
 
 If logs show MSW IS intercepting:
+
 - Check what scenario/testId MSW is using
 - Verify specificity selection logic
 - Check if headers match
@@ -221,6 +240,7 @@ If logs show MSW IS intercepting:
 ### 3. Fix Root Cause
 
 Based on findings from steps 1-2:
+
 - Update code to fix identified issue
 - Re-run test to verify fix
 - Document solution
@@ -235,6 +255,7 @@ Based on findings from steps 1-2:
 ## Manual Test Reference
 
 **Known working command:**
+
 ```bash
 cd apps/nextjs-pages-router-example
 pnpm dev > /tmp/nextjs.log 2>&1 &
@@ -248,11 +269,13 @@ kill $PID
 ## Pricing Reference
 
 **Premium Prices (expected):**
+
 - Product A: £99.99
 - Product B: £149.99
 - Product C: £79.99
 
 **Standard Prices (current result):**
+
 - Product A: £149.99
 - Product B: £199.99
 - Product C: £99.99
@@ -286,6 +309,7 @@ kill $PID
 ## Contact/Context Preservation
 
 If context is lost, read:
+
 1. This file (overview)
 2. `/docs/investigations/next-js-pages-router-msw-investigation.md` (detailed analysis)
 3. CLAUDE.md (appended section at end)
@@ -307,11 +331,13 @@ If context is lost, read:
 ### Evidence from Server Logs
 
 **Scenario is switched:**
+
 ```
 [Scenario Endpoint POST] Scenario is now active for test ID: 7303a536b19f9ee3cc0a...
 ```
 
 **getServerSideProps receives correct headers:**
+
 ```
 [getServerSideProps] About to fetch products with headers: {
   'x-scenarist-test-id': '7303a536b19f9ee3cc0a...',
@@ -321,6 +347,7 @@ If context is lost, read:
 ```
 
 **But MSW fails to find the scenario:**
+
 ```
 [MSW] testId extracted: 7303a536b19f9ee3cc0a...
 [MSW] activeScenario: undefined  ← BUG HERE!
@@ -332,6 +359,7 @@ If context is lost, read:
 When MSW's dynamic handler receives a request with the correct testId, it calls `manager.getActiveScenario(testId)` but gets `undefined` back, even though the scenario was just activated seconds before.
 
 **Possible causes:**
+
 1. ScenarioStore lookup failing (testId not found)
 2. Scenario not persisting after switch
 3. Different Next.js process has different state

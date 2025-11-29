@@ -1,9 +1,9 @@
-import { SCENARIST_TEST_ID_HEADER } from '@scenarist/express-adapter';
-import { describe, it, expect, afterAll } from 'vitest';
-import request from 'supertest';
+import { SCENARIST_TEST_ID_HEADER } from "@scenarist/express-adapter";
+import { describe, it, expect, afterAll } from "vitest";
+import request from "supertest";
 
-import { createTestFixtures } from './test-helpers.js';
-import { scenarios } from '../src/scenarios.js';
+import { createTestFixtures } from "./test-helpers.js";
+import { scenarios } from "../src/scenarios.js";
 
 /**
  * URL Matching Strategies - ATDD Acceptance Tests (Express)
@@ -27,7 +27,7 @@ import { scenarios } from '../src/scenarios.js';
 // Use top-level await to create fixtures once before all tests
 const fixtures = await createTestFixtures();
 
-describe('URL Matching Strategies - Express', () => {
+describe("URL Matching Strategies - Express", () => {
   afterAll(async () => {
     await fixtures.cleanup();
   });
@@ -45,38 +45,36 @@ describe('URL Matching Strategies - Express', () => {
    * - '/users/octocat' (ends with string, not numeric)
    * - '/users/123' (ends with different number)
    */
-  it('should match URL with numeric ID using native RegExp', async () => {
-
+  it("should match URL with numeric ID using native RegExp", async () => {
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(SCENARIST_TEST_ID_HEADER, 'url-test-1')
+      .set(SCENARIST_TEST_ID_HEADER, "url-test-1")
       .send({ scenario: scenarios.urlMatching.id });
 
     const response = await request(fixtures.app)
-      .get('/api/test-url-match/numeric-id/1')
-      .set(SCENARIST_TEST_ID_HEADER, 'url-test-1');
+      .get("/api/test-url-match/numeric-id/1")
+      .set(SCENARIST_TEST_ID_HEADER, "url-test-1");
 
     expect(response.status).toBe(200);
-    expect(response.body.matchedBy).toBe('regexNumericId');
-    expect(response.body.login).toBe('user-numeric-id');
+    expect(response.body.matchedBy).toBe("regexNumericId");
+    expect(response.body.login).toBe("user-numeric-id");
     expect(response.body.followers).toBe(500);
   });
 
-  it('should NOT match non-numeric ID (fallback to path param mock)', async () => {
-
+  it("should NOT match non-numeric ID (fallback to path param mock)", async () => {
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(SCENARIST_TEST_ID_HEADER, 'url-test-2')
+      .set(SCENARIST_TEST_ID_HEADER, "url-test-2")
       .send({ scenario: scenarios.urlMatching.id });
 
     const response = await request(fixtures.app)
-      .get('/api/test-url-match/numeric-id/octocat')
-      .set(SCENARIST_TEST_ID_HEADER, 'url-test-2');
+      .get("/api/test-url-match/numeric-id/octocat")
+      .set(SCENARIST_TEST_ID_HEADER, "url-test-2");
 
     expect(response.status).toBe(200);
     // With path parameter mock present (last fallback wins), it extracts the username
-    expect(response.body.id).toBe('octocat');
-    expect(response.body.login).toBe('user-octocat');
+    expect(response.body.id).toBe("octocat");
+    expect(response.body.login).toBe("user-octocat");
   });
 
   /**
@@ -92,20 +90,19 @@ describe('URL Matching Strategies - Express', () => {
    * - URLs without '/weather/' substring
    */
   it('should match URL containing "/weather/" using contains strategy', async () => {
-
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(SCENARIST_TEST_ID_HEADER, 'url-test-3')
+      .set(SCENARIST_TEST_ID_HEADER, "url-test-3")
       .send({ scenario: scenarios.urlMatching.id });
 
     const response = await request(fixtures.app)
-      .get('/api/test-url-match/contains-api/london')
-      .set(SCENARIST_TEST_ID_HEADER, 'url-test-3');
+      .get("/api/test-url-match/contains-api/london")
+      .set(SCENARIST_TEST_ID_HEADER, "url-test-3");
 
     expect(response.status).toBe(200);
-    expect(response.body.matchedBy).toBe('containsWeather');
-    expect(response.body.city).toBe('Weather Match City');
-    expect(response.body.conditions).toBe('Weather route matched');
+    expect(response.body.matchedBy).toBe("containsWeather");
+    expect(response.body.city).toBe("Weather Match City");
+    expect(response.body.conditions).toBe("Weather route matched");
   });
 
   /**
@@ -120,37 +117,35 @@ describe('URL Matching Strategies - Express', () => {
    * Should NOT match:
    * - 'https://api.weather.com/v1/weather/london' (starts with v1, not v2)
    */
-  it('should match v2 API URL using startsWith strategy', async () => {
-
+  it("should match v2 API URL using startsWith strategy", async () => {
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(SCENARIST_TEST_ID_HEADER, 'url-test-4')
+      .set(SCENARIST_TEST_ID_HEADER, "url-test-4")
       .send({ scenario: scenarios.urlMatching.id });
 
     const response = await request(fixtures.app)
-      .get('/api/test-url-match/version/v2/newyork')
-      .set(SCENARIST_TEST_ID_HEADER, 'url-test-4');
+      .get("/api/test-url-match/version/v2/newyork")
+      .set(SCENARIST_TEST_ID_HEADER, "url-test-4");
 
     expect(response.status).toBe(200);
-    expect(response.body.matchedBy).toBe('startsWithV2');
-    expect(response.body.city).toBe('Version 2 City');
-    expect(response.body.conditions).toBe('V2 API matched');
+    expect(response.body.matchedBy).toBe("startsWithV2");
+    expect(response.body.city).toBe("Version 2 City");
+    expect(response.body.conditions).toBe("V2 API matched");
   });
 
-  it('should NOT match v1 API URL (fallback)', async () => {
-
+  it("should NOT match v1 API URL (fallback)", async () => {
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(SCENARIST_TEST_ID_HEADER, 'url-test-5')
+      .set(SCENARIST_TEST_ID_HEADER, "url-test-5")
       .send({ scenario: scenarios.urlMatching.id });
 
     const response = await request(fixtures.app)
-      .get('/api/test-url-match/version/v1/paris')
-      .set(SCENARIST_TEST_ID_HEADER, 'url-test-5');
+      .get("/api/test-url-match/version/v1/paris")
+      .set(SCENARIST_TEST_ID_HEADER, "url-test-5");
 
     expect(response.status).toBe(200);
-    expect(response.body.matchedBy).toBe('fallback');
-    expect(response.body.city).toBe('Fallback City');
+    expect(response.body.matchedBy).toBe("fallback");
+    expect(response.body.city).toBe("Fallback City");
   });
 
   /**
@@ -165,37 +160,35 @@ describe('URL Matching Strategies - Express', () => {
    * Should NOT match:
    * - '/repos/owner/repo/contents/readme.txt' (ends with .txt)
    */
-  it('should match .json file extension using endsWith strategy', async () => {
-
+  it("should match .json file extension using endsWith strategy", async () => {
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(SCENARIST_TEST_ID_HEADER, 'url-test-6')
+      .set(SCENARIST_TEST_ID_HEADER, "url-test-6")
       .send({ scenario: scenarios.urlMatching.id });
 
     const response = await request(fixtures.app)
-      .get('/api/test-url-match/file-extension/config.json')
-      .set(SCENARIST_TEST_ID_HEADER, 'url-test-6');
+      .get("/api/test-url-match/file-extension/config.json")
+      .set(SCENARIST_TEST_ID_HEADER, "url-test-6");
 
     expect(response.status).toBe(200);
-    expect(response.body.matchedBy).toBe('endsWithJson');
-    expect(response.body.name).toBe('data.json');
-    expect(response.body.type).toBe('file');
+    expect(response.body.matchedBy).toBe("endsWithJson");
+    expect(response.body.name).toBe("data.json");
+    expect(response.body.type).toBe("file");
   });
 
-  it('should NOT match non-.json file (fallback)', async () => {
-
+  it("should NOT match non-.json file (fallback)", async () => {
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(SCENARIST_TEST_ID_HEADER, 'url-test-7')
+      .set(SCENARIST_TEST_ID_HEADER, "url-test-7")
       .send({ scenario: scenarios.urlMatching.id });
 
     const response = await request(fixtures.app)
-      .get('/api/test-url-match/file-extension/readme.txt')
-      .set(SCENARIST_TEST_ID_HEADER, 'url-test-7');
+      .get("/api/test-url-match/file-extension/readme.txt")
+      .set(SCENARIST_TEST_ID_HEADER, "url-test-7");
 
     expect(response.status).toBe(200);
-    expect(response.body.matchedBy).toBe('fallback');
-    expect(response.body.name).toBe('unknown.txt');
+    expect(response.body.matchedBy).toBe("fallback");
+    expect(response.body.name).toBe("unknown.txt");
   });
 
   /**
@@ -207,37 +200,35 @@ describe('URL Matching Strategies - Express', () => {
    * Should match when both conditions met
    * Should NOT match when only URL matches (header mismatch)
    */
-  it('should match when both URL and header match', async () => {
-
+  it("should match when both URL and header match", async () => {
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(SCENARIST_TEST_ID_HEADER, 'url-test-8')
+      .set(SCENARIST_TEST_ID_HEADER, "url-test-8")
       .send({ scenario: scenarios.urlMatching.id });
 
     const response = await request(fixtures.app)
-      .get('/api/test-url-match/combined')
-      .query({ apiVersion: '2023-10-16' })
-      .set(SCENARIST_TEST_ID_HEADER, 'url-test-8');
+      .get("/api/test-url-match/combined")
+      .query({ apiVersion: "2023-10-16" })
+      .set(SCENARIST_TEST_ID_HEADER, "url-test-8");
 
     expect(response.status).toBe(200);
-    expect(response.body.matchedBy).toBe('combinedUrlHeader');
+    expect(response.body.matchedBy).toBe("combinedUrlHeader");
     expect(response.body.amount).toBe(2000);
   });
 
-  it('should NOT match when URL matches but header does not (fallback)', async () => {
-
+  it("should NOT match when URL matches but header does not (fallback)", async () => {
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(SCENARIST_TEST_ID_HEADER, 'url-test-9')
+      .set(SCENARIST_TEST_ID_HEADER, "url-test-9")
       .send({ scenario: scenarios.urlMatching.id });
 
     const response = await request(fixtures.app)
-      .get('/api/test-url-match/combined')
-      .query({ apiVersion: '2022-11-15' }) // Different version
-      .set(SCENARIST_TEST_ID_HEADER, 'url-test-9');
+      .get("/api/test-url-match/combined")
+      .query({ apiVersion: "2022-11-15" }) // Different version
+      .set(SCENARIST_TEST_ID_HEADER, "url-test-9");
 
     expect(response.status).toBe(200);
-    expect(response.body.matchedBy).toBe('fallback');
+    expect(response.body.matchedBy).toBe("fallback");
     expect(response.body.amount).toBe(1000);
   });
 
@@ -249,20 +240,19 @@ describe('URL Matching Strategies - Express', () => {
    *
    * Should match only the exact URL
    */
-  it('should match exact URL string', async () => {
-
+  it("should match exact URL string", async () => {
     await request(fixtures.app)
       .post(fixtures.scenarist.config.endpoints.setScenario)
-      .set(SCENARIST_TEST_ID_HEADER, 'url-test-10')
+      .set(SCENARIST_TEST_ID_HEADER, "url-test-10")
       .send({ scenario: scenarios.urlMatching.id });
 
     const response = await request(fixtures.app)
-      .get('/api/test-url-match/exact/exactuser')
-      .set(SCENARIST_TEST_ID_HEADER, 'url-test-10');
+      .get("/api/test-url-match/exact/exactuser")
+      .set(SCENARIST_TEST_ID_HEADER, "url-test-10");
 
     expect(response.status).toBe(200);
-    expect(response.body.matchedBy).toBe('exactUrl');
-    expect(response.body.login).toBe('exactuser');
+    expect(response.body.matchedBy).toBe("exactUrl");
+    expect(response.body.login).toBe("exactuser");
     expect(response.body.followers).toBe(100);
   });
 
@@ -277,37 +267,36 @@ describe('URL Matching Strategies - Express', () => {
    * - :path+ - Repeating parameter (array)
    * - :id(\d+) - Custom regex parameter
    */
-  describe('Path Parameter Extraction', () => {
+  describe("Path Parameter Extraction", () => {
     /**
      * Test 7: Simple Path Parameter - User ID
      *
      * Pattern: /api/users/:id
      * Should extract different IDs and return user-specific data
      */
-    it('should extract simple path parameter :id and route to different users', async () => {
-
+    it("should extract simple path parameter :id and route to different users", async () => {
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(SCENARIST_TEST_ID_HEADER, 'url-test-11')
+        .set(SCENARIST_TEST_ID_HEADER, "url-test-11")
         .send({ scenario: scenarios.urlMatching.id });
 
       // Request user ID 123
       const response123 = await request(fixtures.app)
-        .get('/api/test-url-match/path-param/123')
-        .set(SCENARIST_TEST_ID_HEADER, 'url-test-11');
+        .get("/api/test-url-match/path-param/123")
+        .set(SCENARIST_TEST_ID_HEADER, "url-test-11");
 
       expect(response123.status).toBe(200);
-      expect(response123.body.id).toBe('123');
-      expect(response123.body.login).toBe('user-123');
+      expect(response123.body.id).toBe("123");
+      expect(response123.body.login).toBe("user-123");
 
       // Request different user ID 456
       const response456 = await request(fixtures.app)
-        .get('/api/test-url-match/path-param/456')
-        .set(SCENARIST_TEST_ID_HEADER, 'url-test-11');
+        .get("/api/test-url-match/path-param/456")
+        .set(SCENARIST_TEST_ID_HEADER, "url-test-11");
 
       expect(response456.status).toBe(200);
-      expect(response456.body.id).toBe('456');
-      expect(response456.body.login).toBe('user-456');
+      expect(response456.body.id).toBe("456");
+      expect(response456.body.login).toBe("user-456");
     });
 
     /**
@@ -316,21 +305,20 @@ describe('URL Matching Strategies - Express', () => {
      * Pattern: /api/users/:userId/posts/:postId
      * Should extract both parameters correctly
      */
-    it('should extract multiple path parameters :userId and :postId', async () => {
-
+    it("should extract multiple path parameters :userId and :postId", async () => {
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(SCENARIST_TEST_ID_HEADER, 'url-test-12')
+        .set(SCENARIST_TEST_ID_HEADER, "url-test-12")
         .send({ scenario: scenarios.urlMatching.id });
 
       const response = await request(fixtures.app)
-        .get('/api/test-url-match/multiple-params/alice/42')
-        .set(SCENARIST_TEST_ID_HEADER, 'url-test-12');
+        .get("/api/test-url-match/multiple-params/alice/42")
+        .set(SCENARIST_TEST_ID_HEADER, "url-test-12");
 
       expect(response.status).toBe(200);
-      expect(response.body.userId).toBe('alice');
-      expect(response.body.postId).toBe('42');
-      expect(response.body.title).toBe('Post 42 by alice');
+      expect(response.body.userId).toBe("alice");
+      expect(response.body.postId).toBe("42");
+      expect(response.body.title).toBe("Post 42 by alice");
     });
 
     /**

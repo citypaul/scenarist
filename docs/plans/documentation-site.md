@@ -18,11 +18,13 @@ This plan creates a gold-standard documentation site for Scenarist using Astro +
 **Translation:** Jest doesn't support RSC. Spawn a new Next.js instance per test. Hope it works.
 
 **Additional Pain:**
+
 - MSW beta setup required with `remote.enabled: true`
 - Aggressive caching defaults cause confusion
 - High internal knowledge requirement
 
 **Developer Quote:**
+
 > "It's not just you, Next.js is getting harder to use... There are many ways to shoot yourself in the foot that are opt-out instead of opt-in."
 > — PropelAuth Blog, March 2025
 
@@ -43,6 +45,7 @@ This plan creates a gold-standard documentation site for Scenarist using Astro +
 ### The Universal E2E Crisis
 
 **Across ALL frameworks:**
+
 1. **Test Pollution** - Shared MSW handlers cause flaky tests
 2. **Scattered Mocks** - Copy-paste across 50 test files
 3. **Sequential Execution** - Can't parallelize (slow suites)
@@ -193,17 +196,20 @@ Scenarist Documentation
 ### Navigation Strategy
 
 **Primary Navigation (Sidebar):**
+
 - **Pain-first ordering**: Framework Guides BEFORE Core Concepts
 - Progressive disclosure: Quick Start → Framework Guide → Features → Recipes → Reference
 - Framework selector widget on homepage
 - Architecture hidden in Contributing section
 
 **Quick Navigation:**
+
 - Hero section CTAs: "Fix Next.js Testing →", "Fix Remix Testing →", "Try Quick Start →"
 - Problem-oriented search: "How do I test authentication?"
 - Framework-specific landing pages for SEO
 
 **Cross-References:**
+
 - Bidirectional links between related concepts
 - "See also" sections at page bottoms
 - Breadcrumbs for context
@@ -222,6 +228,7 @@ Scenarist Documentation
 **Scenarist fixes it.**
 
 Modern frameworks make building features easy but testing them painful:
+
 - ❌ Flaky tests from shared MSW handlers (test pollution)
 - ❌ Sequential execution (tests can't run in parallel)
 - ❌ Scattered mocks across 50 test files
@@ -234,7 +241,7 @@ Modern frameworks make building features easy but testing them painful:
 
 **The Pain Section (Before/After):**
 
-```markdown
+````markdown
 ## What Framework Docs Won't Tell You
 
 ### Next.js App Router
@@ -261,31 +268,38 @@ Modern frameworks make building features easy but testing them painful:
 ---
 
 **Without Scenarist:**
+
 ```typescript
 // ❌ Global MSW handlers - shared state
 beforeAll(() => {
-  server.use(http.get('/api/user', () => HttpResponse.json({ role: 'admin' })));
+  server.use(http.get("/api/user", () => HttpResponse.json({ role: "admin" })));
 });
 
 // Tests interfere with each other
-it('test 1: admin view', () => {/* passes */});
-it('test 2: guest view', () => {/* FAILS - sees admin! */});
+it("test 1: admin view", () => {
+  /* passes */
+});
+it("test 2: guest view", () => {
+  /* FAILS - sees admin! */
+});
 
 // Must run sequentially (slow)
 // Must restart app to test errors (painful)
 // Mocks duplicated across 50 files (brittle)
 ```
+````
 
 **With Scenarist:**
+
 ```typescript
 // ✅ Isolated scenarios - no shared state
-it('test 1: admin view', async () => {
-  await setScenario('admin-user', { testId: 'test-1' });
+it("test 1: admin view", async () => {
+  await setScenario("admin-user", { testId: "test-1" });
   // Test with admin scenario
 });
 
-it('test 2: guest view', async () => {
-  await setScenario('guest-user', { testId: 'test-2' });
+it("test 2: guest view", async () => {
+  await setScenario("guest-user", { testId: "test-2" });
   // Test with guest scenario - no interference!
 });
 
@@ -295,11 +309,13 @@ it('test 2: guest view', async () => {
 ```
 
 **Impact:**
+
 - ✅ Tests run in parallel: **10x faster**
 - ✅ Zero flaky tests: **test isolation**
 - ✅ Clear scenarios: **self-documenting**
 - ✅ Runtime switching: **no app restarts**
-```
+
+````
 
 **Framework Support Section:**
 
@@ -336,21 +352,21 @@ Scenarist is built on MSW but adds the test isolation and scenario management yo
 - Hexagonal architecture
 - Swap frameworks, swap storage (in-memory → Redis)
 - [Contributing Guide →]
-```
+````
 
 ### Content Migration Plan
 
 **From Existing Docs:**
 
-| Source | Destination | Action |
-|--------|-------------|--------|
-| `core-functionality.md` | Core Concepts section | Split into Scenarios, Test Isolation, Mock Definitions |
-| `stateful-mocks.md` | Features → Stateful Mocks | Migrate with pain-first intro |
-| `api-reference-state.md` | API Reference → StateManager | Migrate, add interactive examples |
-| `testing-guidelines.md` | Recipes → Testing Patterns | Reorganize by use case |
-| Package READMEs (quick starts) | Framework Guides | Extract getting started sections |
-| `docs/adrs/` | Contributing → ADRs | Direct migration, add navigation |
-| `templates/ADAPTER_README_TEMPLATE.md` | Contributing → Custom Adapters | Adapt for docs site |
+| Source                                 | Destination                    | Action                                                 |
+| -------------------------------------- | ------------------------------ | ------------------------------------------------------ |
+| `core-functionality.md`                | Core Concepts section          | Split into Scenarios, Test Isolation, Mock Definitions |
+| `stateful-mocks.md`                    | Features → Stateful Mocks      | Migrate with pain-first intro                          |
+| `api-reference-state.md`               | API Reference → StateManager   | Migrate, add interactive examples                      |
+| `testing-guidelines.md`                | Recipes → Testing Patterns     | Reorganize by use case                                 |
+| Package READMEs (quick starts)         | Framework Guides               | Extract getting started sections                       |
+| `docs/adrs/`                           | Contributing → ADRs            | Direct migration, add navigation                       |
+| `templates/ADAPTER_README_TEMPLATE.md` | Contributing → Custom Adapters | Adapt for docs site                                    |
 
 **New Content to Create:**
 
@@ -378,6 +394,7 @@ Scenarist is built on MSW but adds the test isolation and scenario management yo
 ### Content Priorities (Writing Order)
 
 **Phase 1: Essential (Week 1)**
+
 - Homepage (pain-first with framework quotes)
 - Why Scenarist? (framework-specific pain sections)
 - Quick Start with framework selector
@@ -386,6 +403,7 @@ Scenarist is built on MSW but adds the test isolation and scenario management yo
 - Framework Guide: Express → Getting Started
 
 **Phase 2: Framework Coverage (Week 2)**
+
 - Framework Guide: Next.js App Router → Getting Started
 - Landing Page: Why Testing Next.js Is Broken
 - Landing Page: Why Testing Express/Node Is Broken
@@ -393,6 +411,7 @@ Scenarist is built on MSW but adds the test isolation and scenario management yo
 - Core Concepts: Test Isolation
 
 **Phase 3: Features (Week 3)**
+
 - Core Concepts: Mock Definitions
 - Features: Request Matching (all subpages, pain-first)
 - Features: Response Sequences (all subpages, pain-first)
@@ -400,11 +419,13 @@ Scenarist is built on MSW but adds the test isolation and scenario management yo
 - Recipes: 5 most common use cases
 
 **Phase 4: API Reference (Week 4)**
+
 - API Reference: Core (all subpages)
 - API Reference: Adapters (all subpages)
 - API Reference: Schemas
 
 **Phase 5: Recipes & Advanced (Week 5)**
+
 - Recipes: Remaining 10-15 use cases
 - Framework Guides: Configuration pages
 - Framework Guides: Testing Patterns pages
@@ -412,6 +433,7 @@ Scenarist is built on MSW but adds the test isolation and scenario management yo
 - FAQ
 
 **Phase 6: Contributing (Week 6)**
+
 - Architecture documentation (hexagonal design)
 - Contributing guides
 - ADR migration with context
@@ -419,6 +441,7 @@ Scenarist is built on MSW but adds the test isolation and scenario management yo
 - Testing standards
 
 **Phase 7: Polish & Launch (Week 7)**
+
 - Advanced recipes
 - Migration guides
 - Performance optimization
@@ -438,35 +461,39 @@ Scenarist is built on MSW but adds the test isolation and scenario management yo
 
 Documentation sites generate static HTML at build time. Their "behavior" is fundamentally different from application code:
 
-| Library Code | Documentation Site |
-|--------------|-------------------|
-| Has complex runtime behavior | Generates static HTML |
-| User tests depend on correctness | User reads content |
-| Bugs cascade to user codebases | Bugs cause confusion, not failures |
-| 100% coverage required | Build validation required |
+| Library Code                     | Documentation Site                 |
+| -------------------------------- | ---------------------------------- |
+| Has complex runtime behavior     | Generates static HTML              |
+| User tests depend on correctness | User reads content                 |
+| Bugs cascade to user codebases   | Bugs cause confusion, not failures |
+| 100% coverage required           | Build validation required          |
 
 #### Testing Requirements for Documentation
 
 Documentation sites **require** the following quality gates:
 
 **✅ REQUIRED: Build Validation**
+
 - Build must succeed on every commit
 - CI enforces build success
 - Manual verification of build output
 - Catches syntax errors, broken imports, invalid frontmatter
 
 **✅ REQUIRED: Link Integrity**
+
 - No broken internal links (404s)
 - External links should be monitored (but can break over time)
 - Can use simple link checker script (doesn't require Vitest)
 
 **✅ REQUIRED: Content Quality**
+
 - Code examples must be accurate and copy-paste ready
 - Examples must include all required fields
 - Examples should match real type signatures
 - Manual review of examples before merge
 
 **❌ NOT REQUIRED: Comprehensive Test Suites**
+
 - No need to test "page contains text"
 - No need to test navigation structure
 - No need to test Astro/Starlight internals
@@ -475,12 +502,14 @@ Documentation sites **require** the following quality gates:
 #### What This Means for PRs
 
 **PR must demonstrate:**
+
 1. ✅ Build succeeds (`pnpm build` passes)
 2. ✅ Pages render correctly (manual QA or screenshots)
 3. ✅ Code examples are complete and accurate
 4. ✅ No broken internal links (manual check or link checker script)
 
 **PR does NOT need:**
+
 1. ❌ Vitest test suite for static content
 2. ❌ Tests for "page contains expected text"
 3. ❌ Tests for sidebar navigation structure
@@ -507,6 +536,7 @@ All code examples in documentation must be:
 4. **Commented** - Explain what's happening when not obvious
 
 **❌ Bad Example:**
+
 ```typescript
 const scenarios = {
   premium: {
@@ -516,23 +546,24 @@ const scenarios = {
 ```
 
 **✅ Good Example:**
-```typescript
-import type { ScenarioDefinition } from '@scenarist/core';
 
-const products = [{ id: 1, name: 'Premium Product' }];
+```typescript
+import type { ScenarioDefinition } from "@scenarist/core";
+
+const products = [{ id: 1, name: "Premium Product" }];
 
 export const scenarios: Record<string, ScenarioDefinition> = {
   premium: {
-    id: 'premium',           // Required field
-    name: 'Premium Scenario', // Required field
+    id: "premium", // Required field
+    name: "Premium Scenario", // Required field
     mocks: [
       {
-        method: 'GET',
-        url: '/api/products',
-        response: { status: 200, body: { products } }
-      }
-    ]
-  }
+        method: "GET",
+        url: "/api/products",
+        response: { status: 200, body: { products } },
+      },
+    ],
+  },
 };
 ```
 
@@ -541,6 +572,7 @@ export const scenarios: Record<string, ScenarioDefinition> = {
 When reviewing documentation PRs, AI agents should:
 
 **✅ DO check:**
+
 - Build succeeds
 - Code examples are complete
 - Code examples match real types
@@ -548,6 +580,7 @@ When reviewing documentation PRs, AI agents should:
 - Content addresses stated goals
 
 **❌ DON'T require:**
+
 - Comprehensive test suites for static content
 - Tests that verify text presence
 - Tests that verify navigation structure
@@ -564,34 +597,34 @@ When reviewing documentation PRs, AI agents should:
 **Tasks:**
 
 1. **Initialize Astro + Starlight Project**
+
    ```bash
    cd apps/
    pnpm create astro@latest docs -- --template starlight
    ```
 
 2. **Configure Starlight**
+
    ```typescript
    // astro.config.mjs
-   import { defineConfig } from 'astro/config';
-   import starlight from '@astrojs/starlight';
+   import { defineConfig } from "astro/config";
+   import starlight from "@astrojs/starlight";
 
    export default defineConfig({
      integrations: [
        starlight({
-         title: 'Scenarist',
-         description: 'Fix E2E testing for Next.js, Remix, and TanStack',
+         title: "Scenarist",
+         description: "Fix E2E testing for Next.js, Remix, and TanStack",
          logo: {
-           src: './src/assets/logo.svg',
+           src: "./src/assets/logo.svg",
          },
          social: {
-           github: 'https://github.com/username/scenarist',
+           github: "https://github.com/username/scenarist",
          },
          sidebar: [
            // Navigation structure from Section 1
          ],
-         customCss: [
-           './src/styles/custom.css',
-         ],
+         customCss: ["./src/styles/custom.css"],
        }),
      ],
    });
@@ -680,11 +713,11 @@ When reviewing documentation PRs, AI agents should:
    - Production safety guarantees
 
 8. **Introduction → Endpoint APIs**
-   - POST /__scenario__ - Switch scenario API
+   - POST /**scenario** - Switch scenario API
      - Request format: {scenario: string, variant?: string}
      - Response format: {success: boolean, testId: string, scenarioId: string, variant?: string}
      - Error responses: 400 (validation), 404 (not found), 500 (internal)
-   - GET /__scenario__ - Get active scenario API
+   - GET /**scenario** - Get active scenario API
      - Response format: {testId: string, scenarioId: string, scenarioName?: string, variantName?: string}
      - Error response: 404 (no active scenario)
    - Test ID extraction from request context
@@ -699,12 +732,14 @@ When reviewing documentation PRs, AI agents should:
    - Runtime scenario switching demo
 
 10. **Framework Guide → Express → Getting Started**
-   - Complete setup walkthrough
-   - Middleware integration
-   - Scenario endpoints
-   - First test
+
+- Complete setup walkthrough
+- Middleware integration
+- Scenario endpoints
+- First test
 
 **Quality Gate:**
+
 - All code examples tested in real apps
 - Navigation works
 - Search works
@@ -893,6 +928,7 @@ When reviewing documentation PRs, AI agents should:
 **Primary Tone:** Empathetic, competent, honest
 
 **Characteristics:**
+
 - **Empathetic** - "We know testing Next.js is painful"
 - **Direct** - Get to the point quickly
 - **Practical** - Show working code, not theory
@@ -903,7 +939,7 @@ When reviewing documentation PRs, AI agents should:
 
 **Every feature page follows this pattern:**
 
-```markdown
+````markdown
 # Feature Name
 
 ## The Problem [Framework] Developers Face
@@ -911,20 +947,24 @@ When reviewing documentation PRs, AI agents should:
 [Specific pain point with real quote/example]
 
 **Without Scenarist:**
+
 ```typescript
 // ❌ Before: The painful way
 [Code showing current pain]
 ```
+````
 
 ## How Scenarist Solves It
 
 **With Scenarist:**
+
 ```typescript
 // ✅ After: The Scenarist way
 [Code showing solution]
 ```
 
 **Impact:**
+
 - ✅ Benefit 1
 - ✅ Benefit 2
 - ✅ Benefit 3
@@ -940,7 +980,8 @@ When reviewing documentation PRs, AI agents should:
 - [Related Feature 1]
 - [Related Feature 2]
 - [Recipe Using This Feature]
-```
+
+````
 
 ### Code Example Standards
 
@@ -1080,7 +1121,7 @@ Unit tests CAN test server-side logic, but it's painful and risky:
 
 ❌ BAD: "Unit tests don't cover HTTP integration"
 ✅ GOOD: "Unit tests require extensive mocking at the code level, creating distance from production reality"
-```
+````
 
 **Key Insight:**
 Your code runs as part of user journeys with real sessions, auth context, and middleware in production—but you're testing it either in isolation (unit tests) or only for happy path (browser tests). Browser-based testing with real server execution is closer to how code actually runs.
@@ -1088,11 +1129,13 @@ Your code runs as part of user journeys with real sessions, auth context, and mi
 ### No Marketing Fluff
 
 **Remove percentage claims:**
+
 - Don't use "77% boilerplate reduction" or similar statistics
 - Don't use "10x faster" without context
 - Don't use hyperbolic language
 
 **Let code speak for itself:**
+
 ```markdown
 ❌ BAD:
 **Code Reduction: 77%** - From 9 lines to 2 lines
@@ -1111,8 +1154,10 @@ Marketing percentages don't add substance. Developers can see the difference in 
 ### Landing Page vs. Docs Separation
 
 **Landing Page = High-Level Bullet Points:**
+
 ```markdown
 **Key features:**
+
 - **Ephemeral endpoints:** Scenario switching only active when `enabled: true`
 - **Test isolation:** Unique test IDs enable parallel execution
 - **Type-safe helpers:** Playwright integration with autocomplete
@@ -1120,6 +1165,7 @@ Marketing percentages don't add substance. Developers can see the difference in 
 ```
 
 **Docs Pages = Detailed Explanations:**
+
 ```markdown
 ## How It Works: Ephemeral Endpoints & Test Isolation
 
@@ -1133,6 +1179,7 @@ Scenarist creates **ephemeral endpoints** that only exist when testing is enable
 ```
 
 **Why this matters:**
+
 - Landing page readers want quick overview to decide if tool is relevant
 - Docs readers are already committed and want deep technical understanding
 - Long explanations on landing page → high bounce rate
@@ -1143,17 +1190,20 @@ Scenarist creates **ephemeral endpoints** that only exist when testing is enable
 ### The Realistic Testing Gap Framing
 
 **Most teams actually do:**
+
 - Unit tests (Jest/Vitest) → Test functions in isolation
 - Browser tests (Playwright/Cypress) → Test happy path only
 
 **The critical gap:**
 
 Unit tests CAN test server-side logic, but:
+
 - Requires extensive code-level mocking (sessions, auth, request objects)
 - Mocks create distance from production reality
 - Easy to introduce bugs that only surface in real user journeys
 
 Browser tests capture real execution, but:
+
 - Limited to 1-2 scenarios (happy path)
 - Testing multiple scenarios requires complex setup OR server restarts
 
@@ -1164,6 +1214,7 @@ Server-side code executes as part of user journeys with real sessions, auth cont
 Test all scenarios (error cases, edge cases, different user states) through real HTTP requests with real server-side execution (sessions, middleware, Server Components), while mocking only external APIs.
 
 **Why this framing works:**
+
 - Acknowledges unit tests ARE valuable
 - Explains the REAL problem: mocking creates testing/reality gap
 - Shows browser testing is closer to production
@@ -1176,11 +1227,13 @@ Early documentation positioned Scenarist as primarily for Next.js/Server Compone
 
 **The Reality:**
 Scenarist works with ANY Node.js framework:
+
 - Express, Hono, Fastify (pure backend APIs)
 - Next.js (Pages Router + App Router)
 - Remix, SvelteKit (future)
 
 **Server Components is ONE use case among many:**
+
 - API routes (all frameworks)
 - Middleware chains (all frameworks)
 - Validation logic (all frameworks)
@@ -1189,11 +1242,13 @@ Scenarist works with ANY Node.js framework:
 - Business logic (all frameworks)
 
 **Correct opening:**
+
 ```markdown
 Whether you're building with **Express**, **Hono**, **Fastify**, **Next.js**, or **Remix**...
 ```
 
 **Not:**
+
 ```markdown
 Test Next.js Server Components without Jest...
 ```
@@ -1206,17 +1261,20 @@ Narrowing to Next.js alienates Express/Hono/Fastify developers who are majority 
 **Belongs in docs pages (why-scenarist.md, not landing page):**
 
 Three key concepts to explain:
+
 1. **Ephemeral endpoints** - `enabled` flag controls activation
 2. **Test isolation** - Unique test IDs via `crypto.randomUUID()`
 3. **Playwright helpers** - Automatic test ID management
 
 **Landing page (bullet points):**
+
 ```markdown
 - **Ephemeral endpoints:** Scenario switching only active when `enabled: true` (zero production overhead)
 - **Test isolation:** Unique test IDs enable parallel execution without interference
 ```
 
 **Docs page (full explanation):**
+
 ```markdown
 ## How It Works: Ephemeral Endpoints & Test Isolation
 
@@ -1225,6 +1283,7 @@ Three key concepts to explain:
 Scenarist creates **ephemeral endpoints** that only exist when testing is enabled...
 
 **What the `enabled` flag controls:**
+
 - When `enabled: true` (test mode): Endpoints active, middleware extracts IDs, MSW registered
 - When `enabled: false` (production): Endpoints return 404, middleware no-ops, zero overhead
 
@@ -1257,46 +1316,52 @@ Technical details like "how enabled flag works" are valuable but too detailed fo
 
 **Examples:**
 
-| Content | Landing Page? | Docs Page? | Rationale |
-|---------|---------------|------------|-----------|
-| "Ephemeral endpoints (zero production overhead)" | ✅ YES | ✅ YES (detailed) | Essential decision factor + needs technical explanation |
-| "Test isolation via unique IDs" | ✅ YES | ✅ YES (detailed) | Essential benefit + needs mechanism explanation |
-| "How `enabled` flag controls endpoints" | ❌ NO | ✅ YES | Technical detail, not decision factor |
-| "Under the hood: test ID routing" | ❌ NO | ✅ YES | Implementation detail |
-| "Type-safe scenario IDs" | ✅ YES | ✅ YES (detailed) | Developer experience win + needs examples |
-| "Code reduction: 77%" | ❌ NO | ❌ NO | Marketing fluff, remove entirely |
+| Content                                          | Landing Page? | Docs Page?        | Rationale                                               |
+| ------------------------------------------------ | ------------- | ----------------- | ------------------------------------------------------- |
+| "Ephemeral endpoints (zero production overhead)" | ✅ YES        | ✅ YES (detailed) | Essential decision factor + needs technical explanation |
+| "Test isolation via unique IDs"                  | ✅ YES        | ✅ YES (detailed) | Essential benefit + needs mechanism explanation         |
+| "How `enabled` flag controls endpoints"          | ❌ NO         | ✅ YES            | Technical detail, not decision factor                   |
+| "Under the hood: test ID routing"                | ❌ NO         | ✅ YES            | Implementation detail                                   |
+| "Type-safe scenario IDs"                         | ✅ YES        | ✅ YES (detailed) | Developer experience win + needs examples               |
+| "Code reduction: 77%"                            | ❌ NO         | ❌ NO             | Marketing fluff, remove entirely                        |
 
 ### Writing Checklist for Every Page
 
 **Before publishing any documentation page, verify:**
 
 ✅ **Accuracy:**
+
 - [ ] No "CAN'T" statements that should be "CAN, but painful"
 - [ ] Claims about unit tests acknowledge they work but are painful
 - [ ] Testing gap accurately described (mocking creates distance, not impossibility)
 
 ✅ **No Marketing Fluff:**
+
 - [ ] No percentage claims without context
 - [ ] No "X times faster" without explanation
 - [ ] Code comparisons speak for themselves
 
 ✅ **Correct Content Level:**
+
 - [ ] Landing page has only bullet points and high-level overview
 - [ ] Technical details and long explanations are in docs pages
 - [ ] Each piece of content is in appropriate location
 
 ✅ **Framework-Agnostic:**
+
 - [ ] Express, Hono, Fastify mentioned alongside Next.js
 - [ ] Server Components presented as one use case, not THE use case
 - [ ] Examples show multiple frameworks when relevant
 
 ✅ **Code Examples:**
+
 - [ ] All code examples are complete and copy-paste ready
 - [ ] No placeholders or undefined variables
 - [ ] Examples match real type signatures
 - [ ] Comments explain non-obvious parts
 
 ✅ **Realistic Testing Gap:**
+
 - [ ] Acknowledges unit tests are valuable
 - [ ] Explains mocking creates testing/reality gap
 - [ ] Shows browser testing closer to production
@@ -1337,6 +1402,7 @@ Technical details like "how enabled flag works" are valuable but too detailed fo
 ### Completed Work
 
 **Phase 1: Astro + Starlight Setup** ✅ COMPLETE
+
 - Astro + Starlight site initialized at `apps/docs`
 - Framework structure configured (Next.js, Express, future Remix/TanStack)
 - Deployed at scenarist.io (Cloudflare Pages)
@@ -1345,6 +1411,7 @@ Technical details like "how enabled flag works" are valuable but too detailed fo
 - Custom styling applied
 
 **Phase 2: Essential Content** ✅ COMPLETE
+
 - ✅ Homepage (pain-first approach)
 - ✅ Why Scenarist page (framework-specific pain)
 - ✅ Installation guide
@@ -1353,13 +1420,14 @@ Technical details like "how enabled flag works" are valuable but too detailed fo
   - ✅ Scenario Format (comprehensive structure)
   - ✅ Default Mocks (override behavior, fallback patterns)
   - ✅ Ephemeral Endpoints (test-only activation)
-  - ✅ Endpoint APIs (GET/POST /__scenario__ reference)
+  - ✅ Endpoint APIs (GET/POST /**scenario** reference)
 - ✅ Framework Guide → Next.js App Router → Getting Started
 - ✅ Framework Guide → Next.js Pages Router → Getting Started
 - ✅ Framework Guide → Express → Getting Started
 - ✅ Example apps for all three frameworks
 
 **Documentation Fixes (PR #76)** ✅ COMPLETE
+
 - Fixed incorrect API documentation (removed non-existent `createMSWHandler`)
 - Corrected App Router endpoint path to use URL-encoded `%5F%5Fscenario%5F%5F`
 - Added explanation of Next.js private folders
@@ -1370,6 +1438,7 @@ Technical details like "how enabled flag works" are valuable but too detailed fo
 ### Recent Achievements (November 2025)
 
 **Technical Implementation (ALL COMPLETE):**
+
 - ✅ All core packages COMPLETE (300+ tests passing)
 - ✅ Next.js adapter with singleton pattern (ADR-0013, ADR-0014)
 - ✅ Playwright helpers package (70% boilerplate reduction)
@@ -1380,6 +1449,7 @@ Technical details like "how enabled flag works" are valuable but too detailed fo
 - ✅ Hexagonal architecture fully implemented
 
 **Documentation Progress:**
+
 - ✅ Phase 2 introduction pages COMPLETE (Scenario Format, Default Mocks, Ephemeral Endpoints, Endpoint APIs)
 - ✅ Framework-specific getting started guides COMPLETE (Next.js Pages, App Router, Express)
 - ✅ Example app documentation COMPLETE (all three frameworks)
@@ -1388,6 +1458,7 @@ Technical details like "how enabled flag works" are valuable but too detailed fo
 ### In Progress
 
 **Phase 3: Framework Coverage** (Current Work - Week 4-5)
+
 - [ ] Landing Page: Why Testing Next.js Is Broken (SEO priority)
 - [ ] Landing Page: Why Testing Express/Node Is Broken
 - [ ] Core Concepts: Scenarios & Variants
@@ -1401,6 +1472,7 @@ Technical details like "how enabled flag works" are valuable but too detailed fo
 **Weeks Remaining:** ~3 weeks to v1.0 release
 
 **Progress Summary:**
+
 - ✅ Weeks 0-1: Phases 1-2 COMPLETE (Setup + Essential Content)
 - 🚧 Weeks 2-3: Phase 3 IN PROGRESS (Framework Coverage)
 - ⏳ Weeks 4-7: Phases 4-7 REMAINING (Features, API Reference, Recipes, Polish)
@@ -1433,6 +1505,7 @@ Technical details like "how enabled flag works" are valuable but too detailed fo
    - Keyword targeting: "Next.js testing problems", "Remix testing", etc.
 
 **Success Criteria for Phase 3:**
+
 - [ ] Framework landing pages deployed and indexed
 - [ ] All core concepts documented
 - [ ] Real-world examples showcased

@@ -19,11 +19,11 @@
  * NO environment branching - routes always call real REST endpoints!
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
 
-const CART_BACKEND_URL = 'http://localhost:3001/cart';
+const CART_BACKEND_URL = "http://localhost:3001/cart";
 
 export async function GET(request: NextRequest) {
   try {
@@ -44,9 +44,9 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'Failed to fetch cart',
+        error: error instanceof Error ? error.message : "Failed to fetch cart",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

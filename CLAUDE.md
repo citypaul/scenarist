@@ -9,6 +9,7 @@ This file provides guidance to Claude Code when working with this repository. Fo
 **Status:** Production-ready v1.0 candidate. 314 tests passing across all packages with 100% coverage. TypeScript strict mode enforced throughout.
 
 **Key Capabilities:**
+
 - Runtime scenario switching (no app restarts)
 - Test ID isolation (concurrent tests with different states)
 - Request content matching (body/headers/query/regex)
@@ -25,6 +26,7 @@ User App → Adapter (Express/Next.js) → Core (Domain Logic) → Ports (Interf
 ```
 
 **Key Principles:**
+
 - Ports = `interface` (behavior contracts)
 - Types = `type` with `readonly` (data structures)
 - Schemas = Zod at trust boundaries (validation)
@@ -60,6 +62,7 @@ pnpm test --filter=@scenarist/express-adapter
 Every line of production code must be written in response to a failing test.
 
 **RED → GREEN → REFACTOR:**
+
 1. **RED:** Write failing test for desired behavior
 2. **GREEN:** Write minimum code to pass
 3. **REFACTOR:** Assess if refactoring adds value (commit before refactoring)
@@ -67,6 +70,7 @@ Every line of production code must be written in response to a failing test.
 **Git history must show TDD compliance.**
 
 **Common violations to avoid:**
+
 - Writing production code without failing test first
 - Speculative code ("just in case" logic)
 - Batching multiple tests before making first pass
@@ -95,12 +99,14 @@ Scenario definitions must be **declarative patterns**, not imperative functions.
 **Why:** Declarative = inspectable, composable, testable. Imperative = hidden logic, not analyzable.
 
 **Allowed patterns:**
+
 - Primitives, objects, arrays
 - Native RegExp (ADR-0016)
 - Template strings
 - Match criteria objects
 
 **Not allowed:**
+
 - Functions with closures
 - Callbacks
 - Side effects
@@ -112,16 +118,16 @@ Domain logic must NEVER create port implementations internally.
 ```typescript
 // ✅ CORRECT - Ports injected
 export const createScenarioManager = ({
-  registry,  // Injected
-  store,     // Injected
+  registry, // Injected
+  store, // Injected
 }: {
   registry: ScenarioRegistry;
   store: ScenarioStore;
 }): ScenarioManager => {
   return {
     registerScenario(def) {
-      registry.register(def);  // Use injected port
-    }
+      registry.register(def); // Use injected port
+    },
   };
 };
 
@@ -131,7 +137,7 @@ export const createScenarioManager = ({
 }: {
   store: ScenarioStore;
 }): ScenarioManager => {
-  const registry = new Map();  // ❌ Hardcoded implementation!
+  const registry = new Map(); // ❌ Hardcoded implementation!
   // ...
 };
 ```
@@ -202,31 +208,37 @@ const scenarioRequestSchema = z.object({...});  // Duplication!
 ### When to Consult ADRs
 
 **Scenario Definitions:**
+
 - ADR-0013: Why scenarios must be declarative (not functions)
 - ADR-0016: Native RegExp support in declarative patterns
 - ADR-0001: Why scenarios must be serializable (historical context)
 
 **Testing Strategy:**
+
 - ADR-0003: Four-layer testing approach (when to mock vs real dependencies)
 - ADR-0006: When adapters can use real framework dependencies (thin adapter exception - rare!)
 - ADR-0004: Why composition tests aren't needed (orthogonal features)
 
 **API Design:**
+
 - ADR-0008: Type-safe scenario IDs via upfront registration
 - ADR-0009: Upfront scenario registration vs on-demand
 - ADR-0010: Default scenario key convention (`'default'` enforced)
 - ADR-0007: Framework-specific header helpers (why adapters differ)
 
 **State Management:**
+
 - ADR-0005: Sequence/state reset on scenario switch (idempotency)
 - ADR-0012: Template replacement returns undefined for missing state
 - ADR-0015: Sequences preferred over referer routing hacks
 
 **Domain Organization:**
+
 - ADR-0011: Where to put domain constants (core vs adapters)
 - ADR-0014: Build-time variant generation analysis
 
 **Decision Tree - "Where should this go?"**
+
 ```
 Is it a scenario definition concern?
 ├─ YES → Check ADR-0013 (declarative), ADR-0016 (RegExp), ADR-0001 (serializable)
@@ -274,16 +286,17 @@ apps/
 Scenarist adapters use conditional exports to guarantee zero test code in production. The Express adapter adds an additional runtime guard as defense-in-depth.
 
 **Express adapter (two-layer defense):**
+
 ```typescript
 // Layer 1: Conditional exports
 // package.json exports → production.ts when NODE_ENV=production
 
 // Layer 2: Runtime guard in setup.ts
 export const createScenarist = async (options) => {
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === "production") {
     return undefined;
   }
-  const { createScenaristImpl } = await import('./impl.js');  // Dynamic import
+  const { createScenaristImpl } = await import("./impl.js"); // Dynamic import
   return createScenaristImpl(options);
 };
 
@@ -294,11 +307,12 @@ export const createScenarist = async (_options) => {
 ```
 
 **Next.js adapters (conditional exports only):**
+
 ```typescript
 // Layer 1: Conditional exports in package.json → app/production.ts or pages/production.ts
 
 // app/setup.ts or pages/setup.ts (synchronous re-export, no runtime guard)
-export { createScenaristImpl as createScenarist } from './impl.js';
+export { createScenaristImpl as createScenarist } from "./impl.js";
 
 // production.ts (returns undefined, zero imports)
 export const createScenarist = (_options) => {
@@ -307,15 +321,17 @@ export const createScenarist = (_options) => {
 ```
 
 **User-facing pattern (all adapters):**
+
 ```typescript
 // Synchronous pattern - no async/await needed
 export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
+  enabled: process.env.NODE_ENV === "test",
   scenarios,
 });
 ```
 
 **Conditional exports:**
+
 ```json
 // Express adapter
 {
@@ -345,6 +361,7 @@ export const scenarist = createScenarist({
 ```
 
 **Verification:**
+
 ```bash
 # Express adapter & example
 ! grep -rE '(setupWorker|HttpResponse\.json)' dist/
@@ -354,11 +371,13 @@ NODE_ENV=production next build && ! grep -rE '(setupWorker|HttpResponse\.json)' 
 ```
 
 **Why Express uses two layers (defense-in-depth):**
+
 - Layer 1 (conditional exports): Primary defense, handles all standard build tools
 - Layer 2 (NODE_ENV + dynamic imports): Fallback if conditional exports fail or bundler misconfigured
 - Provides extra safety for Express apps with custom build configurations
 
 **Why Next.js uses only Layer 1:**
+
 - Next.js build process is standardized and always respects conditional exports
 - No need for runtime guard when bundler behavior is predictable
 - Simpler implementation: synchronous re-export, no async/await required
@@ -370,18 +389,21 @@ NODE_ENV=production next build && ! grep -rE '(setupWorker|HttpResponse\.json)' 
 ## TypeScript Configuration
 
 **Non-negotiable:**
+
 - `strict: true` everywhere (including tests)
 - No `any` types (use `unknown`)
 - No `@ts-ignore` without justification
 - `noUnusedLocals`, `noUnusedParameters`: `true`
 
 **Type vs Interface:**
+
 - Data structures: `type` with `readonly`
 - Behavior contracts (ports): `interface`
 
 ## Current Status & Next Steps
 
 **Completed:**
+
 - ✅ Core packages with 100% test coverage
 - ✅ Express adapter with production tree-shaking
 - ✅ Next.js adapters (App Router + Pages Router)
@@ -389,6 +411,7 @@ NODE_ENV=production next build && ! grep -rE '(setupWorker|HttpResponse\.json)' 
 - ✅ Production safety (tree-shaking verified)
 
 **Next (Production Readiness):**
+
 - ⏳ Set up Changesets workflow
 - ⏳ Publish v1.0 to npm
 - ⏳ Performance benchmarking

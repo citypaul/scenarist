@@ -28,6 +28,7 @@ Scenarist only supports **exact string matching** for match criteria:
 ```
 
 **Problems:**
+
 - ❌ Cannot match substring patterns (`referer.includes('/apply-sign')`)
 - ❌ Cannot match regex patterns (`referer.match(/\/apply-\w+/`)`)
 - ❌ Requires separate mocks for each exact value (verbose, brittle)
@@ -35,11 +36,14 @@ Scenarist only supports **exact string matching** for match criteria:
 ### User Needs (From Acquisition.Web Analysis)
 
 **Real-world pattern:**
+
 ```typescript
 // Acquisition.Web checks referer substring
-if (request.headers.get('referer')?.includes('/apply-sign') ||
-    request.headers.get('referer')?.includes('/penny-drop')) {
-  return HttpResponse.json({ state: 'appComplete' });
+if (
+  request.headers.get("referer")?.includes("/apply-sign") ||
+  request.headers.get("referer")?.includes("/penny-drop")
+) {
+  return HttpResponse.json({ state: "appComplete" });
 }
 ```
 
@@ -55,13 +59,14 @@ if (request.headers.get('referer')?.includes('/apply-sign') ||
 
 ```typescript
 type MatchValue =
-  | string                           // Exact match (existing)
+  | string // Exact match (existing)
   | {
-      equals?: string;                // Explicit exact match
-      contains?: string;              // Substring match (NEW)
-      startsWith?: string;            // Prefix match (NEW)
-      endsWith?: string;              // Suffix match (NEW)
-      regex?: {                       // Regex match (NEW)
+      equals?: string; // Explicit exact match
+      contains?: string; // Substring match (NEW)
+      startsWith?: string; // Prefix match (NEW)
+      endsWith?: string; // Suffix match (NEW)
+      regex?: {
+        // Regex match (NEW)
         source: string;
         flags?: string;
       };
@@ -203,8 +208,8 @@ export type MatchCriteria = {
 
 ```typescript
 // packages/core/src/schemas/scenario.schemas.ts
-import { z } from 'zod';
-import { isSafe as isRegexSafe } from 'redos-detector'; // ReDoS protection
+import { z } from "zod";
+import { isSafe as isRegexSafe } from "redos-detector"; // ReDoS protection
 
 /**
  * Valid JavaScript regex flags
@@ -215,7 +220,9 @@ const VALID_REGEX_FLAGS = /^[gimsuvy]*$/;
  * Serialized regex schema with ReDoS validation
  */
 export const SerializedRegexSchema = z.object({
-  source: z.string().min(1)
+  source: z
+    .string()
+    .min(1)
     .refine(
       (source) => {
         try {
@@ -225,24 +232,26 @@ export const SerializedRegexSchema = z.object({
           return false; // Invalid regex pattern
         }
       },
-      { message: 'Regex pattern is potentially unsafe (ReDoS vulnerability)' }
+      { message: "Regex pattern is potentially unsafe (ReDoS vulnerability)" },
     ),
-  flags: z.string()
-    .regex(VALID_REGEX_FLAGS, 'Invalid regex flags')
+  flags: z
+    .string()
+    .regex(VALID_REGEX_FLAGS, "Invalid regex flags")
     .optional()
-    .default(''),
+    .default(""),
 });
 
 /**
  * Match value object schema
  */
-export const MatchValueObjectSchema = z.object({
-  equals: z.string().optional(),
-  contains: z.string().optional(),
-  startsWith: z.string().optional(),
-  endsWith: z.string().optional(),
-  regex: SerializedRegexSchema.optional(),
-})
+export const MatchValueObjectSchema = z
+  .object({
+    equals: z.string().optional(),
+    contains: z.string().optional(),
+    startsWith: z.string().optional(),
+    endsWith: z.string().optional(),
+    regex: SerializedRegexSchema.optional(),
+  })
   .refine(
     (obj) => {
       // Exactly ONE strategy must be specified
@@ -255,7 +264,7 @@ export const MatchValueObjectSchema = z.object({
       ].filter(Boolean);
       return strategies.length === 1;
     },
-    { message: 'Exactly one matching strategy must be specified' }
+    { message: "Exactly one matching strategy must be specified" },
   );
 
 /**
@@ -269,11 +278,13 @@ export const MatchValueSchema = z.union([
 /**
  * Match criteria schema
  */
-export const MatchCriteriaSchema = z.object({
-  headers: z.record(MatchValueSchema).optional(),
-  query: z.record(MatchValueSchema).optional(),
-  body: z.record(MatchValueSchema).optional(),
-}).optional();
+export const MatchCriteriaSchema = z
+  .object({
+    headers: z.record(MatchValueSchema).optional(),
+    query: z.record(MatchValueSchema).optional(),
+    body: z.record(MatchValueSchema).optional(),
+  })
+  .optional();
 ```
 
 ### Matching Logic
@@ -284,7 +295,10 @@ export const MatchCriteriaSchema = z.object({
 /**
  * Check if a value matches the given criteria
  */
-export const matchesValue = (actual: unknown, expected: MatchValue): boolean => {
+export const matchesValue = (
+  actual: unknown,
+  expected: MatchValue,
+): boolean => {
   // Handle null/undefined
   if (actual === null || actual === undefined) {
     return false;
@@ -293,7 +307,7 @@ export const matchesValue = (actual: unknown, expected: MatchValue): boolean => 
   const actualString = String(actual);
 
   // Backward compatible: string means exact match
-  if (typeof expected === 'string') {
+  if (typeof expected === "string") {
     return actualString === expected;
   }
 
@@ -315,7 +329,7 @@ export const matchesValue = (actual: unknown, expected: MatchValue): boolean => 
   }
 
   if (expected.regex !== undefined) {
-    const regex = new RegExp(expected.regex.source, expected.regex.flags || '');
+    const regex = new RegExp(expected.regex.source, expected.regex.flags || "");
 
     // Set timeout to prevent ReDoS attacks
     const startTime = Date.now();
@@ -326,13 +340,15 @@ export const matchesValue = (actual: unknown, expected: MatchValue): boolean => 
       const matches = regex.test(actualString);
 
       if (Date.now() - startTime > MAX_REGEX_EXECUTION_TIME) {
-        console.warn(`[Scenarist] Regex execution exceeded ${MAX_REGEX_EXECUTION_TIME}ms, potential ReDoS`);
+        console.warn(
+          `[Scenarist] Regex execution exceeded ${MAX_REGEX_EXECUTION_TIME}ms, potential ReDoS`,
+        );
         return false;
       }
 
       return matches;
     } catch (error) {
-      console.error('[Scenarist] Regex matching error:', error);
+      console.error("[Scenarist] Regex matching error:", error);
       return false;
     }
   }
@@ -345,7 +361,7 @@ export const matchesValue = (actual: unknown, expected: MatchValue): boolean => 
  */
 export const matchesCriteria = (
   context: RequestContext,
-  criteria: MatchCriteria
+  criteria: MatchCriteria,
 ): boolean => {
   // Check headers
   if (criteria.headers) {
@@ -368,7 +384,7 @@ export const matchesCriteria = (
   }
 
   // Check body fields
-  if (criteria.body && context.body && typeof context.body === 'object') {
+  if (criteria.body && context.body && typeof context.body === "object") {
     for (const [key, expected] of Object.entries(criteria.body)) {
       const actual = (context.body as Record<string, unknown>)[key];
       if (!matchesValue(actual, expected)) {
@@ -388,64 +404,67 @@ export const matchesCriteria = (
 ### Phase 1: Core Types & Schemas (TDD)
 
 **Files to modify:**
+
 - `packages/core/src/types/scenario.types.ts`
 - `packages/core/src/schemas/scenario.schemas.ts`
 
 **Steps:**
+
 1. ✅ Write tests for `SerializedRegexSchema` validation
 2. ✅ Write tests for `MatchValueSchema` validation
 3. ✅ Implement schemas
 4. ✅ Verify type inference with TypeScript
 
 **Tests:**
+
 ```typescript
 // packages/core/tests/schemas/match-value.test.ts
-describe('MatchValueSchema', () => {
-  it('should accept plain string (backward compatible)', () => {
-    const result = MatchValueSchema.parse('exact-match');
-    expect(result).toBe('exact-match');
+describe("MatchValueSchema", () => {
+  it("should accept plain string (backward compatible)", () => {
+    const result = MatchValueSchema.parse("exact-match");
+    expect(result).toBe("exact-match");
   });
 
-  it('should accept contains strategy', () => {
-    const result = MatchValueSchema.parse({ contains: '/apply-sign' });
-    expect(result).toEqual({ contains: '/apply-sign' });
+  it("should accept contains strategy", () => {
+    const result = MatchValueSchema.parse({ contains: "/apply-sign" });
+    expect(result).toEqual({ contains: "/apply-sign" });
   });
 
-  it('should accept regex with source only', () => {
+  it("should accept regex with source only", () => {
     const result = MatchValueSchema.parse({
-      regex: { source: 'test' },
+      regex: { source: "test" },
     });
-    expect(result.regex.flags).toBe(''); // Default
+    expect(result.regex.flags).toBe(""); // Default
   });
 
-  it('should reject multiple strategies', () => {
+  it("should reject multiple strategies", () => {
     expect(() => {
       MatchValueSchema.parse({
-        contains: 'foo',
-        startsWith: 'bar', // ❌ Two strategies
+        contains: "foo",
+        startsWith: "bar", // ❌ Two strategies
       });
-    }).toThrow('Exactly one matching strategy');
+    }).toThrow("Exactly one matching strategy");
   });
 
-  it('should reject unsafe regex patterns', () => {
-    expect(() => {
-      MatchValueSchema.parse({
-        regex: {
-          source: '(a+)+b', // ReDoS vulnerable
-        },
-      });
-    }).toThrow('potentially unsafe');
-  });
-
-  it('should reject invalid regex flags', () => {
+  it("should reject unsafe regex patterns", () => {
     expect(() => {
       MatchValueSchema.parse({
         regex: {
-          source: 'test',
-          flags: 'xyz', // ❌ Invalid flags
+          source: "(a+)+b", // ReDoS vulnerable
         },
       });
-    }).toThrow('Invalid regex flags');
+    }).toThrow("potentially unsafe");
+  });
+
+  it("should reject invalid regex flags", () => {
+    expect(() => {
+      MatchValueSchema.parse({
+        regex: {
+          source: "test",
+          flags: "xyz", // ❌ Invalid flags
+        },
+      });
+    }).toThrow("Invalid regex flags");
   });
 });
 ```
@@ -456,23 +475,27 @@ describe('MatchValueSchema', () => {
 **Commits:** b7ced12 (RED) → a8802ed (GREEN) → d971a91 (RED) → fd085a2 (GREEN) → 9cf85cd (GREEN)
 
 **Files created/modified:**
+
 - `packages/core/src/domain/matching.ts` - Implemented string matching functions
 - `packages/core/tests/matching.test.ts` - 13 unit tests covering all strategies
 - `packages/core/src/schemas/scenario.schemas.ts` - Extended MatchValueSchema
 - `apps/nextjs-app-router-example/tests/playwright/string-matching.spec.ts` - 9 ATDD tests
 
 **Implemented Strategies:**
+
 1. ✅ `contains` - Substring matching (case-sensitive)
 2. ✅ `startsWith` - Prefix matching
 3. ✅ `endsWith` - Suffix matching
 4. ✅ `equals` - Explicit exact match (alternative to plain string)
 
 **Test Results:**
+
 - Core package: 257/257 tests passing
 - Playwright ATDD: 9/9 tests passing
 - Coverage: 100% maintained
 
 **Key Implementation Details:**
+
 - All strategies work on headers, query params, and body fields
 - Type coercion: non-string values converted to strings before matching
 - Null/undefined values return false for all strategies
@@ -480,6 +503,7 @@ describe('MatchValueSchema', () => {
 - Schema validation ensures only one strategy per match value
 
 **Steps:**
+
 1. ✅ Write ATDD tests for string matching strategies (RED)
 2. ✅ Extend MatchValueSchema to support string strategies (GREEN)
 3. ✅ Write unit tests for matchesValue() function (RED)
@@ -487,69 +511,72 @@ describe('MatchValueSchema', () => {
 5. ✅ Verify all tests pass (GREEN)
 
 **Tests:**
+
 ```typescript
 // packages/core/tests/domain/matching.test.ts
-describe('matchesValue', () => {
-  describe('Backward compatible exact match', () => {
-    it('should match exact string', () => {
-      expect(matchesValue('hello', 'hello')).toBe(true);
-      expect(matchesValue('hello', 'world')).toBe(false);
+describe("matchesValue", () => {
+  describe("Backward compatible exact match", () => {
+    it("should match exact string", () => {
+      expect(matchesValue("hello", "hello")).toBe(true);
+      expect(matchesValue("hello", "world")).toBe(false);
     });
   });
 
-  describe('contains strategy', () => {
-    it('should match substring', () => {
-      const criteria = { contains: '/apply-sign' };
-      expect(matchesValue('http://localhost/apply-sign/page', criteria)).toBe(true);
-      expect(matchesValue('http://localhost/other', criteria)).toBe(false);
+  describe("contains strategy", () => {
+    it("should match substring", () => {
+      const criteria = { contains: "/apply-sign" };
+      expect(matchesValue("http://localhost/apply-sign/page", criteria)).toBe(
+        true,
+      );
+      expect(matchesValue("http://localhost/other", criteria)).toBe(false);
     });
   });
 
-  describe('startsWith strategy', () => {
-    it('should match prefix', () => {
-      const criteria = { startsWith: 'sk_' };
-      expect(matchesValue('sk_test_123', criteria)).toBe(true);
-      expect(matchesValue('pk_test_123', criteria)).toBe(false);
+  describe("startsWith strategy", () => {
+    it("should match prefix", () => {
+      const criteria = { startsWith: "sk_" };
+      expect(matchesValue("sk_test_123", criteria)).toBe(true);
+      expect(matchesValue("pk_test_123", criteria)).toBe(false);
     });
   });
 
-  describe('endsWith strategy', () => {
-    it('should match suffix', () => {
-      const criteria = { endsWith: '@company.com' };
-      expect(matchesValue('user@company.com', criteria)).toBe(true);
-      expect(matchesValue('user@other.com', criteria)).toBe(false);
+  describe("endsWith strategy", () => {
+    it("should match suffix", () => {
+      const criteria = { endsWith: "@company.com" };
+      expect(matchesValue("user@company.com", criteria)).toBe(true);
+      expect(matchesValue("user@other.com", criteria)).toBe(false);
     });
   });
 
-  describe('regex strategy', () => {
-    it('should match regex pattern', () => {
+  describe("regex strategy", () => {
+    it("should match regex pattern", () => {
       const criteria = {
-        regex: { source: '/apply-\\w+' },
+        regex: { source: "/apply-\\w+" },
       };
-      expect(matchesValue('/apply-sign', criteria)).toBe(true);
-      expect(matchesValue('/apply-123', criteria)).toBe(true);
-      expect(matchesValue('/other', criteria)).toBe(false);
+      expect(matchesValue("/apply-sign", criteria)).toBe(true);
+      expect(matchesValue("/apply-123", criteria)).toBe(true);
+      expect(matchesValue("/other", criteria)).toBe(false);
     });
 
-    it('should respect regex flags', () => {
+    it("should respect regex flags", () => {
       const criteria = {
-        regex: { source: 'HELLO', flags: 'i' },
+        regex: { source: "HELLO", flags: "i" },
       };
-      expect(matchesValue('hello', criteria)).toBe(true);
-      expect(matchesValue('HELLO', criteria)).toBe(true);
-      expect(matchesValue('goodbye', criteria)).toBe(false);
+      expect(matchesValue("hello", criteria)).toBe(true);
+      expect(matchesValue("HELLO", criteria)).toBe(true);
+      expect(matchesValue("goodbye", criteria)).toBe(false);
     });
   });
 
-  describe('Edge cases', () => {
-    it('should handle null/undefined values', () => {
-      expect(matchesValue(null, 'test')).toBe(false);
-      expect(matchesValue(undefined, 'test')).toBe(false);
+  describe("Edge cases", () => {
+    it("should handle null/undefined values", () => {
+      expect(matchesValue(null, "test")).toBe(false);
+      expect(matchesValue(undefined, "test")).toBe(false);
     });
 
-    it('should convert numbers to strings', () => {
-      expect(matchesValue(123, '123')).toBe(true);
-      expect(matchesValue(123, { contains: '12' })).toBe(true);
+    it("should convert numbers to strings", () => {
+      expect(matchesValue(123, "123")).toBe(true);
+      expect(matchesValue(123, { contains: "12" })).toBe(true);
     });
   });
 });
@@ -558,85 +585,98 @@ describe('matchesValue', () => {
 ### Phase 3: Integration with ResponseSelector (TDD)
 
 **Files to modify:**
+
 - `packages/core/src/domain/response-selector.ts`
 - `packages/core/tests/response-selector.test.ts`
 
 **Steps:**
+
 1. ✅ Write integration tests using new match criteria
 2. ✅ Update `matchesCriteria()` calls to use new `matchesValue()` function
 3. ✅ Verify specificity calculation still works
 4. ✅ Verify all existing tests still pass (backward compatibility)
 
 **Tests:**
+
 ```typescript
 // packages/core/tests/response-selector.test.ts
-describe('ResponseSelector with regex matching', () => {
-  it('should select mock with regex header match', () => {
+describe("ResponseSelector with regex matching", () => {
+  it("should select mock with regex header match", () => {
     const mocks = [
       {
-        method: 'GET',
-        url: '/api/data',
+        method: "GET",
+        url: "/api/data",
         match: {
           headers: {
             referer: {
-              regex: { source: '/apply-sign|/penny-drop' },
+              regex: { source: "/apply-sign|/penny-drop" },
             },
           },
         },
-        response: { status: 200, body: { state: 'complete' } },
+        response: { status: 200, body: { state: "complete" } },
       },
       {
-        method: 'GET',
-        url: '/api/data',
-        response: { status: 200, body: { state: 'pending' } },
+        method: "GET",
+        url: "/api/data",
+        response: { status: 200, body: { state: "pending" } },
       },
     ];
 
     const context = {
-      method: 'GET',
-      url: '/api/data',
-      headers: { referer: 'http://localhost/apply-sign/confirm' },
+      method: "GET",
+      url: "/api/data",
+      headers: { referer: "http://localhost/apply-sign/confirm" },
       query: {},
       body: null,
     };
 
-    const result = selector.selectResponse('test-1', 'scenario-1', context, mocks);
+    const result = selector.selectResponse(
+      "test-1",
+      "scenario-1",
+      context,
+      mocks,
+    );
 
-    expect(result.data.body).toEqual({ state: 'complete' });
+    expect(result.data.body).toEqual({ state: "complete" });
   });
 
-  it('should fall back to default when regex doesnt match', () => {
+  it("should fall back to default when regex doesnt match", () => {
     const mocks = [
       {
-        method: 'GET',
-        url: '/api/data',
+        method: "GET",
+        url: "/api/data",
         match: {
           headers: {
             referer: {
-              regex: { source: '/apply-sign' },
+              regex: { source: "/apply-sign" },
             },
           },
         },
-        response: { status: 200, body: { state: 'complete' } },
+        response: { status: 200, body: { state: "complete" } },
       },
       {
-        method: 'GET',
-        url: '/api/data',
-        response: { status: 200, body: { state: 'pending' } },
+        method: "GET",
+        url: "/api/data",
+        response: { status: 200, body: { state: "pending" } },
       },
     ];
 
     const context = {
-      method: 'GET',
-      url: '/api/data',
-      headers: { referer: 'http://localhost/other' },
+      method: "GET",
+      url: "/api/data",
+      headers: { referer: "http://localhost/other" },
       query: {},
       body: null,
     };
 
-    const result = selector.selectResponse('test-1', 'scenario-1', context, mocks);
+    const result = selector.selectResponse(
+      "test-1",
+      "scenario-1",
+      context,
+      mocks,
+    );
 
-    expect(result.data.body).toEqual({ state: 'pending' }); // Fallback
+    expect(result.data.body).toEqual({ state: "pending" }); // Fallback
   });
 });
 ```
@@ -644,11 +684,13 @@ describe('ResponseSelector with regex matching', () => {
 ### Phase 4: Documentation & Examples
 
 **Files to create/modify:**
+
 - `docs/features/regex-matching.md` (NEW)
 - `packages/core/README.md` (update capabilities)
 - `apps/docs/src/content/docs/core-features/matching.mdx` (NEW)
 
 **Content:**
+
 - API reference for MatchValue
 - Examples for each strategy
 - Security considerations (ReDoS)
@@ -657,10 +699,12 @@ describe('ResponseSelector with regex matching', () => {
 ### Phase 5: Example App Integration
 
 **Files to modify:**
+
 - `apps/express-example/src/scenarios.ts` (add regex examples)
 - `apps/express-example/tests/regex-matching.test.ts` (NEW)
 
 **Examples to add:**
+
 - Referer pattern matching
 - User-agent detection (Mobile vs Desktop)
 - Email domain validation
@@ -675,6 +719,7 @@ describe('ResponseSelector with regex matching', () => {
 **Coverage targets:** 100% (per TDD requirements)
 
 **Test categories:**
+
 1. Schema validation
    - Valid inputs
    - Invalid inputs
@@ -695,21 +740,25 @@ describe('ResponseSelector with regex matching', () => {
 ### Integration Tests
 
 **Express adapter:**
+
 - Scenario with regex header matching
 - Multiple strategies in one scenario
 - Fallback behavior
 
 **Next.js adapter:**
+
 - Same scenarios work in Next.js context
 
 ### E2E Tests (Example Apps)
 
 **Express example:**
+
 - Referer-based routing test
 - User-agent detection test
 - API key validation test
 
 **Playwright tests:**
+
 - Verify regex matching in browser context
 - Verify no performance degradation
 
@@ -722,16 +771,20 @@ describe('ResponseSelector with regex matching', () => {
 **Risk:** Malicious regex patterns can cause catastrophic backtracking.
 
 **Mitigations:**
+
 1. ✅ **Static analysis:** Use `redos-detector` in Zod validation
 2. ✅ **Execution timeout:** Limit regex execution to 100ms
 3. ✅ **User education:** Document safe patterns
 4. ✅ **No user input:** Scenarios are authored by developers, not end users
 
 **Example vulnerable pattern:**
+
 ```typescript
 // ❌ UNSAFE - Exponential backtracking
 {
-  regex: { source: '(a+)+b' }
+  regex: {
+    source: "(a+)+b";
+  }
 }
 
 // Zod will reject this pattern with error:
@@ -743,6 +796,7 @@ describe('ResponseSelector with regex matching', () => {
 **Risk:** Invalid patterns crash at runtime.
 
 **Mitigations:**
+
 1. ✅ Zod validates flags against allowed set
 2. ✅ Try-catch around RegExp construction
 3. ✅ Try-catch around regex.test() execution
@@ -772,8 +826,11 @@ class CompiledMock {
   constructor(private mock: ScenaristMock) {
     if (mock.match?.headers) {
       for (const [key, value] of Object.entries(mock.match.headers)) {
-        if (typeof value === 'object' && value.regex) {
-          this.compiledRegex = new RegExp(value.regex.source, value.regex.flags);
+        if (typeof value === "object" && value.regex) {
+          this.compiledRegex = new RegExp(
+            value.regex.source,
+            value.regex.flags,
+          );
         }
       }
     }
@@ -805,6 +862,7 @@ class CompiledMock {
 ✅ **No breaking changes** - Existing scenarios work unchanged.
 
 **Existing exact matching:**
+
 ```typescript
 {
   match: {
@@ -816,6 +874,7 @@ class CompiledMock {
 ```
 
 **New regex matching:**
+
 ```typescript
 {
   match: {
@@ -831,6 +890,7 @@ class CompiledMock {
 ### Conversion Guide
 
 **Pattern: Substring matching**
+
 ```typescript
 // Before (MSW)
 http.get('/api/data', ({ request }) => {
@@ -851,6 +911,7 @@ http.get('/api/data', ({ request }) => {
 ```
 
 **Pattern: Multiple values**
+
 ```typescript
 // Before (MSW)
 const allowedReferers = ['/apply-sign', '/penny-drop'];
@@ -889,6 +950,7 @@ http.get('/api/data', ({ request }) => {
 ```
 
 **Why redos-detector:**
+
 - ✅ Pure JavaScript (no native dependencies)
 - ✅ Fast static analysis
 - ✅ High accuracy
@@ -902,22 +964,26 @@ http.get('/api/data', ({ request }) => {
 ## Rollout Plan
 
 ### Phase 1: Core Implementation (Week 1)
+
 - Types & schemas
 - Matching logic
 - Unit tests (100% coverage)
 
 ### Phase 2: Adapter Integration (Week 2)
+
 - ResponseSelector integration
 - Integration tests
 - Backward compatibility verification
 
 ### Phase 3: Documentation & Examples (Week 3)
+
 - API documentation
 - Migration guide
 - Example scenarios
 - E2E tests
 
 ### Phase 4: Release (Week 4)
+
 - Code review
 - Performance benchmarking
 - Security audit
@@ -929,6 +995,7 @@ http.get('/api/data', ({ request }) => {
 ## Success Criteria
 
 ### Functional
+
 - ✅ All 5 matching strategies work (equals, contains, startsWith, endsWith, regex)
 - ✅ ReDoS protection prevents unsafe patterns
 - ✅ Backward compatibility (existing scenarios unchanged)
@@ -936,12 +1003,14 @@ http.get('/api/data', ({ request }) => {
 - ✅ TypeScript types fully inferred
 
 ### Non-Functional
+
 - ✅ Regex matching < 1ms per request
 - ✅ No performance degradation for non-regex scenarios
 - ✅ Clear error messages for invalid patterns
 - ✅ Comprehensive documentation
 
 ### User Experience
+
 - ✅ Easy migration from MSW substring checks
 - ✅ Intuitive API (contains, startsWith, etc.)
 - ✅ Clear validation errors
@@ -979,11 +1048,13 @@ http.get('/api/data', ({ request }) => {
 All critical design questions have been answered and documented:
 
 **Decision 1: URL Format in Context**
+
 - ✅ **FINALIZED:** `context.url` contains pathname only (no query, no hash)
 - Query string reconstructed when matching: `pathname + '?' + querystring`
 - Rationale: Clean separation, query already parsed in `context.query`
 
 **Decision 2: Path Parameters (CRITICAL - Element of Least Surprise)**
+
 - ✅ **FINALIZED:** Match against RESOLVED URL (actual request like `/users/123`)
 - NOT against pattern (like `/users/:id`)
 - Rationale: Enables filtering by numeric IDs, file extensions, API versions
@@ -991,25 +1062,30 @@ All critical design questions have been answered and documented:
 - Reference: MSW's `req.url.pathname` behavior
 
 **Decision 3: Hash Fragments**
+
 - ✅ **FINALIZED:** Stripped before matching
 - Rationale: Hash never sent to server (HTTP reality)
 
 **Decision 4: URL Encoding**
+
 - ✅ **FINALIZED:** Support both decoded and encoded
 - Implementation: Try decoded first, fallback to encoded
 - Example: `/files/document%20name.pdf` matches both `contains: 'document name'` and `contains: '%20'`
 
 **Decision 5: Specificity Scoring**
+
 - ✅ **FINALIZED:** URL matching adds +1 to specificity score
 - Rationale: Consistent with body/headers/query scoring
 - Example: `{ url: /pattern/, headers: { 'x-tier': 'premium' } }` = 102 (100 base + 1 url + 1 header)
 
 **Decision 6: url Field Requirement**
+
 - ✅ **FINALIZED:** url field ALWAYS required when match.url is present
 - Workaround: Use `url: '*'` for global matching
 - Enforcement: Schema validation with clear error message
 
 **Decision 7: Native RegExp Support (ADR-0016)**
+
 - ✅ **FINALIZED:** Support BOTH native RegExp AND serialized form
 - Rationale: Better DX, MSW compatibility, still declarative
 - Documentation: ADR-0016 created, ADR-0013 updated
@@ -1020,6 +1096,7 @@ All critical design questions have been answered and documented:
 Matching against the actual request URL (resolved path params) instead of the pattern template is crucial for:
 
 **Use Case 1: Numeric ID Filtering**
+
 ```typescript
 {
   url: '/users/:id',
@@ -1028,6 +1105,7 @@ Matching against the actual request URL (resolved path params) instead of the pa
 ```
 
 **Use Case 2: File Extension Filtering**
+
 ```typescript
 {
   url: '/files/:filename',
@@ -1036,6 +1114,7 @@ Matching against the actual request URL (resolved path params) instead of the pa
 ```
 
 **Use Case 3: API Versioning**
+
 ```typescript
 {
   url: '/api/:version/users',
@@ -1044,6 +1123,7 @@ Matching against the actual request URL (resolved path params) instead of the pa
 ```
 
 **Architectural Rationale:**
+
 - Consistent with MSW's `req.url.pathname` (actual request URL)
 - Pattern matching already handled at routing level (MSW integration)
 - Enables powerful filtering capabilities beyond routing
@@ -1065,6 +1145,7 @@ URL matching has **two levels** of concern that must work together:
    - Regex: `match: { url: { regex: { source: '/api/v\\d+/' } } }`
 
 **CRITICAL:** These are SEPARATE concerns:
+
 - Routing determines IF a mock applies to a URL pattern
 - Matching adds ADDITIONAL conditions on top of routing
 
@@ -1107,12 +1188,14 @@ URL matching has **two levels** of concern that must work together:
 All design decisions finalized - ready for TDD implementation:
 
 **Phase 2.5.1: Schema & Type Updates (0.5 days, 12-15 tests)**
+
 - Add native RegExp support to url field in ScenaristMockSchema
 - Add url field to MatchCriteriaSchema (MatchValueSchema)
 - Schema validation tests (native RegExp, serialized form, validation errors)
 - Type system updates (url: RegExp | string | MatchValueObject)
 
 **Phase 2.5.2: URL Matching Logic (1.5 days, 45-50 tests)**
+
 - Implement `matchesUrl(actualUrl: string, matchValue: MatchValue): boolean`
 - Handle query string reconstruction (pathname + '?' + querystring)
 - Handle URL encoding (decoded first, fallback to encoded)
@@ -1120,17 +1203,20 @@ All design decisions finalized - ready for TDD implementation:
 - Unit tests for all matching strategies + edge cases
 
 **Phase 2.5.3: Integration Tests (1 day, 20-25 tests)**
+
 - Test all routing combinations (exact, path params, glob, wildcard)
 - Test resolved URL matching (actual request URL, not pattern)
 - Test specificity scoring (url match adds +1)
 - Test url field requirement enforcement
 
 **Phase 2.5.4: Example Apps & E2E (0.5 days, 27 tests)**
+
 - Express example: URL filtering scenarios (9 tests)
 - Next.js App Router: URL filtering scenarios (9 tests)
 - Next.js Pages Router: URL filtering scenarios (9 tests)
 
 **Phase 2.5.5: Documentation (0.5 days)**
+
 - Update core-functionality.md with URL matching examples
 - Update adapter READMEs with URL matching usage
 - Add migration guide for url field requirement
@@ -1169,11 +1255,13 @@ All design decisions finalized - ready for TDD implementation:
 ### Why Previously Deferred (Now Resolved)
 
 Phase 2.5 was initially deferred because:
+
 - ❌ Complex design decisions required (4 major questions)
 - ❌ Extensive testing needed (53-75 tests)
 - ❌ Two-level matching (routing + matching) unclear
 
 **What Changed:**
+
 - ✅ All 7 design decisions finalized (Session 3)
 - ✅ ADR-0016 created (native RegExp support)
 - ✅ Element of least surprise principle (resolved URL)
@@ -1200,6 +1288,7 @@ These can be considered in future iterations based on user feedback.
 
 **Duration:** ~3 hours
 **Completed:**
+
 - SerializedRegexSchema with ReDoS protection
 - StringMatchSchema with all 5 strategies
 - MatchCriteriaSchema (body, headers, query)
@@ -1207,6 +1296,7 @@ These can be considered in future iterations based on user feedback.
 - 6 validation behavior tests
 
 **Key Learnings:**
+
 - ReDoS protection via `redos-detector` package
 - Zod API: `error.issues` not `error.errors`
 - Schema tests should be minimal (documentation only)
@@ -1216,12 +1306,14 @@ These can be considered in future iterations based on user feedback.
 
 **Duration:** ~4 hours
 **Completed:**
+
 - String matching helpers (equals, contains, startsWith, endsWith)
 - Integration into matchesCriteria()
 - 53 unit tests + 12 integration tests
 - All 265 tests passing, 100% coverage
 
 **Key Learnings:**
+
 - Case sensitivity matters for headers
 - URL encoding requires special handling
 - Native RegExp vs serialized form trade-offs
@@ -1231,6 +1323,7 @@ These can be considered in future iterations based on user feedback.
 
 **Duration:** ~2 hours
 **Completed:**
+
 - ✅ Finalized all 7 design decisions
 - ✅ Created ADR-0016 (native RegExp support)
 - ✅ Updated ADR-0013 (cross-reference)
@@ -1238,6 +1331,7 @@ These can be considered in future iterations based on user feedback.
 - ✅ Created 5-phase implementation plan
 
 **Design Decisions Finalized:**
+
 1. URL format in context (pathname only)
 2. Path parameters (match against resolved URL)
 3. Hash fragments (stripped before matching)
@@ -1247,12 +1341,14 @@ These can be considered in future iterations based on user feedback.
 7. Native RegExp support (both forms supported)
 
 **Key Insights:**
+
 - Resolved URL (not pattern) is element of least surprise
 - Enables powerful filtering use cases (numeric IDs, extensions, versions)
 - Consistent with MSW's `req.url.pathname` behavior
 - Native RegExp simplifies implementation (no conversion needed)
 
 **Ready for Implementation:**
+
 - Phase 2.5.1: Schema & Type Updates (0.5 days)
 - All design questions answered
 - Test strategy defined (104-117 tests)

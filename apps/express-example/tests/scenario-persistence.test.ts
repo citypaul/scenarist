@@ -1,4 +1,4 @@
-import { SCENARIST_TEST_ID_HEADER } from '@scenarist/express-adapter';
+import { SCENARIST_TEST_ID_HEADER } from "@scenarist/express-adapter";
 import request from "supertest";
 import { afterAll, describe, expect, it } from "vitest";
 

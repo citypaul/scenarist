@@ -35,6 +35,7 @@ This example includes a [Bruno](https://www.usebruno.com/) API collection for ma
 Download Bruno for your platform:
 
 - **macOS**: Download from [usebruno.com](https://www.usebruno.com/downloads) or install via Homebrew:
+
   ```bash
   brew install bruno
   ```
@@ -42,6 +43,7 @@ Download Bruno for your platform:
 - **Windows**: Download the installer from [usebruno.com](https://www.usebruno.com/downloads)
 
 - **Linux**: Download the AppImage or use package managers:
+
   ```bash
   # Snap
   snap install bruno
@@ -53,6 +55,7 @@ Download Bruno for your platform:
 ### Opening the Collection
 
 1. Start the Express server:
+
    ```bash
    pnpm dev
    ```
@@ -62,6 +65,7 @@ Download Bruno for your platform:
 3. Click **"Open Collection"**
 
 4. Navigate to this directory and select the `bruno` folder:
+
    ```
    apps/express-example/bruno
    ```
@@ -73,6 +77,7 @@ Download Bruno for your platform:
 The Bruno collection includes:
 
 **Scenarios Folder** - Control which scenario is active:
+
 - Get Active Scenario
 - Set Scenario - Default
 - Set Scenario - Success
@@ -83,6 +88,7 @@ The Bruno collection includes:
 - Set Scenario - Mixed Results
 
 **API Folder** - Test the actual application endpoints:
+
 - GitHub - Get User
 - Weather - Get Current
 - Payment - Create Charge
@@ -148,11 +154,11 @@ yarn add @scenarist/express-adapter
 ### 2. Setup Scenarist
 
 ```typescript
-import { createScenarist } from '@scenarist/express-adapter';
+import { createScenarist } from "@scenarist/express-adapter";
 
 const scenarist = createScenarist({
   enabled: true,
-  strictMode: false  // Allow passthrough for unmocked requests
+  strictMode: false, // Allow passthrough for unmocked requests
 });
 
 // Register scenarios
@@ -172,22 +178,22 @@ scenarist.start();
 Import types from the Express adapter (not from core):
 
 ```typescript
-import type { ScenaristScenario } from '@scenarist/express-adapter';
+import type { ScenaristScenario } from "@scenarist/express-adapter";
 
 export const successScenario: ScenaristScenario = {
-  id: 'success',
-  name: 'Success Scenario',
-  description: 'All external API calls succeed',
+  id: "success",
+  name: "Success Scenario",
+  description: "All external API calls succeed",
   mocks: [
     {
-      method: 'GET',
-      url: 'https://api.github.com/users/:username',
+      method: "GET",
+      url: "https://api.github.com/users/:username",
       response: {
         status: 200,
         body: {
-          login: 'testuser',
+          login: "testuser",
           id: 123,
-          name: 'Test User',
+          name: "Test User",
           // ... more fields
         },
       },
@@ -204,7 +210,7 @@ Scenarios are serializable data (no functions!) that define how external APIs sh
 Your routes call real external APIs - Scenarist intercepts them:
 
 ```typescript
-router.get('/api/github/user/:username', async (req, res) => {
+router.get("/api/github/user/:username", async (req, res) => {
   const { username } = req.params;
 
   // This fetch is intercepted by MSW
@@ -220,7 +226,7 @@ router.get('/api/github/user/:username', async (req, res) => {
 Tests can switch scenarios dynamically and are isolated by test ID:
 
 ```typescript
-describe('GitHub API Integration', () => {
+describe("GitHub API Integration", () => {
   beforeAll(() => {
     scenarist.start();
   });
@@ -229,33 +235,33 @@ describe('GitHub API Integration', () => {
     scenarist.stop();
   });
 
-  it('should return user data when using success scenario', async () => {
+  it("should return user data when using success scenario", async () => {
     // Switch to success scenario for this test
     await request(app)
-      .post('/__scenario__')
-      .set('x-scenarist-test-id', 'test-1')
-      .send({ scenario: 'success' });
+      .post("/__scenario__")
+      .set("x-scenarist-test-id", "test-1")
+      .send({ scenario: "success" });
 
     // Make request
     const response = await request(app)
-      .get('/api/github/user/testuser')
-      .set('x-scenarist-test-id', 'test-1');
+      .get("/api/github/user/testuser")
+      .set("x-scenarist-test-id", "test-1");
 
     expect(response.status).toBe(200);
-    expect(response.body.login).toBe('testuser');
+    expect(response.body.login).toBe("testuser");
   });
 
-  it('should return 404 when using error scenario', async () => {
+  it("should return 404 when using error scenario", async () => {
     // Switch to error scenario for this test
     await request(app)
-      .post('/__scenario__')
-      .set('x-scenarist-test-id', 'test-2')
-      .send({ scenario: 'github-not-found' });
+      .post("/__scenario__")
+      .set("x-scenarist-test-id", "test-2")
+      .send({ scenario: "github-not-found" });
 
     // Make request
     const response = await request(app)
-      .get('/api/github/user/nonexistent')
-      .set('x-scenarist-test-id', 'test-2');
+      .get("/api/github/user/nonexistent")
+      .set("x-scenarist-test-id", "test-2");
 
     expect(response.status).toBe(404);
   });
@@ -269,35 +275,36 @@ describe('GitHub API Integration', () => {
 Once a scenario is set for a test ID, it persists across all subsequent requests with that test ID. This simulates real user journeys across multiple pages:
 
 ```typescript
-const testId = 'user-journey';
+const testId = "user-journey";
 
 // Set scenario once
 await request(app)
-  .post('/__scenario__')
-  .set('x-scenarist-test-id', testId)
-  .send({ scenario: 'success' });
+  .post("/__scenario__")
+  .set("x-scenarist-test-id", testId)
+  .send({ scenario: "success" });
 
 // Page 1: User profile
 await request(app)
-  .get('/api/github/user/john')
-  .set('x-scenarist-test-id', testId);
+  .get("/api/github/user/john")
+  .set("x-scenarist-test-id", testId);
 // => Uses success scenario
 
 // Page 2: Weather dashboard
 await request(app)
-  .get('/api/weather/london')
-  .set('x-scenarist-test-id', testId);
+  .get("/api/weather/london")
+  .set("x-scenarist-test-id", testId);
 // => Still uses success scenario
 
 // Page 3: Payment
 await request(app)
-  .post('/api/payment')
-  .set('x-scenarist-test-id', testId)
+  .post("/api/payment")
+  .set("x-scenarist-test-id", testId)
   .send({ amount: 1000 });
 // => Still uses success scenario
 ```
 
 The scenario remains active until explicitly changed or cleared. This enables:
+
 - **Realistic user journey testing** - Multiple page navigations with consistent backend state
 - **Complex flow testing** - Multi-step processes (browse → add to cart → checkout → confirm)
 - **Consistent behavior** - Same scenario across all requests in a test
@@ -322,15 +329,15 @@ Each test ID has its own scenario state. Tests run in parallel don't affect each
 ```typescript
 // Test 1 uses success scenario
 await request(app)
-  .post('/__scenario__')
-  .set('x-scenarist-test-id', 'test-1')
-  .send({ scenario: 'success' });
+  .post("/__scenario__")
+  .set("x-scenarist-test-id", "test-1")
+  .send({ scenario: "success" });
 
 // Test 2 uses error scenario - completely independent!
 await request(app)
-  .post('/__scenario__')
-  .set('x-scenarist-test-id', 'test-2')
-  .send({ scenario: 'error' });
+  .post("/__scenario__")
+  .set("x-scenarist-test-id", "test-2")
+  .send({ scenario: "error" });
 ```
 
 ### Default Scenario Fallback
@@ -340,20 +347,20 @@ If a scenario doesn't define a mock for a specific endpoint, it automatically fa
 ```typescript
 // weather-error scenario only defines weather API mocks
 await request(app)
-  .post('/__scenario__')
-  .set('x-scenarist-test-id', 'partial-test')
-  .send({ scenario: 'weather-error' });
+  .post("/__scenario__")
+  .set("x-scenarist-test-id", "partial-test")
+  .send({ scenario: "weather-error" });
 
 // Weather API uses weather-error scenario (returns 500)
 await request(app)
-  .get('/api/weather/tokyo')
-  .set('x-scenarist-test-id', 'partial-test');
+  .get("/api/weather/tokyo")
+  .set("x-scenarist-test-id", "partial-test");
 // => 500 error
 
 // GitHub API falls back to default scenario (returns success)
 await request(app)
-  .get('/api/github/user/testuser')
-  .set('x-scenarist-test-id', 'partial-test');
+  .get("/api/github/user/testuser")
+  .set("x-scenarist-test-id", "partial-test");
 // => 200 success with default data
 ```
 

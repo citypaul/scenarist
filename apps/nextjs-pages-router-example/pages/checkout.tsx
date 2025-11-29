@@ -41,7 +41,7 @@ export default function CheckoutPage() {
     postcode: "",
   });
   const [shippingResult, setShippingResult] = useState<ShippingResult | null>(
-    null
+    null,
   );
   const [orderResult, setOrderResult] = useState<OrderResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
@@ -90,7 +90,10 @@ export default function CheckoutPage() {
         style={{ marginBottom: "30px" }}
       >
         <div style={{ marginBottom: "15px" }}>
-          <label htmlFor="country" style={{ display: "block", marginBottom: "5px" }}>
+          <label
+            htmlFor="country"
+            style={{ display: "block", marginBottom: "5px" }}
+          >
             Country
           </label>
           <select
@@ -109,7 +112,10 @@ export default function CheckoutPage() {
         </div>
 
         <div style={{ marginBottom: "15px" }}>
-          <label htmlFor="address" style={{ display: "block", marginBottom: "5px" }}>
+          <label
+            htmlFor="address"
+            style={{ display: "block", marginBottom: "5px" }}
+          >
             Address
           </label>
           <input
@@ -124,22 +130,26 @@ export default function CheckoutPage() {
         </div>
 
         <div style={{ marginBottom: "15px" }}>
-          <label htmlFor="city" style={{ display: "block", marginBottom: "5px" }}>
+          <label
+            htmlFor="city"
+            style={{ display: "block", marginBottom: "5px" }}
+          >
             City
           </label>
           <input
             id="city"
             type="text"
             value={formData.city}
-            onChange={(e) =>
-              setFormData({ ...formData, city: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
             style={{ width: "100%", padding: "8px" }}
           />
         </div>
 
         <div style={{ marginBottom: "15px" }}>
-          <label htmlFor="postcode" style={{ display: "block", marginBottom: "5px" }}>
+          <label
+            htmlFor="postcode"
+            style={{ display: "block", marginBottom: "5px" }}
+          >
             Postcode
           </label>
           <input
@@ -165,7 +175,8 @@ export default function CheckoutPage() {
       {shippingResult && (
         <div style={{ marginBottom: "30px" }}>
           <div role="status" style={{ marginBottom: "15px" }}>
-            <strong>Shipping Cost:</strong> £{shippingResult.shippingCost.toFixed(2)}
+            <strong>Shipping Cost:</strong> £
+            {shippingResult.shippingCost.toFixed(2)}
           </div>
 
           <button

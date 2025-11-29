@@ -1,16 +1,20 @@
-import type { Request } from 'express';
-import { SCENARIST_TEST_ID_HEADER, type RequestContext, type ScenaristConfig } from '@scenarist/core';
+import type { Request } from "express";
+import {
+  SCENARIST_TEST_ID_HEADER,
+  type RequestContext,
+  type ScenaristConfig,
+} from "@scenarist/core";
 
 export class ExpressRequestContext implements RequestContext {
   constructor(
     private readonly req: Request,
-    private readonly config: ScenaristConfig
+    private readonly config: ScenaristConfig,
   ) {}
 
   getTestId(): string {
     const header = this.req.headers[SCENARIST_TEST_ID_HEADER];
 
-    if (typeof header === 'string') {
+    if (typeof header === "string") {
       return header;
     }
 

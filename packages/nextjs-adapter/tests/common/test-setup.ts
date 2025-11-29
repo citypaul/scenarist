@@ -6,7 +6,7 @@ import {
   type ScenarioDefinition,
   type ScenarioManager,
   type ScenaristConfig,
-} from '@scenarist/core';
+} from "@scenarist/core";
 
 /**
  * Create a default scenario for testing.
@@ -14,9 +14,9 @@ import {
  * Reusable across all adapter test suites to ensure consistency.
  */
 export const createDefaultScenario = (): ScenarioDefinition => ({
-  id: 'default',
-  name: 'Default Scenario',
-  description: 'Default test scenario',
+  id: "default",
+  name: "Default Scenario",
+  description: "Default test scenario",
   mocks: [],
 });
 
@@ -26,9 +26,9 @@ export const createDefaultScenario = (): ScenarioDefinition => ({
  * Used to test scenario switching functionality.
  */
 export const createPremiumScenario = (): ScenarioDefinition => ({
-  id: 'premium',
-  name: 'Premium Scenario',
-  description: 'Premium test scenario',
+  id: "premium",
+  name: "Premium Scenario",
+  description: "Premium test scenario",
   mocks: [],
 });
 
@@ -70,7 +70,7 @@ export type EndpointTestSetup<T> = {
  * ```
  */
 export const createEndpointTestSetup = <T>(
-  createHandler: (manager: ScenarioManager, config: ScenaristConfig) => T
+  createHandler: (manager: ScenarioManager, config: ScenaristConfig) => T,
 ): EndpointTestSetup<T> => {
   const defaultScenario = createDefaultScenario();
   const premiumScenario = createPremiumScenario();

@@ -67,6 +67,7 @@ When creating new investigations, include:
 ### Capturing Server Logs
 
 For Next.js Pages Router:
+
 ```bash
 pnpm dev > /tmp/nextjs-server.log 2>&1 &
 pnpm exec playwright test <test-file>
@@ -77,18 +78,21 @@ pkill -f "pnpm dev"
 ### Common Debug Patterns
 
 **Add logging to packages:**
+
 ```typescript
-console.log('[Component] Description:', value);
-console.log('[Component] Object:', JSON.stringify(obj, null, 2));
+console.log("[Component] Description:", value);
+console.log("[Component] Object:", JSON.stringify(obj, null, 2));
 ```
 
 **Check test isolation:**
+
 ```bash
 pnpm exec playwright test <test-file> --workers=1  # Serial execution
 pnpm exec playwright test <test-file> --workers=4  # Parallel execution
 ```
 
 **Compare manual vs automated:**
+
 ```bash
 # Manual curl (usually works)
 curl -H "x-scenarist-test-id: test-123" "http://localhost:3000/path"

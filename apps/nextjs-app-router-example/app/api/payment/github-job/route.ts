@@ -8,9 +8,9 @@
  * (pending → processing → complete) then repeats the last response.
  */
 
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
 
 type JobStatusResponse = {
   readonly jobId: string;
@@ -21,10 +21,10 @@ type JobStatusResponse = {
 export async function GET(request: Request) {
   try {
     // Proxy to json-server (MSW will intercept on server-side)
-    const response = await fetch('http://localhost:3001/github/jobs/123', {
-      method: 'GET',
+    const response = await fetch("http://localhost:3001/github/jobs/123", {
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...getScenaristHeaders(request), // ✅ Pass test ID to MSW
       },
     });
@@ -38,9 +38,10 @@ export async function GET(request: Request) {
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'Failed to check job status',
+        error:
+          error instanceof Error ? error.message : "Failed to check job status",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

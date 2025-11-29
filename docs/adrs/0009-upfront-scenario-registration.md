@@ -39,6 +39,7 @@ This imperative pattern was inherited from typical mock library patterns (like M
 ## Problem
 
 **How can we provide compile-time knowledge of all available scenarios for type safety (ADR-0008) while:**
+
 1. Maintaining simplicity and ease of use
 2. Keeping setup code readable and maintainable
 3. Ensuring scenarios are always available when needed
@@ -46,6 +47,7 @@ This imperative pattern was inherited from typical mock library patterns (like M
 5. Remaining consistent across all adapters (Express, Next.js, etc.)
 
 **Requirements:**
+
 - ✅ All scenarios known at adapter creation time (for TypeScript inference)
 - ✅ Single initialization step (no two-phase setup)
 - ✅ Scenarios defined in one place (single source of truth)
@@ -89,9 +91,10 @@ const scenarist = createScenarist({
 4. TypeScript infers scenario IDs from object keys (ADR-0008)
 
 **Express Adapter Implementation:**
+
 ```typescript
 export const createScenarist = <T extends ScenaristScenarios>(
-  options: CreateScenaristOptions<T>
+  options: CreateScenaristOptions<T>,
 ): Scenarist<T> => {
   const manager = createScenarioManager({ registry, store });
 
@@ -102,9 +105,9 @@ export const createScenarist = <T extends ScenaristScenarios>(
 
   // Set default scenario for fallback
   manager.switchScenario(
-    options.defaultTestId ?? 'default-test',
+    options.defaultTestId ?? "default-test",
     options.defaultScenarioId,
-    undefined
+    undefined,
   );
 
   return {
@@ -116,9 +119,10 @@ export const createScenarist = <T extends ScenaristScenarios>(
 ```
 
 **Next.js Adapter Implementation:**
+
 ```typescript
 const createScenaristBase = <T extends ScenaristScenarios>(
-  options: CreateScenaristOptions<T>
+  options: CreateScenaristOptions<T>,
 ): ScenaristBase<T> => {
   const manager = createScenarioManager({ registry, store });
 
@@ -128,9 +132,9 @@ const createScenaristBase = <T extends ScenaristScenarios>(
   });
 
   manager.switchScenario(
-    options.defaultTestId ?? 'default-test',
+    options.defaultTestId ?? "default-test",
     options.defaultScenarioId,
-    undefined
+    undefined,
   );
 
   return { manager, config };
@@ -140,12 +144,13 @@ const createScenaristBase = <T extends ScenaristScenarios>(
 ### API Surface Changes
 
 **Before (v1.x):**
+
 ```typescript
 type Scenarist = {
   middleware: RequestHandler;
   scenarioEndpoints: Router;
   registerScenario(definition: ScenaristScenario): void; // ← Removed
-  unregisterScenario(id: string): void;                   // ← Removed
+  unregisterScenario(id: string): void; // ← Removed
 };
 
 type CreateScenaristOptions = {
@@ -156,6 +161,7 @@ type CreateScenaristOptions = {
 ```
 
 **After (v2.x):**
+
 ```typescript
 type Scenarist<T extends ScenaristScenarios> = {
   middleware: RequestHandler;
@@ -166,8 +172,8 @@ type Scenarist<T extends ScenaristScenarios> = {
 
 type CreateScenaristOptions<T extends ScenaristScenarios> = {
   enabled: boolean;
-  scenarios: T;                      // ← New: All scenarios upfront
-  defaultScenarioId: string;         // ← Changed: Reference instead of object
+  scenarios: T; // ← New: All scenarios upfront
+  defaultScenarioId: string; // ← Changed: Reference instead of object
   // ...
 };
 ```
@@ -197,8 +203,9 @@ Without upfront registration, TypeScript couldn't infer scenario IDs because the
 ### Alternative 1: Keep Imperative Registration, Add Type Parameter
 
 **Pattern:**
+
 ```typescript
-const scenarist = createScenarist<'premium' | 'standard'>({
+const scenarist = createScenarist<"premium" | "standard">({
   enabled: true,
   defaultScenario: defaultScenario,
 });
@@ -208,10 +215,12 @@ scenarist.registerScenario(standardScenario);
 ```
 
 **Pros:**
+
 - ✅ Backward compatible
 - ✅ Gradual type safety adoption
 
 **Cons:**
+
 - ❌ Manual type parameter (violates DRY - IDs defined in two places)
 - ❌ Type parameter can drift from actual registered scenarios
 - ❌ Still two-phase initialization
@@ -222,6 +231,7 @@ scenarist.registerScenario(standardScenario);
 ### Alternative 2: Hybrid Approach (Both Patterns Supported)
 
 **Pattern:**
+
 ```typescript
 // Option A: Upfront (new)
 const scenarist = createScenarist({ scenarios });
@@ -232,10 +242,12 @@ scenarist.registerScenario(otherScenario);
 ```
 
 **Pros:**
+
 - ✅ Backward compatible
 - ✅ Gradual migration path
 
 **Cons:**
+
 - ❌ Two ways to do the same thing (confusing)
 - ❌ Maintenance burden (support both patterns)
 - ❌ Type inference only works for Option A
@@ -246,6 +258,7 @@ scenarist.registerScenario(otherScenario);
 ### Alternative 3: Registration Function (Fluent Builder)
 
 **Pattern:**
+
 ```typescript
 const scenarist = createScenarist({ enabled: true })
   .withScenario(defaultScenario)
@@ -255,10 +268,12 @@ const scenarist = createScenarist({ enabled: true })
 ```
 
 **Pros:**
+
 - ✅ Fluent API style
 - ✅ Method chaining
 
 **Cons:**
+
 - ❌ TypeScript inference doesn't accumulate across chained calls
 - ❌ Still imperative (order-dependent)
 - ❌ More complex implementation (builder pattern)
@@ -269,6 +284,7 @@ const scenarist = createScenarist({ enabled: true })
 ### Alternative 4: Two-Step Explicit Registration
 
 **Pattern:**
+
 ```typescript
 const scenarios = {
   premium: premiumScenario,
@@ -280,10 +296,12 @@ scenarist.registerScenarios(scenarios); // Single call with object
 ```
 
 **Pros:**
+
 - ✅ Could support type inference
 - ✅ Single registration call (not multiple)
 
 **Cons:**
+
 - ❌ Still two-phase initialization
 - ❌ Scenarios could change between creation and registration
 - ❌ Need to track "initialized" state
@@ -298,23 +316,25 @@ scenarist.registerScenarios(scenarios); // Single call with object
 ✅ **Type inference enabled** - Scenarios object enables TypeScript to infer IDs (ADR-0008)
 
 ✅ **Single initialization** - One `createScenarist()` call, no follow-up steps:
-   ```typescript
-   const scenarist = createScenarist({ scenarios });
-   // Done! All scenarios available immediately.
-   ```
+
+```typescript
+const scenarist = createScenarist({ scenarios });
+// Done! All scenarios available immediately.
+```
 
 ✅ **Order-independent** - Object iteration order doesn't matter for functionality
 
 ✅ **Single source of truth** - All scenarios defined in one place:
-   ```typescript
-   // Easy to see all available scenarios at a glance
-   const scenarios = {
-     default: { ... },
-     premium: { ... },
-     standard: { ... },
-     admin: { ... },
-   } as const satisfies ScenaristScenarios;
-   ```
+
+```typescript
+// Easy to see all available scenarios at a glance
+const scenarios = {
+  default: { ... },
+  premium: { ... },
+  standard: { ... },
+  admin: { ... },
+} as const satisfies ScenaristScenarios;
+```
 
 ✅ **Easy to audit** - Can see all scenarios in scenarios object
 
@@ -323,79 +343,88 @@ scenarist.registerScenarios(scenarios); // Single call with object
 ✅ **Consistent across adapters** - Express, Next.js, and future adapters all use same pattern
 
 ✅ **Better testability** - Single setup step makes tests simpler:
-   ```typescript
-   const scenarist = createScenarist({
-     enabled: true,
-     scenarios: testScenarios,
-      });
-   // All test scenarios available immediately
-   ```
+
+```typescript
+const scenarist = createScenarist({
+  enabled: true,
+  scenarios: testScenarios,
+});
+// All test scenarios available immediately
+```
 
 ✅ **Self-documenting** - Scenarios object serves as documentation of available scenarios
 
 ### Negative
 
 ❌ **Breaking change** - Existing code must migrate:
-   ```typescript
-   // Before:
-   const scenarist = createScenarist({ defaultScenario: ... });
-   scenarist.registerScenario(scenario1);
-   scenarist.registerScenario(scenario2);
 
-   // After:
-   const scenarios = { default: ..., scenario1: ..., scenario2: ... };
-   const scenarist = createScenarist({ scenarios, defaultScenarioId: 'default' });
-   ```
+```typescript
+// Before:
+const scenarist = createScenarist({ defaultScenario: ... });
+scenarist.registerScenario(scenario1);
+scenarist.registerScenario(scenario2);
+
+// After:
+const scenarios = { default: ..., scenario1: ..., scenario2: ... };
+const scenarist = createScenarist({ scenarios, defaultScenarioId: 'default' });
+```
 
 ❌ **Dynamic registration harder** - Can't add scenarios at runtime:
-   ```typescript
-   // Before (dynamic):
-   if (condition) {
-     scenarist.registerScenario(specialScenario);
-   }
 
-   // After (requires object construction):
-   const scenarios = {
-     default: defaultScenario,
-     ...(condition ? { special: specialScenario } : {}),
-   };
-   ```
-   **Note**: Dynamic scenario registration is rare and can be handled with conditional object spreading.
+```typescript
+// Before (dynamic):
+if (condition) {
+  scenarist.registerScenario(specialScenario);
+}
+
+// After (requires object construction):
+const scenarios = {
+  default: defaultScenario,
+  ...(condition ? { special: specialScenario } : {}),
+};
+```
+
+**Note**: Dynamic scenario registration is rare and can be handled with conditional object spreading.
 
 ❌ **Large scenario files** - All scenarios in one object could make file large:
-   ```typescript
-   // scenarios.ts could become large with many scenarios
-   export const scenarios = {
-     default: { ... },    // 50 lines
-     premium: { ... },    // 50 lines
-     standard: { ... },   // 50 lines
-     // ... 10 more scenarios
-   } as const;
-   ```
-   **Mitigation**: Extract scenario definitions to separate files, import and combine:
-   ```typescript
-   // scenarios/default.ts
-   export const defaultScenario: ScenaristScenario = { ... };
 
-   // scenarios/index.ts
-   import { defaultScenario } from './default';
-   import { premiumScenario } from './premium';
+```typescript
+// scenarios.ts could become large with many scenarios
+export const scenarios = {
+  default: { ... },    // 50 lines
+  premium: { ... },    // 50 lines
+  standard: { ... },   // 50 lines
+  // ... 10 more scenarios
+} as const;
+```
 
-   export const scenarios = {
-     default: defaultScenario,
-     premium: premiumScenario,
-   } as const satisfies ScenaristScenarios;
-   ```
+**Mitigation**: Extract scenario definitions to separate files, import and combine:
+
+```typescript
+// scenarios/default.ts
+export const defaultScenario: ScenaristScenario = { ... };
+
+// scenarios/index.ts
+import { defaultScenario } from './default';
+import { premiumScenario } from './premium';
+
+export const scenarios = {
+  default: defaultScenario,
+  premium: premiumScenario,
+} as const satisfies ScenaristScenarios;
+```
 
 ❌ **Scenario removal** - Can't dynamically unregister scenarios:
-   ```typescript
-   // Before:
-   scenarist.unregisterScenario('old-scenario');
 
-   // After:
-   // Must recreate adapter with new scenarios object (rare use case)
-   ```
-   **Note**: Dynamic scenario removal is extremely rare in practice. Most scenarios are static for the lifetime of the application.
+```typescript
+// Before:
+scenarist.unregisterScenario("old-scenario");
+
+// After:
+// Must recreate adapter with new scenarios object (rare use case)
+```
+
+**Note**: Dynamic scenario removal is extremely rare in practice. Most scenarios are static for the lifetime of the application.
 
 ### Neutral
 
@@ -412,6 +441,7 @@ scenarist.registerScenarios(scenarios); // Single call with object
 **Step 1: Collect all scenarios into object**
 
 Before:
+
 ```typescript
 const defaultScenario: ScenaristScenario = { ... };
 const premiumScenario: ScenaristScenario = { ... };
@@ -419,6 +449,7 @@ const standardScenario: ScenaristScenario = { ... };
 ```
 
 After:
+
 ```typescript
 const scenarios = {
   default: { id: 'default', ... },
@@ -430,6 +461,7 @@ const scenarios = {
 **Step 2: Update adapter initialization**
 
 Before:
+
 ```typescript
 const scenarist = createScenarist({
   enabled: true,
@@ -441,6 +473,7 @@ scenarist.registerScenario(standardScenario);
 ```
 
 After:
+
 ```typescript
 const scenarist = createScenarist({
   enabled: true,
@@ -470,11 +503,12 @@ src/
 ```
 
 **scenarios/index.ts:**
+
 ```typescript
-import { defaultScenario } from './default';
-import { premiumUserScenario } from './premium-user';
-import { standardUserScenario } from './standard-user';
-import { adminUserScenario } from './admin-user';
+import { defaultScenario } from "./default";
+import { premiumUserScenario } from "./premium-user";
+import { standardUserScenario } from "./standard-user";
+import { adminUserScenario } from "./admin-user";
 
 export const scenarios = {
   default: defaultScenario,
@@ -485,8 +519,9 @@ export const scenarios = {
 ```
 
 **server.ts:**
+
 ```typescript
-import { scenarios } from './scenarios';
+import { scenarios } from "./scenarios";
 
 const scenarist = createScenarist({
   enabled: true,
@@ -505,9 +540,10 @@ All adapters must:
 5. Set default scenario using `defaultScenarioId` reference
 
 **Example (Express adapter):**
+
 ```typescript
 export const createScenarist = <T extends ScenaristScenarios>(
-  options: CreateScenaristOptions<T>
+  options: CreateScenaristOptions<T>,
 ): Scenarist<T> => {
   // Register all scenarios upfront
   Object.values(options.scenarios).forEach((scenario) => {
@@ -518,7 +554,7 @@ export const createScenarist = <T extends ScenaristScenarios>(
   manager.switchScenario(
     config.defaultTestId,
     options.defaultScenarioId,
-    undefined
+    undefined,
   );
 
   // Don't expose registration methods
@@ -543,10 +579,10 @@ For development, could support watching scenarios file and recreating adapter:
 
 ```typescript
 // Development mode only
-if (process.env.NODE_ENV === 'development') {
-  watch('./scenarios.ts', () => {
+if (process.env.NODE_ENV === "development") {
+  watch("./scenarios.ts", () => {
     // Re-import scenarios
-    const newScenarios = await import('./scenarios.ts?t=' + Date.now());
+    const newScenarios = await import("./scenarios.ts?t=" + Date.now());
     // Recreate adapter with new scenarios
     scenarist = createScenarist({ scenarios: newScenarios.scenarios });
   });

@@ -1,92 +1,92 @@
-import { describe, it, expect } from 'vitest';
-import { InMemoryScenarioRegistry } from '../src/adapters/in-memory-registry.js';
-import type { ScenaristScenario } from '../src/types/index.js';
+import { describe, it, expect } from "vitest";
+import { InMemoryScenarioRegistry } from "../src/adapters/in-memory-registry.js";
+import type { ScenaristScenario } from "../src/types/index.js";
 
 const createTestScenaristScenario = (
   id: string,
-  name: string = 'Test Scenario',
+  name: string = "Test Scenario",
 ): ScenaristScenario => ({
   id,
   name,
   description: `Description for ${name}`,
   mocks: [
     {
-      method: 'GET',
-      url: 'https://api.example.com/test',
+      method: "GET",
+      url: "https://api.example.com/test",
       response: {
         status: 200,
-        body: { message: 'mocked' },
+        body: { message: "mocked" },
       },
     },
   ],
 });
 
-describe('InMemoryScenarioRegistry', () => {
-  describe('register', () => {
-    it('should register a new scenario definition', () => {
+describe("InMemoryScenarioRegistry", () => {
+  describe("register", () => {
+    it("should register a new scenario definition", () => {
       const registry = new InMemoryScenarioRegistry();
-      const definition = createTestScenaristScenario('test-1', 'Test 1');
+      const definition = createTestScenaristScenario("test-1", "Test 1");
 
       registry.register(definition);
 
-      expect(registry.has('test-1')).toBe(true);
-      expect(registry.get('test-1')).toEqual(definition);
+      expect(registry.has("test-1")).toBe(true);
+      expect(registry.get("test-1")).toEqual(definition);
     });
 
-    it('should overwrite existing scenario with same ID', () => {
+    it("should overwrite existing scenario with same ID", () => {
       const registry = new InMemoryScenarioRegistry();
-      const definition1 = createTestScenaristScenario('test', 'First');
-      const definition2 = createTestScenaristScenario('test', 'Second');
+      const definition1 = createTestScenaristScenario("test", "First");
+      const definition2 = createTestScenaristScenario("test", "Second");
 
       registry.register(definition1);
       registry.register(definition2);
 
-      const retrieved = registry.get('test');
-      expect(retrieved?.name).toBe('Second');
+      const retrieved = registry.get("test");
+      expect(retrieved?.name).toBe("Second");
     });
   });
 
-  describe('get', () => {
-    it('should retrieve registered scenario by ID', () => {
+  describe("get", () => {
+    it("should retrieve registered scenario by ID", () => {
       const registry = new InMemoryScenarioRegistry();
-      const definition = createTestScenaristScenario('test', 'Test');
+      const definition = createTestScenaristScenario("test", "Test");
       registry.register(definition);
 
-      const retrieved = registry.get('test');
+      const retrieved = registry.get("test");
 
       expect(retrieved).toEqual(definition);
     });
 
-    it('should return undefined for non-existent scenario', () => {
+    it("should return undefined for non-existent scenario", () => {
       const registry = new InMemoryScenarioRegistry();
 
-      const retrieved = registry.get('non-existent');
+      const retrieved = registry.get("non-existent");
 
       expect(retrieved).toBeUndefined();
     });
   });
 
-  describe('has', () => {
-    it('should return true for registered scenario', () => {
+  describe("has", () => {
+    it("should return true for registered scenario", () => {
       const registry = new InMemoryScenarioRegistry();
-      const definition = createTestScenaristScenario('test', 'Test');
+      const definition = createTestScenaristScenario("test", "Test");
       registry.register(definition);
 
-      expect(registry.has('test')).toBe(true);
+      expect(registry.has("test")).toBe(true);
     });
 
-    it('should return false for non-existent scenario', () => {
+    it("should return false for non-existent scenario", () => {
       const registry = new InMemoryScenarioRegistry();
 
-      expect(registry.has('non-existent')).toBe(false);
+      expect(registry.has("non-existent")).toBe(false);
     });
   });
 
-  describe('list', () => {
-    it('should list all registered scenarios', () => {
+  describe("list", () => {
+    it("should list all registered scenarios", () => {
       const registry = new InMemoryScenarioRegistry();
-      const def1 = createTestScenaristScenario('scenario-1', 'Scenario 1');
-      const def2 = createTestScenaristScenario('scenario-2', 'Scenario 2');
+      const def1 = createTestScenaristScenario("scenario-1", "Scenario 1");
+      const def2 = createTestScenaristScenario("scenario-2", "Scenario 2");
 
       registry.register(def1);
       registry.register(def2);
@@ -98,7 +98,7 @@ describe('InMemoryScenarioRegistry', () => {
       expect(scenarios).toContainEqual(def2);
     });
 
-    it('should return empty array when no scenarios registered', () => {
+    it("should return empty array when no scenarios registered", () => {
       const registry = new InMemoryScenarioRegistry();
 
       const scenarios = registry.list();
@@ -106,9 +106,9 @@ describe('InMemoryScenarioRegistry', () => {
       expect(scenarios).toEqual([]);
     });
 
-    it('should return immutable array', () => {
+    it("should return immutable array", () => {
       const registry = new InMemoryScenarioRegistry();
-      const definition = createTestScenaristScenario('test', 'Test');
+      const definition = createTestScenaristScenario("test", "Test");
       registry.register(definition);
 
       const scenarios = registry.list();
@@ -118,36 +118,36 @@ describe('InMemoryScenarioRegistry', () => {
     });
   });
 
-  describe('unregister', () => {
-    it('should remove scenario from registry', () => {
+  describe("unregister", () => {
+    it("should remove scenario from registry", () => {
       const registry = new InMemoryScenarioRegistry();
-      const definition = createTestScenaristScenario('test', 'Test');
+      const definition = createTestScenaristScenario("test", "Test");
       registry.register(definition);
 
-      registry.unregister('test');
+      registry.unregister("test");
 
-      expect(registry.has('test')).toBe(false);
-      expect(registry.get('test')).toBeUndefined();
+      expect(registry.has("test")).toBe(false);
+      expect(registry.get("test")).toBeUndefined();
     });
 
-    it('should not throw when unregistering non-existent scenario', () => {
+    it("should not throw when unregistering non-existent scenario", () => {
       const registry = new InMemoryScenarioRegistry();
 
-      expect(() => registry.unregister('non-existent')).not.toThrow();
+      expect(() => registry.unregister("non-existent")).not.toThrow();
     });
 
-    it('should not affect other registered scenarios', () => {
+    it("should not affect other registered scenarios", () => {
       const registry = new InMemoryScenarioRegistry();
-      const def1 = createTestScenaristScenario('test-1', 'Test 1');
-      const def2 = createTestScenaristScenario('test-2', 'Test 2');
+      const def1 = createTestScenaristScenario("test-1", "Test 1");
+      const def2 = createTestScenaristScenario("test-2", "Test 2");
 
       registry.register(def1);
       registry.register(def2);
 
-      registry.unregister('test-1');
+      registry.unregister("test-1");
 
-      expect(registry.has('test-1')).toBe(false);
-      expect(registry.has('test-2')).toBe(true);
+      expect(registry.has("test-1")).toBe(false);
+      expect(registry.has("test-2")).toBe(true);
     });
   });
 });

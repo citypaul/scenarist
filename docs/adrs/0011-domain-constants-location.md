@@ -20,6 +20,7 @@ const DEFAULT_MOCK_ENABLED = true; // Line 33
 ```
 
 All three occurrences:
+
 1. Have identical names (`DEFAULT_MOCK_ENABLED`)
 2. Have identical values (`true`)
 3. Serve identical purposes (default when `x-mock-enabled` header absent)
@@ -92,22 +93,22 @@ export const CONFIG_DEFAULTS = {
   /**
    * Default test ID when x-scenarist-test-id header is absent.
    */
-  TEST_ID: 'default-test',
+  TEST_ID: "default-test",
 
   /**
    * HTTP header names for test isolation and control.
    */
   HEADERS: {
-    TEST_ID: 'x-scenarist-test-id',
-    MOCK_ENABLED: 'x-mock-enabled',
+    TEST_ID: "x-scenarist-test-id",
+    MOCK_ENABLED: "x-mock-enabled",
   },
 
   /**
    * HTTP endpoint paths for scenario control.
    */
   ENDPOINTS: {
-    SET_SCENARIO: '/__scenario__',
-    GET_SCENARIO: '/__scenario__',
+    SET_SCENARIO: "/__scenario__",
+    GET_SCENARIO: "/__scenario__",
   },
 
   /**
@@ -122,7 +123,7 @@ export const CONFIG_DEFAULTS = {
 
 ```typescript
 // packages/express-adapter/src/context/express-request-context.ts
-import { CONFIG_DEFAULTS } from '@scenarist/core';
+import { CONFIG_DEFAULTS } from "@scenarist/core";
 
 export class ExpressRequestContext implements RequestContext {
   isMockEnabled(): boolean {
@@ -133,14 +134,14 @@ export class ExpressRequestContext implements RequestContext {
       return CONFIG_DEFAULTS.MOCK_ENABLED; // ✅ Use core default
     }
 
-    return header === 'true';
+    return header === "true";
   }
 }
 ```
 
 ```typescript
 // packages/nextjs-adapter/src/pages/context.ts
-import { CONFIG_DEFAULTS } from '@scenarist/core';
+import { CONFIG_DEFAULTS } from "@scenarist/core";
 
 export class PagesRequestContext implements RequestContext {
   isMockEnabled(): boolean {
@@ -151,14 +152,14 @@ export class PagesRequestContext implements RequestContext {
       return CONFIG_DEFAULTS.MOCK_ENABLED; // ✅ Use core default
     }
 
-    return header === 'true';
+    return header === "true";
   }
 }
 ```
 
 ```typescript
 // packages/nextjs-adapter/src/app/context.ts
-import { CONFIG_DEFAULTS } from '@scenarist/core';
+import { CONFIG_DEFAULTS } from "@scenarist/core";
 
 export class AppRequestContext implements RequestContext {
   isMockEnabled(): boolean {
@@ -169,7 +170,7 @@ export class AppRequestContext implements RequestContext {
       return CONFIG_DEFAULTS.MOCK_ENABLED; // ✅ Use core default
     }
 
-    return header === 'true';
+    return header === "true";
   }
 }
 ```
@@ -184,6 +185,7 @@ export class AppRequestContext implements RequestContext {
 4. **Should be consistent** - Different adapters having different defaults would be confusing
 
 **Contrast with adapter-specific logic:**
+
 - How to read headers (Express vs Next.js API) → **Adapter concern**
 - Whether mocks are enabled by default → **Domain concern**
 
@@ -191,13 +193,14 @@ export class AppRequestContext implements RequestContext {
 
 ```typescript
 // packages/core/src/index.ts
-export { CONFIG_DEFAULTS } from './types/config.js';
-export type { ScenaristConfig, ScenaristConfigInput } from './types/config.js';
+export { CONFIG_DEFAULTS } from "./types/config.js";
+export type { ScenaristConfig, ScenaristConfigInput } from "./types/config.js";
 ```
 
 All adapters can import:
+
 ```typescript
-import { CONFIG_DEFAULTS } from '@scenarist/core';
+import { CONFIG_DEFAULTS } from "@scenarist/core";
 ```
 
 ## Rationale
@@ -217,7 +220,7 @@ import { CONFIG_DEFAULTS } from '@scenarist/core';
 
 ```typescript
 export const buildConfig = <T extends ScenaristScenarios>(
-  input: ScenaristConfigInput<T>
+  input: ScenaristConfigInput<T>,
 ): ScenaristConfig => {
   return {
     enabled: input.enabled,
@@ -240,6 +243,7 @@ isMockEnabled(): boolean {
 ```
 
 **Issues:**
+
 - Config object isn't passed to RequestContext currently (could be added)
 - Config is mutable state (conceptually), default is immutable constant
 - More complex: `this.config.defaultMockEnabled` vs `CONFIG_DEFAULTS.MOCK_ENABLED`
@@ -253,13 +257,14 @@ isMockEnabled(): boolean {
 
 ```typescript
 export const DEFAULT_MOCK_ENABLED = true;
-export const DEFAULT_TEST_ID = 'default-test';
+export const DEFAULT_TEST_ID = "default-test";
 export const DEFAULT_STRICT_MODE = false;
 ```
 
 **Problem:** Scattered constants, no clear grouping.
 
 **Benefit of object:**
+
 - Groups related constants together
 - Clear namespace (`CONFIG_DEFAULTS.MOCK_ENABLED`)
 - Easy to extend (add new defaults)
@@ -272,16 +277,19 @@ export const DEFAULT_STRICT_MODE = false;
 ### Alternative 1: Keep Duplicated Constants (Status Quo)
 
 **Pattern:**
+
 ```typescript
 // Each adapter defines its own
 const DEFAULT_MOCK_ENABLED = true;
 ```
 
 **Pros:**
+
 - ✅ Adapters fully independent
 - ✅ No changes needed
 
 **Cons:**
+
 - ❌ Duplication (3 occurrences)
 - ❌ Knowledge spread across adapters
 - ❌ Risk of inconsistency
@@ -292,6 +300,7 @@ const DEFAULT_MOCK_ENABLED = true;
 ### Alternative 2: Add to ScenaristConfig Type
 
 **Pattern:**
+
 ```typescript
 export type ScenaristConfig = {
   readonly enabled: boolean;
@@ -299,7 +308,9 @@ export type ScenaristConfig = {
   // ...
 };
 
-export const buildConfig = <T>(input: ScenaristConfigInput<T>): ScenaristConfig => {
+export const buildConfig = <T>(
+  input: ScenaristConfigInput<T>,
+): ScenaristConfig => {
   return {
     enabled: input.enabled,
     defaultMockEnabled: input.defaultMockEnabled ?? true,
@@ -309,10 +320,12 @@ export const buildConfig = <T>(input: ScenaristConfigInput<T>): ScenaristConfig 
 ```
 
 **Pros:**
+
 - ✅ Per-instance configurability
 - ✅ Flexible (users can change default)
 
 **Cons:**
+
 - ❌ More configuration burden (another parameter)
 - ❌ Not truly configurable (shouldn't change per instance)
 - ❌ Adds complexity without benefit
@@ -323,14 +336,18 @@ export const buildConfig = <T>(input: ScenaristConfigInput<T>): ScenaristConfig 
 ### Alternative 3: Environment Variable
 
 **Pattern:**
+
 ```typescript
-const DEFAULT_MOCK_ENABLED = process.env.SCENARIST_DEFAULT_MOCK_ENABLED === 'true';
+const DEFAULT_MOCK_ENABLED =
+  process.env.SCENARIST_DEFAULT_MOCK_ENABLED === "true";
 ```
 
 **Pros:**
+
 - ✅ Runtime configurability
 
 **Cons:**
+
 - ❌ Hides default (not visible in code)
 - ❌ Environment-dependent behavior (confusing)
 - ❌ Not serializable (violates ADR-0001)
@@ -341,6 +358,7 @@ const DEFAULT_MOCK_ENABLED = process.env.SCENARIST_DEFAULT_MOCK_ENABLED === 'tru
 ### Alternative 4: Per-Adapter Configuration
 
 **Pattern:**
+
 ```typescript
 // Express adapter
 export const EXPRESS_DEFAULTS = {
@@ -354,9 +372,11 @@ export const NEXTJS_DEFAULTS = {
 ```
 
 **Pros:**
+
 - ✅ Adapters can have different defaults (if needed)
 
 **Cons:**
+
 - ❌ Still duplicated knowledge
 - ❌ Inconsistency risk (adapters drift)
 - ❌ Users expect consistent behavior across adapters
@@ -369,13 +389,14 @@ export const NEXTJS_DEFAULTS = {
 ### Positive
 
 ✅ **Single source of truth** - `CONFIG_DEFAULTS.MOCK_ENABLED` defined once:
-   ```typescript
-   // packages/core/src/types/config.ts
-   export const CONFIG_DEFAULTS = {
-     MOCK_ENABLED: true,
-     // ...
-   } as const;
-   ```
+
+```typescript
+// packages/core/src/types/config.ts
+export const CONFIG_DEFAULTS = {
+  MOCK_ENABLED: true,
+  // ...
+} as const;
+```
 
 ✅ **DRY principle satisfied** - Knowledge not duplicated across adapters
 
@@ -384,60 +405,69 @@ export const NEXTJS_DEFAULTS = {
 ✅ **Easy to change** - Modify one constant, all adapters updated
 
 ✅ **Discoverable** - Users can import `CONFIG_DEFAULTS` to see defaults:
-   ```typescript
-   import { CONFIG_DEFAULTS } from '@scenarist/core';
-   console.log(CONFIG_DEFAULTS.MOCK_ENABLED); // true
-   ```
+
+```typescript
+import { CONFIG_DEFAULTS } from "@scenarist/core";
+console.log(CONFIG_DEFAULTS.MOCK_ENABLED); // true
+```
 
 ✅ **Domain knowledge in core** - Hexagonal architecture principle maintained
 
 ✅ **Better documentation** - JSDoc on constants explains domain decisions:
-   ```typescript
-   /**
-    * Whether mocks are enabled when x-mock-enabled header is absent.
-    * Default: true (mocks enabled unless explicitly disabled)
-    *
-    * Rationale: Scenarist is a testing library - tests expect mocks
-    * to be active. Explicit opt-out (x-mock-enabled: false) is clearer
-    * than explicit opt-in.
-    */
-   MOCK_ENABLED: true,
-   ```
+
+```typescript
+/**
+ * Whether mocks are enabled when x-mock-enabled header is absent.
+ * Default: true (mocks enabled unless explicitly disabled)
+ *
+ * Rationale: Scenarist is a testing library - tests expect mocks
+ * to be active. Explicit opt-out (x-mock-enabled: false) is clearer
+ * than explicit opt-in.
+ */
+MOCK_ENABLED: true,
+```
 
 ✅ **Future extensibility** - Can add more defaults to `CONFIG_DEFAULTS`:
-   ```typescript
-   export const CONFIG_DEFAULTS = {
-     MOCK_ENABLED: true,
-     TEST_ID: 'default-test',
-     STRICT_MODE: false,
-     // Future: RESPONSE_DELAY: 0, etc.
-   } as const;
-   ```
+
+```typescript
+export const CONFIG_DEFAULTS = {
+  MOCK_ENABLED: true,
+  TEST_ID: "default-test",
+  STRICT_MODE: false,
+  // Future: RESPONSE_DELAY: 0, etc.
+} as const;
+```
 
 ### Negative
 
 ❌ **Import dependency** - Adapters must import from core:
-   ```typescript
-   import { CONFIG_DEFAULTS } from '@scenarist/core';
-   ```
-   **Note**: Adapters already depend on core, so no new dependency.
+
+```typescript
+import { CONFIG_DEFAULTS } from "@scenarist/core";
+```
+
+**Note**: Adapters already depend on core, so no new dependency.
 
 ❌ **Not overridable per adapter** - All adapters use same default:
-   ```typescript
-   // Can't do this:
-   // Express uses MOCK_ENABLED = true
-   // Next.js uses MOCK_ENABLED = false
-   ```
-   **Note**: No use case for this - consistency is desirable.
+
+```typescript
+// Can't do this:
+// Express uses MOCK_ENABLED = true
+// Next.js uses MOCK_ENABLED = false
+```
+
+**Note**: No use case for this - consistency is desirable.
 
 ### Neutral
 
 ⚖️ **Constants file grows** - More defaults added over time
-   - Manageable: Keep constants organized in object
+
+- Manageable: Keep constants organized in object
 
 ⚖️ **Breaking change for users?** - No, implementation detail only
-   - Users don't access `DEFAULT_MOCK_ENABLED` directly
-   - Behavior stays identical (still defaults to `true`)
+
+- Users don't access `DEFAULT_MOCK_ENABLED` directly
+- Behavior stays identical (still defaults to `true`)
 
 ## Implementation Notes
 
@@ -464,22 +494,22 @@ export const CONFIG_DEFAULTS = {
   /**
    * Default test ID when x-scenarist-test-id header is absent.
    */
-  TEST_ID: 'default-test',
+  TEST_ID: "default-test",
 
   /**
    * HTTP header names for test isolation and control.
    */
   HEADERS: {
-    TEST_ID: 'x-scenarist-test-id',
-    MOCK_ENABLED: 'x-mock-enabled',
+    TEST_ID: "x-scenarist-test-id",
+    MOCK_ENABLED: "x-mock-enabled",
   },
 
   /**
    * HTTP endpoint paths for scenario control.
    */
   ENDPOINTS: {
-    SET_SCENARIO: '/__scenario__',
-    GET_SCENARIO: '/__scenario__',
+    SET_SCENARIO: "/__scenario__",
+    GET_SCENARIO: "/__scenario__",
   },
 
   /**
@@ -494,15 +524,15 @@ export const CONFIG_DEFAULTS = {
 
 ```typescript
 // packages/core/src/index.ts
-export { CONFIG_DEFAULTS } from './types/config.js';
+export { CONFIG_DEFAULTS } from "./types/config.js";
 ```
 
 ### Step 3: Update Express Adapter
 
 ```typescript
 // packages/express-adapter/src/context/express-request-context.ts
-import type { RequestContext, ScenaristConfig } from '@scenarist/core';
-import { CONFIG_DEFAULTS } from '@scenarist/core'; // ← Add import
+import type { RequestContext, ScenaristConfig } from "@scenarist/core";
+import { CONFIG_DEFAULTS } from "@scenarist/core"; // ← Add import
 
 export class ExpressRequestContext implements RequestContext {
   // ...
@@ -517,7 +547,7 @@ export class ExpressRequestContext implements RequestContext {
       return CONFIG_DEFAULTS.MOCK_ENABLED; // ← Use core default
     }
 
-    return header === 'true';
+    return header === "true";
   }
 }
 ```
@@ -526,8 +556,8 @@ export class ExpressRequestContext implements RequestContext {
 
 ```typescript
 // packages/nextjs-adapter/src/pages/context.ts
-import type { RequestContext, ScenaristConfig } from '@scenarist/core';
-import { CONFIG_DEFAULTS } from '@scenarist/core'; // ← Add import
+import type { RequestContext, ScenaristConfig } from "@scenarist/core";
+import { CONFIG_DEFAULTS } from "@scenarist/core"; // ← Add import
 
 export class PagesRequestContext implements RequestContext {
   // ...
@@ -542,7 +572,7 @@ export class PagesRequestContext implements RequestContext {
       return CONFIG_DEFAULTS.MOCK_ENABLED; // ← Use core default
     }
 
-    return header === 'true';
+    return header === "true";
   }
 }
 ```
@@ -551,8 +581,8 @@ export class PagesRequestContext implements RequestContext {
 
 ```typescript
 // packages/nextjs-adapter/src/app/context.ts
-import type { RequestContext, ScenaristConfig } from '@scenarist/core';
-import { CONFIG_DEFAULTS } from '@scenarist/core'; // ← Add import
+import type { RequestContext, ScenaristConfig } from "@scenarist/core";
+import { CONFIG_DEFAULTS } from "@scenarist/core"; // ← Add import
 
 export class AppRequestContext implements RequestContext {
   // ...
@@ -567,7 +597,7 @@ export class AppRequestContext implements RequestContext {
       return CONFIG_DEFAULTS.MOCK_ENABLED; // ← Use core default
     }
 
-    return header === 'true';
+    return header === "true";
   }
 }
 ```
@@ -576,21 +606,24 @@ export class AppRequestContext implements RequestContext {
 
 ```typescript
 // packages/core/src/domain/config-builder.ts
-import { CONFIG_DEFAULTS } from '../types/config.js';
+import { CONFIG_DEFAULTS } from "../types/config.js";
 
 export const buildConfig = <T extends ScenaristScenarios>(
-  input: ScenaristConfigInput<T>
+  input: ScenaristConfigInput<T>,
 ): ScenaristConfig => {
   return {
     enabled: input.enabled,
     strictMode: input.strictMode ?? CONFIG_DEFAULTS.STRICT_MODE, // ← Use default
     headers: {
       testId: input.headers?.testId ?? CONFIG_DEFAULTS.HEADERS.TEST_ID,
-      mockEnabled: input.headers?.mockEnabled ?? CONFIG_DEFAULTS.HEADERS.MOCK_ENABLED,
+      mockEnabled:
+        input.headers?.mockEnabled ?? CONFIG_DEFAULTS.HEADERS.MOCK_ENABLED,
     },
     endpoints: {
-      setScenario: input.endpoints?.setScenario ?? CONFIG_DEFAULTS.ENDPOINTS.SET_SCENARIO,
-      getScenario: input.endpoints?.getScenario ?? CONFIG_DEFAULTS.ENDPOINTS.GET_SCENARIO,
+      setScenario:
+        input.endpoints?.setScenario ?? CONFIG_DEFAULTS.ENDPOINTS.SET_SCENARIO,
+      getScenario:
+        input.endpoints?.getScenario ?? CONFIG_DEFAULTS.ENDPOINTS.GET_SCENARIO,
     },
     defaultTestId: input.defaultTestId ?? CONFIG_DEFAULTS.TEST_ID, // ← Use default
   };
@@ -603,22 +636,22 @@ This ensures `buildConfig()` and `isMockEnabled()` use the same defaults (single
 
 ```typescript
 // packages/core/tests/config-defaults.test.ts
-import { CONFIG_DEFAULTS } from '../src/index.js';
+import { CONFIG_DEFAULTS } from "../src/index.js";
 
-describe('CONFIG_DEFAULTS', () => {
-  it('should have MOCK_ENABLED = true', () => {
+describe("CONFIG_DEFAULTS", () => {
+  it("should have MOCK_ENABLED = true", () => {
     expect(CONFIG_DEFAULTS.MOCK_ENABLED).toBe(true);
   });
 
   it('should have TEST_ID = "default-test"', () => {
-    expect(CONFIG_DEFAULTS.TEST_ID).toBe('default-test');
+    expect(CONFIG_DEFAULTS.TEST_ID).toBe("default-test");
   });
 
-  it('should have STRICT_MODE = false', () => {
+  it("should have STRICT_MODE = false", () => {
     expect(CONFIG_DEFAULTS.STRICT_MODE).toBe(false);
   });
 
-  it('should be immutable (as const)', () => {
+  it("should be immutable (as const)", () => {
     // TypeScript enforces this at compile time
     // @ts-expect-error - Cannot assign to readonly property
     CONFIG_DEFAULTS.MOCK_ENABLED = false;
@@ -641,11 +674,11 @@ import { CONFIG_DEFAULTS } from '@scenarist/core';
 
 console.log(CONFIG_DEFAULTS);
 // {
-//   MOCK_ENABLED: true,
-//   TEST_ID: 'default-test',
-//   STRICT_MODE: false,
-//   HEADERS: { TEST_ID: 'x-scenarist-test-id', MOCK_ENABLED: 'x-mock-enabled' },
-//   ENDPOINTS: { SET_SCENARIO: '/__scenario__', GET_SCENARIO: '/__scenario__' }
+// MOCK_ENABLED: true,
+// TEST_ID: 'default-test',
+// STRICT_MODE: false,
+// HEADERS: { TEST_ID: 'x-scenarist-test-id', MOCK_ENABLED: 'x-mock-enabled' },
+// ENDPOINTS: { SET_SCENARIO: '/**scenario**', GET_SCENARIO: '/**scenario**' }
 // }
 \`\`\`
 
@@ -674,8 +707,11 @@ export type ScenaristConfigInput<T extends ScenaristScenarios> = {
   };
 };
 
-export const buildConfig = <T>(input: ScenaristConfigInput<T>): ScenaristConfig => {
-  const mockEnabledDefault = input.defaults?.mockEnabled ?? CONFIG_DEFAULTS.MOCK_ENABLED;
+export const buildConfig = <T>(
+  input: ScenaristConfigInput<T>,
+): ScenaristConfig => {
+  const mockEnabledDefault =
+    input.defaults?.mockEnabled ?? CONFIG_DEFAULTS.MOCK_ENABLED;
   const testIdDefault = input.defaults?.testId ?? CONFIG_DEFAULTS.TEST_ID;
 
   return {

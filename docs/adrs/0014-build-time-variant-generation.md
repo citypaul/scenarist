@@ -9,6 +9,7 @@
 During analysis of Acquisition.Web's variant system (PR #88, Issue #89), we identified a critical pattern: **12 variants per scenario family with 90% shared mocks and 10% variant-specific differences**.
 
 **Acquisition.Web Example:**
+
 ```typescript
 // 12 variants: all combinations of:
 // - 3 tiers: Premium, Standard, Basic
@@ -25,6 +26,7 @@ const premiumCallCenterScenario = { id: 'premium-call-center', mocks: [...100 mo
 ```
 
 **The Duplication Problem:**
+
 - Source code duplication makes maintenance nightmarish
 - Changes to shared mocks require updating 12 files
 - High risk of inconsistency (missing an update in one variant)
@@ -43,13 +45,13 @@ Acquisition.Web uses runtime variant interpolation:
 ```typescript
 // Runtime interpolation pattern
 const scenario = {
-  id: 'products',
+  id: "products",
   mocks: [
     {
-      url: '/api/products',
-      response: (variant) => buildProducts(variant.tier) // Function!
-    }
-  ]
+      url: "/api/products",
+      response: (variant) => buildProducts(variant.tier), // Function!
+    },
+  ],
 };
 ```
 
@@ -58,6 +60,7 @@ const scenario = {
 Per ADR-0013 (Declarative Scenarios Through JSON Constraint), scenarios must be JSON-serializable to enforce declarative patterns and prevent imperative routing logic. This constraint also enables storage adapters like Redis (side benefit), but the primary value is preventing function-based handlers that hide routing logic in if/else chains.
 
 **We need a solution that:**
+
 - ✅ Eliminates source duplication (shared mocks defined once)
 - ✅ Maintains JSON serializability (enforces declarative patterns per ADR-0013)
 - ✅ Provides type safety (TypeScript inference)
@@ -67,12 +70,14 @@ Per ADR-0013 (Declarative Scenarios Through JSON Constraint), scenarios must be 
 ## Problem
 
 **How can we support scenarios with multiple variants while:**
+
 1. Avoiding massive source code duplication (12 copies of 100 mocks)
 2. Maintaining JSON serializability (enforces declarative patterns, enables storage adapters as side benefit)
 3. Providing good developer experience (clear, maintainable code)
 4. Keeping memory overhead acceptable (runtime cost trade-off)
 
 **Requirements:**
+
 - ✅ Shared mocks defined once (DRY at source level)
 - ✅ Variant-specific mocks clearly separated
 - ✅ Output is fully JSON-serializable
@@ -86,43 +91,47 @@ We will **implement a `buildVariants` utility for build-time variant generation*
 **The Pattern:**
 
 ```typescript
-import { buildVariants } from '@scenarist/core';
+import { buildVariants } from "@scenarist/core";
 
 // 1. Define base configuration (shared mocks - 90% of content)
 const baseConfig = {
   mocks: [
-    { method: 'GET', url: '/api/auth/status', response: { status: 200, body: { authenticated: true } } },
-    { method: 'GET', url: '/api/user/profile', response: { status: 200, body: { name: 'User' } } },
+    {
+      method: "GET",
+      url: "/api/auth/status",
+      response: { status: 200, body: { authenticated: true } },
+    },
+    {
+      method: "GET",
+      url: "/api/user/profile",
+      response: { status: 200, body: { name: "User" } },
+    },
     // ... 90 more shared mocks
-  ]
+  ],
 };
 
 // 2. Define variant configurations (variant-specific data - 10% of content)
 const variantConfigs = [
-  { tier: 'premium', context: 'online', products: premiumOnlineProducts },
-  { tier: 'premium', context: 'branch', products: premiumBranchProducts },
-  { tier: 'standard', context: 'online', products: standardOnlineProducts },
-  { tier: 'standard', context: 'branch', products: standardBranchProducts },
+  { tier: "premium", context: "online", products: premiumOnlineProducts },
+  { tier: "premium", context: "branch", products: premiumBranchProducts },
+  { tier: "standard", context: "online", products: standardOnlineProducts },
+  { tier: "standard", context: "branch", products: standardBranchProducts },
   // ... 8 more variants
 ];
 
 // 3. Compose function: How to merge base + variant config
-const scenarios = buildVariants(
-  baseConfig,
-  variantConfigs,
-  (base, config) => ({
-    id: `${config.tier}-${config.context}`,
-    name: `${config.tier} - ${config.context}`,
-    mocks: [
-      ...base.mocks, // Shared mocks
-      {
-        method: 'GET',
-        url: '/api/products',
-        response: { status: 200, body: { products: config.products } } // Variant-specific
-      }
-    ]
-  })
-);
+const scenarios = buildVariants(baseConfig, variantConfigs, (base, config) => ({
+  id: `${config.tier}-${config.context}`,
+  name: `${config.tier} - ${config.context}`,
+  mocks: [
+    ...base.mocks, // Shared mocks
+    {
+      method: "GET",
+      url: "/api/products",
+      response: { status: 200, body: { products: config.products } }, // Variant-specific
+    },
+  ],
+}));
 
 // Result: 12 fully expanded scenarios (JSON-serializable)
 // scenarios = [
@@ -138,18 +147,22 @@ const scenarios = buildVariants(
 
 ```typescript
 // packages/core/src/utils/build-variants.ts
-import type { ScenaristScenario } from '../types';
+import type { ScenaristScenario } from "../types";
 
 export const buildVariants = <TConfig>(
   baseConfig: Partial<ScenaristScenario>,
   variantConfigs: ReadonlyArray<TConfig>,
-  composeFn: (base: Partial<ScenaristScenario>, config: TConfig) => ScenaristScenario
+  composeFn: (
+    base: Partial<ScenaristScenario>,
+    config: TConfig,
+  ) => ScenaristScenario,
 ): ReadonlyArray<ScenaristScenario> => {
-  return variantConfigs.map(config => composeFn(baseConfig, config));
+  return variantConfigs.map((config) => composeFn(baseConfig, config));
 };
 ```
 
 **Key Properties:**
+
 - **Input**: Base config + variant configs + compose function
 - **Output**: Array of fully expanded `ScenaristScenario` objects
 - **Serializability**: All output scenarios are JSON-serializable
@@ -161,6 +174,7 @@ export const buildVariants = <TConfig>(
 ### Alternative 1: Manual Scenario Duplication
 
 **Pattern:**
+
 ```typescript
 const premiumOnlineScenario: ScenaristScenario = {
   id: 'premium-online',
@@ -186,11 +200,13 @@ const premiumBranchScenario: ScenaristScenario = {
 ```
 
 **Pros:**
+
 - ✅ Simple to understand (no abstraction)
 - ✅ JSON-serializable (all data)
 - ✅ No build-time generation needed
 
 **Cons:**
+
 - ❌ Massive source duplication (1,080 duplicated mock definitions for 90 shared mocks × 12 variants)
 - ❌ Maintenance nightmare (change to shared mock requires updating 12 files)
 - ❌ High risk of inconsistency (easy to miss one variant)
@@ -202,27 +218,30 @@ const premiumBranchScenario: ScenaristScenario = {
 ### Alternative 2: Runtime Variant Interpolation (Acquisition.Web Pattern)
 
 **Pattern:**
+
 ```typescript
 const scenario = {
-  id: 'products',
+  id: "products",
   mocks: [
     {
-      url: '/api/products',
-      response: (variant) => ({ products: buildProducts(variant.tier) }) // Function!
-    }
-  ]
+      url: "/api/products",
+      response: (variant) => ({ products: buildProducts(variant.tier) }), // Function!
+    },
+  ],
 };
 
 // At runtime:
-const response = scenario.mocks[0].response({ tier: 'premium' });
+const response = scenario.mocks[0].response({ tier: "premium" });
 ```
 
 **Pros:**
+
 - ✅ Minimal source duplication (single definition)
 - ✅ Concise and readable
 - ✅ DRY (shared mocks defined once)
 
 **Cons:**
+
 - ❌ Not JSON-serializable (functions cannot be stored in Redis)
 - ❌ Breaks `RedisScenarioRegistry` (distributed testing impossible)
 - ❌ Violates ADR-0013 (enables imperative patterns, hides logic in functions)
@@ -234,29 +253,32 @@ const response = scenario.mocks[0].response({ tier: 'premium' });
 ### Alternative 3: Template String Interpolation
 
 **Pattern:**
+
 ```typescript
 const scenario = {
-  id: 'products',
+  id: "products",
   mocks: [
     {
-      url: '/api/products',
+      url: "/api/products",
       response: {
         status: 200,
-        body: '{{ products | variantData.tier }}' // Template string
-      }
-    }
-  ]
+        body: "{{ products | variantData.tier }}", // Template string
+      },
+    },
+  ],
 };
 
 // At runtime, replace templates with variant data
-const expanded = interpolateTemplates(scenario, { tier: 'premium' });
+const expanded = interpolateTemplates(scenario, { tier: "premium" });
 ```
 
 **Pros:**
+
 - ✅ Minimal source duplication
 - ✅ Could be JSON-serializable (strings, not functions)
 
 **Cons:**
+
 - ❌ Requires runtime template engine (complexity)
 - ❌ Type safety lost (template strings are opaque to TypeScript)
 - ❌ Custom template syntax to learn/document
@@ -268,6 +290,7 @@ const expanded = interpolateTemplates(scenario, { tier: 'premium' });
 ### Alternative 4: Scenario Inheritance/Composition
 
 **Pattern:**
+
 ```typescript
 const baseScenario: ScenaristScenario = {
   id: 'base',
@@ -289,10 +312,12 @@ const premiumOnlineScenario: ScenaristScenario = {
 ```
 
 **Pros:**
+
 - ✅ Reduces duplication via spread
 - ✅ JSON-serializable
 
 **Cons:**
+
 - ❌ Still requires manually defining 12 scenarios
 - ❌ Spread operator duplicates arrays in memory anyway
 - ❌ Not much better than manual duplication
@@ -303,6 +328,7 @@ const premiumOnlineScenario: ScenaristScenario = {
 ### Alternative 5: Code Generation from Config Files
 
 **Pattern:**
+
 ```yaml
 # scenarios.yaml
 base:
@@ -324,11 +350,13 @@ pnpm scenarist generate scenarios.yaml > scenarios.ts
 ```
 
 **Pros:**
+
 - ✅ Declarative configuration
 - ✅ Version-controllable (YAML/JSON)
 - ✅ Could generate fully expanded scenarios
 
 **Cons:**
+
 - ❌ Build tool dependency (code generation step)
 - ❌ Two languages to learn (YAML + TypeScript)
 - ❌ Loss of TypeScript type safety in YAML
@@ -342,171 +370,188 @@ pnpm scenarist generate scenarios.yaml > scenarios.ts
 ### Positive
 
 ✅ **Minimal source duplication** - Shared mocks defined once:
-   ```typescript
-   // Instead of 1,200 mock definitions (100 × 12):
-   const baseConfig = {
-     mocks: [/* 90 shared mocks */] // Defined once
-   };
-   const variantConfigs = [
-     { tier: 'premium', products: [...] }, // 10 mocks × 12 = 120 variant configs
-     // ... 11 more
-   ];
 
-   // Result: 90 + 120 = 210 definitions vs 1,200 (5.7x reduction)
-   ```
+```typescript
+// Instead of 1,200 mock definitions (100 × 12):
+const baseConfig = {
+  mocks: [/* 90 shared mocks */] // Defined once
+};
+const variantConfigs = [
+  { tier: 'premium', products: [...] }, // 10 mocks × 12 = 120 variant configs
+  // ... 11 more
+];
+
+// Result: 90 + 120 = 210 definitions vs 1,200 (5.7x reduction)
+```
 
 ✅ **JSON-serializable output** - All scenarios are plain data:
-   ```typescript
-   const scenarios = buildVariants(...);
-   // Every scenario in result can be:
-   await redis.set('scenario:premium-online', JSON.stringify(scenarios[0])); ✅
-   ```
+
+```typescript
+const scenarios = buildVariants(...);
+// Every scenario in result can be:
+await redis.set('scenario:premium-online', JSON.stringify(scenarios[0])); ✅
+```
 
 ✅ **Type-safe variant configurations** - TypeScript enforces config shape:
-   ```typescript
-   type VariantConfig = {
-     tier: 'premium' | 'standard' | 'basic';
-     context: 'online' | 'branch' | 'call-center' | 'mobile';
-     products: Product[];
-   };
 
-   const variantConfigs: VariantConfig[] = [
-     { tier: 'premium', context: 'online', products: [...] }, // ✅ Type-checked
-     { tier: 'invalid', context: 'online', products: [...] }, // ❌ Compile error
-   ];
-   ```
+```typescript
+type VariantConfig = {
+  tier: 'premium' | 'standard' | 'basic';
+  context: 'online' | 'branch' | 'call-center' | 'mobile';
+  products: Product[];
+};
+
+const variantConfigs: VariantConfig[] = [
+  { tier: 'premium', context: 'online', products: [...] }, // ✅ Type-checked
+  { tier: 'invalid', context: 'online', products: [...] }, // ❌ Compile error
+];
+```
 
 ✅ **Clear separation of concerns** - Shared vs variant logic separated:
-   ```typescript
-   // Shared (90%):
-   const baseConfig = { mocks: [...] };
 
-   // Variant-specific (10%):
-   const variantConfigs = [{ tier: 'premium', ... }];
+```typescript
+// Shared (90%):
+const baseConfig = { mocks: [...] };
 
-   // Composition logic:
-   const composeFn = (base, config) => ({ ...base, ... });
-   ```
+// Variant-specific (10%):
+const variantConfigs = [{ tier: 'premium', ... }];
+
+// Composition logic:
+const composeFn = (base, config) => ({ ...base, ... });
+```
 
 ✅ **Maintainable** - Changes to shared mocks affect all variants:
-   ```typescript
-   // Add a new shared mock:
-   const baseConfig = {
-     mocks: [
-       ...existingMocks,
-       { method: 'GET', url: '/api/new-endpoint', ... } // ← Automatically in all 12 variants
-     ]
-   };
-   ```
+
+```typescript
+// Add a new shared mock:
+const baseConfig = {
+  mocks: [
+    ...existingMocks,
+    { method: 'GET', url: '/api/new-endpoint', ... } // ← Automatically in all 12 variants
+  ]
+};
+```
 
 ✅ **Flexible composition** - Compose function allows any merging logic:
-   ```typescript
-   // Simple spread:
-   (base, config) => ({ ...base, mocks: [...base.mocks, config.mock] })
 
-   // Conditional logic:
-   (base, config) => ({
-     ...base,
-     mocks: config.tier === 'premium'
-       ? [...base.mocks, premiumMock]
-       : [...base.mocks, standardMock]
-   })
+```typescript
+// Simple spread:
+(base, config) => ({ ...base, mocks: [...base.mocks, config.mock] })
 
-   // Complex transformations:
-   (base, config) => ({
-     ...base,
-     mocks: base.mocks.map(mock =>
-       mock.url === '/api/products'
-         ? { ...mock, response: { ...mock.response, body: config.products } }
-         : mock
-     )
-   })
-   ```
+// Conditional logic:
+(base, config) => ({
+  ...base,
+  mocks: config.tier === 'premium'
+    ? [...base.mocks, premiumMock]
+    : [...base.mocks, standardMock]
+})
+
+// Complex transformations:
+(base, config) => ({
+  ...base,
+  mocks: base.mocks.map(mock =>
+    mock.url === '/api/products'
+      ? { ...mock, response: { ...mock.response, body: config.products } }
+      : mock
+  )
+})
+```
 
 ✅ **Testable** - Compose function is pure and easy to test:
-   ```typescript
-   it('should merge base and variant configs', () => {
-     const result = composeFn(baseConfig, { tier: 'premium' });
-     expect(result.id).toBe('premium-online');
-     expect(result.mocks).toHaveLength(100);
-   });
-   ```
+
+```typescript
+it("should merge base and variant configs", () => {
+  const result = composeFn(baseConfig, { tier: "premium" });
+  expect(result.id).toBe("premium-online");
+  expect(result.mocks).toHaveLength(100);
+});
+```
 
 ### Negative
 
 ❌ **Memory overhead at runtime** - Variants stored as separate scenarios:
-   - 12 variants × 100 mocks = 1,200 mock objects in memory
-   - vs. runtime interpolation: 100 base mocks + variant function
-   - Acquisition.Web analysis: 5x memory (3 MB vs 500 KB)
 
-   **Mitigation**: Acceptable for most use cases
-   - Modern servers have abundant memory
-   - 3 MB is negligible in typical Node.js application
-   - Enables distributed testing (critical for production)
+- 12 variants × 100 mocks = 1,200 mock objects in memory
+- vs. runtime interpolation: 100 base mocks + variant function
+- Acquisition.Web analysis: 5x memory (3 MB vs 500 KB)
+
+**Mitigation**: Acceptable for most use cases
+
+- Modern servers have abundant memory
+- 3 MB is negligible in typical Node.js application
+- Enables distributed testing (critical for production)
 
 ❌ **Build-time generation required** - Scenarios generated at module evaluation:
-   ```typescript
-   // This runs when module is imported:
-   const scenarios = buildVariants(...); // Build-time generation
 
-   // vs. runtime interpolation:
-   const scenario = { response: (v) => ... }; // No generation
-   ```
+```typescript
+// This runs when module is imported:
+const scenarios = buildVariants(...); // Build-time generation
 
-   **Mitigation**: Negligible performance impact
-   - Generation happens once per module load (cached by Node.js)
-   - Fast (simple array mapping)
-   - No external build step required (unlike code generation)
+// vs. runtime interpolation:
+const scenario = { response: (v) => ... }; // No generation
+```
+
+**Mitigation**: Negligible performance impact
+
+- Generation happens once per module load (cached by Node.js)
+- Fast (simple array mapping)
+- No external build step required (unlike code generation)
 
 ❌ **More verbose than runtime interpolation** - 3 steps vs. 1:
-   ```typescript
-   // buildVariants (3 steps):
-   const base = { ... };           // 1. Define base
-   const variants = [...];         // 2. Define variants
-   const scenarios = buildVariants(base, variants, composeFn); // 3. Generate
 
-   // Runtime interpolation (1 step):
-   const scenario = { response: (v) => ... }; // Done
-   ```
+```typescript
+// buildVariants (3 steps):
+const base = { ... };           // 1. Define base
+const variants = [...];         // 2. Define variants
+const scenarios = buildVariants(base, variants, composeFn); // 3. Generate
 
-   **Mitigation**: Verbosity is explicit and self-documenting
-   - Clear separation of shared vs variant logic
-   - Easier to reason about composition
-   - Type-safe variant configurations
+// Runtime interpolation (1 step):
+const scenario = { response: (v) => ... }; // Done
+```
+
+**Mitigation**: Verbosity is explicit and self-documenting
+
+- Clear separation of shared vs variant logic
+- Easier to reason about composition
+- Type-safe variant configurations
 
 ❌ **Indirection** - Additional layer between definition and usage:
-   ```typescript
-   // Instead of direct scenario access:
-   const scenario = premiumOnlineScenario; // Direct
 
-   // Must find in generated array:
-   const scenario = scenarios.find(s => s.id === 'premium-online'); // Indirect
-   ```
+```typescript
+// Instead of direct scenario access:
+const scenario = premiumOnlineScenario; // Direct
 
-   **Mitigation**: Use `scenarios` object pattern (ADR-0009):
-   ```typescript
-   const scenariosArray = buildVariants(...);
-   const scenarios = {
-     premiumOnline: scenariosArray[0],
-     premiumBranch: scenariosArray[1],
-     // ... OR use Object.fromEntries for dynamic mapping
-   } as const satisfies ScenaristScenarios;
+// Must find in generated array:
+const scenario = scenarios.find((s) => s.id === "premium-online"); // Indirect
+```
 
-   // Now direct access:
-   const scenario = scenarios.premiumOnline; // ✅ Direct + type-safe
-   ```
+**Mitigation**: Use `scenarios` object pattern (ADR-0009):
+
+```typescript
+const scenariosArray = buildVariants(...);
+const scenarios = {
+  premiumOnline: scenariosArray[0],
+  premiumBranch: scenariosArray[1],
+  // ... OR use Object.fromEntries for dynamic mapping
+} as const satisfies ScenaristScenarios;
+
+// Now direct access:
+const scenario = scenarios.premiumOnline; // ✅ Direct + type-safe
+```
 
 ### Neutral
 
 ⚖️ **Complexity trade-off** - More setup code, clearer separation:
-   - buildVariants adds abstraction layer
-   - But makes shared/variant distinction explicit
-   - Better for maintainability long-term
+
+- buildVariants adds abstraction layer
+- But makes shared/variant distinction explicit
+- Better for maintainability long-term
 
 ⚖️ **Memory vs. serializability** - 5x memory enables distributed testing:
-   - Critical for production environments
-   - Negligible for development/testing
-   - Acceptable trade-off for architectural flexibility
+
+- Critical for production environments
+- Negligible for development/testing
+- Acceptable trade-off for architectural flexibility
 
 ## Implementation Notes
 
@@ -514,9 +559,9 @@ pnpm scenarist generate scenarios.yaml > scenarios.ts
 
 **Implementation:**
 
-```typescript
+````typescript
 // packages/core/src/utils/build-variants.ts
-import type { ScenaristScenario } from '../types';
+import type { ScenaristScenario } from "../types";
 
 /**
  * Generate multiple scenario variants from a base configuration.
@@ -553,17 +598,20 @@ import type { ScenaristScenario } from '../types';
 export const buildVariants = <TConfig>(
   baseConfig: Partial<ScenaristScenario>,
   variantConfigs: ReadonlyArray<TConfig>,
-  composeFn: (base: Partial<ScenaristScenario>, config: TConfig) => ScenaristScenario
+  composeFn: (
+    base: Partial<ScenaristScenario>,
+    config: TConfig,
+  ) => ScenaristScenario,
 ): ReadonlyArray<ScenaristScenario> => {
-  return variantConfigs.map(config => composeFn(baseConfig, config));
+  return variantConfigs.map((config) => composeFn(baseConfig, config));
 };
-```
+````
 
 **Export from core:**
 
 ```typescript
 // packages/core/src/index.ts
-export { buildVariants } from './utils/build-variants';
+export { buildVariants } from "./utils/build-variants";
 ```
 
 ### Usage Pattern (Acquisition.Web Replacement)
@@ -572,39 +620,55 @@ export { buildVariants } from './utils/build-variants';
 
 ```typescript
 // scenarios/products.ts
-import { buildVariants } from '@scenarist/core';
-import type { ScenaristScenario } from '@scenarist/core';
+import { buildVariants } from "@scenarist/core";
+import type { ScenaristScenario } from "@scenarist/core";
 
 // Type-safe variant configuration
 type ProductVariantConfig = {
-  tier: 'premium' | 'standard' | 'basic';
-  context: 'online' | 'branch' | 'call-center' | 'mobile';
+  tier: "premium" | "standard" | "basic";
+  context: "online" | "branch" | "call-center" | "mobile";
   products: Product[];
 };
 
 // 1. Base configuration (90% shared mocks)
 const baseConfig: Partial<ScenaristScenario> = {
   mocks: [
-    { method: 'GET', url: '/api/auth/status', response: { status: 200, body: { authenticated: true } } },
-    { method: 'GET', url: '/api/user/profile', response: { status: 200, body: { name: 'User' } } },
+    {
+      method: "GET",
+      url: "/api/auth/status",
+      response: { status: 200, body: { authenticated: true } },
+    },
+    {
+      method: "GET",
+      url: "/api/user/profile",
+      response: { status: 200, body: { name: "User" } },
+    },
     // ... 88 more shared mocks
-  ]
+  ],
 };
 
 // 2. Variant configurations (10% variant-specific)
 const variantConfigs: ProductVariantConfig[] = [
-  { tier: 'premium', context: 'online', products: premiumOnlineProducts },
-  { tier: 'premium', context: 'branch', products: premiumBranchProducts },
-  { tier: 'premium', context: 'call-center', products: premiumCallCenterProducts },
-  { tier: 'premium', context: 'mobile', products: premiumMobileProducts },
-  { tier: 'standard', context: 'online', products: standardOnlineProducts },
-  { tier: 'standard', context: 'branch', products: standardBranchProducts },
-  { tier: 'standard', context: 'call-center', products: standardCallCenterProducts },
-  { tier: 'standard', context: 'mobile', products: standardMobileProducts },
-  { tier: 'basic', context: 'online', products: basicOnlineProducts },
-  { tier: 'basic', context: 'branch', products: basicBranchProducts },
-  { tier: 'basic', context: 'call-center', products: basicCallCenterProducts },
-  { tier: 'basic', context: 'mobile', products: basicMobileProducts },
+  { tier: "premium", context: "online", products: premiumOnlineProducts },
+  { tier: "premium", context: "branch", products: premiumBranchProducts },
+  {
+    tier: "premium",
+    context: "call-center",
+    products: premiumCallCenterProducts,
+  },
+  { tier: "premium", context: "mobile", products: premiumMobileProducts },
+  { tier: "standard", context: "online", products: standardOnlineProducts },
+  { tier: "standard", context: "branch", products: standardBranchProducts },
+  {
+    tier: "standard",
+    context: "call-center",
+    products: standardCallCenterProducts,
+  },
+  { tier: "standard", context: "mobile", products: standardMobileProducts },
+  { tier: "basic", context: "online", products: basicOnlineProducts },
+  { tier: "basic", context: "branch", products: basicBranchProducts },
+  { tier: "basic", context: "call-center", products: basicCallCenterProducts },
+  { tier: "basic", context: "mobile", products: basicMobileProducts },
 ];
 
 // 3. Compose function (merging logic)
@@ -617,31 +681,31 @@ const productScenariosArray = buildVariants(
     mocks: [
       ...base.mocks!,
       {
-        method: 'GET',
-        url: '/api/products',
+        method: "GET",
+        url: "/api/products",
         response: {
           status: 200,
-          body: { products: config.products }
-        }
-      }
-    ]
-  })
+          body: { products: config.products },
+        },
+      },
+    ],
+  }),
 );
 
 // 4. Convert to scenarios object (ADR-0009 pattern)
 export const productScenarios = {
-  'premium-online': productScenariosArray[0],
-  'premium-branch': productScenariosArray[1],
-  'premium-call-center': productScenariosArray[2],
-  'premium-mobile': productScenariosArray[3],
-  'standard-online': productScenariosArray[4],
-  'standard-branch': productScenariosArray[5],
-  'standard-call-center': productScenariosArray[6],
-  'standard-mobile': productScenariosArray[7],
-  'basic-online': productScenariosArray[8],
-  'basic-branch': productScenariosArray[9],
-  'basic-call-center': productScenariosArray[10],
-  'basic-mobile': productScenariosArray[11],
+  "premium-online": productScenariosArray[0],
+  "premium-branch": productScenariosArray[1],
+  "premium-call-center": productScenariosArray[2],
+  "premium-mobile": productScenariosArray[3],
+  "standard-online": productScenariosArray[4],
+  "standard-branch": productScenariosArray[5],
+  "standard-call-center": productScenariosArray[6],
+  "standard-mobile": productScenariosArray[7],
+  "basic-online": productScenariosArray[8],
+  "basic-branch": productScenariosArray[9],
+  "basic-call-center": productScenariosArray[10],
+  "basic-mobile": productScenariosArray[11],
 } as const satisfies ScenaristScenarios;
 ```
 
@@ -650,7 +714,7 @@ export const productScenarios = {
 ```typescript
 // More concise but loses explicit type safety
 export const productScenarios = Object.fromEntries(
-  productScenariosArray.map(scenario => [scenario.id, scenario])
+  productScenariosArray.map((scenario) => [scenario.id, scenario]),
 ) as const satisfies ScenaristScenarios;
 ```
 
@@ -660,32 +724,40 @@ export const productScenarios = Object.fromEntries(
 
 ```typescript
 // scenarios/products.test.ts
-import { buildVariants } from '@scenarist/core';
+import { buildVariants } from "@scenarist/core";
 
-describe('Product scenarios', () => {
-  it('should generate correct scenario ID', () => {
-    const scenarios = buildVariants(baseConfig, [
-      { tier: 'premium', context: 'online', products: [] }
-    ], composeFn);
+describe("Product scenarios", () => {
+  it("should generate correct scenario ID", () => {
+    const scenarios = buildVariants(
+      baseConfig,
+      [{ tier: "premium", context: "online", products: [] }],
+      composeFn,
+    );
 
-    expect(scenarios[0].id).toBe('products-premium-online');
+    expect(scenarios[0].id).toBe("products-premium-online");
   });
 
-  it('should include all base mocks', () => {
-    const scenarios = buildVariants(baseConfig, [
-      { tier: 'premium', context: 'online', products: [] }
-    ], composeFn);
+  it("should include all base mocks", () => {
+    const scenarios = buildVariants(
+      baseConfig,
+      [{ tier: "premium", context: "online", products: [] }],
+      composeFn,
+    );
 
     expect(scenarios[0].mocks).toHaveLength(91); // 90 base + 1 variant
   });
 
-  it('should inject variant-specific products', () => {
-    const premiumProducts = [{ id: 1, name: 'Premium Product' }];
-    const scenarios = buildVariants(baseConfig, [
-      { tier: 'premium', context: 'online', products: premiumProducts }
-    ], composeFn);
+  it("should inject variant-specific products", () => {
+    const premiumProducts = [{ id: 1, name: "Premium Product" }];
+    const scenarios = buildVariants(
+      baseConfig,
+      [{ tier: "premium", context: "online", products: premiumProducts }],
+      composeFn,
+    );
 
-    const productsMock = scenarios[0].mocks.find(m => m.url === '/api/products');
+    const productsMock = scenarios[0].mocks.find(
+      (m) => m.url === "/api/products",
+    );
     expect(productsMock?.response.body.products).toEqual(premiumProducts);
   });
 });
@@ -714,6 +786,7 @@ const scenario = { mocks: [...90], response: (v) => ...10 };
 ```
 
 **Conclusion:** 5x memory overhead is acceptable trade-off for:
+
 - Distributed testing (Redis adapter)
 - Maintainability (DRY source code)
 - Type safety (variant configurations)
@@ -736,13 +809,19 @@ Reduce memory overhead by sharing mock object references:
 const buildVariants = <TConfig>(
   baseConfig: Partial<ScenaristScenario>,
   variantConfigs: ReadonlyArray<TConfig>,
-  composeFn: (base: Partial<ScenaristScenario>, config: TConfig) => ScenaristScenario
+  composeFn: (
+    base: Partial<ScenaristScenario>,
+    config: TConfig,
+  ) => ScenaristScenario,
 ): ReadonlyArray<ScenaristScenario> => {
   // Freeze base mocks to enable safe sharing
   const frozenBaseMocks = Object.freeze(baseConfig.mocks);
 
-  return variantConfigs.map(config => {
-    const scenario = composeFn({ ...baseConfig, mocks: frozenBaseMocks }, config);
+  return variantConfigs.map((config) => {
+    const scenario = composeFn(
+      { ...baseConfig, mocks: frozenBaseMocks },
+      config,
+    );
 
     // Share references to frozen base mocks (reduces memory)
     return scenario;
@@ -757,11 +836,9 @@ This could reduce memory from 5x to ~2x overhead.
 ```typescript
 // packages/core/src/utils/scenarios-from-array.ts
 export const scenariosFromArray = <T extends ScenaristScenario>(
-  scenarios: ReadonlyArray<T>
-): { [K in T['id']]: Extract<T, { id: K }> } => {
-  return Object.fromEntries(
-    scenarios.map(s => [s.id, s])
-  ) as any; // Type assertion needed for complex mapping
+  scenarios: ReadonlyArray<T>,
+): { [K in T["id"]]: Extract<T, { id: K }> } => {
+  return Object.fromEntries(scenarios.map((s) => [s.id, s])) as any; // Type assertion needed for complex mapping
 };
 
 // Usage:

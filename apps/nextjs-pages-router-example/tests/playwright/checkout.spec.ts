@@ -22,9 +22,7 @@ test.describe("Checkout - Feature Composition", () => {
     await page.goto("/checkout");
 
     // Verify page loaded
-    await expect(
-      page.getByRole("heading", { name: "Checkout" })
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Checkout" })).toBeVisible();
 
     // Fill in UK shipping address
     await page.getByLabel("Country").selectOption("UK");
@@ -36,14 +34,18 @@ test.describe("Checkout - Feature Composition", () => {
     await page.getByRole("button", { name: "Calculate Shipping" }).click();
 
     // Verify free shipping for UK (MATCHING on country=UK)
-    const shippingCost = page.getByRole("status").filter({ hasText: "Shipping" });
+    const shippingCost = page
+      .getByRole("status")
+      .filter({ hasText: "Shipping" });
     await expect(shippingCost).toContainText("£0.00");
 
     // Place order (triggers state capture of address)
     await page.getByRole("button", { name: "Place Order" }).click();
 
     // Verify address was captured and displayed (STATEFUL)
-    const confirmation = page.getByRole("region", { name: "Order confirmation" });
+    const confirmation = page.getByRole("region", {
+      name: "Order confirmation",
+    });
     await expect(confirmation).toContainText("123 Test Street");
     await expect(confirmation).toContainText("London");
     await expect(confirmation).toContainText("SW1A 1AA");
@@ -68,14 +70,18 @@ test.describe("Checkout - Feature Composition", () => {
     await page.getByRole("button", { name: "Calculate Shipping" }).click();
 
     // Verify £10 shipping for US (MATCHING on country=US)
-    const shippingCost = page.getByRole("status").filter({ hasText: "Shipping" });
+    const shippingCost = page
+      .getByRole("status")
+      .filter({ hasText: "Shipping" });
     await expect(shippingCost).toContainText("£10.00");
 
     // Place order (triggers state capture of address)
     await page.getByRole("button", { name: "Place Order" }).click();
 
     // Verify US address was captured (STATEFUL)
-    const confirmation = page.getByRole("region", { name: "Order confirmation" });
+    const confirmation = page.getByRole("region", {
+      name: "Order confirmation",
+    });
     await expect(confirmation).toContainText("456 Main St");
     await expect(confirmation).toContainText("New York");
     await expect(confirmation).toContainText("10001");
@@ -100,14 +106,18 @@ test.describe("Checkout - Feature Composition", () => {
     await page.getByRole("button", { name: "Calculate Shipping" }).click();
 
     // Verify £5 shipping for EU (MATCHING on country=FR)
-    const shippingCost = page.getByRole("status").filter({ hasText: "Shipping" });
+    const shippingCost = page
+      .getByRole("status")
+      .filter({ hasText: "Shipping" });
     await expect(shippingCost).toContainText("£5.00");
 
     // Place order
     await page.getByRole("button", { name: "Place Order" }).click();
 
     // Verify EU address was captured (STATEFUL)
-    const confirmation = page.getByRole("region", { name: "Order confirmation" });
+    const confirmation = page.getByRole("region", {
+      name: "Order confirmation",
+    });
     await expect(confirmation).toContainText("789 Rue de Paris");
     await expect(confirmation).toContainText("Paris");
     await expect(confirmation).toContainText("75001");

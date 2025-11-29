@@ -5,7 +5,11 @@ import type {
   HttpRequestContext,
   ScenaristResult,
 } from "../types/index.js";
-import type { ResponseSelector, SequenceTracker, StateManager } from "../ports/index.js";
+import type {
+  ResponseSelector,
+  SequenceTracker,
+  StateManager,
+} from "../ports/index.js";
 import { ResponseSelectionError } from "../ports/driven/response-selector.js";
 import { extractFromPath } from "./path-extraction.js";
 import { applyTemplates } from "./template-replacement.js";
@@ -38,7 +42,7 @@ type CreateResponseSelectorOptions = {
  * @param options.stateManager - Optional state manager for capture/injection (Phase 3)
  */
 export const createResponseSelector = (
-  options: CreateResponseSelectorOptions = {}
+  options: CreateResponseSelectorOptions = {},
 ): ResponseSelector => {
   const { sequenceTracker, stateManager } = options;
 
@@ -47,7 +51,7 @@ export const createResponseSelector = (
       testId: string,
       scenarioId: string,
       context: HttpRequestContext,
-      mocks: ReadonlyArray<ScenaristMockWithParams>
+      mocks: ReadonlyArray<ScenaristMockWithParams>,
     ): ScenaristResult<ScenaristResponse, ResponseSelectionError> {
       let bestMatch: {
         mockWithParams: ScenaristMockWithParams;
@@ -66,7 +70,7 @@ export const createResponseSelector = (
           const { exhausted } = sequenceTracker.getPosition(
             testId,
             scenarioId,
-            mockIndex
+            mockIndex,
           );
           if (exhausted) {
             continue; // Skip to next mock, allowing fallback to be selected
@@ -79,7 +83,9 @@ export const createResponseSelector = (
           if (matchesCriteria(context, mock.match)) {
             // Match criteria always have higher priority than fallbacks
             // Base specificity ensures even 1 field beats any fallback
-            const specificity = SPECIFICITY_RANGES.MATCH_CRITERIA_BASE + calculateSpecificity(mock.match);
+            const specificity =
+              SPECIFICITY_RANGES.MATCH_CRITERIA_BASE +
+              calculateSpecificity(mock.match);
 
             // Keep this mock if it's more specific than current best
             // (or if no best match yet)
@@ -102,7 +108,11 @@ export const createResponseSelector = (
           // For equal specificity fallbacks, last wins
           // This allows active scenario mocks to override default mocks
           // Applies to both simple fallbacks (0) and sequence fallbacks (1)
-          bestMatch = { mockWithParams, mockIndex, specificity: fallbackSpecificity };
+          bestMatch = {
+            mockWithParams,
+            mockIndex,
+            specificity: fallbackSpecificity,
+          };
         }
       }
 
@@ -117,14 +127,14 @@ export const createResponseSelector = (
           scenarioId,
           mockIndex,
           mock,
-          sequenceTracker
+          sequenceTracker,
         );
 
         if (!response) {
           return {
             success: false,
             error: new ResponseSelectionError(
-              `Mock has neither response nor sequence field`
+              `Mock has neither response nor sequence field`,
             ),
           };
         }
@@ -144,7 +154,10 @@ export const createResponseSelector = (
             state: currentState,
             params: mockWithParams.params || {},
           };
-          finalResponse = applyTemplates(response, templateData) as ScenaristResponse;
+          finalResponse = applyTemplates(
+            response,
+            templateData,
+          ) as ScenaristResponse;
         }
 
         return { success: true, data: finalResponse };
@@ -154,7 +167,7 @@ export const createResponseSelector = (
       return {
         success: false,
         error: new ResponseSelectionError(
-          `No mock matched for ${context.method} ${context.url}`
+          `No mock matched for ${context.method} ${context.url}`,
         ),
       };
     },
@@ -176,7 +189,7 @@ const selectResponseFromMock = (
   scenarioId: string,
   mockIndex: number,
   mock: ScenaristMock,
-  sequenceTracker?: SequenceTracker
+  sequenceTracker?: SequenceTracker,
 ): ScenaristResponse | null => {
   // Phase 2: If mock has a sequence, use sequence tracker
   if (mock.sequence) {
@@ -189,7 +202,7 @@ const selectResponseFromMock = (
     const { position } = sequenceTracker.getPosition(
       testId,
       scenarioId,
-      mockIndex
+      mockIndex,
     );
 
     // Get response at current position
@@ -198,13 +211,13 @@ const selectResponseFromMock = (
     const response = mock.sequence.responses[position]!;
 
     // Advance position for next call
-    const repeatMode = mock.sequence.repeat || 'last';
+    const repeatMode = mock.sequence.repeat || "last";
     sequenceTracker.advance(
       testId,
       scenarioId,
       mockIndex,
       mock.sequence.responses.length,
-      repeatMode
+      repeatMode,
     );
 
     return response;
@@ -235,7 +248,7 @@ const selectResponseFromMock = (
  * { url: '/api/products', body: { itemType: 'premium' } } = 2 points
  */
 const calculateSpecificity = (
-  criteria: NonNullable<ScenaristMock["match"]>
+  criteria: NonNullable<ScenaristMock["match"]>,
 ): number => {
   let score = 0;
 
@@ -264,7 +277,7 @@ const calculateSpecificity = (
  */
 const matchesCriteria = (
   context: HttpRequestContext,
-  criteria: NonNullable<ScenaristMock["match"]>
+  criteria: NonNullable<ScenaristMock["match"]>,
 ): boolean => {
   // Check URL match (exact match or pattern)
   if (criteria.url) {
@@ -306,7 +319,7 @@ const matchesCriteria = (
  */
 const matchesBody = (
   requestBody: unknown,
-  criteriaBody: Record<string, MatchValue>
+  criteriaBody: Record<string, MatchValue>,
 ): boolean => {
   // If request has no body, can't match
   if (!requestBody || typeof requestBody !== "object") {
@@ -320,7 +333,7 @@ const matchesBody = (
     const requestValue = body[key];
 
     // Convert to string for matching (type coercion like headers/query)
-    const stringValue = requestValue == null ? '' : String(requestValue);
+    const stringValue = requestValue == null ? "" : String(requestValue);
 
     if (!matchesValue(stringValue, criteriaValue)) {
       return false;
@@ -334,7 +347,7 @@ const matchesBody = (
 const normalizeHeaderName = (name: string): string => name.toLowerCase();
 
 const createNormalizedHeaderMap = (
-  headers: Readonly<Record<string, string>>
+  headers: Readonly<Record<string, string>>,
 ): Record<string, string> => {
   const normalized: Record<string, string> = {};
   for (const [key, value] of Object.entries(headers)) {
@@ -342,7 +355,6 @@ const createNormalizedHeaderMap = (
   }
   return normalized;
 };
-
 
 /**
  * Match a request value against a match criteria value.
@@ -369,7 +381,10 @@ const createNormalizedHeaderMap = (
  * @param criteriaValue - The expected value (string, RegExp, number, boolean, null, or strategy object)
  * @returns true if values match, false otherwise
  */
-const matchesValue = (requestValue: string, criteriaValue: MatchValue | unknown): boolean => {
+const matchesValue = (
+  requestValue: string,
+  criteriaValue: MatchValue | unknown,
+): boolean => {
   if (typeof criteriaValue === "string") {
     return requestValue === criteriaValue;
   }
@@ -387,7 +402,7 @@ const matchesValue = (requestValue: string, criteriaValue: MatchValue | unknown)
   }
 
   if (criteriaValue == null) {
-    return requestValue === '';
+    return requestValue === "";
   }
 
   const strategyValue = criteriaValue as Record<string, unknown>;
@@ -409,7 +424,10 @@ const matchesValue = (requestValue: string, criteriaValue: MatchValue | unknown)
   }
 
   if (strategyValue.regex !== undefined) {
-    return matchesRegex(requestValue, strategyValue.regex as { source: string; flags?: string });
+    return matchesRegex(
+      requestValue,
+      strategyValue.regex as { source: string; flags?: string },
+    );
   }
 
   return false;
@@ -417,14 +435,14 @@ const matchesValue = (requestValue: string, criteriaValue: MatchValue | unknown)
 
 const matchesHeaders = (
   requestHeaders: Readonly<Record<string, string>>,
-  criteriaHeaders: Record<string, MatchValue>
+  criteriaHeaders: Record<string, MatchValue>,
 ): boolean => {
   const normalizedRequest = createNormalizedHeaderMap(requestHeaders);
 
   for (const [key, value] of Object.entries(criteriaHeaders)) {
     const normalizedKey = normalizeHeaderName(key);
     const requestValue = normalizedRequest[normalizedKey];
-    
+
     if (!requestValue || !matchesValue(requestValue, value)) {
       return false;
     }
@@ -439,12 +457,12 @@ const matchesHeaders = (
  */
 const matchesQuery = (
   requestQuery: Readonly<Record<string, string>>,
-  criteriaQuery: Record<string, MatchValue>
+  criteriaQuery: Record<string, MatchValue>,
 ): boolean => {
   // Check all required query params exist with exact matching values
   for (const [key, value] of Object.entries(criteriaQuery)) {
     const requestValue = requestQuery[key];
-    
+
     if (!requestValue || !matchesValue(requestValue, value)) {
       return false;
     }
@@ -465,7 +483,7 @@ const captureState = (
   testId: string,
   context: HttpRequestContext,
   captureConfig: Readonly<Record<string, string>>,
-  stateManager: StateManager
+  stateManager: StateManager,
 ): void => {
   for (const [stateKey, pathExpression] of Object.entries(captureConfig)) {
     const value = extractFromPath(context, pathExpression);

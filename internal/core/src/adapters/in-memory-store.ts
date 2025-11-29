@@ -1,5 +1,5 @@
-import type { ScenarioStore } from '../ports/index.js';
-import type { ActiveScenario } from '../types/index.js';
+import type { ScenarioStore } from "../ports/index.js";
+import type { ActiveScenario } from "../types/index.js";
 
 /**
  * In-memory implementation of ScenarioStore using a Map.

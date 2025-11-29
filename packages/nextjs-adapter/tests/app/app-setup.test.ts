@@ -1,25 +1,25 @@
-import { describe, it, expect } from 'vitest';
-import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/core';
-import { createScenarist } from '../../src/app/setup.js';
+import { describe, it, expect } from "vitest";
+import type { ScenaristScenario, ScenaristScenarios } from "@scenarist/core";
+import { createScenarist } from "../../src/app/setup.js";
 
 // Define all test scenarios upfront
 const testScenarios = {
   default: {
-    id: 'default',
-    name: 'Default Scenario',
-    description: 'Default test scenario',
+    id: "default",
+    name: "Default Scenario",
+    description: "Default test scenario",
     mocks: [],
   },
   premium: {
-    id: 'premium',
-    name: 'Premium Scenario',
-    description: 'Premium test scenario',
+    id: "premium",
+    name: "Premium Scenario",
+    description: "Premium test scenario",
     mocks: [],
   },
   scenario2: {
-    id: 'scenario2',
-    name: 'Scenario 2',
-    description: 'Second test scenario',
+    id: "scenario2",
+    name: "Scenario 2",
+    description: "Second test scenario",
     mocks: [],
   },
 } as const satisfies ScenaristScenarios;
@@ -32,100 +32,100 @@ const createTestSetup = async () => {
 
   // Should never be undefined in tests (NODE_ENV !== 'production')
   if (!scenarist) {
-    throw new Error('createScenarist returned undefined in test environment');
+    throw new Error("createScenarist returned undefined in test environment");
   }
 
   return { scenarist };
 };
 
-describe('App Router createScenarist', () => {
-  it('should create scenarist instance with config', async () => {
+describe("App Router createScenarist", () => {
+  it("should create scenarist instance with config", async () => {
     const { scenarist } = await createTestSetup();
 
     expect(scenarist.config).toBeDefined();
     expect(scenarist.config.enabled).toBe(true);
   });
 
-  it('should have all scenarios registered at initialization', async () => {
+  it("should have all scenarios registered at initialization", async () => {
     const { scenarist } = await createTestSetup();
 
     const scenarios = scenarist.listScenarios();
 
     expect(scenarios).toHaveLength(3); // default + premium + scenario2
-    expect(scenarios.map((s) => s.id)).toContain('default');
-    expect(scenarios.map((s) => s.id)).toContain('premium');
-    expect(scenarios.map((s) => s.id)).toContain('scenario2');
+    expect(scenarios.map((s) => s.id)).toContain("default");
+    expect(scenarios.map((s) => s.id)).toContain("premium");
+    expect(scenarios.map((s) => s.id)).toContain("scenario2");
   });
 
-  it('should switch scenarios', async () => {
+  it("should switch scenarios", async () => {
     const { scenarist } = await createTestSetup();
 
-    const result = scenarist.switchScenario('test-1', 'premium');
+    const result = scenarist.switchScenario("test-1", "premium");
 
     expect(result.success).toBe(true);
   });
 
-  it('should get active scenario', async () => {
+  it("should get active scenario", async () => {
     const { scenarist } = await createTestSetup();
 
-    scenarist.switchScenario('test-2', 'premium');
+    scenarist.switchScenario("test-2", "premium");
 
-    const active = scenarist.getActiveScenario('test-2');
+    const active = scenarist.getActiveScenario("test-2");
 
     expect(active).toEqual({
-      scenarioId: 'premium',
+      scenarioId: "premium",
     });
   });
 
-  it('should get scenario by ID', async () => {
+  it("should get scenario by ID", async () => {
     const { scenarist } = await createTestSetup();
 
-    const scenario = scenarist.getScenarioById('premium');
+    const scenario = scenarist.getScenarioById("premium");
 
     expect(scenario).toEqual(testScenarios.premium);
   });
 
-  it('should clear scenario for test ID', async () => {
+  it("should clear scenario for test ID", async () => {
     const { scenarist } = await createTestSetup();
 
-    scenarist.switchScenario('test-3', 'premium');
+    scenarist.switchScenario("test-3", "premium");
 
-    scenarist.clearScenario('test-3');
+    scenarist.clearScenario("test-3");
 
-    const active = scenarist.getActiveScenario('test-3');
+    const active = scenarist.getActiveScenario("test-3");
     expect(active).toBeUndefined();
   });
 
-  it('should provide scenario endpoint handler', async () => {
+  it("should provide scenario endpoint handler", async () => {
     const { scenarist } = await createTestSetup();
 
     expect(scenarist.createScenarioEndpoint).toBeDefined();
-    expect(typeof scenarist.createScenarioEndpoint).toBe('function');
+    expect(typeof scenarist.createScenarioEndpoint).toBe("function");
   });
 
-  it('should create working scenario endpoint when called', async () => {
+  it("should create working scenario endpoint when called", async () => {
     const { scenarist } = await createTestSetup();
 
     const endpoint = scenarist.createScenarioEndpoint();
 
     expect(endpoint).toBeDefined();
-    expect(typeof endpoint).toBe('function');
+    expect(typeof endpoint).toBe("function");
   });
 
-  it('should start MSW server', async () => {
+  it("should start MSW server", async () => {
     const { scenarist } = await createTestSetup();
 
     expect(() => scenarist.start()).not.toThrow();
   });
 
-  it('should stop MSW server', async () => {
+  it("should stop MSW server", async () => {
     const { scenarist } = await createTestSetup();
 
     scenarist.start();
     await expect(scenarist.stop()).resolves.not.toThrow();
   });
 
-  describe('Singleton guard for createScenarist() instance', () => {
+  describe("Singleton guard for createScenarist() instance", () => {
     // Clean up all global state between tests
     const clearAllGlobals = () => {
       delete (global as any).__scenarist_instance;
@@ -139,8 +139,7 @@ describe('App Router createScenarist', () => {
       clearAllGlobals();
     });
 
-    it('should return same instance when createScenarist() called multiple times', async () => {
-
+    it("should return same instance when createScenarist() called multiple times", async () => {
       const instance1 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
@@ -155,7 +154,7 @@ describe('App Router createScenarist', () => {
       expect(instance1).toBe(instance2);
     });
 
-    it('should prevent duplicate scenario registration errors', async () => {
+    it("should prevent duplicate scenario registration errors", async () => {
       // First call registers all scenarios
       const instance1 = createScenarist({
         enabled: true,
@@ -173,7 +172,7 @@ describe('App Router createScenarist', () => {
       expect(instance2).toBe(instance1);
     });
 
-    it('should share scenario registry across all instances', async () => {
+    it("should share scenario registry across all instances", async () => {
       const instance1 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
@@ -185,7 +184,7 @@ describe('App Router createScenarist', () => {
       });
 
       if (!instance1 || !instance2) {
-        throw new Error('Instances should not be undefined in tests');
+        throw new Error("Instances should not be undefined in tests");
       }
 
       // Both instances should see the same scenarios
@@ -196,7 +195,7 @@ describe('App Router createScenarist', () => {
       expect(scenarios1).toHaveLength(3); // default + premium + scenario2
     });
 
-    it('should share scenario store across all instances', async () => {
+    it("should share scenario store across all instances", async () => {
       const instance1 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
@@ -208,20 +207,20 @@ describe('App Router createScenarist', () => {
       });
 
       if (!instance1 || !instance2) {
-        throw new Error('Instances should not be undefined in tests');
+        throw new Error("Instances should not be undefined in tests");
       }
 
       // Switch scenario using instance1
-      instance1.switchScenario('test-singleton-store', 'premium');
+      instance1.switchScenario("test-singleton-store", "premium");
 
       // Instance2 should see the same active scenario
-      const active = instance2.getActiveScenario('test-singleton-store');
+      const active = instance2.getActiveScenario("test-singleton-store");
       expect(active).toEqual({
-        scenarioId: 'premium',
+        scenarioId: "premium",
       });
     });
 
-    it('should maintain singleton across different scenario configurations', async () => {
+    it("should maintain singleton across different scenario configurations", async () => {
       const instance1 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
@@ -235,20 +234,20 @@ describe('App Router createScenarist', () => {
 
       expect(instance1).toBe(instance2);
       if (!instance2) {
-        throw new Error('Instance should not be undefined in tests');
+        throw new Error("Instance should not be undefined in tests");
       }
       // Original config should be preserved
       expect(instance2.config.enabled).toBe(true); // Not false!
     });
   });
 
-  describe('Singleton guard in start() method', () => {
+  describe("Singleton guard in start() method", () => {
     // Clean up global flag between tests
     const clearGlobalFlag = () => {
       delete (global as any).__scenarist_msw_started;
     };
 
-    it('should start MSW on first start() call', async () => {
+    it("should start MSW on first start() call", async () => {
       clearGlobalFlag();
       const { scenarist } = await createTestSetup();
 
@@ -256,7 +255,7 @@ describe('App Router createScenarist', () => {
       expect(() => scenarist.start()).not.toThrow();
     });
 
-    it('should skip MSW initialization on subsequent start() calls from different instances', async () => {
+    it("should skip MSW initialization on subsequent start() calls from different instances", async () => {
       clearGlobalFlag();
       const scenarist1 = createScenarist({
         enabled: true,
@@ -268,7 +267,7 @@ describe('App Router createScenarist', () => {
       });
 
       if (!scenarist1 || !scenarist2) {
-        throw new Error('Instances should not be undefined in tests');
+        throw new Error("Instances should not be undefined in tests");
       }
 
       scenarist1.start(); // First call - should start MSW
@@ -277,7 +276,7 @@ describe('App Router createScenarist', () => {
       expect(() => scenarist2.start()).not.toThrow();
     });
 
-    it('should share scenario store across multiple instances', async () => {
+    it("should share scenario store across multiple instances", async () => {
       clearGlobalFlag();
       const scenarist1 = createScenarist({
         enabled: true,
@@ -289,23 +288,23 @@ describe('App Router createScenarist', () => {
       });
 
       if (!scenarist1 || !scenarist2) {
-        throw new Error('Instances should not be undefined in tests');
+        throw new Error("Instances should not be undefined in tests");
       }
 
       scenarist1.start();
       scenarist2.start();
 
       // Switch scenario using instance 1
-      scenarist1.switchScenario('test-singleton-1', 'premium');
+      scenarist1.switchScenario("test-singleton-1", "premium");
 
       // Verify instance 2 sees the same scenario
-      const active = scenarist2.getActiveScenario('test-singleton-1');
+      const active = scenarist2.getActiveScenario("test-singleton-1");
       expect(active).toEqual({
-        scenarioId: 'premium',
+        scenarioId: "premium",
       });
     });
 
-    it('should allow multiple start() calls on same instance', async () => {
+    it("should allow multiple start() calls on same instance", async () => {
       clearGlobalFlag();
       const { scenarist } = await createTestSetup();
 
@@ -318,7 +317,7 @@ describe('App Router createScenarist', () => {
     });
   });
 
-  describe('getHeaders method', () => {
+  describe("getHeaders method", () => {
     // Clean up all global state between tests to allow different configs
     const clearAllGlobals = () => {
       delete (global as any).__scenarist_instance;
@@ -327,59 +326,59 @@ describe('App Router createScenarist', () => {
       delete (global as any).__scenarist_msw_started;
     };
 
-    it('should extract test ID from request using default configured header name', async () => {
+    it("should extract test ID from request using default configured header name", async () => {
       clearAllGlobals();
       const { scenarist } = await createTestSetup();
-      const headers = new Headers({ 'x-scenarist-test-id': 'test-123' });
-      const req = new Request('http://localhost:3000', { headers });
+      const headers = new Headers({ "x-scenarist-test-id": "test-123" });
+      const req = new Request("http://localhost:3000", { headers });
 
       const result = scenarist.getHeaders(req);
 
-      expect(result).toEqual({ 'x-scenarist-test-id': 'test-123' });
+      expect(result).toEqual({ "x-scenarist-test-id": "test-123" });
     });
 
-    it('should use default test ID when header is missing', async () => {
+    it("should use default test ID when header is missing", async () => {
       clearAllGlobals();
       const { scenarist } = await createTestSetup();
-      const req = new Request('http://localhost:3000');
+      const req = new Request("http://localhost:3000");
 
       const result = scenarist.getHeaders(req);
 
-      expect(result).toEqual({ 'x-scenarist-test-id': 'default-test' });
+      expect(result).toEqual({ "x-scenarist-test-id": "default-test" });
     });
 
-    it('should respect custom default test ID from config', async () => {
+    it("should respect custom default test ID from config", async () => {
       clearAllGlobals();
       const scenarist = createScenarist({
         enabled: true,
         scenarios: testScenarios,
-        defaultTestId: 'my-default',
+        defaultTestId: "my-default",
       });
 
       if (!scenarist) {
-        throw new Error('Scenarist should not be undefined in tests');
+        throw new Error("Scenarist should not be undefined in tests");
       }
 
-      const req = new Request('http://localhost:3000');
+      const req = new Request("http://localhost:3000");
 
       const result = scenarist.getHeaders(req);
 
-      expect(result).toEqual({ 'x-scenarist-test-id': 'my-default' });
+      expect(result).toEqual({ "x-scenarist-test-id": "my-default" });
     });
 
-    it('should handle case-insensitive header lookup', async () => {
+    it("should handle case-insensitive header lookup", async () => {
       clearAllGlobals();
       const { scenarist } = await createTestSetup();
-      const headers = new Headers({ 'X-SCENARIST-TEST-ID': 'test-123' }); // uppercase
-      const req = new Request('http://localhost:3000', { headers });
+      const headers = new Headers({ "X-SCENARIST-TEST-ID": "test-123" }); // uppercase
+      const req = new Request("http://localhost:3000", { headers });
 
       const result = scenarist.getHeaders(req);
 
-      expect(result).toEqual({ 'x-scenarist-test-id': 'test-123' });
+      expect(result).toEqual({ "x-scenarist-test-id": "test-123" });
     });
   });
 
-  describe('getHeadersFromReadonlyHeaders method', () => {
+  describe("getHeadersFromReadonlyHeaders method", () => {
     // Clean up all global state between tests to allow different configs
     const clearAllGlobals = () => {
       delete (global as any).__scenarist_instance;
@@ -406,50 +405,54 @@ describe('App Router createScenarist', () => {
       }
     }
 
-    it('should extract test ID from ReadonlyHeaders using default configured header name', async () => {
+    it("should extract test ID from ReadonlyHeaders using default configured header name", async () => {
       clearAllGlobals();
       const { scenarist } = await createTestSetup();
-      const headers = new MockReadonlyHeaders({ 'x-scenarist-test-id': 'test-456' });
+      const headers = new MockReadonlyHeaders({
+        "x-scenarist-test-id": "test-456",
+      });
 
       const result = scenarist.getHeadersFromReadonlyHeaders(headers);
 
-      expect(result).toEqual({ 'x-scenarist-test-id': 'test-456' });
+      expect(result).toEqual({ "x-scenarist-test-id": "test-456" });
     });
 
-    it('should use default test ID when header is missing from ReadonlyHeaders', async () => {
+    it("should use default test ID when header is missing from ReadonlyHeaders", async () => {
       clearAllGlobals();
       const { scenarist } = await createTestSetup();
       const headers = new MockReadonlyHeaders({}); // No headers
 
       const result = scenarist.getHeadersFromReadonlyHeaders(headers);
 
-      expect(result).toEqual({ 'x-scenarist-test-id': 'default-test' });
+      expect(result).toEqual({ "x-scenarist-test-id": "default-test" });
     });
 
-    it('should handle lowercase header names with ReadonlyHeaders', async () => {
+    it("should handle lowercase header names with ReadonlyHeaders", async () => {
       clearAllGlobals();
       const { scenarist } = await createTestSetup();
       // ReadonlyHeaders.get() is case-insensitive, store as uppercase
-      const headers = new MockReadonlyHeaders({ 'X-SCENARIST-TEST-ID': 'test-uppercase' });
+      const headers = new MockReadonlyHeaders({
+        "X-SCENARIST-TEST-ID": "test-uppercase",
+      });
 
       const result = scenarist.getHeadersFromReadonlyHeaders(headers);
 
       // Should still extract correctly despite uppercase input
-      expect(result).toEqual({ 'x-scenarist-test-id': 'test-uppercase' });
+      expect(result).toEqual({ "x-scenarist-test-id": "test-uppercase" });
     });
 
-    it('should return object with single header entry', async () => {
+    it("should return object with single header entry", async () => {
       clearAllGlobals();
       const { scenarist } = await createTestSetup();
       const headers = new MockReadonlyHeaders({
-        'x-scenarist-test-id': 'test-single',
-        'x-other-header': 'other-value', // Should be ignored
+        "x-scenarist-test-id": "test-single",
+        "x-other-header": "other-value", // Should be ignored
       });
 
       const result = scenarist.getHeadersFromReadonlyHeaders(headers);
 
       // Should only contain test ID header, nothing else
-      expect(result).toEqual({ 'x-scenarist-test-id': 'test-single' });
+      expect(result).toEqual({ "x-scenarist-test-id": "test-single" });
       expect(Object.keys(result)).toHaveLength(1);
     });
   });

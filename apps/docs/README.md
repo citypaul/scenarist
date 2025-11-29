@@ -63,20 +63,21 @@ Navigation is defined in `astro.config.mjs` under `sidebar`:
 ```javascript
 sidebar: [
   {
-    label: 'Introduction',
+    label: "Introduction",
     items: [
-      { label: 'Quick Start', slug: 'getting-started/quick-start' },
-      { label: 'Why Scenarist?', slug: 'introduction/why-scenarist' },
+      { label: "Quick Start", slug: "getting-started/quick-start" },
+      { label: "Why Scenarist?", slug: "introduction/why-scenarist" },
       // ...
     ],
   },
   // ...
-]
+];
 ```
 
 ### Adding New Pages
 
 1. Create MDX file in `src/content/docs/`:
+
    ```bash
    # Example: Add new framework guide
    mkdir -p src/content/docs/frameworks/remix
@@ -84,6 +85,7 @@ sidebar: [
    ```
 
 2. Add frontmatter to new page:
+
    ```mdx
    ---
    title: Remix - Getting Started
@@ -116,6 +118,7 @@ See [documentation writing principles](../../docs/plans/documentation-site.md#7-
 **Node.js version:** 20 (defined in `.nvmrc`)
 
 **Key dependencies:**
+
 - `astro` - Static site generator
 - `@astrojs/starlight` - Documentation theme
 - `rehype-mermaid` - Mermaid diagram support
@@ -124,6 +127,7 @@ See [documentation writing principles](../../docs/plans/documentation-site.md#7-
 ## Cloudflare Pages Configuration
 
 **Recommended build settings (monorepo):**
+
 - **Root directory:** `apps/docs`
 - **Build command:** `npm run build`
 - **Build output directory:** `dist` (relative to Root directory)
@@ -131,12 +135,14 @@ See [documentation writing principles](../../docs/plans/documentation-site.md#7-
 - **Build watch paths:** `apps/docs/**` (only build when docs change)
 
 **How it works:**
+
 - Cloudflare navigates to `apps/docs` (Root directory)
 - Automatically runs `npm install`
 - Runs `npm run build`
 - Deploys contents of `dist/` to production
 
 See [CLOUDFLARE_SETUP.md](./CLOUDFLARE_SETUP.md) for complete setup guide including:
+
 - Step-by-step GitHub integration
 - Custom domain configuration (scenarist.io)
 - Alternative pnpm approaches for workspace dependencies
@@ -199,11 +205,13 @@ pnpm dev
 ## Maintenance
 
 **Automatic:**
+
 - Dependencies: Dependabot creates PRs
 - SSL certificates: Cloudflare auto-renews
 - Build cache: Managed by Cloudflare Pages
 
 **Manual:**
+
 - Review Dependabot PRs monthly
 - Update Node.js version as needed
 - Monitor build times and optimization opportunities

@@ -11,9 +11,9 @@ declare global {
 
 export const trackEvent = (
   eventName: string,
-  options?: PlausibleEventOptions
+  options?: PlausibleEventOptions,
 ): void => {
-  if (typeof window !== 'undefined' && window.plausible) {
+  if (typeof window !== "undefined" && window.plausible) {
     window.plausible(eventName, options);
   }
 };

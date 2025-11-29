@@ -13,13 +13,13 @@
  * Scenarist approach: ✅ Playwright + sequences + RSC = works perfectly
  */
 
-import { headers } from 'next/headers';
+import { headers } from "next/headers";
 
-import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+import { getScenaristHeadersFromReadonlyHeaders } from "@scenarist/nextjs-adapter/app";
 
 type JobStatus = {
   readonly jobId: string;
-  readonly status: 'pending' | 'processing' | 'complete';
+  readonly status: "pending" | "processing" | "complete";
   readonly progress: number;
 };
 
@@ -27,12 +27,15 @@ async function fetchJobStatus(jobId: string): Promise<JobStatus> {
   // Get ReadonlyHeaders from Next.js Server Component
   const headersList = await headers();
 
-  const response = await fetch(`http://localhost:3002/api/github/jobs/${jobId}`, {
-    headers: {
-      ...getScenaristHeadersFromReadonlyHeaders(headersList),
+  const response = await fetch(
+    `http://localhost:3002/api/github/jobs/${jobId}`,
+    {
+      headers: {
+        ...getScenaristHeadersFromReadonlyHeaders(headersList),
+      },
+      cache: "no-store", // Disable Next.js caching for demo
     },
-    cache: 'no-store', // Disable Next.js caching for demo
-  });
+  );
 
   if (!response.ok) {
     throw new Error(`Failed to fetch job status: ${response.statusText}`);
@@ -53,28 +56,28 @@ type PollingPageProps = {
  * Scenarist + Playwright CAN test this - sequences advance on each server render!
  */
 export default async function PollingPage({ searchParams }: PollingPageProps) {
-  const { jobId = '123' } = await searchParams;
+  const { jobId = "123" } = await searchParams;
   const job = await fetchJobStatus(jobId);
 
-  const getStatusColor = (status: JobStatus['status']) => {
+  const getStatusColor = (status: JobStatus["status"]) => {
     switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'processing':
-        return 'bg-blue-100 text-blue-800';
-      case 'complete':
-        return 'bg-green-100 text-green-800';
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "processing":
+        return "bg-blue-100 text-blue-800";
+      case "complete":
+        return "bg-green-100 text-green-800";
     }
   };
 
-  const getProgressBarColor = (status: JobStatus['status']) => {
+  const getProgressBarColor = (status: JobStatus["status"]) => {
     switch (status) {
-      case 'pending':
-        return 'bg-yellow-500';
-      case 'processing':
-        return 'bg-blue-500';
-      case 'complete':
-        return 'bg-green-500';
+      case "pending":
+        return "bg-yellow-500";
+      case "processing":
+        return "bg-blue-500";
+      case "complete":
+        return "bg-green-500";
     }
   };
 
@@ -85,8 +88,8 @@ export default async function PollingPage({ searchParams }: PollingPageProps) {
           Job Polling (React Server Component)
         </h1>
         <p className="text-gray-600 mb-4">
-          This page demonstrates testing sequences with Scenarist and RSC.
-          Each server render advances the sequence: pending → processing → complete.
+          This page demonstrates testing sequences with Scenarist and RSC. Each
+          server render advances the sequence: pending → processing → complete.
         </p>
         <p className="text-sm text-gray-500">
           <strong>Job ID:</strong> {jobId}
@@ -118,14 +121,16 @@ export default async function PollingPage({ searchParams }: PollingPageProps) {
           </div>
 
           <div className="text-sm text-gray-600">
-            {job.status === 'pending' && (
+            {job.status === "pending" && (
               <p>Job is queued and waiting to start...</p>
             )}
-            {job.status === 'processing' && (
+            {job.status === "processing" && (
               <p>Job is currently being processed...</p>
             )}
-            {job.status === 'complete' && (
-              <p className="text-green-700 font-medium">Job completed successfully!</p>
+            {job.status === "complete" && (
+              <p className="text-green-700 font-medium">
+                Job completed successfully!
+              </p>
             )}
           </div>
         </div>
@@ -134,10 +139,12 @@ export default async function PollingPage({ searchParams }: PollingPageProps) {
           <h3 className="font-semibold mb-2">Testing Sequences with RSC</h3>
           <div className="space-y-2 text-sm">
             <p>
-              <strong>Sequence Pattern:</strong> Each page refresh advances the sequence
+              <strong>Sequence Pattern:</strong> Each page refresh advances the
+              sequence
             </p>
             <p>
-              <strong>Repeat Mode:</strong> 'last' - Final state (complete) persists
+              <strong>Repeat Mode:</strong> 'last' - Final state (complete)
+              persists
             </p>
             <p className="text-xs text-gray-600 mt-2">
               This proves Scenarist sequences work with Server Components!

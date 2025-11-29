@@ -1,5 +1,5 @@
-import { test, expect, devices } from '@playwright/test';
-import AxeBuilder from '@axe-core/playwright';
+import { test, expect, devices } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 /**
  * Axe Accessibility Tests
@@ -16,16 +16,16 @@ import AxeBuilder from '@axe-core/playwright';
  */
 
 const PAGES = [
-  { name: 'Landing Page', url: '/' },
-  { name: 'Quick Start Page', url: '/getting-started/quick-start' },
+  { name: "Landing Page", url: "/" },
+  { name: "Quick Start Page", url: "/getting-started/quick-start" },
 ];
 
 const VIEWPORTS = [
-  { name: 'Desktop', viewport: { width: 1280, height: 720 } },
-  { name: 'Mobile', viewport: devices['iPhone 12'].viewport },
+  { name: "Desktop", viewport: { width: 1280, height: 720 } },
+  { name: "Mobile", viewport: devices["iPhone 12"].viewport },
 ];
 
-test.describe('Accessibility - axe-core audits', () => {
+test.describe("Accessibility - axe-core audits", () => {
   for (const testPage of PAGES) {
     for (const device of VIEWPORTS) {
       test(`${testPage.name} - ${device.name} - should have no accessibility violations`, async ({
@@ -37,37 +37,41 @@ test.describe('Accessibility - axe-core audits', () => {
         const page = await context.newPage();
 
         await page.goto(testPage.url);
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState("networkidle");
 
         const accessibilityScanResults = await new AxeBuilder({ page })
-          .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+          .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
           .analyze();
 
         if (accessibilityScanResults.violations.length > 0) {
-          console.log(`\n${'='.repeat(60)}`);
-          console.log(`Accessibility Violations: ${testPage.name} (${device.name})`);
-          console.log('='.repeat(60));
+          console.log(`\n${"=".repeat(60)}`);
+          console.log(
+            `Accessibility Violations: ${testPage.name} (${device.name})`,
+          );
+          console.log("=".repeat(60));
 
           for (const violation of accessibilityScanResults.violations) {
-            console.log(`\n[${violation.impact?.toUpperCase()}] ${violation.id}`);
+            console.log(
+              `\n[${violation.impact?.toUpperCase()}] ${violation.id}`,
+            );
             console.log(`  Description: ${violation.description}`);
             console.log(`  Help: ${violation.help}`);
             console.log(`  Help URL: ${violation.helpUrl}`);
             console.log(`  Affected nodes:`);
             for (const node of violation.nodes) {
               console.log(`    - ${node.html}`);
-              console.log(`      Target: ${node.target.join(' > ')}`);
+              console.log(`      Target: ${node.target.join(" > ")}`);
               if (node.failureSummary) {
                 console.log(`      Fix: ${node.failureSummary}`);
               }
             }
           }
-          console.log('\n');
+          console.log("\n");
         }
 
         expect(
           accessibilityScanResults.violations,
-          `Found ${accessibilityScanResults.violations.length} accessibility violations`
+          `Found ${accessibilityScanResults.violations.length} accessibility violations`,
         ).toEqual([]);
 
         await context.close();
@@ -76,73 +80,84 @@ test.describe('Accessibility - axe-core audits', () => {
   }
 });
 
-test.describe('Accessibility - Specific checks', () => {
-  test('Landing Page - all interactive elements should be keyboard accessible', async ({
+test.describe("Accessibility - Specific checks", () => {
+  test("Landing Page - all interactive elements should be keyboard accessible", async ({
     page,
   }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
-    const interactiveElements = await page.locator('a, button, [role="button"]').all();
+    const interactiveElements = await page
+      .locator('a, button, [role="button"]')
+      .all();
 
     for (const element of interactiveElements) {
       const isVisible = await element.isVisible();
       if (isVisible) {
-        const tabIndex = await element.getAttribute('tabindex');
+        const tabIndex = await element.getAttribute("tabindex");
         expect(
           tabIndex === null || Number(tabIndex) >= 0,
-          `Element should be keyboard accessible: ${await element.innerHTML()}`
+          `Element should be keyboard accessible: ${await element.innerHTML()}`,
         ).toBeTruthy();
       }
     }
   });
 
-  test('Landing Page - all images should have alt text', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+  test("Landing Page - all images should have alt text", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
-    const images = await page.locator('img').all();
+    const images = await page.locator("img").all();
 
     for (const img of images) {
-      const alt = await img.getAttribute('alt');
-      const role = await img.getAttribute('role');
-      const ariaHidden = await img.getAttribute('aria-hidden');
+      const alt = await img.getAttribute("alt");
+      const role = await img.getAttribute("role");
+      const ariaHidden = await img.getAttribute("aria-hidden");
 
       const hasAlt = alt !== null;
-      const isDecorative = role === 'presentation' || ariaHidden === 'true';
+      const isDecorative = role === "presentation" || ariaHidden === "true";
 
       expect(
         hasAlt || isDecorative,
-        `Image should have alt text or be marked decorative: ${await img.getAttribute('src')}`
+        `Image should have alt text or be marked decorative: ${await img.getAttribute("src")}`,
       ).toBeTruthy();
     }
   });
 
-  test('All pages should have proper document structure', async ({ page }) => {
+  test("All pages should have proper document structure", async ({ page }) => {
     for (const testPage of PAGES) {
       await page.goto(testPage.url);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState("networkidle");
 
-      const h1Count = await page.locator('h1').count();
-      expect(h1Count, `${testPage.name} should have at least one h1`).toBeGreaterThanOrEqual(1);
+      const h1Count = await page.locator("h1").count();
+      expect(
+        h1Count,
+        `${testPage.name} should have at least one h1`,
+      ).toBeGreaterThanOrEqual(1);
 
-      const htmlLang = await page.locator('html').getAttribute('lang');
-      expect(htmlLang, `${testPage.name} should have lang attribute`).toBeTruthy();
+      const htmlLang = await page.locator("html").getAttribute("lang");
+      expect(
+        htmlLang,
+        `${testPage.name} should have lang attribute`,
+      ).toBeTruthy();
 
-      const main = await page.locator('main').count();
-      expect(main, `${testPage.name} should have a main element`).toBeGreaterThanOrEqual(1);
+      const main = await page.locator("main").count();
+      expect(
+        main,
+        `${testPage.name} should have a main element`,
+      ).toBeGreaterThanOrEqual(1);
     }
   });
 
-  test('Focus should be visible on interactive elements', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+  test("Focus should be visible on interactive elements", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
-    await page.keyboard.press('Tab');
-    await page.keyboard.press('Tab');
-    await page.keyboard.press('Tab');
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Tab");
 
-    const focusedElement = page.locator(':focus');
+    const focusedElement = page.locator(":focus");
     await expect(focusedElement).toBeVisible();
   });
 });

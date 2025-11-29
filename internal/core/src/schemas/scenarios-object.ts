@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { ScenaristScenarioSchema } from './scenario-definition.js';
+import { z } from "zod";
+import { ScenaristScenarioSchema } from "./scenario-definition.js";
 
 /**
  * Validates that a scenarios object has a 'default' key.
@@ -13,6 +13,6 @@ import { ScenaristScenarioSchema } from './scenario-definition.js';
  */
 export const ScenariosObjectSchema = z
   .record(z.string(), ScenaristScenarioSchema)
-  .refine((scenarios) => 'default' in scenarios, {
+  .refine((scenarios) => "default" in scenarios, {
     message: "Scenarios object must have a 'default' key",
   });

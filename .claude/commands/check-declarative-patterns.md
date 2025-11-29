@@ -48,6 +48,7 @@ grep "scenario:" packages/core/src/types/scenario.ts && echo "❌ ActiveScenario
 ## What Makes Patterns Declarative?
 
 ✅ **Declarative (ALLOWED):**
+
 - Primitives: `string`, `number`, `boolean`, `null`
 - Plain objects: `{ key: value }`
 - Arrays: `ReadonlyArray<T>`
@@ -57,6 +58,7 @@ grep "scenario:" packages/core/src/types/scenario.ts && echo "❌ ActiveScenario
 - Match criteria: `{ headers: { 'x-tier': 'premium' } }`
 
 ❌ **Imperative (NOT ALLOWED):**
+
 - Functions: `() => void`, `(x: T) => U`
 - Closures: functions capturing external variables
 - Imperative logic: `(req) => req.header === 'premium'`
@@ -64,6 +66,7 @@ grep "scenario:" packages/core/src/types/scenario.ts && echo "❌ ActiveScenario
 - Symbols, undefined, circular references
 
 Report any imperative patterns found with:
+
 - File path
 - Type name
 - Specific violation

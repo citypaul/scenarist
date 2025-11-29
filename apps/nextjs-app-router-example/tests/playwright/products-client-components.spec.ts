@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect } from "./fixtures";
 
 /**
  * Products Page - Request Matching with Scenarist
@@ -25,30 +25,36 @@ import { test, expect } from './fixtures';
  * - Fixture API for clean configuration (no repeated baseURL/endpoint)
  */
 
-test.describe('Products Page - Request Matching (with Scenarist)', () => {
-  test('premium user sees premium pricing', async ({ page, switchScenario }) => {
+test.describe("Products Page - Request Matching (with Scenarist)", () => {
+  test("premium user sees premium pricing", async ({
+    page,
+    switchScenario,
+  }) => {
     // Switch to premium user scenario (baseURL and endpoint from config)
-    await switchScenario(page, 'premiumUser');
+    await switchScenario(page, "premiumUser");
 
     // Navigate to products page
-    await page.goto('/');
+    await page.goto("/");
 
     // Click premium tier button and wait for API response
     await Promise.all([
       page.waitForResponse(
-        (resp) => resp.url().includes('/api/products') && resp.ok()
+        (resp) => resp.url().includes("/api/products") && resp.ok(),
       ),
-      page.getByRole('button', { name: 'Select premium tier' }).click(),
+      page.getByRole("button", { name: "Select premium tier" }).click(),
     ]);
 
     // Verify premium pricing is displayed (£99.99 for first product)
-    const firstProduct = page.getByRole('article').first();
-    await expect(firstProduct.getByText('£99.99')).toBeVisible();
+    const firstProduct = page.getByRole("article").first();
+    await expect(firstProduct.getByText("£99.99")).toBeVisible();
   });
 
-  test('standard user sees standard pricing', async ({ page, switchScenario }) => {
+  test("standard user sees standard pricing", async ({
+    page,
+    switchScenario,
+  }) => {
     // Switch to standard user scenario (baseURL and endpoint from config)
-    await switchScenario(page, 'standardUser');
+    await switchScenario(page, "standardUser");
 
     // Navigate to products page and wait for initial products fetch
     // Note: The page loads with userTier='standard' by default, so the initial
@@ -57,13 +63,13 @@ test.describe('Products Page - Request Matching (with Scenarist)', () => {
     // doesn't trigger a new fetch (no state change).
     await Promise.all([
       page.waitForResponse(
-        (resp) => resp.url().includes('/api/products') && resp.ok()
+        (resp) => resp.url().includes("/api/products") && resp.ok(),
       ),
-      page.goto('/'),
+      page.goto("/"),
     ]);
 
     // Verify standard pricing is displayed (£149.99 for first product)
-    const firstProduct = page.getByRole('article').first();
-    await expect(firstProduct.getByText('£149.99')).toBeVisible();
+    const firstProduct = page.getByRole("article").first();
+    await expect(firstProduct.getByText("£149.99")).toBeVisible();
   });
 });

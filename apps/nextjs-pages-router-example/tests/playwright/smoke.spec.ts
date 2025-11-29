@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
 /**
  * Smoke test - Verify basic app functionality
@@ -13,17 +13,17 @@ import { test, expect } from '@playwright/test';
  * 5. Test infrastructure (Playwright + Next.js) works correctly
  */
 
-test('app loads and displays expected content', async ({ page }) => {
-  await page.goto('/');
+test("app loads and displays expected content", async ({ page }) => {
+  await page.goto("/");
 
   // Verify title
   await expect(page).toHaveTitle(/Scenarist E-commerce Example/);
 
   // Verify main heading is visible
-  const heading = page.locator('h1');
+  const heading = page.locator("h1");
   await expect(heading).toBeVisible();
-  await expect(heading).toHaveText('Scenarist E-commerce Example');
+  await expect(heading).toHaveText("Scenarist E-commerce Example");
 
   // Verify product catalog is displayed (at least one product card)
-  await expect(page.getByRole('article').first()).toBeVisible();
+  await expect(page.getByRole("article").first()).toBeVisible();
 });

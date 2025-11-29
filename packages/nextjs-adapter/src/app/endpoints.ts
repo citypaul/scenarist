@@ -1,6 +1,9 @@
-import type { ScenarioManager, ScenaristConfig } from '@scenarist/core';
-import { AppRequestContext } from './context.js';
-import { handlePostLogic, handleGetLogic } from '../common/endpoint-handlers.js';
+import type { ScenarioManager, ScenaristConfig } from "@scenarist/core";
+import { AppRequestContext } from "./context.js";
+import {
+  handlePostLogic,
+  handleGetLogic,
+} from "../common/endpoint-handlers.js";
 
 /**
  * Handle POST request to switch scenarios.
@@ -30,7 +33,7 @@ const handlePost = (manager: ScenarioManager, config: ScenaristConfig) => {
         testId: result.testId,
         scenarioId: result.scenarioId,
       },
-      { status: 200 }
+      { status: 200 },
     );
   };
 };
@@ -52,7 +55,7 @@ const handleGet = (manager: ScenarioManager, config: ScenaristConfig) => {
           error: result.error,
           testId: result.testId,
         },
-        { status: result.status }
+        { status: result.status },
       );
     }
 
@@ -62,7 +65,7 @@ const handleGet = (manager: ScenarioManager, config: ScenaristConfig) => {
         scenarioId: result.scenarioId,
         ...(result.scenarioName && { scenarioName: result.scenarioName }),
       },
-      { status: 200 }
+      { status: 200 },
     );
   };
 };
@@ -86,25 +89,25 @@ const handleGet = (manager: ScenarioManager, config: ScenaristConfig) => {
  */
 export const createScenarioEndpoint = (
   manager: ScenarioManager,
-  config: ScenaristConfig
+  config: ScenaristConfig,
 ) => {
   const postHandler = handlePost(manager, config);
   const getHandler = handleGet(manager, config);
 
   return async (req: Request): Promise<Response> => {
-    if (req.method === 'POST') {
+    if (req.method === "POST") {
       return postHandler(req);
     }
 
-    if (req.method === 'GET') {
+    if (req.method === "GET") {
       return getHandler(req);
     }
 
     return Response.json(
       {
-        error: 'Method not allowed',
+        error: "Method not allowed",
       },
-      { status: 405 }
+      { status: 405 },
     );
   };
 };

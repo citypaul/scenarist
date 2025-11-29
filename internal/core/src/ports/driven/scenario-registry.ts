@@ -1,4 +1,4 @@
-import type { ScenaristScenario } from '../../types/index.js';
+import type { ScenaristScenario } from "../../types/index.js";
 
 /**
  * Secondary port for scenario registry.

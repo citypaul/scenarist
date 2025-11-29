@@ -16,7 +16,7 @@ RegExp objects cannot be directly serialized to JSON because they're not primiti
 **Recommended Approach: `z.instanceof(RegExp)`**
 
 ```typescript
-import { z } from 'zod';
+import { z } from "zod";
 
 // Validate runtime RegExp instances
 const RegExpSchema = z.instanceof(RegExp);
@@ -37,6 +37,7 @@ type Config = z.infer<typeof ConfigSchema>;
 **Source:** [GitHub Issue #2735](https://github.com/colinhacks/zod/issues/2735)
 
 **Why this works:**
+
 - ✅ Validates actual RegExp runtime type
 - ✅ Proper TypeScript type inference for unions
 - ✅ Idiomatic Zod approach
@@ -47,12 +48,12 @@ type Config = z.infer<typeof ConfigSchema>;
 When you need to store RegExp as JSON, use a serialized representation:
 
 ```typescript
-import { z } from 'zod';
+import { z } from "zod";
 
 // Serialized regex format
 const SerializedRegexSchema = z.object({
   source: z.string().min(1),
-  flags: z.string().regex(/^[gimsuvy]*$/),  // Valid JS regex flags
+  flags: z.string().regex(/^[gimsuvy]*$/), // Valid JS regex flags
 });
 
 type SerializedRegex = z.infer<typeof SerializedRegexSchema>;
@@ -78,12 +79,16 @@ const deserializeRegex = (data: SerializedRegex): RegExp => {
 ```
 
 **TypeScript typing:**
+
 ```typescript
 // Brand type for type safety
-type RegexPattern = string & { readonly __brand: 'RegexPattern' };
+type RegexPattern = string & { readonly __brand: "RegexPattern" };
 
 const SerializedRegexBrandedSchema = z.object({
-  source: z.string().min(1).transform((s) => s as RegexPattern),
+  source: z
+    .string()
+    .min(1)
+    .transform((s) => s as RegexPattern),
   flags: z.string().regex(/^[gimsuvy]*$/),
 });
 ```
@@ -97,7 +102,7 @@ const SerializedRegexBrandedSchema = z.object({
 ```typescript
 // SuperJSON serializes RegExp to string representation
 const object = {
-  normal: 'string',
+  normal: "string",
   timestamp: new Date(),
   test: /superjson/gi,
 };
@@ -127,15 +132,16 @@ const restored = superjson.deserialize({ json, meta });
 **Key insight:** SuperJSON separates JSON-compatible data from type metadata. RegExp becomes a string in `json`, with type info in `meta.values`.
 
 **Zod equivalent:**
+
 ```typescript
 // Schema for SuperJSON-style serialized regex
 const SuperJSONRegexSchema = z.object({
   json: z.object({
-    pattern: z.string(),  // "/superjson/gi"
+    pattern: z.string(), // "/superjson/gi"
   }),
   meta: z.object({
     values: z.object({
-      pattern: z.array(z.literal('regexp')),
+      pattern: z.array(z.literal("regexp")),
     }),
   }),
 });
@@ -156,12 +162,14 @@ const serialized = serialize(data);
 ```
 
 **Security features:**
+
 - ✅ Auto-escapes HTML characters (prevents XSS)
 - ✅ Escapes JavaScript line terminators
 - ✅ Safe for embedding in `<script>` tags
 - ⚠️ `unsafe: true` option disables protections (use with caution)
 
 **Zod schema for constructor format:**
+
 ```typescript
 // Not directly applicable - this format is meant for eval
 // If you need to validate, use SerializedRegexSchema above
@@ -174,26 +182,28 @@ const serialized = serialize(data);
 **Detection Libraries:**
 
 1. **safe-regex** (npm package)
+
    ```typescript
-   import safeRegex from 'safe-regex';
+   import safeRegex from "safe-regex";
 
-   const pattern = '(a+)+';
-   safeRegex(pattern);  // false - vulnerable!
+   const pattern = "(a+)+";
+   safeRegex(pattern); // false - vulnerable!
 
-   const safe = '^[a-z]+$';
-   safeRegex(safe);  // true - safe
+   const safe = "^[a-z]+$";
+   safeRegex(safe); // true - safe
    ```
 
    **Limitation:** Has false positives/negatives. Use `vuln-regex-detector` for better accuracy.
 
 2. **redos-detector** (npm package)
-   ```typescript
-   import { isSafe } from 'redos-detector';
 
-   const result = isSafe('(a+)+');
+   ```typescript
+   import { isSafe } from "redos-detector";
+
+   const result = isSafe("(a+)+");
    // { safe: false, score: 10 }
 
-   const safeResult = isSafe('^[a-z]+$');
+   const safeResult = isSafe("^[a-z]+$");
    // { safe: true, score: 0 }
    ```
 
@@ -203,11 +213,12 @@ const serialized = serialize(data);
    - ✅ ESLint plugin available
 
 3. **vuln-regex-detector** (npm package)
-   ```typescript
-   import { detect } from 'vuln-regex-detector';
 
-   detect('(a+)+').then((result) => {
-     console.log(result.vulnerable);  // true
+   ```typescript
+   import { detect } from "vuln-regex-detector";
+
+   detect("(a+)+").then((result) => {
+     console.log(result.vulnerable); // true
    });
    ```
 
@@ -218,8 +229,8 @@ const serialized = serialize(data);
 **Integration with Zod:**
 
 ```typescript
-import { z } from 'zod';
-import { isSafe } from 'redos-detector';
+import { z } from "zod";
+import { isSafe } from "redos-detector";
 
 const SafeRegexSourceSchema = z.string().refine(
   (source) => {
@@ -227,8 +238,8 @@ const SafeRegexSourceSchema = z.string().refine(
     return result.safe;
   },
   {
-    message: 'Regular expression is vulnerable to ReDoS attacks',
-  }
+    message: "Regular expression is vulnerable to ReDoS attacks",
+  },
 );
 
 const SafeSerializedRegexSchema = z.object({
@@ -239,8 +250,8 @@ const SafeSerializedRegexSchema = z.object({
 // Usage
 try {
   SafeSerializedRegexSchema.parse({
-    source: '(a+)+',  // Vulnerable pattern
-    flags: '',
+    source: "(a+)+", // Vulnerable pattern
+    flags: "",
   });
 } catch (error) {
   // Error: Regular expression is vulnerable to ReDoS attacks
@@ -259,16 +270,17 @@ try {
 **Regolith (Rust-backed alternative):**
 
 ```typescript
-import { RegExp as SafeRegExp } from 'regolith';
+import { RegExp as SafeRegExp } from "regolith";
 
 // Drop-in replacement with guaranteed linear performance
-const regex = new SafeRegExp('(a+)+');
+const regex = new SafeRegExp("(a+)+");
 // No catastrophic backtracking - safe by design
 ```
 
 ### 1.5 Database Storage Patterns
 
 **PostgreSQL (JSON column):**
+
 ```sql
 CREATE TABLE patterns (
   id SERIAL PRIMARY KEY,
@@ -281,21 +293,26 @@ INSERT INTO patterns (config) VALUES (
 ```
 
 **MongoDB:**
+
 ```javascript
 db.patterns.insert({
   pattern: {
-    source: '^[a-z]+$',
-    flags: 'i'
-  }
+    source: "^[a-z]+$",
+    flags: "i",
+  },
 });
 ```
 
 **Redis:**
+
 ```javascript
-redis.set('pattern:1', JSON.stringify({
-  source: '^[a-z]+$',
-  flags: 'i'
-}));
+redis.set(
+  "pattern:1",
+  JSON.stringify({
+    source: "^[a-z]+$",
+    flags: "i",
+  }),
+);
 ```
 
 ### 1.6 Recommended Implementation
@@ -303,24 +320,26 @@ redis.set('pattern:1', JSON.stringify({
 **Complete Type-Safe Solution:**
 
 ```typescript
-import { z } from 'zod';
-import { isSafe } from 'redos-detector';
+import { z } from "zod";
+import { isSafe } from "redos-detector";
 
 // Schema for serialized regex
 export const SerializedRegexSchema = z.object({
-  source: z.string()
-    .min(1, 'Regex pattern cannot be empty')
+  source: z
+    .string()
+    .min(1, "Regex pattern cannot be empty")
     .refine(
       (source) => {
         const result = isSafe(source);
         return result.safe;
       },
-      { message: 'Regex pattern is vulnerable to ReDoS attacks' }
+      { message: "Regex pattern is vulnerable to ReDoS attacks" },
     ),
-  flags: z.string()
-    .regex(/^[gimsuvy]*$/, 'Invalid regex flags')
+  flags: z
+    .string()
+    .regex(/^[gimsuvy]*$/, "Invalid regex flags")
     .optional()
-    .default(''),
+    .default(""),
 });
 
 export type SerializedRegex = z.infer<typeof SerializedRegexSchema>;
@@ -367,7 +386,7 @@ const restored = fromJSON(json);
 
 // Validation catches unsafe patterns
 try {
-  deserializeRegex({ source: '(a+)+', flags: '' });
+  deserializeRegex({ source: "(a+)+", flags: "" });
 } catch (error) {
   // Error: Regex pattern is vulnerable to ReDoS attacks
 }
@@ -388,10 +407,10 @@ Template engines like Handlebars, Mustache, and Nunjucks use different approache
 **Registration API:**
 
 ```typescript
-import Handlebars from 'handlebars';
+import Handlebars from "handlebars";
 
 // Basic helper
-Handlebars.registerHelper('loud', (str: string) => {
+Handlebars.registerHelper("loud", (str: string) => {
   return str.toUpperCase();
 });
 
@@ -403,19 +422,11 @@ Handlebars.registerHelper('loud', (str: string) => {
 ```typescript
 // From @types/handlebars
 declare namespace Handlebars {
-  type HelperDelegate = (
-    this: any,
-    ...args: any[]
-  ) => string | void;
+  type HelperDelegate = (this: any, ...args: any[]) => string | void;
 
-  function registerHelper(
-    name: string,
-    fn: HelperDelegate
-  ): void;
+  function registerHelper(name: string, fn: HelperDelegate): void;
 
-  function registerHelper(
-    helpers: { [name: string]: HelperDelegate }
-  ): void;
+  function registerHelper(helpers: { [name: string]: HelperDelegate }): void;
 }
 ```
 
@@ -428,6 +439,7 @@ Handlebars parses helpers as "a simple identifier, followed by zero or more para
 ```
 
 Each parameter is a Handlebars expression:
+
 - **Literals:** `{{helper "string" 123 true false null}}`
 - **Variables:** `{{helper user.name product.price}}`
 - **Subexpressions:** `{{helper (otherHelper "arg")}}`
@@ -439,7 +451,7 @@ Each parameter is a Handlebars expression:
 ```
 
 ```typescript
-Handlebars.registerHelper('helper', function(...args: any[]) {
+Handlebars.registerHelper("helper", function (...args: any[]) {
   const options = args[args.length - 1];
   const hash = options.hash;
   // hash = { key1: value1, key2: value2 }
@@ -489,8 +501,8 @@ Mustache is **logic-less** - no functions with arguments in templates.
 
 ```javascript
 // Define wrapper function
-data.FUNC = function() {
-  return function(val, render) {
+data.FUNC = function () {
+  return function (val, render) {
     const values = JSON.parse(render(val));
     return window[values.FUNCNAME].apply(this, values.FUNCARGS);
   };
@@ -519,7 +531,7 @@ const parseTemplate = (template: string) => {
   for (const match of matches) {
     const helperName = match[1];
     const argsString = match[2];
-    const args = argsString.split(',').map(s => s.trim());
+    const args = argsString.split(",").map((s) => s.trim());
 
     calls.push({ helperName, args });
   }
@@ -528,14 +540,15 @@ const parseTemplate = (template: string) => {
 };
 
 // Usage
-parseTemplate('{{uuid()}}');
+parseTemplate("{{uuid()}}");
 // [{ helperName: 'uuid', args: [''] }]
 
-parseTemplate('{{iso8601(+7days)}}');
+parseTemplate("{{iso8601(+7days)}}");
 // [{ helperName: 'iso8601', args: ['+7days'] }]
 ```
 
 **Limitations:**
+
 - ❌ Can't handle nested function calls
 - ❌ Can't handle quoted strings with commas
 - ❌ Can't handle complex expressions
@@ -545,16 +558,16 @@ parseTemplate('{{iso8601(+7days)}}');
 **Source:** [edge-js/parser](https://github.com/edge-js/parser)
 
 ```typescript
-import { Parser } from 'edge-parser';
+import { Parser } from "edge-parser";
 
 const parser = new Parser();
 
 // Generate AST from expression
-const ast = parser.utils.generateAST('uuid()', loc, filename);
+const ast = parser.utils.generateAST("uuid()", loc, filename);
 
 // Transform AST (e.g., prefix state references)
 const transformed = parser.utils.transformAst(ast, filename, (node) => {
-  if (node.type === 'Identifier') {
+  if (node.type === "Identifier") {
     // Transform identifier nodes
   }
   return node;
@@ -565,6 +578,7 @@ const code = parser.utils.stringify(transformed);
 ```
 
 **Capabilities:**
+
 - ✅ Handles complex JavaScript expressions
 - ✅ Supports nested calls: `outer(inner(arg))`
 - ✅ Supports object/array literals
@@ -589,45 +603,45 @@ const code = parser.utils.stringify(transformed);
 **Source:** [rse/tokenizr](https://github.com/rse/tokenizr)
 
 ```typescript
-import Tokenizr from 'tokenizr';
+import Tokenizr from "tokenizr";
 
 const lexer = new Tokenizr();
 
 // Define tokens
 lexer.rule(/\{\{/, (ctx) => {
-  ctx.accept('open');
-  ctx.state('inside');
+  ctx.accept("open");
+  ctx.state("inside");
 });
 
-lexer.rule('inside', /(\w+)/, (ctx, match) => {
-  ctx.accept('identifier', match[1]);
+lexer.rule("inside", /(\w+)/, (ctx, match) => {
+  ctx.accept("identifier", match[1]);
 });
 
-lexer.rule('inside', /\(/, (ctx) => {
-  ctx.accept('lparen');
-  ctx.state('args');
+lexer.rule("inside", /\(/, (ctx) => {
+  ctx.accept("lparen");
+  ctx.state("args");
 });
 
-lexer.rule('args', /([^,)]+)/, (ctx, match) => {
-  ctx.accept('arg', match[1].trim());
+lexer.rule("args", /([^,)]+)/, (ctx, match) => {
+  ctx.accept("arg", match[1].trim());
 });
 
-lexer.rule('args', /,/, (ctx) => {
-  ctx.accept('comma');
+lexer.rule("args", /,/, (ctx) => {
+  ctx.accept("comma");
 });
 
-lexer.rule('args', /\)/, (ctx) => {
-  ctx.accept('rparen');
-  ctx.state('inside');
+lexer.rule("args", /\)/, (ctx) => {
+  ctx.accept("rparen");
+  ctx.state("inside");
 });
 
-lexer.rule('inside', /\}\}/, (ctx) => {
-  ctx.accept('close');
-  ctx.state('default');
+lexer.rule("inside", /\}\}/, (ctx) => {
+  ctx.accept("close");
+  ctx.state("default");
 });
 
 // Tokenize
-lexer.input('{{uuid()}}');
+lexer.input("{{uuid()}}");
 const tokens = lexer.tokens();
 // [
 //   { type: 'open', value: '{{' },
@@ -639,6 +653,7 @@ const tokens = lexer.tokens();
 ```
 
 **Benefits:**
+
 - ✅ State-based parsing (can switch modes)
 - ✅ Flexible token rules
 - ✅ Can handle complex nested structures
@@ -665,21 +680,21 @@ const helpers: HelperRegistry = {};
 // Register helper with type safety
 const registerHelper = <TArgs extends any[], TReturn = string>(
   name: string,
-  fn: HelperFn<TArgs, TReturn>
+  fn: HelperFn<TArgs, TReturn>,
 ) => {
   helpers[name] = fn;
 };
 
 // Usage
-registerHelper('uuid', () => crypto.randomUUID());
+registerHelper("uuid", () => crypto.randomUUID());
 
-registerHelper('iso8601', (offset?: string) => {
+registerHelper("iso8601", (offset?: string) => {
   const date = new Date();
   if (offset) {
     // Parse offset like "+7days"
     const match = offset.match(/^([+-])(\d+)(days?|hours?|minutes?)$/);
     if (match) {
-      const sign = match[1] === '+' ? 1 : -1;
+      const sign = match[1] === "+" ? 1 : -1;
       const value = parseInt(match[2]);
       const unit = match[3];
       // Apply offset...
@@ -688,7 +703,7 @@ registerHelper('iso8601', (offset?: string) => {
   return date.toISOString();
 });
 
-registerHelper('randomInt', (min: number, max: number) => {
+registerHelper("randomInt", (min: number, max: number) => {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 });
 ```
@@ -705,9 +720,9 @@ const callHelper = (name: string, args: unknown[]): unknown => {
 };
 
 // Usage
-callHelper('uuid', []);  // "550e8400-e29b-41d4-a716-446655440000"
-callHelper('iso8601', ['+7days']);  // "2025-11-20T12:00:00.000Z"
-callHelper('randomInt', [1, 100]);  // 42
+callHelper("uuid", []); // "550e8400-e29b-41d4-a716-446655440000"
+callHelper("iso8601", ["+7days"]); // "2025-11-20T12:00:00.000Z"
+callHelper("randomInt", [1, 100]); // 42
 ```
 
 ### 2.6 Argument Validation with Zod
@@ -715,18 +730,21 @@ callHelper('randomInt', [1, 100]);  // 42
 **Type-safe helper with validated arguments:**
 
 ```typescript
-import { z } from 'zod';
+import { z } from "zod";
 
 // Define argument schema
 const Iso8601ArgsSchema = z.tuple([
-  z.string().regex(/^[+-]\d+(days?|hours?|minutes?)$/).optional(),
+  z
+    .string()
+    .regex(/^[+-]\d+(days?|hours?|minutes?)$/)
+    .optional(),
 ]);
 
 // Create validated helper
 const createValidatedHelper = <TSchema extends z.ZodTypeAny>(
   name: string,
   argsSchema: TSchema,
-  fn: (args: z.infer<TSchema>) => string
+  fn: (args: z.infer<TSchema>) => string,
 ) => {
   return (...args: unknown[]) => {
     const validated = argsSchema.parse(args);
@@ -736,18 +754,14 @@ const createValidatedHelper = <TSchema extends z.ZodTypeAny>(
 
 // Register with validation
 registerHelper(
-  'iso8601',
-  createValidatedHelper(
-    'iso8601',
-    Iso8601ArgsSchema,
-    ([offset]) => {
-      const date = new Date();
-      if (offset) {
-        // Apply offset...
-      }
-      return date.toISOString();
+  "iso8601",
+  createValidatedHelper("iso8601", Iso8601ArgsSchema, ([offset]) => {
+    const date = new Date();
+    if (offset) {
+      // Apply offset...
     }
-  )
+    return date.toISOString();
+  }),
 );
 ```
 
@@ -756,13 +770,13 @@ registerHelper(
 **Complete parser for `{{helper(arg1, arg2)}}`:**
 
 ```typescript
-import { z } from 'zod';
+import { z } from "zod";
 
 // AST node types
 type ASTNode =
-  | { type: 'HelperCall'; name: string; args: Argument[] }
-  | { type: 'Literal'; value: string | number | boolean }
-  | { type: 'StateReference'; path: string };
+  | { type: "HelperCall"; name: string; args: Argument[] }
+  | { type: "Literal"; value: string | number | boolean }
+  | { type: "StateReference"; path: string };
 
 type Argument = ASTNode;
 
@@ -771,67 +785,70 @@ const parseHelperCall = (expression: string): ASTNode => {
   const match = expression.match(/^(\w+)\((.*)\)$/);
 
   if (!match) {
-    throw new Error('Invalid helper call syntax');
+    throw new Error("Invalid helper call syntax");
   }
 
   const [, name, argsString] = match;
 
   const args: Argument[] = argsString
-    .split(',')
-    .map(arg => arg.trim())
-    .filter(arg => arg.length > 0)
+    .split(",")
+    .map((arg) => arg.trim())
+    .filter((arg) => arg.length > 0)
     .map(parseArgument);
 
-  return { type: 'HelperCall', name, args };
+  return { type: "HelperCall", name, args };
 };
 
 const parseArgument = (arg: string): Argument => {
   // String literal
   if (arg.startsWith('"') && arg.endsWith('"')) {
-    return { type: 'Literal', value: arg.slice(1, -1) };
+    return { type: "Literal", value: arg.slice(1, -1) };
   }
 
   // Number literal
   if (/^-?\d+(\.\d+)?$/.test(arg)) {
-    return { type: 'Literal', value: parseFloat(arg) };
+    return { type: "Literal", value: parseFloat(arg) };
   }
 
   // Boolean literal
-  if (arg === 'true' || arg === 'false') {
-    return { type: 'Literal', value: arg === 'true' };
+  if (arg === "true" || arg === "false") {
+    return { type: "Literal", value: arg === "true" };
   }
 
   // State reference (e.g., state.userId)
-  if (arg.startsWith('state.')) {
-    return { type: 'StateReference', path: arg };
+  if (arg.startsWith("state.")) {
+    return { type: "StateReference", path: arg };
   }
 
   // Otherwise treat as string literal
-  return { type: 'Literal', value: arg };
+  return { type: "Literal", value: arg };
 };
 
 // Evaluate AST node
-const evaluateNode = (node: ASTNode, state: Record<string, unknown>): unknown => {
+const evaluateNode = (
+  node: ASTNode,
+  state: Record<string, unknown>,
+): unknown => {
   switch (node.type) {
-    case 'Literal':
+    case "Literal":
       return node.value;
 
-    case 'StateReference':
-      const path = node.path.replace(/^state\./, '');
+    case "StateReference":
+      const path = node.path.replace(/^state\./, "");
       return getNestedValue(state, path);
 
-    case 'HelperCall':
-      const args = node.args.map(arg => evaluateNode(arg, state));
+    case "HelperCall":
+      const args = node.args.map((arg) => evaluateNode(arg, state));
       return callHelper(node.name, args);
   }
 };
 
 // Helper to get nested values
 const getNestedValue = (obj: any, path: string): unknown => {
-  const keys = path.split('.');
+  const keys = path.split(".");
   let value = obj;
   for (const key of keys) {
-    if (value && typeof value === 'object' && key in value) {
+    if (value && typeof value === "object" && key in value) {
       value = value[key];
     } else {
       return undefined;
@@ -844,10 +861,10 @@ const getNestedValue = (obj: any, path: string): unknown => {
 **Usage:**
 
 ```typescript
-const state = { userId: 'user-123' };
+const state = { userId: "user-123" };
 
 // Parse and evaluate
-const ast1 = parseHelperCall('uuid()');
+const ast1 = parseHelperCall("uuid()");
 const result1 = evaluateNode(ast1, state);
 // "550e8400-e29b-41d4-a716-446655440000"
 
@@ -855,13 +872,13 @@ const ast2 = parseHelperCall('iso8601("+7days")');
 const result2 = evaluateNode(ast2, state);
 // "2025-11-20T12:00:00.000Z"
 
-const ast3 = parseHelperCall('randomInt(1, 100)');
+const ast3 = parseHelperCall("randomInt(1, 100)");
 const result3 = evaluateNode(ast3, state);
 // 42
 
 // With state reference
-registerHelper('echo', (value: unknown) => String(value));
-const ast4 = parseHelperCall('echo(state.userId)');
+registerHelper("echo", (value: unknown) => String(value));
+const ast4 = parseHelperCall("echo(state.userId)");
 const result4 = evaluateNode(ast4, state);
 // "user-123"
 ```
@@ -871,7 +888,7 @@ const result4 = evaluateNode(ast4, state);
 **Complete type-safe template helper system:**
 
 ```typescript
-import { z } from 'zod';
+import { z } from "zod";
 
 // 1. Helper function types
 type HelperFn = (...args: unknown[]) => unknown;
@@ -903,22 +920,24 @@ export const callHelper = (name: string, args: unknown[]): unknown => {
 // 5. Parse template expression
 const HELPER_CALL_REGEX = /^(\w+)\((.*)\)$/;
 
-export const parseTemplate = (template: string): {
+export const parseTemplate = (
+  template: string,
+): {
   name: string;
   args: unknown[];
 } => {
   const match = template.match(HELPER_CALL_REGEX);
 
   if (!match) {
-    throw new Error('Invalid template syntax');
+    throw new Error("Invalid template syntax");
   }
 
   const [, name, argsString] = match;
 
   const args = argsString
-    .split(',')
-    .map(arg => arg.trim())
-    .filter(arg => arg.length > 0)
+    .split(",")
+    .map((arg) => arg.trim())
+    .filter((arg) => arg.length > 0)
     .map(parseArgument);
 
   return { name, args };
@@ -926,8 +945,10 @@ export const parseTemplate = (template: string): {
 
 const parseArgument = (arg: string): unknown => {
   // String literal
-  if ((arg.startsWith('"') && arg.endsWith('"')) ||
-      (arg.startsWith("'") && arg.endsWith("'"))) {
+  if (
+    (arg.startsWith('"') && arg.endsWith('"')) ||
+    (arg.startsWith("'") && arg.endsWith("'"))
+  ) {
     return arg.slice(1, -1);
   }
 
@@ -937,11 +958,11 @@ const parseArgument = (arg: string): unknown => {
   }
 
   // Boolean
-  if (arg === 'true') return true;
-  if (arg === 'false') return false;
+  if (arg === "true") return true;
+  if (arg === "false") return false;
 
   // Null
-  if (arg === 'null') return null;
+  if (arg === "null") return null;
 
   // Default: string
   return arg;
@@ -954,31 +975,31 @@ export const executeTemplate = (template: string): unknown => {
 };
 
 // 7. Built-in helpers
-registerHelper('uuid', () => {
+registerHelper("uuid", () => {
   return crypto.randomUUID();
 });
 
-registerHelper('iso8601', (offset?: string) => {
+registerHelper("iso8601", (offset?: string) => {
   const date = new Date();
 
-  if (offset && typeof offset === 'string') {
+  if (offset && typeof offset === "string") {
     const match = offset.match(/^([+-])(\d+)(days?|hours?|minutes?)$/);
     if (match) {
-      const sign = match[1] === '+' ? 1 : -1;
+      const sign = match[1] === "+" ? 1 : -1;
       const value = parseInt(match[2]) * sign;
       const unit = match[3];
 
       switch (unit) {
-        case 'day':
-        case 'days':
+        case "day":
+        case "days":
           date.setDate(date.getDate() + value);
           break;
-        case 'hour':
-        case 'hours':
+        case "hour":
+        case "hours":
           date.setHours(date.getHours() + value);
           break;
-        case 'minute':
-        case 'minutes':
+        case "minute":
+        case "minutes":
           date.setMinutes(date.getMinutes() + value);
           break;
       }
@@ -988,13 +1009,13 @@ registerHelper('iso8601', (offset?: string) => {
   return date.toISOString();
 });
 
-registerHelper('randomInt', (min: unknown, max: unknown) => {
-  const minNum = typeof min === 'number' ? min : 0;
-  const maxNum = typeof max === 'number' ? max : 100;
+registerHelper("randomInt", (min: unknown, max: unknown) => {
+  const minNum = typeof min === "number" ? min : 0;
+  const maxNum = typeof max === "number" ? max : 100;
   return Math.floor(Math.random() * (maxNum - minNum + 1)) + minNum;
 });
 
-registerHelper('timestamp', () => {
+registerHelper("timestamp", () => {
   return Date.now();
 });
 ```
@@ -1003,23 +1024,23 @@ registerHelper('timestamp', () => {
 
 ```typescript
 // Execute templates
-executeTemplate('uuid()');
+executeTemplate("uuid()");
 // "550e8400-e29b-41d4-a716-446655440000"
 
-executeTemplate('iso8601()');
+executeTemplate("iso8601()");
 // "2025-11-13T12:00:00.000Z"
 
 executeTemplate('iso8601("+7days")');
 // "2025-11-20T12:00:00.000Z"
 
-executeTemplate('randomInt(1, 100)');
+executeTemplate("randomInt(1, 100)");
 // 42
 
-executeTemplate('timestamp()');
+executeTemplate("timestamp()");
 // 1699887600000
 
 // Register custom helpers
-registerHelper('uppercase', (str: unknown) => {
+registerHelper("uppercase", (str: unknown) => {
   return String(str).toUpperCase();
 });
 
@@ -1033,27 +1054,27 @@ executeTemplate('uppercase("hello")');
 
 ### Regex Serialization Libraries
 
-| Library | Pros | Cons | Use Case |
-|---------|------|------|----------|
-| **SuperJSON** | ✅ Simple API<br>✅ Metadata separation<br>✅ Multiple types supported | ❌ String representation only<br>❌ No ReDoS protection | Full-stack apps with tRPC/Next.js |
-| **serialize-javascript** | ✅ XSS protection<br>✅ Constructor format<br>✅ Script embedding | ❌ Eval required<br>❌ No type safety | Server-side rendering |
-| **Custom Zod** | ✅ Type safety<br>✅ Validation<br>✅ ReDoS protection | ❌ More code to write<br>❌ Manual implementation | Production APIs with user input |
+| Library                  | Pros                                                                   | Cons                                                    | Use Case                          |
+| ------------------------ | ---------------------------------------------------------------------- | ------------------------------------------------------- | --------------------------------- |
+| **SuperJSON**            | ✅ Simple API<br>✅ Metadata separation<br>✅ Multiple types supported | ❌ String representation only<br>❌ No ReDoS protection | Full-stack apps with tRPC/Next.js |
+| **serialize-javascript** | ✅ XSS protection<br>✅ Constructor format<br>✅ Script embedding      | ❌ Eval required<br>❌ No type safety                   | Server-side rendering             |
+| **Custom Zod**           | ✅ Type safety<br>✅ Validation<br>✅ ReDoS protection                 | ❌ More code to write<br>❌ Manual implementation       | Production APIs with user input   |
 
 ### Template Parsing Approaches
 
-| Approach | Complexity | Capabilities | Best For |
-|----------|-----------|--------------|----------|
-| **Regex** | Low | Simple patterns only | Basic template replacement |
-| **AST (Edge)** | High | Full JavaScript expressions | Complex template engine |
-| **Tokenizer** | Medium | Configurable rules | Custom DSL parsing |
+| Approach       | Complexity | Capabilities                | Best For                   |
+| -------------- | ---------- | --------------------------- | -------------------------- |
+| **Regex**      | Low        | Simple patterns only        | Basic template replacement |
+| **AST (Edge)** | High       | Full JavaScript expressions | Complex template engine    |
+| **Tokenizer**  | Medium     | Configurable rules          | Custom DSL parsing         |
 
 ### Template Engine Comparison
 
-| Engine | Helper Support | Argument Parsing | Type Safety |
-|--------|---------------|------------------|-------------|
-| **Handlebars** | ✅ Excellent | Built-in subexpressions | TypeScript types available |
-| **Nunjucks** | ✅ Good | Standard function calls | Limited types |
-| **Mustache** | ❌ Logic-less | N/A (no arguments) | N/A |
+| Engine         | Helper Support | Argument Parsing        | Type Safety                |
+| -------------- | -------------- | ----------------------- | -------------------------- |
+| **Handlebars** | ✅ Excellent   | Built-in subexpressions | TypeScript types available |
+| **Nunjucks**   | ✅ Good        | Standard function calls | Limited types              |
+| **Mustache**   | ❌ Logic-less  | N/A (no arguments)      | N/A                        |
 
 ---
 
@@ -1065,12 +1086,18 @@ executeTemplate('uppercase("hello")');
 
 ```typescript
 // RECOMMENDED
-import { z } from 'zod';
-import { isSafe } from 'redos-detector';
+import { z } from "zod";
+import { isSafe } from "redos-detector";
 
 const SafeSerializedRegexSchema = z.object({
-  source: z.string().min(1).refine((s) => isSafe(s).safe),
-  flags: z.string().regex(/^[gimsuvy]*$/).default(''),
+  source: z
+    .string()
+    .min(1)
+    .refine((s) => isSafe(s).safe),
+  flags: z
+    .string()
+    .regex(/^[gimsuvy]*$/)
+    .default(""),
 });
 
 // Serialize
@@ -1096,7 +1123,7 @@ const SerializedRegexSchema = z.object({
 });
 
 // Can use SuperJSON for simplicity
-import superjson from 'superjson';
+import superjson from "superjson";
 const serialized = superjson.stringify({ pattern: /test/gi });
 const deserialized = superjson.parse(serialized);
 ```
@@ -1111,7 +1138,7 @@ const HELPER_REGEX = /\{\{(\w+)\((.*?)\)\}\}/g;
 
 const executeTemplate = (template: string) => {
   return template.replace(HELPER_REGEX, (match, name, argsString) => {
-    const args = argsString.split(',').map(s => s.trim());
+    const args = argsString.split(",").map((s) => s.trim());
     return String(callHelper(name, args));
   });
 };
@@ -1121,7 +1148,7 @@ const executeTemplate = (template: string) => {
 
 ```typescript
 // RECOMMENDED: AST-based parsing (Edge parser)
-import { Parser } from 'edge-parser';
+import { Parser } from "edge-parser";
 
 const parser = new Parser();
 const ast = parser.utils.generateAST(expression, loc, filename);
@@ -1132,7 +1159,7 @@ const code = parser.utils.stringify(ast);
 
 ```typescript
 // RECOMMENDED: Tokenizer (Tokenizr)
-import Tokenizr from 'tokenizr';
+import Tokenizr from "tokenizr";
 
 const lexer = new Tokenizr();
 // Define rules...
@@ -1154,12 +1181,12 @@ const isRegExp = (value: unknown): value is RegExp => {
 };
 
 const transformRegExp = (regex: RegExp) => {
-  return regex.toString();  // "/pattern/flags"
+  return regex.toString(); // "/pattern/flags"
 };
 
 const untransformRegExp = (str: string): RegExp => {
   const match = str.match(/^\/(.*)\/([gimsuvy]*)$/);
-  if (!match) throw new Error('Invalid regex string');
+  if (!match) throw new Error("Invalid regex string");
   return new RegExp(match[1], match[2]);
 };
 ```
@@ -1171,7 +1198,7 @@ const untransformRegExp = (str: string): RegExp => {
 ```typescript
 // Simplified from source
 export function registerHelper(name: string, fn: Function) {
-  if (typeof name === 'object') {
+  if (typeof name === "object") {
     Utils.extend(this.helpers, name);
   } else {
     this.helpers[name] = fn;
@@ -1179,16 +1206,19 @@ export function registerHelper(name: string, fn: Function) {
 }
 
 // Built-in helper example
-registerHelper('if', function(conditional, options) {
+registerHelper("if", function (conditional, options) {
   if (arguments.length !== 2) {
-    throw new Exception('#if requires exactly one argument');
+    throw new Exception("#if requires exactly one argument");
   }
 
   if (Utils.isFunction(conditional)) {
     conditional = conditional.call(this);
   }
 
-  if (!options.hash.includeZero && !conditional || Utils.isEmpty(conditional)) {
+  if (
+    (!options.hash.includeZero && !conditional) ||
+    Utils.isEmpty(conditional)
+  ) {
     return options.inverse(this);
   } else {
     return options.fn(this);
@@ -1202,12 +1232,12 @@ registerHelper('if', function(conditional, options) {
 
 ```typescript
 // Simplified from source
-import * as acorn from 'acorn';
+import * as acorn from "acorn";
 
 export function generateAST(
   expression: string,
   loc: object,
-  filename: string
+  filename: string,
 ): any {
   try {
     return acorn.parse(expression, {
@@ -1217,8 +1247,8 @@ export function generateAST(
   } catch (error) {
     throw new EdgeError(
       `Invalid JavaScript expression: ${expression}`,
-      'E_INVALID_EXPRESSION',
-      { filename, ...loc }
+      "E_INVALID_EXPRESSION",
+      { filename, ...loc },
     );
   }
 }

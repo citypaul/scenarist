@@ -26,15 +26,15 @@ Acquisition.Web solves this by inspecting the HTTP referer header:
 
 ```typescript
 // mocks/scenarios/onlineJourneyLogin.ts (Acquisition.Web)
-http.get('/v2/api/applications/:id', async ({ request }) => {
-  const referer = request.headers.get('referer') || '';
+http.get("/v2/api/applications/:id", async ({ request }) => {
+  const referer = request.headers.get("referer") || "";
 
   // Route based on which page sent the request
-  if (referer.includes('/apply-sign') || referer.includes('/penny-drop')) {
-    return HttpResponse.json({ state: 'appComplete' }); // Pages 2-3
+  if (referer.includes("/apply-sign") || referer.includes("/penny-drop")) {
+    return HttpResponse.json({ state: "appComplete" }); // Pages 2-3
   }
 
-  return HttpResponse.json({ state: 'quoteAccept' }); // Page 1 (default)
+  return HttpResponse.json({ state: "quoteAccept" }); // Page 1 (default)
 });
 ```
 
@@ -43,27 +43,32 @@ http.get('/v2/api/applications/:id', async ({ request }) => {
 ### Problems with Referer-Based Routing
 
 **1. Implicit and Brittle:**
+
 - Relies on browser behavior (referer header may not be sent in all contexts)
 - Couples mock behavior to URL structure (changing route breaks mocks)
 - String matching on referer is fragile (`includes('/apply-sign')`)
 - Non-obvious: must read mock code to understand journey progression
 
 **2. Framework-Coupled:**
+
 - Depends on Next.js/Remix routing conventions
 - Won't work with SPA navigation (referer doesn't change within app)
 - Framework migrations require rewriting all mocks
 
 **3. Hard to Test Independently:**
+
 - Can't test "what happens at step 2" without navigating pages 1 → 2
 - Can't reorder pages without breaking mocks
 - Journey order baked into referer checks
 
 **4. Maintenance Burden:**
+
 - Adding a new page requires updating all referer checks
 - Renaming routes breaks mocks silently
 - Duplicated referer logic across multiple mocks
 
 **5. Not Self-Documenting:**
+
 - Journey progression hidden in referer conditionals
 - Can't easily see "this is step 1 of 3"
 - Requires domain knowledge (which pages exist, what order)
@@ -101,6 +106,7 @@ Scenarist already has a feature designed exactly for this use case: **Response S
 ## Problem
 
 **How can we support multi-page journeys with progressive state while:**
+
 1. Avoiding brittle referer-based routing hacks
 2. Remaining framework-agnostic (Next.js, Remix, SPA)
 3. Making journey progression explicit and self-documenting
@@ -108,6 +114,7 @@ Scenarist already has a feature designed exactly for this use case: **Response S
 5. Keeping mocks maintainable as routes change
 
 **Requirements:**
+
 - ✅ Same endpoint returns different responses per stage
 - ✅ Progression explicit (not inferred from headers)
 - ✅ Works across all frameworks (no Next.js/Remix coupling)
@@ -171,6 +178,7 @@ We will **use Scenarist's Response Sequences feature (Phase 2) for multi-page jo
 12. Sequence stays at position 2 (`repeat: 'last'`)
 
 **Key Properties:**
+
 - ✅ No referer inspection
 - ✅ No URL string matching
 - ✅ No framework-specific logic
@@ -180,22 +188,25 @@ We will **use Scenarist's Response Sequences feature (Phase 2) for multi-page jo
 ### Repeat Modes
 
 **last (most common for journeys):**
+
 ```typescript
-repeat: 'last' // Stay at final state after reaching end
+repeat: "last"; // Stay at final state after reaching end
 ```
 
 Use for: Terminal states (application complete, payment succeeded)
 
 **cycle (polling scenarios):**
+
 ```typescript
-repeat: 'cycle' // Loop back to start after reaching end
+repeat: "cycle"; // Loop back to start after reaching end
 ```
 
 Use for: Repeating patterns (weather cycle, status rotation)
 
 **none (rate limiting):**
+
 ```typescript
-repeat: 'none' // Return error after sequence exhausted
+repeat: "none"; // Return error after sequence exhausted
 ```
 
 Use for: Limited attempts (payment retry limit, API quota)
@@ -234,25 +245,28 @@ See "Problems with Referer-Based Routing" section above for detailed analysis.
 ### Alternative 2: Mid-Test Scenario Switching
 
 **Pattern:**
+
 ```typescript
-test('multi-page journey', async () => {
+test("multi-page journey", async () => {
   // Page 1
-  await switchScenario('quote-accept-scenario');
-  await page.goto('/apply/quote');
-  await expect(page.getByText('Accept Quote')).toBeVisible();
+  await switchScenario("quote-accept-scenario");
+  await page.goto("/apply/quote");
+  await expect(page.getByText("Accept Quote")).toBeVisible();
 
   // Page 2
-  await switchScenario('app-complete-scenario'); // Switch mid-test
-  await page.goto('/apply/sign');
-  await expect(page.getByText('Complete')).toBeVisible();
+  await switchScenario("app-complete-scenario"); // Switch mid-test
+  await page.goto("/apply/sign");
+  await expect(page.getByText("Complete")).toBeVisible();
 });
 ```
 
 **Pros:**
+
 - ✅ Explicit scenario per stage
 - ✅ No referer routing needed
 
 **Cons:**
+
 - ❌ Verbose (switch before every navigation)
 - ❌ Tests should set scenario once, not repeatedly
 - ❌ Violates "scenario = test context" principle
@@ -264,6 +278,7 @@ test('multi-page journey', async () => {
 ### Alternative 3: Custom Header for Stage Tracking
 
 **Pattern:**
+
 ```typescript
 test('multi-page journey', async () => {
   await page.goto('/apply/quote');
@@ -288,10 +303,12 @@ test('multi-page journey', async () => {
 ```
 
 **Pros:**
+
 - ✅ Explicit stage tracking
 - ✅ Framework-agnostic (custom header)
 
 **Cons:**
+
 - ❌ Manual header management in tests (easy to forget)
 - ❌ Still uses conditionals in mocks (not self-documenting)
 - ❌ Header pollution (another test-specific header)
@@ -302,6 +319,7 @@ test('multi-page journey', async () => {
 ### Alternative 4: Stateful Mocks (Phase 3)
 
 **Pattern:**
+
 ```typescript
 {
   method: 'POST',
@@ -324,10 +342,12 @@ test('multi-page journey', async () => {
 ```
 
 **Pros:**
+
 - ✅ Explicit state capture
 - ✅ Flexible (any state shape)
 
 **Cons:**
+
 - ❌ Requires POST request to advance state (extra API call)
 - ❌ More complex than sequences for linear journeys
 - ❌ State capture is overkill for simple progression
@@ -341,120 +361,133 @@ test('multi-page journey', async () => {
 ### Positive
 
 ✅ **Explicit > Implicit** - Sequence array shows progression:
-   ```typescript
-   sequence: {
-     responses: [
-       { body: { state: 'step1' } }, // First call
-       { body: { state: 'step2' } }, // Second call
-       { body: { state: 'step3' } }, // Third call
-     ]
-   }
-   // Reads like: "Journey has 3 steps: step1 → step2 → step3"
-   ```
+
+```typescript
+sequence: {
+  responses: [
+    { body: { state: "step1" } }, // First call
+    { body: { state: "step2" } }, // Second call
+    { body: { state: "step3" } }, // Third call
+  ];
+}
+// Reads like: "Journey has 3 steps: step1 → step2 → step3"
+```
 
 ✅ **Framework Agnostic** - No dependency on Next.js/Remix routing:
-   - Works with Next.js (App Router, Pages Router)
-   - Works with Remix
-   - Works with SPAs (React, Vue, Svelte)
-   - Works with any HTTP client
+
+- Works with Next.js (App Router, Pages Router)
+- Works with Remix
+- Works with SPAs (React, Vue, Svelte)
+- Works with any HTTP client
 
 ✅ **Self-Documenting** - Journey progression visible in mock:
-   ```typescript
-   // Before (referer routing):
-   if (referer.includes('/apply-sign')) { ... } // What step is this?
 
-   // After (sequences):
-   responses: [step1, step2, step3] // Clear: 3 steps total
-   ```
+```typescript
+// Before (referer routing):
+if (referer.includes('/apply-sign')) { ... } // What step is this?
+
+// After (sequences):
+responses: [step1, step2, step3] // Clear: 3 steps total
+```
 
 ✅ **Testable Independently** - Can test specific steps:
-   ```typescript
-   it('should return step 2 response on second call', () => {
-     selector.selectResponse(testId, scenarioId, context, mocks); // Call 1
-     const result = selector.selectResponse(testId, scenarioId, context, mocks); // Call 2
 
-     expect(result.data.body.state).toBe('appComplete'); // ✅ Step 2
-   });
-   ```
+```typescript
+it("should return step 2 response on second call", () => {
+  selector.selectResponse(testId, scenarioId, context, mocks); // Call 1
+  const result = selector.selectResponse(testId, scenarioId, context, mocks); // Call 2
+
+  expect(result.data.body.state).toBe("appComplete"); // ✅ Step 2
+});
+```
 
 ✅ **No URL Coupling** - Journey order independent of routes:
-   ```typescript
-   // Rename /apply-sign to /apply-signature → no mock changes needed
-   // Reorder pages → no mock changes needed
-   // Change routing library → no mock changes needed
-   ```
+
+```typescript
+// Rename /apply-sign to /apply-signature → no mock changes needed
+// Reorder pages → no mock changes needed
+// Change routing library → no mock changes needed
+```
 
 ✅ **Maintainable** - Add/remove steps without conditional logic:
-   ```typescript
-   // Add a new step: Just insert in array
-   responses: [
-     { body: { state: 'quoteAccept' } },
-     { body: { state: 'detailsCollect' } }, // ← New step
-     { body: { state: 'appComplete' } },
-   ]
-   ```
+
+```typescript
+// Add a new step: Just insert in array
+responses: [
+  { body: { state: "quoteAccept" } },
+  { body: { state: "detailsCollect" } }, // ← New step
+  { body: { state: "appComplete" } },
+];
+```
 
 ✅ **Already Implemented** - Phase 2 complete (PR #25):
-   - Response sequences with repeat modes
-   - Test ID isolation
-   - Specificity-based selection
-   - Integration with request matching (Phase 1)
-   - 100% test coverage
+
+- Response sequences with repeat modes
+- Test ID isolation
+- Specificity-based selection
+- Integration with request matching (Phase 1)
+- 100% test coverage
 
 ✅ **Proven Architecture** - Validates Phase 2 design decisions:
-   - Real-world use case (48/64 Acquisition.Web tests)
-   - Clear advantage over existing pattern (referer routing)
-   - Architectural principle validated (explicit > implicit)
+
+- Real-world use case (48/64 Acquisition.Web tests)
+- Clear advantage over existing pattern (referer routing)
+- Architectural principle validated (explicit > implicit)
 
 ### Negative
 
 ❌ **Must track call order** - Sequences require consistent call order:
-   ```typescript
-   // If test makes calls in unexpected order:
-   await fetch('/applications/123'); // Call 1 → step 1 ✅
-   await fetch('/applications/123'); // Call 2 → step 2 ✅
-   await fetch('/other-endpoint');   // Unrelated
-   await fetch('/applications/123'); // Call 3 → step 3 ✅
 
-   // But if conditional logic changes order:
-   if (condition) {
-     await fetch('/applications/123'); // Call 1 → step 1 ✅
-   }
-   await fetch('/applications/123');   // Call 2 OR 1 → depends on condition ❌
-   ```
+```typescript
+// If test makes calls in unexpected order:
+await fetch("/applications/123"); // Call 1 → step 1 ✅
+await fetch("/applications/123"); // Call 2 → step 2 ✅
+await fetch("/other-endpoint"); // Unrelated
+await fetch("/applications/123"); // Call 3 → step 3 ✅
 
-   **Mitigation**: Tests should follow predictable navigation order. For non-linear flows, use stateful mocks (Phase 3) instead.
+// But if conditional logic changes order:
+if (condition) {
+  await fetch("/applications/123"); // Call 1 → step 1 ✅
+}
+await fetch("/applications/123"); // Call 2 OR 1 → depends on condition ❌
+```
+
+**Mitigation**: Tests should follow predictable navigation order. For non-linear flows, use stateful mocks (Phase 3) instead.
 
 ❌ **Limited to linear progression** - Sequences don't handle:
-   - Jumping to arbitrary steps (use stateful mocks)
-   - Conditional branching (use match criteria + multiple sequences)
-   - User going backward (would need negative advancement)
 
-   **Mitigation**: Sequences are for linear journeys. Non-linear state should use Phase 3 (stateful mocks).
+- Jumping to arbitrary steps (use stateful mocks)
+- Conditional branching (use match criteria + multiple sequences)
+- User going backward (would need negative advancement)
+
+**Mitigation**: Sequences are for linear journeys. Non-linear state should use Phase 3 (stateful mocks).
 
 ❌ **Repeat mode must be chosen** - Forgot `repeat: 'last'` → unexpected behavior:
-   ```typescript
-   sequence: {
-     responses: [step1, step2, step3]
-     // Missing repeat! Defaults to 'none'
-   }
 
-   // Result: Call 4+ returns error instead of step3
-   ```
+```typescript
+sequence: {
+  responses: [step1, step2, step3];
+  // Missing repeat! Defaults to 'none'
+}
 
-   **Mitigation**: Document repeat mode as required field. Add validation/warning if omitted.
+// Result: Call 4+ returns error instead of step3
+```
+
+**Mitigation**: Document repeat mode as required field. Add validation/warning if omitted.
 
 ### Neutral
 
 ⚖️ **Different mental model** - Must think about "call order" not "page context":
-   - Referer: "What page sent this request?"
-   - Sequence: "How many times has this been called?"
-   - Trade-off: Explicit order vs implicit context
+
+- Referer: "What page sent this request?"
+- Sequence: "How many times has this been called?"
+- Trade-off: Explicit order vs implicit context
 
 ⚖️ **Sequence reset on scenario switch** - Fresh sequences per test:
-   - Ensures test isolation (Phase 2 feature: ADR-0005)
-   - But requires explicit scenario switching between tests
-   - Good for parallel tests, requires understanding reset behavior
+
+- Ensures test isolation (Phase 2 feature: ADR-0005)
+- But requires explicit scenario switching between tests
+- Good for parallel tests, requires understanding reset behavior
 
 ## Implementation Notes
 
@@ -464,19 +497,19 @@ test('multi-page journey', async () => {
 
 ```typescript
 // mocks/scenarios/onlineJourneyLogin.ts (Acquisition.Web)
-http.get('/v2/api/applications/:id', async ({ request }) => {
-  const referer = request.headers.get('referer') || '';
+http.get("/v2/api/applications/:id", async ({ request }) => {
+  const referer = request.headers.get("referer") || "";
 
-  if (referer.includes('/apply-sign') || referer.includes('/penny-drop')) {
+  if (referer.includes("/apply-sign") || referer.includes("/penny-drop")) {
     return HttpResponse.json({
-      state: 'appComplete',
-      decision: { status: 'Accepted' },
+      state: "appComplete",
+      decision: { status: "Accepted" },
     });
   }
 
   return HttpResponse.json({
-    state: 'quoteAccept',
-    decision: { status: 'Pending' },
+    state: "quoteAccept",
+    decision: { status: "Pending" },
   });
 });
 ```
@@ -519,6 +552,7 @@ http.get('/v2/api/applications/:id', async ({ request }) => {
 ```
 
 **Benefits:**
+
 - ✅ No referer string matching
 - ✅ Journey progression explicit (2 steps)
 - ✅ Works if routes change (no URL coupling)
@@ -529,27 +563,27 @@ http.get('/v2/api/applications/:id', async ({ request }) => {
 **Test sequence advancement:**
 
 ```typescript
-describe('Application journey sequence', () => {
-  it('should progress through journey states', async () => {
-    await switchScenario('online-journey-login');
+describe("Application journey sequence", () => {
+  it("should progress through journey states", async () => {
+    await switchScenario("online-journey-login");
 
     // Step 1: Quote page
-    const step1 = await fetch('/applications/123');
+    const step1 = await fetch("/applications/123");
     const data1 = await step1.json();
-    expect(data1.state).toBe('quoteAccept');
-    expect(data1.decision.status).toBe('Pending');
+    expect(data1.state).toBe("quoteAccept");
+    expect(data1.decision.status).toBe("Pending");
 
     // Step 2: Sign page
-    const step2 = await fetch('/applications/123');
+    const step2 = await fetch("/applications/123");
     const data2 = await step2.json();
-    expect(data2.state).toBe('appComplete');
-    expect(data2.decision.status).toBe('Accepted');
+    expect(data2.state).toBe("appComplete");
+    expect(data2.decision.status).toBe("Accepted");
 
     // Step 3: Penny drop page (same as step 2)
-    const step3 = await fetch('/applications/123');
+    const step3 = await fetch("/applications/123");
     const data3 = await step3.json();
-    expect(data3.state).toBe('appComplete');
-    expect(data3.decision.status).toBe('Accepted');
+    expect(data3.state).toBe("appComplete");
+    expect(data3.decision.status).toBe("Accepted");
   });
 });
 ```
@@ -557,11 +591,13 @@ describe('Application journey sequence', () => {
 ### Coverage Analysis (Acquisition.Web)
 
 **Acquisition.Web Tests:**
+
 - Total tests: 64
 - Tests with multi-page journeys: 48 (75%)
 - Tests using referer routing: 48 (100% of journey tests)
 
 **Conversion Impact:**
+
 - 48 tests can use sequences instead of referer routing
 - 16 tests (25%) are single-page (no sequences needed)
 

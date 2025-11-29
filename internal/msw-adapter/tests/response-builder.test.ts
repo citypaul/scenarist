@@ -1,10 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
-import { buildResponse } from '../src/conversion/response-builder.js';
-import { mockDefinition } from './factories.js';
+import { describe, it, expect, vi } from "vitest";
+import { buildResponse } from "../src/conversion/response-builder.js";
+import { mockDefinition } from "./factories.js";
 
-describe('Response Builder', () => {
-  describe('Basic response building', () => {
-    it('should build response with status code', async () => {
+describe("Response Builder", () => {
+  describe("Basic response building", () => {
+    it("should build response with status code", async () => {
       const mock = mockDefinition();
 
       const response = await buildResponse(mock.response!);
@@ -12,11 +12,11 @@ describe('Response Builder', () => {
       expect(response.status).toBe(200);
     });
 
-    it('should build response with JSON body', async () => {
+    it("should build response with JSON body", async () => {
       const mock = mockDefinition({
         response: {
           status: 200,
-          body: { id: '123', name: 'John Doe' },
+          body: { id: "123", name: "John Doe" },
         },
       });
 
@@ -24,27 +24,27 @@ describe('Response Builder', () => {
       const body = await response.json();
 
       expect(response.status).toBe(200);
-      expect(body).toEqual({ id: '123', name: 'John Doe' });
+      expect(body).toEqual({ id: "123", name: "John Doe" });
     });
 
-    it('should build response with custom headers', async () => {
+    it("should build response with custom headers", async () => {
       const mock = mockDefinition({
         response: {
           status: 200,
           headers: {
-            'X-Custom-Header': 'custom-value',
-            'Content-Type': 'application/json',
+            "X-Custom-Header": "custom-value",
+            "Content-Type": "application/json",
           },
         },
       });
 
       const response = await buildResponse(mock.response!);
 
-      expect(response.headers.get('X-Custom-Header')).toBe('custom-value');
-      expect(response.headers.get('Content-Type')).toBe('application/json');
+      expect(response.headers.get("X-Custom-Header")).toBe("custom-value");
+      expect(response.headers.get("Content-Type")).toBe("application/json");
     });
 
-    it('should apply delay before returning response', async () => {
+    it("should apply delay before returning response", async () => {
       vi.useFakeTimers();
 
       const mock = mockDefinition({
@@ -64,10 +64,10 @@ describe('Response Builder', () => {
       vi.useRealTimers();
     });
 
-    it('should handle response with undefined body', async () => {
+    it("should handle response with undefined body", async () => {
       const mock = mockDefinition({
-        method: 'DELETE',
-        url: 'https://api.example.com/users/123',
+        method: "DELETE",
+        url: "https://api.example.com/users/123",
         response: {
           status: 204,
         },
@@ -78,16 +78,16 @@ describe('Response Builder', () => {
       expect(response.status).toBe(204);
     });
 
-    it('should combine all options together', async () => {
+    it("should combine all options together", async () => {
       vi.useFakeTimers();
 
       const mock = mockDefinition({
-        method: 'POST',
+        method: "POST",
         response: {
           status: 201,
-          body: { id: '456', created: true },
+          body: { id: "456", created: true },
           headers: {
-            'Location': '/users/456',
+            Location: "/users/456",
           },
           delay: 50,
         },
@@ -100,8 +100,8 @@ describe('Response Builder', () => {
       const body = await response.json();
 
       expect(response.status).toBe(201);
-      expect(body).toEqual({ id: '456', created: true });
-      expect(response.headers.get('Location')).toBe('/users/456');
+      expect(body).toEqual({ id: "456", created: true });
+      expect(response.headers.get("Location")).toBe("/users/456");
 
       vi.useRealTimers();
     });

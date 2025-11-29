@@ -10,11 +10,11 @@
  * Learn more: https://scenarist.io/guides/testing-database-apps/repository-pattern
  */
 
-import type { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiRequest, NextApiResponse } from "next";
 
-import { z } from 'zod';
-import { getUserRepository, runWithTestId } from '@/lib/container';
-import { scenarioRepositoryData } from '@/lib/repository-data';
+import { z } from "zod";
+import { getUserRepository, runWithTestId } from "@/lib/container";
+import { scenarioRepositoryData } from "@/lib/repository-data";
 
 const SeedRequestSchema = z.object({
   scenarioId: z.string().min(1),
@@ -22,13 +22,14 @@ const SeedRequestSchema = z.object({
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const testId = (req.headers['x-scenarist-test-id'] as string) ?? 'default-test';
+  const testId =
+    (req.headers["x-scenarist-test-id"] as string) ?? "default-test";
 
   const parseResult = SeedRequestSchema.safeParse(req.body);
   if (!parseResult.success) {
@@ -39,14 +40,14 @@ export default async function handler(
 
   // Security: Don't log user-provided values to prevent log injection
   // @see https://github.com/citypaul/scenarist/security/code-scanning/95
-  console.log('[Seed] Processing seed request');
+  console.log("[Seed] Processing seed request");
 
   // Get the repository data for this scenario
   const seedData = scenarioRepositoryData[scenarioId];
 
   if (!seedData) {
     // No seed data for this scenario - that's OK, not all scenarios need repository data
-    return res.json({ seeded: false, message: 'No seed data for scenario' });
+    return res.json({ seeded: false, message: "No seed data for scenario" });
   }
 
   // Seed the repository within the test ID context
@@ -65,7 +66,7 @@ export default async function handler(
         created.push({ id: user.id, name: user.name });
         // Security: Don't log user-provided values to prevent log injection
         // @see https://github.com/citypaul/scenarist/security/code-scanning/96
-        console.log('[Seed] Created user in partition');
+        console.log("[Seed] Created user in partition");
       }
     }
     return created;

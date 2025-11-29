@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect } from "./fixtures";
 
 /**
  * Sequences/Polling Server-Side Page - Pages Router getServerSideProps with Scenarist
@@ -16,57 +16,65 @@ import { test, expect } from './fixtures';
  * - ✅ Phase 2 features (sequences, repeat modes) work with SSR
  */
 
-test.describe('Sequences Page - Server-Side Rendering (getServerSideProps)', () => {
-  test('should render initial job status server-side', async ({
+test.describe("Sequences Page - Server-Side Rendering (getServerSideProps)", () => {
+  test("should render initial job status server-side", async ({
     page,
     switchScenario,
   }) => {
-    await switchScenario(page, 'githubPolling');
+    await switchScenario(page, "githubPolling");
 
     // Navigate to sequences page (should be server-rendered)
-    await page.goto('/sequences');
+    await page.goto("/sequences");
 
     // Verify page renders immediately
-    await expect(page.getByRole('heading', { name: 'Response Sequences Demo' })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Response Sequences Demo" }),
+    ).toBeVisible();
 
     // Verify job polling section is present
-    await expect(page.getByRole('heading', { name: 'GitHub Job Polling' })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "GitHub Job Polling" }),
+    ).toBeVisible();
 
     // Verify no loading state
-    const loadingIndicator = page.getByText('Loading...');
+    const loadingIndicator = page.getByText("Loading...");
     await expect(loadingIndicator).not.toBeVisible();
   });
 
-  test('should render weather section server-side', async ({
+  test("should render weather section server-side", async ({
     page,
     switchScenario,
   }) => {
-    await switchScenario(page, 'weatherCycle');
+    await switchScenario(page, "weatherCycle");
 
     // Navigate to sequences page
-    await page.goto('/sequences');
+    await page.goto("/sequences");
 
     // Verify weather section renders
-    await expect(page.getByRole('heading', { name: 'Weather Cycle' })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Weather Cycle" }),
+    ).toBeVisible();
 
     // Verify no loading state
-    await expect(page.getByText('Loading...')).not.toBeVisible();
+    await expect(page.getByText("Loading...")).not.toBeVisible();
   });
 
-  test('should render payment section server-side', async ({
+  test("should render payment section server-side", async ({
     page,
     switchScenario,
   }) => {
-    await switchScenario(page, 'paymentLimited');
+    await switchScenario(page, "paymentLimited");
 
     // Navigate to sequences page
-    await page.goto('/sequences');
+    await page.goto("/sequences");
 
     // Verify payment section renders
-    await expect(page.getByRole('heading', { name: 'Payment Rate Limiting' })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Payment Rate Limiting" }),
+    ).toBeVisible();
 
     // Verify no loading state
-    await expect(page.getByText('Loading...')).not.toBeVisible();
+    await expect(page.getByText("Loading...")).not.toBeVisible();
   });
 });
 

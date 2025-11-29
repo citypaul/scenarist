@@ -10,10 +10,10 @@
  * Client Component - Requires state and effects for form handling.
  */
 
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
+import { useState } from "react";
+import Link from "next/link";
 
 type ShippingFormData = {
   readonly country: string;
@@ -39,12 +39,14 @@ type OrderResult = {
 
 export default function CheckoutPage() {
   const [formData, setFormData] = useState<ShippingFormData>({
-    country: '',
-    address: '',
-    city: '',
-    postcode: '',
+    country: "",
+    address: "",
+    city: "",
+    postcode: "",
   });
-  const [shippingResult, setShippingResult] = useState<ShippingResult | null>(null);
+  const [shippingResult, setShippingResult] = useState<ShippingResult | null>(
+    null,
+  );
   const [orderResult, setOrderResult] = useState<OrderResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
@@ -52,9 +54,9 @@ export default function CheckoutPage() {
   const handleCalculateShipping = async () => {
     setIsCalculating(true);
     try {
-      const response = await fetch('/api/checkout/shipping', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/checkout/shipping", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
       const data = await response.json();
@@ -68,9 +70,9 @@ export default function CheckoutPage() {
     setIsPlacingOrder(true);
     try {
       const orderId = `order-${Date.now()}`;
-      const response = await fetch('/api/checkout/order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/checkout/order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId }),
       });
       const data = await response.json();
@@ -86,7 +88,10 @@ export default function CheckoutPage() {
         <h1 className="text-4xl font-bold text-gray-900 mb-4">Checkout</h1>
 
         <nav aria-label="Main navigation" className="mb-8">
-          <Link href="/" className="text-blue-600 hover:text-blue-700 underline">
+          <Link
+            href="/"
+            className="text-blue-600 hover:text-blue-700 underline"
+          >
             Back to Products
           </Link>
         </nav>
@@ -101,13 +106,18 @@ export default function CheckoutPage() {
           <h2 className="text-2xl font-semibold mb-6">Shipping Address</h2>
 
           <div className="mb-4">
-            <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="country"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Country
             </label>
             <select
               id="country"
               value={formData.country}
-              onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, country: e.target.value })
+              }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             >
@@ -119,42 +129,57 @@ export default function CheckoutPage() {
           </div>
 
           <div className="mb-4">
-            <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="address"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Address
             </label>
             <input
               id="address"
               type="text"
               value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, address: e.target.value })
+              }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
 
           <div className="mb-4">
-            <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="city"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               City
             </label>
             <input
               id="city"
               type="text"
               value={formData.city}
-              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, city: e.target.value })
+              }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
 
           <div className="mb-6">
-            <label htmlFor="postcode" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="postcode"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Postcode
             </label>
             <input
               id="postcode"
               type="text"
               value={formData.postcode}
-              onChange={(e) => setFormData({ ...formData, postcode: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, postcode: e.target.value })
+              }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
@@ -165,7 +190,7 @@ export default function CheckoutPage() {
             disabled={isCalculating}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded transition-colors"
           >
-            {isCalculating ? 'Calculating...' : 'Calculate Shipping'}
+            {isCalculating ? "Calculating..." : "Calculate Shipping"}
           </button>
         </form>
 
@@ -183,7 +208,7 @@ export default function CheckoutPage() {
               disabled={isPlacingOrder}
               className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded transition-colors"
             >
-              {isPlacingOrder ? 'Placing Order...' : 'Place Order'}
+              {isPlacingOrder ? "Placing Order..." : "Place Order"}
             </button>
           </div>
         )}
@@ -194,9 +219,12 @@ export default function CheckoutPage() {
             aria-label="Order confirmation"
             className="bg-green-50 border border-green-200 p-6 rounded-lg"
           >
-            <h2 className="text-2xl font-bold text-green-800 mb-4">Order Confirmed!</h2>
+            <h2 className="text-2xl font-bold text-green-800 mb-4">
+              Order Confirmed!
+            </h2>
             <p className="mb-2">
-              <span className="font-semibold">Order ID:</span> {orderResult.orderId}
+              <span className="font-semibold">Order ID:</span>{" "}
+              {orderResult.orderId}
             </p>
             <p className="font-semibold mb-2">Shipping Address:</p>
             <ul className="list-disc list-inside text-gray-700">

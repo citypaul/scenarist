@@ -21,10 +21,12 @@ Error: element(s) not found
 ```
 
 **Failing tests:**
+
 - `isolation.spec.ts:23` - Parallel Test Isolation › concurrent test 1: premium user sees £99.99 pricing
 - `products-client-components.spec.ts:29` - Products Page › premium user sees premium pricing
 
 **WebServer error observed:**
+
 ```
 Error: Failed to fetch products: Internal Server Error
 ```
@@ -45,6 +47,7 @@ MSW returning 500 instead of mocked premium pricing response.
    - Workaround documented: use `context.addInitScript()` to intercept `window.fetch`
 
 2. **Code Analysis:**
+
    ```typescript
    // packages/playwright-helpers/src/switch-scenario.ts:107
    await page.setExtraHTTPHeaders({ [testIdHeader]: testId });
@@ -53,23 +56,25 @@ MSW returning 500 instead of mocked premium pricing response.
    This sets headers for Playwright-controlled requests but NOT for JavaScript fetch().
 
 3. **Application Code:**
+
    ```typescript
    // apps/nextjs-app-router-example/app/page.tsx:33-36
-   const response = await fetch('/api/products', {
+   const response = await fetch("/api/products", {
      headers: {
-       'x-user-tier': userTier,  // ✅ Present
+       "x-user-tier": userTier, // ✅ Present
        // ❌ x-scenarist-test-id NOT included - relies on setExtraHTTPHeaders
      },
    });
    ```
 
 4. **API Route Handler:**
+
    ```typescript
    // apps/nextjs-app-router-example/app/api/products/route.ts:27
-   const response = await fetch('http://localhost:3001/products', {
+   const response = await fetch("http://localhost:3001/products", {
      headers: {
-       ...scenarist.getHeaders(request),  // Extracts x-scenarist-test-id from request
-       'x-user-tier': userTier,
+       ...scenarist.getHeaders(request), // Extracts x-scenarist-test-id from request
+       "x-user-tier": userTier,
      },
    });
    ```
@@ -119,11 +124,13 @@ The flakiness occurs because of subtle differences in how Playwright/browsers ha
 5. **Default scenario content:** If 'default' scenario happens to have premium pricing, test might pass accidentally
 
 **Why it passes on Machine A:**
+
 - Possibly using XMLHttpRequest instead of fetch() (framework config difference)
 - Possibly different Playwright/browser version that propagates headers differently
 - Possibly default scenario has correct pricing as fallback
 
 **Why it fails on Machine B:**
+
 - Using fetch() API where setExtraHTTPHeaders doesn't apply
 - Default scenario returns 500 or wrong pricing
 - More consistent behavior exposing the bug
@@ -150,7 +157,7 @@ export const switchScenario = async (
 
   // Intercept ALL requests to inject x-scenarist-test-id header
   // This works for fetch(), XMLHttpRequest, and any HTTP library
-  await page.route('**/*', async (route) => {
+  await page.route("**/*", async (route) => {
     const headers = {
       ...route.request().headers(),
       [testIdHeader]: testId,
@@ -166,6 +173,7 @@ export const switchScenario = async (
 ```
 
 **Pros:**
+
 - ✅ Works for ALL HTTP libraries (fetch, axios, XMLHttpRequest, etc.)
 - ✅ No modification of global APIs
 - ✅ No changes to application code required
@@ -175,6 +183,7 @@ export const switchScenario = async (
 - ✅ Works with same-origin and cross-origin requests
 
 **Cons:**
+
 - ⚠️ Slight performance overhead (request interception)
 - ⚠️ Must be set before page loads that make requests
 
@@ -188,22 +197,24 @@ Modify client-side code to explicitly include x-scenarist-test-id:
 // Get test ID from cookie or header set by Playwright
 const getTestId = () => {
   const meta = document.querySelector('meta[name="x-scenarist-test-id"]');
-  return meta?.getAttribute('content') || 'default-test';
+  return meta?.getAttribute("content") || "default-test";
 };
 
-const response = await fetch('/api/products', {
+const response = await fetch("/api/products", {
   headers: {
-    'x-user-tier': userTier,
-    'x-scenarist-test-id': getTestId(),  // ✅ Explicit header
+    "x-user-tier": userTier,
+    "x-scenarist-test-id": getTestId(), // ✅ Explicit header
   },
 });
 ```
 
 **Pros:**
+
 - ✅ Explicit and visible in code
 - ✅ No global overrides
 
 **Cons:**
+
 - ❌ Requires changing every fetch() call in app code
 - ❌ Couples test infrastructure to application code
 - ❌ Fragile - easy to forget in new code
@@ -216,7 +227,7 @@ Server Components don't use fetch() from browser - headers propagate correctly:
 // apps/nextjs-app-router-example/app/products-server/page.tsx
 
 async function ProductsServerPage() {
-  const response = await fetch('http://localhost:3001/products', {
+  const response = await fetch("http://localhost:3001/products", {
     headers: scenarist.getHeaders(/* from request context */),
   });
   // ...
@@ -224,10 +235,12 @@ async function ProductsServerPage() {
 ```
 
 **Pros:**
+
 - ✅ Headers propagate correctly
 - ✅ No fetch() interception needed
 
 **Cons:**
+
 - ❌ Requires rewriting components
 - ❌ Not suitable for interactive UIs
 - ❌ Doesn't solve the underlying issue
@@ -237,6 +250,7 @@ async function ProductsServerPage() {
 **Implement Option 1 (REVISED): Use Playwright Route Interception**
 
 This is the most robust solution that:
+
 - Fixes the root cause for ALL HTTP requests (regardless of library)
 - Requires no application code changes
 - Doesn't modify global APIs (non-invasive)
@@ -258,13 +272,14 @@ This is the most robust solution that:
 
 Three changes to `establishTestIdInterception()` in `packages/playwright-helpers/src/switch-scenario.ts`:
 
-1. **Added `await page.unroute('**/*')`** - prevents handler accumulation when `switchScenario()` is called multiple times
+1. **Added `await page.unroute('**/\*')`** - prevents handler accumulation when `switchScenario()` is called multiple times
 2. **Added `async` to route callback** - allows awaiting inside the callback
 3. **Added `await` to `route.continue({ headers })`** - **fixes the race condition** by ensuring headers are modified before proceeding
 
 ### Why `'**/*'` Pattern is Correct
 
 The catch-all pattern is necessary for universal compatibility:
+
 - Clients use different API conventions (`/api/*`, `/v1/*`, `/graphql`, etc.)
 - Some apps proxy through middleware at root level
 - Server Components, API routes, Server Actions all need headers

@@ -15,14 +15,14 @@ Check that domain logic follows proper dependency injection - all ports are inje
 ```typescript
 // ❌ WRONG
 export const createScenarioManager = (config: ScenaristConfig) => {
-  const registry = new Map();  // Creating implementation!
-  const store = new Map();     // Creating implementation!
+  const registry = new Map(); // Creating implementation!
+  const store = new Map(); // Creating implementation!
 };
 
 // ✅ CORRECT
 export const createScenarioManager = ({
-  registry,  // Injected
-  store,     // Injected
+  registry, // Injected
+  store, // Injected
   config,
 }: {
   registry: ScenarioRegistry;
@@ -36,6 +36,7 @@ export const createScenarioManager = ({
 ### 2. ScenarioManager Injects BOTH Registry and Store
 
 The manager is a **coordinator** - it must have both dependencies injected:
+
 - `ScenarioRegistry` - catalog of available scenarios
 - `ScenarioStore` - active scenarios per test ID
 
@@ -77,18 +78,21 @@ grep -A 20 "createScenarioManager" SCENARIST_IMPLEMENTATION_PLAN.md | grep "regi
 ## What to Look For
 
 ### Red Flags:
+
 - `new Map` in domain logic
 - `new SomeRegistry()` in domain logic
 - Factory function not accepting registry/store
 - Implementation contains storage logic instead of delegation
 
 ### Green Flags:
+
 - All ports as function parameters
 - Options object: `{ registry, store, config }`
 - Methods call `registry.method()` or `store.method()`
 - No storage logic in domain
 
 Report any dependency injection violations with:
+
 - File path
 - Function name
 - Specific violation

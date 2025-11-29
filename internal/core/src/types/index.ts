@@ -8,7 +8,7 @@ export type {
   ScenaristSequence,
   ScenaristCaptureConfig,
   ScenaristScenario,
-} from '../schemas/scenario-definition.js';
+} from "../schemas/scenario-definition.js";
 
 // Export types that remain in scenario.ts (not validated by schemas)
 export type {
@@ -18,9 +18,6 @@ export type {
   ScenaristResult,
   ScenaristScenarios,
   ScenarioIds,
-} from './scenario.js';
+} from "./scenario.js";
 
-export type {
-  ScenaristConfig,
-  ScenaristConfigInput,
-} from './config.js';
+export type { ScenaristConfig, ScenaristConfigInput } from "./config.js";

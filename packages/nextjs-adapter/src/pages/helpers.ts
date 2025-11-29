@@ -1,11 +1,11 @@
-import type { IncomingMessage } from 'http';
+import type { IncomingMessage } from "http";
 
 /**
  * Type for request objects that have headers.
  * Compatible with both NextApiRequest and GetServerSidePropsContext.req
  */
 type RequestWithHeaders = {
-  headers: IncomingMessage['headers'];
+  headers: IncomingMessage["headers"];
 };
 
 /**
@@ -53,7 +53,9 @@ type RequestWithHeaders = {
  * };
  * ```
  */
-export function getScenaristHeaders(req: RequestWithHeaders): Record<string, string> {
+export function getScenaristHeaders(
+  req: RequestWithHeaders,
+): Record<string, string> {
   const scenarist = global.__scenarist_instance_pages;
   return scenarist?.getHeaders(req) ?? {};
 }

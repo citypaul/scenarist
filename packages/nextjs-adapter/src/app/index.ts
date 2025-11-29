@@ -31,19 +31,19 @@
  * ```
  */
 
-export { createScenarist } from './setup.js';
-export { AppRequestContext } from './context.js';
-export { createScenarioEndpoint } from './endpoints.js';
+export { createScenarist } from "./setup.js";
+export { AppRequestContext } from "./context.js";
+export { createScenarioEndpoint } from "./endpoints.js";
 export {
   getScenaristHeaders,
   getScenaristHeadersFromReadonlyHeaders,
   getScenaristTestId,
   getScenaristTestIdFromReadonlyHeaders,
-} from './helpers.js';
-export type { AppAdapterOptions, AppScenarist } from './setup.js';
+} from "./helpers.js";
+export type { AppAdapterOptions, AppScenarist } from "./setup.js";
 
 // Re-export core types and constants for user convenience (users should only install this adapter)
-export { SCENARIST_TEST_ID_HEADER } from '@scenarist/core';
+export { SCENARIST_TEST_ID_HEADER } from "@scenarist/core";
 export type {
   ScenaristScenario,
   ScenaristMock,
@@ -54,4 +54,4 @@ export type {
   ScenaristScenarios,
   ScenaristConfig,
   ScenaristResult,
-} from '@scenarist/core';
+} from "@scenarist/core";

@@ -18,18 +18,18 @@ During production E2E test development, we discovered a critical flaw: **`undefi
 {
   response: {
     body: {
-      items: "{{state.cartItems}}"  // No state exists yet
+      items: "{{state.cartItems}}"; // No state exists yet
     }
   }
 }
 
 // With undefined (ADR-0012 behavior):
 const result = { items: undefined };
-JSON.stringify(result);  // => "{}"  ← Field disappears!
+JSON.stringify(result); // => "{}"  ← Field disappears!
 
 // With null (new behavior):
 const result = { items: null };
-JSON.stringify(result);  // => '{"items":null}'  ← Field preserved!
+JSON.stringify(result); // => '{"items":null}'  ← Field preserved!
 ```
 
 **Real-world impact:**
@@ -54,6 +54,7 @@ ADR-0012 listed JSON serialization as a "con" but underestimated its severity:
 > ❌ **JSON.stringify omits undefined values (may be unexpected)**
 
 This is not "unexpected" - it's **fundamentally broken for JSON APIs**:
+
 - Response shape changes based on state existence
 - Fields disappear silently
 - No error, just missing data
@@ -70,6 +71,7 @@ This is not "unexpected" - it's **fundamentally broken for JSON APIs**:
 ```
 
 **Impact:**
+
 - Pure template `"{{state.missing}}"` with no state → returns `null` (not `undefined`)
 - Mixed template `"Count: {{state.missing}}"` → returns `"Count: {{state.missing}}"` (unchanged)
 - Pure template with valid state → returns actual state value (unchanged)
@@ -88,11 +90,11 @@ This is not "unexpected" - it's **fundamentally broken for JSON APIs**:
 
 ADR-0012 rejected `null` for these reasons:
 
-| ADR-0012 Con | 2025-11-23 Response |
-|--------------|---------------------|
+| ADR-0012 Con                                   | 2025-11-23 Response                                                          |
+| ---------------------------------------------- | ---------------------------------------------------------------------------- |
 | "Inconsistent with JavaScript property access" | True, but API serialization is more important than property access semantics |
-| "Requires explicit null checks" | `value ?? []` handles both null and undefined |
-| "TypeScript types need explicit `\| null`" | Small price for JSON safety |
+| "Requires explicit null checks"                | `value ?? []` handles both null and undefined                                |
+| "TypeScript types need explicit `\| null`"     | Small price for JSON safety                                                  |
 
 **The key insight:** Scenarist is primarily used for **API mocking**, not general JavaScript object manipulation. JSON serialization semantics trump JavaScript property access semantics.
 
@@ -103,15 +105,15 @@ Defensive code doesn't solve the problem:
 ```typescript
 // Can't fix with defensive code in API handler
 export async function GET(request: NextRequest) {
-  const response = await fetch('http://localhost:3001/cart', {
+  const response = await fetch("http://localhost:3001/cart", {
     headers: { ...getScenaristHeaders(request) },
   });
 
-  const data = await response.json();  // Too late - JSON parsing already lost the field!
+  const data = await response.json(); // Too late - JSON parsing already lost the field!
 
   // This won't help because data = {}, not {items: undefined}
   return NextResponse.json({
-    items: data.items ?? [],  // data.items is undefined because field missing
+    items: data.items ?? [], // data.items is undefined because field missing
   });
 }
 ```
@@ -157,9 +159,9 @@ Applications already using optional chaining or nullish coalescing work unchange
 
 ```typescript
 // These patterns handle both null and undefined:
-const items = data.items ?? [];           // ✅ Works with null
-const items = data.items || [];           // ✅ Works with null
-const items = data.items ? data.items : [];  // ✅ Works with null
+const items = data.items ?? []; // ✅ Works with null
+const items = data.items || []; // ✅ Works with null
+const items = data.items ? data.items : []; // ✅ Works with null
 ```
 
 **Breaking change only affects:**
@@ -213,6 +215,7 @@ if (data.items == null) { ... }        // ✅ Checks both null and undefined
 **Approach:** Return `[]` for arrays, `{}` for objects, `""` for strings, etc.
 
 **Why Rejected:**
+
 - Requires runtime type inference (complex, error-prone)
 - Hides the "no value" signal
 - `[]` is semantically different from "no items yet"
@@ -223,6 +226,7 @@ if (data.items == null) { ... }        // ✅ Checks both null and undefined
 **Approach:** Force users to provide initial state via seed data
 
 **Why Rejected:**
+
 - Requires extra boilerplate for every scenario
 - Doesn't solve the general case (state can still be missing)
 - Users shouldn't need to think about internal serialization issues

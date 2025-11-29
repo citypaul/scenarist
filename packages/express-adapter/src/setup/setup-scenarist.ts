@@ -1,7 +1,7 @@
-import type { ScenaristScenarios } from '@scenarist/core';
+import type { ScenaristScenarios } from "@scenarist/core";
 
 // Re-export types from impl for public API
-export type { ExpressAdapterOptions, ExpressScenarist } from './impl.js';
+export type { ExpressAdapterOptions, ExpressScenarist } from "./impl.js";
 
 /**
  * Create a Scenarist instance for Express.
@@ -29,15 +29,15 @@ export type { ExpressAdapterOptions, ExpressScenarist } from './impl.js';
  * ```
  */
 export const createScenarist = async <T extends ScenaristScenarios>(
-  options: import('./impl.js').ExpressAdapterOptions<T>
-): Promise<import('./impl.js').ExpressScenarist<T> | undefined> => {
+  options: import("./impl.js").ExpressAdapterOptions<T>,
+): Promise<import("./impl.js").ExpressScenarist<T> | undefined> => {
   // In production, return undefined without loading impl.js
   // Dynamic import below is never executed, enabling tree-shaking
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === "production") {
     return undefined;
   }
 
   // In non-production, dynamically import and create instance
-  const { createScenaristImpl } = await import('./impl.js');
+  const { createScenaristImpl } = await import("./impl.js");
   return createScenaristImpl(options);
 };

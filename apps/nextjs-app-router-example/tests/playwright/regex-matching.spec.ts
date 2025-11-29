@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect } from "./fixtures";
 
 /**
  * Regex Matching Tests - Server-Side Pattern Matching
@@ -26,89 +26,99 @@ import { test, expect } from './fixtures';
  * This is intentional - we're driving implementation from the outside in.
  */
 
-test.describe('Regex Pattern Matching (Server-Side)', () => {
+test.describe("Regex Pattern Matching (Server-Side)", () => {
   test('should match premium pricing when campaign contains "premium"', async ({
     page,
     switchScenario,
   }) => {
     // ATDD: This test drives regex matching implementation
-    await switchScenario(page, 'campaignRegex');
+    await switchScenario(page, "campaignRegex");
 
     // Navigate with campaign query param
     // API route will extract this and add as x-campaign header to the fetch
-    await page.goto('/products?campaign=summer-premium-sale');
+    await page.goto("/products?campaign=summer-premium-sale");
 
     // Expected: Premium pricing (regex matched on x-campaign header in server-side fetch)
     // Pattern: /premium|vip/i should match "premium" in "summer-premium-sale"
-    await expect(page.getByText('£99.99')).toBeVisible(); // Premium price for Product A
+    await expect(page.getByText("£99.99")).toBeVisible(); // Premium price for Product A
 
     // Verify it's using premium tier (not standard)
-    const firstProduct = page.locator('div.border').first();
-    await expect(firstProduct.getByText('premium', { exact: false })).toBeVisible();
+    const firstProduct = page.locator("div.border").first();
+    await expect(
+      firstProduct.getByText("premium", { exact: false }),
+    ).toBeVisible();
   });
 
   test('should match premium pricing when campaign contains "vip" (case insensitive)', async ({
     page,
     switchScenario,
   }) => {
-    await switchScenario(page, 'campaignRegex');
+    await switchScenario(page, "campaignRegex");
 
     // Test case-insensitive flag: "VIP" should match /premium|vip/i
-    await page.goto('/products?campaign=early-VIP-access');
+    await page.goto("/products?campaign=early-VIP-access");
 
     // Expected: Premium pricing (regex matched "VIP" with 'i' flag)
-    await expect(page.getByText('£99.99')).toBeVisible();
+    await expect(page.getByText("£99.99")).toBeVisible();
 
-    const firstProduct = page.locator('div.border').first();
-    await expect(firstProduct.getByText('premium', { exact: false })).toBeVisible();
+    const firstProduct = page.locator("div.border").first();
+    await expect(
+      firstProduct.getByText("premium", { exact: false }),
+    ).toBeVisible();
   });
 
-  test('should fallback to standard pricing when campaign does NOT match pattern', async ({
+  test("should fallback to standard pricing when campaign does NOT match pattern", async ({
     page,
     switchScenario,
   }) => {
-    await switchScenario(page, 'campaignRegex');
+    await switchScenario(page, "campaignRegex");
 
     // Campaign that does NOT match /premium|vip/i
-    await page.goto('/products?campaign=summer-sale');
+    await page.goto("/products?campaign=summer-sale");
 
     // Expected: Standard pricing (no regex match, fallback to default scenario)
-    await expect(page.getByText('£149.99')).toBeVisible(); // Standard price for Product A
+    await expect(page.getByText("£149.99")).toBeVisible(); // Standard price for Product A
 
-    const firstProduct = page.locator('div.border').first();
-    await expect(firstProduct.getByText('standard', { exact: false })).toBeVisible();
+    const firstProduct = page.locator("div.border").first();
+    await expect(
+      firstProduct.getByText("standard", { exact: false }),
+    ).toBeVisible();
   });
 
-  test('should fallback to standard pricing when campaign param is missing', async ({
+  test("should fallback to standard pricing when campaign param is missing", async ({
     page,
     switchScenario,
   }) => {
-    await switchScenario(page, 'campaignRegex');
+    await switchScenario(page, "campaignRegex");
 
     // No campaign param - x-campaign header won't be added to fetch
-    await page.goto('/products');
+    await page.goto("/products");
 
     // Expected: Standard pricing (no x-campaign header = no match, fallback to default)
-    await expect(page.getByText('£149.99')).toBeVisible();
+    await expect(page.getByText("£149.99")).toBeVisible();
 
-    const firstProduct = page.locator('div.border').first();
-    await expect(firstProduct.getByText('standard', { exact: false })).toBeVisible();
+    const firstProduct = page.locator("div.border").first();
+    await expect(
+      firstProduct.getByText("standard", { exact: false }),
+    ).toBeVisible();
   });
 
-  test('should demonstrate partial match within campaign string', async ({
+  test("should demonstrate partial match within campaign string", async ({
     page,
     switchScenario,
   }) => {
-    await switchScenario(page, 'campaignRegex');
+    await switchScenario(page, "campaignRegex");
 
     // Pattern should match "premium" anywhere in the campaign string
-    await page.goto('/products?campaign=partners-premium-tier');
+    await page.goto("/products?campaign=partners-premium-tier");
 
     // Expected: Premium pricing (regex finds "premium" in middle of string)
-    await expect(page.getByText('£99.99')).toBeVisible();
+    await expect(page.getByText("£99.99")).toBeVisible();
 
-    const firstProduct = page.locator('div.border').first();
-    await expect(firstProduct.getByText('premium', { exact: false })).toBeVisible();
+    const firstProduct = page.locator("div.border").first();
+    await expect(
+      firstProduct.getByText("premium", { exact: false }),
+    ).toBeVisible();
   });
 });
 

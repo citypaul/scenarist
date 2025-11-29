@@ -1,12 +1,12 @@
-import { describe, it, expect } from 'vitest';
-import { buildConfig, type ScenaristScenario } from '@scenarist/core';
-import { AppRequestContext } from '../../src/app/context.js';
+import { describe, it, expect } from "vitest";
+import { buildConfig, type ScenaristScenario } from "@scenarist/core";
+import { AppRequestContext } from "../../src/app/context.js";
 
-describe('AppRequestContext', () => {
+describe("AppRequestContext", () => {
   const defaultScenario: ScenaristScenario = {
-    id: 'default',
-    name: 'Default',
-    description: 'Default test scenario',
+    id: "default",
+    name: "Default",
+    description: "Default test scenario",
     mocks: [],
   };
 
@@ -19,55 +19,55 @@ describe('AppRequestContext', () => {
     scenarios,
   });
 
-  describe('getTestId', () => {
-    it('should extract test ID from x-test-id header', () => {
+  describe("getTestId", () => {
+    it("should extract test ID from x-test-id header", () => {
       const headers = new Headers({
-        'x-scenarist-test-id': 'my-test-id',
+        "x-scenarist-test-id": "my-test-id",
       });
 
-      const req = new Request('http://localhost:3000/api/test', { headers });
+      const req = new Request("http://localhost:3000/api/test", { headers });
       const context = new AppRequestContext(req, config);
 
-      expect(context.getTestId()).toBe('my-test-id');
+      expect(context.getTestId()).toBe("my-test-id");
     });
 
-    it('should return default test ID when header is missing', () => {
-      const req = new Request('http://localhost:3000/api/test');
+    it("should return default test ID when header is missing", () => {
+      const req = new Request("http://localhost:3000/api/test");
       const context = new AppRequestContext(req, config);
 
-      expect(context.getTestId()).toBe('default-test');
+      expect(context.getTestId()).toBe("default-test");
     });
 
-    it('should be case-insensitive for header names', () => {
+    it("should be case-insensitive for header names", () => {
       const headers = new Headers({
-        'X-SCENARIST-TEST-ID': 'uppercase-id',
+        "X-SCENARIST-TEST-ID": "uppercase-id",
       });
 
-      const req = new Request('http://localhost:3000/api/test', { headers });
+      const req = new Request("http://localhost:3000/api/test", { headers });
       const context = new AppRequestContext(req, config);
 
-      expect(context.getTestId()).toBe('uppercase-id');
+      expect(context.getTestId()).toBe("uppercase-id");
     });
   });
 
-  describe('getHeaders', () => {
-    it('should return all request headers as record', () => {
+  describe("getHeaders", () => {
+    it("should return all request headers as record", () => {
       const headers = new Headers({
-        'x-scenarist-test-id': 'my-test',
-        'content-type': 'application/json',
+        "x-scenarist-test-id": "my-test",
+        "content-type": "application/json",
       });
 
-      const req = new Request('http://localhost:3000/api/test', { headers });
+      const req = new Request("http://localhost:3000/api/test", { headers });
       const context = new AppRequestContext(req, config);
 
       const result = context.getHeaders();
 
-      expect(result['x-scenarist-test-id']).toBe('my-test');
-      expect(result['content-type']).toBe('application/json');
+      expect(result["x-scenarist-test-id"]).toBe("my-test");
+      expect(result["content-type"]).toBe("application/json");
     });
 
-    it('should return empty object when no headers present', () => {
-      const req = new Request('http://localhost:3000/api/test');
+    it("should return empty object when no headers present", () => {
+      const req = new Request("http://localhost:3000/api/test");
       const context = new AppRequestContext(req, config);
 
       const result = context.getHeaders();
@@ -76,37 +76,37 @@ describe('AppRequestContext', () => {
     });
   });
 
-  describe('getHostname', () => {
-    it('should extract hostname from request URL', () => {
-      const req = new Request('http://localhost:3000/api/test');
+  describe("getHostname", () => {
+    it("should extract hostname from request URL", () => {
+      const req = new Request("http://localhost:3000/api/test");
       const context = new AppRequestContext(req, config);
 
-      expect(context.getHostname()).toBe('localhost:3000');
+      expect(context.getHostname()).toBe("localhost:3000");
     });
 
-    it('should handle URLs without port', () => {
-      const req = new Request('https://example.com/api/test');
+    it("should handle URLs without port", () => {
+      const req = new Request("https://example.com/api/test");
       const context = new AppRequestContext(req, config);
 
-      expect(context.getHostname()).toBe('example.com');
+      expect(context.getHostname()).toBe("example.com");
     });
 
-    it('should handle URLs with different ports', () => {
-      const req = new Request('http://localhost:8080/api/test');
+    it("should handle URLs with different ports", () => {
+      const req = new Request("http://localhost:8080/api/test");
       const context = new AppRequestContext(req, config);
 
-      expect(context.getHostname()).toBe('localhost:8080');
+      expect(context.getHostname()).toBe("localhost:8080");
     });
 
-    it('should return empty string for malformed URLs', () => {
+    it("should return empty string for malformed URLs", () => {
       const req = {
-        url: 'not-a-valid-url',
+        url: "not-a-valid-url",
         headers: new Headers(),
       } as Request;
 
       const context = new AppRequestContext(req, config);
 
-      expect(context.getHostname()).toBe('');
+      expect(context.getHostname()).toBe("");
     });
   });
 });

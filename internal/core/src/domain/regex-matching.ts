@@ -1,4 +1,4 @@
-import type { SerializedRegex } from '../schemas/match-criteria.js';
+import type { SerializedRegex } from "../schemas/match-criteria.js";
 
 /**
  * Match a value against a regex pattern.
@@ -19,13 +19,13 @@ import type { SerializedRegex } from '../schemas/match-criteria.js';
  */
 export const matchesRegex = (
   value: string,
-  pattern: SerializedRegex
+  pattern: SerializedRegex,
 ): boolean => {
   try {
     const regex = new RegExp(pattern.source, pattern.flags);
     return regex.test(value);
   } catch (error) {
-    console.error('Regex matching error:', error);
+    console.error("Regex matching error:", error);
     return false;
   }
 };

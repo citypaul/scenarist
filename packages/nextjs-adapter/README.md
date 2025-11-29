@@ -12,23 +12,28 @@ Next.js adapter for [Scenarist](https://scenarist.io) - test different backend s
 ## What is this?
 
 **Before Scenarist:**
+
 ```typescript
 // Every test has fragile per-test mocking
 beforeEach(() => {
-  server.use(
-    http.get('/api/user', () => HttpResponse.json({ role: 'admin' }))
-  );
+  server.use(http.get("/api/user", () => HttpResponse.json({ role: "admin" })));
 });
 // Repeat 100 times across test files, hope they don't conflict
 ```
 
 **With Scenarist:**
+
 ```typescript
 // Define scenario once
-const adminScenario = { id: 'admin', mocks: [/* complete backend state */] };
+const adminScenario = {
+  id: "admin",
+  mocks: [
+    /* complete backend state */
+  ],
+};
 
 // Use in any test with one line
-await setScenario('test-1', 'admin');
+await setScenario("test-1", "admin");
 // Test runs with complete "admin" backend state, isolated from other tests
 ```
 
@@ -42,33 +47,33 @@ This package provides complete Next.js integration for Scenarist's scenario mana
 
 ## Quick Navigation
 
-| I want to... | Go to |
-|-------------|--------|
-| See what problems this solves | [What is this?](#what-is-this) |
-| Get started in 5 minutes | [Quick Start (5 Minutes)](#quick-start-5-minutes) |
-| Choose between routers | [Pages Router vs App Router](#pages-router-vs-app-router) |
-| Set up Pages Router | [Pages Router Setup](#pages-router-setup) |
-| Set up App Router | [App Router Setup](#app-router-setup) |
-| Switch scenarios in tests | [Use in Tests](#4-use-in-tests) |
-| Forward headers to external APIs | [Making External API Calls](#making-external-api-calls) |
-| Understand test isolation | [Test ID Isolation](#test-id-isolation) |
-| Reduce test boilerplate | [Common Patterns](#common-patterns) |
-| Debug issues | [Troubleshooting](#troubleshooting) |
-| See full API reference | [API Reference](#api-reference) |
-| Learn about advanced features | [Core Functionality Docs](../../docs/core-functionality.md) |
+| I want to...                     | Go to                                                       |
+| -------------------------------- | ----------------------------------------------------------- |
+| See what problems this solves    | [What is this?](#what-is-this)                              |
+| Get started in 5 minutes         | [Quick Start (5 Minutes)](#quick-start-5-minutes)           |
+| Choose between routers           | [Pages Router vs App Router](#pages-router-vs-app-router)   |
+| Set up Pages Router              | [Pages Router Setup](#pages-router-setup)                   |
+| Set up App Router                | [App Router Setup](#app-router-setup)                       |
+| Switch scenarios in tests        | [Use in Tests](#4-use-in-tests)                             |
+| Forward headers to external APIs | [Making External API Calls](#making-external-api-calls)     |
+| Understand test isolation        | [Test ID Isolation](#test-id-isolation)                     |
+| Reduce test boilerplate          | [Common Patterns](#common-patterns)                         |
+| Debug issues                     | [Troubleshooting](#troubleshooting)                         |
+| See full API reference           | [API Reference](#api-reference)                             |
+| Learn about advanced features    | [Core Functionality Docs](../../docs/core-functionality.md) |
 
 ## 📖 Documentation
 
 **Full documentation at [scenarist.io](https://scenarist.io)**
 
-| Topic | Link |
-|-------|------|
-| **Why Scenarist?** | [scenarist.io/getting-started/why-scenarist](https://scenarist.io/getting-started/why-scenarist) |
-| **Getting Started (App Router)** | [scenarist.io/frameworks/nextjs-app-router/getting-started](https://scenarist.io/frameworks/nextjs-app-router/getting-started) |
-| **Getting Started (Pages Router)** | [scenarist.io/frameworks/nextjs-pages-router/getting-started](https://scenarist.io/frameworks/nextjs-pages-router/getting-started) |
-| **🎯 React Server Components Guide** | [scenarist.io/frameworks/nextjs-app-router/rsc-guide](https://scenarist.io/frameworks/nextjs-app-router/rsc-guide) |
-| **Parallel Testing** | [scenarist.io/testing/parallel-testing](https://scenarist.io/testing/parallel-testing) |
-| **Testing Philosophy** | [scenarist.io/concepts/philosophy](https://scenarist.io/concepts/philosophy) |
+| Topic                                | Link                                                                                                                               |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **Why Scenarist?**                   | [scenarist.io/getting-started/why-scenarist](https://scenarist.io/getting-started/why-scenarist)                                   |
+| **Getting Started (App Router)**     | [scenarist.io/frameworks/nextjs-app-router/getting-started](https://scenarist.io/frameworks/nextjs-app-router/getting-started)     |
+| **Getting Started (Pages Router)**   | [scenarist.io/frameworks/nextjs-pages-router/getting-started](https://scenarist.io/frameworks/nextjs-pages-router/getting-started) |
+| **🎯 React Server Components Guide** | [scenarist.io/frameworks/nextjs-app-router/rsc-guide](https://scenarist.io/frameworks/nextjs-app-router/rsc-guide)                 |
+| **Parallel Testing**                 | [scenarist.io/testing/parallel-testing](https://scenarist.io/testing/parallel-testing)                                             |
+| **Testing Philosophy**               | [scenarist.io/concepts/philosophy](https://scenarist.io/concepts/philosophy)                                                       |
 
 ## Core Capabilities
 
@@ -77,6 +82,7 @@ Scenarist provides 20+ powerful features for scenario-based testing. All capabil
 ### Request Matching (6 capabilities)
 
 **Body matching (partial match)** - Match requests based on request body fields
+
 ```typescript
 {
   method: 'POST',
@@ -87,6 +93,7 @@ Scenarist provides 20+ powerful features for scenario-based testing. All capabil
 ```
 
 **Header matching (exact match)** - Perfect for user tier testing
+
 ```typescript
 {
   method: 'GET',
@@ -105,6 +112,7 @@ Scenarist provides 20+ powerful features for scenario-based testing. All capabil
 
 **Single responses** - Return same response every time
 **Response sequences (ordered)** - Perfect for polling APIs
+
 ```typescript
 {
   method: 'GET',
@@ -127,6 +135,7 @@ Scenarist provides 20+ powerful features for scenario-based testing. All capabil
 
 **State capture from requests** - Extract values from body/headers/query
 **State injection via templates** - Inject captured state using `{{state.X}}`
+
 ```typescript
 // Capture from POST
 {
@@ -177,13 +186,13 @@ Test how your UI handles API errors without maintaining separate error mocks per
 ```typescript
 // Define once
 const errorScenario = {
-  id: 'api-error',
-  name: 'API Error',
-  mocks: [{ method: 'GET', url: '*/api/*', response: { status: 500 } }]
+  id: "api-error",
+  name: "API Error",
+  mocks: [{ method: "GET", url: "*/api/*", response: { status: 500 } }],
 };
 
 // Use in many tests
-await setScenario('test-1', 'api-error');
+await setScenario("test-1", "api-error");
 // All API calls return 500 for this test
 ```
 
@@ -193,13 +202,15 @@ Test slow API responses without actual network delays:
 
 ```typescript
 const slowScenario = {
-  id: 'slow-api',
-  name: 'Slow API',
-  mocks: [{
-    method: 'GET',
-    url: '*/api/data',
-    response: { status: 200, body: { data: [] }, delay: 3000 } // 3s delay
-  }]
+  id: "slow-api",
+  name: "Slow API",
+  mocks: [
+    {
+      method: "GET",
+      url: "*/api/data",
+      response: { status: 200, body: { data: [] }, delay: 3000 }, // 3s delay
+    },
+  ],
 };
 
 // Perfect for testing loading spinners and skeleton screens
@@ -210,17 +221,27 @@ const slowScenario = {
 Test different user permission levels by switching scenarios:
 
 ```typescript
-const freeUserScenario = { id: 'free', mocks: [/* limited features */] };
-const premiumUserScenario = { id: 'premium', mocks: [/* all features */] };
+const freeUserScenario = {
+  id: "free",
+  mocks: [
+    /* limited features */
+  ],
+};
+const premiumUserScenario = {
+  id: "premium",
+  mocks: [
+    /* all features */
+  ],
+};
 
 // Test switches scenarios mid-suite - no app restart needed
-test('free user sees upgrade prompt', async () => {
-  await setScenario('test-1', 'free');
+test("free user sees upgrade prompt", async () => {
+  await setScenario("test-1", "free");
   // ... test free tier behavior
 });
 
-test('premium user sees all features', async () => {
-  await setScenario('test-2', 'premium');
+test("premium user sees all features", async () => {
+  await setScenario("test-2", "premium");
   // ... test premium tier behavior
 });
 ```
@@ -254,6 +275,7 @@ yarn add -D @scenarist/nextjs-adapter msw
 **Note:** All Scenarist types (`ScenaristScenario`, `ScenaristMock`, etc.) are re-exported from `@scenarist/nextjs-adapter` for convenience. You don't need to install `@scenarist/core` or `@scenarist/msw-adapter` separately - they're already included as dependencies.
 
 **Peer Dependencies:**
+
 - `next` ^14.0.0 || ^15.0.0
 - `msw` ^2.0.0
 
@@ -265,26 +287,33 @@ yarn add -D @scenarist/nextjs-adapter msw
 
 ```typescript
 // lib/scenarios.ts
-import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/nextjs-adapter';
+import type {
+  ScenaristScenario,
+  ScenaristScenarios,
+} from "@scenarist/nextjs-adapter";
 
 export const defaultScenario: ScenaristScenario = {
-  id: 'default',
-  name: 'Default',
-  mocks: [{
-    method: 'GET',
-    url: 'https://api.example.com/user',
-    response: { status: 200, body: { name: 'Default User', role: 'user' } }
-  }]
+  id: "default",
+  name: "Default",
+  mocks: [
+    {
+      method: "GET",
+      url: "https://api.example.com/user",
+      response: { status: 200, body: { name: "Default User", role: "user" } },
+    },
+  ],
 };
 
 export const successScenario: ScenaristScenario = {
-  id: 'success',
-  name: 'API Success',
-  mocks: [{
-    method: 'GET',
-    url: 'https://api.example.com/user',
-    response: { status: 200, body: { name: 'Alice', role: 'user' } }
-  }]
+  id: "success",
+  name: "API Success",
+  mocks: [
+    {
+      method: "GET",
+      url: "https://api.example.com/user",
+      response: { status: 200, body: { name: "Alice", role: "user" } },
+    },
+  ],
 };
 
 export const scenarios = {
@@ -297,16 +326,16 @@ export const scenarios = {
 
 ```typescript
 // lib/scenarist.ts
-import { createScenarist } from '@scenarist/nextjs-adapter/pages'; // or /app
-import { scenarios } from './scenarios';
+import { createScenarist } from "@scenarist/nextjs-adapter/pages"; // or /app
+import { scenarios } from "./scenarios";
 
 export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
-  scenarios,                    // All scenarios registered upfront
+  enabled: process.env.NODE_ENV === "test",
+  scenarios, // All scenarios registered upfront
 });
 
 // Start MSW in Node.js environment
-if (typeof window === 'undefined' && scenarist) {
+if (typeof window === "undefined" && scenarist) {
   scenarist.start();
 }
 ```
@@ -332,8 +361,9 @@ if (typeof window === 'undefined' && scenarist) {
 ### 3. Create Scenario Endpoint
 
 **Pages Router:** Create `pages/api/__scenario__.ts`:
+
 ```typescript
-import { scenarist } from '@/lib/scenarist';
+import { scenarist } from "@/lib/scenarist";
 
 // In production, scenarist is undefined due to conditional exports
 // When the default export is undefined, Next.js treats the route as non-existent
@@ -345,7 +375,7 @@ export default scenarist?.createScenarioEndpoint();
 > **Why the URL encoding?** Next.js App Router treats folders starting with `_` (underscore) as private folders that are excluded from routing. To create a URL route `/api/__scenario__`, we use `%5F` (URL-encoded underscore). This creates the actual endpoint at `http://localhost:3000/api/__scenario__`.
 
 ```typescript
-import { scenarist } from '@/lib/scenarist';
+import { scenarist } from "@/lib/scenarist";
 
 // In production, scenarist is undefined due to conditional exports
 // When exports are undefined, Next.js treats the route as non-existent
@@ -358,33 +388,37 @@ export const GET = handler;
 ### 4. Use in Tests
 
 ```typescript
-import { scenarist } from '@/lib/scenarist';
+import { scenarist } from "@/lib/scenarist";
 
 beforeAll(() => scenarist.start()); // Start MSW server
-afterAll(() => scenarist.stop());   // Stop MSW server
+afterAll(() => scenarist.stop()); // Stop MSW server
 
-it('fetches user successfully', async () => {
+it("fetches user successfully", async () => {
   // Set scenario for this test
-  await fetch('http://localhost:3000/__scenario__', {
-    method: 'POST',
-    headers: { 'x-scenarist-test-id': 'test-1', 'content-type': 'application/json' },
-    body: JSON.stringify({ scenario: 'success' })
+  await fetch("http://localhost:3000/__scenario__", {
+    method: "POST",
+    headers: {
+      "x-scenarist-test-id": "test-1",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ scenario: "success" }),
   });
 
   // Make request - MSW intercepts automatically
-  const response = await fetch('http://localhost:3000/api/user', {
-    headers: { 'x-scenarist-test-id': 'test-1' }
+  const response = await fetch("http://localhost:3000/api/user", {
+    headers: { "x-scenarist-test-id": "test-1" },
   });
 
   expect(response.status).toBe(200);
   const user = await response.json();
-  expect(user.name).toBe('Alice');
+  expect(user.name).toBe("Alice");
 });
 ```
 
 **That's it!** You've got runtime scenario switching.
 
 **Next steps:**
+
 - [Add more scenarios](#pages-router-setup) for different backend states
 - [Use test helpers](#pattern-1-test-helpers) to reduce boilerplate
 - [Learn about test isolation](#test-id-isolation) for parallel tests
@@ -394,18 +428,19 @@ it('fetches user successfully', async () => {
 
 ## Pages Router vs App Router
 
-| Aspect | Pages Router | App Router |
-|--------|-------------|------------|
-| **Import Path** | `@scenarist/nextjs-adapter/pages` | `@scenarist/nextjs-adapter/app` |
-| **Setup File** | `pages/api/__scenario__.ts` | `app/api/%5F%5Fscenario%5F%5F/route.ts` * |
-| **Scenario Endpoint** | `export default scenarist.createScenarioEndpoint()` | `const handler = scenarist.createScenarioEndpoint();`<br>`export const POST = handler;`<br>`export const GET = handler;` |
-| **Core Functionality** | ✅ Same scenarios, same behavior | ✅ Same scenarios, same behavior |
+| Aspect                 | Pages Router                                        | App Router                                                                                                               |
+| ---------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **Import Path**        | `@scenarist/nextjs-adapter/pages`                   | `@scenarist/nextjs-adapter/app`                                                                                          |
+| **Setup File**         | `pages/api/__scenario__.ts`                         | `app/api/%5F%5Fscenario%5F%5F/route.ts` \*                                                                               |
+| **Scenario Endpoint**  | `export default scenarist.createScenarioEndpoint()` | `const handler = scenarist.createScenarioEndpoint();`<br>`export const POST = handler;`<br>`export const GET = handler;` |
+| **Core Functionality** | ✅ Same scenarios, same behavior                    | ✅ Same scenarios, same behavior                                                                                         |
 
 \* App Router uses `%5F%5Fscenario%5F%5F` (URL-encoded) because folders starting with `_` are treated as private folders in Next.js App Router. See [App Router Setup](#app-router-setup) for details.
 
 **Key Insight:** Choose based on your Next.js version - all Scenarist features work identically in both routers.
 
 **Detailed setup guides:**
+
 - **[Pages Router Setup](#pages-router-setup)** - Full walkthrough for Pages Router
 - **[App Router Setup](#app-router-setup)** - Full walkthrough for App Router
 
@@ -417,22 +452,22 @@ it('fetches user successfully', async () => {
 
 ```typescript
 // lib/scenarios/default.ts
-import type { ScenaristScenario } from '@scenarist/nextjs-adapter/pages';
+import type { ScenaristScenario } from "@scenarist/nextjs-adapter/pages";
 
 export const defaultScenario: ScenaristScenario = {
-  id: 'default',
-  name: 'Default Scenario',
-  description: 'Baseline responses for all APIs',
+  id: "default",
+  name: "Default Scenario",
+  description: "Baseline responses for all APIs",
   mocks: [
     {
-      method: 'GET',
-      url: 'https://api.example.com/user',
+      method: "GET",
+      url: "https://api.example.com/user",
       response: {
         status: 200,
         body: {
-          id: '000',
-          name: 'Default User',
-          role: 'user',
+          id: "000",
+          name: "Default User",
+          role: "user",
         },
       },
     },
@@ -441,19 +476,19 @@ export const defaultScenario: ScenaristScenario = {
 
 // lib/scenarios/admin-user.ts
 export const adminUserScenario: ScenaristScenario = {
-  id: 'admin-user',
-  name: 'Admin User',
-  description: 'User with admin privileges',
+  id: "admin-user",
+  name: "Admin User",
+  description: "User with admin privileges",
   mocks: [
     {
-      method: 'GET',
-      url: 'https://api.example.com/user',
+      method: "GET",
+      url: "https://api.example.com/user",
       response: {
         status: 200,
         body: {
-          id: '123',
-          name: 'Admin User',
-          role: 'admin',
+          id: "123",
+          name: "Admin User",
+          role: "admin",
         },
       },
     },
@@ -465,17 +500,17 @@ export const adminUserScenario: ScenaristScenario = {
 
 ```typescript
 // lib/scenarist.ts
-import { createScenarist } from '@scenarist/nextjs-adapter/pages';
-import { scenarios } from './scenarios';
+import { createScenarist } from "@scenarist/nextjs-adapter/pages";
+import { scenarios } from "./scenarios";
 
 export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
-  scenarios,                    // All scenarios registered upfront
-  strictMode: false,            // Allow unmocked requests to pass through to real APIs
+  enabled: process.env.NODE_ENV === "test",
+  scenarios, // All scenarios registered upfront
+  strictMode: false, // Allow unmocked requests to pass through to real APIs
 });
 
 // Start MSW in Node.js environment
-if (typeof window === 'undefined' && scenarist) {
+if (typeof window === "undefined" && scenarist) {
   scenarist.start();
 }
 ```
@@ -484,7 +519,7 @@ if (typeof window === 'undefined' && scenarist) {
 
 ```typescript
 // pages/api/__scenario__.ts
-import { scenarist } from '../../lib/scenarist';
+import { scenarist } from "../../lib/scenarist";
 
 // In production, scenarist is undefined due to conditional exports
 // When the default export is undefined, Next.js treats the route as non-existent
@@ -497,31 +532,31 @@ This single line creates a Next.js API route that handles both GET and POST requ
 
 ```typescript
 // tests/api.test.ts
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { scenarist } from '../lib/scenarist';
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { scenarist } from "../lib/scenarist";
 
-describe('User API', () => {
+describe("User API", () => {
   beforeAll(() => scenarist.start());
   afterAll(() => scenarist.stop());
 
-  it('should return admin user', async () => {
+  it("should return admin user", async () => {
     // Set scenario for this test
-    await fetch('http://localhost:3000/__scenario__', {
-      method: 'POST',
+    await fetch("http://localhost:3000/__scenario__", {
+      method: "POST",
       headers: {
-        'x-scenarist-test-id': 'admin-test',
-        'content-type': 'application/json',
+        "x-scenarist-test-id": "admin-test",
+        "content-type": "application/json",
       },
-      body: JSON.stringify({ scenario: 'admin-user' }),
+      body: JSON.stringify({ scenario: "admin-user" }),
     });
 
     // Make request - MSW intercepts automatically
-    const response = await fetch('http://localhost:3000/api/user', {
-      headers: { 'x-scenarist-test-id': 'admin-test' },
+    const response = await fetch("http://localhost:3000/api/user", {
+      headers: { "x-scenarist-test-id": "admin-test" },
     });
 
     const user = await response.json();
-    expect(user.role).toBe('admin');
+    expect(user.role).toBe("admin");
   });
 });
 ```
@@ -538,17 +573,17 @@ Same as Pages Router - see [Define Scenarios](#1-define-scenarios) above.
 
 ```typescript
 // lib/scenarist.ts
-import { createScenarist } from '@scenarist/nextjs-adapter/app';
-import { scenarios } from './scenarios';
+import { createScenarist } from "@scenarist/nextjs-adapter/app";
+import { scenarios } from "./scenarios";
 
 export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
-  scenarios,                    // All scenarios registered upfront
-  strictMode: false,            // Allow unmocked requests to pass through to real APIs
+  enabled: process.env.NODE_ENV === "test",
+  scenarios, // All scenarios registered upfront
+  strictMode: false, // Allow unmocked requests to pass through to real APIs
 });
 
 // Start MSW in Node.js environment
-if (typeof window === 'undefined' && scenarist) {
+if (typeof window === "undefined" && scenarist) {
   scenarist.start();
 }
 ```
@@ -557,7 +592,7 @@ if (typeof window === 'undefined' && scenarist) {
 
 ```typescript
 // app/api/%5F%5Fscenario%5F%5F/route.ts
-import { scenarist } from '@/lib/scenarist';
+import { scenarist } from "@/lib/scenarist";
 
 // In production, scenarist is undefined due to conditional exports
 // When exports are undefined, Next.js treats the route as non-existent
@@ -582,43 +617,52 @@ Same as Pages Router - see [Use in Tests](#4-use-in-tests) above. The scenario e
 Creates a Scenarist instance with everything wired automatically.
 
 **Import:**
+
 ```typescript
 // Pages Router
-import { createScenarist } from '@scenarist/nextjs-adapter/pages';
+import { createScenarist } from "@scenarist/nextjs-adapter/pages";
 
 // App Router
-import { createScenarist } from '@scenarist/nextjs-adapter/app';
+import { createScenarist } from "@scenarist/nextjs-adapter/app";
 ```
 
 **Parameters:**
+
 ```typescript
 type AdapterOptions<T extends ScenaristScenarios> = {
-  enabled: boolean;                    // Whether mocking is enabled
-  scenarios: T;                        // REQUIRED - scenarios object (all scenarios registered upfront)
-  strictMode?: boolean;                 // Return 501 for unmocked requests (default: false)
+  enabled: boolean; // Whether mocking is enabled
+  scenarios: T; // REQUIRED - scenarios object (all scenarios registered upfront)
+  strictMode?: boolean; // Return 501 for unmocked requests (default: false)
   headers?: {
-    testId?: string;                    // Header for test ID (default: 'x-scenarist-test-id')
+    testId?: string; // Header for test ID (default: 'x-scenarist-test-id')
   };
-  defaultTestId?: string;               // Default test ID (default: 'default-test')
-  registry?: ScenarioRegistry;          // Custom registry (default: InMemoryScenarioRegistry)
-  store?: ScenarioStore;                // Custom store (default: InMemoryScenarioStore)
-  stateManager?: StateManager;          // Custom state manager (default: InMemoryStateManager)
-  sequenceTracker?: SequenceTracker;    // Custom sequence tracker (default: InMemorySequenceTracker)
+  defaultTestId?: string; // Default test ID (default: 'default-test')
+  registry?: ScenarioRegistry; // Custom registry (default: InMemoryScenarioRegistry)
+  store?: ScenarioStore; // Custom store (default: InMemoryScenarioStore)
+  stateManager?: StateManager; // Custom state manager (default: InMemoryStateManager)
+  sequenceTracker?: SequenceTracker; // Custom sequence tracker (default: InMemorySequenceTracker)
 };
 ```
 
 **Returns:**
+
 ```typescript
 type Scenarist<T extends ScenaristScenarios> = {
-  config: ScenaristConfig;              // Resolved configuration (headers, etc.)
+  config: ScenaristConfig; // Resolved configuration (headers, etc.)
   createScenarioEndpoint: () => Handler; // Creates scenario endpoint handler
-  switchScenario: (testId: string, scenarioId: ScenarioIds<T>, variant?: string) => ScenaristResult<void, Error>;
+  switchScenario: (
+    testId: string,
+    scenarioId: ScenarioIds<T>,
+    variant?: string,
+  ) => ScenaristResult<void, Error>;
   getActiveScenario: (testId: string) => ActiveScenario | undefined;
-  getScenarioById: (scenarioId: ScenarioIds<T>) => ScenaristScenario | undefined;
+  getScenarioById: (
+    scenarioId: ScenarioIds<T>,
+  ) => ScenaristScenario | undefined;
   listScenarios: () => ReadonlyArray<ScenaristScenario>;
   clearScenario: (testId: string) => void;
-  start: () => void;                    // Start MSW server
-  stop: () => Promise<void>;            // Stop MSW server
+  start: () => void; // Start MSW server
+  stop: () => Promise<void>; // Stop MSW server
 };
 ```
 
@@ -643,6 +687,7 @@ The endpoint handler exposes these operations:
 #### `POST /__scenario__` - Set Active Scenario
 
 **Request:**
+
 ```typescript
 {
   scenario: string;      // Scenario ID (required)
@@ -651,6 +696,7 @@ The endpoint handler exposes these operations:
 ```
 
 **Response (200):**
+
 ```typescript
 {
   success: true;
@@ -661,20 +707,22 @@ The endpoint handler exposes these operations:
 ```
 
 **Example:**
+
 ```typescript
-await fetch('http://localhost:3000/__scenario__', {
-  method: 'POST',
+await fetch("http://localhost:3000/__scenario__", {
+  method: "POST",
   headers: {
-    'x-scenarist-test-id': 'test-123',
-    'content-type': 'application/json',
+    "x-scenarist-test-id": "test-123",
+    "content-type": "application/json",
   },
-  body: JSON.stringify({ scenario: 'user-logged-in' }),
+  body: JSON.stringify({ scenario: "user-logged-in" }),
 });
 ```
 
 #### `GET /__scenario__` - Get Active Scenario
 
 **Response (200):**
+
 ```typescript
 {
   testId: string;
@@ -684,6 +732,7 @@ await fetch('http://localhost:3000/__scenario__', {
 ```
 
 **Response (404) - No Active Scenario:**
+
 ```typescript
 {
   error: "No active scenario for this test ID";
@@ -692,9 +741,10 @@ await fetch('http://localhost:3000/__scenario__', {
 ```
 
 **Example:**
+
 ```typescript
-const response = await fetch('http://localhost:3000/__scenario__', {
-  headers: { 'x-scenarist-test-id': 'test-123' },
+const response = await fetch("http://localhost:3000/__scenario__", {
+  headers: { "x-scenarist-test-id": "test-123" },
 });
 
 const data = await response.json();
@@ -720,6 +770,7 @@ headers: { 'x-scenarist-test-id': 'test-2' } // Uses scenario B
 ```
 
 Each test ID has completely isolated:
+
 - Active scenario selection
 - Sequence positions (for polling scenarios)
 - Captured state (for stateful mocks)
@@ -735,21 +786,22 @@ Each test ID has completely isolated:
 Use the safe helper functions provided by the adapter:
 
 **Pages Router:**
+
 ```typescript
 // pages/api/products.ts
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
+import type { NextApiRequest, NextApiResponse } from "next";
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/pages";
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   // Fetch from external API with Scenarist headers forwarded
-  const response = await fetch('http://external-api.com/products', {
+  const response = await fetch("http://external-api.com/products", {
     headers: {
-      ...getScenaristHeaders(req),  // ✅ Scenarist infrastructure headers
-      'content-type': 'application/json',      // ✅ Your application headers
-      'x-user-tier': req.headers['x-user-tier'], // ✅ Other app-specific headers
+      ...getScenaristHeaders(req), // ✅ Scenarist infrastructure headers
+      "content-type": "application/json", // ✅ Your application headers
+      "x-user-tier": req.headers["x-user-tier"], // ✅ Other app-specific headers
     },
   });
 
@@ -759,15 +811,16 @@ export default async function handler(
 ```
 
 **App Router Route Handlers:**
+
 ```typescript
 // app/api/products/route.ts
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
 
 export async function GET(request: Request) {
-  const response = await fetch('http://external-api.com/products', {
+  const response = await fetch("http://external-api.com/products", {
     headers: {
       ...getScenaristHeaders(request),
-      'content-type': 'application/json',
+      "content-type": "application/json",
     },
   });
 
@@ -777,6 +830,7 @@ export async function GET(request: Request) {
 ```
 
 **App Router Server Components:**
+
 ```typescript
 // app/products/page.tsx
 import { headers } from 'next/headers';
@@ -799,16 +853,19 @@ export default async function ProductsPage() {
 ```
 
 **What these helpers do:**
+
 - Extract test ID from request headers (`x-scenarist-test-id` by default)
 - Respect your configured `testIdHeaderName` and `defaultTestId`
 - Return object with Scenarist headers ready to spread
 - Safe to use in production (return empty object when scenarist is undefined)
 
 **When to use which helper:**
+
 - **`getScenaristHeaders(request | req)`** - Route Handlers (Request object) or Pages Router API routes (NextApiRequest)
 - **`getScenaristHeadersFromReadonlyHeaders(headersList)`** - App Router Server Components (ReadonlyHeaders from `headers()`)
 
 **Key Distinction:**
+
 - **Scenarist headers** (`x-scenarist-test-id`) - Infrastructure for test isolation
 - **Application headers** (`x-user-tier`, `content-type`) - Your app's business logic
 
@@ -821,12 +878,14 @@ Only Scenarist headers need forwarding via helper functions. Your application he
 `createScenarist()` automatically wires MSW for request interception. You never see MSW code directly.
 
 **What it does:**
+
 1. Creates MSW server with dynamic handler
 2. Extracts test ID from request headers
 3. Looks up active scenario for that test ID
 4. Returns mocked responses based on scenario
 
 **Next.js-specific details:**
+
 - Pages Router: Uses Next.js API routes
 - App Router: Uses Web standard Request/Response
 - Both: Full test ID isolation via headers
@@ -838,20 +897,20 @@ Active scenario mocks take precedence; unmocked endpoints fall back to default s
 ```typescript
 // Default covers all endpoints
 const defaultScenario = {
-  id: 'default',
+  id: "default",
   mocks: [
-    { method: 'GET', url: '*/api/users', response: { status: 200, body: [] } },
-    { method: 'GET', url: '*/api/orders', response: { status: 200, body: [] } },
-  ]
+    { method: "GET", url: "*/api/users", response: { status: 200, body: [] } },
+    { method: "GET", url: "*/api/orders", response: { status: 200, body: [] } },
+  ],
 };
 
 // Test scenario overrides only specific endpoints
 const errorScenario = {
-  id: 'error',
+  id: "error",
   mocks: [
-    { method: 'GET', url: '*/api/users', response: { status: 500 } }
+    { method: "GET", url: "*/api/users", response: { status: 500 } },
     // Orders uses default scenario
-  ]
+  ],
 };
 ```
 
@@ -865,18 +924,21 @@ TypeScript automatically infers scenario names from your scenarios object, provi
 
 ```typescript
 // lib/scenarios.ts
-import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/nextjs-adapter/pages';
+import type {
+  ScenaristScenario,
+  ScenaristScenarios,
+} from "@scenarist/nextjs-adapter/pages";
 
 export const scenarios = {
-  default: { id: 'default', name: 'Default', mocks: [] },
-  success: { id: 'success', name: 'Success', mocks: [] },
-  error: { id: 'error', name: 'Error', mocks: [] },
-  timeout: { id: 'timeout', name: 'Timeout', mocks: [] },
+  default: { id: "default", name: "Default", mocks: [] },
+  success: { id: "success", name: "Success", mocks: [] },
+  error: { id: "error", name: "Error", mocks: [] },
+  timeout: { id: "timeout", name: "Timeout", mocks: [] },
 } as const satisfies ScenaristScenarios;
 
 // lib/scenarist.ts
-import { createScenarist } from '@scenarist/nextjs-adapter/pages';
-import { scenarios } from './scenarios';
+import { createScenarist } from "@scenarist/nextjs-adapter/pages";
+import { scenarios } from "./scenarios";
 
 export const scenarist = createScenarist({
   enabled: true,
@@ -888,12 +950,12 @@ export const scenarist = createScenarist({
 
 ```typescript
 // ✅ Valid - TypeScript knows about these scenario IDs
-scenarist.switchScenario('test-123', 'success');
-scenarist.switchScenario('test-123', 'error');
-scenarist.switchScenario('test-123', 'timeout');
+scenarist.switchScenario("test-123", "success");
+scenarist.switchScenario("test-123", "error");
+scenarist.switchScenario("test-123", "timeout");
 
 // ❌ TypeScript error - 'invalid-name' is not a valid scenario ID
-scenarist.switchScenario('test-123', 'invalid-name');
+scenarist.switchScenario("test-123", "invalid-name");
 //                                    ^^^^^^^^^^^^^^
 // Argument of type '"invalid-name"' is not assignable to parameter of type
 // '"default" | "success" | "error" | "timeout"'
@@ -903,24 +965,31 @@ scenarist.switchScenario('test-123', 'invalid-name');
 
 ```typescript
 // tests.ts
-import { scenarios } from './scenarios';
+import { scenarios } from "./scenarios";
 
 // ✅ Type-safe scenario switching
-await fetch('http://localhost:3000/__scenario__', {
-  method: 'POST',
-  headers: { 'x-scenarist-test-id': 'test-1', 'content-type': 'application/json' },
-  body: JSON.stringify({ scenario: 'success' }), // ✅ Autocomplete works!
+await fetch("http://localhost:3000/__scenario__", {
+  method: "POST",
+  headers: {
+    "x-scenarist-test-id": "test-1",
+    "content-type": "application/json",
+  },
+  body: JSON.stringify({ scenario: "success" }), // ✅ Autocomplete works!
 });
 
 // Or reference by object key for refactor-safety
-await fetch('http://localhost:3000/__scenario__', {
-  method: 'POST',
-  headers: { 'x-scenarist-test-id': 'test-1', 'content-type': 'application/json' },
+await fetch("http://localhost:3000/__scenario__", {
+  method: "POST",
+  headers: {
+    "x-scenarist-test-id": "test-1",
+    "content-type": "application/json",
+  },
   body: JSON.stringify({ scenario: scenarios.success.id }), // ✅ Even safer!
 });
 ```
 
 **What you get:**
+
 - ✅ IDE autocomplete for all scenario names
 - ✅ Compile-time errors for typos (catch bugs before runtime)
 - ✅ Refactor-safe (rename scenarios and all usages update)
@@ -935,39 +1004,48 @@ Create helper functions to reduce boilerplate:
 
 ```typescript
 // tests/helpers.ts
-const API_BASE = 'http://localhost:3000';
+const API_BASE = "http://localhost:3000";
 
-export const setScenario = async (testId: string, scenario: string, variant?: string) => {
+export const setScenario = async (
+  testId: string,
+  scenario: string,
+  variant?: string,
+) => {
   await fetch(`${API_BASE}/__scenario__`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'x-scenarist-test-id': testId,
-      'content-type': 'application/json',
+      "x-scenarist-test-id": testId,
+      "content-type": "application/json",
     },
     body: JSON.stringify({ scenario, variant }),
   });
 };
 
-export const makeRequest = (testId: string, path: string, options?: RequestInit) => {
+export const makeRequest = (
+  testId: string,
+  path: string,
+  options?: RequestInit,
+) => {
   return fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
       ...options?.headers,
-      'x-scenarist-test-id': testId,
+      "x-scenarist-test-id": testId,
     },
   });
 };
 ```
 
 **Usage:**
+
 ```typescript
-import { setScenario, makeRequest } from './helpers';
+import { setScenario, makeRequest } from "./helpers";
 
-test('payment flow', async () => {
-  const testId = 'payment-test';
-  await setScenario(testId, 'payment-success');
+test("payment flow", async () => {
+  const testId = "payment-test";
+  await setScenario(testId, "payment-success");
 
-  const response = await makeRequest(testId, '/api/charge', { method: 'POST' });
+  const response = await makeRequest(testId, "/api/charge", { method: "POST" });
   expect(response.status).toBe(200);
 });
 ```
@@ -977,25 +1055,29 @@ test('payment flow', async () => {
 Generate unique test IDs automatically using a factory function:
 
 ```typescript
-import { randomUUID } from 'crypto';
+import { randomUUID } from "crypto";
 
-describe('API Tests', () => {
+describe("API Tests", () => {
   // Factory function - no shared mutable state
   const createTestId = () => randomUUID();
 
-  it('should process payment', async () => {
+  it("should process payment", async () => {
     const testId = createTestId(); // Fresh ID per test
 
-    await setScenario(testId, 'payment-success');
-    const response = await makeRequest(testId, '/api/charge', { method: 'POST' });
+    await setScenario(testId, "payment-success");
+    const response = await makeRequest(testId, "/api/charge", {
+      method: "POST",
+    });
     expect(response.status).toBe(200);
   });
 
-  it('should handle payment decline', async () => {
+  it("should handle payment decline", async () => {
     const testId = createTestId(); // Independent state
 
-    await setScenario(testId, 'payment-declined');
-    const response = await makeRequest(testId, '/api/charge', { method: 'POST' });
+    await setScenario(testId, "payment-declined");
+    const response = await makeRequest(testId, "/api/charge", {
+      method: "POST",
+    });
     expect(response.status).toBe(402);
   });
 });
@@ -1013,7 +1095,8 @@ describe('API Tests', () => {
 // lib/scenarist.ts
 // ✅ CORRECT - Only enabled in safe environments
 const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test',
+  enabled:
+    process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test",
   scenarios,
   strictMode: false,
 });
@@ -1026,6 +1109,7 @@ const scenarist = createScenarist({
 ```
 
 **Production checklist:**
+
 - ✅ `enabled` is conditional (never hardcoded `true`)
 - ✅ Environment checks use `process.env.NODE_ENV`
 - ✅ `/__scenario__` endpoints not exposed in production builds
@@ -1049,21 +1133,22 @@ curl http://localhost:3000/__scenario__
 ```typescript
 // Test-only
 const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
+  enabled: process.env.NODE_ENV === "test",
   scenarios,
   strictMode: true, // Fail if any unmocked request
 });
 
 // Development and test
 const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development',
+  enabled:
+    process.env.NODE_ENV === "test" || process.env.NODE_ENV === "development",
   scenarios,
   strictMode: false, // Allow passthrough to real APIs
 });
 
 // Opt-in with environment variable
 const scenarist = createScenarist({
-  enabled: process.env.ENABLE_MOCKING === 'true',
+  enabled: process.env.ENABLE_MOCKING === "true",
   scenarios,
   strictMode: false,
 });
@@ -1074,12 +1159,14 @@ const scenarist = createScenarist({
 Controls behavior when no mock matches a request.
 
 **`strictMode: false` (recommended for development):**
+
 - Unmocked requests pass through to real APIs
 - Useful when only mocking specific endpoints
 - Default scenario provides fallback for common endpoints
 - Best for development where you want partial mocking
 
 **`strictMode: true` (recommended for tests):**
+
 - Unmocked requests return 501 Not Implemented
 - Ensures tests don't accidentally hit real APIs
 - Catches missing mocks early in test development
@@ -1094,7 +1181,7 @@ const minimalScenarios = {
 } as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'development',
+  enabled: process.env.NODE_ENV === "development",
   scenarios: minimalScenarios,
   strictMode: false, // Let unmocked APIs pass through to real services
 });
@@ -1105,18 +1192,20 @@ const testScenarios = {
 } as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
+  enabled: process.env.NODE_ENV === "test",
   scenarios: testScenarios,
   strictMode: true, // Fail loudly if any endpoint isn't mocked
 });
 ```
 
 **When strictMode is true:**
+
 - Request for mocked endpoint → Returns defined mock response ✅
 - Request for unmocked endpoint → Returns 501 Not Implemented ❌
 - Easy to spot missing mocks during test development
 
 **When strictMode is false:**
+
 - Request for mocked endpoint → Returns defined mock response ✅
 - Request for unmocked endpoint → Passes through to real API 🌐
 - Useful for incremental mocking in development
@@ -1128,7 +1217,7 @@ const scenarist = createScenarist({
   enabled: true,
   scenarios,
   headers: {
-    testId: 'x-my-test-id',
+    testId: "x-my-test-id",
   },
 });
 ```
@@ -1142,8 +1231,8 @@ const scenarist = createScenarist({
 **Solution:** Ensure you've called `scenarist.start()` before tests and `scenarist.stop()` after:
 
 ```typescript
-beforeAll(() => scenarist.start());  // Starts MSW server
-afterAll(() => scenarist.stop());    // Stops MSW server
+beforeAll(() => scenarist.start()); // Starts MSW server
+afterAll(() => scenarist.stop()); // Stops MSW server
 ```
 
 ### Tests see each other's scenarios
@@ -1154,13 +1243,13 @@ afterAll(() => scenarist.stop());    // Stops MSW server
 
 ```typescript
 // ❌ Wrong - missing header on second request
-await setScenario('test-1', 'my-scenario');
-const response = await fetch('http://localhost:3000/api/data'); // No test ID!
+await setScenario("test-1", "my-scenario");
+const response = await fetch("http://localhost:3000/api/data"); // No test ID!
 
 // ✅ Correct - header on all requests
-await setScenario('test-1', 'my-scenario');
-const response = await fetch('http://localhost:3000/api/data', {
-  headers: { 'x-scenarist-test-id': 'test-1' },
+await setScenario("test-1", "my-scenario");
+const response = await fetch("http://localhost:3000/api/data", {
+  headers: { "x-scenarist-test-id": "test-1" },
 });
 ```
 
@@ -1174,17 +1263,17 @@ const response = await fetch('http://localhost:3000/api/data', {
 // lib/scenarios.ts
 export const scenarios = {
   default: defaultScenario,
-  'my-scenario': myScenario,  // ✅ Include in scenarios object
+  "my-scenario": myScenario, // ✅ Include in scenarios object
 } as const satisfies ScenaristScenarios;
 
 // lib/scenarist.ts
 const scenarist = createScenarist({
   enabled: true,
-  scenarios,  // All scenarios registered automatically
+  scenarios, // All scenarios registered automatically
 });
 
 // tests
-await setScenario('test-1', 'my-scenario');  // ✅ Now works
+await setScenario("test-1", "my-scenario"); // ✅ Now works
 ```
 
 ### TypeScript errors with Next.js types
@@ -1198,13 +1287,14 @@ await setScenario('test-1', 'my-scenario');  // ✅ Now works
 This package is written in TypeScript and includes full type definitions.
 
 **Exported Types:**
+
 ```typescript
 // Pages Router - adapter-specific types
 import type {
   PagesAdapterOptions,
   PagesScenarist,
   PagesRequestContext,
-} from '@scenarist/nextjs-adapter/pages';
+} from "@scenarist/nextjs-adapter/pages";
 
 // Pages Router - core types (re-exported for convenience)
 import type {
@@ -1217,14 +1307,14 @@ import type {
   ScenaristScenarios,
   ScenaristConfig,
   ScenaristResult,
-} from '@scenarist/nextjs-adapter/pages';
+} from "@scenarist/nextjs-adapter/pages";
 
 // App Router - adapter-specific types
 import type {
   AppAdapterOptions,
   AppScenarist,
   AppRequestContext,
-} from '@scenarist/nextjs-adapter/app';
+} from "@scenarist/nextjs-adapter/app";
 
 // App Router - core types (re-exported for convenience)
 import type {
@@ -1237,7 +1327,7 @@ import type {
   ScenaristScenarios,
   ScenaristConfig,
   ScenaristResult,
-} from '@scenarist/nextjs-adapter/app';
+} from "@scenarist/nextjs-adapter/app";
 ```
 
 **Note:** All core types are re-exported from both `/pages` and `/app` subpaths for convenience. You only need one import path for all Scenarist types - just import from the subpath that matches your Next.js router.
@@ -1256,16 +1346,17 @@ If you need custom wiring for specialized use cases, you can access low-level co
 import {
   PagesRequestContext,
   createScenarioEndpoint,
-} from '@scenarist/nextjs-adapter/pages';
+} from "@scenarist/nextjs-adapter/pages";
 
 // App Router low-level components
 import {
   AppRequestContext,
   createScenarioEndpoint,
-} from '@scenarist/nextjs-adapter/app';
+} from "@scenarist/nextjs-adapter/app";
 ```
 
 **Use cases for low-level APIs:**
+
 - Building a custom adapter for a Next.js-like framework
 - Integrating with non-standard request handling
 - Creating custom middleware chains
@@ -1295,9 +1386,11 @@ export const createScenarist = () => undefined;
 ### Bundle Size Impact
 
 **Before (development):**
+
 - Scenarist adapter + Core + MSW: ~320kb
 
 **After (production with tree-shaking):**
+
 - **0kb** - Complete elimination
 
 ### Verifying Tree-Shaking
@@ -1319,6 +1412,7 @@ This builds your app with `NODE_ENV=production` and verifies zero MSW code exist
 ### Bundler Configuration
 
 **Next.js (Automatic):**
+
 - Next.js webpack/Turbopack automatically respects `NODE_ENV=production`
 - No configuration needed - tree-shaking works out of the box
 
@@ -1329,21 +1423,21 @@ If using a custom bundler, ensure it resolves the `"production"` condition:
 ```javascript
 // esbuild
 esbuild.build({
-  conditions: ['production'],  // Resolves production entry points
-  define: { 'process.env.NODE_ENV': '"production"' },
+  conditions: ["production"], // Resolves production entry points
+  define: { "process.env.NODE_ENV": '"production"' },
 });
 
 // Webpack
 module.exports = {
   resolve: {
-    conditionNames: ['production', 'import'],
+    conditionNames: ["production", "import"],
   },
 };
 
 // Vite
 export default {
   resolve: {
-    conditions: ['production'],
+    conditions: ["production"],
   },
 };
 ```
@@ -1351,6 +1445,7 @@ export default {
 ### What Gets Eliminated
 
 When tree-shaking succeeds, your production bundle has:
+
 - ❌ No MSW runtime code (`setupWorker`, `http.get`, `HttpResponse.json`)
 - ❌ No Scenarist core code (scenario manager, state manager, etc.)
 - ❌ No Zod validation schemas
@@ -1362,6 +1457,7 @@ When tree-shaking succeeds, your production bundle has:
 **If `verify:treeshaking` fails:**
 
 1. **Check `NODE_ENV`:** Ensure `NODE_ENV=production` during build
+
    ```bash
    NODE_ENV=production next build
    ```
@@ -1371,6 +1467,7 @@ When tree-shaking succeeds, your production bundle has:
    - Custom bundlers: Add `conditions: ['production']`
 
 3. **Check dynamic imports:** Avoid dynamic imports that bypass tree-shaking
+
    ```typescript
    // ❌ BAD - Bypasses tree-shaking
    const scenarist = await import('@scenarist/nextjs-adapter/app');
@@ -1394,13 +1491,13 @@ The adapter uses **package.json conditional exports** to provide different entry
   "exports": {
     "./app": {
       "types": "./dist/app/index.d.ts",
-      "production": "./dist/app/production.js",  // Returns undefined
-      "import": "./dist/app/index.js"           // Full implementation
+      "production": "./dist/app/production.js", // Returns undefined
+      "import": "./dist/app/index.js" // Full implementation
     },
     "./pages": {
       "types": "./dist/pages/index.d.ts",
       "production": "./dist/pages/production.js", // Returns undefined
-      "import": "./dist/pages/index.js"          // Full implementation
+      "import": "./dist/pages/index.js" // Full implementation
     }
   }
 }
@@ -1421,6 +1518,7 @@ The adapter uses **package.json conditional exports** to provide different entry
 **For developers:** This package has an explicit exception to the project's 100% coverage requirement.
 
 **Current Coverage:**
+
 - Lines: 100% ✅
 - Statements: 100% ✅
 - Branches: 100% ✅
@@ -1439,6 +1537,7 @@ const handler = createDynamicHandler({
 ```
 
 Adapter unit tests focus on Layer 2 (translation layer):
+
 - Request context extraction
 - Endpoint request/response handling
 - Framework-specific edge cases
@@ -1448,6 +1547,7 @@ These tests do NOT make real HTTP requests, so the handler arrow functions are n
 **Resolution:**
 
 Phase 0 (Next.js example app) will add integration tests that:
+
 - Make real HTTP requests (like Express example app does with supertest)
 - Trigger MSW handlers
 - Execute the remaining arrow functions
@@ -1456,6 +1556,7 @@ Phase 0 (Next.js example app) will add integration tests that:
 **Precedent:**
 
 The Express adapter follows the same pattern:
+
 - Adapter unit tests: `packages/express-adapter/tests/`
 - Integration tests: `apps/express-example/tests/` (with supertest)
 - Combined result: 100% coverage

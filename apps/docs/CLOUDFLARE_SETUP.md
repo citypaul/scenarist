@@ -67,6 +67,7 @@ On the "Set up builds and deployments" page, configure:
 ### Environment Variables
 
 **Node.js version (recommended):**
+
 - Variable: `NODE_VERSION`
 - Value: `20`
 
@@ -142,16 +143,19 @@ On the "Set up builds and deployments" page, configure:
 ### Troubleshooting Domain Setup
 
 **Domain not working after 5 minutes:**
+
 - Check DNS records in Cloudflare DNS settings
 - Verify CNAME points to correct `.pages.dev` URL
 - Check SSL/TLS certificate status (should be "Active")
 
 **SSL errors:**
+
 - Wait a bit longer (can take up to 24 hours)
 - Verify SSL mode is "Full (strict)" not "Flexible"
 - Check certificate status in Custom domains tab
 
 **"Too many redirects" error:**
+
 - SSL mode is likely wrong
 - Change to "Full (strict)" in SSL/TLS settings
 
@@ -162,6 +166,7 @@ On the "Set up builds and deployments" page, configure:
 ### How It Works
 
 **On every push to `main` branch:**
+
 1. GitHub webhook triggers Cloudflare Pages
 2. Cloudflare Pages clones repository
 3. Navigates to `apps/docs` (Root Directory)
@@ -171,6 +176,7 @@ On the "Set up builds and deployments" page, configure:
 7. Site updates at `https://scenarist.io`
 
 **On pull request creation/update:**
+
 1. Cloudflare Pages creates preview deployment
 2. Preview URL: `https://<commit-hash>.scenarist-docs.pages.dev`
 3. Comment added to PR with preview link
@@ -193,22 +199,26 @@ Cloudflare Pages officially supports monorepos and package managers (npm, pnpm, 
 ### Solution 1: Use Root Directory + npm (Simplest - RECOMMENDED)
 
 **Configuration:**
+
 - Root Directory: `apps/docs`
 - Build command: `npm run build`
 - Build output: `dist`
 
 **How it works:**
+
 - Cloudflare navigates to `apps/docs`
 - Runs `npm install` (installs dependencies from `apps/docs/package.json`)
 - Runs `npm run build`
 - Works because `apps/docs` has its own `package.json`
 
 **Pros:**
+
 - ✅ Simple, no workarounds needed
 - ✅ Uses official Cloudflare approach
 - ✅ Reliable and well-tested
 
 **Cons:**
+
 - ⚠️ Doesn't use workspace dependencies
 - ⚠️ Slightly slower (re-installs instead of using workspace)
 - ⚠️ Workspace deps must be published packages or copied
@@ -216,28 +226,33 @@ Cloudflare Pages officially supports monorepos and package managers (npm, pnpm, 
 ### Solution 2: Skip npm install with pnpm (Advanced)
 
 **Environment variables:**
+
 ```
 NPM_FLAGS=--version
 NODE_VERSION=20
 ```
 
 **Build command:**
+
 ```bash
 npm install -g pnpm@9 && pnpm install --frozen-lockfile && pnpm --filter=@scenarist/docs build
 ```
 
 **How it works:**
+
 - `NPM_FLAGS=--version` makes `npm install` just print version (skips actual install)
 - Build command installs pnpm globally
 - Then runs pnpm install from monorepo root
 - Filters to build only docs package
 
 **Pros:**
+
 - ✅ Uses workspace dependencies correctly
 - ✅ Respects pnpm-lock.yaml
 - ✅ Consistent with local development
 
 **Cons:**
+
 - ⚠️ More complex setup
 - ⚠️ Requires environment variable workaround
 - ⚠️ Root Directory must be `/` (monorepo root)
@@ -266,6 +281,7 @@ Build output: dist
 ```
 
 **Why:**
+
 - Simple and reliable
 - Uses official Cloudflare approach
 - `apps/docs` has minimal dependencies (just Astro + Starlight)
@@ -279,6 +295,7 @@ Build output: dist
 **Cause:** Trying to use workspace dependencies with Solution 1
 
 **Solution:** Either:
+
 - Use Solution 2 (pnpm with workspace support)
 - Or ensure `apps/docs/package.json` lists all dependencies directly (no workspace references)
 
@@ -299,6 +316,7 @@ Build output: dist
 **Cause:** No build watch paths configured
 
 **Solution:**
+
 1. Go to Settings → Builds & deployments → Build watch paths
 2. Add: `apps/docs/**`
 3. Saves build minutes and time
@@ -306,6 +324,7 @@ Build output: dist
 ### Preview Deployments Not Working
 
 **Solution:** Enable in project settings:
+
 - **Settings** → **Builds & deployments**
 - **Branch deployments:** Enable
 - **Preview deployments:** Enable all branches or specific pattern
@@ -315,6 +334,7 @@ Build output: dist
 **Cause:** Cloudflare's Auto Minify
 
 **Solution:**
+
 1. Go to Cloudflare dashboard → Speed → Optimization
 2. Disable **Auto Minify** for HTML/CSS/JS
 3. Redeploy
@@ -323,19 +343,20 @@ Build output: dist
 
 **Recommended Configuration:**
 
-| Setting | Value | Notes |
-|---------|-------|-------|
-| Project name | `scenarist-docs` | Or `scenarist` |
-| Production branch | `main` | |
-| Framework | Astro | Enables framework-specific optimizations |
-| Root directory | `apps/docs` | **Critical for monorepos** |
-| Build command | `npm run build` | Simple, uses Root Directory |
-| Build output | `dist` | Relative to Root Directory |
-| Node version | `20` | Environment variable |
-| Build watch paths | `apps/docs/**` | Only build when docs change |
-| Custom domain | `scenarist.io` | |
+| Setting           | Value            | Notes                                    |
+| ----------------- | ---------------- | ---------------------------------------- |
+| Project name      | `scenarist-docs` | Or `scenarist`                           |
+| Production branch | `main`           |                                          |
+| Framework         | Astro            | Enables framework-specific optimizations |
+| Root directory    | `apps/docs`      | **Critical for monorepos**               |
+| Build command     | `npm run build`  | Simple, uses Root Directory              |
+| Build output      | `dist`           | Relative to Root Directory               |
+| Node version      | `20`             | Environment variable                     |
+| Build watch paths | `apps/docs/**`   | Only build when docs change              |
+| Custom domain     | `scenarist.io`   |                                          |
 
 **Build Workflow:**
+
 ```bash
 # Cloudflare Pages automatically does:
 cd apps/docs/           # Navigate to Root Directory
@@ -345,6 +366,7 @@ npm run build          # Run build command
 ```
 
 **Automatic Deployments:**
+
 - ✅ Push to `main` → Production deployment
 - ✅ Pull requests → Preview deployments
 - ✅ Build status in GitHub commits
@@ -370,11 +392,13 @@ npm run build          # Run build command
 ## Maintenance
 
 **Automatic maintenance:**
+
 - Dependencies: Dependabot PRs trigger preview deployments
 - Domain renewal: Cloudflare handles SSL certificate renewal
 - Build cache: Cloudflare Pages automatically caches dependencies
 
 **Manual maintenance:**
+
 - Review deployment logs monthly
 - Monitor build times
 - Update Node.js version as needed

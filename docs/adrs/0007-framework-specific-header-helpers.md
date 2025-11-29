@@ -18,11 +18,15 @@ In frameworks without middleware support (like Next.js Pages Router), routes mus
 
 ```typescript
 // pages/api/products.ts
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
   // Need to forward x-scenarist-test-id header to external API
-  const response = await fetch('http://localhost:3001/api/products', {
+  const response = await fetch("http://localhost:3001/api/products", {
     headers: {
-      'x-scenarist-test-id': req.headers['x-scenarist-test-id'] || 'default-test',
+      "x-scenarist-test-id":
+        req.headers["x-scenarist-test-id"] || "default-test",
     },
   });
   // ...
@@ -30,6 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 ```
 
 This pattern will be needed in:
+
 - Next.js Pages Router API routes
 - Next.js App Router Server Actions (when making external calls)
 - Any framework without middleware/AsyncLocalStorage for context propagation
@@ -37,6 +42,7 @@ This pattern will be needed in:
 **The Question:**
 
 Should we create:
+
 1. **Core utility** - Framework-agnostic helper in `@scenarist/core`
 2. **Framework-specific helpers** - One helper per adapter package
 
@@ -45,6 +51,7 @@ Should we create:
 We will implement **framework-specific header forwarding helpers** in each adapter package.
 
 Each adapter will export a `getScenaristHeaders()` function that:
+
 - Accepts framework-specific request object + Scenarist instance
 - Extracts test ID from configured header
 - Returns headers object ready to spread into `fetch()` options
@@ -59,30 +66,32 @@ Each adapter will export a `getScenaristHeaders()` function that:
 // @scenarist/core
 export const getScenaristHeaders = <TRequest>(
   request: TRequest,
-  extractHeaders: (req: TRequest) => Record<string, string | string[] | undefined>,
+  extractHeaders: (
+    req: TRequest,
+  ) => Record<string, string | string[] | undefined>,
   config: ScenaristConfig,
 ): Record<string, string> => {
   const headers = extractHeaders(request);
   const headerValue = headers[config.testIdHeaderName.toLowerCase()];
-  const testId = (Array.isArray(headerValue) ? headerValue[0] : headerValue) || config.defaultTestId;
+  const testId =
+    (Array.isArray(headerValue) ? headerValue[0] : headerValue) ||
+    config.defaultTestId;
   return { [config.testIdHeaderName]: testId };
 };
 
 // Usage in Next.js adapter
-import { getScenaristHeaders } from '@scenarist/core';
-const headers = getScenaristHeaders(
-  req,
-  (r) => r.headers,
-  scenarist.config,
-);
+import { getScenaristHeaders } from "@scenarist/core";
+const headers = getScenaristHeaders(req, (r) => r.headers, scenarist.config);
 ```
 
 **Pros:**
+
 - Single implementation (no code duplication)
 - Consistent behavior across all frameworks
 - Centralized maintenance
 
 **Cons:**
+
 - Complex generic type signature (`<TRequest>`)
 - Requires passing extraction function (boilerplate for users)
 - Type assertions needed or complex type constraints
@@ -92,11 +101,13 @@ const headers = getScenaristHeaders(
 **Why Rejected:**
 
 Framework request types are fundamentally different:
+
 - Express: `Request` with `headers: IncomingHttpHeaders`
 - Next.js: `NextApiRequest` with `headers: Partial<IncomingHttpHeaders>`
 - Future frameworks will have their own types (Fastify, Hono, etc.)
 
 A core utility would need to handle all possible request types via:
+
 - Complex type unions (`TRequest extends ExpressRequest | NextApiRequest | ...`)
 - Type assertions (`as NextApiRequest`)
 - Generic abstractions that leak framework details into core
@@ -115,21 +126,24 @@ export const getScenaristHeaders = (
 ): Record<string, string> => {
   const { testIdHeaderName, defaultTestId } = scenarist.config;
   const headerValue = req.headers[testIdHeaderName.toLowerCase()];
-  const testId = (Array.isArray(headerValue) ? headerValue[0] : headerValue) || defaultTestId;
+  const testId =
+    (Array.isArray(headerValue) ? headerValue[0] : headerValue) ||
+    defaultTestId;
   return { [testIdHeaderName]: testId };
 };
 
 // Usage
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
-const response = await fetch('http://api.com/data', {
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/pages";
+const response = await fetch("http://api.com/data", {
   headers: {
     ...getScenaristHeaders(req, scenarist),
-    'x-app-header': 'value',
+    "x-app-header": "value",
   },
 });
 ```
 
 **Pros:**
+
 - ✅ Type-safe without assertions
 - ✅ Simple, clear API for each framework
 - ✅ No core package dependency on framework types
@@ -138,6 +152,7 @@ const response = await fetch('http://api.com/data', {
 - ✅ Framework authors understand their own request types best
 
 **Cons:**
+
 - ❌ Structural code duplication (~3 lines per adapter)
 - ❌ Pattern must be documented for new adapter authors
 - ❌ Changes to header extraction logic need updating multiple adapters
@@ -154,7 +169,9 @@ const response = await fetch('http://api.com/data', {
    - Actual logic is ~3 lines:
      ```typescript
      const headerValue = req.headers[headerName.toLowerCase()];
-     const testId = (Array.isArray(headerValue) ? headerValue[0] : headerValue) || defaultTestId;
+     const testId =
+       (Array.isArray(headerValue) ? headerValue[0] : headerValue) ||
+       defaultTestId;
      return { [headerName]: testId };
      ```
    - This is **structural duplication** not **knowledge duplication**
@@ -182,20 +199,23 @@ const response = await fetch('http://api.com/data', {
 
 ```typescript
 // User code - no helper provided
-const testId = (Array.isArray(req.headers['x-scenarist-test-id'])
-  ? req.headers['x-scenarist-test-id'][0]
-  : req.headers['x-scenarist-test-id']) || 'default-test';
+const testId =
+  (Array.isArray(req.headers["x-scenarist-test-id"])
+    ? req.headers["x-scenarist-test-id"][0]
+    : req.headers["x-scenarist-test-id"]) || "default-test";
 
-const response = await fetch('http://api.com/data', {
-  headers: { 'x-scenarist-test-id': testId },
+const response = await fetch("http://api.com/data", {
+  headers: { "x-scenarist-test-id": testId },
 });
 ```
 
 **Pros:**
+
 - No code to maintain
 - Maximum flexibility for users
 
 **Cons:**
+
 - Boilerplate in every route
 - Users must understand header array handling
 - Easy to forget or get wrong
@@ -204,6 +224,7 @@ const response = await fetch('http://api.com/data', {
 **Why Rejected:**
 
 This is a common need (forwarding context to external APIs). Providing a helper:
+
 - Reduces boilerplate
 - Ensures correctness
 - Documents the pattern
@@ -216,6 +237,7 @@ This is a common need (forwarding context to external APIs). Providing a helper:
 ✅ **Type safety without complexity** - Each helper uses framework's native request type
 
 ✅ **Simple, ergonomic API** - No generics, no callbacks, no type assertions:
+
 ```typescript
 headers: { ...getScenaristHeaders(req, scenarist) }
 ```
@@ -246,10 +268,10 @@ headers: { ...getScenaristHeaders(req, scenarist) }
 
 When creating a new framework adapter, include header forwarding helper:
 
-```typescript
+````typescript
 // packages/{framework}-adapter/src/helpers.ts
-import type { FrameworkRequest } from 'framework';
-import type { ScenaristInstance } from '@scenarist/core';
+import type { FrameworkRequest } from "framework";
+import type { ScenaristInstance } from "@scenarist/core";
 
 /**
  * Extracts Scenarist headers from framework request for forwarding to external APIs.
@@ -270,54 +292,64 @@ export const getScenaristHeaders = (
 ): Record<string, string> => {
   const { testIdHeaderName, defaultTestId } = scenarist.config;
   const headerValue = req.headers[testIdHeaderName.toLowerCase()];
-  const testId = (Array.isArray(headerValue) ? headerValue[0] : headerValue) || defaultTestId;
+  const testId =
+    (Array.isArray(headerValue) ? headerValue[0] : headerValue) ||
+    defaultTestId;
   return { [testIdHeaderName]: testId };
 };
-```
+````
 
 ### Testing Strategy
 
 Each adapter's helper should have behavior tests:
 
 ```typescript
-describe('getScenaristHeaders', () => {
-  it('should extract test ID from request headers', () => {
-    const req = createMockRequest({ headers: { 'x-scenarist-test-id': 'test-123' } });
-    const scenarist = createMockScenarist({ testIdHeaderName: 'x-scenarist-test-id' });
-
-    const headers = getScenaristHeaders(req, scenarist);
-
-    expect(headers).toEqual({ 'x-scenarist-test-id': 'test-123' });
-  });
-
-  it('should handle header as string array', () => {
-    const req = createMockRequest({ headers: { 'x-scenarist-test-id': ['test-123', 'test-456'] } });
-    const scenarist = createMockScenarist({ testIdHeaderName: 'x-scenarist-test-id' });
-
-    const headers = getScenaristHeaders(req, scenarist);
-
-    expect(headers).toEqual({ 'x-scenarist-test-id': 'test-123' });
-  });
-
-  it('should use default test ID when header missing', () => {
-    const req = createMockRequest({ headers: {} });
+describe("getScenaristHeaders", () => {
+  it("should extract test ID from request headers", () => {
+    const req = createMockRequest({
+      headers: { "x-scenarist-test-id": "test-123" },
+    });
     const scenarist = createMockScenarist({
-      testIdHeaderName: 'x-scenarist-test-id',
-      defaultTestId: 'default-test',
+      testIdHeaderName: "x-scenarist-test-id",
     });
 
     const headers = getScenaristHeaders(req, scenarist);
 
-    expect(headers).toEqual({ 'x-scenarist-test-id': 'default-test' });
+    expect(headers).toEqual({ "x-scenarist-test-id": "test-123" });
   });
 
-  it('should respect configured header name', () => {
-    const req = createMockRequest({ headers: { 'x-custom-id': 'test-789' } });
-    const scenarist = createMockScenarist({ testIdHeaderName: 'x-custom-id' });
+  it("should handle header as string array", () => {
+    const req = createMockRequest({
+      headers: { "x-scenarist-test-id": ["test-123", "test-456"] },
+    });
+    const scenarist = createMockScenarist({
+      testIdHeaderName: "x-scenarist-test-id",
+    });
 
     const headers = getScenaristHeaders(req, scenarist);
 
-    expect(headers).toEqual({ 'x-custom-id': 'test-789' });
+    expect(headers).toEqual({ "x-scenarist-test-id": "test-123" });
+  });
+
+  it("should use default test ID when header missing", () => {
+    const req = createMockRequest({ headers: {} });
+    const scenarist = createMockScenarist({
+      testIdHeaderName: "x-scenarist-test-id",
+      defaultTestId: "default-test",
+    });
+
+    const headers = getScenaristHeaders(req, scenarist);
+
+    expect(headers).toEqual({ "x-scenarist-test-id": "default-test" });
+  });
+
+  it("should respect configured header name", () => {
+    const req = createMockRequest({ headers: { "x-custom-id": "test-789" } });
+    const scenarist = createMockScenarist({ testIdHeaderName: "x-custom-id" });
+
+    const headers = getScenaristHeaders(req, scenarist);
+
+    expect(headers).toEqual({ "x-custom-id": "test-789" });
   });
 });
 ```
@@ -337,15 +369,15 @@ Use the `getScenaristHeaders()` helper:
 import { getScenaristHeaders } from '@scenarist/{framework}-adapter';
 
 export default async function handler(req, res) {
-  const response = await fetch('http://external-api.com/data', {
-    headers: {
-      ...getScenaristHeaders(req, scenarist),
-      'content-type': 'application/json',
-    },
-  });
+const response = await fetch('http://external-api.com/data', {
+headers: {
+...getScenaristHeaders(req, scenarist),
+'content-type': 'application/json',
+},
+});
 
-  const data = await response.json();
-  res.json(data);
+const data = await response.json();
+res.json(data);
 }
 \`\`\`
 
@@ -381,16 +413,19 @@ const testId = getTestId(); // Available in any request context
 
 ```typescript
 // pages/api/products.ts
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
-import { scenarist } from '@/lib/scenarist';
+import type { NextApiRequest, NextApiResponse } from "next";
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/pages";
+import { scenarist } from "@/lib/scenarist";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
   // Forward Scenarist headers to external API
-  const response = await fetch('http://localhost:3001/api/products', {
+  const response = await fetch("http://localhost:3001/api/products", {
     headers: {
       ...getScenaristHeaders(req, scenarist),
-      'content-type': 'application/json',
+      "content-type": "application/json",
     },
   });
 
@@ -403,14 +438,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 ```typescript
 // routes/products.ts
-import { Router } from 'express';
+import { Router } from "express";
 
 const router = Router();
 
 // Middleware extracts test ID, AsyncLocalStorage makes it available
-router.get('/api/products', async (req, res) => {
+router.get("/api/products", async (req, res) => {
   // MSW handlers automatically receive test ID from AsyncLocalStorage
-  const response = await fetch('http://localhost:3001/api/products');
+  const response = await fetch("http://localhost:3001/api/products");
   const products = await response.json();
   res.json(products);
 });
@@ -422,13 +457,13 @@ export default router;
 
 ```typescript
 // routes/products.ts
-import { getScenaristHeaders } from '@scenarist/fastify-adapter';
+import { getScenaristHeaders } from "@scenarist/fastify-adapter";
 
-fastify.get('/api/products', async (request, reply) => {
-  const response = await fetch('http://localhost:3001/api/products', {
+fastify.get("/api/products", async (request, reply) => {
+  const response = await fetch("http://localhost:3001/api/products", {
     headers: {
       ...getScenaristHeaders(request, scenarist),
-      'content-type': 'application/json',
+      "content-type": "application/json",
     },
   });
 

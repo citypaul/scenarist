@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { SerializedRegexSchema } from './match-criteria.js';
+import { z } from "zod";
+import { SerializedRegexSchema } from "./match-criteria.js";
 
 /**
  * Zod schemas for scenario definitions.
@@ -9,7 +9,15 @@ import { SerializedRegexSchema } from './match-criteria.js';
  * a single source of truth. The schemas in this file are the canonical definition.
  */
 
-export const HttpMethodSchema = z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD']);
+export const HttpMethodSchema = z.enum([
+  "GET",
+  "POST",
+  "PUT",
+  "DELETE",
+  "PATCH",
+  "OPTIONS",
+  "HEAD",
+]);
 export type HttpMethod = z.infer<typeof HttpMethodSchema>;
 
 export const ScenaristResponseSchema = z.object({
@@ -35,20 +43,31 @@ export type ScenaristResponse = z.infer<typeof ScenaristResponseSchema>;
 export const MatchValueSchema = z.union([
   z.string(),
   z.instanceof(RegExp),
-  z.object({
-    equals: z.string().optional(),
-    contains: z.string().optional(),
-    startsWith: z.string().optional(),
-    endsWith: z.string().optional(),
-    regex: SerializedRegexSchema.optional(),
-  }).refine(
-    (obj) => {
-      const strategies = [obj.equals, obj.contains, obj.startsWith, obj.endsWith, obj.regex];
-      const defined = strategies.filter(s => s !== undefined);
-      return defined.length === 1;
-    },
-    { message: 'Exactly one matching strategy must be defined (equals, contains, startsWith, endsWith, or regex)' }
-  ),
+  z
+    .object({
+      equals: z.string().optional(),
+      contains: z.string().optional(),
+      startsWith: z.string().optional(),
+      endsWith: z.string().optional(),
+      regex: SerializedRegexSchema.optional(),
+    })
+    .refine(
+      (obj) => {
+        const strategies = [
+          obj.equals,
+          obj.contains,
+          obj.startsWith,
+          obj.endsWith,
+          obj.regex,
+        ];
+        const defined = strategies.filter((s) => s !== undefined);
+        return defined.length === 1;
+      },
+      {
+        message:
+          "Exactly one matching strategy must be defined (equals, contains, startsWith, endsWith, or regex)",
+      },
+    ),
 ]);
 export type MatchValue = z.infer<typeof MatchValueSchema>;
 
@@ -60,7 +79,7 @@ export const ScenaristMatchSchema = z.object({
 });
 export type ScenaristMatch = z.infer<typeof ScenaristMatchSchema>;
 
-export const RepeatModeSchema = z.enum(['last', 'cycle', 'none']);
+export const RepeatModeSchema = z.enum(["last", "cycle", "none"]);
 export type RepeatMode = z.infer<typeof RepeatModeSchema>;
 
 export const ScenaristSequenceSchema = z.object({
@@ -70,7 +89,9 @@ export const ScenaristSequenceSchema = z.object({
 export type ScenaristSequence = z.infer<typeof ScenaristSequenceSchema>;
 
 export const ScenaristCaptureConfigSchema = z.record(z.string(), z.string());
-export type ScenaristCaptureConfig = z.infer<typeof ScenaristCaptureConfigSchema>;
+export type ScenaristCaptureConfig = z.infer<
+  typeof ScenaristCaptureConfigSchema
+>;
 
 /**
  * URL pattern supports three forms:

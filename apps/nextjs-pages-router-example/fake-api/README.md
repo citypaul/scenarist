@@ -51,6 +51,7 @@ The server will run on `http://localhost:3001` and serve the data from `db.json`
 json-server demonstrates what you **lose** without Scenarist:
 
 **Without Scenarist (json-server only):**
+
 - ❌ Static data (can't test premium vs standard pricing)
 - ❌ No request matching (can't vary responses based on headers)
 - ❌ No sequences (can't test polling scenarios)
@@ -59,6 +60,7 @@ json-server demonstrates what you **lose** without Scenarist:
 - ❌ Requires separate process
 
 **With Scenarist (overrides json-server):**
+
 - ✅ Dynamic responses (premium/standard scenarios)
 - ✅ Request matching (based on `x-user-tier` header)
 - ✅ Sequences (payment polling)

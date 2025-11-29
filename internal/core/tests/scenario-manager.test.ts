@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { createScenarioManager } from "../src/domain/scenario-manager.js";
-import type { ScenarioRegistry, ScenarioStore, StateManager, SequenceTracker, SequencePosition } from "../src/ports/index.js";
+import type {
+  ScenarioRegistry,
+  ScenarioStore,
+  StateManager,
+  SequenceTracker,
+  SequencePosition,
+} from "../src/ports/index.js";
 import type { ActiveScenario, ScenaristScenario } from "../src/types/index.js";
 
 // In-memory registry for testing (simple Map-based implementation)
@@ -60,7 +66,11 @@ const createTestStateManager = (): StateManager => {
 const createTestSequenceTracker = (): SequenceTracker => {
   const positions = new Map<string, SequencePosition>();
 
-  const getKey = (testId: string, scenarioId: string, mockIndex: number): string => {
+  const getKey = (
+    testId: string,
+    scenarioId: string,
+    mockIndex: number,
+  ): string => {
     return `${testId}:${scenarioId}:${mockIndex}`;
   };
 
@@ -76,13 +86,16 @@ const createTestSequenceTracker = (): SequenceTracker => {
 
       if (nextPosition >= totalResponses) {
         switch (repeatMode) {
-          case 'last':
-            positions.set(key, { position: totalResponses - 1, exhausted: false });
+          case "last":
+            positions.set(key, {
+              position: totalResponses - 1,
+              exhausted: false,
+            });
             break;
-          case 'cycle':
+          case "cycle":
             positions.set(key, { position: 0, exhausted: false });
             break;
-          case 'none':
+          case "none":
             positions.set(key, { position: totalResponses, exhausted: true });
             break;
         }
@@ -107,7 +120,7 @@ const createTestSequenceTracker = (): SequenceTracker => {
 // Test scenario definition factory
 const createTestScenaristScenario = (
   id: string,
-  name: string = "Test Scenario"
+  name: string = "Test Scenario",
 ): ScenaristScenario => ({
   id,
   name,
@@ -128,13 +141,21 @@ const createTestScenaristScenario = (
  * Factory function to create test setup with fresh dependencies.
  * This functional approach avoids mutation and provides clean isolation between tests.
  */
-const createTestSetup = (options?: { stateManager?: StateManager; sequenceTracker?: SequenceTracker }) => {
+const createTestSetup = (options?: {
+  stateManager?: StateManager;
+  sequenceTracker?: SequenceTracker;
+}) => {
   const registry = createTestRegistry();
   const store = createTestStore();
   const stateManager = options?.stateManager;
   const sequenceTracker = options?.sequenceTracker;
 
-  const manager = createScenarioManager({ registry, store, stateManager, sequenceTracker });
+  const manager = createScenarioManager({
+    registry,
+    store,
+    stateManager,
+    sequenceTracker,
+  });
 
   return { registry, store, stateManager, sequenceTracker, manager };
 };
@@ -145,7 +166,7 @@ describe("ScenarioManager", () => {
       const { manager } = createTestSetup();
       const definition = createTestScenaristScenario(
         "happy-path",
-        "Happy Path"
+        "Happy Path",
       );
 
       manager.registerScenario(definition);
@@ -171,7 +192,7 @@ describe("ScenarioManager", () => {
       manager.registerScenario(definition1);
 
       expect(() => manager.registerScenario(definition2)).toThrow(
-        "Scenario 'duplicate' is already registered"
+        "Scenario 'duplicate' is already registered",
       );
     });
 
@@ -356,7 +377,10 @@ describe("ScenarioManager", () => {
               match: {
                 headers: {
                   "x-campaign": {
-                    regex: { source: "^/api/(products|categories)/\\d+$", flags: "i" },
+                    regex: {
+                      source: "^/api/(products|categories)/\\d+$",
+                      flags: "i",
+                    },
                   },
                 },
               },
@@ -370,12 +394,12 @@ describe("ScenarioManager", () => {
         }).not.toThrow();
       });
 
-      it('should show <unknown> in error message when scenario has no id', () => {
+      it("should show <unknown> in error message when scenario has no id", () => {
         const { manager } = createTestSetup();
         // Pass definition without id field (will fail validation)
         const invalidScenario = {
-          name: 'Test',
-          description: 'Test',
+          name: "Test",
+          description: "Test",
           mocks: [],
         } as any;
 
@@ -503,7 +527,7 @@ describe("ScenarioManager", () => {
       const { manager } = createTestSetup();
       const definition = createTestScenaristScenario(
         "error-state",
-        "Error State"
+        "Error State",
       );
       manager.registerScenario(definition);
 
@@ -530,11 +554,11 @@ describe("ScenarioManager", () => {
       const { manager } = createTestSetup();
       const definition1 = createTestScenaristScenario(
         "scenario-1",
-        "Scenario 1"
+        "Scenario 1",
       );
       const definition2 = createTestScenaristScenario(
         "scenario-2",
-        "Scenario 2"
+        "Scenario 2",
       );
 
       manager.registerScenario(definition1);
@@ -589,10 +613,10 @@ describe("ScenarioManager", () => {
     it("should list all registered scenarios", () => {
       const { manager } = createTestSetup();
       manager.registerScenario(
-        createTestScenaristScenario("scenario-1", "Scenario 1")
+        createTestScenaristScenario("scenario-1", "Scenario 1"),
       );
       manager.registerScenario(
-        createTestScenaristScenario("scenario-2", "Scenario 2")
+        createTestScenaristScenario("scenario-2", "Scenario 2"),
       );
 
       const scenarios = manager.listScenarios();
@@ -790,16 +814,26 @@ describe("ScenarioManager", () => {
       sequenceTracker.advance("test-1", "scenario-1", 1, 3, "last");
 
       // Verify sequences are advanced
-      expect(sequenceTracker.getPosition("test-1", "scenario-1", 0).position).toBe(1);
-      expect(sequenceTracker.getPosition("test-1", "scenario-1", 1).position).toBe(1);
+      expect(
+        sequenceTracker.getPosition("test-1", "scenario-1", 0).position,
+      ).toBe(1);
+      expect(
+        sequenceTracker.getPosition("test-1", "scenario-1", 1).position,
+      ).toBe(1);
 
       // Switch to scenario-2
       manager.switchScenario("test-1", "scenario-2");
 
       // All sequences for test-1 should be reset
-      expect(sequenceTracker.getPosition("test-1", "scenario-1", 0).position).toBe(0);
-      expect(sequenceTracker.getPosition("test-1", "scenario-1", 1).position).toBe(0);
-      expect(sequenceTracker.getPosition("test-1", "scenario-1", 0).exhausted).toBe(false);
+      expect(
+        sequenceTracker.getPosition("test-1", "scenario-1", 0).position,
+      ).toBe(0);
+      expect(
+        sequenceTracker.getPosition("test-1", "scenario-1", 1).position,
+      ).toBe(0);
+      expect(
+        sequenceTracker.getPosition("test-1", "scenario-1", 0).exhausted,
+      ).toBe(false);
     });
 
     it("should not reset sequences when switching fails", () => {
@@ -813,7 +847,9 @@ describe("ScenarioManager", () => {
       sequenceTracker.advance("test-1", "scenario-1", 0, 3, "last");
 
       // Verify sequence is advanced
-      expect(sequenceTracker.getPosition("test-1", "scenario-1", 0).position).toBe(1);
+      expect(
+        sequenceTracker.getPosition("test-1", "scenario-1", 0).position,
+      ).toBe(1);
 
       // Try to switch to non-existent scenario
       const result = manager.switchScenario("test-1", "non-existent");
@@ -822,7 +858,9 @@ describe("ScenarioManager", () => {
       expect(result.success).toBe(false);
 
       // Sequence position should NOT be reset (switch failed)
-      expect(sequenceTracker.getPosition("test-1", "scenario-1", 0).position).toBe(1);
+      expect(
+        sequenceTracker.getPosition("test-1", "scenario-1", 0).position,
+      ).toBe(1);
     });
 
     it("should work without sequence tracker (backward compatibility)", () => {
@@ -855,16 +893,24 @@ describe("ScenarioManager", () => {
       sequenceTracker.advance("test-2", "scenario-1", 0, 3, "last");
 
       // Verify both are advanced
-      expect(sequenceTracker.getPosition("test-1", "scenario-1", 0).position).toBe(1);
-      expect(sequenceTracker.getPosition("test-2", "scenario-1", 0).position).toBe(1);
+      expect(
+        sequenceTracker.getPosition("test-1", "scenario-1", 0).position,
+      ).toBe(1);
+      expect(
+        sequenceTracker.getPosition("test-2", "scenario-1", 0).position,
+      ).toBe(1);
 
       // Switch only test-1
       manager.switchScenario("test-1", "scenario-2");
 
       // Only test-1 sequences should be reset
-      expect(sequenceTracker.getPosition("test-1", "scenario-1", 0).position).toBe(0);
+      expect(
+        sequenceTracker.getPosition("test-1", "scenario-1", 0).position,
+      ).toBe(0);
       // test-2 sequences should remain
-      expect(sequenceTracker.getPosition("test-2", "scenario-1", 0).position).toBe(1);
+      expect(
+        sequenceTracker.getPosition("test-2", "scenario-1", 0).position,
+      ).toBe(1);
     });
   });
 });

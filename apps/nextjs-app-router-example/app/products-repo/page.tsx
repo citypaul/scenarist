@@ -11,15 +11,15 @@
  * - Parallel tests don't interfere with each other
  */
 
-import { headers } from 'next/headers';
-import type { ProductsResponse } from '@/types/product';
-import { getUserRepository, runWithTestId } from '@/lib/container';
-import type { User } from '@/lib/repositories';
+import { headers } from "next/headers";
+import type { ProductsResponse } from "@/types/product";
+import { getUserRepository, runWithTestId } from "@/lib/container";
+import type { User } from "@/lib/repositories";
 
 import {
   getScenaristHeadersFromReadonlyHeaders,
   getScenaristTestIdFromReadonlyHeaders,
-} from '@scenarist/nextjs-adapter/app';
+} from "@scenarist/nextjs-adapter/app";
 
 type ProductsRepoPageProps = {
   searchParams: Promise<{ userId?: string }>;
@@ -27,7 +27,7 @@ type ProductsRepoPageProps = {
 
 async function fetchUserFromRepository(
   testId: string,
-  userId: string
+  userId: string,
 ): Promise<User | null> {
   // Run the repository query within the test ID context
   // This ensures the in-memory repository uses the correct partition
@@ -39,15 +39,15 @@ async function fetchUserFromRepository(
 
 async function fetchProductsFromApi(
   scenaristHeaders: Record<string, string>,
-  tier: string
+  tier: string,
 ): Promise<ProductsResponse> {
   // Fetch products from external API (mocked by Scenarist)
-  const response = await fetch('http://localhost:3001/products', {
+  const response = await fetch("http://localhost:3001/products", {
     headers: {
       ...scenaristHeaders, // Scenarist test isolation headers
-      'x-user-tier': tier, // External API uses this for pricing
+      "x-user-tier": tier, // External API uses this for pricing
     },
-    cache: 'no-store',
+    cache: "no-store",
   });
 
   if (!response.ok) {
@@ -60,7 +60,7 @@ async function fetchProductsFromApi(
 export default async function ProductsRepoPage({
   searchParams,
 }: ProductsRepoPageProps) {
-  const { userId = 'user-1' } = await searchParams;
+  const { userId = "user-1" } = await searchParams;
 
   // Get Scenarist test isolation headers and test ID
   const headersList = await headers();
@@ -71,7 +71,7 @@ export default async function ProductsRepoPage({
   const user = await fetchUserFromRepository(testId, userId);
 
   // 2. Get products from external API (mocked by Scenarist)
-  const tier = user?.tier ?? 'standard';
+  const tier = user?.tier ?? "standard";
   const data = await fetchProductsFromApi(scenaristHeaders, tier);
 
   return (
@@ -98,12 +98,12 @@ export default async function ProductsRepoPage({
               <strong>Email:</strong> {user.email}
             </p>
             <p>
-              <strong>Tier:</strong>{' '}
+              <strong>Tier:</strong>{" "}
               <span
                 className={`px-2 py-1 rounded text-sm ${
-                  user.tier === 'premium'
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : 'bg-gray-100 text-gray-800'
+                  user.tier === "premium"
+                    ? "bg-yellow-100 text-yellow-800"
+                    : "bg-gray-100 text-gray-800"
                 }`}
               >
                 {user.tier}

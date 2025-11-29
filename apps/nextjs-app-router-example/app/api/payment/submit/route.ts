@@ -8,9 +8,9 @@
  * then exhausts and falls through to rate limit error (429).
  */
 
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
 
 type PaymentRequest = {
   readonly amount: number;
@@ -32,10 +32,10 @@ export async function POST(request: Request) {
     const body: PaymentRequest = await request.json();
 
     // Proxy to json-server (MSW will intercept on server-side)
-    const response = await fetch('http://localhost:3001/payments', {
-      method: 'POST',
+    const response = await fetch("http://localhost:3001/payments", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...getScenaristHeaders(request), // ✅ Pass test ID to MSW
       },
       body: JSON.stringify(body),
@@ -55,10 +55,11 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: {
-          message: error instanceof Error ? error.message : 'Failed to submit payment',
+          message:
+            error instanceof Error ? error.message : "Failed to submit payment",
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

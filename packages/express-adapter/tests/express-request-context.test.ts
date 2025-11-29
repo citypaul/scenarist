@@ -1,83 +1,83 @@
-import { describe, it, expect } from 'vitest';
-import { ExpressRequestContext } from '../src/context/express-request-context.js';
-import { mockConfig, mockRequest } from './test-helpers.js';
+import { describe, it, expect } from "vitest";
+import { ExpressRequestContext } from "../src/context/express-request-context.js";
+import { mockConfig, mockRequest } from "./test-helpers.js";
 
-describe('ExpressRequestContext', () => {
-  describe('getTestId', () => {
-    it('should read test ID from header when present', () => {
+describe("ExpressRequestContext", () => {
+  describe("getTestId", () => {
+    it("should read test ID from header when present", () => {
       const config = mockConfig();
       const req = mockRequest({
-        headers: { 'x-scenarist-test-id': 'test-123' },
+        headers: { "x-scenarist-test-id": "test-123" },
       });
 
       const context = new ExpressRequestContext(req, config);
 
-      expect(context.getTestId()).toBe('test-123');
+      expect(context.getTestId()).toBe("test-123");
     });
 
-    it('should use default test ID when header is missing', () => {
-      const config = mockConfig({ defaultTestId: 'default-test' });
+    it("should use default test ID when header is missing", () => {
+      const config = mockConfig({ defaultTestId: "default-test" });
       const req = mockRequest({
         headers: {},
       });
 
       const context = new ExpressRequestContext(req, config);
 
-      expect(context.getTestId()).toBe('default-test');
+      expect(context.getTestId()).toBe("default-test");
     });
 
-    it('should handle array headers by using first value', () => {
+    it("should handle array headers by using first value", () => {
       const config = mockConfig();
       const req = mockRequest({
-        headers: { 'x-scenarist-test-id': ['test-first', 'test-second'] },
+        headers: { "x-scenarist-test-id": ["test-first", "test-second"] },
       });
 
       const context = new ExpressRequestContext(req, config);
 
-      expect(context.getTestId()).toBe('test-first');
+      expect(context.getTestId()).toBe("test-first");
     });
 
-    it('should be case-insensitive for header names', () => {
+    it("should be case-insensitive for header names", () => {
       const config = mockConfig();
       const req = mockRequest({
-        headers: { 'X-Scenarist-Test-ID': 'test-456' },
+        headers: { "X-Scenarist-Test-ID": "test-456" },
       });
 
       const context = new ExpressRequestContext(req, config);
 
-      expect(context.getTestId()).toBe('test-456');
+      expect(context.getTestId()).toBe("test-456");
     });
   });
 
-  describe('getHeaders', () => {
-    it('should return all request headers', () => {
+  describe("getHeaders", () => {
+    it("should return all request headers", () => {
       const config = mockConfig();
       const req = mockRequest({
         headers: {
-          'x-scenarist-test-id': 'test-123',
-          'content-type': 'application/json',
+          "x-scenarist-test-id": "test-123",
+          "content-type": "application/json",
         },
       });
 
       const context = new ExpressRequestContext(req, config);
 
       expect(context.getHeaders()).toEqual({
-        'x-scenarist-test-id': 'test-123',
-        'content-type': 'application/json',
+        "x-scenarist-test-id": "test-123",
+        "content-type": "application/json",
       });
     });
   });
 
-  describe('getHostname', () => {
-    it('should return request hostname', () => {
+  describe("getHostname", () => {
+    it("should return request hostname", () => {
       const config = mockConfig();
       const req = mockRequest({
-        hostname: 'example.com',
+        hostname: "example.com",
       });
 
       const context = new ExpressRequestContext(req, config);
 
-      expect(context.getHostname()).toBe('example.com');
+      expect(context.getHostname()).toBe("example.com");
     });
   });
 });

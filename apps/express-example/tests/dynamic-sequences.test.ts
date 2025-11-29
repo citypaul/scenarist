@@ -1,211 +1,219 @@
-import { SCENARIST_TEST_ID_HEADER } from '@scenarist/express-adapter';
-import { describe, it, expect, afterAll } from 'vitest';
-import request from 'supertest';
+import { SCENARIST_TEST_ID_HEADER } from "@scenarist/express-adapter";
+import { describe, it, expect, afterAll } from "vitest";
+import request from "supertest";
 
-import { createTestFixtures } from './test-helpers.js';
+import { createTestFixtures } from "./test-helpers.js";
 
 const fixtures = await createTestFixtures();
 
-describe('Dynamic Response Sequences E2E (Phase 2)', () => {
-  
-
-  
-
+describe("Dynamic Response Sequences E2E (Phase 2)", () => {
   afterAll(async () => {
     await fixtures.cleanup();
   });
 
-  describe('Basic Sequence Progression', () => {
-    it('should return responses in sequence order (pending → processing → complete)', async () => {
-
+  describe("Basic Sequence Progression", () => {
+    it("should return responses in sequence order (pending → processing → complete)", async () => {
       // Switch to polling scenario (already registered in scenarios.ts)
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(SCENARIST_TEST_ID_HEADER, 'polling-test-1')
-        .send({ scenario: 'github-polling' });
+        .set(SCENARIST_TEST_ID_HEADER, "polling-test-1")
+        .send({ scenario: "github-polling" });
 
       // First call: pending
       const response1 = await request(fixtures.app)
-        .get('/api/github/user/testuser')
-        .set(SCENARIST_TEST_ID_HEADER, 'polling-test-1');
+        .get("/api/github/user/testuser")
+        .set(SCENARIST_TEST_ID_HEADER, "polling-test-1");
 
       expect(response1.status).toBe(200);
-      expect(response1.body).toEqual({ status: 'pending', progress: 0, login: 'user1' });
+      expect(response1.body).toEqual({
+        status: "pending",
+        progress: 0,
+        login: "user1",
+      });
 
       // Second call: processing
       const response2 = await request(fixtures.app)
-        .get('/api/github/user/testuser')
-        .set(SCENARIST_TEST_ID_HEADER, 'polling-test-1');
+        .get("/api/github/user/testuser")
+        .set(SCENARIST_TEST_ID_HEADER, "polling-test-1");
 
       expect(response2.status).toBe(200);
-      expect(response2.body).toEqual({ status: 'processing', progress: 50, login: 'user2' });
+      expect(response2.body).toEqual({
+        status: "processing",
+        progress: 50,
+        login: "user2",
+      });
 
       // Third call: complete
       const response3 = await request(fixtures.app)
-        .get('/api/github/user/testuser')
-        .set(SCENARIST_TEST_ID_HEADER, 'polling-test-1');
+        .get("/api/github/user/testuser")
+        .set(SCENARIST_TEST_ID_HEADER, "polling-test-1");
 
       expect(response3.status).toBe(200);
-      expect(response3.body).toEqual({ status: 'complete', progress: 100, login: 'user3' });
+      expect(response3.body).toEqual({
+        status: "complete",
+        progress: 100,
+        login: "user3",
+      });
 
       // Fourth call: still complete (repeat: 'last')
       const response4 = await request(fixtures.app)
-        .get('/api/github/user/testuser')
-        .set(SCENARIST_TEST_ID_HEADER, 'polling-test-1');
+        .get("/api/github/user/testuser")
+        .set(SCENARIST_TEST_ID_HEADER, "polling-test-1");
 
       expect(response4.status).toBe(200);
-      expect(response4.body).toEqual({ status: 'complete', progress: 100, login: 'user3' });
+      expect(response4.body).toEqual({
+        status: "complete",
+        progress: 100,
+        login: "user3",
+      });
     });
   });
 
-  describe('Repeat Mode: cycle', () => {
-    it('should cycle back to first response after sequence ends', async () => {
-
+  describe("Repeat Mode: cycle", () => {
+    it("should cycle back to first response after sequence ends", async () => {
       // Switch to cycling scenario (already registered in scenarios.ts)
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(SCENARIST_TEST_ID_HEADER, 'cycle-test-1')
-        .send({ scenario: 'weather-cycle' });
+        .set(SCENARIST_TEST_ID_HEADER, "cycle-test-1")
+        .send({ scenario: "weather-cycle" });
 
       // First cycle through
       const response1 = await request(fixtures.app)
-        .get('/api/weather/london')
-        .set(SCENARIST_TEST_ID_HEADER, 'cycle-test-1');
-      expect(response1.body.conditions).toBe('Sunny');
+        .get("/api/weather/london")
+        .set(SCENARIST_TEST_ID_HEADER, "cycle-test-1");
+      expect(response1.body.conditions).toBe("Sunny");
 
       const response2 = await request(fixtures.app)
-        .get('/api/weather/london')
-        .set(SCENARIST_TEST_ID_HEADER, 'cycle-test-1');
-      expect(response2.body.conditions).toBe('Cloudy');
+        .get("/api/weather/london")
+        .set(SCENARIST_TEST_ID_HEADER, "cycle-test-1");
+      expect(response2.body.conditions).toBe("Cloudy");
 
       const response3 = await request(fixtures.app)
-        .get('/api/weather/london')
-        .set(SCENARIST_TEST_ID_HEADER, 'cycle-test-1');
-      expect(response3.body.conditions).toBe('Rainy');
+        .get("/api/weather/london")
+        .set(SCENARIST_TEST_ID_HEADER, "cycle-test-1");
+      expect(response3.body.conditions).toBe("Rainy");
 
       // Should cycle back to first response
       const response4 = await request(fixtures.app)
-        .get('/api/weather/london')
-        .set(SCENARIST_TEST_ID_HEADER, 'cycle-test-1');
+        .get("/api/weather/london")
+        .set(SCENARIST_TEST_ID_HEADER, "cycle-test-1");
       expect(response4.status).toBe(200);
-      expect(response4.body.conditions).toBe('Sunny');
+      expect(response4.body.conditions).toBe("Sunny");
 
       // Continue cycling
       const response5 = await request(fixtures.app)
-        .get('/api/weather/london')
-        .set(SCENARIST_TEST_ID_HEADER, 'cycle-test-1');
-      expect(response5.body.conditions).toBe('Cloudy');
+        .get("/api/weather/london")
+        .set(SCENARIST_TEST_ID_HEADER, "cycle-test-1");
+      expect(response5.body.conditions).toBe("Cloudy");
     });
   });
 
-  describe('Repeat Mode: none (with exhaustion)', () => {
-    it('should fallback to next mock after sequence exhausted', async () => {
-
+  describe("Repeat Mode: none (with exhaustion)", () => {
+    it("should fallback to next mock after sequence exhausted", async () => {
       // Switch to payment limited scenario (already registered in scenarios.ts)
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(SCENARIST_TEST_ID_HEADER, 'exhaust-test-1')
-        .send({ scenario: 'payment-limited' });
+        .set(SCENARIST_TEST_ID_HEADER, "exhaust-test-1")
+        .send({ scenario: "payment-limited" });
 
       // First 3 calls go through sequence
       const response1 = await request(fixtures.app)
-        .post('/api/payment')
-        .set(SCENARIST_TEST_ID_HEADER, 'exhaust-test-1')
-        .send({ amount: 1000, currency: 'usd' });
+        .post("/api/payment")
+        .set(SCENARIST_TEST_ID_HEADER, "exhaust-test-1")
+        .send({ amount: 1000, currency: "usd" });
       expect(response1.status).toBe(200);
-      expect(response1.body.status).toBe('pending');
+      expect(response1.body.status).toBe("pending");
 
       const response2 = await request(fixtures.app)
-        .post('/api/payment')
-        .set(SCENARIST_TEST_ID_HEADER, 'exhaust-test-1')
-        .send({ amount: 1000, currency: 'usd' });
+        .post("/api/payment")
+        .set(SCENARIST_TEST_ID_HEADER, "exhaust-test-1")
+        .send({ amount: 1000, currency: "usd" });
       expect(response2.status).toBe(200);
-      expect(response2.body.status).toBe('pending');
+      expect(response2.body.status).toBe("pending");
 
       const response3 = await request(fixtures.app)
-        .post('/api/payment')
-        .set(SCENARIST_TEST_ID_HEADER, 'exhaust-test-1')
-        .send({ amount: 1000, currency: 'usd' });
+        .post("/api/payment")
+        .set(SCENARIST_TEST_ID_HEADER, "exhaust-test-1")
+        .send({ amount: 1000, currency: "usd" });
       expect(response3.status).toBe(200);
-      expect(response3.body.status).toBe('succeeded');
+      expect(response3.body.status).toBe("succeeded");
 
       // Fourth call: sequence exhausted, fallback to error mock
       const response4 = await request(fixtures.app)
-        .post('/api/payment')
-        .set(SCENARIST_TEST_ID_HEADER, 'exhaust-test-1')
-        .send({ amount: 1000, currency: 'usd' });
+        .post("/api/payment")
+        .set(SCENARIST_TEST_ID_HEADER, "exhaust-test-1")
+        .send({ amount: 1000, currency: "usd" });
       expect(response4.status).toBe(429);
-      expect(response4.body.error.message).toBe('Rate limit exceeded');
+      expect(response4.body.error.message).toBe("Rate limit exceeded");
 
       // Fifth call: still uses fallback
       const response5 = await request(fixtures.app)
-        .post('/api/payment')
-        .set(SCENARIST_TEST_ID_HEADER, 'exhaust-test-1')
-        .send({ amount: 1000, currency: 'usd' });
+        .post("/api/payment")
+        .set(SCENARIST_TEST_ID_HEADER, "exhaust-test-1")
+        .send({ amount: 1000, currency: "usd" });
       expect(response5.status).toBe(429);
     });
   });
 
-  describe('Test ID Isolation', () => {
-    it('should maintain independent sequence positions for different test IDs', async () => {
-
+  describe("Test ID Isolation", () => {
+    it("should maintain independent sequence positions for different test IDs", async () => {
       // Test ID A: Switch to scenario (already registered in scenarios.ts)
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(SCENARIST_TEST_ID_HEADER, 'test-a')
-        .send({ scenario: 'shared-polling' });
+        .set(SCENARIST_TEST_ID_HEADER, "test-a")
+        .send({ scenario: "shared-polling" });
 
       // Test ID B: Switch to same scenario
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
-        .set(SCENARIST_TEST_ID_HEADER, 'test-b')
-        .send({ scenario: 'shared-polling' });
+        .set(SCENARIST_TEST_ID_HEADER, "test-b")
+        .send({ scenario: "shared-polling" });
 
       // Test A: First call (step 1)
       const responseA1 = await request(fixtures.app)
-        .get('/api/github/user/userA')
-        .set(SCENARIST_TEST_ID_HEADER, 'test-a');
+        .get("/api/github/user/userA")
+        .set(SCENARIST_TEST_ID_HEADER, "test-a");
       expect(responseA1.body.step).toBe(1);
 
       // Test B: First call (should also be step 1, independent state)
       const responseB1 = await request(fixtures.app)
-        .get('/api/github/user/userB')
-        .set(SCENARIST_TEST_ID_HEADER, 'test-b');
+        .get("/api/github/user/userB")
+        .set(SCENARIST_TEST_ID_HEADER, "test-b");
       expect(responseB1.body.step).toBe(1);
 
       // Test A: Second call (step 2)
       const responseA2 = await request(fixtures.app)
-        .get('/api/github/user/userA')
-        .set(SCENARIST_TEST_ID_HEADER, 'test-a');
+        .get("/api/github/user/userA")
+        .set(SCENARIST_TEST_ID_HEADER, "test-a");
       expect(responseA2.body.step).toBe(2);
 
       // Test B: Second call (should be step 2, not step 3)
       const responseB2 = await request(fixtures.app)
-        .get('/api/github/user/userB')
-        .set(SCENARIST_TEST_ID_HEADER, 'test-b');
+        .get("/api/github/user/userB")
+        .set(SCENARIST_TEST_ID_HEADER, "test-b");
       expect(responseB2.body.step).toBe(2);
 
       // Test A: Third call (step 3)
       const responseA3 = await request(fixtures.app)
-        .get('/api/github/user/userA')
-        .set(SCENARIST_TEST_ID_HEADER, 'test-a');
+        .get("/api/github/user/userA")
+        .set(SCENARIST_TEST_ID_HEADER, "test-a");
       expect(responseA3.body.step).toBe(3);
 
       // Test B: Third call (should be step 3)
       const responseB3 = await request(fixtures.app)
-        .get('/api/github/user/userB')
-        .set(SCENARIST_TEST_ID_HEADER, 'test-b');
+        .get("/api/github/user/userB")
+        .set(SCENARIST_TEST_ID_HEADER, "test-b");
       expect(responseB3.body.step).toBe(3);
 
       // Both tests at step 3, both should stay there (repeat: 'last')
       const responseA4 = await request(fixtures.app)
-        .get('/api/github/user/userA')
-        .set(SCENARIST_TEST_ID_HEADER, 'test-a');
+        .get("/api/github/user/userA")
+        .set(SCENARIST_TEST_ID_HEADER, "test-a");
       expect(responseA4.body.step).toBe(3);
 
       const responseB4 = await request(fixtures.app)
-        .get('/api/github/user/userB')
-        .set(SCENARIST_TEST_ID_HEADER, 'test-b');
+        .get("/api/github/user/userB")
+        .set(SCENARIST_TEST_ID_HEADER, "test-b");
       expect(responseB4.body.step).toBe(3);
     });
   });

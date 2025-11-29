@@ -4,11 +4,11 @@ This document describes the release workflow for Scenarist packages.
 
 ## Release Types
 
-| Type | Version Example | npm Tag | Branch | Use Case |
-|------|-----------------|---------|--------|----------|
-| **Beta** | `1.0.0-beta.0` | `@beta` | `release/beta` | Early testing, breaking changes expected |
-| **RC** | `1.0.0-rc.0` | `@rc` | `release/rc` | Feature complete, final testing |
-| **Stable** | `1.0.0` | `@latest` | `main` | Production ready |
+| Type       | Version Example | npm Tag   | Branch         | Use Case                                 |
+| ---------- | --------------- | --------- | -------------- | ---------------------------------------- |
+| **Beta**   | `1.0.0-beta.0`  | `@beta`   | `release/beta` | Early testing, breaking changes expected |
+| **RC**     | `1.0.0-rc.0`    | `@rc`     | `release/rc`   | Feature complete, final testing          |
+| **Stable** | `1.0.0`         | `@latest` | `main`         | Production ready                         |
 
 ## Installation by Release Type
 
@@ -63,6 +63,7 @@ git push origin release/beta
 ```
 
 The workflow will:
+
 1. Version packages (e.g., `1.0.0-beta.0`)
 2. Publish to npm with `@beta` tag
 3. Create git tag
@@ -129,6 +130,7 @@ git push origin main
 ### 3. Changesets Creates PR
 
 The release workflow on `main`:
+
 1. Detects changesets
 2. Creates "Version Packages" PR
 3. Updates versions to stable (e.g., `1.0.0`)
@@ -137,6 +139,7 @@ The release workflow on `main`:
 ### 4. Merge Version PR
 
 Merging the "Version Packages" PR:
+
 1. Publishes to npm with `@latest` tag
 2. Creates GitHub Release
 3. Creates git tag
@@ -200,6 +203,7 @@ git push origin main
 ### "No changesets found"
 
 You need at least one changeset file:
+
 ```bash
 pnpm changeset
 ```
@@ -207,6 +211,7 @@ pnpm changeset
 ### Pre-release version not incrementing
 
 Ensure you're in pre-release mode:
+
 ```bash
 cat .changeset/pre.json
 # Should show: { "mode": "pre", "tag": "beta" }
@@ -215,6 +220,7 @@ cat .changeset/pre.json
 ### Wrong npm tag
 
 Check the branch name matches:
+
 - `release/beta` → `@beta`
 - `release/rc` → `@rc`
 - `main` → `@latest`
@@ -222,6 +228,7 @@ Check the branch name matches:
 ### OIDC authentication failed
 
 Ensure the workflow has:
+
 ```yaml
 permissions:
   id-token: write

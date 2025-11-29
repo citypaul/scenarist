@@ -30,12 +30,14 @@ This lack of type safety was particularly painful in test code where scenario sw
 ## Problem
 
 **How can we provide compile-time type safety and autocomplete for scenario IDs without:**
+
 1. Breaking serialization (must remain JSON-compatible)
 2. Requiring code generation
 3. Adding runtime overhead
 4. Forcing string unions or enums (maintenance burden)
 
 **Requirements:**
+
 - ✅ IDE autocomplete for scenario names in all contexts
 - ✅ Compile-time errors for invalid scenario IDs
 - ✅ Zero runtime overhead (pure type-level feature)
@@ -80,17 +82,19 @@ type MyScenarioIds = ScenarioIds<typeof scenarios>;
 **TypeScript's Type Inference Magic:**
 
 1. `as const` makes object keys literal types instead of `string`
+
    ```typescript
    // Without `as const`:
-   const obj = { foo: 'bar' };
+   const obj = { foo: "bar" };
    type Keys = keyof typeof obj; // string
 
    // With `as const`:
-   const obj = { foo: 'bar' } as const;
+   const obj = { foo: "bar" } as const;
    type Keys = keyof typeof obj; // 'foo'
    ```
 
 2. `satisfies ScenaristScenarios` validates structure without widening types
+
    ```typescript
    // Ensures object has correct shape while preserving literal types
    const scenarios = {
@@ -100,6 +104,7 @@ type MyScenarioIds = ScenarioIds<typeof scenarios>;
    ```
 
 3. `keyof T & string` extracts only string keys (excludes `number | symbol`)
+
    ```typescript
    type ScenarioIds<T> = keyof T & string;
    // Ensures we only get string literal types, never number/symbol
@@ -108,26 +113,30 @@ type MyScenarioIds = ScenarioIds<typeof scenarios>;
 4. Generics flow through adapter APIs automatically
    ```typescript
    const scenarist = createScenarist({ scenarios }); // T = typeof scenarios
-   scenarist.switchScenario(testId, 'cart'); // ✅ Autocomplete!
-   scenarist.switchScenario(testId, 'xyz');  // ❌ Compile error!
+   scenarist.switchScenario(testId, "cart"); // ✅ Autocomplete!
+   scenarist.switchScenario(testId, "xyz"); // ❌ Compile error!
    ```
 
 ### Integration Points
 
 **Core Package (`@scenarist/core`):**
+
 ```typescript
 // types/scenario.ts
 export type ScenaristScenarios = Record<string, ScenaristScenario>;
 export type ScenarioIds<T extends ScenaristScenarios> = keyof T & string;
 
 // types/config.ts
-export type ScenaristConfigInput<T extends ScenaristScenarios = ScenaristScenarios> = {
+export type ScenaristConfigInput<
+  T extends ScenaristScenarios = ScenaristScenarios,
+> = {
   readonly scenarios: T;
   // ... (Note: defaultScenarioId was removed per ADR-0010)
 };
 ```
 
 **Adapter Packages (Express, Next.js):**
+
 ```typescript
 export type CreateScenaristOptions<T extends ScenaristScenarios> = {
   scenarios: T;
@@ -135,7 +144,7 @@ export type CreateScenaristOptions<T extends ScenaristScenarios> = {
 };
 
 export const createScenarist = <T extends ScenaristScenarios>(
-  options: CreateScenaristOptions<T>
+  options: CreateScenaristOptions<T>,
 ): Scenarist<T> => {
   // TypeScript infers T from options.scenarios
   // All scenario ID parameters become keyof T automatically
@@ -143,6 +152,7 @@ export const createScenarist = <T extends ScenaristScenarios>(
 ```
 
 **Playwright Helpers:**
+
 ```typescript
 export const withScenarios = <T extends ScenaristScenarios>(scenarios: T) => {
   return base.extend<ScenaristFixtures<T>>({
@@ -158,13 +168,14 @@ export const withScenarios = <T extends ScenaristScenarios>(scenarios: T) => {
 // Usage in tests:
 const test = withScenarios(scenarios); // T inferred from scenarios object
 
-test('my test', async ({ page, switchScenario }) => {
-  await switchScenario('premiumUser'); // ✅ Autocomplete works!
-  await switchScenario('typo');        // ❌ Compile error!
+test("my test", async ({ page, switchScenario }) => {
+  await switchScenario("premiumUser"); // ✅ Autocomplete works!
+  await switchScenario("typo"); // ❌ Compile error!
 });
 ```
 
 **User Code:**
+
 ```typescript
 // apps/my-app/scenarios.ts
 export const scenarios = {
@@ -197,6 +208,7 @@ test('premium user flow', async ({ page, switchScenario }) => {
 ### Alternative 1: String Unions
 
 **Pattern:**
+
 ```typescript
 type ScenarioId = 'cartWithState' | 'premiumUser' | 'standardUser';
 
@@ -208,11 +220,13 @@ const scenarios: Record<ScenarioId, ScenaristScenario> = {
 ```
 
 **Pros:**
+
 - ✅ Type-safe scenario IDs
 - ✅ Autocomplete works
 - ✅ Simple mental model
 
 **Cons:**
+
 - ❌ Requires manual maintenance (define union AND object)
 - ❌ Easy for union and object to drift out of sync
 - ❌ Duplicate source of truth (DRY violation)
@@ -223,6 +237,7 @@ const scenarios: Record<ScenarioId, ScenaristScenario> = {
 ### Alternative 2: Enums
 
 **Pattern:**
+
 ```typescript
 enum ScenarioId {
   CartWithState = 'cartWithState',
@@ -238,10 +253,12 @@ const scenarios: Record<ScenarioId, ScenaristScenario> = {
 ```
 
 **Pros:**
+
 - ✅ Type-safe
 - ✅ Explicit enum values
 
 **Cons:**
+
 - ❌ Even more duplication (enum + object)
 - ❌ Verbose access (`ScenarioId.CartWithState`)
 - ❌ Enums have runtime representation (not pure types)
@@ -252,6 +269,7 @@ const scenarios: Record<ScenarioId, ScenaristScenario> = {
 ### Alternative 3: Code Generation from Schema
 
 **Pattern:**
+
 ```yaml
 # scenarios.yaml
 scenarios:
@@ -265,11 +283,13 @@ type ScenarioId = 'cartWithState' | 'premiumUser';
 ```
 
 **Pros:**
+
 - ✅ Single source of truth (YAML/JSON)
 - ✅ Type-safe
 - ✅ Could generate runtime validation
 
 **Cons:**
+
 - ❌ Requires build step
 - ❌ Adds tooling complexity
 - ❌ Harder to debug (generated code)
@@ -280,6 +300,7 @@ type ScenarioId = 'cartWithState' | 'premiumUser';
 ### Alternative 4: Template Literal Types (Future Enhancement)
 
 **Pattern:**
+
 ```typescript
 // Validate that scenario ID matches object key
 type ValidScenarios<T extends Record<string, ScenaristScenario>> = {
@@ -293,10 +314,12 @@ const scenarios = {
 ```
 
 **Pros:**
+
 - ✅ Validates ID matches key at compile time
 - ✅ Prevents ID/key mismatches
 
 **Cons:**
+
 - ❌ More complex type gymnastics
 - ❌ Requires TypeScript 4.5+ (template literal types)
 - ❌ Harder for developers to understand
@@ -308,13 +331,15 @@ const scenarios = {
 ### Positive
 
 ✅ **IDE autocomplete everywhere** - Scenario IDs autocomplete in:
-   - Test helpers (`switchScenario('premiumUser')`)
-   - API calls (`setScenario(page, 'cart')`)
+
+- Test helpers (`switchScenario('premiumUser')`)
+- API calls (`setScenario(page, 'cart')`)
 
 ✅ **Compile-time errors** - Typos caught during development:
-   ```typescript
-   await switchScenario('premiumUsr'); // ❌ Type error before running tests
-   ```
+
+```typescript
+await switchScenario("premiumUsr"); // ❌ Type error before running tests
+```
 
 ✅ **Refactoring-safe** - Rename scenario key → all references update automatically in IDEs
 
@@ -333,39 +358,44 @@ const scenarios = {
 ❌ **TypeScript 4.1+ required** - Needs template literal types and key remapping
 
 ❌ **`as const satisfies` syntax** - Requires TypeScript 4.9+ for `satisfies`
-   - Workaround for older TS: `as const` + separate type assertion
+
+- Workaround for older TS: `as const` + separate type assertion
 
 ❌ **Learning curve** - Developers must understand:
-   - `as const` for literal types
-   - `satisfies` for type validation
-   - Generic type flow through APIs
+
+- `as const` for literal types
+- `satisfies` for type validation
+- Generic type flow through APIs
 
 ❌ **Generic complexity** - All adapter types become generic:
-   ```typescript
-   Scenarist<T>
-   CreateScenaristOptions<T>
-   ScenaristFixtures<T>
-   ```
+
+```typescript
+Scenarist<T>;
+CreateScenaristOptions<T>;
+ScenaristFixtures<T>;
+```
 
 ❌ **Migration required** - Breaking change for existing users:
-   - Must change from imperative `registerScenario()` to declarative `scenarios` object
-   - Must add `as const satisfies ScenaristScenarios` to scenarios
-   - All adapter setup code must change
+
+- Must change from imperative `registerScenario()` to declarative `scenarios` object
+- Must add `as const satisfies ScenaristScenarios` to scenarios
+- All adapter setup code must change
 
 ### Neutral
 
 ⚖️ **Type inference can be surprising** - Sometimes TS can't infer T:
-   ```typescript
-   // Works:
-   const scenarist = createScenarist({ scenarios });
 
-   // Doesn't work (T = ScenaristScenarios, loses literal types):
-   const options = { scenarios };
-   const scenarist = createScenarist(options); // No autocomplete
+```typescript
+// Works:
+const scenarist = createScenarist({ scenarios });
 
-   // Fix: Inline scenarios or use type annotation
-   const options = { scenarios } as const;
-   ```
+// Doesn't work (T = ScenaristScenarios, loses literal types):
+const options = { scenarios };
+const scenarist = createScenarist(options); // No autocomplete
+
+// Fix: Inline scenarios or use type annotation
+const options = { scenarios } as const;
+```
 
 ⚖️ **Note**: `defaultScenarioId` was later removed entirely per ADR-0010 (enforces 'default' key convention)
 
@@ -374,6 +404,7 @@ const scenarios = {
 ### Migration Path for Users
 
 **Before (v1.x):**
+
 ```typescript
 import { createScenarist } from '@scenarist/express-adapter';
 
@@ -390,6 +421,7 @@ await setScenario(page, 'premium'); // ❌ Typos not caught
 ```
 
 **After (v2.x):**
+
 ```typescript
 import { createScenarist } from '@scenarist/express-adapter';
 
@@ -416,11 +448,13 @@ test('my test', async ({ switchScenario }) => {
 **For autocomplete to work, users must:**
 
 1. Use `as const satisfies ScenaristScenarios` pattern:
+
    ```typescript
    const scenarios = { ... } as const satisfies ScenaristScenarios;
    ```
 
 2. Pass scenarios directly to adapter (no intermediate variables without `as const`):
+
    ```typescript
    // ✅ Good:
    createScenarist({ scenarios });
@@ -435,6 +469,7 @@ test('my test', async ({ switchScenario }) => {
    ```
 
 3. Use `withScenarios()` for Playwright fixtures (not raw `base.extend`):
+
    ```typescript
    // ✅ Good:
    const test = withScenarios(scenarios);

@@ -21,6 +21,7 @@ cat packages/core/coverage/coverage-summary.json
 ```
 
 **Requirements:**
+
 - 100% coverage for business behavior
 - All public API methods tested
 - Edge cases covered
@@ -31,23 +32,24 @@ Tests must verify **behavior**, not **implementation details**:
 
 ```typescript
 // ❌ WRONG - Testing implementation
-it('should call the get method on registry', () => {
-  const spy = jest.spyOn(registry, 'get');
-  manager.switchScenario('test', 'scenario');
-  expect(spy).toHaveBeenCalled();  // Implementation detail!
+it("should call the get method on registry", () => {
+  const spy = jest.spyOn(registry, "get");
+  manager.switchScenario("test", "scenario");
+  expect(spy).toHaveBeenCalled(); // Implementation detail!
 });
 
 // ✅ CORRECT - Testing behavior
-it('should return error when switching to non-existent scenario', () => {
-  const result = manager.switchScenario('test', 'non-existent');
+it("should return error when switching to non-existent scenario", () => {
+  const result = manager.switchScenario("test", "non-existent");
   expect(result.success).toBe(false);
-  expect(result.error.message).toContain('not found');
+  expect(result.error.message).toContain("not found");
 });
 ```
 
 ### 3. Test Organization
 
 Verify:
+
 - Tests are in `packages/*/tests/` or `packages/*/src/**/*.test.ts`
 - No 1:1 mapping (multiple behaviors tested per file is OK)
 - Test files don't mirror implementation structure
@@ -61,11 +63,11 @@ Check for factory functions with optional overrides:
 // ✅ CORRECT
 const createTestScenarioDefinition = (
   id: string,
-  overrides?: Partial<ScenaristScenario>
+  overrides?: Partial<ScenaristScenario>,
 ): ScenaristScenario => ({
   id,
-  name: 'Test Scenario',
-  description: 'Test description',
+  name: "Test Scenario",
+  description: "Test description",
   mocks: [],
   devToolEnabled: false,
   ...overrides,
@@ -98,6 +100,7 @@ grep -r "private" packages/core/tests/ && echo "❌ Tests accessing private memb
 ## What Makes a Good Test?
 
 ### ✅ Good Tests:
+
 - Test through public API only
 - Verify expected business behavior
 - Use descriptive test names
@@ -106,6 +109,7 @@ grep -r "private" packages/core/tests/ && echo "❌ Tests accessing private memb
 - Use factory functions for test data
 
 ### ❌ Bad Tests:
+
 - Mock internal/private functions
 - Test implementation details
 - Have unclear test names
@@ -131,6 +135,7 @@ grep -r "private" packages/core/tests/ && echo "❌ Tests accessing private memb
    - If duplicated setup: Suggest factory pattern
 
 Report findings with:
+
 - Coverage percentage
 - Missing test cases
 - Implementation testing anti-patterns

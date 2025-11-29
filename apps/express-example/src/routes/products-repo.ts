@@ -30,7 +30,8 @@ export const setupProductsRepoRoutes = (router: Router): void => {
    */
   router.post("/test/seed", async (req, res) => {
     try {
-      const testId = (req.headers["x-scenarist-test-id"] as string) ?? "default-test";
+      const testId =
+        (req.headers["x-scenarist-test-id"] as string) ?? "default-test";
 
       const parseResult = SeedRequestSchema.safeParse(req.body);
       if (!parseResult.success) {
@@ -48,7 +49,10 @@ export const setupProductsRepoRoutes = (router: Router): void => {
 
       if (!seedData) {
         // No seed data for this scenario - that's OK, not all scenarios need repository data
-        return res.json({ seeded: false, message: "No seed data for scenario" });
+        return res.json({
+          seeded: false,
+          message: "No seed data for scenario",
+        });
       }
 
       // Seed the repository within the test ID context
@@ -91,7 +95,8 @@ export const setupProductsRepoRoutes = (router: Router): void => {
    */
   router.get("/users/:userId", async (req, res) => {
     try {
-      const testId = (req.headers["x-scenarist-test-id"] as string) ?? "default-test";
+      const testId =
+        (req.headers["x-scenarist-test-id"] as string) ?? "default-test";
       const { userId } = req.params;
 
       const user = await runWithTestId(testId, async () => {
@@ -117,7 +122,8 @@ export const setupProductsRepoRoutes = (router: Router): void => {
    */
   router.get("/products-repo", async (req, res) => {
     try {
-      const testId = (req.headers["x-scenarist-test-id"] as string) ?? "default-test";
+      const testId =
+        (req.headers["x-scenarist-test-id"] as string) ?? "default-test";
       const userId = (req.query.userId as string) ?? "user-1";
 
       // 1. Get user from repository (in-memory with test ID isolation)

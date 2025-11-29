@@ -1,4 +1,8 @@
-import { SCENARIST_TEST_ID_HEADER, type RequestContext, type ScenaristConfig } from '@scenarist/core';
+import {
+  SCENARIST_TEST_ID_HEADER,
+  type RequestContext,
+  type ScenaristConfig,
+} from "@scenarist/core";
 
 /**
  * RequestContext implementation for Next.js App Router.
@@ -12,7 +16,7 @@ import { SCENARIST_TEST_ID_HEADER, type RequestContext, type ScenaristConfig } f
 export class AppRequestContext implements RequestContext {
   constructor(
     private readonly req: Request,
-    private readonly config: ScenaristConfig
+    private readonly config: ScenaristConfig,
   ) {}
 
   getTestId(): string {
@@ -42,7 +46,7 @@ export class AppRequestContext implements RequestContext {
     } catch {
       // Return empty string for malformed URLs (e.g., relative URLs without base)
       // This is expected behavior - hostname extraction is best-effort
-      return '';
+      return "";
     }
   }
 }
