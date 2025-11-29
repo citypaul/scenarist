@@ -12,6 +12,13 @@ const requireDefined = <T>(value: T | undefined): T => {
   return value as T;
 };
 
+const clearAllGlobals = () => {
+  delete (global as unknown as Record<string, unknown>).__scenarist_instance;
+  delete (global as unknown as Record<string, unknown>).__scenarist_registry;
+  delete (global as unknown as Record<string, unknown>).__scenarist_store;
+  delete (global as unknown as Record<string, unknown>).__scenarist_msw_started;
+};
+
 // Define all test scenarios upfront
 const testScenarios = {
   default: {
@@ -132,18 +139,6 @@ describe("App Router createScenarist", () => {
   });
 
   describe("Singleton guard for createScenarist() instance", () => {
-    // Clean up all global state between tests
-    const clearAllGlobals = () => {
-      delete (global as unknown as Record<string, unknown>)
-        .__scenarist_instance;
-      delete (global as unknown as Record<string, unknown>)
-        .__scenarist_registry;
-      delete (global as unknown as Record<string, unknown>).__scenarist_store;
-      delete (global as unknown as Record<string, unknown>)
-        .__scenarist_msw_started;
-    };
-
-    // Clear globals before each test to ensure test isolation
     beforeEach(() => {
       clearAllGlobals();
     });
@@ -436,16 +431,6 @@ describe("App Router createScenarist", () => {
   });
 
   describe("Dependency injection", () => {
-    const clearAllGlobals = () => {
-      delete (global as unknown as Record<string, unknown>)
-        .__scenarist_instance;
-      delete (global as unknown as Record<string, unknown>)
-        .__scenarist_registry;
-      delete (global as unknown as Record<string, unknown>).__scenarist_store;
-      delete (global as unknown as Record<string, unknown>)
-        .__scenarist_msw_started;
-    };
-
     beforeEach(() => {
       clearAllGlobals();
     });
@@ -503,16 +488,6 @@ describe("App Router createScenarist", () => {
   });
 
   describe("MSW request handling", () => {
-    const clearAllGlobals = () => {
-      delete (global as unknown as Record<string, unknown>)
-        .__scenarist_instance;
-      delete (global as unknown as Record<string, unknown>)
-        .__scenarist_registry;
-      delete (global as unknown as Record<string, unknown>).__scenarist_store;
-      delete (global as unknown as Record<string, unknown>)
-        .__scenarist_msw_started;
-    };
-
     // Scenarios with actual mock responses for HTTP testing
     const httpTestScenarios = {
       default: {

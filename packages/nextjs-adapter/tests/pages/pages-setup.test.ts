@@ -7,6 +7,16 @@ const requireDefined = <T>(value: T | undefined): T => {
   return value as T;
 };
 
+const clearAllGlobals = () => {
+  delete (global as unknown as Record<string, unknown>)
+    .__scenarist_instance_pages;
+  delete (global as unknown as Record<string, unknown>)
+    .__scenarist_registry_pages;
+  delete (global as unknown as Record<string, unknown>).__scenarist_store_pages;
+  delete (global as unknown as Record<string, unknown>)
+    .__scenarist_msw_started_pages;
+};
+
 // Define all test scenarios upfront
 const testScenarios = {
   default: {
@@ -127,19 +137,6 @@ describe("Pages Router createScenarist", () => {
   });
 
   describe("Singleton guard for createScenarist() instance", () => {
-    // Clean up all global state between tests
-    const clearAllGlobals = () => {
-      delete (global as unknown as Record<string, unknown>)
-        .__scenarist_instance_pages;
-      delete (global as unknown as Record<string, unknown>)
-        .__scenarist_registry_pages;
-      delete (global as unknown as Record<string, unknown>)
-        .__scenarist_store_pages;
-      delete (global as unknown as Record<string, unknown>)
-        .__scenarist_msw_started_pages;
-    };
-
-    // Clear globals before each test to ensure test isolation
     beforeEach(() => {
       clearAllGlobals();
     });
