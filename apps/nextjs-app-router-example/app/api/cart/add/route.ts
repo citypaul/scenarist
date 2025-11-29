@@ -15,10 +15,10 @@
  * NO environment branching - routes always call real REST endpoints!
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
+import { NextRequest, NextResponse } from "next/server";
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
 
-const CART_BACKEND_URL = 'http://localhost:3001/cart';
+const CART_BACKEND_URL = "http://localhost:3001/cart";
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,10 +28,10 @@ export async function POST(request: NextRequest) {
     if (!productId) {
       return NextResponse.json(
         {
-          error: 'Invalid request',
-          message: 'productId is required',
+          error: "Invalid request",
+          message: "productId is required",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -54,9 +54,9 @@ export async function POST(request: NextRequest) {
 
     // Always PATCH with updated array (MSW intercepts in test/dev, real json-server in production)
     const patchResponse = await fetch(CART_BACKEND_URL, {
-      method: 'PATCH',
+      method: "PATCH",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...getScenaristHeaders(request),
       },
       body: JSON.stringify({
@@ -73,10 +73,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       {
-        error: 'Failed to add to cart',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to add to cart",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

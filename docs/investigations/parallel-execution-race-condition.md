@@ -6,6 +6,7 @@
 ## Key Observation
 
 The test failure has different characteristics:
+
 - ✅ **Passes:** When run in isolation (single test)
 - ❌ **Fails:** When run in parallel with other tests
 - ✅ **Passes:** Consistently on some machines
@@ -20,7 +21,7 @@ This indicates a **race condition** rather than a simple header propagation issu
 When `page.route('**/*', ...)` is called in `switchScenario`:
 
 ```typescript
-await page.route('**/*', async (route) => {
+await page.route("**/*", async (route) => {
   await route.continue({
     headers: {
       ...route.request().headers(),
@@ -57,11 +58,13 @@ await page.setExtraHTTPHeaders({ [testIdHeader]: testId });
 ### Why Machine-Specific?
 
 Faster machines:
+
 - Route handlers register before fetch() happens
 - Less resource contention
 - Tests pass consistently
 
 Slower machines:
+
 - Route handlers register during or after fetch()
 - More resource contention in parallel
 - Tests fail consistently
@@ -74,7 +77,7 @@ Only intercept API routes that need test ID injection:
 
 ```typescript
 // Only intercept API routes, not all requests
-await page.route('**/api/**', async (route) => {
+await page.route("**/api/**", async (route) => {
   await route.continue({
     headers: {
       ...route.request().headers(),
@@ -85,12 +88,14 @@ await page.route('**/api/**', async (route) => {
 ```
 
 **Benefits:**
+
 - ✅ Reduces overhead (only API calls intercepted)
 - ✅ Less contention in parallel execution
 - ✅ More predictable timing
 - ✅ Still works for all HTTP libraries
 
 **Limitations:**
+
 - ⚠️ Only works if all external API calls go through `/api/` routes
 - ⚠️ Doesn't intercept direct external API calls from browser
 
@@ -99,7 +104,7 @@ await page.route('**/api/**', async (route) => {
 Ensure route handler is registered before navigation:
 
 ```typescript
-await page.route('**/*', async (route) => {
+await page.route("**/*", async (route) => {
   await route.continue({
     headers: {
       ...route.request().headers(),
@@ -109,14 +114,16 @@ await page.route('**/*', async (route) => {
 });
 
 // Wait for any pending route registrations to complete
-await page.waitForLoadState('domcontentloaded', { timeout: 1000 });
+await page.waitForLoadState("domcontentloaded", { timeout: 1000 });
 ```
 
 **Benefits:**
+
 - ✅ Ensures handler is ready
 - ✅ Works with any request pattern
 
 **Limitations:**
+
 - ❌ Adds delay to every test
 - ❌ Doesn't solve underlying contention issue
 
@@ -126,10 +133,10 @@ If route handlers accumulate, clear them first:
 
 ```typescript
 // Clear any existing route handlers for this pattern
-await page.unroute('**/*');
+await page.unroute("**/*");
 
 // Register new handler
-await page.route('**/*', async (route) => {
+await page.route("**/*", async (route) => {
   await route.continue({
     headers: {
       ...route.request().headers(),
@@ -140,10 +147,12 @@ await page.route('**/*', async (route) => {
 ```
 
 **Benefits:**
+
 - ✅ Prevents handler accumulation
 - ✅ Cleaner state
 
 **Limitations:**
+
 - ⚠️ Might not solve parallel timing issues
 
 ### Option D: Hybrid Approach
@@ -152,7 +161,7 @@ Combine narrow pattern + explicit wait:
 
 ```typescript
 // Only intercept API routes (reduces overhead)
-await page.route('**/api/**', async (route) => {
+await page.route("**/api/**", async (route) => {
   await route.continue({
     headers: {
       ...route.request().headers(),
@@ -177,7 +186,7 @@ Change from `'**/*'` to `'**/api/**'`:
 ```typescript
 // packages/playwright-helpers/src/switch-scenario.ts
 
-await page.route('**/api/**', async (route) => {
+await page.route("**/api/**", async (route) => {
   await route.continue({
     headers: {
       ...route.request().headers(),
@@ -188,6 +197,7 @@ await page.route('**/api/**', async (route) => {
 ```
 
 This solves the parallel execution issue by:
+
 1. Reducing interception overhead (API routes only)
 2. Less contention between parallel tests
 3. Faster handler registration (fewer patterns to match)
@@ -216,6 +226,7 @@ The race condition was caused by **not awaiting `route.continue()`** in the rout
 **File:** `packages/playwright-helpers/src/switch-scenario.ts`
 
 **Changes:**
+
 1. Added `await page.unroute('**/*')` - prevents handler accumulation
 2. Changed route callback to `async (route) => { ... }`
 3. Added `await` to `route.continue({ headers })`
@@ -223,6 +234,7 @@ The race condition was caused by **not awaiting `route.continue()`** in the rout
 ### Why `'**/*'` Pattern is Correct
 
 The catch-all pattern **must** be used for universal compatibility:
+
 - Clients use different API conventions
 - Server Components, API routes, Server Actions all need headers
 - MSW handles filtering at the server level

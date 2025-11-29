@@ -40,7 +40,9 @@ test.describe("RSC Helper - ATDD", () => {
     await page.goto("/test-rsc-helper");
 
     // Verify page loads without errors
-    await expect(page.getByRole("heading", { name: "Test RSC Helper" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Test RSC Helper" }),
+    ).toBeVisible();
 
     // Verify premium pricing (Product A premium price is £99.99)
     await expect(page.getByText("Price: £99.99")).toBeVisible();

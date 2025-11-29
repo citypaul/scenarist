@@ -1,4 +1,8 @@
-import type { ScenaristScenario, ActiveScenario, ScenaristResult } from '../../types/index.js';
+import type {
+  ScenaristScenario,
+  ActiveScenario,
+  ScenaristResult,
+} from "../../types/index.js";
 
 /**
  * Primary port for scenario management.
@@ -57,7 +61,7 @@ export interface ScenarioManager {
    */
   switchScenario(
     testId: string,
-    scenarioId: string
+    scenarioId: string,
   ): ScenaristResult<void, Error>;
 
   /**

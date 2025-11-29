@@ -14,11 +14,12 @@
  * No manual guards needed - the architecture provides safety automatically.
  */
 
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { scenarist } from '../../lib/scenarist';
+import type { NextApiRequest, NextApiResponse } from "next";
+import { scenarist } from "../../lib/scenarist";
 
 // In production, scenarist is undefined due to conditional exports
 // Provide a fallback handler that returns 405 Method Not Allowed
-export default scenarist?.createScenarioEndpoint() ?? ((_req: NextApiRequest, res: NextApiResponse) => {
-  res.status(405).end();
-});
+export default scenarist?.createScenarioEndpoint() ??
+  ((_req: NextApiRequest, res: NextApiResponse) => {
+    res.status(405).end();
+  });

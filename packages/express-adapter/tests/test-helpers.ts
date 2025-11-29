@@ -1,19 +1,29 @@
-import type { Request, Response } from 'express';
-import type { ScenarioManager, ScenaristConfig, ScenaristScenarios } from '@scenarist/core';
-import { createScenarist as createScenaristImpl, type ExpressScenarist, type ExpressAdapterOptions } from '../src/setup/setup-scenarist.js';
+import type { Request, Response } from "express";
+import type {
+  ScenarioManager,
+  ScenaristConfig,
+  ScenaristScenarios,
+} from "@scenarist/core";
+import {
+  createScenarist as createScenaristImpl,
+  type ExpressScenarist,
+  type ExpressAdapterOptions,
+} from "../src/setup/setup-scenarist.js";
 
 /**
  * Create a mock ScenaristConfig with sensible defaults.
  * Override only the properties you need for your test.
  */
-export const mockConfig = (overrides?: Partial<ScenaristConfig>): ScenaristConfig => ({
+export const mockConfig = (
+  overrides?: Partial<ScenaristConfig>,
+): ScenaristConfig => ({
   enabled: true,
   strictMode: false,
   endpoints: {
-    setScenario: '/__scenario__',
-    getScenario: '/__scenario__',
+    setScenario: "/__scenario__",
+    getScenario: "/__scenario__",
   },
-  defaultTestId: 'default-test',
+  defaultTestId: "default-test",
   ...overrides,
 });
 
@@ -33,7 +43,7 @@ export const mockRequest = (overrides?: Partial<Request>): Request => {
   }
 
   return {
-    hostname: 'localhost',
+    hostname: "localhost",
     ...overrides,
     headers: lowercasedHeaders, // Ensure headers are lowercased even after spread
   } as Request;
@@ -42,14 +52,14 @@ export const mockRequest = (overrides?: Partial<Request>): Request => {
 /**
  * Create a mock Express Response object.
  */
-export const mockResponse = (): Response => ({} as Response);
+export const mockResponse = (): Response => ({}) as Response;
 
 /**
  * Create a mock ScenarioManager with default no-op implementations.
  * Override only the methods you need for your test.
  */
 export const mockScenarioManager = (
-  overrides?: Partial<ScenarioManager>
+  overrides?: Partial<ScenarioManager>,
 ): ScenarioManager =>
   ({
     registerScenario: () => {},
@@ -73,13 +83,13 @@ export const mockScenarioManager = (
  * Note: Named createTestScenarist to distinguish from the public createScenarist API.
  */
 export const createTestScenarist = async <T extends ScenaristScenarios>(
-  options: ExpressAdapterOptions<T>
+  options: ExpressAdapterOptions<T>,
 ): Promise<ExpressScenarist<T>> => {
   const scenarist = await createScenaristImpl(options);
 
   if (!scenarist) {
     throw new Error(
-      'Scenarist should be defined in test environment (NODE_ENV !== "production")'
+      'Scenarist should be defined in test environment (NODE_ENV !== "production")',
     );
   }
 

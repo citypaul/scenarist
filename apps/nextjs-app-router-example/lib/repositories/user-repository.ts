@@ -10,13 +10,13 @@ export type User = {
   readonly id: string;
   readonly email: string;
   readonly name: string;
-  readonly tier: 'standard' | 'premium';
+  readonly tier: "standard" | "premium";
 };
 
 export type CreateUserInput = {
   readonly email: string;
   readonly name: string;
-  readonly tier: 'standard' | 'premium';
+  readonly tier: "standard" | "premium";
 };
 
 /**

@@ -9,9 +9,10 @@ The Next.js App Router introduces React Server Components, enabling server-side 
 
 ### The Challenge
 
-Next.js recommends end-to-end testing for Server Components because *"async Server Components are new to the React ecosystem."* Unit testing requires mocking Next.js internals (fetch, cookies, headers), creating distance from production execution.
+Next.js recommends end-to-end testing for Server Components because _"async Server Components are new to the React ecosystem."_ Unit testing requires mocking Next.js internals (fetch, cookies, headers), creating distance from production execution.
 
 **Specific App Router challenges:**
+
 - Server Components execute asynchronously with no standard testing approach
 - Route Handlers need testing with different external API scenarios
 - Server Actions require testing mutations without complex mocking
@@ -58,18 +59,18 @@ Test API routes with different scenarios:
 // app/api/checkout/route.ts
 export async function POST(request: Request) {
   const body = await request.json();
-  const response = await fetch('https://api.stripe.com/v1/charges', {
-    method: 'POST',
+  const response = await fetch("https://api.stripe.com/v1/charges", {
+    method: "POST",
     body: JSON.stringify(body),
   });
   return Response.json(await response.json());
 }
 
 // Test with different payment scenarios
-test('processes successful payment', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'paymentSuccess');
-  const response = await page.request.post('/api/checkout', {
-    data: { amount: 5000, token: 'tok_test' }
+test("processes successful payment", async ({ page, switchScenario }) => {
+  await switchScenario(page, "paymentSuccess");
+  const response = await page.request.post("/api/checkout", {
+    data: { amount: 5000, token: "tok_test" },
   });
   expect(response.ok()).toBe(true);
 });
@@ -82,20 +83,23 @@ Test mutations with state capture:
 ```typescript
 // app/cart/actions.ts
 export async function addToCart(productId: string) {
-  await fetch('https://api.cart.example.com/add', {
-    method: 'POST',
+  await fetch("https://api.cart.example.com/add", {
+    method: "POST",
     body: JSON.stringify({ productId }),
   });
-  revalidatePath('/cart');
+  revalidatePath("/cart");
 }
 
 // Test with stateful mocks
-test('cart maintains state across requests', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'cartWithState');
-  await page.goto('/products');
-  await page.getByRole('button', { name: 'Add to Cart' }).click();
-  await page.goto('/cart');
-  await expect(page.getByText('Product A')).toBeVisible();
+test("cart maintains state across requests", async ({
+  page,
+  switchScenario,
+}) => {
+  await switchScenario(page, "cartWithState");
+  await page.goto("/products");
+  await page.getByRole("button", { name: "Add to Cart" }).click();
+  await page.goto("/cart");
+  await expect(page.getByText("Product A")).toBeVisible();
 });
 ```
 
@@ -106,6 +110,7 @@ See Scenarist in action with a complete Next.js App Router application:
 [**Explore the Next.js App Router Example →**](/frameworks/nextjs-app-router/example-app)
 
 The example demonstrates:
+
 - Testing Server Components without mocking Next.js internals
 - Request matching for tier-based pricing
 - Sequences for polling scenarios

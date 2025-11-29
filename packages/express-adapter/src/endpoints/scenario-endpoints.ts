@@ -9,7 +9,7 @@ import { ExpressRequestContext } from "../context/express-request-context.js";
 
 const handleSetScenario = (
   manager: ScenarioManager,
-  config: ScenaristConfig
+  config: ScenaristConfig,
 ) => {
   return (req: Request, res: Response): void => {
     try {
@@ -49,7 +49,7 @@ const handleSetScenario = (
 
 const handleGetScenario = (
   manager: ScenarioManager,
-  config: ScenaristConfig
+  config: ScenaristConfig,
 ) => {
   return (req: Request, res: Response): void => {
     const context = new ExpressRequestContext(req, config);
@@ -66,7 +66,7 @@ const handleGetScenario = (
     }
 
     const scenarioDefinition = manager.getScenarioById(
-      activeScenario.scenarioId
+      activeScenario.scenarioId,
     );
 
     res.status(200).json({
@@ -79,7 +79,7 @@ const handleGetScenario = (
 
 export const createScenarioEndpoints = (
   manager: ScenarioManager,
-  config: ScenaristConfig
+  config: ScenaristConfig,
 ): Router => {
   const router = Router();
 

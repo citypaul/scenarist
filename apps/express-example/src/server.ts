@@ -18,7 +18,9 @@ const main = async () => {
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
     if (scenarist) {
-      console.log(`Scenario control: POST http://localhost:${PORT}/__scenario__`);
+      console.log(
+        `Scenario control: POST http://localhost:${PORT}/__scenario__`,
+      );
     }
   });
 };

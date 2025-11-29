@@ -6,13 +6,13 @@ This guide documents configuring **npm Trusted Publishing** for secure, secretle
 
 Trusted publishing is the **recommended approach** for npm publishing from CI/CD:
 
-| Feature | Traditional Token | Trusted Publishing |
-|---------|------------------|-------------------|
-| Secrets to manage | Yes (NPM_TOKEN) | **None** |
-| Token expiration | Manual rotation needed | **Automatic** (per-publish) |
-| Security | Long-lived credential | **OIDC short-lived tokens** |
-| Provenance | Optional | **Built-in attestation** |
-| Supply chain security | Basic | **Enhanced** |
+| Feature               | Traditional Token      | Trusted Publishing          |
+| --------------------- | ---------------------- | --------------------------- |
+| Secrets to manage     | Yes (NPM_TOKEN)        | **None**                    |
+| Token expiration      | Manual rotation needed | **Automatic** (per-publish) |
+| Security              | Long-lived credential  | **OIDC short-lived tokens** |
+| Provenance            | Optional               | **Built-in attestation**    |
+| Supply chain security | Basic                  | **Enhanced**                |
 
 ## Prerequisites
 
@@ -52,7 +52,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  id-token: write  # Required for OIDC token exchange
+  id-token: write # Required for OIDC token exchange
 
 jobs:
   release:
@@ -66,9 +66,9 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
+          node-version-file: ".nvmrc"
           cache: pnpm
-          registry-url: 'https://registry.npmjs.org'
+          registry-url: "https://registry.npmjs.org"
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
@@ -78,12 +78,12 @@ jobs:
         with:
           version: pnpm changeset version
           publish: pnpm changeset publish
-          title: 'chore: release packages'
-          commit: 'chore: release packages'
+          title: "chore: release packages"
+          commit: "chore: release packages"
           createGithubReleases: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_CONFIG_PROVENANCE: true  # Enable provenance attestation
+          NPM_CONFIG_PROVENANCE: true # Enable provenance attestation
 ```
 
 ### Key Configuration Points
@@ -111,6 +111,7 @@ npx --yes setup-npm-trusted-publish @scenarist/playwright-helpers
 ```
 
 This will:
+
 1. Create the package name on npm registry
 2. Configure trusted publishing for the GitHub repository
 3. Allow subsequent publishes via GitHub Actions OIDC
@@ -174,15 +175,18 @@ After setup, verify trusted publishing works:
 ## Troubleshooting
 
 ### "403 Forbidden" error
+
 - Trusted publisher not configured for this package
 - Workflow filename doesn't match configured value
 - Repository owner/name doesn't match
 
 ### "OIDC token exchange failed"
+
 - `id-token: write` permission not set in workflow
 - GitHub Actions OIDC provider not available
 
 ### Provenance not showing
+
 - `NPM_CONFIG_PROVENANCE: true` not set
 - Package was published without provenance initially
 

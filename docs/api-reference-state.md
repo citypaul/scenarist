@@ -15,7 +15,7 @@ type ScenaristMock = {
   // Response (can use templates)
   response?: {
     status: number;
-    body?: unknown;  // Can contain templates
+    body?: unknown; // Can contain templates
     headers?: Record<string, string>;
     delay?: number;
   };
@@ -24,11 +24,11 @@ type ScenaristMock = {
   sequence?: {
     responses: Array<{
       status: number;
-      body?: unknown;  // Can contain templates
+      body?: unknown; // Can contain templates
       headers?: Record<string, string>;
       delay?: number;
     }>;
-    repeat?: 'last' | 'cycle' | 'none';
+    repeat?: "last" | "cycle" | "none";
   };
 
   // Request matching (optional, combines with state)
@@ -48,24 +48,24 @@ type ScenaristMock = {
 
 ```typescript
 captureState: {
-  stateKey: 'sourcePath'
+  stateKey: "sourcePath";
 }
 ```
 
 ### Source Paths
 
-| Path | Captures From | Example |
-|------|---------------|---------|
-| `body.field` | Request body | `body.name` → `request.body.name` |
-| `headers.field` | Request headers | `headers.authorization` → `request.headers.authorization` |
-| `query.field` | Query parameters | `query.user_id` → `?user_id=123` |
+| Path            | Captures From    | Example                                                   |
+| --------------- | ---------------- | --------------------------------------------------------- |
+| `body.field`    | Request body     | `body.name` → `request.body.name`                         |
+| `headers.field` | Request headers  | `headers.authorization` → `request.headers.authorization` |
+| `query.field`   | Query parameters | `query.user_id` → `?user_id=123`                          |
 
 ### State Key Modifiers
 
-| Syntax | Behavior | Example |
-|--------|----------|---------|
-| `key` | Replace value | `userName: 'body.name'` |
-| `key[]` | Append to array | `items[]: 'body.item'` |
+| Syntax            | Behavior             | Example                          |
+| ----------------- | -------------------- | -------------------------------- |
+| `key`             | Replace value        | `userName: 'body.name'`          |
+| `key[]`           | Append to array      | `items[]: 'body.item'`           |
 | `key.nested.path` | Create nested object | `user.profile.name: 'body.name'` |
 
 ### Examples
@@ -121,6 +121,7 @@ response: {
 ```
 
 **Types preserved:**
+
 - Arrays stay arrays
 - Numbers stay numbers
 - Booleans stay booleans
@@ -142,6 +143,7 @@ response: {
 ```
 
 **Everything converts to string** via `String()`:
+
 - Arrays → `"item1,item2,item3"`
 - Numbers → `"123"`
 - Booleans → `"true"` / `"false"`
@@ -375,7 +377,7 @@ interface StateManager {
 ### Default Implementation
 
 ```typescript
-import { createInMemoryStateManager } from '@scenarist/core';
+import { createInMemoryStateManager } from "@scenarist/core";
 
 const stateManager = createInMemoryStateManager();
 ```
@@ -383,8 +385,8 @@ const stateManager = createInMemoryStateManager();
 ### Custom Implementation Example
 
 ```typescript
-import { StateManager } from '@scenarist/core';
-import Redis from 'ioredis';
+import { StateManager } from "@scenarist/core";
+import Redis from "ioredis";
 
 class RedisStateManager implements StateManager {
   constructor(private redis: Redis) {}
@@ -417,7 +419,7 @@ const stateManager = new RedisStateManager(redis);
 const scenarist = createScenarist({
   enabled: true,
   defaultScenario,
-  stateManager,  // Inject custom implementation
+  stateManager, // Inject custom implementation
 });
 ```
 
@@ -436,19 +438,19 @@ type CaptureStateConfig = Record<string, string>;
  */
 const examples: CaptureStateConfig = {
   // Simple capture
-  userName: 'body.name',
+  userName: "body.name",
 
   // Array append
-  'items[]': 'body.item',
+  "items[]": "body.item",
 
   // Nested paths
-  'user.profile.name': 'body.name',
-  'user.profile.email': 'body.email',
+  "user.profile.name": "body.name",
+  "user.profile.email": "body.email",
 
   // Different sources
-  sessionToken: 'headers.authorization',
-  userId: 'query.user_id',
-  loginTime: 'body.timestamp',
+  sessionToken: "headers.authorization",
+  userId: "query.user_id",
+  loginTime: "body.timestamp",
 };
 ```
 
@@ -456,18 +458,18 @@ const examples: CaptureStateConfig = {
 
 ## Cheat Sheet
 
-| Feature | Syntax | Result |
-|---------|--------|--------|
-| **Capture from body** | `key: 'body.field'` | Captures `request.body.field` |
-| **Capture from headers** | `key: 'headers.field'` | Captures `request.headers.field` |
-| **Capture from query** | `key: 'query.field'` | Captures query parameter |
-| **Array append** | `'key[]': 'source'` | Appends to array instead of replacing |
-| **Nested state** | `'a.b.c': 'source'` | Creates `{ a: { b: { c: value } } }` |
-| **Pure template** | `'{{state.key}}'` | Returns raw value (preserves type) |
-| **Mixed template** | `'Text {{state.key}}'` | Converts to string |
-| **Array length** | `'{{state.items.length}}'` | Returns number of items |
-| **Nested access** | `'{{state.user.name}}'` | Accesses nested state |
-| **Missing key** | `'{{state.missing}}'` | Returns `'{{state.missing}}'` (unchanged) |
+| Feature                  | Syntax                     | Result                                    |
+| ------------------------ | -------------------------- | ----------------------------------------- |
+| **Capture from body**    | `key: 'body.field'`        | Captures `request.body.field`             |
+| **Capture from headers** | `key: 'headers.field'`     | Captures `request.headers.field`          |
+| **Capture from query**   | `key: 'query.field'`       | Captures query parameter                  |
+| **Array append**         | `'key[]': 'source'`        | Appends to array instead of replacing     |
+| **Nested state**         | `'a.b.c': 'source'`        | Creates `{ a: { b: { c: value } } }`      |
+| **Pure template**        | `'{{state.key}}'`          | Returns raw value (preserves type)        |
+| **Mixed template**       | `'Text {{state.key}}'`     | Converts to string                        |
+| **Array length**         | `'{{state.items.length}}'` | Returns number of items                   |
+| **Nested access**        | `'{{state.user.name}}'`    | Accesses nested state                     |
+| **Missing key**          | `'{{state.missing}}'`      | Returns `'{{state.missing}}'` (unchanged) |
 
 ---
 

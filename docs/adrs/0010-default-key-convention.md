@@ -10,12 +10,14 @@
 **Decision**: We implemented the "enforce 'default' key" solution immediately, skipping the intermediate type-safe `defaultScenarioId` phase.
 
 **What was implemented:**
+
 - Removed `defaultScenarioId` parameter from configuration entirely
 - Enforced 'default' key requirement via Zod schema validation (`ScenariosObjectSchema`)
 - All adapters now hardcode `'default'` literal for fallback behavior
 - Zod validation ensures 'default' key exists at runtime
 
 **Rationale for immediate implementation:**
+
 - The 'default' key was already conventional in all examples and usage
 - Zod validation made enforcement straightforward and type-safe
 - Simpler to implement once than to migrate through two phases
@@ -48,6 +50,7 @@ const scenarist = createScenarist({
 ```
 
 **Current state:**
+
 - `defaultScenarioId` is a required `string` parameter
 - TypeScript doesn't validate that `defaultScenarioId` exists in scenarios
 - Users can specify any scenario ID (e.g., `'premium'`, `'custom-default'`, `'base'`)
@@ -55,6 +58,7 @@ const scenarist = createScenarist({
 
 **Identified issue:**
 The refactor-scan agent identified this as a duplication/configuration opportunity:
+
 > "Users must always have a 'default' scenario anyway. Why make them specify `defaultScenarioId: 'default'` every time?"
 
 ## Problem
@@ -64,6 +68,7 @@ The refactor-scan agent identified this as a duplication/configuration opportuni
 **Trade-off analysis:**
 
 **Option A: Convention (Require 'default' key)**
+
 - Pro: Less configuration (no `defaultScenarioId` parameter needed)
 - Pro: Consistent naming across all projects ("default means default")
 - Pro: Simpler API surface (one less parameter)
@@ -71,6 +76,7 @@ The refactor-scan agent identified this as a duplication/configuration opportuni
 - Con: Migration burden (rename existing default scenarios to 'default')
 
 **Option B: Configuration (Keep `defaultScenarioId`)**
+
 - Pro: Flexible (any scenario can be default)
 - Pro: Semantic naming (e.g., `'baseline'`, `'standard'`, `'empty'`)
 - Pro: No migration needed (current behavior)
@@ -103,6 +109,7 @@ TypeScript can't validate `defaultScenarioId` exists because it's currently `str
 **We propose DEFERRING enforcement of 'default' key convention to a future major version.**
 
 Instead, we will:
+
 1. **Make `defaultScenarioId` type-safe NOW** (change from `string` to `keyof T & string`)
 2. **Recommend 'default' as best practice** (document in READMEs, examples)
 3. **Consider 'default' convention for v3.0** (breaking change)
@@ -111,14 +118,18 @@ Instead, we will:
 
 ```typescript
 // Before:
-export type ScenaristConfigInput<T extends ScenaristScenarios = ScenaristScenarios> = {
+export type ScenaristConfigInput<
+  T extends ScenaristScenarios = ScenaristScenarios,
+> = {
   readonly scenarios: T;
   readonly defaultScenarioId: string; // ❌ Not type-safe
   // ...
 };
 
 // After:
-export type ScenaristConfigInput<T extends ScenaristScenarios = ScenaristScenarios> = {
+export type ScenaristConfigInput<
+  T extends ScenaristScenarios = ScenaristScenarios,
+> = {
   readonly scenarios: T;
   readonly defaultScenarioId: ScenarioIds<T>; // ✅ Type-safe! (keyof T & string)
   // ...
@@ -126,6 +137,7 @@ export type ScenaristConfigInput<T extends ScenaristScenarios = ScenaristScenari
 ```
 
 **Result:**
+
 ```typescript
 const scenarios = {
   baseline: { id: 'baseline', ... },
@@ -228,6 +240,7 @@ We would reconsider 'default' key enforcement if:
 ### Alternative 1: Enforce 'default' Now (Convention Over Configuration)
 
 **Pattern:**
+
 ```typescript
 // Type enforces 'default' key exists
 export type ScenariosWithDefault = {
@@ -242,11 +255,13 @@ export type ScenaristConfigInput<T extends ScenariosWithDefault> = {
 ```
 
 **Pros:**
+
 - ✅ Less configuration (no `defaultScenarioId`)
 - ✅ Consistent across all projects
 - ✅ Clear convention ("default is default")
 
 **Cons:**
+
 - ❌ Breaking change (must rename scenarios to 'default')
 - ❌ Migration burden on top of v2.0 changes
 - ❌ Less flexible (can't use semantic names)
@@ -257,6 +272,7 @@ export type ScenaristConfigInput<T extends ScenariosWithDefault> = {
 ### Alternative 2: Make `defaultScenarioId` Optional with 'default' Fallback
 
 **Pattern:**
+
 ```typescript
 export type ScenaristConfigInput<T extends ScenaristScenarios> = {
   readonly scenarios: T;
@@ -264,15 +280,17 @@ export type ScenaristConfigInput<T extends ScenaristScenarios> = {
 };
 
 // Implementation defaults to 'default' if not specified
-const defaultId = options.defaultScenarioId ?? ('default' as ScenarioIds<T>);
+const defaultId = options.defaultScenarioId ?? ("default" as ScenarioIds<T>);
 ```
 
 **Pros:**
+
 - ✅ Backward compatible
 - ✅ Convention encouraged (omit parameter → uses 'default')
 - ✅ Flexibility preserved (can override)
 
 **Cons:**
+
 - ❌ Type safety unclear (what if 'default' doesn't exist?)
 - ❌ Runtime error possible if 'default' not in scenarios
 - ❌ Requires type assertion (`as ScenarioIds<T>`) which breaks type safety
@@ -282,6 +300,7 @@ const defaultId = options.defaultScenarioId ?? ('default' as ScenarioIds<T>);
 ### Alternative 3: First Key Is Default (Implicit Convention)
 
 **Pattern:**
+
 ```typescript
 // First key in scenarios object is implicitly the default
 const scenarios = {
@@ -293,10 +312,12 @@ const scenarios = {
 ```
 
 **Pros:**
+
 - ✅ No configuration needed
 - ✅ Flexible naming
 
 **Cons:**
+
 - ❌ Non-obvious convention (requires documentation)
 - ❌ Object key order dependency (fragile)
 - ❌ Can't easily change default (must reorder keys)
@@ -307,6 +328,7 @@ const scenarios = {
 ### Alternative 4: Required 'default' + Alias Support
 
 **Pattern:**
+
 ```typescript
 const scenarios = {
   default: { id: 'default', ... },  // ← Required
@@ -316,10 +338,12 @@ const scenarios = {
 ```
 
 **Pros:**
+
 - ✅ Enforces 'default' convention
 - ✅ Allows semantic aliases
 
 **Cons:**
+
 - ❌ Confusing (two keys for same scenario)
 - ❌ Duplication in scenarios object
 - ❌ Hard to implement (scenario ID uniqueness validation?)
@@ -333,9 +357,10 @@ const scenarios = {
 **Positive:**
 
 ✅ **Compile-time validation** - Can't typo `defaultScenarioId`:
-   ```typescript
-   defaultScenarioId: 'defualt' // ❌ Compile error
-   ```
+
+```typescript
+defaultScenarioId: "defualt"; // ❌ Compile error
+```
 
 ✅ **Autocomplete** - IDE suggests valid scenario IDs
 
@@ -348,12 +373,14 @@ const scenarios = {
 **Negative:**
 
 ❌ **Type complexity** - `ScenarioIds<T>` instead of `string`
-   - Minor complexity increase, worth it for safety
+
+- Minor complexity increase, worth it for safety
 
 **Neutral:**
 
 ⚖️ **Still requires configuration** - Must specify `defaultScenarioId`
-   - Not worse than current state, just type-safe now
+
+- Not worse than current state, just type-safe now
 
 ### Future Option (v3.0): 'default' Enforcement
 
@@ -381,7 +408,9 @@ const scenarios = {
 
 ```typescript
 // packages/core/src/types/config.ts
-export type ScenaristConfigInput<T extends ScenaristScenarios = ScenaristScenarios> = {
+export type ScenaristConfigInput<
+  T extends ScenaristScenarios = ScenaristScenarios,
+> = {
   readonly scenarios: T;
   readonly defaultScenarioId: ScenarioIds<T>; // Changed from string
   // ...
@@ -405,7 +434,7 @@ export type CreateScenaristOptions<T extends ScenaristScenarios> = {
 // Verify defaultScenarioId exists in scenarios
 const scenarist = createScenarist({
   scenarios,
-  defaultScenarioId: 'default', // ✅ Type-checked against scenarios keys
+  defaultScenarioId: "default", // ✅ Type-checked against scenarios keys
 });
 ```
 
@@ -422,13 +451,13 @@ The `defaultScenarioId` parameter specifies which scenario to use as the fallbac
 
 \`\`\`typescript
 const scenarios = {
-  default: { id: 'default', name: 'Default Scenario', ... }, // ← Recommended
-  premium: { id: 'premium', name: 'Premium User', ... },
+default: { id: 'default', name: 'Default Scenario', ... }, // ← Recommended
+premium: { id: 'premium', name: 'Premium User', ... },
 } as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
-  scenarios,
-  defaultScenarioId: 'default', // ✅ Conventional and clear
+scenarios,
+defaultScenarioId: 'default', // ✅ Conventional and clear
 });
 \`\`\`
 
@@ -439,6 +468,7 @@ a scenario ID that doesn't exist in your scenarios object.
 ### Future Implementation (v3.0) - If We Decide to Enforce
 
 **Only if:**
+
 1. Feedback shows 'default' convention is universal
 2. Users ask for less configuration
 3. We're already doing other breaking changes for v3.0

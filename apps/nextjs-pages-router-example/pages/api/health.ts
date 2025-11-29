@@ -5,15 +5,15 @@
  * Used by production tests to verify app is running.
  */
 
-import type { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiRequest, NextApiResponse } from "next";
 
 type HealthResponse = {
-  readonly status: 'ok';
+  readonly status: "ok";
 };
 
 export default function handler(
   _req: NextApiRequest,
-  res: NextApiResponse<HealthResponse>
+  res: NextApiResponse<HealthResponse>,
 ) {
-  return res.status(200).json({ status: 'ok' });
+  return res.status(200).json({ status: "ok" });
 }

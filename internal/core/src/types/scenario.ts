@@ -1,4 +1,4 @@
-import type { HttpMethod, ScenaristScenario } from '../schemas/index.js';
+import type { HttpMethod, ScenaristScenario } from "../schemas/index.js";
 
 /**
  * HTTP request data for response selection.
@@ -38,7 +38,7 @@ export type HttpRequestContext = {
  * ```
  */
 export type ScenaristMockWithParams = {
-  readonly mock: import('../schemas/index.js').ScenaristMock;
+  readonly mock: import("../schemas/index.js").ScenaristMock;
   readonly params?: Readonly<Record<string, string | ReadonlyArray<string>>>;
 };
 

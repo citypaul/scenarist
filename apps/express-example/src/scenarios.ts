@@ -1,26 +1,29 @@
-import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/express-adapter';
-import { buildProducts } from './data/products.js';
+import type {
+  ScenaristScenario,
+  ScenaristScenarios,
+} from "@scenarist/express-adapter";
+import { buildProducts } from "./data/products.js";
 
 /**
  * Default scenario - always available as fallback
  * Contains basic successful responses for all external APIs
  */
 export const defaultScenario: ScenaristScenario = {
-  id: 'default',
-  name: 'Default Scenario',
-  description: 'Default successful responses for all external APIs',
+  id: "default",
+  name: "Default Scenario",
+  description: "Default successful responses for all external APIs",
   mocks: [
     // GitHub API - Get user profile
     {
-      method: 'GET',
-      url: 'https://api.github.com/users/:username',
+      method: "GET",
+      url: "https://api.github.com/users/:username",
       response: {
         status: 200,
         body: {
-          login: 'octocat',
+          login: "octocat",
           id: 1,
-          name: 'The Octocat',
-          bio: 'GitHub mascot',
+          name: "The Octocat",
+          bio: "GitHub mascot",
           public_repos: 8,
           followers: 1000,
         },
@@ -28,40 +31,40 @@ export const defaultScenario: ScenaristScenario = {
     },
     // Weather API - Get current weather
     {
-      method: 'GET',
-      url: 'https://api.weather.com/v1/weather/:city',
+      method: "GET",
+      url: "https://api.weather.com/v1/weather/:city",
       response: {
         status: 200,
         body: {
-          city: 'London',
+          city: "London",
           temperature: 18,
-          conditions: 'Cloudy',
+          conditions: "Cloudy",
           humidity: 65,
         },
       },
     },
     // Stripe API - Create payment
     {
-      method: 'POST',
-      url: 'https://api.stripe.com/v1/charges',
+      method: "POST",
+      url: "https://api.stripe.com/v1/charges",
       response: {
         status: 200,
         body: {
-          id: 'ch_default123',
-          status: 'succeeded',
+          id: "ch_default123",
+          status: "succeeded",
           amount: 1000,
-          currency: 'usd',
+          currency: "usd",
         },
       },
     },
     // Products API - Standard pricing (fallback)
     {
-      method: 'GET',
-      url: 'http://localhost:3001/products',
+      method: "GET",
+      url: "http://localhost:3001/products",
       response: {
         status: 200,
         body: {
-          products: buildProducts('standard'),
+          products: buildProducts("standard"),
         },
       },
     },
@@ -72,48 +75,48 @@ export const defaultScenario: ScenaristScenario = {
  * Scenario: All APIs return successful responses
  */
 export const successScenario: ScenaristScenario = {
-  id: 'success',
-  name: 'Success Scenario',
-  description: 'All external API calls succeed with valid data',
+  id: "success",
+  name: "Success Scenario",
+  description: "All external API calls succeed with valid data",
   mocks: [
     {
-      method: 'GET',
-      url: 'https://api.github.com/users/:username',
+      method: "GET",
+      url: "https://api.github.com/users/:username",
       response: {
         status: 200,
         body: {
-          login: 'testuser',
+          login: "testuser",
           id: 123,
-          name: 'Test User',
-          bio: 'Test bio',
+          name: "Test User",
+          bio: "Test bio",
           public_repos: 42,
           followers: 1337,
         },
       },
     },
     {
-      method: 'GET',
-      url: 'https://api.weather.com/v1/weather/:city',
+      method: "GET",
+      url: "https://api.weather.com/v1/weather/:city",
       response: {
         status: 200,
         body: {
-          city: 'San Francisco',
+          city: "San Francisco",
           temperature: 22,
-          conditions: 'Sunny',
+          conditions: "Sunny",
           humidity: 45,
         },
       },
     },
     {
-      method: 'POST',
-      url: 'https://api.stripe.com/v1/charges',
+      method: "POST",
+      url: "https://api.stripe.com/v1/charges",
       response: {
         status: 200,
         body: {
-          id: 'ch_success123',
-          status: 'succeeded',
+          id: "ch_success123",
+          status: "succeeded",
           amount: 5000,
-          currency: 'usd',
+          currency: "usd",
         },
       },
     },
@@ -124,18 +127,18 @@ export const successScenario: ScenaristScenario = {
  * Scenario: GitHub API returns 404 (user not found)
  */
 export const githubNotFoundScenario: ScenaristScenario = {
-  id: 'github-not-found',
-  name: 'GitHub User Not Found',
-  description: 'GitHub API returns 404 for user lookup',
+  id: "github-not-found",
+  name: "GitHub User Not Found",
+  description: "GitHub API returns 404 for user lookup",
   mocks: [
     {
-      method: 'GET',
-      url: 'https://api.github.com/users/:username',
+      method: "GET",
+      url: "https://api.github.com/users/:username",
       response: {
         status: 404,
         body: {
-          message: 'Not Found',
-          documentation_url: 'https://docs.github.com',
+          message: "Not Found",
+          documentation_url: "https://docs.github.com",
         },
       },
     },
@@ -146,18 +149,18 @@ export const githubNotFoundScenario: ScenaristScenario = {
  * Scenario: Weather API returns server error
  */
 export const weatherErrorScenario: ScenaristScenario = {
-  id: 'weather-error',
-  name: 'Weather API Error',
-  description: 'Weather API returns 500 server error',
+  id: "weather-error",
+  name: "Weather API Error",
+  description: "Weather API returns 500 server error",
   mocks: [
     {
-      method: 'GET',
-      url: 'https://api.weather.com/v1/weather/:city',
+      method: "GET",
+      url: "https://api.weather.com/v1/weather/:city",
       response: {
         status: 500,
         body: {
-          error: 'Internal Server Error',
-          message: 'Weather service temporarily unavailable',
+          error: "Internal Server Error",
+          message: "Weather service temporarily unavailable",
         },
       },
     },
@@ -168,20 +171,20 @@ export const weatherErrorScenario: ScenaristScenario = {
  * Scenario: Stripe payment fails (insufficient funds)
  */
 export const stripeFailureScenario: ScenaristScenario = {
-  id: 'stripe-failure',
-  name: 'Stripe Payment Failure',
-  description: 'Stripe payment fails due to insufficient funds',
+  id: "stripe-failure",
+  name: "Stripe Payment Failure",
+  description: "Stripe payment fails due to insufficient funds",
   mocks: [
     {
-      method: 'POST',
-      url: 'https://api.stripe.com/v1/charges',
+      method: "POST",
+      url: "https://api.stripe.com/v1/charges",
       response: {
         status: 402,
         body: {
           error: {
-            type: 'card_error',
-            code: 'insufficient_funds',
-            message: 'Your card has insufficient funds.',
+            type: "card_error",
+            code: "insufficient_funds",
+            message: "Your card has insufficient funds.",
           },
         },
       },
@@ -193,20 +196,20 @@ export const stripeFailureScenario: ScenaristScenario = {
  * Scenario: APIs return with delays (slow network)
  */
 export const slowNetworkScenario: ScenaristScenario = {
-  id: 'slow-network',
-  name: 'Slow Network',
-  description: 'All APIs respond slowly (1-2 second delays)',
+  id: "slow-network",
+  name: "Slow Network",
+  description: "All APIs respond slowly (1-2 second delays)",
   mocks: [
     {
-      method: 'GET',
-      url: 'https://api.github.com/users/:username',
+      method: "GET",
+      url: "https://api.github.com/users/:username",
       response: {
         status: 200,
         body: {
-          login: 'slowuser',
+          login: "slowuser",
           id: 999,
-          name: 'Slow User',
-          bio: 'Slow network test',
+          name: "Slow User",
+          bio: "Slow network test",
           public_repos: 5,
           followers: 10,
         },
@@ -214,29 +217,29 @@ export const slowNetworkScenario: ScenaristScenario = {
       },
     },
     {
-      method: 'GET',
-      url: 'https://api.weather.com/v1/weather/:city',
+      method: "GET",
+      url: "https://api.weather.com/v1/weather/:city",
       response: {
         status: 200,
         body: {
-          city: 'Tokyo',
+          city: "Tokyo",
           temperature: 25,
-          conditions: 'Clear',
+          conditions: "Clear",
           humidity: 55,
         },
         delay: 2000,
       },
     },
     {
-      method: 'POST',
-      url: 'https://api.stripe.com/v1/charges',
+      method: "POST",
+      url: "https://api.stripe.com/v1/charges",
       response: {
         status: 200,
         body: {
-          id: 'ch_slow123',
-          status: 'succeeded',
+          id: "ch_slow123",
+          status: "succeeded",
           amount: 3000,
-          currency: 'usd',
+          currency: "usd",
         },
         delay: 1000,
       },
@@ -248,46 +251,46 @@ export const slowNetworkScenario: ScenaristScenario = {
  * Scenario: Mixed results (some succeed, some fail)
  */
 export const mixedResultsScenario: ScenaristScenario = {
-  id: 'mixed-results',
-  name: 'Mixed Results',
-  description: 'Some APIs succeed, others fail',
+  id: "mixed-results",
+  name: "Mixed Results",
+  description: "Some APIs succeed, others fail",
   mocks: [
     {
-      method: 'GET',
-      url: 'https://api.github.com/users/:username',
+      method: "GET",
+      url: "https://api.github.com/users/:username",
       response: {
         status: 200,
         body: {
-          login: 'mixeduser',
+          login: "mixeduser",
           id: 456,
-          name: 'Mixed User',
-          bio: 'Test mixed scenario',
+          name: "Mixed User",
+          bio: "Test mixed scenario",
           public_repos: 15,
           followers: 100,
         },
       },
     },
     {
-      method: 'GET',
-      url: 'https://api.weather.com/v1/weather/:city',
+      method: "GET",
+      url: "https://api.weather.com/v1/weather/:city",
       response: {
         status: 503,
         body: {
-          error: 'Service Unavailable',
-          message: 'Weather service is temporarily down',
+          error: "Service Unavailable",
+          message: "Weather service is temporarily down",
         },
       },
     },
     {
-      method: 'POST',
-      url: 'https://api.stripe.com/v1/charges',
+      method: "POST",
+      url: "https://api.stripe.com/v1/charges",
       response: {
         status: 200,
         body: {
-          id: 'ch_mixed123',
-          status: 'succeeded',
+          id: "ch_mixed123",
+          status: "succeeded",
           amount: 2500,
-          currency: 'usd',
+          currency: "usd",
         },
       },
     },
@@ -299,67 +302,68 @@ export const mixedResultsScenario: ScenaristScenario = {
  * Demonstrates matching on request body, headers, and query parameters
  */
 export const contentMatchingScenario: ScenaristScenario = {
-  id: 'content-matching',
-  name: 'Content Matching',
-  description: 'Different responses based on request content (body, headers, query)',
+  id: "content-matching",
+  name: "Content Matching",
+  description:
+    "Different responses based on request content (body, headers, query)",
   mocks: [
     // Stripe: Premium items get discounted pricing (body match)
     {
-      method: 'POST',
-      url: 'https://api.stripe.com/v1/charges',
-      match: { body: { itemType: 'premium' } },
+      method: "POST",
+      url: "https://api.stripe.com/v1/charges",
+      match: { body: { itemType: "premium" } },
       response: {
         status: 200,
         body: {
-          id: 'ch_premium123',
-          status: 'succeeded',
+          id: "ch_premium123",
+          status: "succeeded",
           amount: 8000, // Discounted from 10000
-          currency: 'usd',
-          discount: 'premium_item_discount',
+          currency: "usd",
+          discount: "premium_item_discount",
         },
       },
     },
     // Stripe: Standard items get regular pricing (body match)
     {
-      method: 'POST',
-      url: 'https://api.stripe.com/v1/charges',
-      match: { body: { itemType: 'standard' } },
+      method: "POST",
+      url: "https://api.stripe.com/v1/charges",
+      match: { body: { itemType: "standard" } },
       response: {
         status: 200,
         body: {
-          id: 'ch_standard123',
-          status: 'succeeded',
+          id: "ch_standard123",
+          status: "succeeded",
           amount: 5000,
-          currency: 'usd',
+          currency: "usd",
         },
       },
     },
     // Stripe: Fallback for other payment types
     {
-      method: 'POST',
-      url: 'https://api.stripe.com/v1/charges',
+      method: "POST",
+      url: "https://api.stripe.com/v1/charges",
       response: {
         status: 200,
         body: {
-          id: 'ch_fallback123',
-          status: 'succeeded',
+          id: "ch_fallback123",
+          status: "succeeded",
           amount: 1000,
-          currency: 'usd',
+          currency: "usd",
         },
       },
     },
     // GitHub: Premium users get enhanced data (header match)
     {
-      method: 'GET',
-      url: 'https://api.github.com/users/:username',
-      match: { headers: { 'x-user-tier': 'premium' } },
+      method: "GET",
+      url: "https://api.github.com/users/:username",
+      match: { headers: { "x-user-tier": "premium" } },
       response: {
         status: 200,
         body: {
-          login: 'premium-user',
+          login: "premium-user",
           id: 999,
-          name: 'Premium User',
-          bio: 'Premium tier access',
+          name: "Premium User",
+          bio: "Premium tier access",
           public_repos: 100,
           followers: 5000,
           private_repos: 50, // Extra field for premium users
@@ -369,16 +373,16 @@ export const contentMatchingScenario: ScenaristScenario = {
     },
     // GitHub: Standard users get basic data (header match)
     {
-      method: 'GET',
-      url: 'https://api.github.com/users/:username',
-      match: { headers: { 'x-user-tier': 'standard' } },
+      method: "GET",
+      url: "https://api.github.com/users/:username",
+      match: { headers: { "x-user-tier": "standard" } },
       response: {
         status: 200,
         body: {
-          login: 'standard-user',
+          login: "standard-user",
           id: 100,
-          name: 'Standard User',
-          bio: 'Standard tier access',
+          name: "Standard User",
+          bio: "Standard tier access",
           public_repos: 20,
           followers: 100,
         },
@@ -386,15 +390,15 @@ export const contentMatchingScenario: ScenaristScenario = {
     },
     // GitHub: Fallback for users without tier header
     {
-      method: 'GET',
-      url: 'https://api.github.com/users/:username',
+      method: "GET",
+      url: "https://api.github.com/users/:username",
       response: {
         status: 200,
         body: {
-          login: 'guest-user',
+          login: "guest-user",
           id: 1,
-          name: 'Guest User',
-          bio: 'No tier specified',
+          name: "Guest User",
+          bio: "No tier specified",
           public_repos: 5,
           followers: 10,
         },
@@ -402,15 +406,15 @@ export const contentMatchingScenario: ScenaristScenario = {
     },
     // Weather: Filtered results (query param match)
     {
-      method: 'GET',
-      url: 'https://api.weather.com/v1/weather/:city',
-      match: { query: { units: 'metric', detailed: 'true' } },
+      method: "GET",
+      url: "https://api.weather.com/v1/weather/:city",
+      match: { query: { units: "metric", detailed: "true" } },
       response: {
         status: 200,
         body: {
-          city: 'Paris',
+          city: "Paris",
           temperature: 20,
-          conditions: 'Partly Cloudy',
+          conditions: "Partly Cloudy",
           humidity: 60,
           windSpeed: 15, // Extra detail when detailed=true
           pressure: 1013,
@@ -420,29 +424,29 @@ export const contentMatchingScenario: ScenaristScenario = {
     },
     // Weather: Standard results (query param match for units only)
     {
-      method: 'GET',
-      url: 'https://api.weather.com/v1/weather/:city',
-      match: { query: { units: 'imperial' } },
+      method: "GET",
+      url: "https://api.weather.com/v1/weather/:city",
+      match: { query: { units: "imperial" } },
       response: {
         status: 200,
         body: {
-          city: 'New York',
+          city: "New York",
           temperature: 68,
-          conditions: 'Sunny',
+          conditions: "Sunny",
           humidity: 50,
         },
       },
     },
     // Weather: Fallback
     {
-      method: 'GET',
-      url: 'https://api.weather.com/v1/weather/:city',
+      method: "GET",
+      url: "https://api.weather.com/v1/weather/:city",
       response: {
         status: 200,
         body: {
-          city: 'Default City',
+          city: "Default City",
           temperature: 15,
-          conditions: 'Clear',
+          conditions: "Clear",
           humidity: 55,
         },
       },
@@ -455,20 +459,29 @@ export const contentMatchingScenario: ScenaristScenario = {
  * Demonstrates sequence progression with repeat: 'last'
  */
 export const githubPollingScenario: ScenaristScenario = {
-  id: 'github-polling',
-  name: 'GitHub Job Polling Sequence',
-  description: 'Simulates async GitHub job polling with state progression',
+  id: "github-polling",
+  name: "GitHub Job Polling Sequence",
+  description: "Simulates async GitHub job polling with state progression",
   mocks: [
     {
-      method: 'GET',
-      url: 'https://api.github.com/users/:username',
+      method: "GET",
+      url: "https://api.github.com/users/:username",
       sequence: {
         responses: [
-          { status: 200, body: { status: 'pending', progress: 0, login: 'user1' } },
-          { status: 200, body: { status: 'processing', progress: 50, login: 'user2' } },
-          { status: 200, body: { status: 'complete', progress: 100, login: 'user3' } },
+          {
+            status: 200,
+            body: { status: "pending", progress: 0, login: "user1" },
+          },
+          {
+            status: 200,
+            body: { status: "processing", progress: 50, login: "user2" },
+          },
+          {
+            status: 200,
+            body: { status: "complete", progress: 100, login: "user3" },
+          },
         ],
-        repeat: 'last',
+        repeat: "last",
       },
     },
   ],
@@ -479,20 +492,29 @@ export const githubPollingScenario: ScenaristScenario = {
  * Demonstrates sequence cycling with repeat: 'cycle'
  */
 export const weatherCycleScenario: ScenaristScenario = {
-  id: 'weather-cycle',
-  name: 'Weather Cycle Sequence',
-  description: 'Cycles through weather states infinitely',
+  id: "weather-cycle",
+  name: "Weather Cycle Sequence",
+  description: "Cycles through weather states infinitely",
   mocks: [
     {
-      method: 'GET',
-      url: 'https://api.weather.com/v1/weather/:city',
+      method: "GET",
+      url: "https://api.weather.com/v1/weather/:city",
       sequence: {
         responses: [
-          { status: 200, body: { city: 'London', conditions: 'Sunny', temp: 20 } },
-          { status: 200, body: { city: 'London', conditions: 'Cloudy', temp: 18 } },
-          { status: 200, body: { city: 'London', conditions: 'Rainy', temp: 15 } },
+          {
+            status: 200,
+            body: { city: "London", conditions: "Sunny", temp: 20 },
+          },
+          {
+            status: 200,
+            body: { city: "London", conditions: "Cloudy", temp: 18 },
+          },
+          {
+            status: 200,
+            body: { city: "London", conditions: "Rainy", temp: 15 },
+          },
         ],
-        repeat: 'cycle',
+        repeat: "cycle",
       },
     },
   ],
@@ -503,30 +525,30 @@ export const weatherCycleScenario: ScenaristScenario = {
  * Demonstrates sequence exhaustion with repeat: 'none' and fallback mock
  */
 export const paymentLimitedScenario: ScenaristScenario = {
-  id: 'payment-limited',
-  name: 'Limited Payment Attempts',
-  description: 'Allows 3 attempts then falls back to error',
+  id: "payment-limited",
+  name: "Limited Payment Attempts",
+  description: "Allows 3 attempts then falls back to error",
   mocks: [
     // Fallback mock - comes first but has lower priority
     {
-      method: 'POST',
-      url: 'https://api.stripe.com/v1/charges',
+      method: "POST",
+      url: "https://api.stripe.com/v1/charges",
       response: {
         status: 429,
-        body: { error: { message: 'Rate limit exceeded' } },
+        body: { error: { message: "Rate limit exceeded" } },
       },
     },
     // Sequence mock - last fallback wins (will be selected until exhausted)
     {
-      method: 'POST',
-      url: 'https://api.stripe.com/v1/charges',
+      method: "POST",
+      url: "https://api.stripe.com/v1/charges",
       sequence: {
         responses: [
-          { status: 200, body: { id: 'ch_1', status: 'pending' } },
-          { status: 200, body: { id: 'ch_2', status: 'pending' } },
-          { status: 200, body: { id: 'ch_3', status: 'succeeded' } },
+          { status: 200, body: { id: "ch_1", status: "pending" } },
+          { status: 200, body: { id: "ch_2", status: "pending" } },
+          { status: 200, body: { id: "ch_3", status: "succeeded" } },
         ],
-        repeat: 'none',
+        repeat: "none",
       },
     },
   ],
@@ -544,36 +566,36 @@ export const paymentLimitedScenario: ScenaristScenario = {
  * MSW intercepts in test/dev, json-server in production.
  */
 export const shoppingCartScenario: ScenaristScenario = {
-  id: 'shoppingCart',
-  name: 'Shopping Cart (Stateful)',
-  description: 'Stateful shopping cart with capture and injection',
+  id: "shoppingCart",
+  name: "Shopping Cart (Stateful)",
+  description: "Stateful shopping cart with capture and injection",
   mocks: [
     // Get cart - injects captured items (null initially, route handles with || [])
     {
-      method: 'GET',
-      url: 'http://localhost:3001/cart',
+      method: "GET",
+      url: "http://localhost:3001/cart",
       response: {
         status: 200,
         body: {
-          items: '{{state.cartItems}}',  // Inject items array (null initially)
-          count: '{{state.cartItems.length}}',  // Compute from state items
-          total: 0,  // Bruno API tests expect this field
+          items: "{{state.cartItems}}", // Inject items array (null initially)
+          count: "{{state.cartItems.length}}", // Compute from state items
+          total: 0, // Bruno API tests expect this field
         },
       },
     },
     // PATCH cart - captures full items array
     {
-      method: 'PATCH',
-      url: 'http://localhost:3001/cart',
+      method: "PATCH",
+      url: "http://localhost:3001/cart",
       captureState: {
-        'cartItems': 'body.items',  // Capture full array [1,2,3]
+        cartItems: "body.items", // Capture full array [1,2,3]
       },
       response: {
         status: 200,
         body: {
-          items: '{{body.items}}',  // Echo back what was sent
-          count: '{{body.items.length}}',  // Compute from request body (always defined)
-          message: 'Item added to cart',  // Bruno API tests expect this field
+          items: "{{body.items}}", // Echo back what was sent
+          count: "{{body.items.length}}", // Compute from request body (always defined)
+          message: "Item added to cart", // Bruno API tests expect this field
         },
       },
     },
@@ -590,59 +612,59 @@ export const shoppingCartScenario: ScenaristScenario = {
  * 3. POST /form/submit - Injects all captured state in confirmation
  */
 export const multiStepFormScenario: ScenaristScenario = {
-  id: 'multiStepForm',
-  name: 'Multi-Step Form (Stateful)',
-  description: 'Multi-step form with state persistence',
+  id: "multiStepForm",
+  name: "Multi-Step Form (Stateful)",
+  description: "Multi-step form with state persistence",
   mocks: [
     // Step 1: User info
     {
-      method: 'POST',
-      url: 'https://api.forms.com/form/step1',
+      method: "POST",
+      url: "https://api.forms.com/form/step1",
       captureState: {
-        'userName': 'body.name',
-        'userEmail': 'body.email',
+        userName: "body.name",
+        userEmail: "body.email",
       },
       response: {
         status: 200,
         body: {
           success: true,
-          message: 'Step 1 completed',
-          nextStep: '/form/step2',
+          message: "Step 1 completed",
+          nextStep: "/form/step2",
         },
       },
     },
     // Step 2: Address
     {
-      method: 'POST',
-      url: 'https://api.forms.com/form/step2',
+      method: "POST",
+      url: "https://api.forms.com/form/step2",
       captureState: {
-        'userAddress': 'body.address',
-        'userCity': 'body.city',
+        userAddress: "body.address",
+        userCity: "body.city",
       },
       response: {
         status: 200,
         body: {
           success: true,
-          message: 'Step 2 completed for {{state.userName}}',
-          nextStep: '/form/submit',
+          message: "Step 2 completed for {{state.userName}}",
+          nextStep: "/form/submit",
         },
       },
     },
     // Step 3: Submit - inject all captured state
     {
-      method: 'POST',
-      url: 'https://api.forms.com/form/submit',
+      method: "POST",
+      url: "https://api.forms.com/form/submit",
       response: {
         status: 200,
         body: {
           success: true,
-          message: 'Form submitted successfully',
+          message: "Form submitted successfully",
           confirmation: {
-            name: '{{state.userName}}',
-            email: '{{state.userEmail}}',
-            address: '{{state.userAddress}}',
-            city: '{{state.userCity}}',
-            confirmationId: 'CONF-12345',
+            name: "{{state.userName}}",
+            email: "{{state.userEmail}}",
+            address: "{{state.userAddress}}",
+            city: "{{state.userCity}}",
+            confirmationId: "CONF-12345",
           },
         },
       },
@@ -655,20 +677,20 @@ export const multiStepFormScenario: ScenaristScenario = {
  * Used in tests to verify test ID isolation with sequences
  */
 export const sharedPollingScenario: ScenaristScenario = {
-  id: 'shared-polling',
-  name: 'Shared Polling Sequence',
-  description: 'Multiple tests can use same scenario with independent state',
+  id: "shared-polling",
+  name: "Shared Polling Sequence",
+  description: "Multiple tests can use same scenario with independent state",
   mocks: [
     {
-      method: 'GET',
-      url: 'https://api.github.com/users/:username',
+      method: "GET",
+      url: "https://api.github.com/users/:username",
       sequence: {
         responses: [
           { status: 200, body: { step: 1 } },
           { status: 200, body: { step: 2 } },
           { status: 200, body: { step: 3 } },
         ],
-        repeat: 'last',
+        repeat: "last",
       },
     },
   ],
@@ -679,15 +701,15 @@ export const sharedPollingScenario: ScenaristScenario = {
  * Used in tests to verify state is not reset when scenario switch fails
  */
 export const tempCaptureScenario: ScenaristScenario = {
-  id: 'temp-capture-scenario',
-  name: 'Temp Capture Scenario',
-  description: 'Temporary scenario for testing failed switch',
+  id: "temp-capture-scenario",
+  name: "Temp Capture Scenario",
+  description: "Temporary scenario for testing failed switch",
   mocks: [
     {
-      method: 'POST',
-      url: 'https://api.example.com/temp-data',
+      method: "POST",
+      url: "https://api.example.com/temp-data",
       captureState: {
-        tempValue: 'body.value',
+        tempValue: "body.value",
       },
       response: {
         status: 200,
@@ -695,12 +717,12 @@ export const tempCaptureScenario: ScenaristScenario = {
       },
     },
     {
-      method: 'GET',
-      url: 'https://api.example.com/temp-data',
+      method: "GET",
+      url: "https://api.example.com/temp-data",
       response: {
         status: 200,
         body: {
-          value: '{{state.tempValue}}',
+          value: "{{state.tempValue}}",
         },
       },
     },
@@ -720,27 +742,27 @@ export const tempCaptureScenario: ScenaristScenario = {
  * Server-side: API route extracts campaign from query param, adds as header to fetch
  */
 export const campaignRegexScenario: ScenaristScenario = {
-  id: 'campaignRegex',
-  name: 'Campaign Regex Matching',
-  description: 'Premium user data for premium/vip campaigns',
+  id: "campaignRegex",
+  name: "Campaign Regex Matching",
+  description: "Premium user data for premium/vip campaigns",
   mocks: [
     {
-      method: 'GET',
-      url: 'https://api.github.com/users/:username',
+      method: "GET",
+      url: "https://api.github.com/users/:username",
       match: {
         headers: {
-          'x-campaign': {
-            regex: { source: 'premium|vip', flags: 'i' },
+          "x-campaign": {
+            regex: { source: "premium|vip", flags: "i" },
           },
         },
       },
       response: {
         status: 200,
         body: {
-          login: 'premium-campaign-user',
+          login: "premium-campaign-user",
           id: 9999,
-          name: 'Premium Campaign User',
-          bio: 'VIP access via marketing campaign',
+          name: "Premium Campaign User",
+          bio: "VIP access via marketing campaign",
           public_repos: 200,
           followers: 10000,
           private_repos: 100,
@@ -763,48 +785,48 @@ export const campaignRegexScenario: ScenaristScenario = {
  * Use case: Flexible request matching without regex complexity
  */
 export const stringMatchingScenario: ScenaristScenario = {
-  id: 'stringMatching',
-  name: 'String Matching Strategies',
-  description: 'Tests contains, startsWith, endsWith, and equals matching',
+  id: "stringMatching",
+  name: "String Matching Strategies",
+  description: "Tests contains, startsWith, endsWith, and equals matching",
   mocks: [
     // Test 1: Contains strategy - campaign header containing 'premium'
     {
-      method: 'GET',
-      url: 'https://api.github.com/users/:username',
+      method: "GET",
+      url: "https://api.github.com/users/:username",
       match: {
         headers: {
-          'x-campaign': { contains: 'premium' },
+          "x-campaign": { contains: "premium" },
         },
       },
       response: {
         status: 200,
         body: {
-          login: 'premium-user',
+          login: "premium-user",
           id: 888,
-          name: 'Premium User',
-          bio: 'Premium campaign access',
+          name: "Premium User",
+          bio: "Premium campaign access",
           public_repos: 150,
           followers: 8000,
-          matchedBy: 'contains',
+          matchedBy: "contains",
         },
       },
     },
 
     // Test 2: StartsWith strategy - API key starting with 'sk_'
     {
-      method: 'GET',
-      url: 'https://api.stripe.com/v1/api-keys',
+      method: "GET",
+      url: "https://api.stripe.com/v1/api-keys",
       match: {
         headers: {
-          'x-api-key': { startsWith: 'sk_' },
+          "x-api-key": { startsWith: "sk_" },
         },
       },
       response: {
         status: 200,
         body: {
           valid: true,
-          keyType: 'secret',
-          matchedBy: 'startsWith',
+          keyType: "secret",
+          matchedBy: "startsWith",
         },
       },
     },
@@ -812,40 +834,40 @@ export const stringMatchingScenario: ScenaristScenario = {
     // Test 3: EndsWith strategy - email query param ending with '@company.com'
     // Using GitHub repos endpoint as it's a known working domain
     {
-      method: 'GET',
-      url: 'https://api.github.com/users/:username/repos',
+      method: "GET",
+      url: "https://api.github.com/users/:username/repos",
       match: {
         query: {
-          email: { endsWith: '@company.com' },
+          email: { endsWith: "@company.com" },
         },
       },
       response: {
         status: 200,
         body: {
           users: [
-            { id: 1, email: 'john@company.com', role: 'admin' },
-            { id: 2, email: 'jane@company.com', role: 'user' },
+            { id: 1, email: "john@company.com", role: "admin" },
+            { id: 2, email: "jane@company.com", role: "user" },
           ],
-          matchedBy: 'endsWith',
+          matchedBy: "endsWith",
         },
       },
     },
 
     // Test 4: Equals strategy - explicit exact match
     {
-      method: 'GET',
-      url: 'https://api.status.com/status',
+      method: "GET",
+      url: "https://api.status.com/status",
       match: {
         headers: {
-          'x-exact': { equals: 'exact-value' },
+          "x-exact": { equals: "exact-value" },
         },
       },
       response: {
         status: 200,
         body: {
-          status: 'ok',
-          message: 'Exact match successful',
-          matchedBy: 'equals',
+          status: "ok",
+          message: "Exact match successful",
+          matchedBy: "equals",
         },
       },
     },
@@ -856,46 +878,46 @@ export const stringMatchingScenario: ScenaristScenario = {
 
     // Fallback for GitHub users endpoint (contains test)
     {
-      method: 'GET',
-      url: 'https://api.github.com/users/:username',
+      method: "GET",
+      url: "https://api.github.com/users/:username",
       response: {
         status: 200,
         body: {
-          login: 'standard-user',
+          login: "standard-user",
           id: 111,
-          name: 'Standard User',
-          bio: 'Standard access',
+          name: "Standard User",
+          bio: "Standard access",
           public_repos: 25,
           followers: 200,
-          matchedBy: 'fallback',
+          matchedBy: "fallback",
         },
       },
     },
 
     // Fallback for Stripe API keys endpoint (startsWith test)
     {
-      method: 'GET',
-      url: 'https://api.stripe.com/v1/api-keys',
+      method: "GET",
+      url: "https://api.stripe.com/v1/api-keys",
       response: {
         status: 401,
         body: {
           error: {
-            message: 'Invalid API key',
-            type: 'invalid_request_error',
+            message: "Invalid API key",
+            type: "invalid_request_error",
           },
-          matchedBy: 'fallback',
+          matchedBy: "fallback",
         },
       },
     },
 
     // Fallback for GitHub repos endpoint (endsWith test)
     {
-      method: 'GET',
-      url: 'https://api.github.com/users/:username/repos',
+      method: "GET",
+      url: "https://api.github.com/users/:username/repos",
       response: {
         status: 200,
         body: {
-          matchedBy: 'fallback',
+          matchedBy: "fallback",
           repos: [],
         },
       },
@@ -903,13 +925,13 @@ export const stringMatchingScenario: ScenaristScenario = {
 
     // Fallback for status endpoint (equals test)
     {
-      method: 'GET',
-      url: 'https://api.status.com/status',
+      method: "GET",
+      url: "https://api.status.com/status",
       response: {
         status: 400,
         body: {
-          error: 'Missing or invalid x-exact header',
-          matchedBy: 'fallback',
+          error: "Missing or invalid x-exact header",
+          matchedBy: "fallback",
         },
       },
     },
@@ -925,209 +947,210 @@ export const stringMatchingScenario: ScenaristScenario = {
  * - Combined matching (URL + headers/query)
  */
 export const urlMatchingScenario: ScenaristScenario = {
-  id: 'urlMatching',
-  name: 'URL Matching Strategies',
-  description: 'Tests URL matching with RegExp, string strategies, and combined criteria',
+  id: "urlMatching",
+  name: "URL Matching Strategies",
+  description:
+    "Tests URL matching with RegExp, string strategies, and combined criteria",
   mocks: [
     // Test 1: Native RegExp - Match specific numeric user ID (octocat=1)
     // Uses more specific pattern to avoid conflicting with path param tests
     {
-      method: 'GET',
-      url: 'https://api.github.com/users/:username',
+      method: "GET",
+      url: "https://api.github.com/users/:username",
       match: {
-        url: /\/users\/1$/,  // Match URLs ending with exactly "1" (octocat's ID)
+        url: /\/users\/1$/, // Match URLs ending with exactly "1" (octocat's ID)
       },
       response: {
         status: 200,
         body: {
-          login: 'user-numeric-id',
+          login: "user-numeric-id",
           id: 12345,
-          name: 'Numeric ID User',
-          bio: 'Matched by numeric ID pattern',
+          name: "Numeric ID User",
+          bio: "Matched by numeric ID pattern",
           public_repos: 42,
           followers: 500,
-          matchedBy: 'regexNumericId',
+          matchedBy: "regexNumericId",
         },
       },
     },
 
     // Test 2: Contains strategy - Match URLs containing '/london'
     {
-      method: 'GET',
-      url: /https:\/\/api\.weather\.com\/v\d+\/weather\/[^/]+$/,  // RegExp for any version
+      method: "GET",
+      url: /https:\/\/api\.weather\.com\/v\d+\/weather\/[^/]+$/, // RegExp for any version
       match: {
-        url: { contains: '/london' },  // Match specific city
+        url: { contains: "/london" }, // Match specific city
       },
       response: {
         status: 200,
         body: {
-          city: 'Weather Match City',
+          city: "Weather Match City",
           temperature: 22,
-          conditions: 'Weather route matched',
+          conditions: "Weather route matched",
           humidity: 55,
-          matchedBy: 'containsWeather',
+          matchedBy: "containsWeather",
         },
       },
     },
 
     // Test 3: StartsWith strategy - Match API versioning
     {
-      method: 'GET',
-      url: /https:\/\/api\.weather\.com\/v\d+\/weather\/[^/]+$/,  // RegExp for any version
+      method: "GET",
+      url: /https:\/\/api\.weather\.com\/v\d+\/weather\/[^/]+$/, // RegExp for any version
       match: {
-        url: { startsWith: 'https://api.weather.com/v2' },
+        url: { startsWith: "https://api.weather.com/v2" },
       },
       response: {
         status: 200,
         body: {
-          city: 'Version 2 City',
+          city: "Version 2 City",
           temperature: 25,
-          conditions: 'V2 API matched',
+          conditions: "V2 API matched",
           humidity: 60,
-          matchedBy: 'startsWithV2',
+          matchedBy: "startsWithV2",
         },
       },
     },
 
     // Test 4: EndsWith strategy - Match file extensions
     {
-      method: 'GET',
-      url: 'https://api.github.com/repos/:owner/:repo/contents/:path',
+      method: "GET",
+      url: "https://api.github.com/repos/:owner/:repo/contents/:path",
       match: {
-        url: { endsWith: '.json' },
+        url: { endsWith: ".json" },
       },
       response: {
         status: 200,
         body: {
-          type: 'file',
-          name: 'data.json',
-          path: 'config/data.json',
-          content: 'eyJrZXkiOiJ2YWx1ZSJ9', // base64: {"key":"value"}
-          matchedBy: 'endsWithJson',
+          type: "file",
+          name: "data.json",
+          path: "config/data.json",
+          content: "eyJrZXkiOiJ2YWx1ZSJ9", // base64: {"key":"value"}
+          matchedBy: "endsWithJson",
         },
       },
     },
 
     // Test 5: Combined - URL pattern + header match
     {
-      method: 'GET',
-      url: 'https://api.stripe.com/v1/charges',
+      method: "GET",
+      url: "https://api.stripe.com/v1/charges",
       match: {
         url: /\/v1\/charges$/,
         headers: {
-          'x-api-version': '2023-10-16',
+          "x-api-version": "2023-10-16",
         },
       },
       response: {
         status: 200,
         body: {
-          id: 'ch_combined123',
-          status: 'succeeded',
+          id: "ch_combined123",
+          status: "succeeded",
           amount: 2000,
-          currency: 'usd',
-          matchedBy: 'combinedUrlHeader',
+          currency: "usd",
+          matchedBy: "combinedUrlHeader",
         },
       },
     },
 
     // Test 6: Exact string match (backward compatible)
     {
-      method: 'GET',
-      url: 'https://api.github.com/users/:username',
+      method: "GET",
+      url: "https://api.github.com/users/:username",
       match: {
-        url: 'https://api.github.com/users/exactuser',
+        url: "https://api.github.com/users/exactuser",
       },
       response: {
         status: 200,
         body: {
-          login: 'exactuser',
+          login: "exactuser",
           id: 99999,
-          name: 'Exact Match User',
-          bio: 'Matched by exact URL',
+          name: "Exact Match User",
+          bio: "Matched by exact URL",
           public_repos: 10,
           followers: 100,
-          matchedBy: 'exactUrl',
+          matchedBy: "exactUrl",
         },
       },
     },
 
     // Fallback response (no match criteria)
     {
-      method: 'GET',
-      url: 'https://api.github.com/users/:username',
+      method: "GET",
+      url: "https://api.github.com/users/:username",
       response: {
         status: 200,
         body: {
-          login: 'fallback-user',
+          login: "fallback-user",
           id: 1,
-          name: 'Fallback User',
-          bio: 'Default response when no URL match',
+          name: "Fallback User",
+          bio: "Default response when no URL match",
           public_repos: 5,
           followers: 50,
-          matchedBy: 'fallback',
+          matchedBy: "fallback",
         },
       },
     },
 
     // Fallback for weather API
     {
-      method: 'GET',
-      url: /https:\/\/api\.weather\.com\/v\d+\/weather\/[^/]+$/,  // RegExp for any version
+      method: "GET",
+      url: /https:\/\/api\.weather\.com\/v\d+\/weather\/[^/]+$/, // RegExp for any version
       response: {
         status: 200,
         body: {
-          city: 'Fallback City',
+          city: "Fallback City",
           temperature: 20,
-          conditions: 'No URL match',
+          conditions: "No URL match",
           humidity: 50,
-          matchedBy: 'fallback',
+          matchedBy: "fallback",
         },
       },
     },
 
     // Fallback for file contents
     {
-      method: 'GET',
-      url: 'https://api.github.com/repos/:owner/:repo/contents/:path',
+      method: "GET",
+      url: "https://api.github.com/repos/:owner/:repo/contents/:path",
       response: {
         status: 200,
         body: {
-          type: 'file',
-          name: 'unknown.txt',
-          path: 'unknown.txt',
-          content: 'ZGVmYXVsdA==', // base64: "default"
-          matchedBy: 'fallback',
+          type: "file",
+          name: "unknown.txt",
+          path: "unknown.txt",
+          content: "ZGVmYXVsdA==", // base64: "default"
+          matchedBy: "fallback",
         },
       },
     },
 
     // Fallback for stripe
     {
-      method: 'GET',
-      url: 'https://api.stripe.com/v1/charges',
+      method: "GET",
+      url: "https://api.stripe.com/v1/charges",
       response: {
         status: 200,
         body: {
-          id: 'ch_fallback123',
-          status: 'pending',
+          id: "ch_fallback123",
+          status: "pending",
           amount: 1000,
-          currency: 'usd',
-          matchedBy: 'fallback',
+          currency: "usd",
+          matchedBy: "fallback",
         },
       },
     },
 
     // Test 7: Simple path parameter - extract :username and return user-specific data
     {
-      method: 'GET',
-      url: 'https://api.github.com/users/:username',
+      method: "GET",
+      url: "https://api.github.com/users/:username",
       response: {
         status: 200,
         body: {
-          id: '{{params.username}}',
-          login: 'user-{{params.username}}',
-          name: 'User {{params.username}}',
-          bio: 'Test user with dynamic ID',
+          id: "{{params.username}}",
+          login: "user-{{params.username}}",
+          name: "User {{params.username}}",
+          bio: "Test user with dynamic ID",
           public_repos: 10,
           followers: 100,
         },
@@ -1136,16 +1159,16 @@ export const urlMatchingScenario: ScenaristScenario = {
 
     // Test 8: Multiple path parameters - extract :userId and :postId
     {
-      method: 'GET',
-      url: 'https://api.blog.com/users/:userId/posts/:postId',
+      method: "GET",
+      url: "https://api.blog.com/users/:userId/posts/:postId",
       response: {
         status: 200,
         body: {
-          userId: '{{params.userId}}',
-          postId: '{{params.postId}}',
-          title: 'Post {{params.postId}} by {{params.userId}}',
-          content: 'Test post content',
-          author: '{{params.userId}}',
+          userId: "{{params.userId}}",
+          postId: "{{params.postId}}",
+          title: "Post {{params.postId}} by {{params.userId}}",
+          content: "Test post content",
+          author: "{{params.userId}}",
         },
       },
     },
@@ -1162,24 +1185,24 @@ export const urlMatchingScenario: ScenaristScenario = {
  * 3. REGEXP patterns (/\/api\/data/) - Origin-agnostic (MSW weak comparison)
  */
 export const hostnameMatchingScenario: ScenaristScenario = {
-  id: 'hostnameMatching',
-  name: 'Hostname Matching Demonstration',
-  description: 'Shows pathname vs full URL vs RegExp pattern behaviors',
+  id: "hostnameMatching",
+  name: "Hostname Matching Demonstration",
+  description: "Shows pathname vs full URL vs RegExp pattern behaviors",
   mocks: [
     // Example 1: Pathname-only pattern - matches ANY hostname
     {
-      method: 'GET',
-      url: '/api/origin-agnostic',
+      method: "GET",
+      url: "/api/origin-agnostic",
       response: {
         status: 200,
         body: {
-          patternType: 'pathname-only',
-          behavior: 'origin-agnostic',
-          message: 'This matches requests to ANY hostname',
+          patternType: "pathname-only",
+          behavior: "origin-agnostic",
+          message: "This matches requests to ANY hostname",
           examples: [
-            'http://localhost:3000/api/origin-agnostic',
-            'https://api.github.com/api/origin-agnostic',
-            'https://api.stripe.com/api/origin-agnostic',
+            "http://localhost:3000/api/origin-agnostic",
+            "https://api.github.com/api/origin-agnostic",
+            "https://api.stripe.com/api/origin-agnostic",
           ],
         },
       },
@@ -1187,19 +1210,19 @@ export const hostnameMatchingScenario: ScenaristScenario = {
 
     // Example 2: Full URL pattern with GitHub - hostname-specific
     {
-      method: 'GET',
-      url: 'https://api.github.com/api/github-only',
+      method: "GET",
+      url: "https://api.github.com/api/github-only",
       response: {
         status: 200,
         body: {
-          patternType: 'full-url',
-          hostname: 'api.github.com',
-          behavior: 'hostname-specific',
-          message: 'This ONLY matches api.github.com requests',
-          willMatch: 'https://api.github.com/api/github-only',
+          patternType: "full-url",
+          hostname: "api.github.com",
+          behavior: "hostname-specific",
+          message: "This ONLY matches api.github.com requests",
+          willMatch: "https://api.github.com/api/github-only",
           wontMatch: [
-            'https://api.stripe.com/api/github-only',
-            'http://localhost:3000/api/github-only',
+            "https://api.stripe.com/api/github-only",
+            "http://localhost:3000/api/github-only",
           ],
         },
       },
@@ -1207,19 +1230,19 @@ export const hostnameMatchingScenario: ScenaristScenario = {
 
     // Example 3: Full URL pattern with Stripe - hostname-specific
     {
-      method: 'GET',
-      url: 'https://api.stripe.com/api/stripe-only',
+      method: "GET",
+      url: "https://api.stripe.com/api/stripe-only",
       response: {
         status: 200,
         body: {
-          patternType: 'full-url',
-          hostname: 'api.stripe.com',
-          behavior: 'hostname-specific',
-          message: 'This ONLY matches api.stripe.com requests',
-          willMatch: 'https://api.stripe.com/api/stripe-only',
+          patternType: "full-url",
+          hostname: "api.stripe.com",
+          behavior: "hostname-specific",
+          message: "This ONLY matches api.stripe.com requests",
+          willMatch: "https://api.stripe.com/api/stripe-only",
           wontMatch: [
-            'https://api.github.com/api/stripe-only',
-            'http://localhost:3000/api/stripe-only',
+            "https://api.github.com/api/stripe-only",
+            "http://localhost:3000/api/stripe-only",
           ],
         },
       },
@@ -1227,18 +1250,18 @@ export const hostnameMatchingScenario: ScenaristScenario = {
 
     // Example 4: Native RegExp pattern - origin-agnostic
     {
-      method: 'GET',
+      method: "GET",
       url: /\/api\/regex-pattern$/,
       response: {
         status: 200,
         body: {
-          patternType: 'native-regexp',
-          behavior: 'origin-agnostic (MSW weak comparison)',
-          message: 'This matches the pathname pattern at ANY hostname',
+          patternType: "native-regexp",
+          behavior: "origin-agnostic (MSW weak comparison)",
+          message: "This matches the pathname pattern at ANY hostname",
           examples: [
-            'http://localhost:3000/api/regex-pattern',
-            'https://api.github.com/api/regex-pattern',
-            'https://api.stripe.com/api/regex-pattern',
+            "http://localhost:3000/api/regex-pattern",
+            "https://api.github.com/api/regex-pattern",
+            "https://api.stripe.com/api/regex-pattern",
           ],
         },
       },
@@ -1246,19 +1269,19 @@ export const hostnameMatchingScenario: ScenaristScenario = {
 
     // Example 5: Pathname with path parameters - origin-agnostic + param extraction
     {
-      method: 'GET',
-      url: '/api/users/:userId/posts/:postId',
+      method: "GET",
+      url: "/api/users/:userId/posts/:postId",
       response: {
         status: 200,
         body: {
-          patternType: 'pathname-only with params',
-          behavior: 'origin-agnostic + param extraction',
-          message: 'Extracts params and matches ANY hostname',
-          userId: '{{params.userId}}',
-          postId: '{{params.postId}}',
+          patternType: "pathname-only with params",
+          behavior: "origin-agnostic + param extraction",
+          message: "Extracts params and matches ANY hostname",
+          userId: "{{params.userId}}",
+          postId: "{{params.postId}}",
           examples: [
-            'http://localhost:3000/api/users/123/posts/456',
-            'https://api.github.com/api/users/123/posts/456',
+            "http://localhost:3000/api/users/123/posts/456",
+            "https://api.github.com/api/users/123/posts/456",
           ],
         },
       },
@@ -1266,18 +1289,18 @@ export const hostnameMatchingScenario: ScenaristScenario = {
 
     // Example 6: Full URL with path parameters - hostname-specific + param extraction
     {
-      method: 'GET',
-      url: 'https://api.github.com/api/github-users/:userId',
+      method: "GET",
+      url: "https://api.github.com/api/github-users/:userId",
       response: {
         status: 200,
         body: {
-          patternType: 'full-url with params',
-          hostname: 'api.github.com',
-          behavior: 'hostname-specific + param extraction',
-          message: 'Extracts params but ONLY matches api.github.com',
-          userId: '{{params.userId}}',
-          willMatch: 'https://api.github.com/api/github-users/123',
-          wontMatch: 'https://api.stripe.com/api/github-users/123',
+          patternType: "full-url with params",
+          hostname: "api.github.com",
+          behavior: "hostname-specific + param extraction",
+          message: "Extracts params but ONLY matches api.github.com",
+          userId: "{{params.userId}}",
+          willMatch: "https://api.github.com/api/github-users/123",
+          wontMatch: "https://api.stripe.com/api/github-users/123",
         },
       },
     },
@@ -1297,21 +1320,21 @@ export const hostnameMatchingScenario: ScenaristScenario = {
  * Learn more: https://scenarist.io/guides/testing-database-apps/repository-pattern
  */
 export const premiumUserScenario: ScenaristScenario = {
-  id: 'premiumUser',
-  name: 'Premium User',
-  description: 'Premium tier pricing (£99.99)',
+  id: "premiumUser",
+  name: "Premium User",
+  description: "Premium tier pricing (£99.99)",
   mocks: [
     // Products API - Premium pricing (matched by x-user-tier header)
     {
-      method: 'GET',
-      url: 'http://localhost:3001/products',
+      method: "GET",
+      url: "http://localhost:3001/products",
       match: {
-        headers: { 'x-user-tier': 'premium' },
+        headers: { "x-user-tier": "premium" },
       },
       response: {
         status: 200,
         body: {
-          products: buildProducts('premium'),
+          products: buildProducts("premium"),
         },
       },
     },
@@ -1352,4 +1375,3 @@ export const scenarios = {
   hostnameMatching: hostnameMatchingScenario,
   premiumUser: premiumUserScenario,
 } as const satisfies ScenaristScenarios;
-

@@ -1,4 +1,4 @@
-import type { Request, Response, Router } from 'express';
+import type { Request, Response, Router } from "express";
 
 /**
  * Shopping cart routes - demonstrates stateful mock with capture and injection
@@ -11,16 +11,16 @@ import type { Request, Response, Router } from 'express';
  */
 
 // Always use real json-server endpoint (MSW intercepts in test/dev)
-const CART_BACKEND_URL = 'http://localhost:3001/cart';
+const CART_BACKEND_URL = "http://localhost:3001/cart";
 
 export const setupCartRoutes = (router: Router): void => {
-  router.post('/api/cart/add', async (req: Request, res: Response) => {
+  router.post("/api/cart/add", async (req: Request, res: Response) => {
     const { item } = req.body;
 
     if (!item) {
       return res.status(400).json({
-        error: 'Invalid request',
-        message: 'Item is required',
+        error: "Invalid request",
+        message: "Item is required",
       });
     }
 
@@ -37,22 +37,26 @@ export const setupCartRoutes = (router: Router): void => {
 
       // PATCH cart with updated items array
       const patchResponse = await fetch(CART_BACKEND_URL, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items: updatedItems }),
       });
 
       const data = await patchResponse.json();
-      return res.json({ success: true, items: data.items, message: data.message });
+      return res.json({
+        success: true,
+        items: data.items,
+        message: data.message,
+      });
     } catch (error) {
       return res.status(500).json({
-        error: 'Failed to add item to cart',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to add item to cart",
+        message: error instanceof Error ? error.message : "Unknown error",
       });
     }
   });
 
-  router.get('/api/cart', async (_req: Request, res: Response) => {
+  router.get("/api/cart", async (_req: Request, res: Response) => {
     try {
       // Both envs: GET cart
       const response = await fetch(CART_BACKEND_URL);
@@ -65,8 +69,8 @@ export const setupCartRoutes = (router: Router): void => {
       return res.json(data);
     } catch (error) {
       return res.status(500).json({
-        error: 'Failed to get cart',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to get cart",
+        message: error instanceof Error ? error.message : "Unknown error",
       });
     }
   });

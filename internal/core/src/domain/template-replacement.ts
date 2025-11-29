@@ -7,18 +7,24 @@
  *                       Can be flat object (backward compatible) or { state: {...}, params: {...} }
  * @returns Value with templates replaced
  */
-export const applyTemplates = (value: unknown, templateData: Record<string, unknown>): unknown => {
+export const applyTemplates = (
+  value: unknown,
+  templateData: Record<string, unknown>,
+): unknown => {
   // Backward compatibility: If templateData doesn't have 'state' or 'params' keys,
   // treat it as a flat state object and wrap it
-  const normalizedData = (templateData.state !== undefined || templateData.params !== undefined)
-    ? templateData
-    : { state: templateData, params: {} };
+  const normalizedData =
+    templateData.state !== undefined || templateData.params !== undefined
+      ? templateData
+      : { state: templateData, params: {} };
   // Guard: Handle strings (base case)
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     // Check if entire string is a single pure template (no surrounding text)
     // Supports both {{state.key}} and {{params.key}}
     // Using {1,256} limit to prevent ReDoS attacks with malicious input
-    const pureTemplateMatch = /^\{\{(state|params)\.([^}]{1,256})\}\}$/.exec(value);
+    const pureTemplateMatch = /^\{\{(state|params)\.([^}]{1,256})\}\}$/.exec(
+      value,
+    );
 
     if (pureTemplateMatch) {
       // Pure template: return raw value (preserves type - arrays, numbers, objects)
@@ -34,17 +40,20 @@ export const applyTemplates = (value: unknown, templateData: Record<string, unkn
     // Mixed template (has surrounding text): use string replacement
     // Supports both {{state.key}} and {{params.key}}
     // Using {1,256} limit to prevent ReDoS attacks with malicious input
-    return value.replace(/\{\{(state|params)\.([^}]{1,256})\}\}/g, (match, prefix: string, path: string) => {
-      const resolvedValue = resolveTemplatePath(normalizedData, prefix, path);
+    return value.replace(
+      /\{\{(state|params)\.([^}]{1,256})\}\}/g,
+      (match, prefix: string, path: string) => {
+        const resolvedValue = resolveTemplatePath(normalizedData, prefix, path);
 
-      // Guard: Missing keys remain as template
-      if (resolvedValue === undefined) {
-        return match;
-      }
+        // Guard: Missing keys remain as template
+        if (resolvedValue === undefined) {
+          return match;
+        }
 
-      // Convert to string for concatenation with surrounding text
-      return String(resolvedValue);
-    });
+        // Convert to string for concatenation with surrounding text
+        return String(resolvedValue);
+      },
+    );
   }
 
   // Guard: Handle arrays recursively
@@ -53,7 +62,7 @@ export const applyTemplates = (value: unknown, templateData: Record<string, unkn
   }
 
   // Guard: Handle objects recursively
-  if (typeof value === 'object' && value !== null) {
+  if (typeof value === "object" && value !== null) {
     const result: Record<string, unknown> = {};
     for (const [key, val] of Object.entries(value)) {
       result[key] = applyTemplates(val, normalizedData);
@@ -77,28 +86,28 @@ export const applyTemplates = (value: unknown, templateData: Record<string, unkn
 const resolveTemplatePath = (
   templateData: Record<string, unknown>,
   prefix: string,
-  path: string
+  path: string,
 ): unknown => {
   // Get the root object (state or params)
   const root = templateData[prefix];
 
   // Guard: Prefix doesn't exist (e.g., no params provided)
-  if (root === undefined || typeof root !== 'object' || root === null) {
+  if (root === undefined || typeof root !== "object" || root === null) {
     return undefined;
   }
 
   // Resolve nested path within root object
-  const segments = path.split('.');
+  const segments = path.split(".");
   let current: unknown = root;
 
   for (const segment of segments) {
     // Guard: Can't traverse non-objects
-    if (typeof current !== 'object' || current === null) {
+    if (typeof current !== "object" || current === null) {
       return undefined;
     }
 
     // Handle arrays with .length property
-    if (Array.isArray(current) && segment === 'length') {
+    if (Array.isArray(current) && segment === "length") {
       return current.length;
     }
 

@@ -1,5 +1,5 @@
 // Re-export types from impl for public API
-export type { AppAdapterOptions, AppScenarist } from './impl.js';
+export type { AppAdapterOptions, AppScenarist } from "./impl.js";
 
 /**
  * Create a Scenarist instance for Next.js App Router.
@@ -27,4 +27,4 @@ export type { AppAdapterOptions, AppScenarist } from './impl.js';
  * }
  * ```
  */
-export { createScenaristImpl as createScenarist } from './impl.js';
+export { createScenaristImpl as createScenarist } from "./impl.js";

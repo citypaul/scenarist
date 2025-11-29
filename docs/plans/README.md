@@ -13,6 +13,7 @@ This directory contains **working implementation plans** for features and initia
 **Audience:** Future developers wondering "why did we decide this?"
 
 **ADR Structure:**
+
 ```markdown
 # ADR-NNNN: Title
 
@@ -20,28 +21,37 @@ This directory contains **working implementation plans** for features and initia
 **Date**: YYYY-MM-DD
 
 ## Context
+
 What is the issue we're facing? What forces are at play?
 
 ## Decision
+
 What have we decided to do?
 
 ## Alternatives Considered
+
 What other options did we evaluate?
+
 - Alternative 1: Description + why rejected
 - Alternative 2: Description + why rejected
 
 ## Consequences
+
 ### Positive
+
 What benefits does this decision bring?
 
 ### Negative
+
 What drawbacks or costs does this decision have?
 
 ### Risks & Mitigation
+
 What could go wrong and how do we address it?
 ```
 
 **What belongs in an ADR:**
+
 - ✅ The architectural decision being made
 - ✅ Context explaining why the decision is needed
 - ✅ Alternatives that were considered and rejected
@@ -53,6 +63,7 @@ What could go wrong and how do we address it?
 - ❌ Exhaustive API specifications
 
 **Example ADR topics:**
+
 - "Why we use ports and adapters architecture"
 - "Why scenarios must be serializable"
 - "Why we chose four-layer testing strategy"
@@ -69,6 +80,7 @@ What could go wrong and how do we address it?
 **Important:** Plans typically **combine requirements and implementation** for a feature. This is common practice (e.g., GitHub issues combine "what" and "how") because requirements and implementation evolve together. Separating them into two files creates synchronization issues.
 
 **Plan Structure:**
+
 ```markdown
 # Feature Name Implementation Plan
 
@@ -77,41 +89,52 @@ What could go wrong and how do we address it?
 **Tracking Issue:** #123
 
 ## Overview
+
 Brief description of what we're building.
 
 ## Requirements
+
 - REQ-1: Description
 - REQ-2: Description
 
 ## Implementation Phases
+
 ### Phase 1: Name
+
 **Status**: ✅ Complete | 🚧 In Progress | ⏸️ Blocked | ⏳ Not Started
 
 **Tasks:**
+
 - [x] Completed task
 - [ ] Pending task
 
 **Files to modify:**
+
 - `path/to/file.ts` - what changes
 
 **TDD workflow:**
+
 1. RED: Test description
 2. GREEN: Minimal implementation
 3. REFACTOR: Improvements
 
 ### Phase 2: Name
+
 ...
 
 ## Progress Tracking
+
 - Phase 1: ✅ Complete
 - Phase 2: 🚧 In Progress (3/7 tasks)
 - Phase 3: ⏳ Not Started
 
 ## Notes & Learnings
+
 Things discovered during implementation.
 ```
 
 **What belongs in a plan:**
+
 - ✅ Requirements with acceptance criteria (REQ-1, REQ-2, etc.)
 - ✅ Detailed implementation steps
 - ✅ Task lists and progress tracking
@@ -123,6 +146,7 @@ Things discovered during implementation.
 - ✅ Notes and learnings during implementation
 
 **Example plan topics:**
+
 - "Dynamic Response System - Requirements & Implementation"
 - "Redis Adapter - Requirements & Implementation"
 - "Visual Debugger - Requirements & Implementation"
@@ -131,12 +155,14 @@ Things discovered during implementation.
 ## When to Create Each
 
 ### Create an ADR when:
+
 - Making an architectural decision that affects the system design
 - Choosing between multiple viable approaches
 - Establishing a pattern or principle for the codebase
 - Answering "why did we do it this way?" for future developers
 
 ### Create a Plan when:
+
 - Starting work on a new feature
 - Breaking down a large initiative into phases
 - Tracking progress across multiple PRs
@@ -145,17 +171,20 @@ Things discovered during implementation.
 ## Example: Dynamic Response System
 
 **Bad approach (mixing):**
+
 - Single 1300-line ADR-0002 containing both decisions AND implementation plan
 
 **Good approach (separated):**
 
 **ADR-0002: Dynamic Response System** (300 lines)
+
 - Decision: Support request matching, sequences, and state
 - Alternative: Function-based responses (rejected - not serializable)
 - Alternative: State machine definitions (rejected - too complex)
 - Consequence: More complex core logic, but maintains serializability
 
 **Plan: Dynamic Response System - Requirements & Implementation** (1200 lines)
+
 - Requirements: REQ-1 through REQ-5 with acceptance criteria
 - Phase 1: Request matching (detailed tasks)
 - Phase 2: Response sequences (detailed tasks)
@@ -187,25 +216,25 @@ for detailed implementation phases and progress tracking.
 
 ## Current Plans
 
-| Plan | Status | Related ADR |
-|------|--------|-------------|
-| [Regex Support](./regex-support-implementation.md) | 🚧 In Progress (Phase 2.5.1) | [ADR-0016](../adrs/0016-native-regexp-in-declarative-patterns.md) |
-| [Documentation Site](./documentation-site.md) | 🚧 Phase 3 In Progress | N/A |
-| [Next Stages](./next-stages.md) | 📍 Active Roadmap (Updated Nov 2025) | N/A |
-| [Test ID Header Simplification](./issue-123-simplify-test-id-header.md) | ⏳ Ready for Implementation | N/A |
-| [Template Helpers](./template-helpers-implementation.md) | ⏳ Planned | N/A |
+| Plan                                                                    | Status                               | Related ADR                                                       |
+| ----------------------------------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------- |
+| [Regex Support](./regex-support-implementation.md)                      | 🚧 In Progress (Phase 2.5.1)         | [ADR-0016](../adrs/0016-native-regexp-in-declarative-patterns.md) |
+| [Documentation Site](./documentation-site.md)                           | 🚧 Phase 3 In Progress               | N/A                                                               |
+| [Next Stages](./next-stages.md)                                         | 📍 Active Roadmap (Updated Nov 2025) | N/A                                                               |
+| [Test ID Header Simplification](./issue-123-simplify-test-id-header.md) | ⏳ Ready for Implementation          | N/A                                                               |
+| [Template Helpers](./template-helpers-implementation.md)                | ⏳ Planned                           | N/A                                                               |
 
 ## Completed & Archived Plans
 
-| Plan | Status | Completion Date | Location |
-|------|--------|-----------------|----------|
-| Automatic Default Fallback | ✅ Complete | 2025-11-26 | Removed (merged) |
-| RSC Helper Readonly Headers | ✅ Complete | 2025-11-26 | Removed (PR #111) |
-| Hybrid Testing Demonstration | ✅ Complete | 2025-11-25 | Removed (PRs #1, #2, #107, #108) |
-| Next.js RSC Examples | ✅ Complete | 2025-11-09 | [archive/](../archive/nextjs-rsc-examples.md) |
-| Next.js Pages Router + Playwright Helpers | ✅ Complete | 2025-11-08 | [archive/](../archive/nextjs-pages-and-playwright-helpers.md) |
-| Dynamic Response System | ✅ Complete | 2025-10-27 | Implemented in core |
-| Scenarist Core Implementation | ✅ Complete | 2025-10-15 | [archive/](../archive/SCENARIST_IMPLEMENTATION_PLAN.md) |
+| Plan                                      | Status      | Completion Date | Location                                                      |
+| ----------------------------------------- | ----------- | --------------- | ------------------------------------------------------------- |
+| Automatic Default Fallback                | ✅ Complete | 2025-11-26      | Removed (merged)                                              |
+| RSC Helper Readonly Headers               | ✅ Complete | 2025-11-26      | Removed (PR #111)                                             |
+| Hybrid Testing Demonstration              | ✅ Complete | 2025-11-25      | Removed (PRs #1, #2, #107, #108)                              |
+| Next.js RSC Examples                      | ✅ Complete | 2025-11-09      | [archive/](../archive/nextjs-rsc-examples.md)                 |
+| Next.js Pages Router + Playwright Helpers | ✅ Complete | 2025-11-08      | [archive/](../archive/nextjs-pages-and-playwright-helpers.md) |
+| Dynamic Response System                   | ✅ Complete | 2025-10-27      | Implemented in core                                           |
+| Scenarist Core Implementation             | ✅ Complete | 2025-10-15      | [archive/](../archive/SCENARIST_IMPLEMENTATION_PLAN.md)       |
 
 ## Creating a New Plan
 
@@ -218,6 +247,7 @@ for detailed implementation phases and progress tracking.
 ## Archiving Completed Plans
 
 When a plan is fully complete:
+
 1. Update status to "✅ Complete"
 2. Add completion date
 3. Move to `docs/plans/archive/` (optional)

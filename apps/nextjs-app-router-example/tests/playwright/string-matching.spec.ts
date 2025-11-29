@@ -50,7 +50,7 @@ test.describe("String Matching Strategies - ATDD", () => {
 
     // Navigate with campaign header containing 'premium'
     await page.goto(
-      "/string-matching?strategy=contains&campaign=summer-premium-sale"
+      "/string-matching?strategy=contains&campaign=summer-premium-sale",
     );
 
     // Verify premium products are returned
@@ -72,7 +72,7 @@ test.describe("String Matching Strategies - ATDD", () => {
 
     // Navigate with campaign header NOT containing 'premium'
     await page.goto(
-      "/string-matching?strategy=contains&campaign=standard-sale"
+      "/string-matching?strategy=contains&campaign=standard-sale",
     );
 
     // Should fall back to standard products (no match)
@@ -102,7 +102,7 @@ test.describe("String Matching Strategies - ATDD", () => {
 
     // Navigate with API key starting with 'sk_'
     await page.goto(
-      "/string-matching?strategy=startsWith&apiKey=sk_test_12345"
+      "/string-matching?strategy=startsWith&apiKey=sk_test_12345",
     );
 
     // Verify valid API key response
@@ -119,7 +119,7 @@ test.describe("String Matching Strategies - ATDD", () => {
 
     // Navigate with API key NOT starting with 'sk_'
     await page.goto(
-      "/string-matching?strategy=startsWith&apiKey=pk_test_12345"
+      "/string-matching?strategy=startsWith&apiKey=pk_test_12345",
     );
 
     // Should not see the startsWith match (no fallback defined for this URL)
@@ -148,13 +148,17 @@ test.describe("String Matching Strategies - ATDD", () => {
 
     // Navigate with email query param ending with '@company.com'
     await page.goto(
-      "/string-matching?strategy=endsWith&email=john@company.com"
+      "/string-matching?strategy=endsWith&email=john@company.com",
     );
 
     // Verify company users are returned
     await expect(page.getByText("Matched By: endsWith")).toBeVisible();
-    await expect(page.getByText("john@company.com", { exact: true }).first()).toBeVisible();
-    await expect(page.getByText("jane@company.com", { exact: true }).first()).toBeVisible();
+    await expect(
+      page.getByText("john@company.com", { exact: true }).first(),
+    ).toBeVisible();
+    await expect(
+      page.getByText("jane@company.com", { exact: true }).first(),
+    ).toBeVisible();
   });
 
   test("should NOT match when query param doesn't end with suffix", async ({
@@ -165,7 +169,7 @@ test.describe("String Matching Strategies - ATDD", () => {
 
     // Navigate with email NOT ending with '@company.com'
     await page.goto(
-      "/string-matching?strategy=endsWith&email=john@example.com"
+      "/string-matching?strategy=endsWith&email=john@example.com",
     );
 
     // Should not see the endsWith match
@@ -199,7 +203,9 @@ test.describe("String Matching Strategies - ATDD", () => {
     // Verify exact match response
     await expect(page.getByText("Matched By: equals")).toBeVisible();
     await expect(page.getByText("Status: ok")).toBeVisible();
-    await expect(page.getByText("Exact match successful").first()).toBeVisible();
+    await expect(
+      page.getByText("Exact match successful").first(),
+    ).toBeVisible();
   });
 
   test("should NOT match when header value is not exact", async ({
@@ -209,9 +215,7 @@ test.describe("String Matching Strategies - ATDD", () => {
     await switchScenario(page, "stringMatching");
 
     // Navigate with non-exact header value
-    await page.goto(
-      "/string-matching?strategy=equals&exact=exact-value-plus"
-    );
+    await page.goto("/string-matching?strategy=equals&exact=exact-value-plus");
 
     // Should not see the equals match
     await expect(page.getByText("Matched By: equals")).not.toBeVisible();

@@ -1,23 +1,18 @@
-import { SCENARIST_TEST_ID_HEADER } from '@scenarist/express-adapter';
+import { SCENARIST_TEST_ID_HEADER } from "@scenarist/express-adapter";
 import request from "supertest";
 import { afterAll, describe, expect, it } from "vitest";
 import type { Request, Response } from "express";
 
-import { createTestFixtures } from './test-helpers.js';
+import { createTestFixtures } from "./test-helpers.js";
 const fixtures = await createTestFixtures();
 
 describe("Stateful Scenarios E2E (Phase 3)", () => {
-  
-
-  
-
   afterAll(async () => {
     await fixtures.cleanup();
   });
 
   describe("Shopping Cart - Complete Journey", () => {
     it("should capture items and inject into cart response", async () => {
-
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "cart-test-1")
@@ -51,7 +46,6 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
 
   describe("Multi-Step Form - Complete Journey", () => {
     it("should accumulate state across form steps and inject in final confirmation", async () => {
-
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "form-test-1")
@@ -96,7 +90,6 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
 
   describe("State Reset on Scenario Switch", () => {
     it("should reset cart state when switching scenarios", async () => {
-
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "reset-test-1")
@@ -128,7 +121,6 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
     });
 
     it("should NOT reset state when scenario switch fails", async () => {
-
       // Scenario already registered in scenarios.ts
 
       const router = fixtures.app._router as {
@@ -137,29 +129,38 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
       if (
         !router?.stack.some((layer) => layer.route?.path === "/api/temp-data")
       ) {
-        fixtures.app.post("/api/temp-data", async (req: Request, res: Response) => {
-          try {
-            const response = await fetch("https://api.example.com/temp-data", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(req.body),
-            });
-            const data = await response.json();
-            res.status(response.status).json(data);
-          } catch (e: unknown) {
-            res.status(500).json({ error: "Failed" });
-          }
-        });
+        fixtures.app.post(
+          "/api/temp-data",
+          async (req: Request, res: Response) => {
+            try {
+              const response = await fetch(
+                "https://api.example.com/temp-data",
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(req.body),
+                },
+              );
+              const data = await response.json();
+              res.status(response.status).json(data);
+            } catch (e: unknown) {
+              res.status(500).json({ error: "Failed" });
+            }
+          },
+        );
 
-        fixtures.app.get("/api/temp-data", async (_req: Request, res: Response) => {
-          try {
-            const response = await fetch("https://api.example.com/temp-data");
-            const data = await response.json();
-            res.status(response.status).json(data);
-          } catch (error) {
-            res.status(500).json({ error: "Failed" });
-          }
-        });
+        fixtures.app.get(
+          "/api/temp-data",
+          async (_req: Request, res: Response) => {
+            try {
+              const response = await fetch("https://api.example.com/temp-data");
+              const data = await response.json();
+              res.status(response.status).json(data);
+            } catch (error) {
+              res.status(500).json({ error: "Failed" });
+            }
+          },
+        );
       }
 
       await request(fixtures.app)
@@ -190,7 +191,6 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
 
   describe("State Isolation Between Test IDs", () => {
     it("should maintain independent cart state for different test IDs", async () => {
-
       await request(fixtures.app)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "isolation-test-A")

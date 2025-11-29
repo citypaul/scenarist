@@ -1,6 +1,6 @@
-import type { StateManager } from '../ports/driven/state-manager.js';
+import type { StateManager } from "../ports/driven/state-manager.js";
 
-const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+const DANGEROUS_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 
 const isDangerousKey = (key: string): boolean => DANGEROUS_KEYS.has(key);
 
@@ -20,7 +20,7 @@ export class InMemoryStateManager implements StateManager {
       return undefined;
     }
 
-    const path = key.split('.');
+    const path = key.split(".");
     return this.getNestedValue(testState, path);
   }
 
@@ -28,15 +28,15 @@ export class InMemoryStateManager implements StateManager {
     const testState = this.getOrCreateTestState(testId);
 
     // Guard: Normal set (no array syntax)
-    if (!key.endsWith('[]')) {
-      const path = key.split('.');
+    if (!key.endsWith("[]")) {
+      const path = key.split(".");
       this.setNestedValue(testState, path, value);
       return;
     }
 
     // Array append syntax
     const actualKey = key.slice(0, -2);
-    const path = actualKey.split('.');
+    const path = actualKey.split(".");
     const currentValue = this.get(testId, actualKey);
 
     // Guard: If current value is already an array, append immutably
@@ -66,7 +66,11 @@ export class InMemoryStateManager implements StateManager {
     return testState;
   }
 
-  private setNestedValue(obj: Record<string, unknown>, path: string[], value: unknown): void {
+  private setNestedValue(
+    obj: Record<string, unknown>,
+    path: string[],
+    value: unknown,
+  ): void {
     const key = path[0]!;
 
     // Guard: Prevent prototype pollution attacks
@@ -85,7 +89,11 @@ export class InMemoryStateManager implements StateManager {
     }
 
     const existingValue = Object.hasOwn(obj, key) ? obj[key] : undefined;
-    if (typeof existingValue !== 'object' || existingValue === null || Array.isArray(existingValue)) {
+    if (
+      typeof existingValue !== "object" ||
+      existingValue === null ||
+      Array.isArray(existingValue)
+    ) {
       Object.defineProperty(obj, key, {
         value: {},
         writable: true,
@@ -98,7 +106,10 @@ export class InMemoryStateManager implements StateManager {
     this.setNestedValue(nested, path.slice(1), value);
   }
 
-  private getNestedValue(obj: Record<string, unknown>, path: readonly string[]): unknown {
+  private getNestedValue(
+    obj: Record<string, unknown>,
+    path: readonly string[],
+  ): unknown {
     const key = path[0]!;
 
     // Guard: Prevent prototype pollution attacks
@@ -117,7 +128,7 @@ export class InMemoryStateManager implements StateManager {
       return value;
     }
 
-    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    if (typeof value !== "object" || value === null || Array.isArray(value)) {
       return undefined;
     }
 

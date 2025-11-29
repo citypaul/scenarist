@@ -33,8 +33,8 @@ yarn add @scenarist/nextjs-adapter msw
 **Important:** When using the Pages Router, import from the `/pages` subpath:
 
 ```typescript
-import type { ScenaristScenario } from '@scenarist/nextjs-adapter/pages';
-import { createScenarist } from '@scenarist/nextjs-adapter/pages';
+import type { ScenaristScenario } from "@scenarist/nextjs-adapter/pages";
+import { createScenarist } from "@scenarist/nextjs-adapter/pages";
 ```
 
 ## Getting Started
@@ -141,6 +141,7 @@ See `tsconfig.json` for complete configuration.
 ## Current Test Results
 
 **Phase 0 Scaffolding:**
+
 - ✅ 1 Playwright smoke test passing
 - ✅ 1 Vitest API test passing
 - ✅ TypeScript: 0 errors
@@ -149,6 +150,7 @@ See `tsconfig.json` for complete configuration.
 ## Development Roadmap
 
 ### Phase 0: Infrastructure Setup ✅ COMPLETE
+
 - ✅ Next.js app scaffolding
 - ✅ Playwright configuration
 - ✅ Vitest configuration
@@ -156,12 +158,14 @@ See `tsconfig.json` for complete configuration.
 - ✅ Smoke tests passing
 
 ### Phase 1: Product Catalog (In Progress)
+
 - 🔄 Product listing page
 - 🔄 Scenarist integration
 - 🔄 Scenario switching tests
 - 🔄 Playwright helper utilities
 
 ### Phase 2+: Advanced Features
+
 - 📋 Shopping cart
 - 📋 Checkout flow
 - 📋 Payment integration
@@ -180,6 +184,7 @@ This runs all E2E tests against a custom Express server instead of `next dev`.
 ## CI/CD
 
 This example is tested in CI with:
+
 - ✅ Playwright browser caching for fast CI runs
 - ✅ Version-specific cache keys
 - ✅ Automated test execution on every PR

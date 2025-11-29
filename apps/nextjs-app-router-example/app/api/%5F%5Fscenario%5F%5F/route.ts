@@ -14,7 +14,7 @@
  * No manual guards needed - the architecture provides safety automatically.
  */
 
-import { scenarist } from '../../../lib/scenarist';
+import { scenarist } from "../../../lib/scenarist";
 
 // In production, scenarist is undefined due to conditional exports
 // This makes the exports undefined, and Next.js treats the route as non-existent

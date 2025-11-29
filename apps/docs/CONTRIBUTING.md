@@ -7,15 +7,20 @@ This guide outlines standards and conventions for maintaining the Scenarist docu
 The documentation follows a consistent three-level hierarchy:
 
 ### Level 1: Framework
+
 Top-level categorization by framework (Express, Next.js, Remix, SvelteKit).
 
 ### Level 2: Router Type (Next.js only)
+
 For Next.js, we split by router type since they have different architectures:
+
 - **App Router** - Modern Next.js with Server Components
 - **Pages Router** - Traditional Next.js with pages directory
 
 ### Level 3: Guide Type
+
 Each framework/router combination has these guide types:
+
 - **Overview** - Framework-specific challenges and how Scenarist solves them
 - **Getting Started** - Step-by-step setup instructions
 - **Example App** - Complete working example with installation and detailed code walkthroughs
@@ -41,9 +46,10 @@ Next.js
 
 **Always specify language identifiers** for syntax highlighting:
 
-```markdown
+````markdown
 ✅ CORRECT:
-```bash
+
+````bash
 npm install @scenarist/express-adapter
 \```
 
@@ -59,7 +65,8 @@ npm install @scenarist/express-adapter
 \```
 export const scenarios = { ... };
 \```
-```
+````
+````
 
 ### Supported Language Identifiers
 
@@ -94,9 +101,10 @@ import { FileTree } from '@astrojs/starlight/components';
 ```
 
 **Features:**
+
 - Directories end with `/`
 - Add comments after filenames to explain purpose
-- Comments support **bold** and *italic* formatting
+- Comments support **bold** and _italic_ formatting
 - Use `...` for omitted content
 - Automatically renders as collapsible tree structure
 
@@ -105,53 +113,69 @@ import { FileTree } from '@astrojs/starlight/components';
 All example app pages must include these sections in order:
 
 ### 1. Overview
+
 - Brief description
 - GitHub link to example source code
 
 ### 2. What It Demonstrates
+
 List features demonstrated with clear categorization:
+
 - Core Features (framework-specific capabilities)
 - Dynamic Response Features (Scenarist features)
 
 ### 3. Installation
 
 #### Prerequisites
+
 **Required** - Must be consistent across all examples:
+
 ```markdown
 ### Prerequisites
+
 - Node.js 20+
 - pnpm 9+
 ```
 
 #### Clone and Install
+
 Standard monorepo installation instructions.
 
 ### 4. Running the Example
 
 #### Development Mode
+
 Commands to start the dev server.
 
 #### Run Tests
+
 Commands to run tests (all, specific, UI mode).
 
 ### 5. Key Files
+
 Code examples showing:
+
 - Scenarist setup
 - Scenario definitions
 - API route/component examples
 - Test examples
 
 ### 6. Architecture
+
 Explain:
+
 - How it works (step-by-step flow)
 - Test isolation mechanism
 - File structure
 
 ### 7. Common Patterns
+
 Reusable patterns for the framework.
 
 ### 8. Next Steps
+
 Links to:
+
 - Getting Started guide
 - Core concept documentation
 
@@ -160,22 +184,27 @@ Links to:
 ### Framework-Specific Recommendations
 
 **Next.js (App Router & Pages Router):**
+
 - **Recommended:** Playwright with `@scenarist/playwright-helpers`
 - **Why:** Tests Server Components, API routes, getServerSideProps with real HTTP requests and browser rendering
 
 **Express:**
+
 - **Recommended:** Supertest
 - **Why:** Direct API testing without browser overhead
 - **Optional:** Playwright for full page testing if serving HTML
 
 **General Rule:**
+
 - If framework has server-side rendering → Recommend Playwright
 - If framework is API-only → Recommend supertest
 
 ## Code Example Standards
 
 ### Complete Examples
+
 Code examples should be:
+
 - **Complete** - Show all necessary imports and setup
 - **Runnable** - Copy-paste ready when possible
 - **Commented** - Explain non-obvious parts
@@ -183,16 +212,18 @@ Code examples should be:
 
 ### Example Structure
 
-```markdown
+````markdown
 **`path/to/file.ts`** - Brief description
-```typescript
+
+````typescript
 import { necessary } from 'imports';
 
 export function example() {
   // Implementation
 }
 \```
-```
+````
+````
 
 ## Consistency Checklist
 
@@ -218,10 +249,12 @@ description: Brief description (used in SEO and navigation)
 ```
 
 **Title:** Use proper case, framework name if applicable
+
 - ✅ "Next.js App Router - Getting Started"
 - ❌ "next.js app router getting started"
 
 **Description:** One sentence, no period, under 160 characters
+
 - ✅ "Set up Scenarist with Next.js App Router in 5 minutes"
 - ❌ "This guide will walk you through setting up Scenarist with Next.js App Router."
 
@@ -261,23 +294,30 @@ Always open in new tab for external resources:
 ## Section Heading Standards
 
 ### Hierarchy
+
 - `##` - Major sections
 - `###` - Subsections
 - `####` - Tertiary sections (use sparingly)
 
 ### Naming
+
 - Use title case for major sections
 - Use sentence case for subsections
 - Keep concise (3-5 words maximum)
 
 ```markdown
 ✅ CORRECT:
+
 ## Key Files
+
 ### Scenarist Setup
+
 ### Scenario Definitions
 
 ❌ WRONG:
+
 ## KEY FILES
+
 ### Here is how you set up Scenarist for this framework
 ```
 
@@ -302,6 +342,7 @@ Important warnings about potential issues.
 ```
 
 **Guidelines:**
+
 - Use only when information truly stands out from regular flow
 - Keep content concise (1-3 sentences)
 - Don't overuse - too many asides reduce their impact
@@ -319,13 +360,19 @@ sidebar: [
         label: "Framework Name",
         items: [
           { label: "Overview", slug: "frameworks/framework-name" },
-          { label: "Getting Started", slug: "frameworks/framework-name/getting-started" },
-          { label: "Example App", slug: "frameworks/framework-name/example-app" },
+          {
+            label: "Getting Started",
+            slug: "frameworks/framework-name/getting-started",
+          },
+          {
+            label: "Example App",
+            slug: "frameworks/framework-name/example-app",
+          },
         ],
       },
     ],
   },
-]
+];
 ```
 
 ## Questions?

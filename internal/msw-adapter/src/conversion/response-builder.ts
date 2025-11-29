@@ -1,8 +1,8 @@
-import { HttpResponse, delay } from 'msw';
-import type { ScenaristResponse } from '@scenarist/core';
+import { HttpResponse, delay } from "msw";
+import type { ScenaristResponse } from "@scenarist/core";
 
 export const buildResponse = async (
-  response: ScenaristResponse
+  response: ScenaristResponse,
 ): Promise<Response> => {
   if (response.delay) {
     await delay(response.delay);

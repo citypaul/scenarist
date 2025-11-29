@@ -40,7 +40,7 @@ const createTestSetup = () => {
    */
   const testParamParity = async (
     pattern: string,
-    requestPath: string
+    requestPath: string,
   ): Promise<MSWParams> => {
     // MSW in Node.js requires FULL URLs (not pathname-only patterns)
     // Match the full URL that fetch will request
@@ -59,11 +59,11 @@ const createTestSetup = () => {
         http.get(mswPattern, ({ params, request }) => {
           console.log(
             `[MSW HANDLER] pattern=${mswPattern}, url=${request.url}, params=`,
-            params
+            params,
           );
           resolve(params as MSWParams);
           return HttpResponse.json({ ok: true });
-        })
+        }),
       );
 
       console.log(`[TEST] Fetching ${fullUrl}`);
@@ -107,7 +107,7 @@ describe("MSW Parity: Path Parameter Extraction", () => {
     it("should extract multiple params :userId/:postId identically to MSW", async () => {
       await testParamParity(
         "/users/:userId/posts/:postId",
-        "/users/alice/posts/42"
+        "/users/alice/posts/42",
       );
     });
 
@@ -118,7 +118,7 @@ describe("MSW Parity: Path Parameter Extraction", () => {
     it("should preserve case in param names", async () => {
       await testParamParity(
         "/users/:userId/posts/:postID",
-        "/users/alice/posts/42"
+        "/users/alice/posts/42",
       );
     });
 
@@ -182,7 +182,7 @@ describe("MSW Parity: Path Parameter Extraction", () => {
     it("should extract :path+ with single segment as array", async () => {
       const mswParams = await testParamParity(
         "/files/:path+",
-        "/files/document.txt"
+        "/files/document.txt",
       );
 
       // MSW returns array even for single segment
@@ -193,7 +193,7 @@ describe("MSW Parity: Path Parameter Extraction", () => {
     it("should extract :path+ with multiple segments as array", async () => {
       const mswParams = await testParamParity(
         "/files/:path+",
-        "/files/folder/subfolder/document.txt"
+        "/files/folder/subfolder/document.txt",
       );
 
       expect(Array.isArray(mswParams?.path)).toBe(true);
@@ -205,7 +205,7 @@ describe("MSW Parity: Path Parameter Extraction", () => {
     it("should preserve segment order in :path+ array", async () => {
       const mswParams = await testParamParity(
         "/files/:path+",
-        "/files/a/b/c/d"
+        "/files/a/b/c/d",
       );
 
       expect(mswParams?.path).toEqual(["a", "b", "c", "d"]);
@@ -218,7 +218,7 @@ describe("MSW Parity: Path Parameter Extraction", () => {
     it("should handle :path* with multiple segments", async () => {
       const mswParams = await testParamParity(
         "/files/:path*",
-        "/files/folder/file.txt"
+        "/files/folder/file.txt",
       );
 
       expect(Array.isArray(mswParams?.path)).toBe(true);
@@ -227,7 +227,7 @@ describe("MSW Parity: Path Parameter Extraction", () => {
     it("should handle multiple repeating params", async () => {
       const mswParams = await testParamParity(
         "/api/:version+/resources/:path+",
-        "/api/v1/v2/resources/users/123"
+        "/api/v1/v2/resources/users/123",
       );
 
       expect(Array.isArray(mswParams?.version)).toBe(true);
@@ -237,7 +237,7 @@ describe("MSW Parity: Path Parameter Extraction", () => {
     it("should decode each segment in :path+ separately", async () => {
       const mswParams = await testParamParity(
         "/files/:path+",
-        "/files/hello%20world/foo%2Fbar"
+        "/files/hello%20world/foo%2Fbar",
       );
 
       expect(mswParams?.path).toContain("hello world");
@@ -265,19 +265,19 @@ describe("MSW Parity: Path Parameter Extraction", () => {
               ({ params }) => {
                 resolve("specific");
                 return HttpResponse.json({ matched: "specific", params });
-              }
+              },
             ),
             // Catch-all fallback handler - will match if specific handler doesn't
             http.get("https://api.example.com/users/*", () => {
               resolve("fallback");
               return HttpResponse.json({ matched: "fallback" });
-            })
+            }),
           );
 
           // Make request that shouldn't match the regex pattern
           // If MSW's :id(\d+) doesn't match "alice", the fallback will catch it
           fetch("https://api.example.com/users/alice");
-        }
+        },
       );
 
       // Our implementation should also not match
@@ -296,21 +296,21 @@ describe("MSW Parity: Path Parameter Extraction", () => {
     it("should extract :slug([a-z0-9-]+) with character class", async () => {
       await testParamParity(
         "/slugs/:slug([a-z0-9-]+)",
-        "/slugs/my-blog-post-123"
+        "/slugs/my-blog-post-123",
       );
     });
 
     it("should handle multiple params with custom regexes", async () => {
       await testParamParity(
         "/posts/:year(\\d{4})/:month(\\d{2})/:slug([a-z0-9-]+)",
-        "/posts/2024/11/my-post"
+        "/posts/2024/11/my-post",
       );
     });
 
     it("should handle repeating param with custom regex", async () => {
       const mswParams = await testParamParity(
         "/numbers/:id(\\d+)+",
-        "/numbers/1/22/333"
+        "/numbers/1/22/333",
       );
 
       expect(Array.isArray(mswParams?.id)).toBe(true);
@@ -321,7 +321,7 @@ describe("MSW Parity: Path Parameter Extraction", () => {
     it("should decode %20 to space identically", async () => {
       const mswParams = await testParamParity(
         "/search/:query",
-        "/search/hello%20world"
+        "/search/hello%20world",
       );
 
       expect(mswParams?.query).toBe("hello world");
@@ -330,7 +330,7 @@ describe("MSW Parity: Path Parameter Extraction", () => {
     it("should decode %2F to forward slash identically", async () => {
       const mswParams = await testParamParity(
         "/files/:path",
-        "/files/folder%2Ffile.txt"
+        "/files/folder%2Ffile.txt",
       );
 
       expect(mswParams?.path).toBe("folder/file.txt");
@@ -339,7 +339,7 @@ describe("MSW Parity: Path Parameter Extraction", () => {
     it("should decode Unicode characters identically", async () => {
       const mswParams = await testParamParity(
         "/users/:name",
-        "/users/%E4%BD%A0%E5%A5%BD" // "你好"
+        "/users/%E4%BD%A0%E5%A5%BD", // "你好"
       );
 
       expect(mswParams?.name).toBe("你好");
@@ -366,7 +366,7 @@ describe("MSW Parity: Path Parameter Extraction", () => {
     it("should extract params ignoring single query parameter", async () => {
       const mswParams = await testParamParity(
         "https://api.example.com/users/:id",
-        "https://api.example.com/users/123?foo=bar"
+        "https://api.example.com/users/123?foo=bar",
       );
 
       expect(mswParams?.id).toBe("123");
@@ -375,7 +375,7 @@ describe("MSW Parity: Path Parameter Extraction", () => {
     it("should extract params ignoring multiple query parameters", async () => {
       const mswParams = await testParamParity(
         "https://api.example.com/posts/:year/:month",
-        "https://api.example.com/posts/2024/11?tag=tech&author=alice"
+        "https://api.example.com/posts/2024/11?tag=tech&author=alice",
       );
 
       expect(mswParams).toEqual({ year: "2024", month: "11" });
@@ -384,7 +384,7 @@ describe("MSW Parity: Path Parameter Extraction", () => {
     it("should handle query params with special characters", async () => {
       const mswParams = await testParamParity(
         "https://api.example.com/search/:query",
-        "https://api.example.com/search/test?filter=name%3Dalice&sort=asc"
+        "https://api.example.com/search/test?filter=name%3Dalice&sort=asc",
       );
 
       expect(mswParams?.query).toBe("test");
@@ -393,7 +393,7 @@ describe("MSW Parity: Path Parameter Extraction", () => {
     it("should extract optional params with query string present", async () => {
       const mswParams = await testParamParity(
         "https://api.example.com/users/:id?",
-        "https://api.example.com/users/123?role=admin"
+        "https://api.example.com/users/123?role=admin",
       );
 
       expect(mswParams?.id).toBe("123");
@@ -402,7 +402,7 @@ describe("MSW Parity: Path Parameter Extraction", () => {
     it("should extract repeating params with query string", async () => {
       const mswParams = await testParamParity(
         "https://api.example.com/files/:path+",
-        "https://api.example.com/files/folder/doc.txt?version=2&download=true"
+        "https://api.example.com/files/folder/doc.txt?version=2&download=true",
       );
 
       expect(mswParams?.path).toEqual(["folder", "doc.txt"]);
@@ -411,7 +411,7 @@ describe("MSW Parity: Path Parameter Extraction", () => {
     it("should handle empty query string", async () => {
       const mswParams = await testParamParity(
         "https://api.example.com/users/:id",
-        "https://api.example.com/users/123?"
+        "https://api.example.com/users/123?",
       );
 
       expect(mswParams?.id).toBe("123");
@@ -420,7 +420,7 @@ describe("MSW Parity: Path Parameter Extraction", () => {
     it("should handle query string with equals but no value", async () => {
       const mswParams = await testParamParity(
         "https://api.example.com/users/:id",
-        "https://api.example.com/users/123?foo="
+        "https://api.example.com/users/123?foo=",
       );
 
       expect(mswParams?.id).toBe("123");
@@ -429,7 +429,7 @@ describe("MSW Parity: Path Parameter Extraction", () => {
     it("should handle URL with root path and query params", async () => {
       const mswParams = await testParamParity(
         "https://api.example.com/",
-        "https://api.example.com/?key=value"
+        "https://api.example.com/?key=value",
       );
 
       // Root path with query params should match root pattern
@@ -447,7 +447,7 @@ describe("MSW Parity: Path Parameter Extraction", () => {
           http.post(pattern, ({ params, request }) => {
             resolve(params);
             return HttpResponse.json({ ok: true });
-          })
+          }),
         );
 
         // Send POST with plain text body (not JSON)
@@ -467,7 +467,7 @@ describe("MSW Parity: Path Parameter Extraction", () => {
     it("should handle URL without query params (no searchParams)", async () => {
       const mswParams = await testParamParity(
         "https://api.example.com/users",
-        "https://api.example.com/users"
+        "https://api.example.com/users",
       );
 
       // Should match with empty params
@@ -478,7 +478,7 @@ describe("MSW Parity: Path Parameter Extraction", () => {
       // This test ensures url-matcher line 34 (|| '/') is executed
       const mswParams = await testParamParity(
         "https://api.example.com/",
-        "https://api.example.com"
+        "https://api.example.com",
       );
 
       // Root path should match with empty params

@@ -9,10 +9,10 @@
  * Client Component - Requires state and effects for API calls.
  */
 
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
+import { useState } from "react";
+import Link from "next/link";
 
 type JobStatus = {
   readonly jobId: string;
@@ -39,8 +39,12 @@ type PaymentError = {
 
 export default function PaymentPage() {
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
-  const [weatherStatus, setWeatherStatus] = useState<WeatherStatus | null>(null);
-  const [paymentResult, setPaymentResult] = useState<PaymentResult | null>(null);
+  const [weatherStatus, setWeatherStatus] = useState<WeatherStatus | null>(
+    null,
+  );
+  const [paymentResult, setPaymentResult] = useState<PaymentResult | null>(
+    null,
+  );
   const [paymentError, setPaymentError] = useState<PaymentError | null>(null);
   const [isCheckingJob, setIsCheckingJob] = useState(false);
   const [isCheckingWeather, setIsCheckingWeather] = useState(false);
@@ -49,8 +53,8 @@ export default function PaymentPage() {
   const handleCheckJobStatus = async () => {
     setIsCheckingJob(true);
     try {
-      const response = await fetch('/api/payment/github-job', {
-        method: 'GET',
+      const response = await fetch("/api/payment/github-job", {
+        method: "GET",
       });
       const data: JobStatus = await response.json();
       setJobStatus(data);
@@ -62,8 +66,8 @@ export default function PaymentPage() {
   const handleGetWeather = async () => {
     setIsCheckingWeather(true);
     try {
-      const response = await fetch('/api/payment/weather', {
-        method: 'GET',
+      const response = await fetch("/api/payment/weather", {
+        method: "GET",
       });
       const data: WeatherStatus = await response.json();
       setWeatherStatus(data);
@@ -76,9 +80,9 @@ export default function PaymentPage() {
     setIsSubmittingPayment(true);
     setPaymentError(null);
     try {
-      const response = await fetch('/api/payment/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/payment/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount: 100 }),
       });
 
@@ -99,10 +103,15 @@ export default function PaymentPage() {
   return (
     <main className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Response Sequences Demo</h1>
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          Response Sequences Demo
+        </h1>
 
         <nav aria-label="Main navigation" className="mb-8">
-          <Link href="/" className="text-blue-600 hover:text-blue-700 underline">
+          <Link
+            href="/"
+            className="text-blue-600 hover:text-blue-700 underline"
+          >
             Back to Products
           </Link>
         </nav>
@@ -110,10 +119,13 @@ export default function PaymentPage() {
         <div className="grid grid-cols-1 gap-8">
           {/* GitHub Job Polling (repeat: 'last') */}
           <section className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-2xl font-semibold mb-4">1. GitHub Job Polling (repeat: 'last')</h2>
+            <h2 className="text-2xl font-semibold mb-4">
+              1. GitHub Job Polling (repeat: 'last')
+            </h2>
             <p className="text-gray-600 mb-6">
-              Demonstrates polling pattern. Sequence progresses through pending → processing → complete,
-              then repeats the last response indefinitely.
+              Demonstrates polling pattern. Sequence progresses through pending
+              → processing → complete, then repeats the last response
+              indefinitely.
             </p>
 
             <button
@@ -121,7 +133,7 @@ export default function PaymentPage() {
               disabled={isCheckingJob}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded transition-colors mb-6"
             >
-              {isCheckingJob ? 'Checking...' : 'Check Job Status'}
+              {isCheckingJob ? "Checking..." : "Check Job Status"}
             </button>
 
             {jobStatus && (
@@ -131,16 +143,24 @@ export default function PaymentPage() {
                 className="bg-blue-50 border border-blue-200 p-4 rounded-lg"
               >
                 <p className="mb-2">
-                  <span className="font-semibold">Job ID:</span> {jobStatus.jobId}
+                  <span className="font-semibold">Job ID:</span>{" "}
+                  {jobStatus.jobId}
                 </p>
                 <p className="mb-2">
-                  <span className="font-semibold">Status:</span>{' '}
-                  <span className={jobStatus.status === 'complete' ? 'text-green-600' : 'text-blue-600'}>
+                  <span className="font-semibold">Status:</span>{" "}
+                  <span
+                    className={
+                      jobStatus.status === "complete"
+                        ? "text-green-600"
+                        : "text-blue-600"
+                    }
+                  >
                     {jobStatus.status}
                   </span>
                 </p>
                 <div className="mb-2">
-                  <span className="font-semibold">Progress:</span> {jobStatus.progress}%
+                  <span className="font-semibold">Progress:</span>{" "}
+                  {jobStatus.progress}%
                 </div>
                 <div
                   role="progressbar"
@@ -160,10 +180,12 @@ export default function PaymentPage() {
 
           {/* Weather Cycle (repeat: 'cycle') */}
           <section className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-2xl font-semibold mb-4">2. Weather Cycle (repeat: 'cycle')</h2>
+            <h2 className="text-2xl font-semibold mb-4">
+              2. Weather Cycle (repeat: 'cycle')
+            </h2>
             <p className="text-gray-600 mb-6">
-              Demonstrates cycling pattern. Sequence cycles through Sunny → Cloudy → Rainy,
-              then loops back to the start infinitely.
+              Demonstrates cycling pattern. Sequence cycles through Sunny →
+              Cloudy → Rainy, then loops back to the start infinitely.
             </p>
 
             <button
@@ -171,7 +193,7 @@ export default function PaymentPage() {
               disabled={isCheckingWeather}
               className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded transition-colors mb-6"
             >
-              {isCheckingWeather ? 'Checking...' : 'Get Weather'}
+              {isCheckingWeather ? "Checking..." : "Get Weather"}
             </button>
 
             {weatherStatus && (
@@ -181,14 +203,18 @@ export default function PaymentPage() {
                 className="bg-green-50 border border-green-200 p-4 rounded-lg"
               >
                 <p className="mb-2">
-                  <span className="font-semibold">City:</span> {weatherStatus.city}
+                  <span className="font-semibold">City:</span>{" "}
+                  {weatherStatus.city}
                 </p>
                 <p className="mb-2">
-                  <span className="font-semibold">Conditions:</span>{' '}
-                  <span className="text-green-700">{weatherStatus.conditions}</span>
+                  <span className="font-semibold">Conditions:</span>{" "}
+                  <span className="text-green-700">
+                    {weatherStatus.conditions}
+                  </span>
                 </p>
                 <p>
-                  <span className="font-semibold">Temperature:</span> {weatherStatus.temp}°C
+                  <span className="font-semibold">Temperature:</span>{" "}
+                  {weatherStatus.temp}°C
                 </p>
               </div>
             )}
@@ -196,10 +222,12 @@ export default function PaymentPage() {
 
           {/* Payment Limited (repeat: 'none') */}
           <section className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-2xl font-semibold mb-4">3. Payment Limited (repeat: 'none')</h2>
+            <h2 className="text-2xl font-semibold mb-4">
+              3. Payment Limited (repeat: 'none')
+            </h2>
             <p className="text-gray-600 mb-6">
-              Demonstrates rate limiting. Allows 3 payment attempts, then falls through to
-              rate limit error. Sequence exhausts and never repeats.
+              Demonstrates rate limiting. Allows 3 payment attempts, then falls
+              through to rate limit error. Sequence exhausts and never repeats.
             </p>
 
             <button
@@ -207,7 +235,7 @@ export default function PaymentPage() {
               disabled={isSubmittingPayment}
               className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded transition-colors mb-6"
             >
-              {isSubmittingPayment ? 'Submitting...' : 'Submit Payment'}
+              {isSubmittingPayment ? "Submitting..." : "Submit Payment"}
             </button>
 
             {paymentResult && (
@@ -217,11 +245,18 @@ export default function PaymentPage() {
                 className="bg-purple-50 border border-purple-200 p-4 rounded-lg"
               >
                 <p className="mb-2">
-                  <span className="font-semibold">Payment ID:</span> {paymentResult.id}
+                  <span className="font-semibold">Payment ID:</span>{" "}
+                  {paymentResult.id}
                 </p>
                 <p>
-                  <span className="font-semibold">Status:</span>{' '}
-                  <span className={paymentResult.status === 'succeeded' ? 'text-green-600' : 'text-purple-600'}>
+                  <span className="font-semibold">Status:</span>{" "}
+                  <span
+                    className={
+                      paymentResult.status === "succeeded"
+                        ? "text-green-600"
+                        : "text-purple-600"
+                    }
+                  >
                     {paymentResult.status}
                   </span>
                 </p>
@@ -229,8 +264,13 @@ export default function PaymentPage() {
             )}
 
             {paymentError && (
-              <div role="alert" className="bg-red-50 border border-red-200 p-4 rounded-lg">
-                <p className="text-red-700 font-semibold mb-2">Payment Failed</p>
+              <div
+                role="alert"
+                className="bg-red-50 border border-red-200 p-4 rounded-lg"
+              >
+                <p className="text-red-700 font-semibold mb-2">
+                  Payment Failed
+                </p>
                 <p className="text-red-600">{paymentError.error.message}</p>
               </div>
             )}

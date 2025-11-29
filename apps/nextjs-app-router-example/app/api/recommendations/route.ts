@@ -7,22 +7,22 @@
  * Scenarist mocks this to test different recommendation responses.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
-  const tier = request.headers.get('x-user-tier') || 'standard';
+  const tier = request.headers.get("x-user-tier") || "standard";
 
   // Forward test ID header for scenario isolation
-  const testId = request.headers.get('x-scenarist-test-id');
+  const testId = request.headers.get("x-scenarist-test-id");
   const headers: Record<string, string> = {
-    'x-user-tier': tier,
+    "x-user-tier": tier,
   };
   if (testId) {
-    headers['x-scenarist-test-id'] = testId;
+    headers["x-scenarist-test-id"] = testId;
   }
 
   // Call external recommendation service (Scenarist intercepts this)
-  const response = await fetch('http://localhost:3001/api/recommendations', {
+  const response = await fetch("http://localhost:3001/api/recommendations", {
     headers,
   });
 

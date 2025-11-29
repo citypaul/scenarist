@@ -7,7 +7,7 @@
  * - Fast in-memory execution (no database round-trips)
  */
 
-import type { UserRepository, User, CreateUserInput } from './user-repository';
+import type { UserRepository, User, CreateUserInput } from "./user-repository";
 
 export class InMemoryUserRepository implements UserRepository {
   // Map<testId, Map<userId, User>>

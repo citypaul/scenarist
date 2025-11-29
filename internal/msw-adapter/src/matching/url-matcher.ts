@@ -1,4 +1,4 @@
-import { match } from 'path-to-regexp';
+import { match } from "path-to-regexp";
 
 /**
  * Result of URL matching with path parameter extraction.
@@ -31,7 +31,7 @@ const extractPathnameOrReturnAsIs = (url: string): string => {
 
   if (match) {
     // Return everything after the host (group 1), or '/' if no path
-    return match[1] || '/';
+    return match[1] || "/";
   }
 
   // Not a full URL, return as-is (already a pathname)
@@ -49,7 +49,7 @@ const extractPathnameOrReturnAsIs = (url: string): string => {
  * Returns Record<string, string | string[]> matching MSW's documented types.
  */
 const extractParams = (
-  params: object
+  params: object,
 ): Record<string, string | ReadonlyArray<string>> => {
   return Object.fromEntries(
     Object.entries(params).filter(([key, value]) => {
@@ -58,8 +58,8 @@ const extractParams = (
         return false;
       }
       // Keep strings and arrays (MSW documented: string | string[])
-      return typeof value === 'string' || Array.isArray(value);
-    })
+      return typeof value === "string" || Array.isArray(value);
+    }),
   ) as Record<string, string | ReadonlyArray<string>>;
 };
 
@@ -99,7 +99,7 @@ const extractHostname = (url: string): string | undefined => {
  */
 export const matchesUrl = (
   pattern: string | RegExp,
-  requestUrl: string
+  requestUrl: string,
 ): UrlMatchResult => {
   /**
    * RegExp patterns: MSW Weak Comparison (ADR-0016)
@@ -157,7 +157,7 @@ export const matchesUrl = (
   let requestPath = extractPathnameOrReturnAsIs(requestUrl);
 
   // Strip query parameters from request path
-  const queryIndex = requestPath.indexOf('?');
+  const queryIndex = requestPath.indexOf("?");
   if (queryIndex !== -1) {
     requestPath = requestPath.substring(0, queryIndex);
   }

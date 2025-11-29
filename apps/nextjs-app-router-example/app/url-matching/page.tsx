@@ -16,7 +16,7 @@
 // CRITICAL: Import scenarist to ensure MSW starts before fetch calls
 import { headers } from "next/headers";
 
-import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+import { getScenaristHeadersFromReadonlyHeaders } from "@scenarist/nextjs-adapter/app";
 
 type User = {
   readonly login: string;
@@ -90,7 +90,16 @@ type CustomRegexOrder = {
   readonly matchedBy: string;
 };
 
-type TestResult = User | Weather | FileInfo | Charge | PathParamUser | MultipleParams | OptionalFile | RepeatingPath | CustomRegexOrder;
+type TestResult =
+  | User
+  | Weather
+  | FileInfo
+  | Charge
+  | PathParamUser
+  | MultipleParams
+  | OptionalFile
+  | RepeatingPath
+  | CustomRegexOrder;
 
 type FetchResult =
   | { readonly success: true; readonly data: TestResult }
@@ -99,7 +108,7 @@ type FetchResult =
 const fetchTestData = async (
   test: string,
   params: Record<string, string | undefined>,
-  scenaristHeaders: Record<string, string>
+  scenaristHeaders: Record<string, string>,
 ): Promise<FetchResult> => {
   try {
     switch (test) {
@@ -112,7 +121,7 @@ const fetchTestData = async (
           {
             headers: scenaristHeaders,
             cache: "no-store",
-          }
+          },
         );
         const data = (await response.json()) as User;
         return { success: true, data };
@@ -126,7 +135,7 @@ const fetchTestData = async (
           {
             headers: scenaristHeaders,
             cache: "no-store",
-          }
+          },
         );
         const data = (await response.json()) as Weather;
         return { success: true, data };
@@ -141,7 +150,7 @@ const fetchTestData = async (
           {
             headers: scenaristHeaders,
             cache: "no-store",
-          }
+          },
         );
         const data = (await response.json()) as Weather;
         return { success: true, data };
@@ -155,7 +164,7 @@ const fetchTestData = async (
           {
             headers: scenaristHeaders,
             cache: "no-store",
-          }
+          },
         );
         const data = (await response.json()) as FileInfo;
         return { success: true, data };
@@ -186,7 +195,7 @@ const fetchTestData = async (
           {
             headers: scenaristHeaders,
             cache: "no-store",
-          }
+          },
         );
         const data = (await response.json()) as PathParamUser;
         return { success: true, data };
@@ -201,7 +210,7 @@ const fetchTestData = async (
           {
             headers: scenaristHeaders,
             cache: "no-store",
-          }
+          },
         );
         const data = (await response.json()) as MultipleParams;
         return { success: true, data };
@@ -229,7 +238,7 @@ const fetchTestData = async (
           {
             headers: scenaristHeaders,
             cache: "no-store",
-          }
+          },
         );
         const data = (await response.json()) as RepeatingPath;
         return { success: true, data };
@@ -243,7 +252,7 @@ const fetchTestData = async (
           {
             headers: scenaristHeaders,
             cache: "no-store",
-          }
+          },
         );
         const data = (await response.json()) as CustomRegexOrder;
         return { success: true, data };
@@ -428,13 +437,16 @@ export default async function URLMatchingPage({
           {"filename" in fetchResult.data && (
             <>
               <p className="mb-2">
-                <strong>Filename:</strong> {fetchResult.data.filename || "default.txt"}
+                <strong>Filename:</strong>{" "}
+                {fetchResult.data.filename || "default.txt"}
               </p>
               <p className="mb-2">
-                <strong>Path:</strong> {fetchResult.data.path || "/file-optional/default.txt"}
+                <strong>Path:</strong>{" "}
+                {fetchResult.data.path || "/file-optional/default.txt"}
               </p>
               <p className="mb-2">
-                <strong>Exists:</strong> {fetchResult.data.exists ? "Yes" : "No"}
+                <strong>Exists:</strong>{" "}
+                {fetchResult.data.exists ? "Yes" : "No"}
               </p>
             </>
           )}
@@ -443,7 +455,8 @@ export default async function URLMatchingPage({
           {"segments" in fetchResult.data && (
             <>
               <p className="mb-2">
-                <strong>Path:</strong> {Array.isArray(fetchResult.data.path)
+                <strong>Path:</strong>{" "}
+                {Array.isArray(fetchResult.data.path)
                   ? fetchResult.data.path.join("/")
                   : fetchResult.data.path}
               </p>

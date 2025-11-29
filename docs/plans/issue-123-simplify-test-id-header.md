@@ -7,6 +7,7 @@ Remove the configurable `headers.testId` option and standardize on `'x-scenarist
 **Status:** Ready for implementation
 
 **Decisions:**
+
 - Documentation: Include in this PR
 - Config shape: Remove `headers` object entirely (cleaner API)
 - Migration: Clean break, no backward compatibility
@@ -25,10 +26,10 @@ The current `headers.testId` configuration option creates inconsistency:
 
 ### Header Name Change
 
-| Before | After |
-|--------|-------|
-| Configurable via `headers.testId` | Fixed constant |
-| Default: `'x-scenarist-test-id'` | Standard: `'x-scenarist-test-id'` |
+| Before                            | After                             |
+| --------------------------------- | --------------------------------- |
+| Configurable via `headers.testId` | Fixed constant                    |
+| Default: `'x-scenarist-test-id'`  | Standard: `'x-scenarist-test-id'` |
 
 ### Files to Modify
 
@@ -107,6 +108,7 @@ The current `headers.testId` configuration option creates inconsistency:
 ### TDD Approach
 
 For each file change:
+
 1. **RED**: Update test to expect `'x-scenarist-test-id'` - watch it fail
 2. **GREEN**: Update implementation to use new header name
 3. **REFACTOR**: Simplify any code that was dealing with configuration complexity
@@ -125,12 +127,13 @@ Export from core so all packages use same source:
 
 ```typescript
 // packages/core/src/constants/headers.ts
-export const SCENARIST_TEST_ID_HEADER = 'x-scenarist-test-id';
+export const SCENARIST_TEST_ID_HEADER = "x-scenarist-test-id";
 ```
 
 Then import in adapters:
+
 ```typescript
-import { SCENARIST_TEST_ID_HEADER } from '@scenarist/core';
+import { SCENARIST_TEST_ID_HEADER } from "@scenarist/core";
 ```
 
 ## Breaking Change Impact
@@ -149,12 +152,12 @@ import { SCENARIST_TEST_ID_HEADER } from '@scenarist/core';
 // Before
 const scenarist = createScenarist({
   enabled: true,
-  headers: { testId: 'x-custom-header' }, // Remove this
+  headers: { testId: "x-custom-header" }, // Remove this
   scenarios,
 });
 
 // Test code before
-await page.setExtraHTTPHeaders({ 'x-scenarist-test-id': testId });
+await page.setExtraHTTPHeaders({ "x-scenarist-test-id": testId });
 
 // After
 const scenarist = createScenarist({
@@ -163,37 +166,37 @@ const scenarist = createScenarist({
 });
 
 // Test code after
-await page.setExtraHTTPHeaders({ 'x-scenarist-test-id': testId });
+await page.setExtraHTTPHeaders({ "x-scenarist-test-id": testId });
 ```
 
 ## Scope Breakdown
 
-| Category | File Count | Complexity |
-|----------|------------|------------|
-| Core types/config | 4 | Low |
-| Adapter implementations | 8 | Low |
-| Package tests | ~15 | Medium |
-| Example app tests | ~40 | Medium (find/replace) |
-| Bruno collections | ~30 | Low (find/replace) |
-| Documentation | ~25 | Low (find/replace) |
-| **Total** | **~122** | |
+| Category                | File Count | Complexity            |
+| ----------------------- | ---------- | --------------------- |
+| Core types/config       | 4          | Low                   |
+| Adapter implementations | 8          | Low                   |
+| Package tests           | ~15        | Medium                |
+| Example app tests       | ~40        | Medium (find/replace) |
+| Bruno collections       | ~30        | Low (find/replace)    |
+| Documentation           | ~25        | Low (find/replace)    |
+| **Total**               | **~122**   |                       |
 
 ## Decisions (Resolved)
 
-| Question | Decision |
-|----------|----------|
-| Documentation scope | Include in this PR |
-| Config type approach | Remove `headers` entirely |
-| Backward compatibility | Clean break, document migration |
-| Example apps scope | Update everything (ensures examples work) |
+| Question               | Decision                                  |
+| ---------------------- | ----------------------------------------- |
+| Documentation scope    | Include in this PR                        |
+| Config type approach   | Remove `headers` entirely                 |
+| Backward compatibility | Clean break, document migration           |
+| Example apps scope     | Update everything (ensures examples work) |
 
 ## Risk Assessment
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|------------|--------|------------|
-| Breaking user tests | High | Medium | Clear migration docs |
-| Missing file updates | Medium | Low | Comprehensive grep before PR |
-| Constant import cycles | Low | Medium | Put in dedicated constants file |
+| Risk                   | Likelihood | Impact | Mitigation                      |
+| ---------------------- | ---------- | ------ | ------------------------------- |
+| Breaking user tests    | High       | Medium | Clear migration docs            |
+| Missing file updates   | Medium     | Low    | Comprehensive grep before PR    |
+| Constant import cycles | Low        | Medium | Put in dedicated constants file |
 
 ## Success Criteria
 

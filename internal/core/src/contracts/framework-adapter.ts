@@ -6,9 +6,9 @@ import type {
   ScenaristConfig,
   ScenaristScenarios,
   ScenarioIds,
-} from '../types/index.js';
-import type { ScenarioRegistry } from '../ports/driven/scenario-registry.js';
-import type { ScenarioStore } from '../ports/driven/scenario-store.js';
+} from "../types/index.js";
+import type { ScenarioRegistry } from "../ports/driven/scenario-registry.js";
+import type { ScenarioStore } from "../ports/driven/scenario-store.js";
 
 /**
  * Base configuration options that all framework adapters must support.
@@ -31,8 +31,9 @@ import type { ScenarioStore } from '../ports/driven/scenario-store.js';
  *   };
  * ```
  */
-export type BaseAdapterOptions<T extends ScenaristScenarios = ScenaristScenarios> =
-  ScenaristConfigInput<T> & {
+export type BaseAdapterOptions<
+  T extends ScenaristScenarios = ScenaristScenarios,
+> = ScenaristConfigInput<T> & {
   /**
    * Custom scenario registry implementation.
    *
@@ -61,7 +62,7 @@ export type BaseAdapterOptions<T extends ScenaristScenarios = ScenaristScenarios
  */
 export type ScenaristAdapter<
   TMiddleware = unknown,
-  TScenarios extends ScenaristScenarios = ScenaristScenarios
+  TScenarios extends ScenaristScenarios = ScenaristScenarios,
 > = {
   /**
    * Resolved configuration.
@@ -102,7 +103,7 @@ export type ScenaristAdapter<
    */
   readonly switchScenario: (
     testId: string,
-    scenarioId: ScenarioIds<TScenarios>
+    scenarioId: ScenarioIds<TScenarios>,
   ) => ScenaristResult<void, Error>;
 
   /**
@@ -116,7 +117,7 @@ export type ScenaristAdapter<
    * Scenario IDs are type-safe based on the scenarios object.
    */
   readonly getScenarioById: (
-    scenarioId: ScenarioIds<TScenarios>
+    scenarioId: ScenarioIds<TScenarios>,
   ) => ScenaristScenario | undefined;
 
   /**

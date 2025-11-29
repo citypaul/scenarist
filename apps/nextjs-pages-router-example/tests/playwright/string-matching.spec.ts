@@ -38,7 +38,9 @@ test.describe("String Matching Strategies - Pages Router", () => {
   }) => {
     await switchScenario(page, "stringMatching");
 
-    await page.goto("/api/test-string-match?strategy=contains&campaign=summer-premium-sale");
+    await page.goto(
+      "/api/test-string-match?strategy=contains&campaign=summer-premium-sale",
+    );
 
     const response = await page.textContent("body");
     const data = JSON.parse(response || "{}");
@@ -55,7 +57,9 @@ test.describe("String Matching Strategies - Pages Router", () => {
   }) => {
     await switchScenario(page, "stringMatching");
 
-    await page.goto("/api/test-string-match?strategy=contains&campaign=standard-sale");
+    await page.goto(
+      "/api/test-string-match?strategy=contains&campaign=standard-sale",
+    );
 
     const response = await page.textContent("body");
     const data = JSON.parse(response || "{}");
@@ -85,7 +89,9 @@ test.describe("String Matching Strategies - Pages Router", () => {
   }) => {
     await switchScenario(page, "stringMatching");
 
-    await page.goto("/api/test-string-match?strategy=startsWith&apiKey=sk_test_12345");
+    await page.goto(
+      "/api/test-string-match?strategy=startsWith&apiKey=sk_test_12345",
+    );
 
     const response = await page.textContent("body");
     const data = JSON.parse(response || "{}");
@@ -101,7 +107,9 @@ test.describe("String Matching Strategies - Pages Router", () => {
   }) => {
     await switchScenario(page, "stringMatching");
 
-    await page.goto("/api/test-string-match?strategy=startsWith&apiKey=pk_test_12345");
+    await page.goto(
+      "/api/test-string-match?strategy=startsWith&apiKey=pk_test_12345",
+    );
 
     const response = await page.textContent("body");
     const data = JSON.parse(response || "{}");
@@ -129,7 +137,9 @@ test.describe("String Matching Strategies - Pages Router", () => {
   }) => {
     await switchScenario(page, "stringMatching");
 
-    await page.goto("/api/test-string-match?strategy=endsWith&email=john@company.com");
+    await page.goto(
+      "/api/test-string-match?strategy=endsWith&email=john@company.com",
+    );
 
     const response = await page.textContent("body");
     const data = JSON.parse(response || "{}");
@@ -146,7 +156,9 @@ test.describe("String Matching Strategies - Pages Router", () => {
   }) => {
     await switchScenario(page, "stringMatching");
 
-    await page.goto("/api/test-string-match?strategy=endsWith&email=john@example.com");
+    await page.goto(
+      "/api/test-string-match?strategy=endsWith&email=john@example.com",
+    );
 
     const response = await page.textContent("body");
     const data = JSON.parse(response || "{}");
@@ -191,7 +203,9 @@ test.describe("String Matching Strategies - Pages Router", () => {
   }) => {
     await switchScenario(page, "stringMatching");
 
-    await page.goto("/api/test-string-match?strategy=equals&exact=exact-value-plus");
+    await page.goto(
+      "/api/test-string-match?strategy=equals&exact=exact-value-plus",
+    );
 
     const response = await page.textContent("body");
     const data = JSON.parse(response || "{}");

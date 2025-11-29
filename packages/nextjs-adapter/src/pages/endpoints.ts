@@ -1,7 +1,10 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import type { ScenarioManager, ScenaristConfig } from '@scenarist/core';
-import { PagesRequestContext } from './context.js';
-import { handlePostLogic, handleGetLogic } from '../common/endpoint-handlers.js';
+import type { NextApiRequest, NextApiResponse } from "next";
+import type { ScenarioManager, ScenaristConfig } from "@scenarist/core";
+import { PagesRequestContext } from "./context.js";
+import {
+  handlePostLogic,
+  handleGetLogic,
+} from "../common/endpoint-handlers.js";
 
 /**
  * Handle POST request to switch scenarios.
@@ -78,22 +81,22 @@ const handleGet = (manager: ScenarioManager, config: ScenaristConfig) => {
  */
 export const createScenarioEndpoint = (
   manager: ScenarioManager,
-  config: ScenaristConfig
+  config: ScenaristConfig,
 ) => {
   const postHandler = handlePost(manager, config);
   const getHandler = handleGet(manager, config);
 
   return async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
-    if (req.method === 'POST') {
+    if (req.method === "POST") {
       return postHandler(req, res);
     }
 
-    if (req.method === 'GET') {
+    if (req.method === "GET") {
       return getHandler(req, res);
     }
 
     res.status(405).json({
-      error: 'Method not allowed',
+      error: "Method not allowed",
     });
   };
 };

@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { isSafePattern } from 'redos-detector';
+import { z } from "zod";
+import { isSafePattern } from "redos-detector";
 
 /**
  * Zod schemas for match criteria with regex support.
@@ -64,13 +64,16 @@ const isPatternSafeFromReDoS = (pattern: string): boolean => {
 export const SerializedRegexSchema = z.object({
   source: z
     .string()
-    .min(1, 'Regex source must not be empty')
+    .min(1, "Regex source must not be empty")
     .refine(isPatternSafeFromReDoS, {
-      message: 'Regex pattern is unsafe (ReDoS vulnerability detected)',
+      message: "Regex pattern is unsafe (ReDoS vulnerability detected)",
     }),
   flags: z
     .string()
-    .regex(VALID_REGEX_FLAGS, 'Invalid regex flags (only g, i, m, s, u, v, y allowed)')
+    .regex(
+      VALID_REGEX_FLAGS,
+      "Invalid regex flags (only g, i, m, s, u, v, y allowed)",
+    )
     .optional(),
 });
 

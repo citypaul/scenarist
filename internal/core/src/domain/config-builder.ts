@@ -1,5 +1,9 @@
-import type { ScenaristConfig, ScenaristConfigInput, ScenaristScenarios } from '../types/index.js';
-import { ScenariosObjectSchema } from '../schemas/index.js';
+import type {
+  ScenaristConfig,
+  ScenaristConfigInput,
+  ScenaristScenarios,
+} from "../types/index.js";
+import { ScenariosObjectSchema } from "../schemas/index.js";
 
 /**
  * Build a complete config from partial user input.
@@ -8,7 +12,7 @@ import { ScenariosObjectSchema } from '../schemas/index.js';
  * **Validation:** Ensures scenarios object has a 'default' key.
  */
 export const buildConfig = <T extends ScenaristScenarios>(
-  input: ScenaristConfigInput<T>
+  input: ScenaristConfigInput<T>,
 ): ScenaristConfig => {
   // Validate scenarios object has 'default' key (trust boundary)
   ScenariosObjectSchema.parse(input.scenarios);
@@ -17,9 +21,9 @@ export const buildConfig = <T extends ScenaristScenarios>(
     enabled: input.enabled,
     strictMode: input.strictMode ?? false,
     endpoints: {
-      setScenario: input.endpoints?.setScenario ?? '/__scenario__',
-      getScenario: input.endpoints?.getScenario ?? '/__scenario__',
+      setScenario: input.endpoints?.setScenario ?? "/__scenario__",
+      getScenario: input.endpoints?.getScenario ?? "/__scenario__",
     },
-    defaultTestId: input.defaultTestId ?? 'default-test',
+    defaultTestId: input.defaultTestId ?? "default-test",
   };
 };

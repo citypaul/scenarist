@@ -9,32 +9,32 @@
  * The tier header is production logic - external APIs often need user context!
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import type { ProductsResponse } from '../../../types/product';
+import { NextRequest, NextResponse } from "next/server";
+import type { ProductsResponse } from "../../../types/product";
 
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
 
 export async function GET(request: NextRequest) {
   try {
     // Get user tier from request header (application context)
-    const userTier = request.headers.get('x-user-tier') || 'standard';
+    const userTier = request.headers.get("x-user-tier") || "standard";
 
     // Extract campaign from query parameter for regex matching
-    const campaign = request.nextUrl.searchParams.get('campaign');
+    const campaign = request.nextUrl.searchParams.get("campaign");
 
     // Fetch from external API (json-server simulating Stripe)
     // External API needs tier context to return correct pricing
     const fetchHeaders: Record<string, string> = {
-      ...getScenaristHeaders(request),  // Scenarist infrastructure (x-test-id)
-      'x-user-tier': userTier,           // Application context (API needs this!)
+      ...getScenaristHeaders(request), // Scenarist infrastructure (x-test-id)
+      "x-user-tier": userTier, // Application context (API needs this!)
     };
 
     // Add campaign header if present (external API uses for promotions)
     if (campaign) {
-      fetchHeaders['x-campaign'] = campaign;
+      fetchHeaders["x-campaign"] = campaign;
     }
 
-    const response = await fetch('http://localhost:3001/products', {
+    const response = await fetch("http://localhost:3001/products", {
       headers: fetchHeaders,
     });
 
@@ -53,9 +53,10 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'Failed to fetch products',
+        error:
+          error instanceof Error ? error.message : "Failed to fetch products",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

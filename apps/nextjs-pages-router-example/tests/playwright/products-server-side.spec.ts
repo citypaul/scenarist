@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect } from "./fixtures";
 
 /**
  * Products Server-Side Page - Pages Router getServerSideProps with Scenarist
@@ -23,52 +23,55 @@ import { test, expect } from './fixtures';
  * - Tests verify server-rendered output contains correct data
  */
 
-test.describe('Products Page - Server-Side Rendering (getServerSideProps)', () => {
-  test('should render premium products server-side', async ({ page, switchScenario }) => {
+test.describe("Products Page - Server-Side Rendering (getServerSideProps)", () => {
+  test("should render premium products server-side", async ({
+    page,
+    switchScenario,
+  }) => {
     // Switch to premiumUserScenario to activate premium mocks
     // Automatic default fallback will combine default + premium mocks
     // Premium mock (specificity 1) will override default fallback (specificity 0)
-    await switchScenario(page, 'premiumUser');
+    await switchScenario(page, "premiumUser");
 
     // Navigate to products page with tier query param for getServerSideProps
-    await page.goto('/?tier=premium');
+    await page.goto("/?tier=premium");
 
     // Verify products are visible with PREMIUM pricing (should be server-rendered)
-    const firstProduct = page.getByRole('article').first();
-    await expect(firstProduct.getByText('£99.99')).toBeVisible();
+    const firstProduct = page.getByRole("article").first();
+    await expect(firstProduct.getByText("£99.99")).toBeVisible();
 
     // Additional verification: Server-rendered pages don't show loading state
     // (If we see "Loading products..." it means client-side fetch, not SSR)
-    await expect(page.getByText('Loading products...')).not.toBeVisible();
+    await expect(page.getByText("Loading products...")).not.toBeVisible();
   });
 
-  test('should render standard products server-side', async ({
+  test("should render standard products server-side", async ({
     page,
     switchScenario,
   }) => {
     // Switch to standard user scenario
-    await switchScenario(page, 'standardUser');
+    await switchScenario(page, "standardUser");
 
     // Navigate to products page with tier query param
-    await page.goto('/?tier=standard');
+    await page.goto("/?tier=standard");
 
     // Verify standard pricing in server-rendered output
-    const firstProduct = page.getByRole('article').first();
-    await expect(firstProduct.getByText('£149.99')).toBeVisible();
+    const firstProduct = page.getByRole("article").first();
+    await expect(firstProduct.getByText("£149.99")).toBeVisible();
 
     // Verify no loading state (proves SSR worked)
-    await expect(page.getByText('Loading products...')).not.toBeVisible();
+    await expect(page.getByText("Loading products...")).not.toBeVisible();
   });
 
-  test('should show all products server-rendered', async ({
+  test("should show all products server-rendered", async ({
     page,
     switchScenario,
   }) => {
-    await switchScenario(page, 'standardUser');
-    await page.goto('/?tier=standard');
+    await switchScenario(page, "standardUser");
+    await page.goto("/?tier=standard");
 
     // Verify multiple products are present in initial HTML
-    const products = page.getByRole('article');
+    const products = page.getByRole("article");
     await expect(products).toHaveCount(3);
 
     // All products should be visible immediately (SSR)

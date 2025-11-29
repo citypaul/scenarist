@@ -33,18 +33,35 @@ type PageProps = {
   readonly error: string | null;
 };
 
-export default function HostnameMatchingPage({ testType, result, error }: PageProps) {
+export default function HostnameMatchingPage({
+  testType,
+  result,
+  error,
+}: PageProps) {
   return (
     <div style={{ padding: "20px", fontFamily: "monospace" }}>
       <h1>Hostname Matching Test: {testType}</h1>
 
-      <div style={{ marginTop: "20px", padding: "10px", background: "#f5f5f5" }}>
-        <p><strong>Test Type:</strong> {testType}</p>
+      <div
+        style={{ marginTop: "20px", padding: "10px", background: "#f5f5f5" }}
+      >
+        <p>
+          <strong>Test Type:</strong> {testType}
+        </p>
       </div>
 
       {error && (
-        <div style={{ marginTop: "20px", padding: "10px", background: "#ffebee", color: "#c62828" }}>
-          <p><strong>Error:</strong> {error}</p>
+        <div
+          style={{
+            marginTop: "20px",
+            padding: "10px",
+            background: "#ffebee",
+            color: "#c62828",
+          }}
+        >
+          <p>
+            <strong>Error:</strong> {error}
+          </p>
         </div>
       )}
 
@@ -52,17 +69,37 @@ export default function HostnameMatchingPage({ testType, result, error }: PagePr
         <div style={{ marginTop: "20px" }}>
           <h2>Result:</h2>
           <div style={{ padding: "10px", background: "#e8f5e9" }}>
-            <p><strong>Pattern Type:</strong> {result.patternType}</p>
-            {result.hostname && <p><strong>Hostname:</strong> {result.hostname}</p>}
-            <p><strong>Behavior:</strong> {result.behavior}</p>
-            <p><strong>Message:</strong> {result.message}</p>
+            <p>
+              <strong>Pattern Type:</strong> {result.patternType}
+            </p>
+            {result.hostname && (
+              <p>
+                <strong>Hostname:</strong> {result.hostname}
+              </p>
+            )}
+            <p>
+              <strong>Behavior:</strong> {result.behavior}
+            </p>
+            <p>
+              <strong>Message:</strong> {result.message}
+            </p>
 
-            {result.userId && <p><strong>User ID:</strong> {result.userId}</p>}
-            {result.postId && <p><strong>Post ID:</strong> {result.postId}</p>}
+            {result.userId && (
+              <p>
+                <strong>User ID:</strong> {result.userId}
+              </p>
+            )}
+            {result.postId && (
+              <p>
+                <strong>Post ID:</strong> {result.postId}
+              </p>
+            )}
 
             {result.examples && (
               <div>
-                <p><strong>Examples:</strong></p>
+                <p>
+                  <strong>Examples:</strong>
+                </p>
                 <ul>
                   {result.examples.map((example, i) => (
                     <li key={i}>{example}</li>
@@ -72,12 +109,16 @@ export default function HostnameMatchingPage({ testType, result, error }: PagePr
             )}
 
             {result.willMatch && (
-              <p><strong>Will Match:</strong> {result.willMatch}</p>
+              <p>
+                <strong>Will Match:</strong> {result.willMatch}
+              </p>
             )}
 
             {result.wontMatch && (
               <div>
-                <p><strong>Won't Match:</strong></p>
+                <p>
+                  <strong>Won't Match:</strong>
+                </p>
                 {Array.isArray(result.wontMatch) ? (
                   <ul>
                     {result.wontMatch.map((url, i) => (
@@ -101,12 +142,17 @@ export default function HostnameMatchingPage({ testType, result, error }: PagePr
  * @see https://github.com/citypaul/scenarist/security/code-scanning/81
  * @see https://github.com/citypaul/scenarist/security/code-scanning/82
  */
-const encodePathParam = (val: string | string[] | undefined, defaultVal: string): string => {
-  const str = Array.isArray(val) ? val[0] : val ?? defaultVal;
+const encodePathParam = (
+  val: string | string[] | undefined,
+  defaultVal: string,
+): string => {
+  const str = Array.isArray(val) ? val[0] : (val ?? defaultVal);
   return encodeURIComponent(str);
 };
 
-export const getServerSideProps: GetServerSideProps<PageProps> = async (context) => {
+export const getServerSideProps: GetServerSideProps<PageProps> = async (
+  context,
+) => {
   const { query } = context;
   const testType = (query.test as string) || "unknown";
   const userId = encodePathParam(query.userId, "123");
@@ -122,54 +168,72 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (context)
     switch (testType) {
       case "pathnameOnly": {
         // Test 1: Pathname-only pattern - should match ANY hostname
-        const response = await fetch("http://localhost:3001/api/origin-agnostic", {
-          headers: scenaristHeaders,
-        });
+        const response = await fetch(
+          "http://localhost:3001/api/origin-agnostic",
+          {
+            headers: scenaristHeaders,
+          },
+        );
         result = await response.json();
         break;
       }
 
       case "localhostFull": {
         // Test 2: Full URL with localhost - hostname-specific
-        const response = await fetch("http://localhost:3001/api/localhost-only", {
-          headers: scenaristHeaders,
-        });
+        const response = await fetch(
+          "http://localhost:3001/api/localhost-only",
+          {
+            headers: scenaristHeaders,
+          },
+        );
         result = await response.json();
         break;
       }
 
       case "externalFull": {
         // Test 3: Full URL with external domain - hostname-specific
-        const response = await fetch("https://api.example.com/api/production-only", {
-          headers: scenaristHeaders,
-        });
+        const response = await fetch(
+          "https://api.example.com/api/production-only",
+          {
+            headers: scenaristHeaders,
+          },
+        );
         result = await response.json();
         break;
       }
 
       case "regexp": {
         // Test 4: Native RegExp pattern - origin-agnostic
-        const response = await fetch("http://localhost:3001/api/regex-pattern", {
-          headers: scenaristHeaders,
-        });
+        const response = await fetch(
+          "http://localhost:3001/api/regex-pattern",
+          {
+            headers: scenaristHeaders,
+          },
+        );
         result = await response.json();
         break;
       }
 
       case "pathnameParams": {
         // Test 5: Pathname with path parameters - origin-agnostic + param extraction
-        const response = await fetch(`http://localhost:3001/api/users/${userId}/posts/${postId}`, {
-          headers: scenaristHeaders,
-        });
+        const response = await fetch(
+          `http://localhost:3001/api/users/${userId}/posts/${postId}`,
+          {
+            headers: scenaristHeaders,
+          },
+        );
         result = await response.json();
         break;
       }
 
       case "fullUrlParams": {
         // Test 6: Full URL with path parameters - hostname-specific + param extraction
-        const response = await fetch(`http://localhost:3001/api/local-users/${userId}`, {
-          headers: scenaristHeaders,
-        });
+        const response = await fetch(
+          `http://localhost:3001/api/local-users/${userId}`,
+          {
+            headers: scenaristHeaders,
+          },
+        );
         result = await response.json();
         break;
       }

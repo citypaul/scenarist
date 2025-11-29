@@ -37,7 +37,7 @@ Step-by-step guide for adding a new feature to Scenarist following TDD and hexag
 export type NewFeature = {
   readonly id: string;
   readonly name: string;
-  readonly data: unknown;  // Must be JSON-serializable
+  readonly data: unknown; // Must be JSON-serializable
 };
 ```
 
@@ -69,16 +69,16 @@ export interface NewPort {
 
 ```typescript
 // packages/core/tests/new-feature.test.ts
-describe('NewFeature', () => {
-  it('should do expected behavior', () => {
+describe("NewFeature", () => {
+  it("should do expected behavior", () => {
     const result = feature.doSomething(data);
     expect(result.success).toBe(true);
   });
 
-  it('should handle error case', () => {
+  it("should handle error case", () => {
     const result = feature.doSomething(invalidData);
     expect(result.success).toBe(false);
-    expect(result.error.message).toContain('expected error');
+    expect(result.error.message).toContain("expected error");
   });
 });
 ```

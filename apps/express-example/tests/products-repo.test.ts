@@ -1,4 +1,4 @@
-import { createTestFixtures } from './test-helpers.js';
+import { createTestFixtures } from "./test-helpers.js";
 
 /**
  * Products with Repository Pattern - Integration Tests
@@ -70,8 +70,6 @@ import request from "supertest";
 const fixtures = await createTestFixtures();
 
 describe("Products with Repository Pattern", () => {
-
-
   // Start MSW for HTTP mocking
   fixtures.scenarist.start();
 

@@ -16,6 +16,7 @@ When evaluating whether Scenarist is working correctly in your project, use this
 Each test gets a unique test ID (automatically generated). This test ID must be sent with EVERY request to ensure the test uses the correct scenario. If headers aren't propagated through internal server-side fetches, those requests will use the default scenario instead of the test's scenario.
 
 **Common Symptom:**
+
 - ✅ Tests pass when run individually (`--workers=1`)
 - ❌ Tests fail when run in parallel (`--workers=4`)
 - ❌ Flaky results that change between runs
@@ -28,6 +29,7 @@ When your server-side code makes internal fetch calls, headers don't automatical
 #### Next.js: Use getScenaristHeaders()
 
 **Problem:**
+
 ```typescript
 // ❌ BAD - Headers not propagated to internal fetch
 export async function Page() {
@@ -39,6 +41,7 @@ export async function Page() {
 ```
 
 **Solution:**
+
 ```typescript
 import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
 
@@ -56,6 +59,7 @@ export async function Page() {
 ```
 
 **What `getScenaristHeaders()` does:**
+
 - Extracts test ID from current request context (AsyncLocalStorage)
 - Returns `{ 'x-scenarist-test-id': 'generated-uuid' }` object
 - Safe to call even when Scenarist is disabled (returns empty object)
@@ -66,14 +70,15 @@ export async function Page() {
 Express adapter uses AsyncLocalStorage to automatically track test IDs per request. No manual header propagation needed for middleware chains.
 
 **Internal fetch calls** still need headers:
+
 ```typescript
 // ✅ GOOD - Include test ID in internal fetches
-app.get('/api/dashboard', async (req, res) => {
+app.get("/api/dashboard", async (req, res) => {
   const testId = req.get(SCENARIST_TEST_ID_HEADER);
 
-  const response = await fetch('http://localhost:3001/api/user', {
+  const response = await fetch("http://localhost:3001/api/user", {
     headers: {
-      [SCENARIST_TEST_ID_HEADER]: testId || 'default-test',
+      [SCENARIST_TEST_ID_HEADER]: testId || "default-test",
     },
   });
 
@@ -88,13 +93,16 @@ app.get('/api/dashboard', async (req, res) => {
 
 ```typescript
 // tests/header-propagation.spec.ts
-test('headers propagate through server-side fetch', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'premium-user');
+test("headers propagate through server-side fetch", async ({
+  page,
+  switchScenario,
+}) => {
+  await switchScenario(page, "premium-user");
 
-  await page.goto('/dashboard');
+  await page.goto("/dashboard");
 
   // If headers propagated correctly, should see premium content
-  await expect(page.getByText('Premium Features')).toBeVisible();
+  await expect(page.getByText("Premium Features")).toBeVisible();
 
   // If headers DIDN'T propagate, would see default content
   // This would fail in parallel tests (wrong scenario)
@@ -102,6 +110,7 @@ test('headers propagate through server-side fetch', async ({ page, switchScenari
 ```
 
 **Debugging failed tests:**
+
 1. Add logging to see which scenario is active
 2. Check server logs for test ID headers
 3. Verify `getScenaristHeaders()` is called before fetch
@@ -110,6 +119,7 @@ test('headers propagate through server-side fetch', async ({ page, switchScenari
 #### Red Flags
 
 **❌ Tests fail only in parallel:**
+
 ```bash
 # Pass individually
 pnpm exec playwright test --workers=1
@@ -123,19 +133,21 @@ pnpm exec playwright test --workers=4
 **Root cause:** Missing header propagation. Tests interfere because they're all using the default scenario.
 
 **❌ Wrong data in tests:**
+
 ```typescript
 // Test expects premium pricing
-await expect(page.getByText('£99.99')).toBeVisible();
+await expect(page.getByText("£99.99")).toBeVisible();
 // ❌ Error: element not found
 
 // But sees standard pricing instead
-await expect(page.getByText('£149.99')).toBeVisible();
+await expect(page.getByText("£149.99")).toBeVisible();
 // ✅ This passes (wrong scenario!)
 ```
 
 **Root cause:** Internal fetch didn't include test ID header, used default scenario instead of premium scenario.
 
 **❌ Flaky test results:**
+
 - Sometimes premium pricing, sometimes standard
 - Different results on different runs
 - Race conditions between parallel tests
@@ -153,13 +165,14 @@ When parallel tests fail:
 5. ✅ **Isolation:** Ensure each test calls `switchScenario()` independently
 
 **Quick fix for Next.js:**
+
 ```typescript
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
 
 // Add this line before EVERY internal fetch in Server Components
 const headers = getScenaristHeaders();
 
-fetch(url, { headers });  // Always include
+fetch(url, { headers }); // Always include
 ```
 
 ### Runtime Scenario Switching
@@ -167,24 +180,26 @@ fetch(url, { headers });  // Always include
 **Verify:** Scenarios can be switched without server restarts
 
 ```typescript
-test('scenario switching', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'premium');
-  await page.goto('/dashboard');
-  await expect(page.getByText('Premium Features')).toBeVisible();
+test("scenario switching", async ({ page, switchScenario }) => {
+  await switchScenario(page, "premium");
+  await page.goto("/dashboard");
+  await expect(page.getByText("Premium Features")).toBeVisible();
 
-  await switchScenario(page, 'free');
-  await page.goto('/dashboard');
-  await expect(page.getByText('Upgrade to Premium')).toBeVisible();
+  await switchScenario(page, "free");
+  await page.goto("/dashboard");
+  await expect(page.getByText("Upgrade to Premium")).toBeVisible();
 });
 ```
 
 **Expected behavior:**
+
 - Scenario changes take effect immediately
 - No server restart required
 - Different responses from same endpoints
 - State is cleared when switching scenarios
 
 **Red flags:**
+
 - Need to restart server between scenario changes
 - Scenario switches not taking effect
 - Previous scenario behavior persisting
@@ -194,32 +209,34 @@ test('scenario switching', async ({ page, switchScenario }) => {
 **Verify:** Each test has isolated state via unique test ID
 
 ```typescript
-test('test 1: add item to cart', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'cart');
+test("test 1: add item to cart", async ({ page, switchScenario }) => {
+  await switchScenario(page, "cart");
 
-  await page.goto('/cart');
+  await page.goto("/cart");
   await page.click('[data-testid="add-product-1"]');
 
   const items = await page.locator('[data-testid="cart-item"]').count();
   expect(items).toBe(1);
 });
 
-test('test 2: empty cart', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'cart');
+test("test 2: empty cart", async ({ page, switchScenario }) => {
+  await switchScenario(page, "cart");
 
-  await page.goto('/cart');
+  await page.goto("/cart");
 
   const items = await page.locator('[data-testid="cart-item"]').count();
-  expect(items).toBe(0);  // Should be empty, not affected by test 1
+  expect(items).toBe(0); // Should be empty, not affected by test 1
 });
 ```
 
 **Expected behavior:**
+
 - Each test starts with clean state
 - Test 2 doesn't see items added in Test 1
 - Tests can run in any order
 
 **Red flags:**
+
 - Tests depend on execution order
 - State leaking between tests
 - Need to manually clean up state
@@ -229,25 +246,27 @@ test('test 2: empty cart', async ({ page, switchScenario }) => {
 **Verify:** Backend code executes with real middleware and routing
 
 ```typescript
-test('middleware executes', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'logged-in');
+test("middleware executes", async ({ page, switchScenario }) => {
+  await switchScenario(page, "logged-in");
 
   // Should trigger auth middleware
-  const response = await page.goto('/protected');
+  const response = await page.goto("/protected");
 
   // Middleware should have run and allowed access
   expect(response?.status()).toBe(200);
-  await expect(page.getByText('Protected Content')).toBeVisible();
+  await expect(page.getByText("Protected Content")).toBeVisible();
 });
 ```
 
 **Expected behavior:**
+
 - Middleware chains execute normally
 - Route handlers run with production logic
 - Business logic processes responses correctly
 - Only external API calls are mocked
 
 **Red flags:**
+
 - Middleware is being skipped or mocked
 - Business logic not executing as in production
 - Framework internals are mocked
@@ -261,38 +280,48 @@ test('middleware executes', async ({ page, switchScenario }) => {
 **Check your test setup:**
 
 ```typescript
-import type { ScenaristScenarios } from '@scenarist/express-adapter';
+import type { ScenaristScenarios } from "@scenarist/express-adapter";
 
 // ✅ GOOD - Only external APIs mocked
 const scenarios = {
   stripe: {
-    mocks: [{
-      method: 'POST',
-      url: 'https://api.stripe.com/v1/charges',  // External API
-      response: { /* ... */ }
-    }]
-  }
+    mocks: [
+      {
+        method: "POST",
+        url: "https://api.stripe.com/v1/charges", // External API
+        response: {
+          /* ... */
+        },
+      },
+    ],
+  },
 } as const satisfies ScenaristScenarios;
 
 // ❌ BAD - Mocking framework internals
 const badScenarios = {
   nextjs: {
-    mocks: [{
-      method: 'GET',
-      url: '/api/my-endpoint',  // Your own endpoint!
-      response: { /* ... */ }
-    }]
-  }
-};  // Don't do this - mocking your own routes defeats the purpose
+    mocks: [
+      {
+        method: "GET",
+        url: "/api/my-endpoint", // Your own endpoint!
+        response: {
+          /* ... */
+        },
+      },
+    ],
+  },
+}; // Don't do this - mocking your own routes defeats the purpose
 ```
 
 **What to mock:**
+
 - ✅ Stripe API calls
 - ✅ Auth0 API calls
 - ✅ SendGrid API calls
 - ✅ Any external HTTP service
 
 **What NOT to mock:**
+
 - ❌ Your own API routes
 - ❌ Framework request/response objects
 - ❌ Internal middleware
@@ -304,30 +333,34 @@ const badScenarios = {
 ```typescript
 // scenarios.ts - Shared across all tests
 export const premiumScenario = {
-  id: 'premium',
-  mocks: [/* ... */]
+  id: "premium",
+  mocks: [
+    /* ... */
+  ],
 };
 
 // Used in multiple test files:
 // tests/dashboard.spec.ts
-test('dashboard shows premium features', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'premium');
+test("dashboard shows premium features", async ({ page, switchScenario }) => {
+  await switchScenario(page, "premium");
   // ...
 });
 
 // tests/checkout.spec.ts
-test('checkout with premium discount', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'premium');
+test("checkout with premium discount", async ({ page, switchScenario }) => {
+  await switchScenario(page, "premium");
   // ...
 });
 ```
 
 **Expected behavior:**
+
 - Same scenario definition works everywhere
 - No need to duplicate scenario logic
 - Changes to scenario affect all tests using it
 
 **Red flags:**
+
 - Duplicating scenario definitions across test files
 - Different scenarios for same behavior
 - Scenarios tightly coupled to specific tests
@@ -370,6 +403,7 @@ test('checkout with premium discount', async ({ page, switchScenario }) => {
 ```
 
 **How to verify:**
+
 - Compare mock responses against API documentation
 - Use TypeScript types from API client libraries
 - Validate responses against API schemas if available
@@ -382,29 +416,31 @@ test('checkout with premium discount', async ({ page, switchScenario }) => {
 **Verify:** Can test edge cases without complex setup
 
 ```typescript
-test('handles payment declined', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'payment-declined');
+test("handles payment declined", async ({ page, switchScenario }) => {
+  await switchScenario(page, "payment-declined");
 
-  await page.goto('/checkout');
+  await page.goto("/checkout");
   await page.click('[data-testid="submit-payment"]');
 
-  await expect(page.getByText('Payment declined')).toBeVisible();
+  await expect(page.getByText("Payment declined")).toBeVisible();
 });
 
-test('handles auth timeout', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'auth-timeout');
+test("handles auth timeout", async ({ page, switchScenario }) => {
+  await switchScenario(page, "auth-timeout");
 
-  const response = await page.goto('/dashboard');
+  const response = await page.goto("/dashboard");
   expect(response?.status()).toBe(401);
 });
 ```
 
 **Expected behavior:**
+
 - Can test decline codes, timeouts, rate limits easily
 - No need to manipulate external APIs
 - Error states are deterministic and repeatable
 
 **Red flags:**
+
 - Can't test specific error codes
 - Need complex setup to trigger errors
 - Error scenarios are flaky
@@ -414,25 +450,26 @@ test('handles auth timeout', async ({ page, switchScenario }) => {
 **Verify:** Multiple user types can be tested concurrently
 
 ```typescript
-test.describe.parallel('User tiers', () => {
-  test('premium user experience', async ({ page, switchScenario }) => {
-    await switchScenario(page, 'premium-user');
+test.describe.parallel("User tiers", () => {
+  test("premium user experience", async ({ page, switchScenario }) => {
+    await switchScenario(page, "premium-user");
     // ... test premium features
   });
 
-  test('free user experience', async ({ page, switchScenario }) => {
-    await switchScenario(page, 'free-user');
+  test("free user experience", async ({ page, switchScenario }) => {
+    await switchScenario(page, "free-user");
     // ... test limited features
   });
 
-  test('trial user experience', async ({ page, switchScenario }) => {
-    await switchScenario(page, 'trial-user');
+  test("trial user experience", async ({ page, switchScenario }) => {
+    await switchScenario(page, "trial-user");
     // ... test trial features
   });
 });
 ```
 
 **Expected behavior:**
+
 - All tier tests run in parallel
 - Each test uses correct tier data
 - No interference between tiers
@@ -443,32 +480,35 @@ test.describe.parallel('User tiers', () => {
 
 ```typescript
 {
-  mocks: [{
-    method: 'POST',
-    url: 'https://api.example.com/action',
-    sequence: {
-      responses: [
-        { status: 500, body: { error: 'Server error' } },
-        { status: 500, body: { error: 'Server error' } },
-        { status: 200, body: { success: true } }
-      ],
-      repeat: 'last'
-    }
-  }]
+  mocks: [
+    {
+      method: "POST",
+      url: "https://api.example.com/action",
+      sequence: {
+        responses: [
+          { status: 500, body: { error: "Server error" } },
+          { status: 500, body: { error: "Server error" } },
+          { status: 200, body: { success: true } },
+        ],
+        repeat: "last",
+      },
+    },
+  ];
 }
 
-test('retries on failure', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'retry-scenario');
+test("retries on failure", async ({ page, switchScenario }) => {
+  await switchScenario(page, "retry-scenario");
 
   // First two attempts fail, third succeeds
   await page.click('[data-testid="submit"]');
 
   // Should eventually show success after retries
-  await expect(page.getByText('Success')).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText("Success")).toBeVisible({ timeout: 10000 });
 });
 ```
 
 **Expected behavior:**
+
 - Sequence advances through responses
 - Retry logic can be verified
 - Rate limiting scenarios testable
@@ -478,12 +518,14 @@ test('retries on failure', async ({ page, switchScenario }) => {
 **Verify:** Tests remain fast for frequent execution
 
 **Benchmarks to aim for:**
+
 - Test setup (scenario switch): < 100ms
 - HTTP requests to your backend: Same speed as without Scenarist
 - Mock response time: < 10ms
 - Full test suite: Suitable for watch mode during development
 
 **Red flags:**
+
 - Tests are slower than unit tests
 - Scenario switching takes multiple seconds
 - Mock overhead is noticeable
@@ -520,6 +562,7 @@ NODE_ENV=production vite build
 ```
 
 **Expected output:**
+
 ```
 dist/
   server.js           ~27kb    ← Entry point (small!)
@@ -564,6 +607,7 @@ kill $SERVER_PID
 **Expected result:** No output. The `impl-*.js` chunk file exists on disk but is NOT loaded into the Node.js process memory.
 
 **What `lsof` proves:**
+
 - Lists all files opened by a process
 - If implementation chunk was loaded, it would appear in the output
 - No output = chunk never touched by runtime = zero delivery overhead
@@ -587,6 +631,7 @@ ls -lh dist/impl-*.js
 ```
 
 **Expected behavior:**
+
 - Entry point is 85-95% smaller than it would be without code splitting
 - Implementation chunk exists (this is normal and expected)
 - Runtime verification (step 3) proves chunk never loads
@@ -594,28 +639,33 @@ ls -lh dist/impl-*.js
 ### Red Flags
 
 **❌ Implementation code in entry point:**
+
 ```bash
 $ grep 'createScenaristImpl' dist/server.js
 # Found matches ← BAD: Implementation bundled inline
 ```
 
 **Fix:** Enable code splitting:
+
 - esbuild: Add `--splitting --outdir=dist` (requires ESM format)
 - webpack: Check that dynamic imports aren't being forced inline
 - Vite: Code splitting should be automatic (check build config)
 
 **❌ Implementation chunk loads into memory:**
+
 ```bash
 $ lsof -p $SERVER_PID | grep 'impl-.*\.js'
 dist/impl-ABC123.js  ← BAD: Chunk is being loaded!
 ```
 
 **Fix:** Check that `process.env.NODE_ENV` is being set to `'production'`:
+
 - Verify DefinePlugin configuration
 - Check that `if (process.env.NODE_ENV === 'production')` branch is unreachable
 - Ensure bundler is actually replacing `process.env.NODE_ENV` with literal value
 
 **❌ No code splitting (single bundle):**
+
 ```bash
 $ ls dist/
 server.js  ← Only one file, no chunks
@@ -686,6 +736,7 @@ grep -r 'createScenaristImpl' .next/server/pages
 ### Next Steps
 
 If verification fails:
+
 1. Check bundler configuration for code splitting support
 2. Verify DefinePlugin is replacing `process.env.NODE_ENV`
 3. Ensure you're using dynamic imports (not static imports)
@@ -699,27 +750,30 @@ If verification succeeds:
 ### Issue: Tests Interfere With Each Other
 
 **Symptoms:**
+
 - Tests pass individually but fail in parallel
 - Flaky results
 - State leaking between tests
 
 **Check:**
+
 - Verify each test calls `switchScenario()` before actions
 - Ensure test IDs are unique (generated automatically by helper)
 - Check that state is isolated per test ID
 
 **Fix:**
+
 ```typescript
 // ✅ GOOD - Each test switches scenario
-test('test 1', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'scenario1');  // Isolates this test
+test("test 1", async ({ page, switchScenario }) => {
+  await switchScenario(page, "scenario1"); // Isolates this test
   // ...
 });
 
 // ❌ BAD - Shared scenario across tests
-const scenarioId = 'shared';
-test('test 1', async ({ page, switchScenario }) => {
-  await switchScenario(page, scenarioId);  // Don't share!
+const scenarioId = "shared";
+test("test 1", async ({ page, switchScenario }) => {
+  await switchScenario(page, scenarioId); // Don't share!
   // ...
 });
 ```
@@ -727,16 +781,19 @@ test('test 1', async ({ page, switchScenario }) => {
 ### Issue: Framework Internals Are Mocked
 
 **Symptoms:**
+
 - Middleware doesn't execute
 - Business logic is bypassed
 - Tests don't reflect production behavior
 
 **Check:**
+
 - Review mock URLs - should all be external APIs
 - Verify your route handlers execute normally
 - Check that middleware chains run
 
 **Fix:**
+
 ```typescript
 // ❌ BAD - Mocking your own routes
 {
@@ -754,16 +811,19 @@ test('test 1', async ({ page, switchScenario }) => {
 ### Issue: Scenarios Can't Switch at Runtime
 
 **Symptoms:**
+
 - Need to restart server to change scenarios
 - Scenario changes don't take effect
 - Old scenario behavior persists
 
 **Check:**
+
 - Verify `/__scenario__` endpoint is registered
 - Check that `enabled: true` in config
 - Ensure test ID headers are being sent
 
 **Fix:**
+
 - Check adapter setup in your application
 - Verify Playwright helpers are configured correctly
 - Check for errors in scenario registration
@@ -771,16 +831,19 @@ test('test 1', async ({ page, switchScenario }) => {
 ### Issue: Tests Are Slow
 
 **Symptoms:**
+
 - Tests slower than expected
 - Long wait times for responses
 - Unsuitable for watch mode
 
 **Check:**
+
 - Look for unnecessary `delay` in mock responses
 - Check for browser interactions that could be HTTP-only
 - Verify parallel execution is enabled
 
 **Fix:**
+
 ```typescript
 // Remove unnecessary delays
 {

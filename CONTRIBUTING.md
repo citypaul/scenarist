@@ -16,27 +16,32 @@ Please be respectful and constructive in all interactions. We welcome contributo
 ### Getting Started
 
 1. Clone the repository
+
    ```bash
    git clone https://github.com/citypaul/scenarist.git
    cd scenarist
    ```
 
 2. Install dependencies
+
    ```bash
    pnpm install
    ```
 
 3. Build all packages
+
    ```bash
    pnpm build
    ```
 
 4. Run tests
+
    ```bash
    pnpm test
    ```
 
 5. Type check
+
    ```bash
    pnpm typecheck
    ```
@@ -76,16 +81,19 @@ apps/              # Example applications
 We follow strict Test-Driven Development (TDD) with the RED-GREEN-REFACTOR cycle:
 
 ### RED Phase
+
 - Write a failing test for the desired behavior
 - The test must fail for the right reason
 - No production code until you have a failing test
 
 ### GREEN Phase
+
 - Write the **minimum** code to make the test pass
 - Resist the urge to write more than needed
 - Get to green as quickly as possible
 
 ### REFACTOR Phase
+
 - Assess the code for improvement opportunities
 - Only refactor if it adds value
 - **Commit before refactoring** to have a safe point to return to
@@ -113,12 +121,14 @@ When making changes to packages that should be released, you must create a chang
 ### When to Create a Changeset
 
 Create a changeset when you:
+
 - Add a new feature
 - Fix a bug
 - Make a breaking change
 - Change public API behavior
 
 You do NOT need a changeset for:
+
 - Documentation-only changes
 - Internal refactoring with no public API changes
 - Changes to example apps or internal tooling
@@ -126,6 +136,7 @@ You do NOT need a changeset for:
 ### How to Create a Changeset
 
 1. After making your changes, run:
+
    ```bash
    pnpm changeset
    ```
@@ -143,11 +154,11 @@ You do NOT need a changeset for:
 
 ### Bump Type Guidelines
 
-| Bump Type | When to Use |
-|-----------|-------------|
+| Bump Type | When to Use                                           |
+| --------- | ----------------------------------------------------- |
 | **patch** | Bug fixes, performance improvements, internal changes |
-| **minor** | New features, new optional parameters, deprecations |
-| **major** | Breaking changes, removed features, changed behavior |
+| **minor** | New features, new optional parameters, deprecations   |
+| **major** | Breaking changes, removed features, changed behavior  |
 
 ### Writing Good Changeset Summaries
 
@@ -155,9 +166,11 @@ Changeset summaries become changelog entries. Write them for users, not develope
 
 ```markdown
 # Good
+
 Added support for regex pattern matching in URL definitions
 
 # Bad
+
 Fixed the URL matching to use RegExp objects
 ```
 
@@ -166,16 +179,19 @@ Fixed the URL matching to use RegExp objects
 ### Before Opening a PR
 
 1. All tests pass locally
+
    ```bash
    pnpm test
    ```
 
 2. Type checking passes
+
    ```bash
    pnpm typecheck
    ```
 
 3. Linting passes
+
    ```bash
    pnpm lint
    ```

@@ -1,7 +1,7 @@
 import type {
   SequenceTracker,
   SequencePosition,
-} from '../ports/driven/sequence-tracker.js';
+} from "../ports/driven/sequence-tracker.js";
 
 /**
  * In-memory implementation of SequenceTracker.
@@ -23,14 +23,18 @@ export class InMemorySequenceTracker implements SequenceTracker {
    * Generate key for tracking sequence position.
    * Format: `${testId}:${scenarioId}:${mockIndex}`
    */
-  private getKey(testId: string, scenarioId: string, mockIndex: number): string {
+  private getKey(
+    testId: string,
+    scenarioId: string,
+    mockIndex: number,
+  ): string {
     return `${testId}:${scenarioId}:${mockIndex}`;
   }
 
   getPosition(
     testId: string,
     scenarioId: string,
-    mockIndex: number
+    mockIndex: number,
   ): SequencePosition {
     const key = this.getKey(testId, scenarioId, mockIndex);
     const existing = this.positions.get(key);
@@ -48,7 +52,7 @@ export class InMemorySequenceTracker implements SequenceTracker {
     scenarioId: string,
     mockIndex: number,
     totalResponses: number,
-    repeatMode: 'last' | 'cycle' | 'none'
+    repeatMode: "last" | "cycle" | "none",
   ): void {
     const key = this.getKey(testId, scenarioId, mockIndex);
     const current = this.getPosition(testId, scenarioId, mockIndex);
@@ -58,7 +62,7 @@ export class InMemorySequenceTracker implements SequenceTracker {
     // Handle different repeat modes
     if (nextPosition >= totalResponses) {
       switch (repeatMode) {
-        case 'last':
+        case "last":
           // Stay at last position (don't increment beyond last)
           this.positions.set(key, {
             position: totalResponses - 1,
@@ -66,7 +70,7 @@ export class InMemorySequenceTracker implements SequenceTracker {
           });
           break;
 
-        case 'cycle':
+        case "cycle":
           // Wrap back to first position
           this.positions.set(key, {
             position: 0,
@@ -74,7 +78,7 @@ export class InMemorySequenceTracker implements SequenceTracker {
           });
           break;
 
-        case 'none':
+        case "none":
           // Mark as exhausted
           this.positions.set(key, {
             position: totalResponses,
@@ -94,8 +98,8 @@ export class InMemorySequenceTracker implements SequenceTracker {
   reset(testId: string): void {
     const prefix = `${testId}:`;
     Array.from(this.positions.keys())
-      .filter(key => key.startsWith(prefix))
-      .forEach(key => this.positions.delete(key));
+      .filter((key) => key.startsWith(prefix))
+      .forEach((key) => this.positions.delete(key));
   }
 }
 

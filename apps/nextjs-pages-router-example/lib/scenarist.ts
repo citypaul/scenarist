@@ -10,8 +10,8 @@
  * protect against runtime errors while enabling tree-shaking.
  */
 
-import { createScenarist } from '@scenarist/nextjs-adapter/pages';
-import { scenarios } from './scenarios';
+import { createScenarist } from "@scenarist/nextjs-adapter/pages";
+import { scenarios } from "./scenarios";
 
 /**
  * Create Scenarist instance with scenarios
@@ -50,6 +50,10 @@ export const scenarist = createScenarist({
  * }
  * ```
  */
-if (typeof window === 'undefined' && scenarist && process.env.SKIP_MSW !== 'true') {
+if (
+  typeof window === "undefined" &&
+  scenarist &&
+  process.env.SKIP_MSW !== "true"
+) {
   scenarist.start();
 }

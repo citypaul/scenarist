@@ -16,6 +16,7 @@ Testing Pages Router applications traditionally requires choosing between:
 - **Testing each API route separately** with mocked dependencies (creates test maintenance burden)
 
 **Specific Pages Router challenges:**
+
 - API routes need testing with different external API scenarios
 - getServerSideProps executes server-side and requires mocking fetch or external APIs
 - getStaticProps needs testing with various data states
@@ -40,9 +41,12 @@ Test API routes with different scenarios:
 
 ```typescript
 // pages/api/checkout.ts
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const response = await fetch('https://api.stripe.com/v1/charges', {
-    method: 'POST',
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
+  const response = await fetch("https://api.stripe.com/v1/charges", {
+    method: "POST",
     body: JSON.stringify(req.body),
   });
 
@@ -51,10 +55,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 }
 
 // Test with different payment scenarios
-test('processes successful payment', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'paymentSuccess');
-  const response = await page.request.post('/api/checkout', {
-    data: { amount: 5000, token: 'tok_test' }
+test("processes successful payment", async ({ page, switchScenario }) => {
+  await switchScenario(page, "paymentSuccess");
+  const response = await page.request.post("/api/checkout", {
+    data: { amount: 5000, token: "tok_test" },
   });
   expect(response.ok()).toBe(true);
 });

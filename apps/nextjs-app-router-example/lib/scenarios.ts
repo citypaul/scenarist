@@ -5,7 +5,10 @@
  * Phase 2: Request matching for tier-based pricing
  */
 
-import type { ScenaristScenario, ScenaristScenarios } from "@scenarist/nextjs-adapter/app";
+import type {
+  ScenaristScenario,
+  ScenaristScenarios,
+} from "@scenarist/nextjs-adapter/app";
 import { buildProducts } from "../data/products";
 import { checkoutScenarios } from "./scenarios-checkout";
 
@@ -551,7 +554,8 @@ export const stringMatchingScenario: ScenaristScenario = {
 export const urlMatchingScenario: ScenaristScenario = {
   id: "urlMatching",
   name: "URL Matching Strategies",
-  description: "Tests URL matching with RegExp, string strategies, and combined criteria",
+  description:
+    "Tests URL matching with RegExp, string strategies, and combined criteria",
   mocks: [
     // Test 1: Native RegExp - Match numeric user IDs
     {
@@ -577,9 +581,9 @@ export const urlMatchingScenario: ScenaristScenario = {
     // Test 2: Contains strategy - Match URLs containing specific city
     {
       method: "GET",
-      url: /http:\/\/localhost:3001\/api\/weather\/v\d+\/[^/]+$/,  // RegExp for any version
+      url: /http:\/\/localhost:3001\/api\/weather\/v\d+\/[^/]+$/, // RegExp for any version
       match: {
-        url: { contains: "/london" },  // Match specific city
+        url: { contains: "/london" }, // Match specific city
       },
       response: {
         status: 200,
@@ -596,7 +600,7 @@ export const urlMatchingScenario: ScenaristScenario = {
     // Test 3: StartsWith strategy - Match API versioning
     {
       method: "GET",
-      url: /http:\/\/localhost:3001\/api\/weather\/v\d+\/[^/]+$/,  // RegExp for any version
+      url: /http:\/\/localhost:3001\/api\/weather\/v\d+\/[^/]+$/, // RegExp for any version
       match: {
         url: { startsWith: "http://localhost:3001/api/weather/v2" },
       },
@@ -695,7 +699,7 @@ export const urlMatchingScenario: ScenaristScenario = {
     // Fallback for weather API
     {
       method: "GET",
-      url: /http:\/\/localhost:3001\/api\/weather\/v\d+\/[^/]+$/,  // RegExp for any version
+      url: /http:\/\/localhost:3001\/api\/weather\/v\d+\/[^/]+$/, // RegExp for any version
       response: {
         status: 200,
         body: {
@@ -749,7 +753,7 @@ export const urlMatchingScenario: ScenaristScenario = {
       response: {
         status: 200,
         body: {
-          userId: "{{params.id}}",  // Should be extracted from URL
+          userId: "{{params.id}}", // Should be extracted from URL
           login: "user-{{params.id}}",
           name: "User {{params.id}}",
           bio: "User with ID from path parameter",
@@ -779,7 +783,7 @@ export const urlMatchingScenario: ScenaristScenario = {
     // More specific mock (uses template to inject param)
     {
       method: "GET",
-      url: "/api/file-optional/:filename",  // Without ? - requires param
+      url: "/api/file-optional/:filename", // Without ? - requires param
       response: {
         status: 200,
         body: {
@@ -795,7 +799,7 @@ export const urlMatchingScenario: ScenaristScenario = {
     // Fallback mock (static defaults)
     {
       method: "GET",
-      url: "/api/file-optional",  // Exact match, no param
+      url: "/api/file-optional", // Exact match, no param
       response: {
         status: 200,
         body: {
@@ -815,8 +819,8 @@ export const urlMatchingScenario: ScenaristScenario = {
       response: {
         status: 200,
         body: {
-          path: "{{params.path}}",  // Should be array joined
-          segments: "{{params.path.length}}",  // Array length
+          path: "{{params.path}}", // Should be array joined
+          segments: "{{params.path.length}}", // Array length
           fullPath: "/paths/{{params.path}}",
           matchedBy: "repeating",
         },

@@ -13,9 +13,9 @@
  * Scenarist approach: ✅ Playwright + stateful mocks + RSC = works perfectly
  */
 
-import { headers } from 'next/headers';
+import { headers } from "next/headers";
 
-import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+import { getScenaristHeadersFromReadonlyHeaders } from "@scenarist/nextjs-adapter/app";
 
 type CartItem = {
   readonly id: string;
@@ -28,12 +28,14 @@ type CartResponse = {
 };
 
 const PRODUCT_NAMES: Record<string, string> = {
-  'prod-1': 'Product A',
-  'prod-2': 'Product B',
-  'prod-3': 'Product C',
+  "prod-1": "Product A",
+  "prod-2": "Product B",
+  "prod-3": "Product C",
 };
 
-const aggregateCartItems = (productIds?: ReadonlyArray<string>): ReadonlyArray<CartItem> => {
+const aggregateCartItems = (
+  productIds?: ReadonlyArray<string>,
+): ReadonlyArray<CartItem> => {
   if (!productIds || productIds.length === 0) {
     return [];
   }
@@ -54,11 +56,11 @@ async function fetchCart(): Promise<CartResponse> {
   // Get ReadonlyHeaders from Next.js Server Component
   const headersList = await headers();
 
-  const response = await fetch('http://localhost:3002/api/cart', {
+  const response = await fetch("http://localhost:3002/api/cart", {
     headers: {
       ...getScenaristHeadersFromReadonlyHeaders(headersList),
     },
-    cache: 'no-store', // Disable Next.js caching for demo
+    cache: "no-store", // Disable Next.js caching for demo
   });
 
   if (!response.ok) {
@@ -87,7 +89,8 @@ export default async function CartServerPage() {
         </h1>
         <p className="text-gray-600 mb-4">
           This page demonstrates testing stateful mocks with Scenarist and RSC.
-          Cart items are captured from POST requests and injected into GET responses.
+          Cart items are captured from POST requests and injected into GET
+          responses.
         </p>
       </div>
 
@@ -118,16 +121,21 @@ export default async function CartServerPage() {
         </div>
 
         <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-          <h3 className="font-semibold mb-2">Testing Stateful Mocks with RSC</h3>
+          <h3 className="font-semibold mb-2">
+            Testing Stateful Mocks with RSC
+          </h3>
           <div className="space-y-2 text-sm">
             <p>
-              <strong>State Capture:</strong> POST /cart/add captures productId from request body
+              <strong>State Capture:</strong> POST /cart/add captures productId
+              from request body
             </p>
             <p>
-              <strong>State Injection:</strong> GET /cart injects captured items via templates
+              <strong>State Injection:</strong> GET /cart injects captured items
+              via templates
             </p>
             <p>
-              <strong>Per-Test Isolation:</strong> Each test ID has independent cart state
+              <strong>Per-Test Isolation:</strong> Each test ID has independent
+              cart state
             </p>
             <p className="text-xs text-gray-600 mt-2">
               This proves Scenarist stateful mocks work with Server Components!

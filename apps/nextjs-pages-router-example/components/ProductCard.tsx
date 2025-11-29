@@ -5,22 +5,24 @@
  * Uses semantic HTML and accessible labels for Playwright testing best practices.
  */
 
-import type { Product } from '../types/product';
+import type { Product } from "../types/product";
 
 type ProductCardProps = Product & {
   readonly onAddToCart?: () => void;
 };
 
-export const ProductCard = ({ name, description, price, tier, onAddToCart }: ProductCardProps) => {
+export const ProductCard = ({
+  name,
+  description,
+  price,
+  tier,
+  onAddToCart,
+}: ProductCardProps) => {
   return (
     <article className="border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
       <div className="mb-4">
-        <h3 className="text-lg font-semibold mb-2">
-          {name}
-        </h3>
-        <p className="text-gray-600 text-sm mb-4">
-          {description}
-        </p>
+        <h3 className="text-lg font-semibold mb-2">{name}</h3>
+        <p className="text-gray-600 text-sm mb-4">{description}</p>
       </div>
 
       <div className="flex items-center justify-between mb-4">

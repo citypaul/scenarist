@@ -1,9 +1,9 @@
-import { z } from 'zod';
+import { z } from "zod";
 import {
   ScenarioRequestSchema,
   type ScenarioManager,
   type RequestContext,
-} from '@scenarist/core';
+} from "@scenarist/core";
 
 /**
  * Result type for POST endpoint business logic.
@@ -61,7 +61,7 @@ export type PostResult =
 export const handlePostLogic = async (
   body: unknown,
   context: RequestContext,
-  manager: ScenarioManager
+  manager: ScenarioManager,
 ): Promise<PostResult> => {
   try {
     // Validate request body
@@ -92,7 +92,7 @@ export const handlePostLogic = async (
       return {
         success: false,
         status: 400,
-        error: 'Invalid request body',
+        error: "Invalid request body",
         details: error.issues,
       };
     }
@@ -101,7 +101,7 @@ export const handlePostLogic = async (
     return {
       success: false,
       status: 500,
-      error: 'Internal server error',
+      error: "Internal server error",
     };
   }
 };
@@ -156,7 +156,7 @@ export type GetResult =
  */
 export const handleGetLogic = (
   context: RequestContext,
-  manager: ScenarioManager
+  manager: ScenarioManager,
 ): GetResult => {
   const testId = context.getTestId();
   const activeScenario = manager.getActiveScenario(testId);
@@ -165,7 +165,7 @@ export const handleGetLogic = (
     return {
       success: false,
       status: 404,
-      error: 'No active scenario for this test ID',
+      error: "No active scenario for this test ID",
       testId,
     };
   }

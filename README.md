@@ -56,17 +56,17 @@ app.post("/api/checkout", async (req, res) => {
 
   // ✅ Your business logic ACTUALLY EXECUTES
   const total = calculateTotal(items, tier);
-  const discount = tier === 'premium' ? 0.2 : 0;
+  const discount = tier === "premium" ? 0.2 : 0;
 
   // ✅ This external API call is mocked by Scenarist
-  const payment = await fetch('https://api.stripe.com/v1/charges', {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${process.env.STRIPE_KEY}` },
+  const payment = await fetch("https://api.stripe.com/v1/charges", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${process.env.STRIPE_KEY}` },
     body: JSON.stringify({ amount: total * (1 - discount) }),
   });
 
   const result = await payment.json();
-  res.json({ success: result.status === 'succeeded' });
+  res.json({ success: result.status === "succeeded" });
 });
 ```
 
@@ -516,7 +516,7 @@ const scenarios = {
 // Create Scenarist instance (wires everything automatically)
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === "test",
-  scenarios,                    // All scenarios registered upfront
+  scenarios, // All scenarios registered upfront
   strictMode: false,
 });
 

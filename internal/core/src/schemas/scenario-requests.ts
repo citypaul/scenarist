@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 /**
  * Schema for scenario switch request body.
@@ -26,7 +26,7 @@ export const ScenarioRequestSchema = z.object({
    * Scenario ID to switch to.
    * Must be a non-empty string matching a registered scenario ID.
    */
-  scenario: z.string().min(1, 'Scenario ID must not be empty'),
+  scenario: z.string().min(1, "Scenario ID must not be empty"),
 });
 
 /**

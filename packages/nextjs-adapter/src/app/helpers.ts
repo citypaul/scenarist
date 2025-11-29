@@ -1,10 +1,10 @@
-import { SCENARIST_TEST_ID_HEADER } from '@scenarist/core';
+import { SCENARIST_TEST_ID_HEADER } from "@scenarist/core";
 
 /**
  * Fallback constant for default test ID when scenarist is undefined (production builds).
  * In development/test, this is overridden by values from scenarist.config.
  */
-const FALLBACK_DEFAULT_TEST_ID = 'default-test';
+const FALLBACK_DEFAULT_TEST_ID = "default-test";
 
 /**
  * Safe helper to extract Scenarist infrastructure headers from a Request object.
@@ -89,7 +89,9 @@ export function getScenaristHeaders(req: Request): Record<string, string> {
  * }
  * ```
  */
-export function getScenaristHeadersFromReadonlyHeaders(headers: { get(name: string): string | null }): Record<string, string> {
+export function getScenaristHeadersFromReadonlyHeaders(headers: {
+  get(name: string): string | null;
+}): Record<string, string> {
   const scenarist = global.__scenarist_instance;
   return scenarist?.getHeadersFromReadonlyHeaders(headers) ?? {};
 }
@@ -134,13 +136,16 @@ export function getScenaristHeadersFromReadonlyHeaders(headers: { get(name: stri
  * }
  * ```
  */
-export function getScenaristTestIdFromReadonlyHeaders(headers: { get(name: string): string | null }): string {
+export function getScenaristTestIdFromReadonlyHeaders(headers: {
+  get(name: string): string | null;
+}): string {
   const scenarist = global.__scenarist_instance;
   if (!scenarist) {
     return FALLBACK_DEFAULT_TEST_ID;
   }
 
-  const defaultTestId = scenarist.config?.defaultTestId ?? FALLBACK_DEFAULT_TEST_ID;
+  const defaultTestId =
+    scenarist.config?.defaultTestId ?? FALLBACK_DEFAULT_TEST_ID;
   return headers.get(SCENARIST_TEST_ID_HEADER) ?? defaultTestId;
 }
 
@@ -175,6 +180,7 @@ export function getScenaristTestId(req: Request): string {
     return FALLBACK_DEFAULT_TEST_ID;
   }
 
-  const defaultTestId = scenarist.config?.defaultTestId ?? FALLBACK_DEFAULT_TEST_ID;
+  const defaultTestId =
+    scenarist.config?.defaultTestId ?? FALLBACK_DEFAULT_TEST_ID;
   return req.headers.get(SCENARIST_TEST_ID_HEADER) ?? defaultTestId;
 }

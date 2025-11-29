@@ -13,6 +13,7 @@ After deep analysis of Acquisition.Web's 64+ Playwright test files and 19 scenar
 ### What Acquisition.Web Tests Actually Do
 
 **Pattern discovered:** Tests navigate through **multi-page linear journeys** where:
+
 1. Scenario is set **ONCE** at the beginning
 2. Test navigates through 4-7 pages (e.g., `/login` → `/apply-sign` → `/penny-drop` → `/penny-drop/verify`)
 3. **The SAME API endpoint is called multiple times** during the journey
@@ -23,15 +24,15 @@ After deep analysis of Acquisition.Web's 64+ Playwright test files and 19 scenar
 ```typescript
 // Scenario set ONCE at start
 await setTestScenario({
-  scenario: 'onlineJourneyLogin',
-  variant: { name: 'mobile_transfer_accept' }
+  scenario: "onlineJourneyLogin",
+  variant: { name: "mobile_transfer_accept" },
 });
 
 // Navigate through pages - SAME endpoint called multiple times:
-await page.goto('/login');              // GET /applications/:id → return {state: 'quoteAccept'}
-await page.goto('/apply-sign');         // GET /applications/:id → return {state: 'appComplete'}
-await page.goto('/penny-drop');         // GET /applications/:id → return {state: 'appComplete'}
-await page.goto('/penny-drop/verify');  // GET /applications/:id → return {state: 'appComplete'}
+await page.goto("/login"); // GET /applications/:id → return {state: 'quoteAccept'}
+await page.goto("/apply-sign"); // GET /applications/:id → return {state: 'appComplete'}
+await page.goto("/penny-drop"); // GET /applications/:id → return {state: 'appComplete'}
+await page.goto("/penny-drop/verify"); // GET /applications/:id → return {state: 'appComplete'}
 ```
 
 **The problem:** Same endpoint, called 4 times, but **first call needs different response** than subsequent calls.
@@ -44,16 +45,19 @@ http.get(`${UNIFIED_API_URL}/applications/:id`, async ({ request }) => {
   const { remixHeadersParsed } = await getRemixMetaInformation(request);
 
   // ROUTING HACK: Use referer header to determine which page is calling
-  if (remixHeadersParsed['referer'].includes('/apply-sign') ||
-      remixHeadersParsed['referer'].includes('/penny-drop')) {
-    return HttpResponse.json({ state: 'appComplete' });  // Signed state
+  if (
+    remixHeadersParsed["referer"].includes("/apply-sign") ||
+    remixHeadersParsed["referer"].includes("/penny-drop")
+  ) {
+    return HttpResponse.json({ state: "appComplete" }); // Signed state
   }
 
-  return HttpResponse.json({ state: 'quoteAccept' });  // Initial state
+  return HttpResponse.json({ state: "quoteAccept" }); // Initial state
 });
 ```
 
 **Why this hack was needed:**
+
 - Test sets scenario ONCE
 - Application navigates through multiple pages
 - Backend API needs to return **progressive state** (initial → signed → complete)
@@ -70,31 +74,34 @@ http.get(`${UNIFIED_API_URL}/applications/:id`, async ({ request }) => {
 
 ```typescript
 const loginJourneyScenario: ScenaristScenario = {
-  id: 'loginJourney',
-  mocks: [{
-    method: 'GET',
-    url: '/applications/:id',
-    sequence: {
-      responses: [
-        { status: 200, body: { state: 'quoteAccept' } },    // 1st call from /login
-        { status: 200, body: { state: 'appComplete' } },    // 2nd call from /apply-sign
-        { status: 200, body: { state: 'appComplete' } },    // 3rd call from /penny-drop
-        { status: 200, body: { state: 'appComplete' } },    // 4th call from /verify
-      ],
-      repeat: 'last'  // Keep returning appComplete after sequence exhausts
-    }
-  }]
+  id: "loginJourney",
+  mocks: [
+    {
+      method: "GET",
+      url: "/applications/:id",
+      sequence: {
+        responses: [
+          { status: 200, body: { state: "quoteAccept" } }, // 1st call from /login
+          { status: 200, body: { state: "appComplete" } }, // 2nd call from /apply-sign
+          { status: 200, body: { state: "appComplete" } }, // 3rd call from /penny-drop
+          { status: 200, body: { state: "appComplete" } }, // 4th call from /verify
+        ],
+        repeat: "last", // Keep returning appComplete after sequence exhausts
+      },
+    },
+  ],
 };
 
 // Test remains simple - scenario set ONCE
-await switchScenario('loginJourney');
-await page.goto('/login');              // Returns quoteAccept
-await page.goto('/apply-sign');         // Returns appComplete
-await page.goto('/penny-drop');         // Returns appComplete
-await page.goto('/penny-drop/verify');  // Returns appComplete
+await switchScenario("loginJourney");
+await page.goto("/login"); // Returns quoteAccept
+await page.goto("/apply-sign"); // Returns appComplete
+await page.goto("/penny-drop"); // Returns appComplete
+await page.goto("/penny-drop/verify"); // Returns appComplete
 ```
 
 **Advantages over referer routing:**
+
 - ✅ Explicit progression (you can SEE the journey in the sequence)
 - ✅ No coupling to navigation order or referer headers
 - ✅ Testable in isolation (can test sequence advancement independently)
@@ -108,25 +115,38 @@ await page.goto('/penny-drop/verify');  // Returns appComplete
 ```typescript
 // Separate scenarios for each journey stage
 const loginInitialScenario = {
-  id: 'loginInitial',
-  mocks: [{ method: 'GET', url: '/applications/:id', response: { status: 200, body: { state: 'quoteAccept' } } }]
+  id: "loginInitial",
+  mocks: [
+    {
+      method: "GET",
+      url: "/applications/:id",
+      response: { status: 200, body: { state: "quoteAccept" } },
+    },
+  ],
 };
 
 const loginSignedScenario = {
-  id: 'loginSigned',
-  mocks: [{ method: 'GET', url: '/applications/:id', response: { status: 200, body: { state: 'appComplete' } } }]
+  id: "loginSigned",
+  mocks: [
+    {
+      method: "GET",
+      url: "/applications/:id",
+      response: { status: 200, body: { state: "appComplete" } },
+    },
+  ],
 };
 
 // Test explicitly switches scenarios between pages
-await switchScenario('loginInitial');
-await page.goto('/login');  // API returns quoteAccept
+await switchScenario("loginInitial");
+await page.goto("/login"); // API returns quoteAccept
 
-await switchScenario('loginSigned');
-await page.goto('/apply-sign');  // API returns appComplete
-await page.goto('/penny-drop');  // API returns appComplete
+await switchScenario("loginSigned");
+await page.goto("/apply-sign"); // API returns appComplete
+await page.goto("/penny-drop"); // API returns appComplete
 ```
 
 **Advantages over referer routing:**
+
 - ✅ **MOST EXPLICIT** - test code shows EXACTLY when state changes
 - ✅ No implicit coupling to browser navigation
 - ✅ Easy to reason about ("before signing" vs "after signing")
@@ -139,34 +159,35 @@ await page.goto('/penny-drop');  // API returns appComplete
 
 ```typescript
 const loginJourneyScenario: ScenaristScenario = {
-  id: 'loginJourney',
+  id: "loginJourney",
   mocks: [
     // POST /applications/:id/signature captures new state
     {
-      method: 'POST',
-      url: '/applications/:id/signature',
+      method: "POST",
+      url: "/applications/:id/signature",
       response: { status: 200, body: { success: true } },
       captureState: {
-        applicationState: { from: 'body', path: 'newState' }  // Capture from request
-      }
+        applicationState: { from: "body", path: "newState" }, // Capture from request
+      },
     },
     // GET /applications/:id injects captured state
     {
-      method: 'GET',
-      url: '/applications/:id',
+      method: "GET",
+      url: "/applications/:id",
       response: {
         status: 200,
         body: {
-          state: '{{state.applicationState}}',  // Inject captured state
+          state: "{{state.applicationState}}", // Inject captured state
           // OR provide fallback: state: '{{state.applicationState || "quoteAccept"}}'
-        }
-      }
-    }
-  ]
+        },
+      },
+    },
+  ],
 };
 ```
 
 **Advantages over referer routing:**
+
 - ✅ Models ACTUAL backend behavior (state changes persist)
 - ✅ No coupling to navigation at all
 - ✅ Tests can validate state transitions
@@ -178,13 +199,13 @@ const loginJourneyScenario: ScenaristScenario = {
 
 After analyzing all test files:
 
-| Pattern | Count | Scenarist Solution |
-|---------|-------|-------------------|
-| **Linear multi-page journeys** | 48 tests | ✅ Response Sequences (Approach 1) |
-| **Scenario variations** (under/over 75, with/without offers) | 16 tests | ✅ Separate scenarios (already explicit) |
-| **API-only tests** | 3 tests | ✅ Direct mock matching (no routing needed) |
-| **Mid-journey failures** | 5 tests | ✅ Explicit scenario switching (Approach 2) |
-| **State capture/progression** | 12 tests | ✅ Stateful mocks (Approach 3) |
+| Pattern                                                      | Count    | Scenarist Solution                          |
+| ------------------------------------------------------------ | -------- | ------------------------------------------- |
+| **Linear multi-page journeys**                               | 48 tests | ✅ Response Sequences (Approach 1)          |
+| **Scenario variations** (under/over 75, with/without offers) | 16 tests | ✅ Separate scenarios (already explicit)    |
+| **API-only tests**                                           | 3 tests  | ✅ Direct mock matching (no routing needed) |
+| **Mid-journey failures**                                     | 5 tests  | ✅ Explicit scenario switching (Approach 2) |
+| **State capture/progression**                                | 12 tests | ✅ Stateful mocks (Approach 3)              |
 
 **Verdict: 100% coverage with Scenarist**
 
@@ -193,39 +214,46 @@ After analyzing all test files:
 #### Example 1: Login Full Journey (Linear Progression)
 
 **Acquisition.Web approach:**
+
 ```typescript
 // Scenario with referer routing hack
-http.get('/applications/:id', async ({ request }) => {
+http.get("/applications/:id", async ({ request }) => {
   const { remixHeadersParsed } = await getRemixMetaInformation(request);
 
-  if (remixHeadersParsed['referer'].includes('/apply-sign') ||
-      remixHeadersParsed['referer'].includes('/penny-drop')) {
-    return HttpResponse.json({ state: 'appComplete' });
+  if (
+    remixHeadersParsed["referer"].includes("/apply-sign") ||
+    remixHeadersParsed["referer"].includes("/penny-drop")
+  ) {
+    return HttpResponse.json({ state: "appComplete" });
   }
 
-  return HttpResponse.json({ state: 'quoteAccept' });
+  return HttpResponse.json({ state: "quoteAccept" });
 });
 ```
 
 **Scenarist approach (using sequences):**
+
 ```typescript
 const loginJourneyScenario: ScenaristScenario = {
-  id: 'loginJourney',
-  mocks: [{
-    method: 'GET',
-    url: '/applications/:id',
-    sequence: {
-      responses: [
-        { status: 200, body: { state: 'quoteAccept' } },
-        { status: 200, body: { state: 'appComplete' } },
-      ],
-      repeat: 'last'
-    }
-  }]
+  id: "loginJourney",
+  mocks: [
+    {
+      method: "GET",
+      url: "/applications/:id",
+      sequence: {
+        responses: [
+          { status: 200, body: { state: "quoteAccept" } },
+          { status: 200, body: { state: "appComplete" } },
+        ],
+        repeat: "last",
+      },
+    },
+  ],
 };
 ```
 
 **Why better:**
+
 - No referer dependency
 - Explicit progression visible in scenario
 - Easier to modify (add new stages)
@@ -234,15 +262,17 @@ const loginJourneyScenario: ScenaristScenario = {
 #### Example 2: Document Upload (Multiple Uploads)
 
 **Acquisition.Web approach:**
+
 ```typescript
-http.post('/applications/:id/proofs', ({ request, params }) => {
-  const docId = v4();  // Generate UUID
-  const appId = params.id;  // Extract from path
+http.post("/applications/:id/proofs", ({ request, params }) => {
+  const docId = v4(); // Generate UUID
+  const appId = params.id; // Extract from path
   return HttpResponse.json({ id: docId, applicationId: appId });
 });
 ```
 
 **Scenarist approach (using template helpers - future):**
+
 ```typescript
 {
   method: 'POST',
@@ -258,6 +288,7 @@ http.post('/applications/:id/proofs', ({ request, params }) => {
 ```
 
 **Why equivalent:**
+
 - Tests don't validate UUID format
 - Tests just need unique, stable IDs
 - Template helpers provide same functionality
@@ -266,42 +297,51 @@ http.post('/applications/:id/proofs', ({ request, params }) => {
 #### Example 3: Variant System (Under/Over 75)
 
 **Acquisition.Web approach:**
+
 ```typescript
 // 12 variants in single scenario via createScenario() helper
 export const aggregatorRequoteScenarios = createScenario((variant) => ({
-  name: 'Aggregator Requote',
+  name: "Aggregator Requote",
   variants: {
-    successUnder75: { state: 'quoteAccept', age: 'under75' },
-    successOver75: { state: 'quoteAccept', age: 'over75' },
+    successUnder75: { state: "quoteAccept", age: "under75" },
+    successOver75: { state: "quoteAccept", age: "over75" },
     // ... 10 more variants
   },
-  mocks: [/* shared mocks with variant interpolation */]
+  mocks: [
+    /* shared mocks with variant interpolation */
+  ],
 }));
 ```
 
 **Scenarist approach:**
+
 ```typescript
 // Separate explicit scenarios (Clarity > DRY)
 const successUnder75Scenario: ScenaristScenario = {
-  id: 'successUnder75',
-  mocks: [{
-    method: 'GET',
-    url: '/applications/:id',
-    response: { status: 200, body: { state: 'quoteAccept', age: 'under75' } }
-  }]
+  id: "successUnder75",
+  mocks: [
+    {
+      method: "GET",
+      url: "/applications/:id",
+      response: { status: 200, body: { state: "quoteAccept", age: "under75" } },
+    },
+  ],
 };
 
 const successOver75Scenario: ScenaristScenario = {
-  id: 'successOver75',
-  mocks: [{
-    method: 'GET',
-    url: '/applications/:id',
-    response: { status: 200, body: { state: 'quoteAccept', age: 'over75' } }
-  }]
+  id: "successOver75",
+  mocks: [
+    {
+      method: "GET",
+      url: "/applications/:id",
+      response: { status: 200, body: { state: "quoteAccept", age: "over75" } },
+    },
+  ],
 };
 ```
 
 **Trade-off accepted (for simple cases):**
+
 - More duplication (acceptable when only 2-3 variants)
 - But CLEARER intent
 - Easier to modify individual scenarios
@@ -313,32 +353,40 @@ When duplication becomes unmanageable (like 12 tier×context variants), `buildVa
 
 ```typescript
 // Build-time generation (maintains declarative constraint)
-import { buildVariants } from '@scenarist/core';
+import { buildVariants } from "@scenarist/core";
 
 const scenarios = buildVariants(
-  { mocks: [/* 90 shared mocks */] },  // Base config (defined once)
+  {
+    mocks: [
+      /* 90 shared mocks */
+    ],
+  }, // Base config (defined once)
   [
-    { tier: 'premium', age: 'under75' },
-    { tier: 'premium', age: 'over75' },
-    { tier: 'standard', age: 'under75' },
-    { tier: 'standard', age: 'over75' },
+    { tier: "premium", age: "under75" },
+    { tier: "premium", age: "over75" },
+    { tier: "standard", age: "under75" },
+    { tier: "standard", age: "over75" },
   ],
   (base, variant) => ({
     id: `${variant.tier}-${variant.age}`,
     mocks: [
       ...base.mocks,
       {
-        method: 'GET',
-        url: '/applications/:id',
-        response: { status: 200, body: { tier: variant.tier, age: variant.age } }
-      }
-    ]
-  })
+        method: "GET",
+        url: "/applications/:id",
+        response: {
+          status: 200,
+          body: { tier: variant.tier, age: variant.age },
+        },
+      },
+    ],
+  }),
 );
 // Result: 4 fully expanded scenarios (all JSON-serializable)
 ```
 
 **Key distinction from Acquisition.Web runtime variants:**
+
 - ❌ **Runtime interpolation** - Functions in scenarios (breaks declarative constraint)
 - ✅ **Build-time generation** - Functions run ONCE at module load, output is pure JSON
 
@@ -379,11 +427,12 @@ This maintains serializability while reducing source duplication. See ADR-0014 f
 **Why it exists:** Return different responses based on request body fields
 
 **Example:**
+
 ```typescript
-http.post('/api/quote', async ({ request }) => {
+http.post("/api/quote", async ({ request }) => {
   const body = await request.json();
-  if (body.amount > 5000) return HttpResponse.json({ tier: 'premium' });
-  return HttpResponse.json({ tier: 'standard' });
+  if (body.amount > 5000) return HttpResponse.json({ tier: "premium" });
+  return HttpResponse.json({ tier: "standard" });
 });
 ```
 
@@ -439,6 +488,7 @@ http.post('/api/quote', async ({ request }) => {
 ### 1. Progressive State ≠ Routing Hacks
 
 Acquisition.Web models progressive state through routing hacks because it lacks:
+
 - Response sequences
 - Mid-journey scenario switching
 - Stateful mock capabilities
@@ -448,11 +498,13 @@ Scenarist has all three → no hacks needed.
 ### 2. Explicit > Implicit (Validated Again)
 
 Acquisition.Web:
+
 - Implicit state via referer headers
 - Hard to reason about ("why does this return appComplete?")
 - Brittle (depends on browser navigation order)
 
 Scenarist:
+
 - Explicit sequences show progression
 - Or explicit scenario switches show transitions
 - Easy to reason about ("this is step 2 of 4")
@@ -460,11 +512,13 @@ Scenarist:
 ### 3. Test Intent vs. Implementation
 
 **Critical realization:** Tests don't actually care about:
+
 - Real UUIDs (static IDs work fine)
 - Path param echo (tests don't validate it)
 - Exact referer URLs (tests validate page content, not routing)
 
 Tests care about:
+
 - **Journey progression** (can user complete the flow?)
 - **State transitions** (does state change correctly?)
 - **UI rendering** (are the right elements visible?)
@@ -486,6 +540,7 @@ Test Suite → Load Balancer → [Server 1, Server 2, Server 3]
 **Challenge:** How do you ensure all servers use the same mock scenario for a given test ID?
 
 **Without shared state:**
+
 - Test switches to "premium" scenario
 - Request 1 hits Server 1 (has "premium" active) ✅
 - Request 2 hits Server 2 (still on "default") ❌
@@ -501,7 +556,7 @@ class RedisScenarioRegistry implements ScenarioRegistry {
     // Serialize scenario definition to JSON
     await redis.set(
       `scenario:${scenario.id}`,
-      JSON.stringify(scenario)  // ← REQUIRES JSON-serializable
+      JSON.stringify(scenario), // ← REQUIRES JSON-serializable
     );
   }
 
@@ -515,7 +570,7 @@ class RedisScenarioStore implements ScenarioStore {
   async set(testId: string, scenario: ActiveScenario) {
     await redis.set(
       `test:${testId}`,
-      JSON.stringify(scenario)  // ← REQUIRES JSON-serializable
+      JSON.stringify(scenario), // ← REQUIRES JSON-serializable
     );
   }
 
@@ -527,6 +582,7 @@ class RedisScenarioStore implements ScenarioStore {
 ```
 
 **Architecture:**
+
 ```
 Test Suite
     ↓
@@ -545,6 +601,7 @@ RedisScenarioStore.get('test-123') → {scenarioId: 'premium'}
 ```
 
 **Benefits:**
+
 - ✅ All servers share scenario state via Redis
 - ✅ Test ID isolation maintained across servers
 - ✅ Scenario definitions stored once, accessed by all servers
@@ -554,38 +611,46 @@ RedisScenarioStore.get('test-123') → {scenarioId: 'premium'}
 ### Why This Requires JSON Serializability
 
 **If scenarios contained functions/closures:**
+
 ```typescript
 // ❌ CANNOT serialize to Redis
 const scenario = {
-  id: 'premium',
-  mocks: [{
-    method: 'GET',
-    url: '/api/products',
-    response: () => {  // Function - cannot JSON.stringify!
-      return buildProducts('premium');
-    }
-  }]
+  id: "premium",
+  mocks: [
+    {
+      method: "GET",
+      url: "/api/products",
+      response: () => {
+        // Function - cannot JSON.stringify!
+        return buildProducts("premium");
+      },
+    },
+  ],
 };
 
-JSON.stringify(scenario);  // Error: Cannot serialize function
+JSON.stringify(scenario); // Error: Cannot serialize function
 ```
 
 **With JSON-serializable scenarios:**
+
 ```typescript
 // ✅ CAN serialize to Redis
 const scenario = {
-  id: 'premium',
-  mocks: [{
-    method: 'GET',
-    url: '/api/products',
-    response: {  // Plain JSON
-      status: 200,
-      body: { products: buildProducts('premium') }
-    }
-  }]
+  id: "premium",
+  mocks: [
+    {
+      method: "GET",
+      url: "/api/products",
+      response: {
+        // Plain JSON
+        status: 200,
+        body: { products: buildProducts("premium") },
+      },
+    },
+  ],
 };
 
-JSON.stringify(scenario);  // Works perfectly
+JSON.stringify(scenario); // Works perfectly
 ```
 
 ### The buildVariants Trade-off
@@ -614,12 +679,14 @@ const onlineJourneyScenarios = buildVariants({
 ```
 
 **Trade-off accepted:**
+
 - ✅ Minimal source duplication (shared mocks + variant configs)
 - ✅ All generated scenarios are JSON-serializable
 - ✅ Enables Redis adapter for load-balanced testing
 - ⚠️ 5x memory at runtime (3 MB vs 500 KB - negligible)
 
 **Alternative considered and rejected:**
+
 - Runtime variant interpolation (Acquisition.Web style)
 - ❌ Cannot serialize functions to Redis
 - ❌ Blocks load-balanced testing architecture
@@ -628,6 +695,7 @@ const onlineJourneyScenarios = buildVariants({
 ### Architectural Principle
 
 **"Don't paint yourself into a corner"** - By maintaining JSON serializability from the start, Scenarist enables:
+
 - Redis adapters for load-balanced testing
 - Database storage adapters (PostgreSQL, MongoDB)
 - Remote scenario fetching (HTTP API)
@@ -643,6 +711,7 @@ const onlineJourneyScenarios = buildVariants({
 **Answer:** ✅ **YES - 100%**
 
 **Evidence:**
+
 - 64 test files analyzed
 - 48 linear journeys → Response sequences
 - 16 variant scenarios → Explicit scenarios
@@ -660,6 +729,7 @@ const onlineJourneyScenarios = buildVariants({
 6. ✅ **Framework agnostic** - Not coupled to Next.js/Remix headers
 
 **Remaining work:**
+
 - Issue #86: Regex support (for 95% coverage)
 - Issue #87: Template helpers (for 100% coverage + convenience)
 

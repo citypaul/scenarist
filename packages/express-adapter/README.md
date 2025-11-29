@@ -10,49 +10,59 @@ Express.js adapter for [Scenarist](https://scenarist.io) - manage MSW mock scena
 **Scenarist** enables concurrent tests to run with different backend states by switching mock scenarios at runtime via test IDs. Your real application code executes while external API responses are controlled by scenarios. No application restarts needed, no complex per-test mocking, just simple scenario switching.
 
 **Before Scenarist:**
+
 ```typescript
 // Every test has fragile per-test mocking
 beforeEach(() => {
-  server.use(
-    http.get('/api/user', () => HttpResponse.json({ role: 'admin' }))
-  );
+  server.use(http.get("/api/user", () => HttpResponse.json({ role: "admin" })));
 });
 // Repeat 100 times across test files, hope they don't conflict
 ```
 
 **With Scenarist:**
+
 ```typescript
 // Define scenario once
-const adminScenario = { id: 'admin', mocks: [/* complete backend state */] };
+const adminScenario = {
+  id: "admin",
+  mocks: [
+    /* complete backend state */
+  ],
+};
 
 // Use in any test with one line
-await setScenario('test-1', 'admin');
+await setScenario("test-1", "admin");
 // Test runs with complete "admin" backend state, isolated from other tests
 ```
 
 ## Why Use Scenarist with Express?
 
 **Runtime Scenario Switching**
+
 - Change entire backend state with one API call
 - No server restarts between tests
 - Instant feedback during development
 
 **True Parallel Testing**
+
 - 100+ tests run concurrently with different scenarios
 - Each test ID has isolated scenario state
 - No conflicts, no serialization needed
 
 **Automatic Test ID Propagation** (Express advantage)
+
 - AsyncLocalStorage propagates test IDs automatically
 - No manual header forwarding in route handlers
 - MSW handlers receive test ID transparently
 
 **Reusable Scenarios**
+
 - Define scenarios once, use across all tests
 - Version control your mock scenarios
 - Share scenarios across teams
 
 **Zero Boilerplate**
+
 - One function call (`createScenarist()`) wires everything
 - Middleware + endpoints + MSW automatically configured
 - Just add `app.use(scenarist.middleware)` and you're done
@@ -83,6 +93,7 @@ yarn add -D @scenarist/express-adapter msw
 **Note:** All Scenarist types (`ScenaristScenario`, `ScenaristMock`, etc.) are re-exported from `@scenarist/express-adapter` for convenience. You don't need to install `@scenarist/core` or `@scenarist/msw-adapter` separately - they're already included as dependencies.
 
 **Peer Dependencies:**
+
 - `express` ^4.18.0 || ^5.0.0
 - `msw` ^2.0.0
 
@@ -90,13 +101,13 @@ yarn add -D @scenarist/express-adapter msw
 
 **Full documentation at [scenarist.io](https://scenarist.io)**
 
-| Topic | Link |
-|-------|------|
-| **Why Scenarist?** | [scenarist.io/getting-started/why-scenarist](https://scenarist.io/getting-started/why-scenarist) |
+| Topic                         | Link                                                                                                       |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Why Scenarist?**            | [scenarist.io/getting-started/why-scenarist](https://scenarist.io/getting-started/why-scenarist)           |
 | **Getting Started (Express)** | [scenarist.io/frameworks/express/getting-started](https://scenarist.io/frameworks/express/getting-started) |
-| **Parallel Testing** | [scenarist.io/testing/parallel-testing](https://scenarist.io/testing/parallel-testing) |
-| **Testing Philosophy** | [scenarist.io/concepts/philosophy](https://scenarist.io/concepts/philosophy) |
-| **Architecture** | [scenarist.io/concepts/architecture](https://scenarist.io/concepts/architecture) |
+| **Parallel Testing**          | [scenarist.io/testing/parallel-testing](https://scenarist.io/testing/parallel-testing)                     |
+| **Testing Philosophy**        | [scenarist.io/concepts/philosophy](https://scenarist.io/concepts/philosophy)                               |
+| **Architecture**              | [scenarist.io/concepts/architecture](https://scenarist.io/concepts/architecture)                           |
 
 ## Quick Start
 
@@ -104,22 +115,25 @@ yarn add -D @scenarist/express-adapter msw
 
 ```typescript
 // test/scenarios.ts
-import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/express-adapter';
+import type {
+  ScenaristScenario,
+  ScenaristScenarios,
+} from "@scenarist/express-adapter";
 
 const defaultScenario: ScenaristScenario = {
-  id: 'default',
-  name: 'Default Scenario',
-  description: 'Baseline responses for all APIs',
+  id: "default",
+  name: "Default Scenario",
+  description: "Baseline responses for all APIs",
   mocks: [
     {
-      method: 'GET',
-      url: 'https://api.example.com/user',
+      method: "GET",
+      url: "https://api.example.com/user",
       response: {
         status: 200,
         body: {
-          id: '000',
-          name: 'Default User',
-          role: 'user',
+          id: "000",
+          name: "Default User",
+          role: "user",
         },
       },
     },
@@ -127,19 +141,19 @@ const defaultScenario: ScenaristScenario = {
 };
 
 const adminUserScenario: ScenaristScenario = {
-  id: 'admin-user',
-  name: 'Admin User',
-  description: 'User with admin privileges',
+  id: "admin-user",
+  name: "Admin User",
+  description: "User with admin privileges",
   mocks: [
     {
-      method: 'GET',
-      url: 'https://api.example.com/user',
+      method: "GET",
+      url: "https://api.example.com/user",
       response: {
         status: 200,
         body: {
-          id: '123',
-          name: 'Admin User',
-          role: 'admin',
+          id: "123",
+          name: "Admin User",
+          role: "admin",
         },
       },
     },
@@ -157,12 +171,12 @@ export const scenarios = {
 
 ```typescript
 // test/setup.ts
-import { createScenarist } from '@scenarist/express-adapter';
-import { scenarios } from './scenarios';
+import { createScenarist } from "@scenarist/express-adapter";
+import { scenarios } from "./scenarios";
 
 export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
-  scenarios,                    // All scenarios registered upfront
+  enabled: process.env.NODE_ENV === "test",
+  scenarios, // All scenarios registered upfront
   strictMode: false,
 });
 ```
@@ -171,20 +185,20 @@ export const scenarist = createScenarist({
 
 ```typescript
 // src/app.ts
-import express from 'express';
-import { scenarist } from '../test/setup';
+import express from "express";
+import { scenarist } from "../test/setup";
 
 const app = express();
 app.use(express.json());
 
 // Add Scenarist middleware (includes everything)
-if (process.env.NODE_ENV === 'test') {
+if (process.env.NODE_ENV === "test") {
   app.use(scenarist.middleware);
 }
 
 // Your application routes
-app.get('/api/user', async (req, res) => {
-  const response = await fetch('https://api.example.com/user');
+app.get("/api/user", async (req, res) => {
+  const response = await fetch("https://api.example.com/user");
   const user = await response.json();
   res.json(user);
 });
@@ -196,29 +210,29 @@ export { app };
 
 ```typescript
 // test/api.test.ts
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import request from 'supertest';
-import { app } from '../src/app';
-import { scenarist } from './setup';
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import request from "supertest";
+import { app } from "../src/app";
+import { scenarist } from "./setup";
 
-describe('User API', () => {
+describe("User API", () => {
   beforeAll(() => scenarist.start());
   afterAll(() => scenarist.stop());
 
-  it('should return admin user', async () => {
+  it("should return admin user", async () => {
     // Set scenario for this test
     await request(app)
-      .post('/__scenario__')
-      .set('x-scenarist-test-id', 'admin-test')
-      .send({ scenario: 'admin-user' });
+      .post("/__scenario__")
+      .set("x-scenarist-test-id", "admin-test")
+      .send({ scenario: "admin-user" });
 
     // Make request - MSW intercepts automatically
     const response = await request(app)
-      .get('/api/user')
-      .set('x-scenarist-test-id', 'admin-test');
+      .get("/api/user")
+      .set("x-scenarist-test-id", "admin-test");
 
     expect(response.status).toBe(200);
-    expect(response.body.role).toBe('admin');
+    expect(response.body.role).toBe("admin");
   });
 });
 ```
@@ -230,40 +244,47 @@ describe('User API', () => {
 Creates a Scenarist instance with everything wired automatically.
 
 **Parameters:**
+
 ```typescript
 type ExpressAdapterOptions<T extends ScenaristScenarios> = {
-  enabled: boolean;                    // Whether mocking is enabled
-  scenarios: T;                        // REQUIRED - scenarios object
-  strictMode?: boolean;                // Return 501 for unmocked requests (default: false)
+  enabled: boolean; // Whether mocking is enabled
+  scenarios: T; // REQUIRED - scenarios object
+  strictMode?: boolean; // Return 501 for unmocked requests (default: false)
   headers?: {
-    testId?: string;                   // Header for test ID (default: 'x-scenarist-test-id')
+    testId?: string; // Header for test ID (default: 'x-scenarist-test-id')
   };
   endpoints?: {
-    setScenario?: string;              // POST endpoint (default: '/__scenario__')
-    getScenario?: string;              // GET endpoint (default: '/__scenario__')
+    setScenario?: string; // POST endpoint (default: '/__scenario__')
+    getScenario?: string; // GET endpoint (default: '/__scenario__')
   };
-  defaultTestId?: string;              // Default test ID (default: 'default-test')
-  registry?: ScenarioRegistry;         // Custom registry (default: InMemoryScenarioRegistry)
-  store?: ScenarioStore;               // Custom store (default: InMemoryScenarioStore)
+  defaultTestId?: string; // Default test ID (default: 'default-test')
+  registry?: ScenarioRegistry; // Custom registry (default: InMemoryScenarioRegistry)
+  store?: ScenarioStore; // Custom store (default: InMemoryScenarioStore)
 };
 ```
 
 **Returns:**
+
 ```typescript
 type ExpressScenarist<T extends ScenaristScenarios> = {
-  config: ScenaristConfig;              // Resolved configuration (endpoints, headers, etc.)
-  middleware: Router;                   // Express middleware (includes test ID extraction + scenario endpoints)
-  switchScenario: (testId: string, scenarioId: keyof T, variant?: string) => ScenaristResult<void, Error>;
+  config: ScenaristConfig; // Resolved configuration (endpoints, headers, etc.)
+  middleware: Router; // Express middleware (includes test ID extraction + scenario endpoints)
+  switchScenario: (
+    testId: string,
+    scenarioId: keyof T,
+    variant?: string,
+  ) => ScenaristResult<void, Error>;
   getActiveScenario: (testId: string) => ActiveScenario | undefined;
   getScenarioById: (scenarioId: string) => ScenaristScenario | undefined;
   listScenarios: () => ReadonlyArray<ScenaristScenario>;
   clearScenario: (testId: string) => void;
-  start: () => void;                    // Start MSW server
-  stop: () => Promise<void>;            // Stop MSW server
+  start: () => void; // Start MSW server
+  stop: () => Promise<void>; // Stop MSW server
 };
 ```
 
 **Example:**
+
 ```typescript
 const scenarios = {
   default: defaultScenario,
@@ -290,6 +311,7 @@ The middleware automatically exposes these endpoints:
 #### `POST /__scenario__` - Set Active Scenario
 
 **Request:**
+
 ```typescript
 {
   scenario: string;      // Scenario ID (required)
@@ -298,6 +320,7 @@ The middleware automatically exposes these endpoints:
 ```
 
 **Response (200):**
+
 ```typescript
 {
   success: true;
@@ -308,16 +331,18 @@ The middleware automatically exposes these endpoints:
 ```
 
 **Example:**
+
 ```typescript
 await request(app)
-  .post('/__scenario__')
-  .set('x-scenarist-test-id', 'test-123')
-  .send({ scenario: 'user-logged-in' });
+  .post("/__scenario__")
+  .set("x-scenarist-test-id", "test-123")
+  .send({ scenario: "user-logged-in" });
 ```
 
 #### `GET /__scenario__` - Get Active Scenario
 
 **Response (200):**
+
 ```typescript
 {
   testId: string;
@@ -327,6 +352,7 @@ await request(app)
 ```
 
 **Response (404) - No Active Scenario:**
+
 ```typescript
 {
   error: "No active scenario for this test ID";
@@ -335,22 +361,23 @@ await request(app)
 ```
 
 **Example:**
+
 ```typescript
 // After setting a scenario
 const response = await request(app)
-  .get('/__scenario__')
-  .set('x-scenarist-test-id', 'test-123');
+  .get("/__scenario__")
+  .set("x-scenarist-test-id", "test-123");
 
 expect(response.status).toBe(200);
-expect(response.body.scenarioId).toBe('success');
+expect(response.body.scenarioId).toBe("success");
 
 // Before setting a scenario
 const response2 = await request(app)
-  .get('/__scenario__')
-  .set('x-scenarist-test-id', 'new-test');
+  .get("/__scenario__")
+  .set("x-scenarist-test-id", "new-test");
 
 expect(response2.status).toBe(404);
-expect(response2.body.error).toBe('No active scenario for this test ID');
+expect(response2.body.error).toBe("No active scenario for this test ID");
 ```
 
 ## Core Capabilities
@@ -360,6 +387,7 @@ Scenarist provides 20+ powerful features for scenario-based testing. All capabil
 ### Request Matching (6 capabilities)
 
 **Body matching (partial match)** - Match requests based on request body fields
+
 ```typescript
 {
   method: 'POST',
@@ -370,6 +398,7 @@ Scenarist provides 20+ powerful features for scenario-based testing. All capabil
 ```
 
 **Header matching (exact match)** - Perfect for user tier testing
+
 ```typescript
 {
   method: 'GET',
@@ -380,6 +409,7 @@ Scenarist provides 20+ powerful features for scenario-based testing. All capabil
 ```
 
 **Query parameter matching** - Different responses for filtered requests
+
 ```typescript
 {
   method: 'GET',
@@ -397,6 +427,7 @@ Scenarist provides 20+ powerful features for scenario-based testing. All capabil
 
 **Single responses** - Return same response every time
 **Response sequences (ordered)** - Return different response on each call
+
 ```typescript
 {
   method: 'GET',
@@ -419,6 +450,7 @@ Scenarist provides 20+ powerful features for scenario-based testing. All capabil
 
 **State capture from requests** - Extract values from body/headers/query
 **State injection via templates** - Inject captured state using `{{state.X}}`
+
 ```typescript
 // Capture from POST
 {
@@ -468,14 +500,10 @@ Each request can include an `x-scenarist-test-id` header. Scenarist uses this to
 
 ```typescript
 // Test 1 uses scenario A
-await request(app)
-  .get('/api/data')
-  .set('x-scenarist-test-id', 'test-1'); // Uses scenario A
+await request(app).get("/api/data").set("x-scenarist-test-id", "test-1"); // Uses scenario A
 
 // Test 2 uses scenario B (runs concurrently!)
-await request(app)
-  .get('/api/data')
-  .set('x-scenarist-test-id', 'test-2'); // Uses scenario B
+await request(app).get("/api/data").set("x-scenarist-test-id", "test-2"); // Uses scenario B
 ```
 
 ### Automatic Test ID Propagation
@@ -483,6 +511,7 @@ await request(app)
 **Express advantage:** Unlike frameworks without middleware (like Next.js), Express uses **AsyncLocalStorage** to automatically propagate test IDs throughout the request lifecycle.
 
 **What this means:**
+
 - Middleware extracts test ID from `x-scenarist-test-id` header **once**
 - Test ID stored in AsyncLocalStorage for the request duration
 - MSW handlers automatically access test ID from AsyncLocalStorage
@@ -492,10 +521,10 @@ await request(app)
 
 ```typescript
 // routes/products.ts
-app.get('/api/products', async (req, res) => {
+app.get("/api/products", async (req, res) => {
   // Test ID automatically available to MSW via AsyncLocalStorage
   // No need to manually forward headers!
-  const response = await fetch('http://external-api.com/products');
+  const response = await fetch("http://external-api.com/products");
   const products = await response.json();
   res.json(products);
 });
@@ -505,9 +534,9 @@ app.get('/api/products', async (req, res) => {
 
 ```typescript
 // Next.js - MUST manually forward headers
-const response = await fetch('http://external-api.com/products', {
+const response = await fetch("http://external-api.com/products", {
   headers: {
-    ...getScenaristHeaders(req, scenarist),  // Required!
+    ...getScenaristHeaders(req, scenarist), // Required!
   },
 });
 ```
@@ -516,11 +545,12 @@ const response = await fetch('http://external-api.com/products', {
 
 ```typescript
 // Express - AsyncLocalStorage propagates automatically
-const response = await fetch('http://external-api.com/products');
+const response = await fetch("http://external-api.com/products");
 // MSW handlers receive test ID from AsyncLocalStorage
 ```
 
 **Why this works:**
+
 - Express middleware runs before all routes
 - Middleware extracts `x-scenarist-test-id` and stores in AsyncLocalStorage
 - MSW dynamic handler reads from AsyncLocalStorage
@@ -531,6 +561,7 @@ const response = await fetch('http://external-api.com/products');
 ### Automatic MSW Integration
 
 The `createScenarist()` function automatically:
+
 1. Creates an MSW server with a dynamic handler
 2. Wires test ID extraction from headers via AsyncLocalStorage
 3. Sets up scenario control endpoints (POST/GET `/__scenario__`)
@@ -538,6 +569,7 @@ The `createScenarist()` function automatically:
 5. Returns mocked responses based on the scenario
 
 The `middleware` includes everything:
+
 - Test ID extraction from `x-scenarist-test-id` header (stored in AsyncLocalStorage)
 - Scenario control endpoints (`/__scenario__`)
 - All wired together - just add `app.use(scenarist.middleware)`
@@ -550,20 +582,33 @@ If a mock isn't found in the active scenario, Scenarist automatically falls back
 
 ```typescript
 const scenarios = {
-  default: {  // REQUIRED - must have 'default' key
-    id: 'default',
-    name: 'Default Happy Path',
-    description: 'Base responses for all APIs',
+  default: {
+    // REQUIRED - must have 'default' key
+    id: "default",
+    name: "Default Happy Path",
+    description: "Base responses for all APIs",
     mocks: [
-      { method: 'GET', url: '*/api/users', response: { status: 200, body: [] } },
-      { method: 'GET', url: '*/api/orders', response: { status: 200, body: [] } },
+      {
+        method: "GET",
+        url: "*/api/users",
+        response: { status: 200, body: [] },
+      },
+      {
+        method: "GET",
+        url: "*/api/orders",
+        response: { status: 200, body: [] },
+      },
     ],
   },
   userError: {
-    id: 'user-error',
-    name: 'User API Error',
+    id: "user-error",
+    name: "User API Error",
     mocks: [
-      { method: 'GET', url: '*/api/users', response: { status: 500, body: { error: 'Server error' } } },
+      {
+        method: "GET",
+        url: "*/api/users",
+        response: { status: 500, body: { error: "Server error" } },
+      },
       // Orders endpoint falls back to default scenario
     ],
   },
@@ -571,7 +616,7 @@ const scenarios = {
 
 const scenarist = createScenarist({
   enabled: true,
-  scenarios,  // 'default' key is validated at runtime
+  scenarios, // 'default' key is validated at runtime
 });
 ```
 
@@ -581,7 +626,7 @@ The new API provides full type safety with TypeScript autocomplete for scenario 
 
 ```typescript
 // scenarios.ts - define scenarios with type constraint
-import type { ScenaristScenarios } from '@scenarist/express-adapter';
+import type { ScenaristScenarios } from "@scenarist/express-adapter";
 
 export const scenarios = {
   default: defaultScenario,
@@ -592,7 +637,7 @@ export const scenarios = {
 } as const satisfies ScenaristScenarios;
 
 // setup.ts - create scenarist with type parameter
-import { scenarios } from './scenarios';
+import { scenarios } from "./scenarios";
 
 export const scenarist = createScenarist({
   enabled: true,
@@ -600,16 +645,17 @@ export const scenarist = createScenarist({
 });
 
 // test.ts - type-safe scenario switching
-scenarist.switchScenario('test-123', 'success');      // ✅ Autocomplete works!
-scenarist.switchScenario('test-123', 'invalid-name'); // ❌ TypeScript error!
+scenarist.switchScenario("test-123", "success"); // ✅ Autocomplete works!
+scenarist.switchScenario("test-123", "invalid-name"); // ❌ TypeScript error!
 
 await request(app)
   .post(scenarist.config.endpoints.setScenario)
-  .set(SCENARIST_TEST_ID_HEADER, 'test-123')
-  .send({ scenario: 'success' }); // ✅ Type-safe!
+  .set(SCENARIST_TEST_ID_HEADER, "test-123")
+  .send({ scenario: "success" }); // ✅ Type-safe!
 ```
 
 **Benefits:**
+
 - ✅ Autocomplete for scenario IDs in your editor
 - ✅ Refactor-safe (rename propagates everywhere)
 - ✅ Compile-time errors for typos
@@ -623,30 +669,35 @@ Create helper functions to reduce boilerplate:
 
 ```typescript
 // test/helpers.ts
-import request from 'supertest';
-import { app } from '../src/app';
+import request from "supertest";
+import { app } from "../src/app";
 
-export const setScenario = async (testId: string, scenario: string, variant?: string) => {
+export const setScenario = async (
+  testId: string,
+  scenario: string,
+  variant?: string,
+) => {
   await request(app)
-    .post('/__scenario__')
-    .set('x-scenarist-test-id', testId)
+    .post("/__scenario__")
+    .set("x-scenarist-test-id", testId)
     .send({ scenario, variant });
 };
 
 export const makeRequest = (testId: string) => {
-  return request(app).set('x-scenarist-test-id', testId);
+  return request(app).set("x-scenarist-test-id", testId);
 };
 ```
 
 **Usage:**
+
 ```typescript
-import { setScenario, makeRequest } from './helpers';
+import { setScenario, makeRequest } from "./helpers";
 
-test('payment flow', async () => {
-  const testId = 'payment-test';
-  await setScenario(testId, 'payment-success');
+test("payment flow", async () => {
+  const testId = "payment-test";
+  await setScenario(testId, "payment-success");
 
-  const response = await makeRequest(testId).post('/api/charge');
+  const response = await makeRequest(testId).post("/api/charge");
   expect(response.status).toBe(200);
 });
 ```
@@ -656,18 +707,18 @@ test('payment flow', async () => {
 Generate unique test IDs automatically:
 
 ```typescript
-import { randomUUID } from 'crypto';
+import { randomUUID } from "crypto";
 
-describe('API Tests', () => {
+describe("API Tests", () => {
   let testId: string;
 
   beforeEach(() => {
     testId = randomUUID();
   });
 
-  it('should process payment', async () => {
-    await setScenario(testId, 'payment-success');
-    const response = await makeRequest(testId).post('/api/charge');
+  it("should process payment", async () => {
+    await setScenario(testId, "payment-success");
+    const response = await makeRequest(testId).post("/api/charge");
     expect(response.status).toBe(200);
   });
 });
@@ -679,7 +730,8 @@ Enable scenario switching during development:
 
 ```typescript
 const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test',
+  enabled:
+    process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test",
   scenarios,
   strictMode: false,
 });
@@ -704,21 +756,22 @@ curl http://localhost:3000/__scenario__
 ```typescript
 // Test-only
 const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
+  enabled: process.env.NODE_ENV === "test",
   scenarios,
   strictMode: true, // Fail if any unmocked request
 });
 
 // Development and test
 const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development',
+  enabled:
+    process.env.NODE_ENV === "test" || process.env.NODE_ENV === "development",
   scenarios,
   strictMode: false, // Allow passthrough to real APIs
 });
 
 // Opt-in with environment variable
 const scenarist = createScenarist({
-  enabled: process.env.ENABLE_MOCKING === 'true',
+  enabled: process.env.ENABLE_MOCKING === "true",
   scenarios,
   strictMode: false,
 });
@@ -731,11 +784,11 @@ const scenarist = createScenarist({
   enabled: true,
   scenarios,
   headers: {
-    testId: 'x-my-test-id',
+    testId: "x-my-test-id",
   },
   endpoints: {
-    setScenario: '/api/scenarios/set',
-    getScenario: '/api/scenarios/active',
+    setScenario: "/api/scenarios/set",
+    getScenario: "/api/scenarios/active",
   },
 });
 ```
@@ -754,6 +807,7 @@ NODE_ENV=production node src/server.js
 ```
 
 **How it works:**
+
 1. `process.env.NODE_ENV === 'production'` evaluates to `true` at runtime
 2. `createScenarist()` returns `undefined` without loading dependencies
 3. MSW and all Scenarist code **never loads into memory**
@@ -773,8 +827,8 @@ Scenarist uses **conditional package.json exports** to provide a production-spec
 {
   "exports": {
     ".": {
-      "production": "./dist/setup/production.js",  // Zero imports
-      "default": "./dist/index.js"                 // Full implementation
+      "production": "./dist/setup/production.js", // Zero imports
+      "default": "./dist/index.js" // Full implementation
     }
   }
 }
@@ -783,11 +837,13 @@ Scenarist uses **conditional package.json exports** to provide a production-spec
 The `"production"` condition is a **custom condition** (not a Node.js built-in like `"import"` or `"require"`). Bundlers must be explicitly configured to recognize it.
 
 **Without configuration:**
+
 - MSW code included in bundle (~320kb)
 - Code never executes (safe)
 - Wastes bandwidth
 
 **With configuration:**
+
 - MSW code completely eliminated
 - Bundle size reduced by ~52% (618kb → 298kb)
 - Optimal production deployment
@@ -813,15 +869,15 @@ Add `conditionNames` to resolve configuration:
 ```javascript
 // webpack.config.js
 module.exports = {
-  mode: 'production',
+  mode: "production",
   resolve: {
-    conditionNames: ['production', 'import', 'require']
+    conditionNames: ["production", "import", "require"],
   },
   plugins: [
     new webpack.DefinePlugin({
-      'process.env.NODE_ENV': JSON.stringify('production')
-    })
-  ]
+      "process.env.NODE_ENV": JSON.stringify("production"),
+    }),
+  ],
 };
 ```
 
@@ -833,11 +889,11 @@ Add `conditions` to resolve configuration:
 // vite.config.js
 export default {
   resolve: {
-    conditions: ['production']
+    conditions: ["production"],
   },
   define: {
-    'process.env.NODE_ENV': JSON.stringify('production')
-  }
+    "process.env.NODE_ENV": JSON.stringify("production"),
+  },
 };
 ```
 
@@ -847,19 +903,19 @@ Add `exportConditions` to node-resolve plugin:
 
 ```javascript
 // rollup.config.js
-import resolve from '@rollup/plugin-node-resolve';
-import replace from '@rollup/plugin-replace';
+import resolve from "@rollup/plugin-node-resolve";
+import replace from "@rollup/plugin-replace";
 
 export default {
   plugins: [
     resolve({
-      exportConditions: ['production']
+      exportConditions: ["production"],
     }),
     replace({
-      'process.env.NODE_ENV': JSON.stringify('production'),
-      preventAssignment: true
-    })
-  ]
+      "process.env.NODE_ENV": JSON.stringify("production"),
+      preventAssignment: true,
+    }),
+  ],
 };
 ```
 
@@ -880,11 +936,13 @@ The Express example app includes a verification script you can adapt:
 ```
 
 **Run verification:**
+
 ```bash
 pnpm verify:treeshaking
 ```
 
 **Success output:**
+
 ```
 dist/server.js  298.4kb
 
@@ -896,24 +954,27 @@ The script checks that MSW-specific implementation patterns (`setupWorker`, `Htt
 ### Bundle Size Comparison
 
 **Without tree-shaking configuration:**
+
 - Bundle size: ~618kb
 - Includes: Application + Zod + MSW + Scenarist
 - Status: Code included but never executes
 
 **With tree-shaking configuration:**
+
 - Bundle size: ~298kb (52% reduction)
 - Includes: Application + Zod only
 - Status: MSW and Scenarist completely eliminated
 
 ### Trade-Offs
 
-| Deployment Type | Configuration Required | Tree-Shaking | Bundle Impact |
-|----------------|------------------------|--------------|---------------|
-| **Unbundled** (standard Express) | ✅ None | ✅ Automatic | ✅ Zero (code never loads) |
-| **Bundled** without config | ❌ None | ❌ Partial | ⚠️ ~320kb dead code |
-| **Bundled** with config | ✅ One line | ✅ Complete | ✅ Zero (eliminated) |
+| Deployment Type                  | Configuration Required | Tree-Shaking | Bundle Impact              |
+| -------------------------------- | ---------------------- | ------------ | -------------------------- |
+| **Unbundled** (standard Express) | ✅ None                | ✅ Automatic | ✅ Zero (code never loads) |
+| **Bundled** without config       | ❌ None                | ❌ Partial   | ⚠️ ~320kb dead code        |
+| **Bundled** with config          | ✅ One line            | ✅ Complete  | ✅ Zero (eliminated)       |
 
 **Recommendation:**
+
 - If you're deploying unbundled code: No action needed ✅
 - If you're bundling: Add the one-line bundler configuration for optimal bundle size
 
@@ -926,8 +987,8 @@ The script checks that MSW-specific implementation patterns (`setupWorker`, `Htt
 **Solution:** Ensure you've called `scenarist.start()` before tests and `scenarist.stop()` after:
 
 ```typescript
-beforeAll(() => scenarist.start());  // Starts MSW server
-afterAll(() => scenarist.stop());    // Stops MSW server
+beforeAll(() => scenarist.start()); // Starts MSW server
+afterAll(() => scenarist.stop()); // Stops MSW server
 ```
 
 ### Tests see each other's scenarios
@@ -938,14 +999,14 @@ afterAll(() => scenarist.stop());    // Stops MSW server
 
 ```typescript
 // ❌ Wrong - missing header on second request
-await setScenario('test-1', 'my-scenario');
-const response = await request(app).get('/api/data'); // No test ID!
+await setScenario("test-1", "my-scenario");
+const response = await request(app).get("/api/data"); // No test ID!
 
 // ✅ Correct - header on all requests
-await setScenario('test-1', 'my-scenario');
+await setScenario("test-1", "my-scenario");
 const response = await request(app)
-  .get('/api/data')
-  .set('x-scenarist-test-id', 'test-1');
+  .get("/api/data")
+  .set("x-scenarist-test-id", "test-1");
 ```
 
 ### Scenario not found error
@@ -957,7 +1018,7 @@ const response = await request(app)
 ```typescript
 const scenarios = {
   default: defaultScenario,
-  myScenario: myScenario,  // ✅ Registered
+  myScenario: myScenario, // ✅ Registered
 } as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
@@ -965,8 +1026,8 @@ const scenarist = createScenarist({
   scenarios,
 });
 
-await setScenario('test-1', 'myScenario');  // ✅ Works
-await setScenario('test-1', 'unknown');     // ❌ Error: Scenario not found
+await setScenario("test-1", "myScenario"); // ✅ Works
+await setScenario("test-1", "unknown"); // ❌ Error: Scenario not found
 ```
 
 ## TypeScript
@@ -974,12 +1035,13 @@ await setScenario('test-1', 'unknown');     // ❌ Error: Scenario not found
 This package is written in TypeScript and includes full type definitions.
 
 **Exported Types:**
+
 ```typescript
 // Adapter-specific types
 import type {
   ExpressAdapterOptions,
   ExpressScenarist,
-} from '@scenarist/express-adapter';
+} from "@scenarist/express-adapter";
 
 // Core types (re-exported for convenience)
 import type {
@@ -992,7 +1054,7 @@ import type {
   ScenaristScenarios,
   ScenaristConfig,
   ScenaristResult,
-} from '@scenarist/express-adapter';
+} from "@scenarist/express-adapter";
 ```
 
 **Note:** All core types are re-exported from `@scenarist/express-adapter`, so you only need one import path for all Scenarist types.
@@ -1008,6 +1070,7 @@ See the [**Express Example App**](../../apps/express-example) for a complete wor
 - ✅ **Multiple scenarios** - Success, errors, timeouts, mixed results
 
 The example includes:
+
 - Complete Express application with GitHub, Weather, and Stripe API integrations
 - 7 different scenario definitions
 - 20 passing E2E tests demonstrating all features

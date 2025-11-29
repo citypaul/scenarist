@@ -93,9 +93,16 @@
  * https://github.com/citypaul/scenarist/tree/main/packages/playwright-helpers
  */
 
-import { test as base, expect as baseExpect, type Page } from '@playwright/test';
-import { switchScenario as baseSwitchScenario, type SwitchScenarioOptions } from './switch-scenario.js';
-import type { ScenaristScenarios, ScenarioIds } from '@scenarist/core';
+import {
+  test as base,
+  expect as baseExpect,
+  type Page,
+} from "@playwright/test";
+import {
+  switchScenario as baseSwitchScenario,
+  type SwitchScenarioOptions,
+} from "./switch-scenario.js";
+import type { ScenaristScenarios, ScenarioIds } from "@scenarist/core";
 
 /**
  * Configuration options for Scenarist.
@@ -167,7 +174,7 @@ export type ScenaristFixtures<S extends string = string> = {
   switchScenario: (
     page: Page,
     scenarioId: S,
-    options?: Partial<Pick<SwitchScenarioOptions, 'endpoint' | 'baseURL'>>
+    options?: Partial<Pick<SwitchScenarioOptions, "endpoint" | "baseURL">>,
   ) => Promise<string>;
 };
 
@@ -211,7 +218,7 @@ export function withScenarios<T extends ScenaristScenarios>(scenarios: T) {
 
   return base.extend<ScenaristOptions & ScenaristFixtures<ScenarioId>>({
     // Configuration option with default value
-    scenaristEndpoint: ['/api/__scenario__', { option: true }],
+    scenaristEndpoint: ["/api/__scenario__", { option: true }],
 
     // Generate a guaranteed unique test ID for each test
     scenaristTestId: async ({}, use, testInfo) => {
@@ -221,15 +228,19 @@ export function withScenarios<T extends ScenaristScenarios>(scenarios: T) {
     },
 
     // Provide a switchScenario helper that reads config and auto-injects test ID
-    switchScenario: async ({ scenaristTestId, scenaristEndpoint, baseURL }, use) => {
+    switchScenario: async (
+      { scenaristTestId, scenaristEndpoint, baseURL },
+      use,
+    ) => {
       const switchFn = async (
         page: Page,
         scenarioId: ScenarioId,
-        options?: Partial<Pick<SwitchScenarioOptions, 'endpoint' | 'baseURL'>>
+        options?: Partial<Pick<SwitchScenarioOptions, "endpoint" | "baseURL">>,
       ): Promise<string> => {
         // Read from config, allow per-test override, fallback to defaults
         const finalEndpoint = options?.endpoint ?? scenaristEndpoint;
-        const finalBaseURL = options?.baseURL ?? baseURL ?? 'http://localhost:3000';
+        const finalBaseURL =
+          options?.baseURL ?? baseURL ?? "http://localhost:3000";
 
         // Call the base switchScenario with all config and return test ID
         return await baseSwitchScenario(page, scenarioId, {

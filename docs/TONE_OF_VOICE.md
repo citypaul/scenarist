@@ -80,11 +80,13 @@ Scenarist uses hexagonal architecture with ports and adapters...
 ### 5. Neutral Documentation Tone
 
 **Avoid:**
+
 - Superlatives ("best", "perfect", "revolutionary")
 - Defensive language ("finally", "unlike other tools")
 - Over-enthusiasm ("amazing", "incredible")
 
 **Use:**
+
 - Factual descriptions
 - Balanced comparisons
 - Honest trade-off discussions
@@ -102,6 +104,7 @@ Scenarist uses hexagonal architecture with ports and adapters...
 
 ```markdown
 **Key features:**
+
 - **Ephemeral endpoints:** Scenario switching only active when `enabled: true`
 - **Test isolation:** Unique test IDs enable parallel execution
 - **Type-safe helpers:** Playwright integration with autocomplete
@@ -117,6 +120,7 @@ Scenarist uses hexagonal architecture with ports and adapters...
 Scenarist creates ephemeral endpoints that only exist when testing is enabled.
 
 **What the `enabled` flag controls:**
+
 - When `enabled: true`: Endpoints active, middleware registered
 - When `enabled: false`: Endpoints return 404, zero overhead
 
@@ -175,7 +179,7 @@ When explaining framework-specific issues, **use direct quotes from official doc
 
 Every feature page follows this structure:
 
-```markdown
+````markdown
 # Feature Name
 
 ## The Problem [Framework] Developers Face
@@ -183,20 +187,24 @@ Every feature page follows this structure:
 [Specific pain point with real quote/example]
 
 **Without Scenarist:**
+
 ```typescript
 // ❌ Before: The painful way
 [Code showing current pain]
 ```
+````
 
 ## How Scenarist Solves It
 
 **With Scenarist:**
+
 ```typescript
 // ✅ After: The Scenarist way
 [Code showing solution]
 ```
 
 **Benefits:**
+
 - Parallel test execution
 - No test pollution
 - Runtime scenario switching
@@ -211,7 +219,8 @@ Every feature page follows this structure:
 
 - [Related Feature 1]
 - [Related Concept 2]
-```
+
+````
 
 ## Code Example Standards
 
@@ -230,23 +239,26 @@ const scenarios = {
     mocks: [...]  // Undefined, incomplete
   }
 };
-```
+````
 
 ✅ **GOOD:**
+
 ```typescript
-import type { ScenaristScenario } from '@scenarist/core';
+import type { ScenaristScenario } from "@scenarist/core";
 
 export const premiumScenario: ScenaristScenario = {
-  id: 'premium',
-  name: 'Premium User',
-  mocks: [{
-    method: 'GET',
-    url: 'https://api.auth.com/session',
-    response: {
-      status: 200,
-      body: { tier: 'premium', userId: 'user-123' }
-    }
-  }]
+  id: "premium",
+  name: "Premium User",
+  mocks: [
+    {
+      method: "GET",
+      url: "https://api.auth.com/session",
+      response: {
+        status: 200,
+        body: { tier: "premium", userId: "user-123" },
+      },
+    },
+  ],
 };
 ```
 
@@ -255,32 +267,38 @@ export const premiumScenario: ScenaristScenario = {
 Before publishing any documentation page:
 
 ### Accuracy
+
 - [ ] No "CAN'T" statements that should be "CAN, but painful"
 - [ ] Claims about unit tests acknowledge they work but require extensive mocking
 - [ ] Testing gap accurately described (mocking creates distance, not impossibility)
 
 ### No Marketing Fluff
+
 - [ ] No percentage claims without context
 - [ ] No "X times faster" without explanation
 - [ ] Code comparisons speak for themselves
 
 ### Correct Content Level
+
 - [ ] Landing page has only bullet points and high-level overview
 - [ ] Technical details are in docs pages, not landing page
 - [ ] Each piece of content is in appropriate location
 
 ### Framework-Agnostic
+
 - [ ] Express, Hono, Fastify mentioned alongside Next.js
 - [ ] Server Components presented as one use case among many
 - [ ] Examples show multiple frameworks when relevant
 
 ### Code Examples
+
 - [ ] All code examples are complete and copy-paste ready
 - [ ] No placeholders or undefined variables
 - [ ] Examples match real type signatures
 - [ ] Comments explain non-obvious parts
 
 ### Realistic Testing Gap
+
 - [ ] Acknowledges unit tests are valuable
 - [ ] Explains mocking creates testing/reality gap
 - [ ] Shows HTTP-level testing is closer to production
@@ -289,26 +307,31 @@ Before publishing any documentation page:
 ## Anti-Patterns to Avoid
 
 ### ❌ Defensive Language
+
 - "Finally, testing that works"
 - "Unlike other tools"
 - "The way testing should be"
 
 ### ❌ Over-Promising
+
 - "Solves all testing problems"
 - "Perfect testing solution"
 - "Zero configuration"
 
 ### ❌ Technical Jargon Without Context
+
 - "Uses ports and adapters" (before explaining why it matters)
 - "Hexagonal architecture" (before showing the problem it solves)
 - "Ephemeral endpoints" (before explaining what that means)
 
 ### ❌ Vague Benefits
+
 - "Better testing experience"
 - "Improved developer workflow"
 - "Enhanced test quality"
 
 ### ✅ Instead: Specific, Measurable, Honest
+
 - "Tests run in parallel without interference"
 - "Switch scenarios at runtime without restarting the server"
 - "Mock only external APIs, not framework internals"
@@ -322,6 +345,7 @@ Before publishing any documentation page:
 > Between these extremes lies a testing gap: verifying that your backend HTTP layer behaves correctly under different scenarios, without the overhead of full end-to-end tests."
 
 **Why this works:**
+
 - Neutral, explanatory tone
 - States facts without superlatives
 - Acknowledges both approaches have value
@@ -338,6 +362,7 @@ Before publishing any documentation page:
 > **Scenarist eliminates E2E testing's biggest pain points!**"
 
 **Problems:**
+
 - Absolute statement ("is broken")
 - Emotional language ("biggest pain points")
 - Defensive tone ("eliminates")
@@ -346,6 +371,7 @@ Before publishing any documentation page:
 ## Summary
 
 **Remember:**
+
 - Empathetic, not defensive
 - Honest, not hyperbolic
 - Practical, not theoretical

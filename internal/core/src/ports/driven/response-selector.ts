@@ -43,6 +43,6 @@ export interface ResponseSelector {
     testId: string,
     scenarioId: string,
     context: HttpRequestContext,
-    mocks: ReadonlyArray<ScenaristMockWithParams>
+    mocks: ReadonlyArray<ScenaristMockWithParams>,
   ): ScenaristResult<ScenaristResponse, ResponseSelectionError>;
 }

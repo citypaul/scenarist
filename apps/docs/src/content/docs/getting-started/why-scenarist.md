@@ -17,13 +17,13 @@ This creates a testing challenge:
 
 **Choose your path based on what you need:**
 
-| If you want to... | Go to... |
-|-------------------|----------|
-| See how Scenarist works | [How it works](/concepts/how-it-works) |
-| Learn about dynamic capabilities | [Capabilities](/concepts/dynamic-responses) |
-| Compare with unit/E2E tests | [Comparison](#comparison-with-other-testing-approaches) |
-| Understand limitations | [Limitations](#limitations-and-trade-offs) |
-| Start implementing | [Getting Started](#getting-started) |
+| If you want to...                | Go to...                                                |
+| -------------------------------- | ------------------------------------------------------- |
+| See how Scenarist works          | [How it works](/concepts/how-it-works)                  |
+| Learn about dynamic capabilities | [Capabilities](/concepts/dynamic-responses)             |
+| Compare with unit/E2E tests      | [Comparison](#comparison-with-other-testing-approaches) |
+| Understand limitations           | [Limitations](#limitations-and-trade-offs)              |
+| Start implementing               | [Getting Started](#getting-started)                     |
 
 ---
 
@@ -76,13 +76,13 @@ Scenarist intercepts HTTP requests that traverse the network. This works because
 
 ```typescript
 // ✅ WORKS - External API
-const stripe = await fetch('https://api.stripe.com/v1/products');
+const stripe = await fetch("https://api.stripe.com/v1/products");
 
 // ✅ WORKS - Different port on localhost
-const products = await fetch('http://localhost:3001/products');
+const products = await fetch("http://localhost:3001/products");
 
 // ❌ Does NOT work - Same host/port internal route
-const products = await fetch('http://localhost:3000/api/products');
+const products = await fetch("http://localhost:3000/api/products");
 ```
 
 **Why internal routes don't work:** When a Server Component calls an API route on the same host/port, Next.js handles this internally without making a network request. MSW only sees requests that go through the network stack.
@@ -100,7 +100,7 @@ const products = await fetch('http://localhost:3000/api/products');
 
 ### Why Framework Documentation Recommends E2E
 
-This gap is evident in how framework authors struggle to provide testing guidance. The Next.js documentation states: *"Since async Server Components are new to the React ecosystem, Next.js recommends using end-to-end testing."* Remix notes: *"There aren't standard ways of testing components that have Remix code."* SvelteKit faces similar challenges with server route testing.
+This gap is evident in how framework authors struggle to provide testing guidance. The Next.js documentation states: _"Since async Server Components are new to the React ecosystem, Next.js recommends using end-to-end testing."_ Remix notes: _"There aren't standard ways of testing components that have Remix code."_ SvelteKit faces similar challenges with server route testing.
 
 The pattern is clear: when "frontend" components run on the server and call external APIs directly, traditional testing approaches break down. **Scenarist fills this gap** by testing real server-side code with mocked external APIs.
 
@@ -109,11 +109,13 @@ The pattern is clear: when "frontend" components run on the server and call exte
 Scenarist enables behavior-focused testing by letting you test your server's response to different external API behaviors without mocking internal implementation details.
 
 **Your tests describe scenarios:**
+
 - "Premium user checkout with valid payment"
 - "Payment declined due to insufficient funds"
 - "Auth0 timeout during login"
 
 **Not implementation details:**
+
 - ~~"Mock stripe.charges.create to throw error"~~
 - ~~"Stub authClient.getSession to return null"~~
 - ~~"Mock sendgrid.send to resolve with 500"~~
@@ -124,15 +126,15 @@ This follows Test-Driven Development principles: tests document expected behavio
 
 ## Comparison with Other Testing Approaches
 
-| Aspect | Unit Tests | E2E Tests | Scenarist |
-|--------|-----------|-----------|-----------|
-| HTTP layer | Mocked | Real | Real |
-| Backend execution | Real (but isolated) | Real | Real |
-| External APIs | Mocked | Real or mocked | Mocked via scenarios |
-| Tests behavior over implementation | No (mocks internals) | Yes | Yes |
-| Parallel execution | Yes | Typically no | Yes |
-| Speed | Fast | Slow | Fast |
-| Scenario coverage | High (with mocking) | Low (speed constraint) | High |
+| Aspect                             | Unit Tests           | E2E Tests              | Scenarist            |
+| ---------------------------------- | -------------------- | ---------------------- | -------------------- |
+| HTTP layer                         | Mocked               | Real                   | Real                 |
+| Backend execution                  | Real (but isolated)  | Real                   | Real                 |
+| External APIs                      | Mocked               | Real or mocked         | Mocked via scenarios |
+| Tests behavior over implementation | No (mocks internals) | Yes                    | Yes                  |
+| Parallel execution                 | Yes                  | Typically no           | Yes                  |
+| Speed                              | Fast                 | Slow                   | Fast                 |
+| Scenario coverage                  | High (with mocking)  | Low (speed constraint) | High                 |
 
 None of these approaches replaces the others—they serve different purposes:
 

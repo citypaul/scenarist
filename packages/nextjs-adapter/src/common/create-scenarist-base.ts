@@ -1,4 +1,4 @@
-import { setupServer } from 'msw/node';
+import { setupServer } from "msw/node";
 import {
   buildConfig,
   createScenarioManager,
@@ -12,8 +12,8 @@ import {
   type ScenaristConfig,
   type ScenarioManager,
   type ResponseSelector,
-} from '@scenarist/core';
-import { createDynamicHandler } from '@scenarist/msw-adapter';
+} from "@scenarist/core";
+import { createDynamicHandler } from "@scenarist/msw-adapter";
 
 /**
  * Shared setup logic for both Pages Router and App Router adapters.
@@ -43,7 +43,7 @@ export type ScenaristBaseSetup = {
  * @returns Shared setup objects for both router implementations
  */
 export const createScenaristBase = (
-  options: BaseAdapterOptions
+  options: BaseAdapterOptions,
 ): ScenaristBaseSetup => {
   const config = buildConfig(options);
 

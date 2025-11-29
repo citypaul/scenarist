@@ -14,6 +14,7 @@ Scenarist uses hexagonal architecture with ports (interfaces) to abstract storag
 - `ScenarioStore`: Tracks which scenario each test is using
 
 The architectural promise of these ports was that they could have multiple implementations:
+
 - `InMemoryScenarioRegistry` - Fast, for single process
 - `RedisScenarioRegistry` - Distributed testing across processes
 - `FileSystemScenarioRegistry` - Version control scenarios as JSON/YAML
@@ -26,7 +27,7 @@ However, the initial design made these alternative implementations **impossible*
 The initial `Scenario` type contained MSW's `HttpHandler` type:
 
 ```typescript
-import type { HttpHandler } from 'msw';
+import type { HttpHandler } from "msw";
 
 type Scenario = {
   readonly name: string;
@@ -37,12 +38,14 @@ type Scenario = {
 ```
 
 `HttpHandler` is not serializable because it contains:
+
 - Functions (request matchers, response resolvers)
 - Closures over variables
 - Regular expressions
 - Methods and class instances
 
 This meant:
+
 - ❌ Cannot store scenarios in Redis (can't serialize functions)
 - ❌ Cannot save scenarios to files (JSON.stringify fails on functions)
 - ❌ Cannot fetch scenarios from remote APIs (can't send functions over HTTP)
@@ -59,7 +62,14 @@ We will **separate serializable scenario definitions from runtime MSW handlers**
 **Serializable Definition Types:**
 
 ```typescript
-export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'HEAD';
+export type HttpMethod =
+  | "GET"
+  | "POST"
+  | "PUT"
+  | "DELETE"
+  | "PATCH"
+  | "OPTIONS"
+  | "HEAD";
 
 export type ScenaristResponse = {
   readonly status: number;
@@ -104,10 +114,15 @@ export type ActiveScenario = {
 At runtime, `ScenaristMock` instances are converted to MSW `HttpHandler` instances:
 
 ```typescript
-import { http, HttpResponse, delay } from 'msw';
+import { http, HttpResponse, delay } from "msw";
 
 const toMSWHandler = (definition: ScenaristMock): HttpHandler => {
-  const method = definition.method.toLowerCase() as 'get' | 'post' | 'put' | 'delete' | 'patch';
+  const method = definition.method.toLowerCase() as
+    | "get"
+    | "post"
+    | "put"
+    | "delete"
+    | "patch";
 
   return http[method](definition.url, async () => {
     if (definition.response.delay) {
@@ -147,11 +162,12 @@ interface ScenarioStore {
 ### Positive
 
 ✅ **Ports are genuinely useful** - Multiple implementations are now possible:
-   - `InMemoryScenarioRegistry` - Fast, no external dependencies
-   - `RedisScenarioRegistry` - Distributed testing across processes
-   - `FileSystemScenarioRegistry` - Version control scenarios as JSON/YAML
-   - `RemoteScenarioRegistry` - Centralized scenario management
-   - `DatabaseScenarioRegistry` - PostgreSQL, MongoDB, etc.
+
+- `InMemoryScenarioRegistry` - Fast, no external dependencies
+- `RedisScenarioRegistry` - Distributed testing across processes
+- `FileSystemScenarioRegistry` - Version control scenarios as JSON/YAML
+- `RemoteScenarioRegistry` - Centralized scenario management
+- `DatabaseScenarioRegistry` - PostgreSQL, MongoDB, etc.
 
 ✅ **Scenarios can be version controlled** - Save as JSON/YAML files in git
 

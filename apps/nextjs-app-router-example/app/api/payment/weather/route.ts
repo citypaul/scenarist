@@ -8,9 +8,9 @@
  * (Sunny → Cloudy → Rainy → back to Sunny) infinitely.
  */
 
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
 
 type WeatherResponse = {
   readonly city: string;
@@ -21,10 +21,10 @@ type WeatherResponse = {
 export async function GET(request: Request) {
   try {
     // Proxy to json-server (MSW will intercept on server-side)
-    const response = await fetch('http://localhost:3001/weather/London', {
-      method: 'GET',
+    const response = await fetch("http://localhost:3001/weather/London", {
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...getScenaristHeaders(request), // ✅ Pass test ID to MSW
       },
     });
@@ -38,9 +38,9 @@ export async function GET(request: Request) {
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'Failed to get weather',
+        error: error instanceof Error ? error.message : "Failed to get weather",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

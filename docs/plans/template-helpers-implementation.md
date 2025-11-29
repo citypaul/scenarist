@@ -26,6 +26,7 @@ Scenarist responses are **static JSON only**:
 ```
 
 **Problems:**
+
 - ❌ Cannot generate dynamic UUIDs (`v4()`)
 - ❌ Cannot generate current timestamps (`new Date()`)
 - ❌ Cannot compute values (hashing, encoding)
@@ -34,12 +35,13 @@ Scenarist responses are **static JSON only**:
 ### User Needs (From Acquisition.Web Analysis)
 
 **Real-world pattern:**
+
 ```typescript
 // Acquisition.Web generates dynamic values
-http.post('/api/upload', ({ request }) => {
-  const docId = v4();                        // UUID generation
+http.post("/api/upload", ({ request }) => {
+  const docId = v4(); // UUID generation
   const uploadTime = new Date().toISOString(); // Timestamp
-  const hash = createHash('sha256').update(fileName).digest('hex');
+  const hash = createHash("sha256").update(fileName).digest("hex");
 
   return HttpResponse.json({ id: docId, uploadedAt: uploadTime, hash });
 });
@@ -87,6 +89,7 @@ const helpers = {
 ### Key Design Decisions
 
 **1. Predefined Registry (NOT arbitrary functions)**
+
 - ✅ Safe (no eval, no arbitrary code execution)
 - ✅ Serializable (function names are strings)
 - ✅ Type-safe (TypeScript knows about helpers)
@@ -94,12 +97,14 @@ const helpers = {
 - ❌ Limited (can't do arbitrary computation)
 
 **2. String-Based Syntax (Handlebars-style)**
+
 - ✅ Familiar pattern (`{{helper(args)}}`)
 - ✅ Easy to parse with regex
 - ✅ Clear visual distinction from static values
 - ✅ JSON-compatible (helpers are strings)
 
 **3. State References in Arguments**
+
 - ✅ Can use captured state (`{{sha256(state.fileName)}}`)
 - ✅ Composable with existing state system
 - ✅ No new state mechanism needed
@@ -238,8 +243,8 @@ type ParsedTemplate = {
  * Template argument (literal or state reference)
  */
 type TemplateArg =
-  | { type: 'literal'; value: string | number | boolean }
-  | { type: 'state'; path: string };
+  | { type: "literal"; value: string | number | boolean }
+  | { type: "state"; path: string };
 
 /**
  * Parse template string to extract helper call
@@ -270,27 +275,27 @@ export const parseTemplate = (template: string): ParsedTemplate | null => {
       const trimmed = token.trim();
 
       // State reference: state.fieldName
-      if (trimmed.startsWith('state.')) {
+      if (trimmed.startsWith("state.")) {
         const path = trimmed.substring(6); // Remove 'state.'
-        args.push({ type: 'state', path });
+        args.push({ type: "state", path });
         continue;
       }
 
       // Number literal
       if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
-        args.push({ type: 'literal', value: parseFloat(trimmed) });
+        args.push({ type: "literal", value: parseFloat(trimmed) });
         continue;
       }
 
       // Boolean literal
-      if (trimmed === 'true' || trimmed === 'false') {
-        args.push({ type: 'literal', value: trimmed === 'true' });
+      if (trimmed === "true" || trimmed === "false") {
+        args.push({ type: "literal", value: trimmed === "true" });
         continue;
       }
 
       // String literal (remove quotes if present)
-      const stringValue = trimmed.replace(/^['"]|['"]$/g, '');
-      args.push({ type: 'literal', value: stringValue });
+      const stringValue = trimmed.replace(/^['"]|['"]$/g, "");
+      args.push({ type: "literal", value: stringValue });
     }
   }
 
@@ -302,19 +307,19 @@ export const parseTemplate = (template: string): ParsedTemplate | null => {
  */
 const splitArguments = (argsString: string): string[] => {
   const args: string[] = [];
-  let current = '';
+  let current = "";
   let depth = 0;
 
   for (const char of argsString) {
-    if (char === '(') {
+    if (char === "(") {
       depth++;
       current += char;
-    } else if (char === ')') {
+    } else if (char === ")") {
       depth--;
       current += char;
-    } else if (char === ',' && depth === 0) {
+    } else if (char === "," && depth === 0) {
       args.push(current);
-      current = '';
+      current = "";
     } else {
       current += char;
     }
@@ -339,10 +344,10 @@ const splitArguments = (argsString: string): string[] => {
 export const evaluateTemplate = (
   value: unknown,
   context: TemplateContext,
-  helpers: HelperRegistry
+  helpers: HelperRegistry,
 ): unknown => {
   // Only process strings
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     return value;
   }
 
@@ -363,7 +368,7 @@ export const evaluateTemplate = (
 
   // Resolve arguments
   const resolvedArgs = parsed.args.map((arg) => {
-    if (arg.type === 'literal') {
+    if (arg.type === "literal") {
       return arg.value;
     }
 
@@ -387,14 +392,14 @@ export const evaluateTemplate = (
 export const evaluateTemplatesDeep = (
   obj: unknown,
   context: TemplateContext,
-  helpers: HelperRegistry
+  helpers: HelperRegistry,
 ): unknown => {
   if (obj === null || obj === undefined) {
     return obj;
   }
 
   // String: evaluate template
-  if (typeof obj === 'string') {
+  if (typeof obj === "string") {
     return evaluateTemplate(obj, context, helpers);
   }
 
@@ -404,7 +409,7 @@ export const evaluateTemplatesDeep = (
   }
 
   // Object: evaluate each value
-  if (typeof obj === 'object') {
+  if (typeof obj === "object") {
     const result: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
       result[key] = evaluateTemplatesDeep(value, context, helpers);
@@ -419,15 +424,18 @@ export const evaluateTemplatesDeep = (
 /**
  * Get nested value from object by path
  */
-const getNestedValue = (obj: Record<string, unknown>, path: string): unknown => {
-  const keys = path.split('.');
+const getNestedValue = (
+  obj: Record<string, unknown>,
+  path: string,
+): unknown => {
+  const keys = path.split(".");
   let current: unknown = obj;
 
   for (const key of keys) {
     if (current === null || current === undefined) {
       return undefined;
     }
-    if (typeof current === 'object' && key in current) {
+    if (typeof current === "object" && key in current) {
       current = (current as Record<string, unknown>)[key];
     } else {
       return undefined;
@@ -442,7 +450,7 @@ const getNestedValue = (obj: Record<string, unknown>, path: string): unknown => 
 
 ```typescript
 // packages/core/src/domain/helper-registry.ts
-import crypto from 'crypto';
+import crypto from "crypto";
 
 /**
  * Global helper registry
@@ -483,12 +491,12 @@ export const getAllHelpers = (): HelperRegistry => {
  */
 export const registerBuiltInHelpers = (): void => {
   // UUID generation
-  registerHelper('uuid', () => {
+  registerHelper("uuid", () => {
     return crypto.randomUUID();
   });
 
   // Current timestamp in ISO 8601
-  registerHelper('iso8601', (offset?: string) => {
+  registerHelper("iso8601", (offset?: string) => {
     const now = new Date();
 
     if (offset) {
@@ -502,22 +510,22 @@ export const registerBuiltInHelpers = (): void => {
   });
 
   // Random number
-  registerHelper('random', (min: number, max: number) => {
+  registerHelper("random", (min: number, max: number) => {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   });
 
   // SHA-256 hash
-  registerHelper('sha256', (value: string) => {
-    return crypto.createHash('sha256').update(String(value)).digest('hex');
+  registerHelper("sha256", (value: string) => {
+    return crypto.createHash("sha256").update(String(value)).digest("hex");
   });
 
   // Base64 encoding
-  registerHelper('base64', (value: string) => {
-    return Buffer.from(String(value)).toString('base64');
+  registerHelper("base64", (value: string) => {
+    return Buffer.from(String(value)).toString("base64");
   });
 
   // Sequential counter
-  registerHelper('counter', function(this: TemplateContext, key = 'default') {
+  registerHelper("counter", function (this: TemplateContext, key = "default") {
     const testId = this.testId;
     const counterKey = `${testId}:${key}`;
 
@@ -535,7 +543,7 @@ export const registerBuiltInHelpers = (): void => {
   });
 
   // Date formatting
-  registerHelper('format', (pattern: string) => {
+  registerHelper("format", (pattern: string) => {
     const now = new Date();
     return formatDate(now, pattern);
   });
@@ -553,7 +561,7 @@ const parseTimeOffset = (offset: string): { milliseconds: number } | null => {
 
   const [, sign, amount, unit] = match;
   const value = parseInt(amount, 10);
-  const multiplier = sign === '+' ? 1 : -1;
+  const multiplier = sign === "+" ? 1 : -1;
 
   const unitMilliseconds: Record<string, number> = {
     second: 1000,
@@ -580,11 +588,11 @@ const parseTimeOffset = (offset: string): { milliseconds: number } | null => {
 const formatDate = (date: Date, pattern: string): string => {
   const tokens: Record<string, string> = {
     YYYY: date.getFullYear().toString(),
-    MM: String(date.getMonth() + 1).padStart(2, '0'),
-    DD: String(date.getDate()).padStart(2, '0'),
-    HH: String(date.getHours()).padStart(2, '0'),
-    mm: String(date.getMinutes()).padStart(2, '0'),
-    ss: String(date.getSeconds()).padStart(2, '0'),
+    MM: String(date.getMonth() + 1).padStart(2, "0"),
+    DD: String(date.getDate()).padStart(2, "0"),
+    HH: String(date.getHours()).padStart(2, "0"),
+    mm: String(date.getMinutes()).padStart(2, "0"),
+    ss: String(date.getSeconds()).padStart(2, "0"),
   };
 
   let result = pattern;
@@ -606,57 +614,60 @@ registerBuiltInHelpers();
 ### Phase 1: Template Parser (TDD)
 
 **Files to create:**
+
 - `packages/core/src/domain/template-parser.ts`
 - `packages/core/tests/template-parser.test.ts`
 
 **Steps:**
+
 1. ✅ Write tests for `parseTemplate()` function
 2. ✅ Write tests for argument parsing (literals, state refs)
 3. ✅ Implement parser
 4. ✅ Verify all tests pass
 
 **Tests:**
+
 ```typescript
-describe('parseTemplate', () => {
-  it('should parse helper with no arguments', () => {
-    const result = parseTemplate('{{uuid()}}');
+describe("parseTemplate", () => {
+  it("should parse helper with no arguments", () => {
+    const result = parseTemplate("{{uuid()}}");
     expect(result).toEqual({
-      helperName: 'uuid',
+      helperName: "uuid",
       args: [],
     });
   });
 
-  it('should parse helper with string literal', () => {
-    const result = parseTemplate('{{iso8601(+7days)}}');
+  it("should parse helper with string literal", () => {
+    const result = parseTemplate("{{iso8601(+7days)}}");
     expect(result).toEqual({
-      helperName: 'iso8601',
-      args: [{ type: 'literal', value: '+7days' }],
+      helperName: "iso8601",
+      args: [{ type: "literal", value: "+7days" }],
     });
   });
 
-  it('should parse helper with state reference', () => {
-    const result = parseTemplate('{{sha256(state.fileName)}}');
+  it("should parse helper with state reference", () => {
+    const result = parseTemplate("{{sha256(state.fileName)}}");
     expect(result).toEqual({
-      helperName: 'sha256',
-      args: [{ type: 'state', path: 'fileName' }],
+      helperName: "sha256",
+      args: [{ type: "state", path: "fileName" }],
     });
   });
 
-  it('should parse helper with multiple arguments', () => {
-    const result = parseTemplate('{{random(1000, 9999)}}');
+  it("should parse helper with multiple arguments", () => {
+    const result = parseTemplate("{{random(1000, 9999)}}");
     expect(result).toEqual({
-      helperName: 'random',
+      helperName: "random",
       args: [
-        { type: 'literal', value: 1000 },
-        { type: 'literal', value: 9999 },
+        { type: "literal", value: 1000 },
+        { type: "literal", value: 9999 },
       ],
     });
   });
 
-  it('should return null for non-template strings', () => {
-    expect(parseTemplate('hello')).toBeNull();
-    expect(parseTemplate('{{notATemplate')).toBeNull();
-    expect(parseTemplate('noDoublebraces()')).toBeNull();
+  it("should return null for non-template strings", () => {
+    expect(parseTemplate("hello")).toBeNull();
+    expect(parseTemplate("{{notATemplate")).toBeNull();
+    expect(parseTemplate("noDoublebraces()")).toBeNull();
   });
 });
 ```
@@ -664,10 +675,12 @@ describe('parseTemplate', () => {
 ### Phase 2: Helper Registry (TDD)
 
 **Files to create:**
+
 - `packages/core/src/domain/helper-registry.ts`
 - `packages/core/tests/helper-registry.test.ts`
 
 **Steps:**
+
 1. ✅ Write tests for `registerHelper()` and `getHelper()`
 2. ✅ Write tests for built-in helpers (uuid, iso8601, etc.)
 3. ✅ Implement helper registry
@@ -675,48 +688,53 @@ describe('parseTemplate', () => {
 5. ✅ Verify all tests pass
 
 **Tests:**
+
 ```typescript
-describe('Helper Registry', () => {
-  it('should register and retrieve custom helper', () => {
-    registerHelper('test', () => 'hello');
-    const helper = getHelper('test');
-    expect(helper()).toBe('hello');
+describe("Helper Registry", () => {
+  it("should register and retrieve custom helper", () => {
+    registerHelper("test", () => "hello");
+    const helper = getHelper("test");
+    expect(helper()).toBe("hello");
   });
 
-  it('should have uuid helper', () => {
-    const helper = getHelper('uuid');
+  it("should have uuid helper", () => {
+    const helper = getHelper("uuid");
     const result = helper();
-    expect(typeof result).toBe('string');
-    expect(result).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+    expect(typeof result).toBe("string");
+    expect(result).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
   });
 
-  it('should have iso8601 helper', () => {
-    const helper = getHelper('iso8601');
+  it("should have iso8601 helper", () => {
+    const helper = getHelper("iso8601");
     const result = helper();
     expect(result).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
   });
 
-  it('should support iso8601 with offset', () => {
-    const helper = getHelper('iso8601');
+  it("should support iso8601 with offset", () => {
+    const helper = getHelper("iso8601");
     const now = new Date();
-    const future = helper('+1day');
+    const future = helper("+1day");
     const futureDate = new Date(future);
     const diff = futureDate.getTime() - now.getTime();
     expect(diff).toBeGreaterThan(23 * 60 * 60 * 1000); // ~24 hours
     expect(diff).toBeLessThan(25 * 60 * 60 * 1000);
   });
 
-  it('should have random helper', () => {
-    const helper = getHelper('random');
+  it("should have random helper", () => {
+    const helper = getHelper("random");
     const result = helper(1000, 9999);
     expect(result).toBeGreaterThanOrEqual(1000);
     expect(result).toBeLessThanOrEqual(9999);
   });
 
-  it('should have sha256 helper', () => {
-    const helper = getHelper('sha256');
-    const result = helper('test');
-    expect(result).toBe('9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08');
+  it("should have sha256 helper", () => {
+    const helper = getHelper("sha256");
+    const result = helper("test");
+    expect(result).toBe(
+      "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+    );
   });
 });
 ```
@@ -724,10 +742,12 @@ describe('Helper Registry', () => {
 ### Phase 3: Template Evaluator (TDD)
 
 **Files to create:**
+
 - `packages/core/src/domain/template-evaluator.ts`
 - `packages/core/tests/template-evaluator.test.ts`
 
 **Steps:**
+
 1. ✅ Write tests for `evaluateTemplate()`
 2. ✅ Write tests for `evaluateTemplatesDeep()`
 3. ✅ Write tests for state reference resolution
@@ -735,61 +755,68 @@ describe('Helper Registry', () => {
 5. ✅ Verify all tests pass
 
 **Tests:**
+
 ```typescript
-describe('evaluateTemplate', () => {
+describe("evaluateTemplate", () => {
   const context: TemplateContext = {
-    state: { fileName: 'test.txt' },
-    testId: 'test-1',
-    scenarioId: 'scenario-1',
+    state: { fileName: "test.txt" },
+    testId: "test-1",
+    scenarioId: "scenario-1",
   };
 
-  it('should evaluate uuid() template', () => {
-    const result = evaluateTemplate('{{uuid()}}', context, getAllHelpers());
-    expect(typeof result).toBe('string');
+  it("should evaluate uuid() template", () => {
+    const result = evaluateTemplate("{{uuid()}}", context, getAllHelpers());
+    expect(typeof result).toBe("string");
     expect(result).toMatch(/^[0-9a-f-]{36}$/);
   });
 
-  it('should evaluate template with state reference', () => {
-    const result = evaluateTemplate('{{sha256(state.fileName)}}', context, getAllHelpers());
-    expect(result).toBe('f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de');
+  it("should evaluate template with state reference", () => {
+    const result = evaluateTemplate(
+      "{{sha256(state.fileName)}}",
+      context,
+      getAllHelpers(),
+    );
+    expect(result).toBe(
+      "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de",
+    );
   });
 
-  it('should return non-template strings unchanged', () => {
-    const result = evaluateTemplate('hello world', context, getAllHelpers());
-    expect(result).toBe('hello world');
+  it("should return non-template strings unchanged", () => {
+    const result = evaluateTemplate("hello world", context, getAllHelpers());
+    expect(result).toBe("hello world");
   });
 
-  it('should return original template for unknown helpers', () => {
-    const result = evaluateTemplate('{{unknown()}}', context, getAllHelpers());
-    expect(result).toBe('{{unknown()}}');
+  it("should return original template for unknown helpers", () => {
+    const result = evaluateTemplate("{{unknown()}}", context, getAllHelpers());
+    expect(result).toBe("{{unknown()}}");
   });
 });
 
-describe('evaluateTemplatesDeep', () => {
+describe("evaluateTemplatesDeep", () => {
   const context: TemplateContext = {
-    state: { fileName: 'test.txt' },
-    testId: 'test-1',
-    scenarioId: 'scenario-1',
+    state: { fileName: "test.txt" },
+    testId: "test-1",
+    scenarioId: "scenario-1",
   };
 
-  it('should evaluate templates in nested objects', () => {
+  it("should evaluate templates in nested objects", () => {
     const input = {
-      id: '{{uuid()}}',
+      id: "{{uuid()}}",
       nested: {
-        timestamp: '{{iso8601()}}',
-        static: 'unchanged',
+        timestamp: "{{iso8601()}}",
+        static: "unchanged",
       },
-      array: ['{{uuid()}}', 'static'],
+      array: ["{{uuid()}}", "static"],
     };
 
     const result = evaluateTemplatesDeep(input, context, getAllHelpers());
 
-    expect(typeof result.id).toBe('string');
+    expect(typeof result.id).toBe("string");
     expect(result.id).toMatch(/^[0-9a-f-]{36}$/);
-    expect(typeof result.nested.timestamp).toBe('string');
-    expect(result.nested.static).toBe('unchanged');
+    expect(typeof result.nested.timestamp).toBe("string");
+    expect(result.nested.static).toBe("unchanged");
     expect(result.array[0]).toMatch(/^[0-9a-f-]{36}$/);
-    expect(result.array[1]).toBe('static');
+    expect(result.array[1]).toBe("static");
   });
 });
 ```
@@ -797,10 +824,12 @@ describe('evaluateTemplatesDeep', () => {
 ### Phase 4: Integration with Response Transformation (TDD)
 
 **Files to modify:**
+
 - `packages/core/src/domain/response-selector.ts`
 - `packages/core/tests/response-selector.test.ts`
 
 **Steps:**
+
 1. ✅ Add template evaluation to response transformation
 2. ✅ Write integration tests
 3. ✅ Verify backward compatibility (no templates = no change)
@@ -814,6 +843,7 @@ describe('evaluateTemplatesDeep', () => {
 **Coverage targets:** 100% (per TDD requirements)
 
 **Test categories:**
+
 1. Template parsing
    - Valid templates
    - Invalid templates
@@ -833,6 +863,7 @@ describe('evaluateTemplatesDeep', () => {
 ### Integration Tests
 
 **Response transformation:**
+
 - Templates in response body
 - Templates combined with state capture
 - Templates in headers
@@ -841,6 +872,7 @@ describe('evaluateTemplatesDeep', () => {
 ### E2E Tests (Example Apps)
 
 **Express example:**
+
 - File upload with UUID generation
 - Timestamp validation
 - Hash verification
@@ -871,6 +903,7 @@ describe('evaluateTemplatesDeep', () => {
 All helpers are registered by developers, not end users.
 
 **Risk mitigation:**
+
 - ✅ Whitelist approach (only registered helpers work)
 - ✅ No eval() anywhere
 - ✅ Argument parsing is safe (no code execution)
@@ -889,6 +922,7 @@ All helpers are registered by developers, not end users.
 ### Helper Execution Cost
 
 **Benchmark targets:**
+
 - Single helper call: < 1ms
 - 100 helper calls: < 10ms
 - UUID generation: ~0.1ms (crypto.randomUUID)
@@ -903,6 +937,7 @@ All helpers are registered by developers, not end users.
 ✅ **No breaking changes** - Existing scenarios work unchanged.
 
 **Existing static responses:**
+
 ```typescript
 {
   response: {
@@ -914,6 +949,7 @@ All helpers are registered by developers, not end users.
 ```
 
 **New template responses:**
+
 ```typescript
 {
   response: {
@@ -929,23 +965,27 @@ All helpers are registered by developers, not end users.
 ## Rollout Plan
 
 ### Phase 1: Core Implementation (Week 1)
+
 - Template parser
 - Helper registry
 - Built-in helpers
 - Unit tests (100% coverage)
 
 ### Phase 2: Integration (Week 2)
+
 - Response transformation
 - Integration tests
 - Backward compatibility verification
 
 ### Phase 3: Documentation & Examples (Week 3)
+
 - API documentation
 - Helper reference guide
 - Custom helper examples
 - E2E tests
 
 ### Phase 4: Release (Week 4)
+
 - Code review
 - Performance benchmarking
 - Security audit
@@ -957,6 +997,7 @@ All helpers are registered by developers, not end users.
 ## Success Criteria
 
 ### Functional
+
 - ✅ All built-in helpers work correctly
 - ✅ Custom helper registration works
 - ✅ State references resolve properly
@@ -965,6 +1006,7 @@ All helpers are registered by developers, not end users.
 - ✅ TypeScript types fully inferred
 
 ### Non-Functional
+
 - ✅ Helper execution < 1ms per call
 - ✅ No performance degradation for non-template scenarios
 - ✅ Clear error messages for invalid templates

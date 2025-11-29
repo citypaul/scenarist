@@ -7,16 +7,16 @@
  * Client Component - Requires state and effects for data fetching and cart management.
  */
 
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { ProductCard } from '../components/ProductCard';
-import { TierSelector } from '../components/TierSelector';
-import type { Product } from '../types/product';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { ProductCard } from "../components/ProductCard";
+import { TierSelector } from "../components/TierSelector";
+import type { Product } from "../types/product";
 
 export default function HomePage() {
-  const [userTier, setUserTier] = useState<'premium' | 'standard'>('standard');
+  const [userTier, setUserTier] = useState<"premium" | "standard">("standard");
   const [products, setProducts] = useState<ReadonlyArray<Product>>([]);
   const [cartCount, setCartCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -30,9 +30,9 @@ export default function HomePage() {
 
       try {
         // Fetch from API route with tier header
-        const response = await fetch('/api/products', {
+        const response = await fetch("/api/products", {
           headers: {
-            'x-user-tier': userTier,
+            "x-user-tier": userTier,
           },
         });
 
@@ -43,7 +43,9 @@ export default function HomePage() {
         const data = await response.json();
         setProducts(data.products);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch products');
+        setError(
+          err instanceof Error ? err.message : "Failed to fetch products",
+        );
       } finally {
         setLoading(false);
       }
@@ -56,7 +58,7 @@ export default function HomePage() {
   useEffect(() => {
     const fetchCartCount = async () => {
       try {
-        const response = await fetch('/api/cart');
+        const response = await fetch("/api/cart");
         if (response.ok) {
           const data = await response.json();
           const items = data.items ?? [];
@@ -73,10 +75,10 @@ export default function HomePage() {
   // Handle adding product to cart
   const handleAddToCart = async (productId: number) => {
     try {
-      const response = await fetch('/api/cart/add', {
-        method: 'POST',
+      const response = await fetch("/api/cart/add", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ productId }),
       });
@@ -88,7 +90,7 @@ export default function HomePage() {
       // Increment cart count
       setCartCount((prev) => prev + 1);
     } catch (err) {
-      console.error('Failed to add to cart:', err);
+      console.error("Failed to add to cart:", err);
     }
   };
 
@@ -96,8 +98,13 @@ export default function HomePage() {
     <main className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-6xl mx-auto">
         <div className="mb-4">
-          <h1 className="text-4xl font-bold mb-2 text-gray-900">Scenarist - Next.js App Router Example</h1>
-          <p className="text-gray-600">E-commerce demo showcasing all Scenarist features with tier-based pricing</p>
+          <h1 className="text-4xl font-bold mb-2 text-gray-900">
+            Scenarist - Next.js App Router Example
+          </h1>
+          <p className="text-gray-600">
+            E-commerce demo showcasing all Scenarist features with tier-based
+            pricing
+          </p>
         </div>
 
         <div className="flex items-center justify-between mb-6">
@@ -119,7 +126,9 @@ export default function HomePage() {
         </div>
 
         {loading && (
-          <div className="mt-8 text-center text-gray-600">Loading products...</div>
+          <div className="mt-8 text-center text-gray-600">
+            Loading products...
+          </div>
         )}
 
         {error && (
@@ -129,7 +138,9 @@ export default function HomePage() {
         )}
 
         {!loading && !error && products.length === 0 && (
-          <div className="mt-8 text-center text-gray-600">No products found.</div>
+          <div className="mt-8 text-center text-gray-600">
+            No products found.
+          </div>
         )}
 
         {!loading && !error && products.length > 0 && (

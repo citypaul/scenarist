@@ -37,8 +37,8 @@ yarn add @scenarist/nextjs-adapter msw
 **Important:** When using the App Router, import from the `/app` subpath:
 
 ```typescript
-import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
-import { createScenarist } from '@scenarist/nextjs-adapter/app';
+import type { ScenaristScenario } from "@scenarist/nextjs-adapter/app";
+import { createScenarist } from "@scenarist/nextjs-adapter/app";
 ```
 
 ## Getting Started
@@ -119,26 +119,27 @@ This example uses **Next.js App Router** (Next.js 13+). Key differences from Pag
 
 ### 1. Directory Structure
 
-| Aspect | App Router | Pages Router |
-|--------|-----------|--------------|
-| **Routing** | `app/` directory with `page.tsx` files | `pages/` directory with `.tsx` files |
-| **API Routes** | Route Handlers in `app/api/*/route.ts` | API routes in `pages/api/*.ts` |
-| **Layouts** | `layout.tsx` files for nested layouts | `_app.tsx` and `_document.tsx` |
-| **Components** | Server Components by default | Client Components by default |
+| Aspect         | App Router                             | Pages Router                         |
+| -------------- | -------------------------------------- | ------------------------------------ |
+| **Routing**    | `app/` directory with `page.tsx` files | `pages/` directory with `.tsx` files |
+| **API Routes** | Route Handlers in `app/api/*/route.ts` | API routes in `pages/api/*.ts`       |
+| **Layouts**    | `layout.tsx` files for nested layouts  | `_app.tsx` and `_document.tsx`       |
+| **Components** | Server Components by default           | Client Components by default         |
 
 ### 2. Route Handler Pattern
 
 **App Router (Route Handlers):**
+
 ```typescript
 // app/api/products/route.ts
-import { NextResponse } from 'next/server';
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
+import { NextResponse } from "next/server";
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
 
 export async function GET(request: Request) {
-  const response = await fetch('http://localhost:3001/products', {
+  const response = await fetch("http://localhost:3001/products", {
     headers: {
-      ...getScenaristHeaders(request, scenarist),  // Extract test ID + mock status
-      'x-user-tier': request.headers.get('x-user-tier') || 'standard',
+      ...getScenaristHeaders(request, scenarist), // Extract test ID + mock status
+      "x-user-tier": request.headers.get("x-user-tier") || "standard",
     },
   });
   const data = await response.json();
@@ -147,16 +148,20 @@ export async function GET(request: Request) {
 ```
 
 **Pages Router (API Routes):**
+
 ```typescript
 // pages/api/products.ts
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
+import type { NextApiRequest, NextApiResponse } from "next";
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/pages";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const response = await fetch('http://localhost:3001/products', {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
+  const response = await fetch("http://localhost:3001/products", {
     headers: {
-      ...getScenaristHeaders(req, scenarist),  // Different request type
-      'x-user-tier': req.headers['x-user-tier'] || 'standard',
+      ...getScenaristHeaders(req, scenarist), // Different request type
+      "x-user-tier": req.headers["x-user-tier"] || "standard",
     },
   });
   const data = await response.json();
@@ -167,11 +172,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 ### 3. Component Patterns
 
 **App Router:**
+
 - Server Components by default (can fetch data directly)
 - Client Components with `'use client'` directive
 - Async components supported
 
 **Pages Router:**
+
 - Client Components by default
 - Data fetching via `getServerSideProps` or `getStaticProps`
 - No async components
@@ -180,10 +187,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 ```typescript
 // App Router
-import { createScenarist } from '@scenarist/nextjs-adapter/app';
+import { createScenarist } from "@scenarist/nextjs-adapter/app";
 
 // Pages Router
-import { createScenarist } from '@scenarist/nextjs-adapter/pages';
+import { createScenarist } from "@scenarist/nextjs-adapter/pages";
 ```
 
 ## Scenarist Integration
@@ -191,18 +198,18 @@ import { createScenarist } from '@scenarist/nextjs-adapter/pages';
 ### Setup (`lib/scenarist.ts`)
 
 ```typescript
-import { createScenarist } from '@scenarist/nextjs-adapter/app';
-import { scenarios } from './scenarios';
+import { createScenarist } from "@scenarist/nextjs-adapter/app";
+import { scenarios } from "./scenarios";
 
 const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
+  enabled: process.env.NODE_ENV === "test",
   scenarios,
-  defaultScenarioId: 'default',
+  defaultScenarioId: "default",
   strictMode: false,
 });
 
 // Auto-start in test environment (server-side MSW)
-if (typeof window === 'undefined' && scenarist.config.enabled) {
+if (typeof window === "undefined" && scenarist.config.enabled) {
   scenarist.start();
 }
 
@@ -214,47 +221,49 @@ export { scenarist };
 Demonstrates all three Scenarist features:
 
 ```typescript
-import type { ScenaristScenarios } from '@scenarist/nextjs-adapter/app';
+import type { ScenaristScenarios } from "@scenarist/nextjs-adapter/app";
 
 export const scenarios = {
   // Phase 1: Request Content Matching (tier-based pricing)
   premiumUser: {
-    id: 'premiumUser',
-    name: 'Premium User Scenario',
-    mocks: [{
-      method: 'GET',
-      url: 'http://localhost:3001/products',
-      match: {
-        headers: { 'x-user-tier': 'premium' },  // Only matches premium tier
+    id: "premiumUser",
+    name: "Premium User Scenario",
+    mocks: [
+      {
+        method: "GET",
+        url: "http://localhost:3001/products",
+        match: {
+          headers: { "x-user-tier": "premium" }, // Only matches premium tier
+        },
+        response: {
+          status: 200,
+          body: buildProducts("premium"), // Different prices for premium
+        },
       },
-      response: {
-        status: 200,
-        body: buildProducts('premium'),  // Different prices for premium
-      },
-    }],
+    ],
   },
 
   // Phase 3: Stateful Mocks (shopping cart)
   shoppingCart: {
-    id: 'shoppingCart',
-    name: 'Shopping Cart Scenario',
+    id: "shoppingCart",
+    name: "Shopping Cart Scenario",
     mocks: [
       {
-        method: 'POST',
-        url: 'http://localhost:3001/cart/add',
+        method: "POST",
+        url: "http://localhost:3001/cart/add",
         captureState: {
-          'items[]': 'body.productId',  // Append to array
+          "items[]": "body.productId", // Append to array
         },
         response: { status: 200, body: { success: true } },
       },
       {
-        method: 'GET',
-        url: 'http://localhost:3001/cart',
+        method: "GET",
+        url: "http://localhost:3001/cart",
         response: {
           status: 200,
           body: {
-            items: '{{state.items}}',  // Inject captured state
-            count: '{{state.items.length}}',
+            items: "{{state.items}}", // Inject captured state
+            count: "{{state.items.length}}",
           },
         },
       },
@@ -267,14 +276,14 @@ export const scenarios = {
 
 ```typescript
 // app/api/products/route.ts
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
-import { scenarist } from '@/lib/scenarist';
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
+import { scenarist } from "@/lib/scenarist";
 
 export async function GET(request: Request) {
-  const response = await fetch('http://localhost:3001/products', {
+  const response = await fetch("http://localhost:3001/products", {
     headers: {
-      ...getScenaristHeaders(request, scenarist),  // Auto test ID + mock status
-      'x-user-tier': request.headers.get('x-user-tier') || 'standard',
+      ...getScenaristHeaders(request, scenarist), // Auto test ID + mock status
+      "x-user-tier": request.headers.get("x-user-tier") || "standard",
     },
   });
   const data = await response.json();
@@ -300,6 +309,7 @@ pnpm test:e2e
 - Configured in `playwright.config.ts`
 
 **Example Tests:**
+
 - `smoke.spec.ts` - Basic app functionality
 - `scenario-switching.spec.ts` - Scenarist scenario management
 - `products.spec.ts` - Tier-based pricing (request matching)
@@ -307,19 +317,22 @@ pnpm test:e2e
 - `shopping-cart.spec.ts` - Cart state management (stateful mocks)
 
 **Playwright Helpers:**
+
 ```typescript
-import { test as base } from '@playwright/test';
-import { withScenario } from '@scenarist/playwright-helpers';
+import { test as base } from "@playwright/test";
+import { withScenario } from "@scenarist/playwright-helpers";
 
 // Type-safe scenario switching
-const test = base.extend(withScenario({
-  scenarios,
-  baseURL: 'http://localhost:3002',
-}));
+const test = base.extend(
+  withScenario({
+    scenarios,
+    baseURL: "http://localhost:3002",
+  }),
+);
 
-test('premium user sees premium pricing', async ({ page, switchScenario }) => {
-  await switchScenario('premiumUser');  // Type-safe scenario ID
-  await page.goto('/');
+test("premium user sees premium pricing", async ({ page, switchScenario }) => {
+  await switchScenario("premiumUser"); // Type-safe scenario ID
+  await page.goto("/");
   // Test premium pricing...
 });
 ```
@@ -381,6 +394,7 @@ See `tsconfig.json` for complete configuration.
 ## Current Test Results
 
 **Phase 9 Complete:**
+
 - ✅ 7 Playwright E2E tests passing
 - ✅ 1 Vitest API test passing
 - ✅ TypeScript: 0 errors
@@ -388,6 +402,7 @@ See `tsconfig.json` for complete configuration.
 - ✅ All Scenarist features demonstrated
 
 **Test Breakdown:**
+
 - Smoke tests: 1 passing
 - Scenario switching: 2 passing (verbose + helper)
 - Product catalog: 2 passing (standard + premium tiers)
@@ -397,6 +412,7 @@ See `tsconfig.json` for complete configuration.
 ## Implementation Phases
 
 ### Phase 0: Infrastructure Setup ✅ COMPLETE
+
 - ✅ Next.js App Router scaffolding
 - ✅ Playwright configuration
 - ✅ Vitest configuration
@@ -404,6 +420,7 @@ See `tsconfig.json` for complete configuration.
 - ✅ Smoke tests passing
 
 ### Phase 1: Product Catalog ✅ COMPLETE
+
 - ✅ Product listing page with Server Components
 - ✅ Scenarist integration with auto-start
 - ✅ Request content matching (tier-based pricing)
@@ -411,6 +428,7 @@ See `tsconfig.json` for complete configuration.
 - ✅ Baseline comparison tests
 
 ### Phase 3: Shopping Cart ✅ COMPLETE
+
 - ✅ Shopping cart page
 - ✅ Stateful mocks (cart state capture/injection)
 - ✅ Add to cart functionality
@@ -425,8 +443,8 @@ Server-side MSW must start automatically in test environment:
 
 ```typescript
 // lib/scenarist.ts
-if (typeof window === 'undefined' && scenarist.config.enabled) {
-  scenarist.start();  // Starts MSW server on first import
+if (typeof window === "undefined" && scenarist.config.enabled) {
+  scenarist.start(); // Starts MSW server on first import
 }
 ```
 
@@ -457,7 +475,7 @@ App Router uses Web `Request` objects, not Next.js-specific types:
 ```typescript
 // Different from Pages Router NextApiRequest
 export async function GET(request: Request) {
-  const tier = request.headers.get('x-user-tier');  // .get(), not array access
+  const tier = request.headers.get("x-user-tier"); // .get(), not array access
   // ...
 }
 ```
@@ -467,7 +485,7 @@ export async function GET(request: Request) {
 Use `getScenaristHeaders()` to extract both test ID and mock status:
 
 ```typescript
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
 
 // Returns: { 'x-scenarist-test-id': '...', 'x-mock-enabled': 'true' }
 const headers = getScenaristHeaders(request, scenarist);
@@ -477,16 +495,16 @@ This ensures proper test isolation and mock activation.
 
 ## Comparison: Pages Router vs App Router
 
-| Feature | App Router (this example) | Pages Router |
-|---------|-------------------------|--------------|
-| **Directory** | `app/` | `pages/` |
-| **Components** | Server by default | Client by default |
-| **API Routes** | Route Handlers (`route.ts`) | API Routes (`/api/*.ts`) |
-| **Request Type** | Web `Request` | `NextApiRequest` |
-| **Response Type** | Web `Response` | `NextApiResponse` |
-| **Import Path** | `/app` | `/pages` |
-| **Port** | 3002 | 3000 |
-| **Data Fetching** | Async Server Components | `getServerSideProps` |
+| Feature           | App Router (this example)   | Pages Router             |
+| ----------------- | --------------------------- | ------------------------ |
+| **Directory**     | `app/`                      | `pages/`                 |
+| **Components**    | Server by default           | Client by default        |
+| **API Routes**    | Route Handlers (`route.ts`) | API Routes (`/api/*.ts`) |
+| **Request Type**  | Web `Request`               | `NextApiRequest`         |
+| **Response Type** | Web `Response`              | `NextApiResponse`        |
+| **Import Path**   | `/app`                      | `/pages`                 |
+| **Port**          | 3002                        | 3000                     |
+| **Data Fetching** | Async Server Components     | `getServerSideProps`     |
 
 Both examples demonstrate identical Scenarist features with router-specific implementations.
 
@@ -503,6 +521,7 @@ This runs all E2E tests against a custom Express server instead of `next dev`.
 ## CI/CD
 
 This example is tested in CI with:
+
 - ✅ Playwright browser caching for fast CI runs
 - ✅ Version-specific cache keys
 - ✅ Automated test execution on every PR

@@ -7,10 +7,10 @@ Scenarist is distributed as a set of packages. Install the adapter for your fram
 
 ## Package Overview
 
-| Package | Purpose |
-|---------|---------|
-| `@scenarist/nextjs-adapter` | Next.js App Router and Pages Router integration |
-| `@scenarist/express-adapter` | Express middleware integration |
+| Package                         | Purpose                                               |
+| ------------------------------- | ----------------------------------------------------- |
+| `@scenarist/nextjs-adapter`     | Next.js App Router and Pages Router integration       |
+| `@scenarist/express-adapter`    | Express middleware integration                        |
 | `@scenarist/playwright-helpers` | Test utilities for Playwright (browser-based testing) |
 
 ## Next.js App Router
@@ -34,7 +34,7 @@ yarn add -D @scenarist/playwright-helpers @playwright/test
 Import from the `/app` subpath:
 
 ```typescript
-import { createScenarist } from '@scenarist/nextjs-adapter/app';
+import { createScenarist } from "@scenarist/nextjs-adapter/app";
 ```
 
 **Peer dependencies:** `next@^14.0.0 || ^15.0.0`, `msw@^2.0.0`
@@ -62,7 +62,7 @@ yarn add -D @scenarist/playwright-helpers @playwright/test
 Import from the `/pages` subpath:
 
 ```typescript
-import { createScenarist } from '@scenarist/nextjs-adapter/pages';
+import { createScenarist } from "@scenarist/nextjs-adapter/pages";
 ```
 
 **Peer dependencies:** `next@^14.0.0 || ^15.0.0`, `msw@^2.0.0`
@@ -94,19 +94,19 @@ This is the recommended approach for Express API testing—fast, parallel test e
 **Example test with Supertest:**
 
 ```typescript
-import { describe, it, expect } from 'vitest';
-import request from 'supertest';
-import { SCENARIST_TEST_ID_HEADER } from '@scenarist/express-adapter';
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import { SCENARIST_TEST_ID_HEADER } from "@scenarist/express-adapter";
 
-it('processes payment successfully', async () => {
+it("processes payment successfully", async () => {
   await request(app)
-    .post('/__scenario__')
-    .set(SCENARIST_TEST_ID_HEADER, 'test-1')
-    .send({ scenario: 'default' });
+    .post("/__scenario__")
+    .set(SCENARIST_TEST_ID_HEADER, "test-1")
+    .send({ scenario: "default" });
 
   const response = await request(app)
-    .post('/api/checkout')
-    .set(SCENARIST_TEST_ID_HEADER, 'test-1')
+    .post("/api/checkout")
+    .set(SCENARIST_TEST_ID_HEADER, "test-1")
     .send({ amount: 5000 });
 
   expect(response.status).toBe(200);

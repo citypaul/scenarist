@@ -45,13 +45,14 @@ Vitest's `fileParallelism: true` (default) runs test files in separate **process
 // vitest.config.ts default behavior
 export default defineConfig({
   test: {
-    fileParallelism: true,  // Default - runs files in parallel processes
-    pool: 'forks',          // Default - separate Node.js processes
+    fileParallelism: true, // Default - runs files in parallel processes
+    pool: "forks", // Default - separate Node.js processes
   },
 });
 ```
 
 When test files run in parallel:
+
 1. Each file imports test helpers
 2. Each helper calls `createApp()` which initializes MSW
 3. Each process has its own MSW server instance
@@ -62,6 +63,7 @@ When test files run in parallel:
 The flaky tests exhibited two patterns:
 
 **Pattern 1: MSW Startup Race**
+
 ```
 Time →
 Process A: Start MSW ─────────────> Listening
@@ -71,6 +73,7 @@ Process B: Start MSW ────> Listening (partial intercept)
 ```
 
 **Pattern 2: MSW Shutdown Interference**
+
 ```
 Time →
 File A: Tests complete ──> Stop MSW ───> Done
@@ -101,6 +104,7 @@ This works **perfectly** when all tests share one MSW instance. The issue is **m
 **How can we run reliable MSW-based tests in Vitest while maintaining Scenarist's concurrent test support?**
 
 The tension:
+
 - Vitest's file parallelism provides faster test execution
 - MSW's process-level interception creates race conditions when multiple processes have MSW servers
 - Scenarist needs reliable MSW operation to demonstrate its Test ID isolation
@@ -111,18 +115,18 @@ The tension:
 
 ```typescript
 // vitest.config.ts
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
     globals: true,
-    environment: 'node',
-    fileParallelism: false,  // Sequential file execution for MSW stability
+    environment: "node",
+    fileParallelism: false, // Sequential file execution for MSW stability
     coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
+      provider: "v8",
+      reporter: ["text", "json", "html"],
     },
-    exclude: ['**/node_modules/**', '**/dist/**', '**/tests/production/**'],
+    exclude: ["**/node_modules/**", "**/dist/**", "**/tests/production/**"],
   },
 });
 ```
@@ -136,12 +140,12 @@ export default defineConfig({
 export const createTestFixtures = async (): Promise<{
   app: Express;
   scenarist: ExpressScenarist<typeof scenarios>;
-  cleanup: () => Promise<void>;  // Must return Promise
+  cleanup: () => Promise<void>; // Must return Promise
 }> => {
   const setup = await createApp();
 
   if (!setup.scenarist) {
-    throw new Error('Scenarist not initialized');
+    throw new Error("Scenarist not initialized");
   }
 
   setup.scenarist.start();
@@ -150,15 +154,15 @@ export const createTestFixtures = async (): Promise<{
     app: setup.app,
     scenarist: setup.scenarist,
     cleanup: async () => {
-      await setup.scenarist?.stop();  // Async MSW server.close()
+      await setup.scenarist?.stop(); // Async MSW server.close()
     },
   };
 };
 
 // In test files - MUST await cleanup
-describe('My Tests', () => {
+describe("My Tests", () => {
   afterAll(async () => {
-    await fixtures.cleanup();  // MUST await!
+    await fixtures.cleanup(); // MUST await!
   });
 });
 ```
@@ -206,6 +210,7 @@ Sequential file execution adds ~1 second to the total test time. With 12 test fi
 **Alternative 1: Use `pool: 'threads'` instead of `forks`**
 
 Vitest's threads pool runs tests in V8 isolates within a single process. However:
+
 - MSW still creates separate server instances per test file
 - Race conditions still occurred in testing (~17% failure rate)
 - Not a fundamental fix
@@ -227,6 +232,7 @@ export const getSharedFixtures = async () => {
 ```
 
 This failed because:
+
 - Vitest's forks pool creates separate processes
 - Singleton state isn't shared across processes
 - Even with threads pool, module state isolation prevented sharing
@@ -239,12 +245,13 @@ Vitest's `globalSetup` runs once before all tests:
 // vitest.config.ts
 export default defineConfig({
   test: {
-    globalSetup: './setup.ts',
+    globalSetup: "./setup.ts",
   },
 });
 ```
 
 However:
+
 - Global setup runs in a separate process
 - MSW server can't be shared to test processes
 - Would require inter-process communication (complex, error-prone)
@@ -280,16 +287,20 @@ However:
 ### Changes Made
 
 **1. vitest.config.ts**
+
 ```typescript
 fileParallelism: false,
 ```
 
 **2. test-helpers.ts**
+
 - Cleanup function returns `Promise<void>`
 - MSW stop is properly awaited
 
 **3. All 12 test files**
+
 - Updated `afterAll` to use async/await pattern:
+
 ```typescript
 afterAll(async () => {
   await fixtures.cleanup();

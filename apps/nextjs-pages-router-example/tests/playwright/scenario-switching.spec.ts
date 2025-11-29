@@ -11,46 +11,52 @@
  * 4. MSW server initialization
  */
 
-import { test, expect } from './fixtures';
+import { test, expect } from "./fixtures";
 
-test('can switch to premium scenario manually', async ({ page }) => {
+test("can switch to premium scenario manually", async ({ page }) => {
   // VERBOSE: Manually construct test ID
   const testId = `test-premium-${Date.now()}`;
 
   // VERBOSE: Manually call scenario endpoint
-  const response = await page.request.post('http://localhost:3000/api/__scenario__', {
-    headers: { 'x-scenarist-test-id': testId },
-    data: { scenario: 'premiumUser' },
-  });
+  const response = await page.request.post(
+    "http://localhost:3000/api/__scenario__",
+    {
+      headers: { "x-scenarist-test-id": testId },
+      data: { scenario: "premiumUser" },
+    },
+  );
 
   // Verify scenario switch succeeded
   expect(response.status()).toBe(200);
 
   // VERBOSE: Manually set test ID header for all subsequent requests
-  await page.setExtraHTTPHeaders({ 'x-scenarist-test-id': testId });
+  await page.setExtraHTTPHeaders({ "x-scenarist-test-id": testId });
 
   // Navigate to home page
-  await page.goto('/');
+  await page.goto("/");
 
   // Verify page loaded successfully
   await expect(page).toHaveTitle(/Scenarist E-commerce Example/);
 
   // Verify main heading is visible
-  const heading = page.locator('h1');
+  const heading = page.locator("h1");
   await expect(heading).toBeVisible();
 });
 
-test('can switch to premium scenario using helper (Phase 1b)', async ({ page, switchScenario }) => {
+test("can switch to premium scenario using helper (Phase 1b)", async ({
+  page,
+  switchScenario,
+}) => {
   // Clean fixture API - baseURL and endpoint from config
-  await switchScenario(page, 'premiumUser');
+  await switchScenario(page, "premiumUser");
 
   // Navigate to home page
-  await page.goto('/');
+  await page.goto("/");
 
   // Verify page loaded successfully
   await expect(page).toHaveTitle(/Scenarist E-commerce Example/);
 
   // Verify main heading is visible
-  const heading = page.locator('h1');
+  const heading = page.locator("h1");
   await expect(heading).toBeVisible();
 });

@@ -10,7 +10,7 @@
  * Learn more: https://scenarist.io/guides/testing-database-apps/repository-pattern
  */
 
-import type { UserRepository, User, CreateUserInput } from './user-repository';
+import type { UserRepository, User, CreateUserInput } from "./user-repository";
 
 export class InMemoryUserRepository implements UserRepository {
   // Map<testId, Map<userId, User>>

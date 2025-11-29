@@ -110,12 +110,14 @@ ADRs capture the **context**, **decision**, **alternatives considered**, and **c
 ## ADR Timeline
 
 ### 2025-10 (Initial Architecture)
+
 - **Oct 20**: ADR-0001 (Serializable Scenarios) - Foundation for hexagonal architecture
 - **Oct 23**: ADR-0002 (Dynamic Responses) - Core feature implementation
 - **Oct 27**: ADR-0004 (Composition Tests) - Testing strategy refinement
 - **Oct 27**: ADR-0005 (State Reset) - Idempotency fix
 
 ### 2025-11 (Type-Safe API & Refinements)
+
 - **Nov 02**: ADR-0003 (Testing Strategy) - Comprehensive testing approach
 - **Nov 02**: ADR-0006 (Thin Adapters) - Testing exception criteria
 - **Nov 02**: ADR-0007 (Header Helpers) - Framework-specific patterns
@@ -132,24 +134,28 @@ ADRs capture the **context**, **decision**, **alternatives considered**, and **c
 ## Key Decisions by Category
 
 ### Hexagonal Architecture
+
 - [ADR-0001](0001-serializable-scenario-definitions.md): Serializable definitions enable multiple storage implementations
 - [ADR-0011](0011-domain-constants-location.md): Domain constants belong in core, not adapters
 - [ADR-0013](0013-declarative-scenarios-through-json-constraint.md): JSON constraint enforces declarative patterns (side benefit: storage adapters possible)
 - [ADR-0014](0014-build-time-variant-generation.md): Build-time variant generation maintains serializability while reducing duplication
 
 ### Type Safety
+
 - [ADR-0008](0008-type-safe-scenario-ids.md): TypeScript generics provide compile-time scenario ID validation
 - [ADR-0009](0009-upfront-scenario-registration.md): Upfront registration enables type inference
 - [ADR-0010](0010-default-key-convention.md): Type-safe `defaultScenarioId` prevents typos
 - [ADR-0012](0012-template-missing-state-undefined.md): Pure templates return `undefined` for type safety
 
 ### Testing
+
 - [ADR-0003](0003-testing-strategy.md): Four-layer strategy with clear boundaries
 - [ADR-0004](0004-why-composition-tests-unnecessary.md): Architecture guarantees composition
 - [ADR-0006](0006-thin-adapters-real-integration-tests.md): Exception for thin adapters
 - [ADR-0018](0018-msw-vitest-file-parallelism.md): MSW requires sequential file execution in Vitest
 
 ### User Experience
+
 - [ADR-0002](0002-dynamic-response-system.md): Three-phase system enables realistic scenarios
 - [ADR-0005](0005-state-sequence-reset-on-scenario-switch.md): Idempotent tests through reset
 - [ADR-0007](0007-framework-specific-header-helpers.md): Framework-specific helpers in adapters
@@ -193,6 +199,7 @@ See any existing ADR for format. Key principles:
 ## Questions?
 
 For questions about architectural decisions:
+
 - Check existing ADRs first
 - Review related documentation
 - Consult CLAUDE.md for project guidance

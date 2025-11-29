@@ -10,33 +10,39 @@
  * Learn more: https://scenarist.io/guides/testing-database-apps/repository-pattern
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-import { getUserRepository, runWithTestId } from '@/lib/container';
-import { scenarioRepositoryData } from '@/lib/repository-data';
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { getUserRepository, runWithTestId } from "@/lib/container";
+import { scenarioRepositoryData } from "@/lib/repository-data";
 
 const SeedRequestSchema = z.object({
   scenarioId: z.string().min(1),
 });
 
 export async function POST(request: NextRequest) {
-  const testId = request.headers.get('x-scenarist-test-id') ?? 'default-test';
+  const testId = request.headers.get("x-scenarist-test-id") ?? "default-test";
 
   const parseResult = SeedRequestSchema.safeParse(await request.json());
   if (!parseResult.success) {
-    return NextResponse.json({ error: parseResult.error.message }, { status: 400 });
+    return NextResponse.json(
+      { error: parseResult.error.message },
+      { status: 400 },
+    );
   }
 
   const { scenarioId } = parseResult.data;
 
-  console.log('[Seed] testId:', testId, 'scenarioId:', scenarioId);
+  console.log("[Seed] testId:", testId, "scenarioId:", scenarioId);
 
   // Get the repository data for this scenario
   const seedData = scenarioRepositoryData[scenarioId];
 
   if (!seedData) {
     // No seed data for this scenario - that's OK, not all scenarios need repository data
-    return NextResponse.json({ seeded: false, message: 'No seed data for scenario' });
+    return NextResponse.json({
+      seeded: false,
+      message: "No seed data for scenario",
+    });
   }
 
   // Seed the repository within the test ID context
@@ -53,7 +59,13 @@ export async function POST(request: NextRequest) {
           tier: userData.tier,
         });
         created.push({ id: user.id, name: user.name });
-        console.log('[Seed] Created user:', user.id, user.name, 'in partition:', testId);
+        console.log(
+          "[Seed] Created user:",
+          user.id,
+          user.name,
+          "in partition:",
+          testId,
+        );
       }
     }
     return created;

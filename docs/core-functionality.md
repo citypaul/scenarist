@@ -31,6 +31,7 @@ Scenarist's core functionality is implemented in `@scenarist/core`, which contai
 A **Scenario** is a complete set of mock API responses representing a specific application state. Each scenario defines how all external APIs should respond during that test scenario.
 
 **Examples of scenarios:**
+
 - "Payment Success" - All payment APIs return success responses
 - "Payment Declined" - Payment APIs return declined responses
 - "Network Error" - All APIs return 500 errors or timeout
@@ -38,6 +39,7 @@ A **Scenario** is a complete set of mock API responses representing a specific a
 - "Premium Tier User" - APIs return responses for premium features
 
 **Key characteristics:**
+
 - Scenarios use **declarative patterns** (explicit, inspectable, no hidden logic)
 - Scenarios can be stored in version control
 - Most scenarios CAN be stored as JSON (when not using native RegExp)
@@ -48,6 +50,7 @@ A **Scenario** is a complete set of mock API responses representing a specific a
 A **Test ID** is a unique identifier for each test execution, passed via the `x-scenarist-test-id` header (configurable). Test IDs enable parallel test isolation - tests can run simultaneously with different scenarios without conflicts.
 
 **How it works:**
+
 ```typescript
 // Test A
 headers: { 'x-scenarist-test-id': 'test-A' }
@@ -59,6 +62,7 @@ headers: { 'x-scenarist-test-id': 'test-B' }
 ```
 
 Each test ID has its own:
+
 - Active scenario
 - Sequence positions (reset on scenario switch)
 - Captured state (reset on scenario switch)
@@ -68,6 +72,7 @@ Each test ID has its own:
 A **Mock Definition** is a declarative description of how to respond to HTTP requests. Unlike MSW handlers (which contain functions), mock definitions use explicit patterns that are inspectable and composable.
 
 **Basic mock:**
+
 ```typescript
 {
   method: 'GET',
@@ -80,6 +85,7 @@ A **Mock Definition** is a declarative description of how to respond to HTTP req
 ```
 
 **Why declarative patterns?**
+
 - Explicit and inspectable (visible in scenario definition)
 - Composable with other features (match + sequence + state)
 - Type-safe and validatable
@@ -90,38 +96,38 @@ A **Mock Definition** is a declarative description of how to respond to HTTP req
 Scenarios are defined using `ScenaristScenario`:
 
 ```typescript
-import type { ScenaristScenario } from '@scenarist/core';
+import type { ScenaristScenario } from "@scenarist/core";
 
 const paymentSuccess: ScenaristScenario = {
-  id: 'payment-success',
-  name: 'Payment Success',
-  description: 'All payment operations succeed',
+  id: "payment-success",
+  name: "Payment Success",
+  description: "All payment operations succeed",
   mocks: [
     {
-      method: 'POST',
-      url: 'https://api.stripe.com/charges',
+      method: "POST",
+      url: "https://api.stripe.com/charges",
       response: {
         status: 200,
         body: {
-          id: 'ch_123',
+          id: "ch_123",
           amount: 1000,
-          status: 'succeeded'
-        }
-      }
+          status: "succeeded",
+        },
+      },
     },
     {
-      method: 'GET',
-      url: 'https://api.stripe.com/charges/:id',
+      method: "GET",
+      url: "https://api.stripe.com/charges/:id",
       response: {
         status: 200,
         body: {
-          id: 'ch_123',
+          id: "ch_123",
           amount: 1000,
-          status: 'succeeded'
-        }
-      }
-    }
-  ]
+          status: "succeeded",
+        },
+      },
+    },
+  ],
 };
 ```
 
@@ -141,11 +147,13 @@ Scenarist supports two types of URL handling:
 The `url` field supports three pattern types with different hostname matching behaviors:
 
 **1. Pathname-only patterns** (origin-agnostic)
+
 ```typescript
-url: '/api/users'          // Exact pathname
-url: '/api/users/:id'      // Path parameters
-url: '/api/users/*'        // Wildcards
+url: "/api/users"; // Exact pathname
+url: "/api/users/:id"; // Path parameters
+url: "/api/users/*"; // Wildcards
 ```
+
 - **Matches ANY hostname** - works across localhost, staging, production
 - Best for environment-agnostic mocks
 - Example: `/api/users/123` matches:
@@ -154,11 +162,13 @@ url: '/api/users/*'        // Wildcards
   - `https://api.production.com/api/users/123` ✅
 
 **2. Full URL patterns** (hostname-specific)
+
 ```typescript
-url: 'https://api.example.com/users'           // Exact match with hostname
-url: 'https://api.example.com/users/:id'       // Path parameters with hostname
-url: 'https://api.example.com/users/*'         // Wildcards with hostname
+url: "https://api.example.com/users"; // Exact match with hostname
+url: "https://api.example.com/users/:id"; // Path parameters with hostname
+url: "https://api.example.com/users/*"; // Wildcards with hostname
 ```
+
 - **Matches ONLY the specified hostname** (protocol + host must match exactly)
 - Best for environment-specific mocks
 - Example: `https://api.example.com/users/:id` matches:
@@ -167,10 +177,12 @@ url: 'https://api.example.com/users/*'         // Wildcards with hostname
   - `https://api.staging.com/users/123` ❌ (different hostname)
 
 **3. Native RegExp patterns** (origin-agnostic, weak comparison)
+
 ```typescript
-url: /\/users\/\d+/        // Matches /users/123, /users/456, etc.
-url: /\/posts\//           // Matches any URL containing /posts/
+url: /\/users\/\d+/; // Matches /users/123, /users/456, etc.
+url: /\/posts\//; // Matches any URL containing /posts/
 ```
+
 - **Matches ANY hostname** - substring matching (MSW weak comparison)
 - Best for flexible pattern matching across environments
 - Example: `/\/posts\//` matches:
@@ -209,6 +221,7 @@ url: /\/posts\//           // Matches any URL containing /posts/
 Once a routing pattern matches, you can use `match.url` to conditionally respond based on URL characteristics:
 
 **1. Native RegExp Matching:**
+
 ```typescript
 {
   method: 'GET',
@@ -221,6 +234,7 @@ Once a routing pattern matches, you can use `match.url` to conditionally respond
 ```
 
 **2. String Matching Strategies:**
+
 ```typescript
 // Contains - URL contains substring
 {
@@ -280,40 +294,45 @@ RegExp patterns use **weak comparison** - they match anywhere in the URL (substr
 ```
 
 **This matches:**
+
 - ✅ `https://api.example.com/users/123`
 - ✅ `http://localhost/v1/users/456/profile`
 - ✅ `https://backend.dev/api/users/789/settings`
 
 **This does NOT match:**
+
 - ❌ `https://api.example.com/posts/123` (pattern not found)
 
 **Weak Comparison Use Cases:**
 
 **Cross-Origin API Calls:**
+
 ```typescript
 {
   match: {
-    url: /\/api\/v\d+\//  // Matches v1, v2, v3, etc.
+    url: /\/api\/v\d+\//; // Matches v1, v2, v3, etc.
   }
 }
 // Works for: localhost, staging, production, any API version
 ```
 
 **Query Parameter Matching:**
+
 ```typescript
 {
   match: {
-    url: /\/search\?/  // Matches any URL with query params
+    url: /\/search\?/; // Matches any URL with query params
   }
 }
 // Matches: '/search?q=test', 'https://example.com/v1/search?filter=active'
 ```
 
 **Case-Insensitive Matching:**
+
 ```typescript
 {
   match: {
-    url: /\/API\/USERS/i  // 'i' flag = case-insensitive
+    url: /\/API\/USERS/i; // 'i' flag = case-insensitive
   }
 }
 // Matches: '/api/users', '/API/USERS', '/Api/Users'
@@ -321,36 +340,37 @@ RegExp patterns use **weak comparison** - they match anywhere in the URL (substr
 
 **Weak vs. Strong Comparison:**
 
-| Pattern Type | Comparison | Origin-Agnostic? | Example |
-|--------------|------------|------------------|---------|
-| String literal | Strong (exact) | ❌ No | `url: '/api/users/123'` |
-| `{ contains }` | Strong (substring) | ❌ No | `url: { contains: '/users/' }` |
-| `{ startsWith }` | Strong (prefix) | ❌ No | `url: { startsWith: '/api/' }` |
-| `{ endsWith }` | Strong (suffix) | ❌ No | `url: { endsWith: '.json' }` |
-| RegExp | Weak (substring) | ✅ Yes | `url: /\/users\/\d+/` |
+| Pattern Type     | Comparison         | Origin-Agnostic? | Example                        |
+| ---------------- | ------------------ | ---------------- | ------------------------------ |
+| String literal   | Strong (exact)     | ❌ No            | `url: '/api/users/123'`        |
+| `{ contains }`   | Strong (substring) | ❌ No            | `url: { contains: '/users/' }` |
+| `{ startsWith }` | Strong (prefix)    | ❌ No            | `url: { startsWith: '/api/' }` |
+| `{ endsWith }`   | Strong (suffix)    | ❌ No            | `url: { endsWith: '.json' }`   |
+| RegExp           | Weak (substring)   | ✅ Yes           | `url: /\/users\/\d+/`          |
 
 **Key Difference:** Only RegExp patterns match across different origins. String strategies require the full URL to match exactly.
 
 **Routing vs. Matching Example:**
+
 ```typescript
 const mocks = [
   // Routing: Intercepts ALL /users/:id requests
   // Matching: Only responds when ID is numeric
   {
-    method: 'GET',
-    url: 'https://api.example.com/users/:id',  // Routing pattern
+    method: "GET",
+    url: "https://api.example.com/users/:id", // Routing pattern
     match: {
-      url: /\/users\/\d+$/  // URL matching condition
+      url: /\/users\/\d+$/, // URL matching condition
     },
-    response: { status: 200, body: { type: 'numeric' } }
+    response: { status: 200, body: { type: "numeric" } },
   },
 
   // Fallback: Responds when routing matches but URL matching doesn't
   {
-    method: 'GET',
-    url: 'https://api.example.com/users/:id',
-    response: { status: 200, body: { type: 'other' } }
-  }
+    method: "GET",
+    url: "https://api.example.com/users/:id",
+    response: { status: 200, body: { type: "other" } },
+  },
 ];
 
 // GET /users/123   → First mock (numeric ID matches regex)
@@ -358,10 +378,12 @@ const mocks = [
 ```
 
 **How the resolved URL works:**
+
 - For exact URLs: `match.url` compares against the literal URL string
 - For path params/wildcards: `match.url` compares against the **resolved URL** (path params replaced with actual values)
 
 Example:
+
 ```typescript
 // Routing pattern: /users/:id
 // Request: GET /users/123
@@ -415,6 +437,7 @@ Match when request body **contains** specific fields. Additional fields in the r
 ```
 
 **Example requests:**
+
 ```typescript
 // ✅ MATCHES - has itemId field
 { itemId: 'premium-item', quantity: 5, color: 'blue' }
@@ -445,6 +468,7 @@ Match when request headers **exactly match** specified values. Header names are 
 ```
 
 **Example requests:**
+
 ```typescript
 // ✅ MATCHES - header value matches
 headers: { 'x-user-tier': 'premium', 'x-other': 'value' }
@@ -478,6 +502,7 @@ Match when query parameters **exactly match** specified values.
 ```
 
 **Example requests:**
+
 ```typescript
 // ✅ MATCHES - all query params match
 ?filter=active&sort=asc&limit=10
@@ -585,7 +610,9 @@ Match when field value **ends with** the suffix:
 {
   match: {
     query: {
-      email: { endsWith: '@company.com' }
+      email: {
+        endsWith: "@company.com";
+      }
     }
   }
 }
@@ -664,21 +691,28 @@ Match when field value **matches** the regex pattern. You can use either native 
 
 ```typescript
 // ❌ REJECTED - Catastrophic backtracking
-{ referer: /(a+)+b/ }
+{
+  referer: /(a+)+b/;
+}
 // Error: Unsafe regex pattern detected
 
 // ❌ REJECTED - Exponential time complexity
-{ email: /(x+x+)+@/ }
+{
+  email: /(x+x+)+@/;
+}
 // Error: Unsafe regex pattern detected
 
 // ✅ SAFE - Linear time complexity
-{ referer: /\/api\/[^/]+\/users/ }
+{
+  referer: /\/api\/[^/]+\/users/;
+}
 // Matches safely with bounded backtracking
 ```
 
 Scenarist validates patterns before execution to protect your tests from denial-of-service attacks caused by malicious or poorly designed regex patterns.
 
 **Supported Flags:**
+
 - `i` - Case-insensitive
 - `g` - Global (allowed but has no effect in matching)
 - `m` - Multiline
@@ -694,7 +728,9 @@ All values are converted to strings before matching. This allows matching agains
 {
   match: {
     query: {
-      page: { equals: '1' }  // Matches ?page=1 (number coerced to string)
+      page: {
+        equals: "1";
+      } // Matches ?page=1 (number coerced to string)
     }
   }
 }
@@ -715,6 +751,7 @@ Scenarist uses **separate priority ranges** to ensure correct selection:
 3. **Simple fallback responses:** Specificity 0
 
 This guarantees:
+
 - ✅ Mocks with match criteria ALWAYS win over fallbacks
 - ✅ Sequence fallbacks take priority over simple response fallbacks
 - ✅ No conflicts between match criteria and sequence features
@@ -722,16 +759,19 @@ This guarantees:
 #### Specificity Scoring
 
 **Mocks with match criteria:**
+
 - Base specificity: **100**
 - Each body field: **+1 point**
 - Each header: **+1 point**
 - Each query parameter: **+1 point**
 
 **Mocks without match criteria (fallbacks):**
+
 - Has `sequence`: **1 point**
 - Simple `response`: **0 points**
 
 **Examples:**
+
 ```typescript
 // Specificity: 101 (100 base + 1 body field)
 match: { body: { itemId: 'premium' } }
@@ -770,21 +810,21 @@ response: { status: 200, body: { default: true } }
 const mocks = [
   // Mock 1: Specificity 101 (100 base + 1 body field)
   {
-    method: 'POST',
-    url: '/api/charge',
-    match: { body: { itemType: 'premium' } },
-    response: { status: 200, body: { discount: 10 } }
+    method: "POST",
+    url: "/api/charge",
+    match: { body: { itemType: "premium" } },
+    response: { status: 200, body: { discount: 10 } },
   },
   // Mock 2: Specificity 103 (100 base + 2 body + 1 header)
   {
-    method: 'POST',
-    url: '/api/charge',
+    method: "POST",
+    url: "/api/charge",
     match: {
-      body: { itemType: 'premium', quantity: 5 },
-      headers: { 'x-user-tier': 'gold' }
+      body: { itemType: "premium", quantity: 5 },
+      headers: { "x-user-tier": "gold" },
     },
-    response: { status: 200, body: { discount: 20 } }
-  }
+    response: { status: 200, body: { discount: 20 } },
+  },
 ];
 
 // Request:
@@ -797,6 +837,7 @@ const mocks = [
 ```
 
 **Why this matters:**
+
 - Place mocks in any order - specificity determines selection
 - Mocks with match criteria always win over fallbacks
 - Sequence fallbacks take priority over simple fallbacks
@@ -810,38 +851,40 @@ Mocks without match criteria serve as **fallback** or "catch-all" mocks.
 const mocks = [
   // Specific mock: Only for premium items
   {
-    method: 'POST',
-    url: '/api/items',
-    match: { body: { itemId: 'premium' } },
-    response: { status: 200, body: { price: 100 } }
+    method: "POST",
+    url: "/api/items",
+    match: { body: { itemId: "premium" } },
+    response: { status: 200, body: { price: 100 } },
   },
   // Sequence fallback: For all other items
   {
-    method: 'POST',
-    url: '/api/items',
+    method: "POST",
+    url: "/api/items",
     sequence: {
       responses: [
         { status: 200, body: { price: 50, attempt: 1 } },
         { status: 200, body: { price: 50, attempt: 2 } },
       ],
-      repeat: 'last'
-    }
+      repeat: "last",
+    },
   },
   // Simple fallback: Last resort
   {
-    method: 'POST',
-    url: '/api/items',
-    response: { status: 200, body: { price: 50 } }
-  }
+    method: "POST",
+    url: "/api/items",
+    response: { status: 200, body: { price: 50 } },
+  },
 ];
 ```
 
 **Priority order (highest to lowest):**
+
 1. **Match criteria mocks** (specificity 101+) - Always checked first
 2. **Sequence fallbacks** (specificity 1) - Used when no match criteria mocks match
 3. **Simple fallbacks** (specificity 0) - Used when sequences exhausted or no sequences
 
 **Behavior:**
+
 - Specific mocks (with match criteria) always take precedence over fallbacks
 - Sequence fallbacks take priority over simple response fallbacks
 - Multiple fallbacks of equal priority: first one wins as tiebreaker
@@ -922,6 +965,7 @@ After selecting response:
 **Composition Guaranteed by Design:**
 
 The three phases are **orthogonal** (independent and non-interfering):
+
 - Match doesn't know about sequences or state
 - Select doesn't know about match criteria or state
 - Transform doesn't know about matching or sequences
@@ -929,6 +973,7 @@ The three phases are **orthogonal** (independent and non-interfering):
 They communicate through a **data pipeline**, not shared logic. Each phase has a **single responsibility**.
 
 **This means:**
+
 - Features automatically compose correctly
 - No dedicated composition tests needed
 - Like Unix pipes: `cat | grep | sort` works because each tool is independent
@@ -987,6 +1032,7 @@ Body: { scenario: 'payment-error' }
 ```
 
 **Isolation guarantees:**
+
 - Test A and Test B can run simultaneously
 - Each sees their own active scenario
 - No interference or conflicts
@@ -1003,6 +1049,7 @@ Different frameworks have different architectures for propagating test IDs throu
 #### Pattern 1: AsyncLocalStorage (Express)
 
 **How it works:**
+
 1. Middleware extracts `x-scenarist-test-id` header **once** at request start
 2. Test ID stored in AsyncLocalStorage for request duration
 3. MSW dynamic handler reads from AsyncLocalStorage
@@ -1015,8 +1062,8 @@ Different frameworks have different architectures for propagating test IDs throu
 app.use(testIdMiddleware); // Extracts x-scenarist-test-id → AsyncLocalStorage
 
 // Route handler (no manual forwarding needed)
-app.get('/api/products', async (req, res) => {
-  const response = await fetch('http://external-api.com/products');
+app.get("/api/products", async (req, res) => {
+  const response = await fetch("http://external-api.com/products");
   // MSW handler automatically receives test ID from AsyncLocalStorage
   const products = await response.json();
   res.json(products);
@@ -1024,17 +1071,20 @@ app.get('/api/products', async (req, res) => {
 ```
 
 **Advantages:**
+
 - ✅ Zero boilerplate in route handlers
 - ✅ Automatic propagation across async boundaries
 - ✅ Test ID available anywhere in request lifecycle
 - ✅ No manual header forwarding required
 
 **Frameworks using this pattern:**
+
 - Express
 
 #### Pattern 2: Manual Forwarding (Next.js)
 
 **How it works:**
+
 1. No global middleware layer for API routes
 2. Each route receives request independently
 3. Routes must manually forward `x-scenarist-test-id` header when calling external APIs
@@ -1044,15 +1094,15 @@ app.get('/api/products', async (req, res) => {
 
 ```typescript
 // pages/api/products.ts
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
-import { scenarist } from '@/lib/scenarist';
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/pages";
+import { scenarist } from "@/lib/scenarist";
 
 export default async function handler(req, res) {
   // MUST manually forward headers
-  const response = await fetch('http://external-api.com/products', {
+  const response = await fetch("http://external-api.com/products", {
     headers: {
       ...getScenaristHeaders(req, scenarist), // Extract test ID from req
-      'content-type': 'application/json',
+      "content-type": "application/json",
     },
   });
 
@@ -1062,44 +1112,50 @@ export default async function handler(req, res) {
 ```
 
 **Why manual forwarding is needed:**
+
 - Next.js API routes have no middleware layer
 - Each route is isolated entry point
 - Test ID must be explicitly passed to MSW
 - Without forwarding, MSW sees `'default-test'` instead of actual test ID
 
 **Advantages:**
+
 - ✅ Explicit and clear (visible in code)
 - ✅ Works without middleware support
 - ✅ Type-safe helper function
 
 **Disadvantages:**
+
 - ❌ Boilerplate in every route that calls external APIs
 - ❌ Easy to forget (but tests will fail)
 
 **Frameworks using this pattern:**
+
 - Next.js Pages Router
 - Next.js App Router (Server Actions)
 - Any framework without middleware support
 
 #### Comparison Table
 
-| Aspect | AsyncLocalStorage (Express) | Manual Forwarding (Next.js) |
-|--------|----------------------------|----------------------------|
-| **Middleware support** | ✅ Yes | ❌ No |
-| **Manual forwarding** | ❌ Not needed | ✅ Required |
-| **Boilerplate** | None | One line per external call |
-| **Helper function** | N/A | `getScenaristHeaders()` |
-| **Risk of forgetting** | ✅ None (automatic) | ⚠️ Tests will fail if forgotten |
-| **Visibility** | Implicit (AsyncLocalStorage) | Explicit (in every route) |
+| Aspect                 | AsyncLocalStorage (Express)  | Manual Forwarding (Next.js)     |
+| ---------------------- | ---------------------------- | ------------------------------- |
+| **Middleware support** | ✅ Yes                       | ❌ No                           |
+| **Manual forwarding**  | ❌ Not needed                | ✅ Required                     |
+| **Boilerplate**        | None                         | One line per external call      |
+| **Helper function**    | N/A                          | `getScenaristHeaders()`         |
+| **Risk of forgetting** | ✅ None (automatic)          | ⚠️ Tests will fail if forgotten |
+| **Visibility**         | Implicit (AsyncLocalStorage) | Explicit (in every route)       |
 
 #### When to Use Which Pattern
 
 **Use AsyncLocalStorage pattern when:**
+
 - Framework has global middleware support
 - Can intercept all requests before route handlers
 - AsyncLocalStorage available (Node.js 16+)
 
 **Use Manual Forwarding pattern when:**
+
 - Framework has no middleware layer (Next.js)
 - Routes are isolated entry points
 - Need explicit control over header propagation
@@ -1177,19 +1233,20 @@ All ports are injected as dependencies, never created internally:
 ```typescript
 // ✅ CORRECT - Ports injected
 const scenarioManager = createScenarioManager({
-  registry: myRegistry,  // Injected
-  store: myStore,        // Injected
-  config: myConfig
+  registry: myRegistry, // Injected
+  store: myStore, // Injected
+  config: myConfig,
 });
 
 // ❌ WRONG - Creating implementation internally
 const scenarioManager = createScenarioManager({
-  config: myConfig
+  config: myConfig,
 });
 // Creates new Map() internally - can only ever be in-memory!
 ```
 
 **Why dependency injection?**
+
 - Enables multiple implementations (in-memory, Redis, files, remote)
 - Supports distributed testing
 - True hexagonal architecture

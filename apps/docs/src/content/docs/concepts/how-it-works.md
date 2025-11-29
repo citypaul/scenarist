@@ -64,27 +64,33 @@ Notice how each scenario defines the complete behavior: in `paymentFails`, only 
 Define a `default` scenario with your **happy path** responses for all external APIs. Then create specialized scenarios that override only what changes:
 
 ```typescript
-import type { ScenaristScenarios } from '@scenarist/nextjs-adapter/app';
+import type { ScenaristScenarios } from "@scenarist/nextjs-adapter/app";
 
 const scenarios = {
-  default: {  // Happy path - all APIs succeed
+  default: {
+    // Happy path - all APIs succeed
     mocks: [
-      { url: 'https://api.stripe.com/...', response: { status: 'succeeded' } },
-      { url: 'https://api.auth0.com/...', response: { user: 'john@example.com' } },
-      { url: 'https://api.sendgrid.com/...', response: { status: 'sent' } }
-    ]
+      { url: "https://api.stripe.com/...", response: { status: "succeeded" } },
+      {
+        url: "https://api.auth0.com/...",
+        response: { user: "john@example.com" },
+      },
+      { url: "https://api.sendgrid.com/...", response: { status: "sent" } },
+    ],
   },
-  paymentFails: {  // Only override Stripe - Auth0 and SendGrid automatically fall back to default
+  paymentFails: {
+    // Only override Stripe - Auth0 and SendGrid automatically fall back to default
     mocks: [
-      { url: 'https://api.stripe.com/...', response: { status: 'declined' } }
-    ]
-  }
+      { url: "https://api.stripe.com/...", response: { status: "declined" } },
+    ],
+  },
 } as const satisfies ScenaristScenarios;
 ```
 
 When you switch to `paymentFails`, Scenarist uses that scenario's mocks (Stripe declines) **and automatically falls back to the default scenario** for any APIs not defined (Auth0 and SendGrid succeed). This eliminates duplication—you only define what changes.
 
 **What this enables:**
+
 - ✅ **Unlimited scenarios** - Premium users, free users, error states, edge cases—as many as you need
 - ✅ **Unlimited APIs per scenario** - Mock Stripe, Auth0, SendGrid, GitHub, Twilio—as many as your app uses
 - ✅ **Default fallback** - Define happy path once, override only what changes in each scenario
@@ -124,11 +130,11 @@ This example demonstrates HTTP-level testing with Next.js. Each framework has it
 
 ```typescript
 // app/api/[[...route]]/route.ts - Next.js App Router
-import { createScenarist } from '@scenarist/nextjs-adapter';
-import { scenarios } from './scenarios';
+import { createScenarist } from "@scenarist/nextjs-adapter";
+import { scenarios } from "./scenarios";
 
 export const { GET, POST } = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
+  enabled: process.env.NODE_ENV === "test",
   scenarios,
 });
 ```
@@ -137,21 +143,23 @@ export const { GET, POST } = createScenarist({
 
 ```typescript
 // scenarios.ts
-import type { ScenaristScenarios } from '@scenarist/nextjs-adapter/app';
+import type { ScenaristScenarios } from "@scenarist/nextjs-adapter/app";
 
 export const scenarios = {
   premiumUser: {
-    id: 'premiumUser',
-    name: 'Premium User',
-    mocks: [{
-      method: 'GET',
-      url: 'https://api.auth-provider.com/session',
-      response: {
-        status: 200,
-        body: { tier: 'premium', userId: 'user-123' }
-      }
-    }]
-  }
+    id: "premiumUser",
+    name: "Premium User",
+    mocks: [
+      {
+        method: "GET",
+        url: "https://api.auth-provider.com/session",
+        response: {
+          status: 200,
+          body: { tier: "premium", userId: "user-123" },
+        },
+      },
+    ],
+  },
 } as const satisfies ScenaristScenarios;
 ```
 
@@ -159,8 +167,8 @@ export const scenarios = {
 
 ```typescript
 // tests/fixtures.ts
-import { withScenarios, expect } from '@scenarist/playwright-helpers';
-import { scenarios } from './scenarios'; // Import your scenarios
+import { withScenarios, expect } from "@scenarist/playwright-helpers";
+import { scenarios } from "./scenarios"; // Import your scenarios
 
 // Create type-safe test object with scenario IDs
 export const test = withScenarios(scenarios);
@@ -171,21 +179,25 @@ export { expect };
 
 ```typescript
 // tests/premium-features.spec.ts
-import { test, expect } from './fixtures'; // ✅ Import from fixtures, NOT @playwright/test
+import { test, expect } from "./fixtures"; // ✅ Import from fixtures, NOT @playwright/test
 
-test('premium users access advanced features', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'premiumUser'); // ✅ Type-safe! Autocomplete works
+test("premium users access advanced features", async ({
+  page,
+  switchScenario,
+}) => {
+  await switchScenario(page, "premiumUser"); // ✅ Type-safe! Autocomplete works
 
   // Real HTTP request → Next.js route → middleware → business logic
-  await page.goto('/dashboard');
+  await page.goto("/dashboard");
 
   // External auth API call intercepted, returns mocked premium tier
   // Your business logic processes the tier correctly
-  await expect(page.getByText('Advanced Analytics')).toBeVisible();
+  await expect(page.getByText("Advanced Analytics")).toBeVisible();
 });
 ```
 
 **What's happening:**
+
 1. Framework adapter integrates Scenarist into your Next.js app
 2. Scenarios define how external APIs behave
 3. Playwright fixtures create type-safe test helpers with scenario autocomplete
@@ -195,10 +207,12 @@ test('premium users access advanced features', async ({ page, switchScenario }) 
 7. External API calls return scenario-defined responses
 
 **See complete working examples:**
+
 - [Next.js Example App →](/frameworks/nextjs-app-router/example-app)
 - [Express Example App →](/frameworks/express/example-app)
 
 **Framework-specific guides:**
+
 - [Next.js setup →](/frameworks/nextjs-app-router/getting-started)
 - [Express setup →](/frameworks/express/getting-started)
 
@@ -207,6 +221,7 @@ test('premium users access advanced features', async ({ page, switchScenario }) 
 Scenarist creates special `/__scenario__` endpoints that **only exist when testing is enabled**. These ephemeral endpoints enable runtime scenario switching while maintaining production safety.
 
 **What are ephemeral endpoints?**
+
 - `POST /__scenario__` - Switch the active scenario for a test
 - `GET /__scenario__` - Check which scenario is currently active
 
@@ -216,17 +231,19 @@ The endpoints only exist when you set `enabled: true` in your Scenarist configur
 
 ```typescript
 const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',  // Only active in test environment
+  enabled: process.env.NODE_ENV === "test", // Only active in test environment
   scenarios,
 });
 ```
 
 **When `enabled: true` (test mode):**
+
 - Endpoints accept requests and switch scenarios
 - MSW intercepts external API calls
 - Test ID headers route requests to correct scenarios
 
 **When `enabled: false` (production):**
+
 - Endpoints return 404 (do not exist)
 - Zero overhead - no middleware, no MSW, no scenario infrastructure
 - Your app runs exactly as it would without Scenarist
@@ -244,19 +261,25 @@ Scenarist addresses this through runtime scenario switching using test identifie
 ```typescript
 // Define multiple scenarios
 const scenarios = {
-  premium: { /* premium tier mocks */ },
-  free: { /* free tier mocks */ },
-  error: { /* error state mocks */ }
+  premium: {
+    /* premium tier mocks */
+  },
+  free: {
+    /* free tier mocks */
+  },
+  error: {
+    /* error state mocks */
+  },
 } as const satisfies ScenaristScenarios;
 
 // Tests run concurrently
-test('premium features', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'premium');
+test("premium features", async ({ page, switchScenario }) => {
+  await switchScenario(page, "premium");
   // Test with premium scenario
 });
 
-test('free features', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'free');
+test("free features", async ({ page, switchScenario }) => {
+  await switchScenario(page, "free");
   // Test with free scenario - runs simultaneously
 });
 ```
@@ -328,6 +351,7 @@ sequenceDiagram
 6. **Tests run in parallel** - Test 1 and Test 2 execute simultaneously without affecting each other
 
 This enables:
+
 - ✅ **Unlimited scenarios** - Test premium, free, errors, edge cases all in parallel
 - ✅ **No interference** - Each test isolated by unique test ID
 - ✅ **One backend server** - All tests share same server instance
@@ -341,6 +365,7 @@ This enables parallel test execution without process coordination or port confli
 Scenarist uses hexagonal architecture to maintain framework independence. The core has no web framework dependencies.
 
 Benefits:
+
 - Scenario definitions work across all frameworks
 - Framework-specific adapters handle integration
 - Switching frameworks doesn't require rewriting scenarios

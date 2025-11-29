@@ -1,5 +1,5 @@
-import type { ScenarioRegistry } from '../ports/index.js';
-import type { ScenaristScenario } from '../types/index.js';
+import type { ScenarioRegistry } from "../ports/index.js";
+import type { ScenaristScenario } from "../types/index.js";
 
 /**
  * In-memory implementation of ScenarioRegistry using a Map.

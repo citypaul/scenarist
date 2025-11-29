@@ -10,7 +10,7 @@
  * Learn more: https://scenarist.io/guides/testing-database-apps/repository-pattern
  */
 
-import type { CreateUserInput } from './repositories/index.js';
+import type { CreateUserInput } from "./repositories/index.js";
 
 /**
  * Maps scenario IDs to repository seed data.
@@ -25,9 +25,9 @@ export const scenarioRepositoryData: Record<
   premiumUser: {
     users: [
       {
-        email: 'premium@example.com',
-        name: 'Premium User',
-        tier: 'premium',
+        email: "premium@example.com",
+        name: "Premium User",
+        tier: "premium",
       },
     ],
   },
@@ -35,9 +35,9 @@ export const scenarioRepositoryData: Record<
   default: {
     users: [
       {
-        email: 'standard@example.com',
-        name: 'Standard User',
-        tier: 'standard',
+        email: "standard@example.com",
+        name: "Standard User",
+        tier: "standard",
       },
     ],
   },

@@ -7,12 +7,14 @@ This file contains specific rules and guidelines for reviewing code in the Scena
 **These architecture rules apply to LIBRARY CODE ONLY (`packages/*`), NOT to example apps (`apps/*`).**
 
 ### Library Code (`packages/*`)
+
 - **Strict hexagonal architecture** - Zero framework coupling in core
 - **All architecture rules below apply**
 - This is the published npm package - must be pristine
 - Examples: `packages/core`, `packages/express-adapter`, `packages/nextjs-adapter`
 
 ### Example Apps (`apps/*`)
+
 - **Realistic demonstration applications** showing how to USE Scenarist
 - **NOT library code** - these are end-user applications
 - **Intentionally use non-hexagonal patterns** to show real-world integration:
@@ -30,7 +32,7 @@ This file contains specific rules and guidelines for reviewing code in the Scena
 
 **If you're reviewing changes to `apps/*`, skip hexagonal architecture checks and focus on test quality and realistic integration patterns.**
 
-## Critical Architecture Rules (packages/* ONLY)
+## Critical Architecture Rules (packages/\* ONLY)
 
 ### 1. Hexagonal Architecture (Ports & Adapters)
 
@@ -49,6 +51,7 @@ import { FastifyRequest } from 'fastify';  // Never in core!
 ```
 
 **Review checklist:**
+
 - [ ] Core package has zero framework dependencies (except MSW types)
 - [ ] Ports use `interface`, types use `type`
 - [ ] All data types use `readonly` for immutability
@@ -62,19 +65,19 @@ import { FastifyRequest } from 'fastify';  // Never in core!
 ```typescript
 // ❌ WRONG - Imperative function-based (hidden logic)
 type Scenario = {
-  readonly mocks: ReadonlyArray<HttpHandler>;  // Functions with closures!
-  readonly shouldMatch: (request: Request) => boolean;  // Imperative logic!
+  readonly mocks: ReadonlyArray<HttpHandler>; // Functions with closures!
+  readonly shouldMatch: (request: Request) => boolean; // Imperative logic!
 };
 
 // ✅ CORRECT - Declarative data structures
 type ScenaristScenario = {
-  readonly mocks: ReadonlyArray<ScenaristMock>;  // Declarative patterns
+  readonly mocks: ReadonlyArray<ScenaristMock>; // Declarative patterns
 };
 
 type ScenaristMock = {
-  readonly method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-  readonly url: string | RegExp;  // ✅ RegExp is declarative (pattern matching)
-  readonly match?: MatchCriteria;  // ✅ Declarative criteria (not functions)
+  readonly method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+  readonly url: string | RegExp; // ✅ RegExp is declarative (pattern matching)
+  readonly match?: MatchCriteria; // ✅ Declarative criteria (not functions)
   readonly response: {
     readonly status: number;
     readonly body?: unknown;
@@ -83,6 +86,7 @@ type ScenaristMock = {
 ```
 
 **Review checklist:**
+
 - [ ] No functions, closures, or methods in scenario types (declarative patterns only)
 - [ ] Native RegExp is ALLOWED (declarative pattern matching) per ADR-0016
 - [ ] Match criteria use data structures, not functions
@@ -96,14 +100,14 @@ type ScenaristMock = {
 ```typescript
 // ❌ WRONG - Creating implementation internally
 export const createScenarioManager = (config: ScenaristConfig) => {
-  const registry = new Map<string, ScenaristScenario>();  // ❌ Hardcoded!
+  const registry = new Map<string, ScenaristScenario>(); // ❌ Hardcoded!
   // ...
 };
 
 // ✅ CORRECT - Injecting both ports
 export const createScenarioManager = ({
-  registry,  // ✅ Injected
-  store,     // ✅ Injected
+  registry, // ✅ Injected
+  store, // ✅ Injected
   config,
 }: {
   registry: ScenarioRegistry;
@@ -115,6 +119,7 @@ export const createScenarioManager = ({
 ```
 
 **Review checklist:**
+
 - [ ] All ports are injected as dependencies
 - [ ] No `new` for port implementations in domain logic
 - [ ] Factory functions use options objects
@@ -140,6 +145,7 @@ export class InMemoryScenarioRegistry implements ScenarioRegistry {
 ```
 
 **Review checklist:**
+
 - [ ] All adapter classes use `implements PortName`
 - [ ] No implicit/structural typing for adapters
 - [ ] Port changes will cause compile errors in adapters
@@ -160,6 +166,7 @@ export class InMemoryScenarioRegistry implements ScenarioRegistry {
 ```
 
 **Review checklist:**
+
 - [ ] No `any` types (use `unknown` if truly unknown)
 - [ ] No type assertions (`as Type`) without clear justification
 - [ ] No `@ts-ignore` or `@ts-expect-error` without explanation
@@ -182,6 +189,7 @@ export type ScenaristScenario = {
 ```
 
 **Review checklist:**
+
 - [ ] Ports use `interface` (in packages/core/src/ports/)
 - [ ] Data structures use `type` (in packages/core/src/types/)
 - [ ] All data fields use `readonly`
@@ -200,8 +208,8 @@ export const calculateTotal = (items: Item[]) => {
 };
 
 // ✅ CORRECT - Test first, then implementation
-describe('calculateTotal', () => {
-  it('should sum item prices', () => {
+describe("calculateTotal", () => {
+  it("should sum item prices", () => {
     const items = [{ price: 10 }, { price: 20 }];
     expect(calculateTotal(items)).toBe(30);
   });
@@ -209,6 +217,7 @@ describe('calculateTotal', () => {
 ```
 
 **Review checklist:**
+
 - [ ] All new production code has corresponding tests
 - [ ] Tests verify behavior, not implementation details
 - [ ] No testing of internal/private functions
@@ -219,22 +228,23 @@ describe('calculateTotal', () => {
 
 ```typescript
 // ❌ WRONG - Testing implementation details
-it('should call the validateAmount method', () => {
-  const spy = jest.spyOn(manager, 'validateAmount');
+it("should call the validateAmount method", () => {
+  const spy = jest.spyOn(manager, "validateAmount");
   manager.processPayment(payment);
-  expect(spy).toHaveBeenCalled();  // Implementation detail!
+  expect(spy).toHaveBeenCalled(); // Implementation detail!
 });
 
 // ✅ CORRECT - Testing behavior
-it('should reject payment with negative amount', () => {
+it("should reject payment with negative amount", () => {
   const payment = { amount: -100 };
   const result = manager.processPayment(payment);
   expect(result.success).toBe(false);
-  expect(result.error.message).toContain('Invalid amount');
+  expect(result.error.message).toContain("Invalid amount");
 });
 ```
 
 **Review checklist:**
+
 - [ ] Tests verify business behavior
 - [ ] Tests use public API only
 - [ ] No mocking of internal functions
@@ -248,7 +258,7 @@ it('should reject payment with negative amount', () => {
 ```typescript
 // ❌ WRONG - Mutation
 const addItem = (items: Item[], newItem: Item) => {
-  items.push(newItem);  // Mutates!
+  items.push(newItem); // Mutates!
   return items;
 };
 
@@ -259,6 +269,7 @@ const addItem = (items: Item[], newItem: Item): Item[] => {
 ```
 
 **Review checklist:**
+
 - [ ] No data mutation
 - [ ] Pure functions wherever possible
 - [ ] Use `map`, `filter`, `reduce` over imperative loops
@@ -284,6 +295,7 @@ if (!user || !user.isActive || !user.hasPermission) {
 ```
 
 **Review checklist:**
+
 - [ ] No nested if/else (use early returns)
 - [ ] Max 2 levels of nesting
 - [ ] Guard clauses at function start
@@ -317,6 +329,7 @@ const createPayment = (options: CreatePaymentOptions): Payment => {
 ```
 
 **Review checklist:**
+
 - [ ] Functions with 3+ parameters use options objects
 - [ ] Options objects for functions with optional parameters
 - [ ] Destructure options at function start
@@ -327,7 +340,7 @@ const createPayment = (options: CreatePaymentOptions): Payment => {
 // ❌ WRONG - Comments explaining code
 const calculateDiscount = (price: number, customer: Customer): number => {
   // Check if customer is premium
-  if (customer.tier === 'premium') {
+  if (customer.tier === "premium") {
     // Apply 20% discount for premium customers
     return price * 0.8;
   }
@@ -339,7 +352,7 @@ const PREMIUM_DISCOUNT_MULTIPLIER = 0.8;
 const STANDARD_DISCOUNT_MULTIPLIER = 0.9;
 
 const isPremiumCustomer = (customer: Customer): boolean => {
-  return customer.tier === 'premium';
+  return customer.tier === "premium";
 };
 
 const calculateDiscount = (price: number, customer: Customer): number => {
@@ -351,6 +364,7 @@ const calculateDiscount = (price: number, customer: Customer): number => {
 ```
 
 **Review checklist:**
+
 - [ ] Code is self-documenting through clear naming
 - [ ] No comments explaining what code does
 - [ ] JSDoc only for public APIs (and code is still clear without it)
@@ -359,6 +373,7 @@ const calculateDiscount = (price: number, customer: Customer): number => {
 ## Common Anti-Patterns
 
 ### ❌ In Core Package
+
 - Importing framework-specific code (Express, Fastify, etc.)
 - Using classes for ports (use `interface`)
 - Using interfaces for types (use `type` with `readonly`)
@@ -366,6 +381,7 @@ const calculateDiscount = (price: number, customer: Customer): number => {
 - Creating port implementations internally
 
 ### ❌ In Tests
+
 - Testing implementation details
 - Mocking internal functions
 - 1:1 test file to implementation file mapping
@@ -373,6 +389,7 @@ const calculateDiscount = (price: number, customer: Customer): number => {
 - Writing production code without tests first
 
 ### ❌ General
+
 - Any use of `any` type
 - Nested if/else statements
 - Deep function nesting (>2 levels)
@@ -413,6 +430,7 @@ When reviewing a PR:
 When leaving review comments:
 
 ✅ **Be constructive and specific:**
+
 ```
 This violates dependency injection - `registry` should be injected as a
 parameter, not created internally. See CLAUDE.md "Dependency Injection Pattern"
@@ -420,17 +438,20 @@ section for the correct approach.
 ```
 
 ❌ **Don't be vague:**
+
 ```
 This doesn't look right.
 ```
 
 ✅ **Reference documentation:**
+
 ```
 Per ADR-0001, scenarios must be serializable. This `mocks` field contains
 HttpHandler which includes functions. Use ScenaristMock instead.
 ```
 
 ✅ **Provide examples:**
+
 ```
 Instead of:
   const registry = new Map();
@@ -444,6 +465,7 @@ Use dependency injection:
 ## Quick Reference
 
 **File structure check:**
+
 - `packages/core/` - No framework imports
 - `packages/core/src/ports/` - All `interface`
 - `packages/core/src/types/` - All `type` with `readonly`
@@ -451,18 +473,21 @@ Use dependency injection:
 - Adapters - Explicitly `implements` ports
 
 **Type system check:**
+
 - No `any` types anywhere
 - No type assertions without justification
 - Ports = `interface`, Data = `type`
 - Everything `readonly`
 
 **Testing check:**
+
 - Test first (TDD)
 - Test behavior (not implementation)
 - 100% business behavior coverage
 - No mocking internals
 
 **Code style check:**
+
 - No mutations
 - No nested if/else
 - No comments

@@ -1,7 +1,7 @@
-import type { Express } from 'express';
-import type { ExpressScenarist } from '@scenarist/express-adapter';
-import { createApp } from '../src/app.js';
-import { scenarios } from '../src/scenarios.js';
+import type { Express } from "express";
+import type { ExpressScenarist } from "@scenarist/express-adapter";
+import { createApp } from "../src/app.js";
+import { scenarios } from "../src/scenarios.js";
 
 /**
  * Create test fixtures for Express integration tests.
@@ -45,7 +45,7 @@ export const createTestFixtures = async (): Promise<{
 
   if (!setup.scenarist) {
     throw new Error(
-      'Scenarist not initialized - ensure NODE_ENV is set to "test" or scenarist.enabled is true'
+      'Scenarist not initialized - ensure NODE_ENV is set to "test" or scenarist.enabled is true',
     );
   }
 

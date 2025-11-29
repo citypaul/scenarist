@@ -8,11 +8,11 @@
  * Client Component - Requires state and effects for data fetching.
  */
 
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import type { Product } from '../../types/product';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import type { Product } from "../../types/product";
 
 type CartItem = {
   readonly productId: number;
@@ -21,10 +21,15 @@ type CartItem = {
 };
 
 // Aggregate raw productIds array into items with quantities
-const aggregateCartItems = (productIds: ReadonlyArray<number>): ReadonlyArray<CartItem> => {
-  const counts = productIds.reduce((acc, productId) => {
-    return { ...acc, [productId]: (acc[productId] ?? 0) + 1 };
-  }, {} as Record<number, number>);
+const aggregateCartItems = (
+  productIds: ReadonlyArray<number>,
+): ReadonlyArray<CartItem> => {
+  const counts = productIds.reduce(
+    (acc, productId) => {
+      return { ...acc, [productId]: (acc[productId] ?? 0) + 1 };
+    },
+    {} as Record<number, number>,
+  );
 
   return Object.entries(counts).map(([productId, quantity]) => ({
     productId: Number(productId),
@@ -43,7 +48,7 @@ export default function CartPage() {
       setError(null);
 
       try {
-        const response = await fetch('/api/cart');
+        const response = await fetch("/api/cart");
 
         if (!response.ok) {
           throw new Error(`Failed to fetch cart: ${response.status}`);
@@ -54,13 +59,14 @@ export default function CartPage() {
         // State from Scenarist is raw array of productIds: [1, 1, 2]
         // Aggregate into items with quantities: [{ productId: 1, quantity: 2 }, { productId: 2, quantity: 1 }]
         const rawItems = data.items ?? [];
-        const aggregated = Array.isArray(rawItems) && rawItems.length > 0
-          ? aggregateCartItems(rawItems)
-          : [];
+        const aggregated =
+          Array.isArray(rawItems) && rawItems.length > 0
+            ? aggregateCartItems(rawItems)
+            : [];
 
         setCartItems(aggregated);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch cart');
+        setError(err instanceof Error ? err.message : "Failed to fetch cart");
       } finally {
         setLoading(false);
       }
@@ -77,7 +83,10 @@ export default function CartPage() {
         <nav aria-label="Main navigation" className="mb-8">
           <ul className="flex gap-4">
             <li>
-              <Link href="/" className="text-blue-600 hover:text-blue-700 underline">
+              <Link
+                href="/"
+                className="text-blue-600 hover:text-blue-700 underline"
+              >
                 Products
               </Link>
             </li>
@@ -100,7 +109,10 @@ export default function CartPage() {
         {!loading && !error && cartItems.length === 0 && (
           <div className="text-center text-gray-600">
             <p className="text-xl mb-4">Your cart is empty</p>
-            <Link href="/" className="text-blue-600 hover:text-blue-700 underline">
+            <Link
+              href="/"
+              className="text-blue-600 hover:text-blue-700 underline"
+            >
               Continue Shopping
             </Link>
           </div>
@@ -121,7 +133,9 @@ export default function CartPage() {
                       </h3>
                       {item.product && (
                         <>
-                          <p className="text-gray-600 text-sm mb-2">{item.product.name}</p>
+                          <p className="text-gray-600 text-sm mb-2">
+                            {item.product.name}
+                          </p>
                           <p className="text-xl font-bold text-blue-600">
                             £{item.product.price.toFixed(2)}
                           </p>

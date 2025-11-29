@@ -1,23 +1,22 @@
-import { describe, it, expect } from 'vitest';
-import { createScenarioEndpoint } from '../../src/app/endpoints.js';
-import { createEndpointTestSetup } from '../common/test-setup.js';
+import { describe, it, expect } from "vitest";
+import { createScenarioEndpoint } from "../../src/app/endpoints.js";
+import { createEndpointTestSetup } from "../common/test-setup.js";
 
-const createTestSetup = () =>
-  createEndpointTestSetup(createScenarioEndpoint);
+const createTestSetup = () => createEndpointTestSetup(createScenarioEndpoint);
 
-describe('App Router Scenario Endpoints', () => {
-  describe('POST (switch scenario)', () => {
-    it('should switch to a valid scenario', async () => {
+describe("App Router Scenario Endpoints", () => {
+  describe("POST (switch scenario)", () => {
+    it("should switch to a valid scenario", async () => {
       const { handler } = createTestSetup();
 
-      const req = new Request('http://localhost:3000/__scenario__', {
-        method: 'POST',
+      const req = new Request("http://localhost:3000/__scenario__", {
+        method: "POST",
         headers: {
-          'x-scenarist-test-id': 'test-123',
-          'content-type': 'application/json',
+          "x-scenarist-test-id": "test-123",
+          "content-type": "application/json",
         },
         body: JSON.stringify({
-          scenario: 'premium',
+          scenario: "premium",
         }),
       });
 
@@ -27,22 +26,22 @@ describe('App Router Scenario Endpoints', () => {
       expect(response.status).toBe(200);
       expect(data).toEqual({
         success: true,
-        testId: 'test-123',
-        scenarioId: 'premium',
+        testId: "test-123",
+        scenarioId: "premium",
       });
     });
 
-    it('should return 400 when scenario does not exist', async () => {
+    it("should return 400 when scenario does not exist", async () => {
       const { handler } = createTestSetup();
 
-      const req = new Request('http://localhost:3000/__scenario__', {
-        method: 'POST',
+      const req = new Request("http://localhost:3000/__scenario__", {
+        method: "POST",
         headers: {
-          'x-scenarist-test-id': 'test-789',
-          'content-type': 'application/json',
+          "x-scenarist-test-id": "test-789",
+          "content-type": "application/json",
         },
         body: JSON.stringify({
-          scenario: 'nonexistent',
+          scenario: "nonexistent",
         }),
       });
 
@@ -50,17 +49,17 @@ describe('App Router Scenario Endpoints', () => {
       const data = await response.json();
 
       expect(response.status).toBe(400);
-      expect(data.error).toContain('not found');
+      expect(data.error).toContain("not found");
     });
 
-    it('should return 400 when request body is invalid', async () => {
+    it("should return 400 when request body is invalid", async () => {
       const { handler } = createTestSetup();
 
-      const req = new Request('http://localhost:3000/__scenario__', {
-        method: 'POST',
+      const req = new Request("http://localhost:3000/__scenario__", {
+        method: "POST",
         headers: {
-          'x-scenarist-test-id': 'test-bad',
-          'content-type': 'application/json',
+          "x-scenarist-test-id": "test-bad",
+          "content-type": "application/json",
         },
         body: JSON.stringify({
           // Missing 'scenario' field
@@ -71,25 +70,25 @@ describe('App Router Scenario Endpoints', () => {
       const data = await response.json();
 
       expect(response.status).toBe(400);
-      expect(data.error).toBe('Invalid request body');
+      expect(data.error).toBe("Invalid request body");
     });
 
-    it('should return 500 for unexpected errors during request handling', async () => {
+    it("should return 500 for unexpected errors during request handling", async () => {
       const { handler, manager } = createTestSetup();
 
       // Mock switchScenario to throw an unexpected error
-      vi.spyOn(manager, 'switchScenario').mockImplementation(() => {
-        throw new Error('Unexpected database error');
+      vi.spyOn(manager, "switchScenario").mockImplementation(() => {
+        throw new Error("Unexpected database error");
       });
 
-      const req = new Request('http://localhost:3000/__scenario__', {
-        method: 'POST',
+      const req = new Request("http://localhost:3000/__scenario__", {
+        method: "POST",
         headers: {
-          'x-scenarist-test-id': 'test-error',
-          'content-type': 'application/json',
+          "x-scenarist-test-id": "test-error",
+          "content-type": "application/json",
         },
         body: JSON.stringify({
-          scenario: 'premium',
+          scenario: "premium",
         }),
       });
 
@@ -97,21 +96,21 @@ describe('App Router Scenario Endpoints', () => {
       const data = await response.json();
 
       expect(response.status).toBe(500);
-      expect(data.error).toBe('Internal server error');
+      expect(data.error).toBe("Internal server error");
     });
   });
 
-  describe('GET (retrieve active scenario)', () => {
-    it('should return active scenario for test ID', async () => {
+  describe("GET (retrieve active scenario)", () => {
+    it("should return active scenario for test ID", async () => {
       const { handler, manager } = createTestSetup();
 
       // First, switch to a scenario
-      manager.switchScenario('test-abc', 'premium', undefined);
+      manager.switchScenario("test-abc", "premium", undefined);
 
-      const req = new Request('http://localhost:3000/__scenario__', {
-        method: 'GET',
+      const req = new Request("http://localhost:3000/__scenario__", {
+        method: "GET",
         headers: {
-          'x-scenarist-test-id': 'test-abc',
+          "x-scenarist-test-id": "test-abc",
         },
       });
 
@@ -120,19 +119,19 @@ describe('App Router Scenario Endpoints', () => {
 
       expect(response.status).toBe(200);
       expect(data).toEqual({
-        testId: 'test-abc',
-        scenarioId: 'premium',
-        scenarioName: 'Premium Scenario',
+        testId: "test-abc",
+        scenarioId: "premium",
+        scenarioName: "Premium Scenario",
       });
     });
 
-    it('should return 404 when no active scenario exists', async () => {
+    it("should return 404 when no active scenario exists", async () => {
       const { handler } = createTestSetup();
 
-      const req = new Request('http://localhost:3000/__scenario__', {
-        method: 'GET',
+      const req = new Request("http://localhost:3000/__scenario__", {
+        method: "GET",
         headers: {
-          'x-scenarist-test-id': 'test-no-scenario',
+          "x-scenarist-test-id": "test-no-scenario",
         },
       });
 
@@ -140,20 +139,19 @@ describe('App Router Scenario Endpoints', () => {
       const data = await response.json();
 
       expect(response.status).toBe(404);
-      expect(data.error).toContain('No active scenario');
-      expect(data.testId).toBe('test-no-scenario');
+      expect(data.error).toContain("No active scenario");
+      expect(data.testId).toBe("test-no-scenario");
     });
-
   });
 
-  describe('unsupported methods', () => {
-    it('should return 405 for unsupported methods', async () => {
+  describe("unsupported methods", () => {
+    it("should return 405 for unsupported methods", async () => {
       const { handler } = createTestSetup();
 
-      const req = new Request('http://localhost:3000/__scenario__', {
-        method: 'PUT',
+      const req = new Request("http://localhost:3000/__scenario__", {
+        method: "PUT",
         headers: {
-          'x-scenarist-test-id': 'test-put',
+          "x-scenarist-test-id": "test-put",
         },
       });
 
@@ -161,7 +159,7 @@ describe('App Router Scenario Endpoints', () => {
       const data = await response.json();
 
       expect(response.status).toBe(405);
-      expect(data.error).toBe('Method not allowed');
+      expect(data.error).toBe("Method not allowed");
     });
   });
 });

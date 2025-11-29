@@ -16,6 +16,7 @@ This raised a fundamental architectural question: **What is the real constraint 
 ADR-0013 established that Scenarist enforces **declarative scenario definitions through strict JSON serializability**.
 
 The reasoning:
+
 ```typescript
 // ❌ Imperative (functions) - REJECTED
 http.get('/api/products', ({ request }) => {
@@ -39,9 +40,11 @@ http.get('/api/products', ({ request }) => {
 ### The False Dichotomy
 
 We initially framed the constraint as:
+
 - **JSON-serializable** (good) ↔ **Not JSON-serializable** (bad)
 
 But the REAL constraint we care about is:
+
 - **Declarative patterns** (good) ↔ **Imperative functions** (bad)
 
 **Critical realization**: RegExp is declarative even though it's not JSON-serializable.
@@ -53,9 +56,9 @@ But the REAL constraint we care about is:
 const pattern = /\/users\/\d+/;
 
 // It is:
-pattern.source;  // "/users/\d+" - Visible!
-pattern.flags;   // "" - Visible!
-pattern.test('/users/123');  // Declarative pattern matching
+pattern.source; // "/users/\d+" - Visible!
+pattern.flags; // "" - Visible!
+pattern.test("/users/123"); // Declarative pattern matching
 
 // It is NOT:
 // - A closure (no external scope)
@@ -72,9 +75,9 @@ MSW v1 (the de facto standard for API mocking) supports native RegExp in URL rou
 
 ```typescript
 // MSW v1 documentation examples:
-rest.get('/user/:userId', handler)        // Path params ✅
-rest.get('/user/*', handler)               // Glob ✅
-rest.get(/\/user\/\d+/, handler)           // RegExp ✅ (native!)
+rest.get("/user/:userId", handler); // Path params ✅
+rest.get("/user/*", handler); // Glob ✅
+rest.get(/\/user\/\d+/, handler); // RegExp ✅ (native!)
 ```
 
 Scenarist currently supports path params and globs but NOT native RegExp:
@@ -92,11 +95,13 @@ Scenarist currently supports path params and globs but NOT native RegExp:
 ### The Use Case Analysis
 
 **95% of users**: Want clean, readable patterns in their test scenarios
+
 - Don't need to store scenarios in Redis/files
 - Import scenarios from code (TypeScript modules)
 - Want MSW-compatible syntax
 
 **5% of users**: Need to serialize scenarios to JSON
+
 - Distributed testing with Redis storage
 - Scenario files loaded at runtime (JSON/YAML)
 - Remote scenario APIs
@@ -106,6 +111,7 @@ Scenarist currently supports path params and globs but NOT native RegExp:
 ## Problem
 
 **How can we:**
+
 1. Maintain the principle of "declarative > imperative" from ADR-0013
 2. Improve developer experience with MSW-compatible syntax
 3. Support the minority who need JSON serializability
@@ -126,6 +132,7 @@ We will **support BOTH native RegExp objects AND serialized form**, recognizing 
 **What this means:**
 
 ✅ **ALLOWED** (Declarative patterns):
+
 ```typescript
 '/users'                          // String literal
 /\/users\/\d+/                    // Native RegExp ✅ NEW
@@ -135,6 +142,7 @@ We will **support BOTH native RegExp objects AND serialized form**, recognizing 
 ```
 
 ❌ **NOT ALLOWED** (Imperative functions):
+
 ```typescript
 (request) => request.pathname.startsWith('/users/')  // Function
 { shouldMatch: (req) => { ... } }                     // Closure
@@ -143,21 +151,25 @@ We will **support BOTH native RegExp objects AND serialized form**, recognizing 
 ### Architecture: Hybrid Approach
 
 **For the 95% (code-based scenarios):**
+
 ```typescript
 // Clean, readable, MSW-compatible
 export const scenarios = {
   default: {
-    id: 'default',
-    mocks: [{
-      url: /\/users\/\d+/,  // ✅ Native RegExp
-      match: { url: /\/users\/\d+/ },
-      response: { status: 200 }
-    }]
-  }
+    id: "default",
+    mocks: [
+      {
+        url: /\/users\/\d+/, // ✅ Native RegExp
+        match: { url: /\/users\/\d+/ },
+        response: { status: 200 },
+      },
+    ],
+  },
 } as const satisfies ScenaristScenarios;
 ```
 
 **For the 5% (JSON storage needs):**
+
 ```typescript
 // Explicitly serialized form
 {
@@ -175,6 +187,7 @@ export const scenarios = {
 ### Implementation
 
 **Schema changes:**
+
 ```typescript
 // Before (Phase 2):
 export const MatchValueSchema = z.union([
@@ -193,20 +206,22 @@ export const MatchValueSchema = z.union([
   z.object({ contains: z.string() }),
   z.object({ startsWith: z.string() }),
   z.object({ endsWith: z.string() }),
-  z.object({ regex: SerializedRegexSchema }),  // Keep for JSON storage
-  z.instanceof(RegExp),  // ✅ NEW: Native RegExp support
+  z.object({ regex: SerializedRegexSchema }), // Keep for JSON storage
+  z.instanceof(RegExp), // ✅ NEW: Native RegExp support
 ]);
 ```
 
 **URL field schema:**
+
 ```typescript
 export const UrlPatternSchema = z.union([
-  z.string(),           // Exact match, path params (/users/:id), glob (/api/*)
+  z.string(), // Exact match, path params (/users/:id), glob (/api/*)
   z.instanceof(RegExp), // ✅ NEW: Native RegExp for URL routing
 ]);
 ```
 
 **Type changes:**
+
 ```typescript
 type MatchValue =
   | string
@@ -215,24 +230,28 @@ type MatchValue =
   | { startsWith: string }
   | { endsWith: string }
   | { regex: { source: string; flags?: string } }
-  | RegExp;  // ✅ NEW
+  | RegExp; // ✅ NEW
 ```
 
 **Matching logic (unchanged):**
+
 ```typescript
-const matchesValue = (requestValue: string, criteriaValue: MatchValue): boolean => {
+const matchesValue = (
+  requestValue: string,
+  criteriaValue: MatchValue,
+): boolean => {
   // ... existing strategies ...
 
   // Native RegExp
   if (criteriaValue instanceof RegExp) {
     return matchesRegex(requestValue, {
       source: criteriaValue.source,
-      flags: criteriaValue.flags
+      flags: criteriaValue.flags,
     });
   }
 
   // Serialized regex (backward compatible)
-  if (typeof criteriaValue === 'object' && 'regex' in criteriaValue) {
+  if (typeof criteriaValue === "object" && "regex" in criteriaValue) {
     return matchesRegex(requestValue, criteriaValue.regex);
   }
 
@@ -241,10 +260,11 @@ const matchesValue = (requestValue: string, criteriaValue: MatchValue): boolean 
 ```
 
 **ReDoS protection (unchanged):**
+
 ```typescript
 export const matchesRegex = (
   value: string,
-  regex: { source: string; flags?: string }
+  regex: { source: string; flags?: string },
 ): boolean => {
   // Validation against unsafe patterns
   const safetyCheck = isRegexSafe(regex.source);
@@ -254,19 +274,19 @@ export const matchesRegex = (
   }
 
   // Timeout protection
-  const pattern = new RegExp(regex.source, regex.flags || '');
+  const pattern = new RegExp(regex.source, regex.flags || "");
   const startTime = Date.now();
   const MAX_EXECUTION_TIME = 100; // ms
 
   try {
     const matches = pattern.test(value);
     if (Date.now() - startTime > MAX_EXECUTION_TIME) {
-      console.warn('[Scenarist] Regex timeout exceeded');
+      console.warn("[Scenarist] Regex timeout exceeded");
       return false;
     }
     return matches;
   } catch (error) {
-    console.error('[Scenarist] Regex error:', error);
+    console.error("[Scenarist] Regex error:", error);
     return false;
   }
 };
@@ -286,7 +306,7 @@ MSW documentation explicitly states that **regular expressions use weak comparis
 
 ```typescript
 // MSW example from official docs:
-rest.delete(/\/posts\//, responseResolver)
+rest.delete(/\/posts\//, responseResolver);
 
 // Matches ALL of these (different origins, same path pattern):
 // - DELETE http://localhost:8080/posts/
@@ -295,6 +315,7 @@ rest.delete(/\/posts\//, responseResolver)
 ```
 
 **Key characteristics:**
+
 1. **Origin-agnostic**: Pattern matches regardless of protocol, domain, or port
 2. **Substring matching**: Pattern matches anywhere in the URL path
 3. **Partial matches**: Pattern doesn't need to match entire URL
@@ -326,6 +347,7 @@ Scenarist implements **identical weak comparison semantics** for MSW compatibili
 ### Weak vs Strong Comparison
 
 **Strong comparison** (exact string matching):
+
 ```typescript
 {
   url: '/api/users/123',  // String literal
@@ -338,6 +360,7 @@ Scenarist implements **identical weak comparison semantics** for MSW compatibili
 ```
 
 **Weak comparison** (RegExp substring matching):
+
 ```typescript
 {
   url: '*',
@@ -353,33 +376,36 @@ Scenarist implements **identical weak comparison semantics** for MSW compatibili
 ### Use Cases Enabled by Weak Comparison
 
 **1. Cross-Origin API Calls**
+
 ```typescript
 // Match API calls to any domain
 {
   match: {
-    url: /\/api\/v\d+\//  // Matches v1, v2, v3, etc.
+    url: /\/api\/v\d+\//; // Matches v1, v2, v3, etc.
   }
 }
 // Works for: localhost, staging, production, any API version
 ```
 
 **2. Query Parameter Matching**
+
 ```typescript
 // Match search endpoints with query params
 {
   match: {
-    url: /\/search\?/
+    url: /\/search\?/;
   }
 }
 // Matches: '/search?q=test', 'https://example.com/v1/search?filter=active'
 ```
 
 **3. Case-Insensitive Matching**
+
 ```typescript
 // Match regardless of casing
 {
   match: {
-    url: /\/API\/USERS/i  // 'i' flag = case-insensitive
+    url: /\/API\/USERS/i; // 'i' flag = case-insensitive
   }
 }
 // Matches: '/api/users', '/API/USERS', '/Api/Users'
@@ -404,30 +430,33 @@ if (pattern instanceof RegExp) {
 Scenarist includes comprehensive tests proving MSW weak comparison compatibility:
 
 **MSW Adapter tests** (`internal/msw-adapter/tests/url-matcher.test.ts`):
+
 - Cross-origin matching (same pattern, different domains)
 - Partial path matching (substring in any position)
 - Query parameter support
 - Case-insensitive + weak comparison
 
 **Core integration tests** (`packages/core/tests/url-matching.test.ts`):
+
 - Response selector with weak comparison
 - Specificity-based selection with weak patterns
 - Combined match criteria (weak URL + headers)
 
 **Playwright E2E tests** (example apps):
+
 - Real-world scenarios using weak comparison patterns
 - Cross-origin mocking verification
 - MSW compatibility validation
 
 ### MSW Compatibility Matrix
 
-| Pattern Type | MSW v1 | Scenarist | Weak Comparison |
-|--------------|--------|-----------|-----------------|
-| String literal | ✅ | ✅ | ❌ (exact match) |
-| Path params (`/users/:id`) | ✅ | ✅ | ❌ (exact match) |
-| Glob (`/api/*`) | ✅ | ✅ | ❌ (exact match) |
-| Native RegExp | ✅ | ✅ | ✅ (substring) |
-| Serialized regex | ❌ | ✅ | ✅ (substring) |
+| Pattern Type               | MSW v1 | Scenarist | Weak Comparison  |
+| -------------------------- | ------ | --------- | ---------------- |
+| String literal             | ✅     | ✅        | ❌ (exact match) |
+| Path params (`/users/:id`) | ✅     | ✅        | ❌ (exact match) |
+| Glob (`/api/*`)            | ✅     | ✅        | ❌ (exact match) |
+| Native RegExp              | ✅     | ✅        | ✅ (substring)   |
+| Serialized regex           | ❌     | ✅        | ✅ (substring)   |
 
 **Key insight**: Only RegExp patterns (native or serialized) use weak comparison. All other pattern types use strong (exact) matching.
 
@@ -452,19 +481,20 @@ ADR-0013's core principle: **"Force explicit, declarative patterns by making imp
 // ❌ This is what we're preventing:
 {
   shouldMatch: (request) => {
-    const tier = request.headers.get('x-tier');
-    const referer = request.headers.get('referer');
+    const tier = request.headers.get("x-tier");
+    const referer = request.headers.get("referer");
 
     // Hidden imperative logic
-    if (referer?.includes('/premium')) {
-      return tier === 'premium';
+    if (referer?.includes("/premium")) {
+      return tier === "premium";
     }
     return true;
-  }
+  };
 }
 ```
 
 **Why this is bad:**
+
 - Logic is hidden in function body
 - Captures external scope (closures)
 - Can have side effects
@@ -484,6 +514,7 @@ ADR-0013's core principle: **"Force explicit, declarative patterns by making imp
 ### Benefits of This Decision
 
 **1. Better Developer Experience**
+
 ```typescript
 // Before (verbose):
 { url: { regex: { source: '/users/\\d+', flags: '' } } }
@@ -493,36 +524,50 @@ ADR-0013's core principle: **"Force explicit, declarative patterns by making imp
 ```
 
 **2. MSW Compatibility**
+
 ```typescript
 // MSW v1 examples work in Scenarist:
-rest.get(/\/user\/\d+/, handler)  // MSW
-{ url: /\/user\/\d+/ }             // Scenarist ✅
+rest.get(/\/user\/\d+/, handler); // MSW
+{
+  url: /\/user\/\d+/;
+} // Scenarist ✅
 ```
 
 **3. Backward Compatibility**
+
 ```typescript
 // Serialized form still works:
-{ url: { regex: { source: '/users/\\d+' } } }  // ✅ Still supported
+{
+  url: {
+    regex: {
+      source: "/users/\\d+";
+    }
+  }
+} // ✅ Still supported
 ```
 
 **4. Flexibility for Storage Needs**
+
 ```typescript
 // 95% use native RegExp (better DX)
 const scenarios = {
   default: {
-    mocks: [{ url: /\/users\/\d+/ }]
-  }
+    mocks: [{ url: /\/users\/\d+/ }],
+  },
 };
 
 // 5% use serialized form (for JSON storage)
 const scenarioJSON = {
-  "mocks": [{
-    "url": { "regex": { "source": "/users/\\d+" } }
-  }]
+  mocks: [
+    {
+      url: { regex: { source: "/users/\\d+" } },
+    },
+  ],
 };
 ```
 
 **5. Same Safety Guarantees**
+
 - ReDoS protection: ✅ Same validation
 - Timeout guards: ✅ Same limits
 - Error handling: ✅ Same behavior
@@ -540,20 +585,24 @@ const scenarioJSON = {
 ### Trade-offs Accepted
 
 ⚠️ **Scenarios with native RegExp can't be `JSON.stringify()`'d directly**
+
 - Mitigation: Serialized form still available for storage needs
 - Custom serialization helper can convert RegExp → serialized form
 
 ⚠️ **Two ways to express the same pattern**
+
 - Mitigation: Document native RegExp as recommended, serialized as fallback
 - Linting rule could enforce consistency if needed
 
 ⚠️ **Slightly more complex schema validation**
+
 - Mitigation: `z.instanceof(RegExp)` is straightforward
 - Performance impact negligible
 
 ### Migration Path (None Required)
 
 **This is a non-breaking change:**
+
 - Existing scenarios with serialized regex continue to work
 - New scenarios can use native RegExp
 - No migration needed - adopt at your own pace
@@ -563,6 +612,7 @@ const scenarioJSON = {
 ### Alternative 1: Require Serialized Form Only
 
 **Rejected because:**
+
 - ❌ Poor DX (verbose syntax)
 - ❌ Not MSW-compatible
 - ❌ Optimizes for 5% use case instead of 95%
@@ -571,6 +621,7 @@ const scenarioJSON = {
 ### Alternative 2: Allow Arbitrary Functions
 
 **Rejected because:**
+
 - ❌ Violates declarative principle
 - ❌ Hidden imperative logic
 - ❌ Breaks composability
@@ -584,10 +635,13 @@ Require users to manually convert RegExp to serialized form:
 const r = (source: string, flags?: string) => ({ regex: { source, flags } });
 
 // Usage:
-{ url: r('/users/\\d+') }  // Still verbose
+{
+  url: r("/users/\\d+");
+} // Still verbose
 ```
 
 **Rejected because:**
+
 - ❌ Still verbose
 - ❌ Non-standard API
 - ❌ Doesn't solve MSW compatibility
@@ -597,10 +651,13 @@ const r = (source: string, flags?: string) => ({ regex: { source, flags } });
 Use string literals with special syntax:
 
 ```typescript
-{ url: 'regex:/users/\\d+/' }  // String-based
+{
+  url: "regex:/users/\\d+/";
+} // String-based
 ```
 
 **Rejected because:**
+
 - ❌ Non-standard (JavaScript has native RegExp)
 - ❌ Parsing complexity
 - ❌ Loses IDE regex syntax highlighting
@@ -611,11 +668,13 @@ Use string literals with special syntax:
 ### Update ADR-0013 Status
 
 Add note to ADR-0013:
+
 > **Note**: ADR-0016 refines this constraint from "JSON-serializable" to "declarative patterns". Native RegExp is now supported as it satisfies the declarative principle.
 
 ### User-Facing Documentation
 
 **Recommended approach**:
+
 ```typescript
 // Use native RegExp (clean, MSW-compatible)
 {
@@ -626,6 +685,7 @@ Add note to ADR-0013:
 ```
 
 **For JSON storage needs**:
+
 ```typescript
 // Use serialized form (still supported)
 {
@@ -640,6 +700,7 @@ Add note to ADR-0013:
 **No migration required** - this is additive only.
 
 **If adopting native RegExp:**
+
 ```typescript
 // Before:
 { url: { regex: { source: '/api/v\\d+/.*', flags: 'i' } } }
@@ -649,6 +710,7 @@ Add note to ADR-0013:
 ```
 
 **Custom serialization** (if needed):
+
 ```typescript
 const serializeScenario = (scenario: ScenaristScenario) => {
   return JSON.stringify(scenario, (key, value) => {

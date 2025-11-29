@@ -9,8 +9,8 @@
  * With Scenarist disabled: Returns actual json-server data
  */
 
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
+import type { NextApiRequest, NextApiResponse } from "next";
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/pages";
 
 type CartItem = {
   readonly productId: number;
@@ -23,18 +23,18 @@ type CartResponse = {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<CartResponse | { error: string }>
+  res: NextApiResponse<CartResponse | { error: string }>,
 ) {
   // Only allow GET requests
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== "GET") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
     // Fetch from json-server (external API)
     // Scenarist MSW will intercept this request and return mocked cart data
-    const response = await fetch('http://localhost:3001/cart', {
-      headers: getScenaristHeaders(req),  // ✅ Scenarist infrastructure headers (x-test-id)
+    const response = await fetch("http://localhost:3001/cart", {
+      headers: getScenaristHeaders(req), // ✅ Scenarist infrastructure headers (x-test-id)
     });
 
     if (!response.ok) {
@@ -46,7 +46,7 @@ export default async function handler(
     return res.status(200).json(data);
   } catch (error) {
     return res.status(500).json({
-      error: error instanceof Error ? error.message : 'Failed to fetch cart',
+      error: error instanceof Error ? error.message : "Failed to fetch cart",
     });
   }
 }

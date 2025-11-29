@@ -8,13 +8,15 @@
  * InMemoryUserRepository which doesn't require a database.
  */
 
-import type { UserRepository, User, CreateUserInput } from './user-repository';
+import type { UserRepository, User, CreateUserInput } from "./user-repository";
 
 // Type for Prisma client - in real app would import from @prisma/client
 type PrismaClient = {
   user: {
     findUnique: (args: { where: { id: string } }) => Promise<PrismaUser | null>;
-    findFirst: (args: { where: { email: string } }) => Promise<PrismaUser | null>;
+    findFirst: (args: {
+      where: { email: string };
+    }) => Promise<PrismaUser | null>;
     findMany: () => Promise<PrismaUser[]>;
     create: (args: { data: CreateUserInput }) => Promise<PrismaUser>;
   };
@@ -24,7 +26,7 @@ type PrismaUser = {
   id: string;
   email: string;
   name: string;
-  tier: 'standard' | 'premium';
+  tier: "standard" | "premium";
   createdAt: Date;
   updatedAt: Date;
 };
@@ -44,7 +46,7 @@ export class PrismaUserRepository implements UserRepository {
 
   async findAll(): Promise<ReadonlyArray<User>> {
     const users = await this.prisma.user.findMany();
-    return users.map(user => this.toUser(user));
+    return users.map((user) => this.toUser(user));
   }
 
   async create(data: CreateUserInput): Promise<User> {

@@ -14,7 +14,7 @@ import { headers } from "next/headers";
 import {
   getScenaristHeadersFromReadonlyHeaders,
   getScenaristTestIdFromReadonlyHeaders,
-} from '@scenarist/nextjs-adapter/app';
+} from "@scenarist/nextjs-adapter/app";
 
 type ProductsResponse = {
   readonly products: readonly {
@@ -30,11 +30,12 @@ type FetchResult =
   | { readonly success: false; readonly error: string };
 
 const fetchProducts = async (
-  headersList: Awaited<ReturnType<typeof headers>>
+  headersList: Awaited<ReturnType<typeof headers>>,
 ): Promise<FetchResult> => {
   try {
     // CLEAN API: Use ReadonlyHeaders directly (no fake Request needed)
-    const scenaristHeaders = getScenaristHeadersFromReadonlyHeaders(headersList);
+    const scenaristHeaders =
+      getScenaristHeadersFromReadonlyHeaders(headersList);
 
     const response = await fetch("http://localhost:3001/products", {
       headers: {
@@ -72,12 +73,15 @@ export default async function TestRSCHelperPage() {
     <div style={{ padding: "20px", fontFamily: "monospace" }}>
       <h1>Test RSC Helper</h1>
 
-      <div style={{ marginTop: "20px", padding: "10px", background: "#f5f5f5" }}>
+      <div
+        style={{ marginTop: "20px", padding: "10px", background: "#f5f5f5" }}
+      >
         <p>
           <strong>Test ID:</strong> {testId}
         </p>
         <p>
-          <strong>Pattern:</strong> Using getHeadersFromReadonlyHeaders (clean API)
+          <strong>Pattern:</strong> Using getHeadersFromReadonlyHeaders (clean
+          API)
         </p>
       </div>
 

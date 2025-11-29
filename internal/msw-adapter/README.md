@@ -7,6 +7,7 @@ This package is an internal implementation detail of Scenarist and is **NOT publ
 ## Why is this package private?
 
 **You should install a framework adapter instead:**
+
 - ✅ `@scenarist/express-adapter` - For Express applications
 - ✅ `@scenarist/nextjs-adapter` - For Next.js applications
 - ✅ `@scenarist/core` - For building custom adapters
@@ -21,6 +22,7 @@ This package is an internal implementation detail of Scenarist and is **NOT publ
 6. **Cleaner API surface** - Framework adapters ARE the public API, msw-adapter is hidden complexity
 
 **Dependency structure:**
+
 ```
 Your App
   ├─ @scenarist/express-adapter (public, install this!)
@@ -70,6 +72,7 @@ The MSW adapter is the bridge between Scenarist's serializable mock definitions 
 This adapter implements all 25 Scenarist capabilities:
 
 ### Request Matching (6 capabilities)
+
 - **Body matching** (partial match) - Match on request body fields
 - **Header matching** (exact, case-insensitive) - Match on header values
 - **Query matching** (exact) - Match on query parameters
@@ -78,12 +81,14 @@ This adapter implements all 25 Scenarist capabilities:
 - **Fallback mocks** - Mocks without criteria act as catch-all
 
 ### Response Sequences (4 capabilities)
+
 - **Single responses** - Return same response every time
 - **Response sequences** - Ordered responses for polling scenarios
 - **Repeat modes** - `last`, `cycle`, `none` behaviors
 - **Sequence exhaustion** - Skip exhausted sequences to fallback
 
 ### Stateful Mocks (6 capabilities)
+
 - **State capture** - Extract values from requests
 - **State injection** - Inject state into responses via templates
 - **Array append** - Syntax: `stateKey[]` for arrays
@@ -92,12 +97,14 @@ This adapter implements all 25 Scenarist capabilities:
 - **State reset** - Fresh state on scenario switch
 
 ### URL Patterns (4 capabilities)
+
 - **Exact matches** - `https://api.example.com/users`
 - **Wildcards** - `*/api/*`, `https://*/users`
 - **Path parameters** - `/users/:id`, `/posts/:postId/comments/:commentId`
 - **Native RegExp** - `/\/api\/v\d+\//`, `/\/users\/\d+$/` (weak comparison per MSW behavior)
 
 ### MSW Integration (6 capabilities)
+
 - **Dynamic handler generation** - Single handler routes at runtime
 - **Response building** - Status codes, JSON bodies, headers, delays
 - **Automatic default fallback** - Collects default + active scenario mocks together
@@ -131,28 +138,35 @@ You typically don't install or use this directly. Instead, use a framework-speci
 Converts string patterns into MSW-compatible URL matchers:
 
 ```typescript
-import { matchesUrl } from '@scenarist/msw-adapter';
+import { matchesUrl } from "@scenarist/msw-adapter";
 
-matchesUrl('https://api.github.com/users/octocat', 'GET', 'https://api.github.com/users/:username');
+matchesUrl(
+  "https://api.github.com/users/octocat",
+  "GET",
+  "https://api.github.com/users/:username",
+);
 // Returns: { matches: true, params: { username: 'octocat' } }
 
-matchesUrl('https://api.stripe.com/v1/charges', 'POST', '*/v1/charges');
+matchesUrl("https://api.stripe.com/v1/charges", "POST", "*/v1/charges");
 // Returns: { matches: true, params: {} }
 ```
 
 **Supported patterns (three types with different hostname matching):**
 
 **1. Pathname-only patterns** (origin-agnostic - match ANY hostname)
+
 - Path params: `/users/:id`, `/posts/:postId/comments/:commentId`
 - Exact: `/api/users`
 - Wildcards: `/api/*`, `*/users/*`
 
 **2. Full URL patterns** (hostname-specific - match ONLY specified hostname)
+
 - Exact: `https://api.example.com/users`
 - Path params: `https://api.example.com/users/:id`
 - Wildcards: `https://*/users`, `https://api.example.com/*`
 
 **3. Native RegExp** (origin-agnostic - MSW weak comparison)
+
 - `/\/api\/v\d+\//` (matches /api/v1/, /api/v2/, etc.)
 - `/\/users\/\d+$/` (matches /users/123 at any origin)
 
@@ -179,15 +193,15 @@ const mock = findMatchingMock(mocks, 'GET', 'https://api.example.com/users/123')
 Converts `ScenaristMock` to MSW `HttpResponse`:
 
 ```typescript
-import { buildResponse } from '@scenarist/msw-adapter';
+import { buildResponse } from "@scenarist/msw-adapter";
 
 const mockDef: ScenaristMock = {
-  method: 'GET',
-  url: '/api/user',
+  method: "GET",
+  url: "/api/user",
   response: {
     status: 200,
-    body: { id: '123', name: 'John' },
-    headers: { 'X-Custom': 'value' },
+    body: { id: "123", name: "John" },
+    headers: { "X-Custom": "value" },
     delay: 100,
   },
 };
@@ -201,11 +215,11 @@ const response = await buildResponse(mockDef);
 The core integration - a single MSW handler that routes dynamically:
 
 ```typescript
-import { createDynamicHandler } from '@scenarist/msw-adapter';
-import { setupServer } from 'msw/node';
+import { createDynamicHandler } from "@scenarist/msw-adapter";
+import { setupServer } from "msw/node";
 
 const handler = createDynamicHandler({
-  getTestId: () => testIdStorage.getStore() ?? 'default-test',
+  getTestId: () => testIdStorage.getStore() ?? "default-test",
   getActiveScenario: (testId) => manager.getActiveScenario(testId),
   getScenarioDefinition: (scenarioId) => manager.getScenarioById(scenarioId),
   strictMode: false,
@@ -216,6 +230,7 @@ server.listen();
 ```
 
 **How it works:**
+
 1. Gets test ID from AsyncLocalStorage (or other context)
 2. Looks up active scenario for that test ID
 3. **Collects mocks from BOTH default AND active scenario** for matching URL + method
@@ -290,10 +305,9 @@ export const createDynamicHandler = (
 Full TypeScript support with strict mode enabled.
 
 **Exported types:**
+
 ```typescript
-import type {
-  DynamicHandlerOptions,
-} from '@scenarist/msw-adapter';
+import type { DynamicHandlerOptions } from "@scenarist/msw-adapter";
 ```
 
 ## Testing

@@ -1,6 +1,6 @@
-import type { HttpRequestContext } from '../types/scenario.js';
+import type { HttpRequestContext } from "../types/scenario.js";
 
-const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+const DANGEROUS_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 
 const isDangerousKey = (key: string): boolean => DANGEROUS_KEYS.has(key);
 
@@ -18,8 +18,11 @@ const isDangerousKey = (key: string): boolean => DANGEROUS_KEYS.has(key);
  * @param path - Path expression (e.g., 'body.userId', 'headers.x-session-id')
  * @returns Extracted value, or undefined if path not found
  */
-export const extractFromPath = (context: HttpRequestContext, path: string): unknown => {
-  const segments = path.split('.');
+export const extractFromPath = (
+  context: HttpRequestContext,
+  path: string,
+): unknown => {
+  const segments = path.split(".");
 
   // Guard: Need at least 2 segments (prefix.field)
   if (segments.length < 2) {
@@ -29,7 +32,7 @@ export const extractFromPath = (context: HttpRequestContext, path: string): unkn
   const prefix = segments[0]!;
 
   // Guard: Must be valid prefix
-  if (prefix !== 'body' && prefix !== 'headers' && prefix !== 'query') {
+  if (prefix !== "body" && prefix !== "headers" && prefix !== "query") {
     return undefined;
   }
 
@@ -45,18 +48,18 @@ export const extractFromPath = (context: HttpRequestContext, path: string): unkn
   return traversePath(source, remainingPath);
 };
 
-type ValidPrefix = 'body' | 'headers' | 'query';
+type ValidPrefix = "body" | "headers" | "query";
 
 const getSourceForPrefix = (
   context: HttpRequestContext,
-  prefix: ValidPrefix
+  prefix: ValidPrefix,
 ): unknown => {
   switch (prefix) {
-    case 'body':
+    case "body":
       return context.body;
-    case 'headers':
+    case "headers":
       return context.headers;
-    case 'query':
+    case "query":
       return context.query;
   }
 };
@@ -75,7 +78,7 @@ const traversePath = (obj: unknown, path: readonly string[]): unknown => {
   }
 
   // Guard: Can only traverse objects
-  if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) {
+  if (typeof obj !== "object" || obj === null || Array.isArray(obj)) {
     return undefined;
   }
 

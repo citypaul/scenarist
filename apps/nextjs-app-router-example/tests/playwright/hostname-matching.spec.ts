@@ -30,15 +30,15 @@ test.describe("Hostname Matching - ATDD", () => {
     await expect(page.getByText("Pattern Type: pathname-only")).toBeVisible();
     await expect(page.getByText("Behavior: origin-agnostic")).toBeVisible();
     await expect(
-      page.getByText("This matches requests to ANY hostname")
+      page.getByText("This matches requests to ANY hostname"),
     ).toBeVisible();
 
     // Verify examples list shows multiple hostnames
     await expect(
-      page.getByText("http://localhost:3002/api/origin-agnostic")
+      page.getByText("http://localhost:3002/api/origin-agnostic"),
     ).toBeVisible();
     await expect(
-      page.getByText("https://api.example.com/api/origin-agnostic")
+      page.getByText("https://api.example.com/api/origin-agnostic"),
     ).toBeVisible();
   });
 
@@ -61,15 +61,15 @@ test.describe("Hostname Matching - ATDD", () => {
     await expect(page.getByText("Hostname: localhost:3001")).toBeVisible();
     await expect(page.getByText("Behavior: hostname-specific")).toBeVisible();
     await expect(
-      page.getByText("This ONLY matches localhost:3001 requests")
+      page.getByText("This ONLY matches localhost:3001 requests"),
     ).toBeVisible();
 
     // Verify will match / won't match examples
     await expect(
-      page.getByText("Will Match: http://localhost:3001/api/localhost-only")
+      page.getByText("Will Match: http://localhost:3001/api/localhost-only"),
     ).toBeVisible();
     await expect(
-      page.getByText("https://api.example.com/api/localhost-only")
+      page.getByText("https://api.example.com/api/localhost-only"),
     ).toBeVisible(); // In "won't match" list
   });
 
@@ -92,15 +92,15 @@ test.describe("Hostname Matching - ATDD", () => {
     await expect(page.getByText("Hostname: api.example.com")).toBeVisible();
     await expect(page.getByText("Behavior: hostname-specific")).toBeVisible();
     await expect(
-      page.getByText("This ONLY matches api.example.com requests")
+      page.getByText("This ONLY matches api.example.com requests"),
     ).toBeVisible();
 
     // Verify will match / won't match examples
     await expect(
-      page.getByText("Will Match: https://api.example.com/api/production-only")
+      page.getByText("Will Match: https://api.example.com/api/production-only"),
     ).toBeVisible();
     await expect(
-      page.getByText("http://localhost:3001/api/production-only")
+      page.getByText("http://localhost:3001/api/production-only"),
     ).toBeVisible(); // In "won't match" list
   });
 
@@ -121,18 +121,18 @@ test.describe("Hostname Matching - ATDD", () => {
     // Verify pattern type and behavior
     await expect(page.getByText("Pattern Type: native-regexp")).toBeVisible();
     await expect(
-      page.getByText("Behavior: origin-agnostic (MSW weak comparison)")
+      page.getByText("Behavior: origin-agnostic (MSW weak comparison)"),
     ).toBeVisible();
     await expect(
-      page.getByText("This matches the pattern at ANY origin")
+      page.getByText("This matches the pattern at ANY origin"),
     ).toBeVisible();
 
     // Verify examples list shows multiple hostnames
     await expect(
-      page.getByText("http://localhost:3002/api/regex-pattern")
+      page.getByText("http://localhost:3002/api/regex-pattern"),
     ).toBeVisible();
     await expect(
-      page.getByText("https://api.example.com/api/regex-pattern")
+      page.getByText("https://api.example.com/api/regex-pattern"),
     ).toBeVisible();
   });
 
@@ -148,17 +148,19 @@ test.describe("Hostname Matching - ATDD", () => {
   }) => {
     await switchScenario(page, "hostnameMatching");
 
-    await page.goto("/hostname-matching?test=pathnameParams&userId=789&postId=321");
+    await page.goto(
+      "/hostname-matching?test=pathnameParams&userId=789&postId=321",
+    );
 
     // Verify pattern type and behavior
     await expect(
-      page.getByText("Pattern Type: pathname-only with params")
+      page.getByText("Pattern Type: pathname-only with params"),
     ).toBeVisible();
     await expect(
-      page.getByText("Behavior: origin-agnostic + param extraction")
+      page.getByText("Behavior: origin-agnostic + param extraction"),
     ).toBeVisible();
     await expect(
-      page.getByText("Extracts params and matches ANY hostname")
+      page.getByText("Extracts params and matches ANY hostname"),
     ).toBeVisible();
 
     // Verify params were extracted
@@ -167,10 +169,10 @@ test.describe("Hostname Matching - ATDD", () => {
 
     // Verify examples show multiple hostnames
     await expect(
-      page.getByText("http://localhost:3002/api/users/123/posts/456")
+      page.getByText("http://localhost:3002/api/users/123/posts/456"),
     ).toBeVisible();
     await expect(
-      page.getByText("https://api.example.com/api/users/123/posts/456")
+      page.getByText("https://api.example.com/api/users/123/posts/456"),
     ).toBeVisible();
   });
 
@@ -190,14 +192,14 @@ test.describe("Hostname Matching - ATDD", () => {
 
     // Verify pattern type and behavior
     await expect(
-      page.getByText("Pattern Type: full-url with params")
+      page.getByText("Pattern Type: full-url with params"),
     ).toBeVisible();
     await expect(page.getByText("Hostname: localhost:3001")).toBeVisible();
     await expect(
-      page.getByText("Behavior: hostname-specific + param extraction")
+      page.getByText("Behavior: hostname-specific + param extraction"),
     ).toBeVisible();
     await expect(
-      page.getByText("Extracts params but ONLY from localhost:3001")
+      page.getByText("Extracts params but ONLY from localhost:3001"),
     ).toBeVisible();
 
     // Verify param was extracted
@@ -205,11 +207,11 @@ test.describe("Hostname Matching - ATDD", () => {
 
     // Verify will match / won't match examples
     await expect(
-      page.getByText("Will Match: http://localhost:3001/api/local-users/123")
+      page.getByText("Will Match: http://localhost:3001/api/local-users/123"),
     ).toBeVisible();
     await expect(page.getByText("Won't Match:")).toBeVisible();
     await expect(
-      page.getByText("https://api.example.com/api/local-users/123")
+      page.getByText("https://api.example.com/api/local-users/123"),
     ).toBeVisible();
   });
 });

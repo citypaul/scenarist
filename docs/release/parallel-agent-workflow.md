@@ -27,16 +27,16 @@ git worktree add ../scenarist-ws8 main -b workstream-8
 
 ### Worktree Assignment
 
-| Worktree | Branch | Workstream | Issues |
-|----------|--------|------------|--------|
-| `scenarist-ws1` | `workstream-1` | Getting Started Section | #191, #192, #193, #194 |
-| `scenarist-ws2` | `workstream-2` | Core Concepts Section | #195, #196, #197, #198, #199 |
-| `scenarist-ws3` | `workstream-3` | RSC Guide | #200 |
-| `scenarist-ws4` | `workstream-4` | Testing Patterns | #201, #202, #203 |
-| `scenarist-ws5` | `workstream-5` | Reference Section | #204, #205 |
-| `scenarist-ws6` | `workstream-6` | Sidebar & Link Fixes | #206, #207 |
-| `scenarist-ws7` | `workstream-7` | App Router Examples (M2) | #208, #209, #210, #211 |
-| `scenarist-ws8` | `workstream-8` | RSC Guide Updates (M2) | #212, #213, #214, #215 |
+| Worktree        | Branch         | Workstream               | Issues                       |
+| --------------- | -------------- | ------------------------ | ---------------------------- |
+| `scenarist-ws1` | `workstream-1` | Getting Started Section  | #191, #192, #193, #194       |
+| `scenarist-ws2` | `workstream-2` | Core Concepts Section    | #195, #196, #197, #198, #199 |
+| `scenarist-ws3` | `workstream-3` | RSC Guide                | #200                         |
+| `scenarist-ws4` | `workstream-4` | Testing Patterns         | #201, #202, #203             |
+| `scenarist-ws5` | `workstream-5` | Reference Section        | #204, #205                   |
+| `scenarist-ws6` | `workstream-6` | Sidebar & Link Fixes     | #206, #207                   |
+| `scenarist-ws7` | `workstream-7` | App Router Examples (M2) | #208, #209, #210, #211       |
+| `scenarist-ws8` | `workstream-8` | RSC Guide Updates (M2)   | #212, #213, #214, #215       |
 
 ---
 
@@ -61,31 +61,32 @@ Agents must pick up tickets in dependency order within their workstream.
 
 #### Workstream Ticket Order
 
-| Workstream | Order | Rationale |
-|------------|-------|-----------|
-| **WS1 (Getting Started)** | #191, #192, #193, #194 (any order) | All independent |
-| **WS2 (Core Concepts)** | #195, #196, #197, #198, #199 (any order) | All independent |
-| **WS3 (RSC Guide)** | #200 | Single issue |
-| **WS4 (Testing Patterns)** | #201, #202, #203 (any order) | All independent |
-| **WS5 (Reference)** | #204, #205 (any order) | All independent |
-| **WS6 (Sidebar/Links)** | #206, #207 (any order) | Must wait for WS1-WS5 |
-| **WS7 (App Router Examples)** | #208, #209, #210, #211 (any order) | All independent, TDD required |
-| **WS8 (RSC Guide Updates)** | Each depends on WS7 | See cross-workstream deps |
+| Workstream                    | Order                                    | Rationale                     |
+| ----------------------------- | ---------------------------------------- | ----------------------------- |
+| **WS1 (Getting Started)**     | #191, #192, #193, #194 (any order)       | All independent               |
+| **WS2 (Core Concepts)**       | #195, #196, #197, #198, #199 (any order) | All independent               |
+| **WS3 (RSC Guide)**           | #200                                     | Single issue                  |
+| **WS4 (Testing Patterns)**    | #201, #202, #203 (any order)             | All independent               |
+| **WS5 (Reference)**           | #204, #205 (any order)                   | All independent               |
+| **WS6 (Sidebar/Links)**       | #206, #207 (any order)                   | Must wait for WS1-WS5         |
+| **WS7 (App Router Examples)** | #208, #209, #210, #211 (any order)       | All independent, TDD required |
+| **WS8 (RSC Guide Updates)**   | Each depends on WS7                      | See cross-workstream deps     |
 
 #### Cross-Workstream Dependencies
 
 Some tickets depend on other workstreams completing:
 
-| Ticket | Depends On | Action |
-|--------|------------|--------|
+| Ticket     | Depends On         | Action                                               |
+| ---------- | ------------------ | ---------------------------------------------------- |
 | #206 (WS6) | All WS1-WS5 issues | WS6 agent must wait for docs restructure to complete |
 | #207 (WS6) | All WS1-WS5 issues | WS6 agent must wait for docs restructure to complete |
-| #212 (WS8) | #208 (WS7) | WS8 agent must wait for Server Actions example |
-| #213 (WS8) | #209 (WS7) | WS8 agent must wait for Auth example |
-| #214 (WS8) | #210 (WS7) | WS8 agent must wait for Streaming example |
-| #215 (WS8) | #211 (WS7) | WS8 agent must wait for Error Boundary example |
+| #212 (WS8) | #208 (WS7)         | WS8 agent must wait for Server Actions example       |
+| #213 (WS8) | #209 (WS7)         | WS8 agent must wait for Auth example                 |
+| #214 (WS8) | #210 (WS7)         | WS8 agent must wait for Streaming example            |
+| #215 (WS8) | #211 (WS7)         | WS8 agent must wait for Error Boundary example       |
 
 **How to check if a dependency is met:**
+
 ```bash
 # Check if a ticket's PR has been merged to main
 gh pr list --state merged --search "closes #143"
@@ -119,6 +120,7 @@ closes #<issue-number> (only on final commit for ticket)
 **Types**: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`
 
 **Examples**:
+
 ```bash
 # Incremental commits
 git commit -m "chore(changesets): install @changesets/cli"
@@ -147,18 +149,22 @@ Before writing any code for a ticket, the agent must:
 ## Plan for #<issue-number>
 
 ### Files to Modify
+
 - [ ] `path/to/file1.ts`
 - [ ] `path/to/file2.json`
 
 ### Commit Sequence
+
 1. `chore(scope): first change`
 2. `chore(scope): second change`
 3. `chore(scope): final change - closes #<issue>`
 
 ### Dependencies Verified
+
 - [x] #<dep-issue> merged to main
 
 ### Acceptance Criteria Check
+
 - [ ] Criterion 1
 - [ ] Criterion 2
 ```
@@ -238,6 +244,7 @@ gh issue edit 142 --remove-label "in-progress" --add-label "review"
 When your ticket depends on another workstream:
 
 1. **Check dependency status**:
+
    ```bash
    gh issue view <dep-issue-number> --json state,labels
    ```
@@ -299,6 +306,7 @@ Documentation pages map from file paths to URLs as follows:
 **Base URL:** `https://scenarist.io`
 
 **Mapping Rule:**
+
 ```
 apps/docs/src/content/docs/{path}.md  →  https://scenarist.io/{path}
 apps/docs/src/content/docs/{path}.mdx →  https://scenarist.io/{path}

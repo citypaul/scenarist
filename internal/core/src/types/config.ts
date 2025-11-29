@@ -1,4 +1,4 @@
-import type { ScenaristScenarios } from './scenario.js';
+import type { ScenaristScenarios } from "./scenario.js";
 
 /**
  * Configuration for the scenario management system.
@@ -45,10 +45,12 @@ export type ScenaristConfig = {
  * Partial config for user input - missing values will use defaults.
  * All properties must be serializable (no functions).
  */
-export type ScenaristConfigInput<T extends ScenaristScenarios = ScenaristScenarios> = {
+export type ScenaristConfigInput<
+  T extends ScenaristScenarios = ScenaristScenarios,
+> = {
   readonly enabled: boolean;
   readonly strictMode?: boolean;
-  readonly endpoints?: Partial<ScenaristConfig['endpoints']>;
+  readonly endpoints?: Partial<ScenaristConfig["endpoints"]>;
   /**
    * All scenarios defined as a named object.
    * Keys become scenario IDs that enable type-safe autocomplete.

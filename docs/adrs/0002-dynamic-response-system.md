@@ -29,11 +29,13 @@ These patterns appear in **every significant application**. Without support for 
 ## Problem
 
 Users need to define different responses from the same endpoint based on:
+
 - **Request content** (body, headers, query parameters)
 - **Call sequence** (1st call, 2nd call, 3rd call - for polling)
 - **Application state** (responses depend on what happened in previous requests)
 
 **Critical constraints:**
+
 1. Must remain 100% serializable (JSON only, no functions) - see ADR-0001
 2. Must be self-contained (no runtime headers/configuration required beyond test ID)
 3. Must work in browsers (for future devtools)
@@ -52,9 +54,9 @@ Enable different responses based on request content using optional `match` crite
 
 ```typescript
 type ScenaristMatch = {
-  readonly body?: Record<string, unknown>;      // Partial match
-  readonly headers?: Record<string, string>;    // Exact match
-  readonly query?: Record<string, string>;      // Exact match
+  readonly body?: Record<string, unknown>; // Partial match
+  readonly headers?: Record<string, string>; // Exact match
+  readonly query?: Record<string, string>; // Exact match
 };
 ```
 
@@ -66,15 +68,17 @@ Enable ordered sequences of responses for polling scenarios using `sequence` fie
 
 ```typescript
 type ScenaristMock = {
-  readonly response?: ScenaristResponse;     // Single response (existing)
-  readonly sequence?: {                 // OR sequence (new)
+  readonly response?: ScenaristResponse; // Single response (existing)
+  readonly sequence?: {
+    // OR sequence (new)
     readonly responses: ReadonlyArray<ScenaristResponse>;
-    readonly repeat?: 'last' | 'cycle' | 'none';
+    readonly repeat?: "last" | "cycle" | "none";
   };
 };
 ```
 
 **Repeat modes:**
+
 - `last` (default): Return last response infinitely
 - `cycle`: Loop back to first response
 - `none`: Mark mock as exhausted, enable fallback to next mock
@@ -85,11 +89,12 @@ Enable capturing data from requests and injecting it into responses:
 
 ```typescript
 type ScenaristMock = {
-  readonly captureState?: Record<string, string>;  // { stateKey: requestPath }
+  readonly captureState?: Record<string, string>; // { stateKey: requestPath }
 };
 ```
 
 **State characteristics:**
+
 - Stored per test ID (isolated between tests)
 - Reset when scenario switches
 - Accessed via `{{state.key}}` template syntax in responses
@@ -100,17 +105,20 @@ type ScenaristMock = {
 **CRITICAL**: The dynamic response logic is **domain logic** and must live in `packages/core/src/domain/`, not in adapters.
 
 **Core responsibilities:**
+
 - `ResponseSelector` domain service (matching, sequence tracking, state management)
 - `SequenceTracker` port (interface for tracking positions)
 - `StateManager` port (interface for managing state)
 - All implementations use dependency injection pattern
 
 **Adapter responsibilities:**
+
 - Extract request context from framework
 - Call core domain services
 - NO domain logic in adapters
 
 **Why this matters:**
+
 - ✅ Single implementation - logic tested once in core
 - ✅ No duplication - adapters just translate
 - ✅ Consistency - every adapter behaves identically
@@ -125,6 +133,7 @@ All three features compose naturally through a three-phase execution model:
 3. **Phase 3: Transform** - Modify based on state (capture and template replacement)
 
 **Key architectural insight:** The phases are **orthogonal** (independent and non-interfering). Each phase:
+
 - Has **single responsibility** and is independently testable
 - Communicates through **data pipeline**, not shared logic
 - **Cannot interfere** beyond defined boundaries
@@ -152,6 +161,7 @@ See [ADR-0004](./0004-why-composition-tests-unnecessary.md) for detailed analysi
 **Decision**: Rejected
 
 **Why:**
+
 - ❌ Violates ADR-0001 (must be serializable)
 - ❌ Cannot be stored in Redis, files, or databases
 - ❌ Cannot be version controlled effectively
@@ -179,6 +189,7 @@ See [ADR-0004](./0004-why-composition-tests-unnecessary.md) for detailed analysi
 **Decision**: Rejected
 
 **Why:**
+
 - ⚠️ More complex type system
 - ⚠️ Harder to understand composition model
 - ⚠️ Doesn't handle sequences or state naturally
@@ -206,6 +217,7 @@ See [ADR-0004](./0004-why-composition-tests-unnecessary.md) for detailed analysi
 **Decision**: Rejected for v1, may revisit
 
 **Why:**
+
 - ⚠️ Significantly more complex
 - ⚠️ Overkill for most use cases
 - ✅ Sequences with repeat modes cover 95% of cases
@@ -216,6 +228,7 @@ See [ADR-0004](./0004-why-composition-tests-unnecessary.md) for detailed analysi
 **Decision**: Chose per-test-ID state
 
 **Why:**
+
 - ✅ Enables parallel test execution (critical for performance)
 - ✅ Tests don't interfere with each other
 - ✅ Each test gets predictable, isolated state
@@ -227,6 +240,7 @@ See [ADR-0004](./0004-why-composition-tests-unnecessary.md) for detailed analysi
 **Decision**: Chose reset on scenario switch
 
 **Why:**
+
 - ✅ Each scenario starts with clean slate (predictable)
 - ✅ Prevents subtle bugs from state leakage
 - ✅ Makes scenarios truly independent
@@ -270,25 +284,31 @@ See [ADR-0004](./0004-why-composition-tests-unnecessary.md) for detailed analysi
 ### Risks & Mitigation
 
 **Risk 1: Composition ambiguity**
-- *Mitigation*: Clear three-phase model, explicit precedence rules, comprehensive tests
+
+- _Mitigation_: Clear three-phase model, explicit precedence rules, comprehensive tests
 
 **Risk 2: State grows unbounded**
-- *Mitigation*: State resets on scenario switch, scoped per test ID (tests are short-lived)
+
+- _Mitigation_: State resets on scenario switch, scoped per test ID (tests are short-lived)
 
 **Risk 3: Template syntax limitations**
-- *Mitigation*: Start simple (no operations), can extend later if needed
+
+- _Mitigation_: Start simple (no operations), can extend later if needed
 
 **Risk 4: Performance degradation**
-- *Mitigation*: Benchmark each phase, optimize hot paths, document performance characteristics
+
+- _Mitigation_: Benchmark each phase, optimize hot paths, document performance characteristics
 
 **Risk 5: Learning curve**
-- *Mitigation*: Extensive documentation, examples, Bruno collection for exploration
+
+- _Mitigation_: Extensive documentation, examples, Bruno collection for exploration
 
 ### Implementation Learnings (Updated 2025-10-27)
 
 ✅ **Performance characteristics** - No significant overhead detected. Match checking, sequence lookup, and template replacement are all fast enough for testing workloads. No optimization needed for v1.
 
 ✅ **Template edge cases** - Handled through graceful degradation:
+
 - **Pure templates** with missing keys return `undefined` (see [ADR-0012](./0012-template-missing-state-undefined.md))
 - **Mixed templates** with missing keys keep unreplaced template in string (e.g., `"Count: {{state.missing}}"`)
 - Nested path traversal handles null/undefined safely
@@ -296,17 +316,20 @@ See [ADR-0004](./0004-why-composition-tests-unnecessary.md) for detailed analysi
 - No circular reference issues (state is JSON-serializable)
 
 ✅ **Composition edge cases** - Only one meaningful edge case found:
+
 - PR #28: Non-matching requests don't advance sequences
 - All other compositions work by orthogonal phase design
 - See ADR-0004 for why dedicated composition tests are unnecessary
 
 ✅ **Real-world usage patterns** - All three features heavily used:
+
 - **Match:** Essential for premium/standard tier differences
 - **Sequences:** Critical for polling scenarios (GitHub jobs, payment processing)
 - **State:** Enables shopping cart, multi-step forms
 - **Composition:** Match+Sequence and Sequence+State are common patterns
 
 ✅ **Test idempotency discovery** - Critical finding:
+
 - Sequences and state MUST reset on scenario switch
 - Without reset: Bruno tests fail on second run (117/133 vs 133/133)
 - With reset: Tests idempotent, no server restart needed
@@ -317,28 +340,33 @@ See [ADR-0004](./0004-why-composition-tests-unnecessary.md) for detailed analysi
 **Status:** ✅ Complete (Phases 1-3 implemented, Phase 4 analysis shows no action needed)
 
 **Phase 1:** Request Content Matching (PR #24)
+
 - Match on body/headers/query parameters
 - Specificity-based selection
 - Core tests: 100% coverage
 
 **Phase 2:** Response Sequences (PRs #25-27, #35)
+
 - Sequences with repeat modes (last/cycle/none)
 - Sequence exhaustion and fallback
 - Test idempotency via reset on scenario switch
 - Core tests: 100% coverage
 
 **Phase 3:** Stateful Mocks (PRs #30-35)
+
 - State capture from requests (path extraction, array appending)
 - Template injection (`{{state.key}}`, nested paths)
 - State reset on scenario switch
 - Core tests: 100% coverage
 
 **Phase 4:** Feature Composition - No implementation needed
+
 - Architecture guarantees composition via orthogonal phases
 - Only meaningful edge case tested in PR #28
 - See ADR-0004 for detailed analysis
 
 **Documentation:**
+
 - [Core Functionality § Three-Phase Execution Model](../core-functionality.md#three-phase-execution-model)
 - [Stateful Mocks User Guide](../stateful-mocks.md)
 - [State API Reference](../api-reference-state.md)
