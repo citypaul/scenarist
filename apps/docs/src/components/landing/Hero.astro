@@ -13,13 +13,13 @@ const releasesUrl = 'https://github.com/citypaul/scenarist/releases';
 <section class="relative z-10 pt-32 pb-20 px-6 overflow-hidden">
   <!-- Background Gradients -->
   <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl pointer-events-none">
-    <div class="absolute top-20 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl opacity-30 animate-pulse"></div>
-    <div class="absolute top-40 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl opacity-30 animate-pulse delay-1000"></div>
+    <div class="absolute top-20 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl opacity-30 animate-pulse will-change-transform"></div>
+    <div class="absolute top-40 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl opacity-30 animate-pulse delay-1000 will-change-transform"></div>
   </div>
 
   <div class="max-w-4xl mx-auto text-center relative z-10">
     <!-- Version Badge -->
-    <a href={releasesUrl} class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 backdrop-blur-sm text-xs font-mono text-primary mb-8 hover:border-primary/50 transition-colors">
+    <a href={releasesUrl} class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 backdrop-blur-sm text-xs font-mono text-primary mb-8 hover:border-primary/50 transition-colors will-change-transform">
       <span class="flex w-2 h-2 rounded-full bg-primary animate-pulse"></span>
       v{version} Available
     </a>
