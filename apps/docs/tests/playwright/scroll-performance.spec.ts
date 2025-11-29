@@ -13,6 +13,31 @@ const SEVERE_JANK_THRESHOLD_MS = 100;
 const MAX_JANK_FRAMES = 2;
 
 test.describe("Scroll Performance", () => {
+  test("blur elements have GPU layer promotion", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+
+    const results = await page.locator('[class*="blur-"]').evaluateAll((els) =>
+      els.map((el) => ({
+        className: el.className.slice(0, 60),
+        hasGpuLayer: getComputedStyle(el).willChange.includes("transform"),
+      })),
+    );
+
+    const missing = results.filter((r) => !r.hasGpuLayer);
+    if (missing.length > 0) {
+      console.log(
+        "Missing will-change-transform:",
+        missing.map((m) => m.className),
+      );
+    }
+
+    expect(
+      missing.length,
+      "Blur elements need will-change-transform for smooth scroll",
+    ).toBe(0);
+  });
+
   test("landing page scrolls without jank", async () => {
     const browser = await chromium.launch();
     const page = await browser.newPage();
