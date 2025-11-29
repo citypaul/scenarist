@@ -279,7 +279,32 @@ jobs:
       - name: Run docs E2E tests
         run: pnpm --filter=@scenarist/docs test
 
-  # Job 8: Custom Server Tests (verifies Scenarist works with Express + Next.js custom servers)
+  # Job 8: Docs Accessibility Tests (Lighthouse and axe-core audits)
+  docs-accessibility-tests:
+    name: Docs Accessibility Tests
+    needs: setup-and-build
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+
+      - name: Restore workspace
+        uses: ./.github/actions/restore-workspace
+
+      - name: Run accessibility tests (axe-core)
+        run: pnpm --filter=@scenarist/docs test:a11y
+
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v5.0.0
+        with:
+          name: lighthouse-reports
+          path: apps/docs/lighthouse-reports/
+          if-no-files-found: ignore
+
+  # Job 9: Custom Server Tests (verifies Scenarist works with Express + Next.js custom servers)
   custom-server-tests:
     name: Custom Server Tests (${{ matrix.name }})
     needs: setup-and-build

@@ -12,7 +12,9 @@
     "typecheck": "astro check",
     "test": "pnpm pw",
     "pw": "playwright test --project=chromium",
-    "pw:ui": "playwright test --config=playwright.dev.config.ts --project=chromium --ui"
+    "pw:ui": "playwright test --config=playwright.dev.config.ts --project=chromium --ui",
+    "test:lighthouse": "playwright test --config=playwright.lighthouse.config.ts lighthouse.spec.ts",
+    "test:a11y": "playwright test --config=playwright.lighthouse.config.ts accessibility.spec.ts"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.12",
@@ -24,9 +26,12 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.6",
+    "@axe-core/playwright": "^4.11.0",
     "@playwright/test": "^1.57.0",
     "@tailwindcss/vite": "^4.1.17",
+    "lighthouse": "^13.0.1",
     "playwright": "^1.57.0",
+    "playwright-lighthouse": "^4.0.0",
     "tailwindcss": "^4.1.17",
     "typescript": "^5.9.3",
     "wrangler": "^4.51.0"

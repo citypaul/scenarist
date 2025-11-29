@@ -19,3 +19,6 @@ pnpm-debug.log*
 
 # macOS-specific files
 .DS_Store
+
+# Lighthouse reports (generated during tests)
+lighthouse-reports/
