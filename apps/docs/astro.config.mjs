@@ -140,19 +140,22 @@ export default defineConfig({
       ],
       sidebar: [
         {
-          label: "Introduction",
+          label: "Getting Started",
           items: [
             { label: "Quick Start", slug: "getting-started/quick-start" },
+            { label: "Installation", slug: "getting-started/installation" },
+            { label: "Why Scenarist?", slug: "getting-started/why-scenarist" },
+          ],
+        },
+        {
+          label: "Core Concepts",
+          items: [
             { label: "Philosophy", slug: "concepts/philosophy" },
-            { label: "Why Scenarist?", slug: "introduction/why-scenarist" },
-            { label: "How it works", slug: "introduction/overview" },
-            { label: "Dynamic Capabilities", slug: "introduction/capabilities" },
-            { label: "Installation", slug: "introduction/installation" },
-            { label: "Production Safety", slug: "introduction/production-safety" },
-            { label: "Scenario Format", slug: "introduction/scenario-format" },
-            { label: "Default Mocks & Overrides", slug: "introduction/default-mocks" },
-            { label: "Ephemeral Endpoints", slug: "introduction/ephemeral-endpoints" },
-            { label: "Endpoint APIs", slug: "introduction/endpoint-apis" },
+            { label: "How It Works", slug: "concepts/how-it-works" },
+            { label: "Scenario Format", slug: "concepts/scenario-format" },
+            { label: "Default Mocks", slug: "concepts/default-mocks" },
+            { label: "Dynamic Responses", slug: "concepts/dynamic-responses" },
+            { label: "Production Safety", slug: "concepts/production-safety" },
           ],
         },
         {
@@ -160,6 +163,7 @@ export default defineConfig({
           items: [
             {
               label: "Express",
+              collapsed: true,
               items: [
                 { label: "Overview", slug: "frameworks/express" },
                 { label: "Getting Started", slug: "frameworks/express/getting-started" },
@@ -168,6 +172,7 @@ export default defineConfig({
             },
             {
               label: "Next.js",
+              collapsed: true,
               items: [
                 { label: "Overview", slug: "frameworks/nextjs" },
                 {
@@ -189,8 +194,6 @@ export default defineConfig({
                 },
               ],
             },
-            { label: "Remix", slug: "frameworks/remix" },
-            { label: "SvelteKit", slug: "frameworks/sveltekit" },
           ],
         },
         {
@@ -216,16 +219,14 @@ export default defineConfig({
           ],
         },
         {
-          label: "Concepts",
-          collapsed: true,
-          items: [
-            { label: "Architecture", slug: "concepts/architecture" },
-          ],
-        },
-        {
           label: "Reference",
           collapsed: true,
-          items: [{ label: "Verification Guide", slug: "reference/verification" }],
+          items: [
+            { label: "API Endpoints", slug: "reference/api-endpoints" },
+            { label: "Ephemeral Endpoints", slug: "reference/ephemeral-endpoints" },
+            { label: "Verification", slug: "reference/verification" },
+            { label: "Architecture", slug: "concepts/architecture" },
+          ],
         },
       ],
       customCss: ["./src/styles/custom.css"],

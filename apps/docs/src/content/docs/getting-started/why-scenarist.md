@@ -19,8 +19,8 @@ This creates a testing challenge:
 
 | If you want to... | Go to... |
 |-------------------|----------|
-| See how Scenarist works | [How it works](/introduction/overview) |
-| Learn about dynamic capabilities | [Capabilities](/introduction/capabilities) |
+| See how Scenarist works | [How it works](/concepts/how-it-works) |
+| Learn about dynamic capabilities | [Capabilities](/concepts/dynamic-responses) |
 | Compare with unit/E2E tests | [Comparison](#comparison-with-other-testing-approaches) |
 | Understand limitations | [Limitations](#limitations-and-trade-offs) |
 | Start implementing | [Getting Started](#getting-started) |
@@ -96,7 +96,7 @@ const products = await fetch('http://localhost:3000/api/products');
 
 **If your app uses direct database access:** See [Testing Database Apps](/guides/testing-database-apps) for strategies. We recommend the [Repository Pattern](/guides/testing-database-apps/repository-pattern) for scalable parallel testing with the same test ID isolation model as Scenarist.
 
-[Learn how it works →](/introduction/overview)
+[Learn how it works →](/concepts/how-it-works)
 
 ### Why Framework Documentation Recommends E2E
 
@@ -180,12 +180,10 @@ Choose your framework to see specific installation and usage instructions:
 
 - [Next.js →](/frameworks/nextjs) - Test Server Components and API routes
 - [Express →](/frameworks/express) - Test middleware and route handlers
-- [Remix →](/frameworks/remix) - Test loaders and actions (coming soon)
-- [SvelteKit →](/frameworks/sveltekit) - Test server routes (coming soon)
 
 Or explore core concepts that apply to all frameworks:
 
-- [Overview: How It Works →](/introduction/overview)
-- [Capabilities: Dynamic Responses →](/introduction/capabilities)
-- [Scenarios & Format →](/introduction/scenario-format)
+- [Overview: How It Works →](/concepts/how-it-works)
+- [Capabilities: Dynamic Responses →](/concepts/dynamic-responses)
+- [Scenarios & Format →](/concepts/scenario-format)
 - [Architecture →](/concepts/architecture)
