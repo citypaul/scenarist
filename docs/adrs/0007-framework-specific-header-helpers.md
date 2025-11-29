@@ -136,7 +136,7 @@ export const getScenaristHeaders = (
 import { getScenaristHeaders } from "@scenarist/nextjs-adapter/pages";
 const response = await fetch("http://api.com/data", {
   headers: {
-    ...getScenaristHeaders(req, scenarist),
+    ...getScenaristHeaders(req),
     "x-app-header": "value",
   },
 });
@@ -180,7 +180,7 @@ const response = await fetch("http://api.com/data", {
 3. **No Abstraction Overhead:**
    - Framework-specific helpers are immediately type-safe
    - No generics, no type assertions, no complex constraints
-   - Simple API: `getScenaristHeaders(req, scenarist)`
+   - Simple API: `getScenaristHeaders(req)`
 
 4. **Different Test ID Propagation Patterns:**
    - **Express**: Uses AsyncLocalStorage → middleware extracts test ID once → routes don't manually forward
@@ -239,7 +239,7 @@ This is a common need (forwarding context to external APIs). Providing a helper:
 ✅ **Simple, ergonomic API** - No generics, no callbacks, no type assertions:
 
 ```typescript
-headers: { ...getScenaristHeaders(req, scenarist) }
+headers: { ...getScenaristHeaders(req) }
 ```
 
 ✅ **Framework-optimized** - Each adapter can use framework idioms (e.g., Express doesn't need this, Next.js does)
@@ -280,7 +280,7 @@ import type { ScenaristInstance } from "@scenarist/core";
  * ```typescript
  * const response = await fetch('http://api.com/data', {
  *   headers: {
- *     ...getScenaristHeaders(req, scenarist),
+ *     ...getScenaristHeaders(req),
  *     'content-type': 'application/json',
  *   },
  * });
@@ -313,7 +313,7 @@ describe("getScenaristHeaders", () => {
       testIdHeaderName: "x-scenarist-test-id",
     });
 
-    const headers = getScenaristHeaders(req, scenarist);
+    const headers = getScenaristHeaders(req);
 
     expect(headers).toEqual({ "x-scenarist-test-id": "test-123" });
   });
@@ -326,7 +326,7 @@ describe("getScenaristHeaders", () => {
       testIdHeaderName: "x-scenarist-test-id",
     });
 
-    const headers = getScenaristHeaders(req, scenarist);
+    const headers = getScenaristHeaders(req);
 
     expect(headers).toEqual({ "x-scenarist-test-id": "test-123" });
   });
@@ -338,7 +338,7 @@ describe("getScenaristHeaders", () => {
       defaultTestId: "default-test",
     });
 
-    const headers = getScenaristHeaders(req, scenarist);
+    const headers = getScenaristHeaders(req);
 
     expect(headers).toEqual({ "x-scenarist-test-id": "default-test" });
   });
@@ -347,7 +347,7 @@ describe("getScenaristHeaders", () => {
     const req = createMockRequest({ headers: { "x-custom-id": "test-789" } });
     const scenarist = createMockScenarist({ testIdHeaderName: "x-custom-id" });
 
-    const headers = getScenaristHeaders(req, scenarist);
+    const headers = getScenaristHeaders(req);
 
     expect(headers).toEqual({ "x-custom-id": "test-789" });
   });
@@ -363,15 +363,15 @@ Include in adapter README under "Making External API Calls" section:
 
 When your API routes need to make calls to external APIs (or other services mocked by Scenarist), you must forward the Scenarist headers so MSW can intercept with the correct scenario.
 
-Use the `getScenaristHeaders()` helper:
+Use the `getScenaristHeaders(req)` helper:
 
 \`\`\`typescript
 import { getScenaristHeaders } from '@scenarist/{framework}-adapter';
 
 export default async function handler(req, res) {
-const response = await fetch('http://external-api.com/data', {
+const response = await fetch('https://api.stripe.com/v1/data', {
 headers: {
-...getScenaristHeaders(req, scenarist),
+...getScenaristHeaders(req),
 'content-type': 'application/json',
 },
 });
@@ -424,7 +424,7 @@ export default async function handler(
   // Forward Scenarist headers to external API
   const response = await fetch("http://localhost:3001/api/products", {
     headers: {
-      ...getScenaristHeaders(req, scenarist),
+      ...getScenaristHeaders(req),
       "content-type": "application/json",
     },
   });
@@ -462,7 +462,7 @@ import { getScenaristHeaders } from "@scenarist/fastify-adapter";
 fastify.get("/api/products", async (request, reply) => {
   const response = await fetch("http://localhost:3001/api/products", {
     headers: {
-      ...getScenaristHeaders(request, scenarist),
+      ...getScenaristHeaders(request),
       "content-type": "application/json",
     },
   });

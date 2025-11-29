@@ -80,7 +80,7 @@ export default async function handler(
 ) {
   const response = await fetch("http://localhost:3001/products", {
     headers: {
-      ...getScenaristHeaders(req, scenarist), // ← Tested in adapter (Layer 2)
+      ...getScenaristHeaders(req), // ← Tested in adapter (Layer 2)
       "x-user-tier": req.headers["x-user-tier"] || "standard",
     },
   });

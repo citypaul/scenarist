@@ -52,7 +52,7 @@
 **Missing Information:**
 
 - Whether getServerSideProps is running at all
-- What headers scenarist.getHeaders() is extracting
+- What headers getScenaristHeaders() is extracting
 - What testId MSW is using
 - Whether MSW is intercepting the fetch to localhost:3001/products
 - Whether MSW is matching the premium mock or falling back to default
@@ -73,7 +73,7 @@
 
 2. Next.js runs getServerSideProps
    - Extracts tier=premium from query
-   - Calls scenarist.getHeaders(context.req)
+   - Calls getScenaristHeaders(context.req)
    - Returns { 'x-scenarist-test-id': 'test-premium' }
    - Creates headers: { 'x-scenarist-test-id': 'test-premium', 'x-user-tier': 'premium' }
 
@@ -101,7 +101,7 @@
 
 3. Next.js runs getServerSideProps (ASSUMED - not verified)
    - Should extract tier=premium
-   - Should call scenarist.getHeaders()
+   - Should call getScenaristHeaders()
    - Should create headers with testId + x-user-tier
 
 4. Should fetch localhost:3001/products (NOT VERIFIED)
@@ -134,7 +134,7 @@
 
 **Possible causes:**
 
-- scenarist.getHeaders() not extracting testId correctly
+- getScenaristHeaders() not extracting testId correctly
 - Playwright's injected header not reaching Next.js server
 - Header name case sensitivity issue
 
@@ -291,7 +291,7 @@ kill $PID
 ## Questions To Answer
 
 1. Is getServerSideProps running during Playwright test? ❓ UNKNOWN
-2. Does scenarist.getHeaders() extract the testId? ❓ UNKNOWN
+2. Does getScenaristHeaders() extract the testId? ❓ UNKNOWN
 3. Does MSW intercept the fetch to localhost:3001? ❓ UNKNOWN
 4. What scenario is active in MSW when fetch happens? ❓ UNKNOWN
 5. Does the premium mock's match criteria get evaluated? ❓ UNKNOWN

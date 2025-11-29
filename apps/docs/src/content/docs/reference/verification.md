@@ -26,31 +26,34 @@ Each test gets a unique test ID (automatically generated). This test ID must be 
 
 When your server-side code makes internal fetch calls, headers don't automatically propagate. You must explicitly include them.
 
-#### Next.js: Use getScenaristHeaders()
+#### Next.js: Header Propagation Helpers
 
 **Problem:**
 
 ```typescript
 // ❌ BAD - Headers not propagated to internal fetch
-export async function Page() {
+export default async function Page() {
   // This fetch doesn't include test ID header!
-  const response = await fetch('http://localhost:3001/api/products');
+  const response = await fetch('https://api.stripe.com/v1/products');
   const data = await response.json();
   return <div>{/* render */}</div>;
 }
 ```
 
-**Solution:**
+**Solution for Server Components** (use `getScenaristHeadersFromReadonlyHeaders`):
 
 ```typescript
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
+import { headers } from 'next/headers';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
 
-// ✅ GOOD - Headers propagated correctly
-export async function Page() {
-  const headers = getScenaristHeaders();  // Get headers from request context
+// ✅ GOOD - Headers propagated correctly in Server Components
+export default async function Page() {
+  const headersList = await headers();  // Get ReadonlyHeaders from Next.js
 
-  const response = await fetch('http://localhost:3001/api/products', {
-    headers,  // Include test ID header
+  const response = await fetch('https://api.stripe.com/v1/products', {
+    headers: {
+      ...getScenaristHeadersFromReadonlyHeaders(headersList),  // Include test ID header
+    },
   });
 
   const data = await response.json();
@@ -58,12 +61,29 @@ export async function Page() {
 }
 ```
 
-**What `getScenaristHeaders()` does:**
+**Solution for Route Handlers** (use `getScenaristHeaders`):
 
-- Extracts test ID from current request context (AsyncLocalStorage)
-- Returns `{ 'x-scenarist-test-id': 'generated-uuid' }` object
+```typescript
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
+
+// ✅ GOOD - Headers propagated correctly in Route Handlers
+export async function GET(request: Request) {
+  const response = await fetch("https://api.stripe.com/v1/products", {
+    headers: {
+      ...getScenaristHeaders(request), // Include test ID header
+    },
+  });
+
+  const data = await response.json();
+  return Response.json(data);
+}
+```
+
+**What these helpers do:**
+
+- Extract test ID from request/headers
+- Return `{ 'x-scenarist-test-id': 'generated-uuid' }` object
 - Safe to call even when Scenarist is disabled (returns empty object)
-- Works in both App Router and Pages Router
 
 #### Express: Headers Already Tracked
 
@@ -113,7 +133,7 @@ test("headers propagate through server-side fetch", async ({
 
 1. Add logging to see which scenario is active
 2. Check server logs for test ID headers
-3. Verify `getScenaristHeaders()` is called before fetch
+3. Verify header helpers are called before fetch
 4. Confirm headers object includes test ID
 
 #### Red Flags
@@ -158,21 +178,35 @@ await expect(page.getByText("£149.99")).toBeVisible();
 
 When parallel tests fail:
 
-1. ✅ **Next.js:** Add `getScenaristHeaders()` before all internal fetch calls
+1. ✅ **Next.js:** Add header helpers before all internal fetch calls (use `getScenaristHeadersFromReadonlyHeaders` in Server Components, `getScenaristHeaders` in Route Handlers)
 2. ✅ **Express:** Include test ID header in internal fetch calls
 3. ✅ **Playwright:** Verify tests switch scenarios before navigation
 4. ✅ **Logging:** Add debug logs to confirm headers are present
 5. ✅ **Isolation:** Ensure each test calls `switchScenario()` independently
 
-**Quick fix for Next.js:**
+**Quick fix for Next.js Server Components:**
+
+```typescript
+import { headers } from "next/headers";
+import { getScenaristHeadersFromReadonlyHeaders } from "@scenarist/nextjs-adapter/app";
+
+// Add this before EVERY external fetch in Server Components
+const headersList = await headers();
+
+fetch(url, {
+  headers: { ...getScenaristHeadersFromReadonlyHeaders(headersList) },
+}); // Always include
+```
+
+**Quick fix for Next.js Route Handlers:**
 
 ```typescript
 import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
 
-// Add this line before EVERY internal fetch in Server Components
-const headers = getScenaristHeaders();
-
-fetch(url, { headers }); // Always include
+// In your route handler: export async function GET(request: Request)
+fetch(url, {
+  headers: { ...getScenaristHeaders(request) },
+}); // Always include
 ```
 
 ### Runtime Scenario Switching

@@ -108,17 +108,22 @@ export async function Page() {
 
 Without the test ID header, the internal fetch uses the **default scenario** instead of the test's scenario. In parallel tests, this causes interference.
 
-### Next.js Solution: getScenaristHeaders()
+### Next.js Solution: Header Propagation Helpers
+
+**For Server Components** (use `getScenaristHeadersFromReadonlyHeaders`):
 
 ```typescript
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
+import { headers } from 'next/headers';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
 
-// ✅ GOOD - Headers propagated correctly
-export async function Page() {
-  const headers = getScenaristHeaders();  // Get headers from request context
+// ✅ GOOD - Headers propagated correctly in Server Components
+export default async function Page() {
+  const headersList = await headers();  // Get ReadonlyHeaders from Next.js
 
-  const response = await fetch('http://localhost:3001/api/products', {
-    headers,  // Include test ID header
+  const response = await fetch('https://api.stripe.com/v1/products', {
+    headers: {
+      ...getScenaristHeadersFromReadonlyHeaders(headersList),  // Include test ID header
+    },
   });
 
   const data = await response.json();
@@ -126,11 +131,28 @@ export async function Page() {
 }
 ```
 
-**What `getScenaristHeaders()` does:**
-- Extracts test ID from current request context (AsyncLocalStorage)
-- Returns `{ 'x-scenarist-test-id': 'generated-uuid' }` object
+**For Route Handlers** (use `getScenaristHeaders`):
+
+```typescript
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
+
+// ✅ GOOD - Headers propagated correctly in Route Handlers
+export async function GET(request: Request) {
+  const response = await fetch('https://api.stripe.com/v1/products', {
+    headers: {
+      ...getScenaristHeaders(request),  // Include test ID header
+    },
+  });
+
+  const data = await response.json();
+  return Response.json(data);
+}
+```
+
+**What these helpers do:**
+- Extract test ID from request/headers
+- Return `{ 'x-scenarist-test-id': 'generated-uuid' }` object
 - Safe to call when Scenarist is disabled (returns empty object)
-- Works in both App Router and Pages Router
 
 ### Express Solution: Manual Header Forwarding
 
@@ -194,7 +216,7 @@ await expect(page.getByText('£149.99')).toBeVisible();
 
 2. **Check server logs** for test ID headers on internal fetches
 
-3. **Verify `getScenaristHeaders()`** is called before every internal fetch
+3. **Verify header helpers** are called before every internal fetch
 
 4. **Confirm headers object** includes the test ID
 
@@ -202,7 +224,7 @@ await expect(page.getByText('£149.99')).toBeVisible();
 
 When parallel tests fail:
 
-1. ✅ **Next.js:** Add `getScenaristHeaders()` before all internal fetch calls
+1. ✅ **Next.js:** Add header helpers before all internal fetch calls (use `getScenaristHeadersFromReadonlyHeaders` in Server Components, `getScenaristHeaders` in Route Handlers)
 2. ✅ **Express:** Include test ID header in internal fetch calls
 3. ✅ **Playwright:** Verify tests call `switchScenario()` before navigation
 4. ✅ **Isolation:** Ensure each test switches scenarios independently

@@ -1,4 +1,3 @@
-import type { IncomingMessage } from "http";
 import type {
   BaseAdapterOptions,
   ScenaristAdapter,
@@ -8,7 +7,6 @@ import type {
 import {
   InMemoryScenarioRegistry,
   InMemoryScenarioStore,
-  SCENARIST_TEST_ID_HEADER,
 } from "@scenarist/core";
 import { createScenaristBase } from "../common/create-scenarist-base.js";
 import { createScenarioEndpoint } from "./endpoints.js";
@@ -42,14 +40,6 @@ declare global {
 }
 
 /**
- * Type for request objects that have headers.
- * Compatible with both NextApiRequest and GetServerSidePropsContext.req
- */
-type RequestWithHeaders = {
-  headers: IncomingMessage["headers"];
-};
-
-/**
  * Next.js Pages Router adapter options.
  *
  * Extends BaseAdapterOptions to ensure consistency across all adapters.
@@ -75,36 +65,6 @@ export type PagesScenarist = Omit<ScenaristAdapter<never>, "middleware"> & {
    * ```
    */
   createScenarioEndpoint: () => ReturnType<typeof createScenarioEndpoint>;
-
-  /**
-   * Extract Scenarist infrastructure headers from the request.
-   *
-   * This helper respects the configured test ID header name and default test ID,
-   * ensuring headers are forwarded correctly when making external API calls.
-   *
-   * Works with both NextApiRequest (API routes) and GetServerSidePropsContext.req (SSR).
-   *
-   * @param req - Request object with headers
-   * @returns Object with single entry: configured test ID header name → value from request or default
-   *
-   * @example
-   * ```typescript
-   * // API Route
-   * export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-   *   const response = await fetch('http://localhost:3001/products', {
-   *     headers: scenarist.getHeaders(req),
-   *   });
-   * }
-   *
-   * // getServerSideProps
-   * export const getServerSideProps: GetServerSideProps = async (context) => {
-   *   const response = await fetch('http://localhost:3001/products', {
-   *     headers: scenarist.getHeaders(context.req),
-   *   });
-   * };
-   * ```
-   */
-  getHeaders: (req: RequestWithHeaders) => Record<string, string>;
 };
 
 /**
@@ -176,16 +136,6 @@ export const createScenaristImpl = (
     listScenarios: () => manager.listScenarios(),
     clearScenario: (testId) => manager.clearScenario(testId),
     createScenarioEndpoint: () => createScenarioEndpoint(manager, config),
-    getHeaders: (req: RequestWithHeaders): Record<string, string> => {
-      const headerValue = req.headers[SCENARIST_TEST_ID_HEADER];
-      const testId =
-        (Array.isArray(headerValue) ? headerValue[0] : headerValue) ||
-        config.defaultTestId;
-
-      return {
-        [SCENARIST_TEST_ID_HEADER]: testId,
-      };
-    },
     start: () => {
       // Singleton guard - prevents duplicate MSW initialization
       // Next.js dev mode with HMR creates multiple module instances, so this ensures

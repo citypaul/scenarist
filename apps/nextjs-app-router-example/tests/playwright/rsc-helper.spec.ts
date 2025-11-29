@@ -1,35 +1,23 @@
 /**
- * RSC Helper - ATDD Acceptance Test
+ * RSC Helper - Acceptance Test
  *
- * This test verifies that Server Components can use scenarist.getHeadersFromReadonlyHeaders()
- * to work with ReadonlyHeaders from next/headers, without the awkward Request workaround.
- *
- * CURRENT STATUS: FAILS because getHeadersFromReadonlyHeaders doesn't exist yet.
- * AFTER IMPLEMENTATION: Will pass with clean API usage.
+ * This test verifies that Server Components can use getScenaristHeadersFromReadonlyHeaders()
+ * to work with ReadonlyHeaders from next/headers, without awkward Request workarounds.
  */
 
 import { test, expect } from "./fixtures";
 
-test.describe("RSC Helper - ATDD", () => {
+test.describe("RSC Helper", () => {
   /**
-   * Test: Server Component uses ReadonlyHeaders directly with clean helper API
+   * Test: Server Component uses ReadonlyHeaders directly with standalone helper
    *
    * DEMONSTRATES:
    * - Server Component gets headers via headers() from next/headers (ReadonlyHeaders)
-   * - Calls scenarist.getHeadersFromReadonlyHeaders(headersList)
+   * - Uses getScenaristHeadersFromReadonlyHeaders(headersList) standalone helper
    * - No fake Request object needed
-   * - Clean, obvious API for primary Next.js pattern
-   *
-   * EXPECTED BEHAVIOR:
-   * - Page loads successfully (no TypeScript/runtime errors)
-   * - Premium scenario active → premium pricing returned
-   * - Product A shows £99.99 (premium price, not £149.99 standard)
-   *
-   * CURRENT STATUS: FAILS
-   * - getHeadersFromReadonlyHeaders doesn't exist on scenarist object
-   * - Page will show runtime error
+   * - Clean, production-safe API for primary Next.js pattern
    */
-  test("should work with ReadonlyHeaders using getHeadersFromReadonlyHeaders helper", async ({
+  test("should work with ReadonlyHeaders using getScenaristHeadersFromReadonlyHeaders helper", async ({
     page,
     switchScenario,
   }) => {

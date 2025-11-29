@@ -138,7 +138,7 @@ import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
 export async function GET(request: Request) {
   const response = await fetch("http://localhost:3001/products", {
     headers: {
-      ...getScenaristHeaders(request, scenarist), // Extract test ID + mock status
+      ...getScenaristHeaders(request), // Extract test ID
       "x-user-tier": request.headers.get("x-user-tier") || "standard",
     },
   });
@@ -160,7 +160,7 @@ export default async function handler(
 ) {
   const response = await fetch("http://localhost:3001/products", {
     headers: {
-      ...getScenaristHeaders(req, scenarist), // Different request type
+      ...getScenaristHeaders(req), // Extract test ID
       "x-user-tier": req.headers["x-user-tier"] || "standard",
     },
   });
@@ -277,12 +277,11 @@ export const scenarios = {
 ```typescript
 // app/api/products/route.ts
 import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
-import { scenarist } from "@/lib/scenarist";
 
 export async function GET(request: Request) {
   const response = await fetch("http://localhost:3001/products", {
     headers: {
-      ...getScenaristHeaders(request, scenarist), // Auto test ID + mock status
+      ...getScenaristHeaders(request), // Extract test ID
       "x-user-tier": request.headers.get("x-user-tier") || "standard",
     },
   });
@@ -483,13 +482,25 @@ export async function GET(request: Request) {
 
 ### Helper Function Best Practices
 
-Use `getScenaristHeaders()` to extract both test ID and mock status:
+**For Route Handlers** - use `getScenaristHeaders(request)`:
 
 ```typescript
 import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
 
-// Returns: { 'x-scenarist-test-id': '...', 'x-mock-enabled': 'true' }
-const headers = getScenaristHeaders(request, scenarist);
+// In your route handler: export async function GET(request: Request)
+const scenaristHeaders = getScenaristHeaders(request);
+// Returns: { 'x-scenarist-test-id': '...' }
+```
+
+**For Server Components** - use `getScenaristHeadersFromReadonlyHeaders`:
+
+```typescript
+import { headers } from "next/headers";
+import { getScenaristHeadersFromReadonlyHeaders } from "@scenarist/nextjs-adapter/app";
+
+const headersList = await headers();
+const scenaristHeaders = getScenaristHeadersFromReadonlyHeaders(headersList);
+// Returns: { 'x-scenarist-test-id': '...' }
 ```
 
 This ensures proper test isolation and mock activation.

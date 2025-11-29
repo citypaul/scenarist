@@ -45,9 +45,13 @@ export async function GET() {
 
 // Step 2: Server Component calls API route
 // app/products/page.tsx
+import { headers } from 'next/headers';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+
 export default async function ProductsPage() {
+  const headersList = await headers();
   const response = await fetch('http://localhost:3000/api/products', {
-    headers: scenarist.getHeaders(request),
+    headers: getScenaristHeadersFromReadonlyHeaders(headersList),
   });
   const products = await response.json();
   return <ProductList products={products} />;
@@ -86,6 +90,9 @@ export const defaultScenario = {
 ### Recommended Architecture: Scenarist + Testcontainers
 
 ```typescript
+import { headers } from 'next/headers';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+
 // Your realistic Server Component (NO code changes needed!)
 export default async function CheckoutPage({ params }: { params: { id: string } }) {
   // DATABASE QUERY - Test with Testcontainers (real PostgreSQL)
@@ -98,10 +105,11 @@ export default async function CheckoutPage({ params }: { params: { id: string } 
   });
 
   // EXTERNAL API - Test with Scenarist
+  const headersList = await headers();
   const recommendations = await fetch('https://api.recommendations.example.com/suggest', {
     headers: {
       'Authorization': `Bearer ${process.env.RECOMMENDATIONS_API_KEY}`,
-      ...scenarist.getHeaders(request),
+      ...getScenaristHeadersFromReadonlyHeaders(headersList),
     },
     body: JSON.stringify({ userId: params.id, cartTotal: cart.total }),
   });
@@ -223,14 +231,19 @@ export const standardRecommendationsScenario: ScenaristScenario = {
 **Use when:** Your Next.js app fetches data exclusively from external HTTP APIs.
 
 ```typescript
+import { headers } from 'next/headers';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+
 // All data from external APIs - perfect for Scenarist
 export default async function ProductsPage() {
+  const headersList = await headers();
+
   const products = await fetch('https://api.catalog.example.com/products', {
-    headers: scenarist.getHeaders(request),
+    headers: getScenaristHeadersFromReadonlyHeaders(headersList),
   });
 
   const pricing = await fetch('https://api.pricing.example.com/prices', {
-    headers: scenarist.getHeaders(request),
+    headers: getScenaristHeadersFromReadonlyHeaders(headersList),
   });
 
   return <ProductList products={products} prices={pricing} />;
@@ -262,26 +275,32 @@ This is the **recommended approach for production applications**.
 **This pattern DOES work with Scenarist:**
 
 ```typescript
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
+
 // ✅ API route that proxies EXTERNAL service
 // app/api/recommendations/route.ts
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   const tier = request.headers.get('x-user-tier') || 'standard';
 
   // This calls an EXTERNAL service - MSW CAN intercept this
   const response = await fetch('https://api.recommendations.example.com/suggest', {
     headers: {
       'x-user-tier': tier,
-      ...getTestHeaders(request),
+      ...getScenaristHeaders(request),
     },
   });
 
-  return NextResponse.json(await response.json());
+  return Response.json(await response.json());
 }
 
 // Now your Server Component calls the internal route
+import { headers } from 'next/headers';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+
 export default async function ProductsPage() {
+  const headersList = await headers();
   const response = await fetch('http://localhost:3000/api/recommendations', {
-    headers: scenarist.getHeaders(request),
+    headers: getScenaristHeadersFromReadonlyHeaders(headersList),
   });
   // ...
 }

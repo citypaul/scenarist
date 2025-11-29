@@ -55,14 +55,10 @@ describe("App Router Helpers", () => {
       expect(result).toEqual({});
     });
 
-    it("should return headers from global scenarist instance when defined", () => {
-      // Mock scenarist instance
+    it("should extract test ID from request when scenarist instance exists", () => {
+      // Mock scenarist instance with config (what implementation actually uses)
       (global as { __scenarist_instance?: unknown }).__scenarist_instance = {
-        getHeaders: (req: Request) => {
-          const testId =
-            req.headers.get("x-scenarist-test-id") ?? "default-test";
-          return { "x-scenarist-test-id": testId };
-        },
+        config: { defaultTestId: "custom-default" },
       };
 
       const request = createMockRequest({ "x-scenarist-test-id": "test-456" });
@@ -71,13 +67,20 @@ describe("App Router Helpers", () => {
       expect(result).toEqual({ "x-scenarist-test-id": "test-456" });
     });
 
-    it("should return default test ID when header not present", () => {
+    it("should use configured default when header not present", () => {
       (global as { __scenarist_instance?: unknown }).__scenarist_instance = {
-        getHeaders: (req: Request) => {
-          const testId =
-            req.headers.get("x-scenarist-test-id") ?? "default-test";
-          return { "x-scenarist-test-id": testId };
-        },
+        config: { defaultTestId: "custom-default" },
+      };
+
+      const request = createMockRequest({});
+      const result = getScenaristHeaders(request);
+
+      expect(result).toEqual({ "x-scenarist-test-id": "custom-default" });
+    });
+
+    it("should use fallback default when config has no defaultTestId", () => {
+      (global as { __scenarist_instance?: unknown }).__scenarist_instance = {
+        config: {},
       };
 
       const request = createMockRequest({});
@@ -97,14 +100,10 @@ describe("App Router Helpers", () => {
       expect(result).toEqual({});
     });
 
-    it("should return headers from global scenarist instance when defined", () => {
+    it("should extract test ID from headers when scenarist instance exists", () => {
+      // Mock scenarist instance with config (what implementation actually uses)
       (global as { __scenarist_instance?: unknown }).__scenarist_instance = {
-        getHeadersFromReadonlyHeaders: (
-          headers: MockReadonlyHeaders,
-        ): Record<string, string> => {
-          const testId = headers.get("x-scenarist-test-id") ?? "default-test";
-          return { "x-scenarist-test-id": testId };
-        },
+        config: { defaultTestId: "custom-default" },
       };
 
       const headers = createMockReadonlyHeaders({
@@ -115,14 +114,20 @@ describe("App Router Helpers", () => {
       expect(result).toEqual({ "x-scenarist-test-id": "test-789" });
     });
 
-    it("should return default test ID when header not present", () => {
+    it("should use configured default when header not present", () => {
       (global as { __scenarist_instance?: unknown }).__scenarist_instance = {
-        getHeadersFromReadonlyHeaders: (
-          headers: MockReadonlyHeaders,
-        ): Record<string, string> => {
-          const testId = headers.get("x-scenarist-test-id") ?? "default-test";
-          return { "x-scenarist-test-id": testId };
-        },
+        config: { defaultTestId: "custom-default" },
+      };
+
+      const headers = createMockReadonlyHeaders({});
+      const result = getScenaristHeadersFromReadonlyHeaders(headers);
+
+      expect(result).toEqual({ "x-scenarist-test-id": "custom-default" });
+    });
+
+    it("should use fallback default when config has no defaultTestId", () => {
+      (global as { __scenarist_instance?: unknown }).__scenarist_instance = {
+        config: {},
       };
 
       const headers = createMockReadonlyHeaders({});

@@ -73,14 +73,14 @@ MSW returning 500 instead of mocked premium pricing response.
    // apps/nextjs-app-router-example/app/api/products/route.ts:27
    const response = await fetch("http://localhost:3001/products", {
      headers: {
-       ...scenarist.getHeaders(request), // Extracts x-scenarist-test-id from request
+       ...getScenaristHeaders(request), // Extracts x-scenarist-test-id from request
        "x-user-tier": userTier,
      },
    });
    ```
 
    When x-scenarist-test-id is missing from client request:
-   - `scenarist.getHeaders()` falls back to `defaultTestId`
+   - `getScenaristHeaders()` falls back to `defaultTestId`
    - Routes to 'default' scenario instead of test-specific scenario (e.g., 'premiumUser')
    - MSW returns wrong data or 500 error
 
@@ -98,7 +98,7 @@ MSW returning 500 instead of mocked premium pricing response.
    - fetch() call does NOT include x-scenarist-test-id header ❌ (setExtraHTTPHeaders doesn't affect fetch)
 
 4. API route receives request without x-scenarist-test-id
-   - scenarist.getHeaders(request) returns: { 'x-scenarist-test-id': 'default-test' }
+   - getScenaristHeaders(request) returns: { 'x-scenarist-test-id': 'default-test' }
 
 5. API route forwards to external API with default test ID
    - MSW intercepts with 'default-test' test ID
@@ -227,8 +227,9 @@ Server Components don't use fetch() from browser - headers propagate correctly:
 // apps/nextjs-app-router-example/app/products-server/page.tsx
 
 async function ProductsServerPage() {
+  const headersList = await headers();
   const response = await fetch("http://localhost:3001/products", {
-    headers: scenarist.getHeaders(/* from request context */),
+    headers: getScenaristHeadersFromReadonlyHeaders(headersList),
   });
   // ...
 }
