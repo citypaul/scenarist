@@ -1,6 +1,23 @@
-import { describe, it, expect } from "vitest";
-import type { ScenaristScenarios } from "@scenarist/core";
+import {
+  createInMemorySequenceTracker,
+  createInMemoryStateManager,
+  SCENARIST_TEST_ID_HEADER,
+  type ScenaristScenarios,
+} from "@scenarist/core";
+import { describe, expect, it } from "vitest";
 import { createScenarist } from "../../src/app/setup.js";
+
+const requireDefined = <T>(value: T | undefined): T => {
+  expect(value).toBeDefined();
+  return value as T;
+};
+
+const clearAllGlobals = () => {
+  delete (global as unknown as Record<string, unknown>).__scenarist_instance;
+  delete (global as unknown as Record<string, unknown>).__scenarist_registry;
+  delete (global as unknown as Record<string, unknown>).__scenarist_store;
+  delete (global as unknown as Record<string, unknown>).__scenarist_msw_started;
+};
 
 // Define all test scenarios upfront
 const testScenarios = {
@@ -24,17 +41,13 @@ const testScenarios = {
   },
 } as const satisfies ScenaristScenarios;
 
-const createTestSetup = async () => {
-  const scenarist = createScenarist({
-    enabled: true,
-    scenarios: testScenarios,
-  });
-
-  // Should never be undefined in tests (NODE_ENV !== 'production')
-  if (!scenarist) {
-    throw new Error("createScenarist returned undefined in test environment");
-  }
-
+const createTestSetup = () => {
+  const scenarist = requireDefined(
+    createScenarist({
+      enabled: true,
+      scenarios: testScenarios,
+    }),
+  );
   return { scenarist };
 };
 
@@ -126,15 +139,6 @@ describe("App Router createScenarist", () => {
   });
 
   describe("Singleton guard for createScenarist() instance", () => {
-    // Clean up all global state between tests
-    const clearAllGlobals = () => {
-      delete (global as any).__scenarist_instance;
-      delete (global as any).__scenarist_registry;
-      delete (global as any).__scenarist_store;
-      delete (global as any).__scenarist_msw_started;
-    };
-
-    // Clear globals before each test to ensure test isolation
     beforeEach(() => {
       clearAllGlobals();
     });
@@ -173,19 +177,19 @@ describe("App Router createScenarist", () => {
     });
 
     it("should share scenario registry across all instances", async () => {
-      const instance1 = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
+      const instance1 = requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+        }),
+      );
 
-      const instance2 = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
-
-      if (!instance1 || !instance2) {
-        throw new Error("Instances should not be undefined in tests");
-      }
+      const instance2 = requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+        }),
+      );
 
       // Both instances should see the same scenarios
       const scenarios1 = instance1.listScenarios();
@@ -196,19 +200,19 @@ describe("App Router createScenarist", () => {
     });
 
     it("should share scenario store across all instances", async () => {
-      const instance1 = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
+      const instance1 = requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+        }),
+      );
 
-      const instance2 = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
-
-      if (!instance1 || !instance2) {
-        throw new Error("Instances should not be undefined in tests");
-      }
+      const instance2 = requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+        }),
+      );
 
       // Switch scenario using instance1
       instance1.switchScenario("test-singleton-store", "premium");
@@ -227,24 +231,133 @@ describe("App Router createScenarist", () => {
       });
 
       // Even with different config, should return same instance
-      const instance2 = createScenarist({
-        enabled: false, // Different enabled flag
+      const instance2 = requireDefined(
+        createScenarist({
+          enabled: false, // Different enabled flag
+          scenarios: testScenarios,
+        }),
+      );
+
+      expect(instance1).toBe(instance2);
+      // Original config should be preserved
+      expect(instance2.config.enabled).toBe(true); // Not false!
+    });
+
+    it("should reuse existing registry/store when instance is cleared but globals persist", async () => {
+      // First call creates everything
+      requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+        }),
+      );
+
+      // Store references to the global registry and store
+      const originalRegistry = (global as unknown as Record<string, unknown>)
+        .__scenarist_registry;
+      const originalStore = (global as unknown as Record<string, unknown>)
+        .__scenarist_store;
+
+      // Clear ONLY the instance, leaving registry and store intact
+      // This simulates HMR clearing some globals but not others
+      delete (global as unknown as Record<string, unknown>)
+        .__scenarist_instance;
+
+      // Second call should reuse existing registry and store
+      const instance2 = requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+        }),
+      );
+
+      // Verify the same registry and store are being used
+      expect(
+        (global as unknown as Record<string, unknown>).__scenarist_registry,
+      ).toBe(originalRegistry);
+      expect(
+        (global as unknown as Record<string, unknown>).__scenarist_store,
+      ).toBe(originalStore);
+
+      // New instance should work with the reused registry/store
+      instance2.switchScenario("test-reuse-1", "premium");
+      const active = instance2.getActiveScenario("test-reuse-1");
+      expect(active).toEqual({
+        scenarioId: "premium",
+      });
+    });
+
+    it("should reuse existing registry when store is missing", async () => {
+      // First call creates everything
+      createScenarist({
+        enabled: true,
         scenarios: testScenarios,
       });
 
-      expect(instance1).toBe(instance2);
-      if (!instance2) {
-        throw new Error("Instance should not be undefined in tests");
-      }
-      // Original config should be preserved
-      expect(instance2.config.enabled).toBe(true); // Not false!
+      const originalRegistry = (global as unknown as Record<string, unknown>)
+        .__scenarist_registry;
+
+      // Clear instance and store, leaving only registry
+      delete (global as unknown as Record<string, unknown>)
+        .__scenarist_instance;
+      delete (global as unknown as Record<string, unknown>).__scenarist_store;
+
+      // Second call should reuse registry and create new store
+      requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+        }),
+      );
+
+      // Registry should be reused, store should be new
+      expect(
+        (global as unknown as Record<string, unknown>).__scenarist_registry,
+      ).toBe(originalRegistry);
+      expect(
+        (global as unknown as Record<string, unknown>).__scenarist_store,
+      ).toBeDefined();
+    });
+
+    it("should reuse existing store when registry is missing", async () => {
+      // First call creates everything
+      createScenarist({
+        enabled: true,
+        scenarios: testScenarios,
+      });
+
+      const originalStore = (global as unknown as Record<string, unknown>)
+        .__scenarist_store;
+
+      // Clear instance and registry, leaving only store
+      delete (global as unknown as Record<string, unknown>)
+        .__scenarist_instance;
+      delete (global as unknown as Record<string, unknown>)
+        .__scenarist_registry;
+
+      // Second call should create new registry and reuse store
+      requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+        }),
+      );
+
+      // Store should be reused, registry should be new
+      expect(
+        (global as unknown as Record<string, unknown>).__scenarist_store,
+      ).toBe(originalStore);
+      expect(
+        (global as unknown as Record<string, unknown>).__scenarist_registry,
+      ).toBeDefined();
     });
   });
 
   describe("Singleton guard in start() method", () => {
     // Clean up global flag between tests
     const clearGlobalFlag = () => {
-      delete (global as any).__scenarist_msw_started;
+      delete (global as unknown as Record<string, unknown>)
+        .__scenarist_msw_started;
     };
 
     it("should start MSW on first start() call", async () => {
@@ -257,18 +370,18 @@ describe("App Router createScenarist", () => {
 
     it("should skip MSW initialization on subsequent start() calls from different instances", async () => {
       clearGlobalFlag();
-      const scenarist1 = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
-      const scenarist2 = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
-
-      if (!scenarist1 || !scenarist2) {
-        throw new Error("Instances should not be undefined in tests");
-      }
+      const scenarist1 = requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+        }),
+      );
+      const scenarist2 = requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+        }),
+      );
 
       scenarist1.start(); // First call - should start MSW
 
@@ -278,18 +391,18 @@ describe("App Router createScenarist", () => {
 
     it("should share scenario store across multiple instances", async () => {
       clearGlobalFlag();
-      const scenarist1 = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
-      const scenarist2 = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
-
-      if (!scenarist1 || !scenarist2) {
-        throw new Error("Instances should not be undefined in tests");
-      }
+      const scenarist1 = requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+        }),
+      );
+      const scenarist2 = requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+        }),
+      );
 
       scenarist1.start();
       scenarist2.start();
@@ -314,6 +427,133 @@ describe("App Router createScenarist", () => {
         scenarist.start();
         scenarist.start();
       }).not.toThrow();
+    });
+  });
+
+  describe("Dependency injection", () => {
+    beforeEach(() => {
+      clearAllGlobals();
+    });
+
+    it("should clear injected stateManager state when switching scenarios", () => {
+      const stateManager = createInMemoryStateManager();
+      stateManager.set("test-di-1", "userId", "user-123");
+      stateManager.set("test-di-1", "cartItems", "item1,item2");
+
+      const scenarist = requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+          stateManager,
+        }),
+      );
+
+      // Verify state exists before switch
+      expect(stateManager.get("test-di-1", "userId")).toBe("user-123");
+
+      scenarist.switchScenario("test-di-1", "premium");
+
+      // If adapter correctly used our stateManager, state should be cleared
+      // If adapter created its own internal one, our state would be unchanged
+      expect(stateManager.get("test-di-1", "userId")).toBeUndefined();
+      expect(stateManager.get("test-di-1", "cartItems")).toBeUndefined();
+    });
+
+    it("should reset injected sequenceTracker positions when switching scenarios", () => {
+      const sequenceTracker = createInMemorySequenceTracker();
+      sequenceTracker.advance("test-di-2", "login-sequence");
+      sequenceTracker.advance("test-di-2", "login-sequence");
+
+      const scenarist = requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: testScenarios,
+          sequenceTracker,
+        }),
+      );
+
+      // Verify sequence is advanced before switch
+      expect(
+        sequenceTracker.getPosition("test-di-2", "login-sequence").position,
+      ).toBe(2);
+
+      scenarist.switchScenario("test-di-2", "premium");
+
+      // If adapter correctly used our sequenceTracker, position should be reset
+      // If adapter created its own internal one, our position would be unchanged
+      expect(
+        sequenceTracker.getPosition("test-di-2", "login-sequence").position,
+      ).toBe(0);
+    });
+  });
+
+  describe("MSW request handling", () => {
+    // Scenarios with actual mock responses for HTTP testing
+    const httpTestScenarios = {
+      default: {
+        id: "default",
+        name: "Default",
+        description: "Default scenario",
+        mocks: [
+          {
+            method: "GET" as const,
+            url: "https://api.example.com/user",
+            response: { status: 200, body: { tier: "free" } },
+          },
+        ],
+      },
+      premium: {
+        id: "premium",
+        name: "Premium",
+        description: "Premium scenario",
+        mocks: [
+          {
+            method: "GET" as const,
+            url: "https://api.example.com/user",
+            response: { status: 200, body: { tier: "premium" } },
+          },
+        ],
+      },
+    } as const satisfies ScenaristScenarios;
+
+    it("should route requests to correct scenario based on test ID header", async () => {
+      clearAllGlobals();
+
+      const scenarist = requireDefined(
+        createScenarist({
+          enabled: true,
+          scenarios: httpTestScenarios,
+          defaultTestId: "fallback-test",
+        }),
+      );
+
+      scenarist.start();
+
+      // Set up different scenarios for different test IDs
+      scenarist.switchScenario("test-free", "default");
+      scenarist.switchScenario("test-premium", "premium");
+      scenarist.switchScenario("fallback-test", "premium");
+
+      // Request with test-free header should get free tier response
+      const freeResponse = await fetch("https://api.example.com/user", {
+        headers: { [SCENARIST_TEST_ID_HEADER]: "test-free" },
+      });
+      const freeData = await freeResponse.json();
+      expect(freeData.tier).toBe("free");
+
+      // Request with test-premium header should get premium tier response
+      const premiumResponse = await fetch("https://api.example.com/user", {
+        headers: { [SCENARIST_TEST_ID_HEADER]: "test-premium" },
+      });
+      const premiumData = await premiumResponse.json();
+      expect(premiumData.tier).toBe("premium");
+
+      // Request WITHOUT header should fall back to defaultTestId
+      const fallbackResponse = await fetch("https://api.example.com/user");
+      const fallbackData = await fallbackResponse.json();
+      expect(fallbackData.tier).toBe("premium");
+
+      await scenarist.stop();
     });
   });
 });
