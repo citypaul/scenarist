@@ -363,15 +363,15 @@ Include in adapter README under "Making External API Calls" section:
 
 When your API routes need to make calls to external APIs (or other services mocked by Scenarist), you must forward the Scenarist headers so MSW can intercept with the correct scenario.
 
-Use the `getScenaristHeaders()` helper:
+Use the `getScenaristHeaders(req)` helper:
 
 \`\`\`typescript
 import { getScenaristHeaders } from '@scenarist/{framework}-adapter';
 
 export default async function handler(req, res) {
-const response = await fetch('http://external-api.com/data', {
+const response = await fetch('https://api.stripe.com/v1/data', {
 headers: {
-...getScenaristHeaders(req, scenarist),
+...getScenaristHeaders(req),
 'content-type': 'application/json',
 },
 });

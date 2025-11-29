@@ -483,13 +483,25 @@ export async function GET(request: Request) {
 
 ### Helper Function Best Practices
 
-Use `getScenaristHeaders()` to extract both test ID and mock status:
+**For Route Handlers** - use `getScenaristHeaders(request)`:
 
 ```typescript
 import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
 
-// Returns: { 'x-scenarist-test-id': '...', 'x-mock-enabled': 'true' }
-const headers = getScenaristHeaders(request, scenarist);
+// In your route handler: export async function GET(request: Request)
+const scenaristHeaders = getScenaristHeaders(request);
+// Returns: { 'x-scenarist-test-id': '...' }
+```
+
+**For Server Components** - use `getScenaristHeadersFromReadonlyHeaders`:
+
+```typescript
+import { headers } from "next/headers";
+import { getScenaristHeadersFromReadonlyHeaders } from "@scenarist/nextjs-adapter/app";
+
+const headersList = await headers();
+const scenaristHeaders = getScenaristHeadersFromReadonlyHeaders(headersList);
+// Returns: { 'x-scenarist-test-id': '...' }
 ```
 
 This ensures proper test isolation and mock activation.

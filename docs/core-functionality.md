@@ -1088,20 +1088,19 @@ app.get("/api/products", async (req, res) => {
 1. No global middleware layer for API routes
 2. Each route receives request independently
 3. Routes must manually forward `x-scenarist-test-id` header when calling external APIs
-4. Use `getScenaristHeaders()` helper to extract and forward
+4. Use `getScenaristHeaders(req)` helper to extract and forward
 
 **Code example:**
 
 ```typescript
 // pages/api/products.ts
 import { getScenaristHeaders } from "@scenarist/nextjs-adapter/pages";
-import { scenarist } from "@/lib/scenarist";
 
 export default async function handler(req, res) {
   // MUST manually forward headers
-  const response = await fetch("http://external-api.com/products", {
+  const response = await fetch("https://api.stripe.com/v1/products", {
     headers: {
-      ...getScenaristHeaders(req, scenarist), // Extract test ID from req
+      ...getScenaristHeaders(req), // Extract test ID from req
       "content-type": "application/json",
     },
   });
@@ -1142,7 +1141,7 @@ export default async function handler(req, res) {
 | **Middleware support** | ✅ Yes                       | ❌ No                           |
 | **Manual forwarding**  | ❌ Not needed                | ✅ Required                     |
 | **Boilerplate**        | None                         | One line per external call      |
-| **Helper function**    | N/A                          | `getScenaristHeaders()`         |
+| **Helper function**    | N/A                          | `getScenaristHeaders(req)`      |
 | **Risk of forgetting** | ✅ None (automatic)          | ⚠️ Tests will fail if forgotten |
 | **Visibility**         | Implicit (AsyncLocalStorage) | Explicit (in every route)       |
 
