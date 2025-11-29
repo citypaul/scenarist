@@ -28,9 +28,9 @@
       <!-- Split code panels -->
       <div class="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-100 dark:divide-white/10">
         <!-- Left Panel - Define Scenario -->
-        <div class="p-6 font-mono text-sm leading-relaxed overflow-x-auto bg-white dark:bg-[#0A0A0C]">
+        <div class="p-6 font-mono text-sm leading-relaxed overflow-x-auto bg-white dark:bg-[#0A0A0C]" tabindex="0" role="region" aria-label="Define Scenario code example">
           <div class="text-primary dark:text-primary/80 mb-4 text-[10px] uppercase tracking-widest font-bold font-sans flex items-center gap-2">
-            <span class="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center text-[8px]">1</span>
+            <span class="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center text-[8px]" aria-hidden="true">1</span>
             Define Scenario
           </div>
           <pre class="text-left"><code><span class="text-purple-600 dark:text-[#C792EA]">const</span> <span class="text-gray-800 dark:text-[#D6DEEB]">successScenario</span> <span class="text-gray-600 dark:text-[#89DDFF]">=</span> <span class="text-gray-600 dark:text-[#D6DEEB]">&#123;</span>
@@ -47,9 +47,9 @@
         </div>
 
         <!-- Right Panel - Run Test -->
-        <div class="p-6 font-mono text-sm leading-relaxed overflow-x-auto bg-gray-50 dark:bg-[#161618]/30">
+        <div class="p-6 font-mono text-sm leading-relaxed overflow-x-auto bg-gray-50 dark:bg-[#161618]/30" tabindex="0" role="region" aria-label="Run Test code example">
           <div class="text-blue-600 dark:text-blue-400 mb-4 text-[10px] uppercase tracking-widest font-bold font-sans flex items-center gap-2">
-            <span class="w-4 h-4 rounded-full bg-blue-500/10 flex items-center justify-center text-[8px]">2</span>
+            <span class="w-4 h-4 rounded-full bg-blue-500/10 flex items-center justify-center text-[8px]" aria-hidden="true">2</span>
             Run Test
           </div>
           <pre class="text-left"><code><span class="text-blue-600 dark:text-[#82AAFF]">test</span><span class="text-gray-600 dark:text-[#D6DEEB]">(</span><span class="text-emerald-600 dark:text-[#C3E88D]">'checkout flow'</span><span class="text-gray-600 dark:text-[#D6DEEB]">,</span> <span class="text-purple-600 dark:text-[#C792EA]">async</span> <span class="text-gray-600 dark:text-[#D6DEEB]">(&#123;</span> <span class="text-gray-800 dark:text-[#D6DEEB]">page</span> <span class="text-gray-600 dark:text-[#D6DEEB]">&#125;)</span> <span class="text-purple-600 dark:text-[#C792EA]">=&gt;</span> <span class="text-gray-600 dark:text-[#D6DEEB]">&#123;</span>

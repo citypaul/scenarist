@@ -82,6 +82,15 @@ nav.sidebar {
 
 .sidebar-content a[aria-current="page"] {
   background: var(--color-primary-glow);
+  color: var(--sl-color-accent-high);
+}
+
+/* Ensure sufficient contrast for current page link in dark mode */
+:root .sidebar-content a[aria-current="page"] {
+  color: #C4B5FD; /* violet-300 - 6.08:1 contrast on dark bg */
+}
+
+[data-theme='light'] .sidebar-content a[aria-current="page"] {
   color: var(--color-primary);
 }
 
