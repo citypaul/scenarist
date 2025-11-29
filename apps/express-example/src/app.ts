@@ -61,7 +61,6 @@ export const createApp = async (): Promise<{
   const router = express.Router();
   setupGitHubRoutes(router);
   setupWeatherRoutes(router);
-  // adding a comment
   setupStripeRoutes(router);
   setupCartRoutes(router);
   setupFormRoutes(router);
