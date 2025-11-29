@@ -1,13 +1,14 @@
 /* Scenarist Documentation Custom Styles */
 
-/* ===== FONTS ===== */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+/* ===== FONTS (self-hosted via Fontsource for performance) ===== */
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
 
 /* ===== DESIGN TOKENS ===== */
 :root {
-  /* Typography */
-  --sl-font: 'Inter', system-ui, sans-serif;
-  --sl-font-mono: 'JetBrains Mono', monospace;
+  /* Typography - using variable fonts for performance */
+  --sl-font: 'Inter Variable', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --sl-font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Monaco, monospace;
 
   /* Dark Mode Colors (Starlight default is dark) */
   --sl-color-bg: #030304;
