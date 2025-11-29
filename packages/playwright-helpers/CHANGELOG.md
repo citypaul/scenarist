@@ -1,5 +1,11 @@
 # @scenarist/playwright-helpers
 
+## 0.1.8
+
+### Patch Changes
+
+- [#269](https://github.com/citypaul/scenarist/pull/269) [`1051912`](https://github.com/citypaul/scenarist/commit/1051912e1dcaf87cabcf873a671d9cb52b32000b) Thanks [@citypaul](https://github.com/citypaul)! - Fix "No exports main defined" error by adding missing `main` and `types` fields, and changing `import` to `default` condition in exports for better bundler compatibility.
+
 ## 0.1.7
 
 ### Patch Changes
