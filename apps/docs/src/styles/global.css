@@ -5,9 +5,9 @@
 
 /* Tailwind v4 Theme Configuration */
 @theme {
-  /* Font families */
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  /* Font families - using variable fonts for performance */
+  --font-sans: 'Inter Variable', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Monaco, monospace;
 
   /* Dark mode colors (base) */
   --color-dark-bg: #030304;
@@ -50,6 +50,12 @@
   body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Prevent layout shift during font loading by ensuring text rendering is stable */
+  h1, h2, h3, h4, h5, h6, p {
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
   }
 
   /* Selection styling */
