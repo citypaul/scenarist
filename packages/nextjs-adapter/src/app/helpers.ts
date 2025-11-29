@@ -39,7 +39,17 @@ const FALLBACK_DEFAULT_TEST_ID = "default-test";
  */
 export function getScenaristHeaders(req: Request): Record<string, string> {
   const scenarist = global.__scenarist_instance;
-  return scenarist?.getHeaders(req) ?? {};
+  if (!scenarist) {
+    return {};
+  }
+
+  const defaultTestId =
+    scenarist.config?.defaultTestId ?? FALLBACK_DEFAULT_TEST_ID;
+  const testId = req.headers.get(SCENARIST_TEST_ID_HEADER) ?? defaultTestId;
+
+  return {
+    [SCENARIST_TEST_ID_HEADER]: testId,
+  };
 }
 
 /**
@@ -83,7 +93,17 @@ export function getScenaristHeadersFromReadonlyHeaders(headers: {
   get(name: string): string | null;
 }): Record<string, string> {
   const scenarist = global.__scenarist_instance;
-  return scenarist?.getHeadersFromReadonlyHeaders(headers) ?? {};
+  if (!scenarist) {
+    return {};
+  }
+
+  const defaultTestId =
+    scenarist.config?.defaultTestId ?? FALLBACK_DEFAULT_TEST_ID;
+  const testId = headers.get(SCENARIST_TEST_ID_HEADER) ?? defaultTestId;
+
+  return {
+    [SCENARIST_TEST_ID_HEADER]: testId,
+  };
 }
 
 /**

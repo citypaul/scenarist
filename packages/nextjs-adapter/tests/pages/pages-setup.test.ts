@@ -1,8 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { NextApiRequest } from "next";
-import type { IncomingMessage } from "http";
-import type { NextApiRequestCookies } from "next/dist/server/api-utils";
-import type { ScenaristScenario, ScenaristScenarios } from "@scenarist/core";
+import type { ScenaristScenarios } from "@scenarist/core";
 import { createScenarist } from "../../src/pages/setup.js";
 
 // Define all test scenarios upfront
@@ -317,86 +314,6 @@ describe("Pages Router createScenarist", () => {
         scenarist.start();
         scenarist.start();
       }).not.toThrow();
-    });
-  });
-
-  describe("getHeaders method", () => {
-    // Clean up all global state between tests to allow different configs
-    const clearAllGlobals = () => {
-      delete (global as any).__scenarist_instance_pages;
-      delete (global as any).__scenarist_registry_pages;
-      delete (global as any).__scenarist_store_pages;
-      delete (global as any).__scenarist_msw_started_pages;
-    };
-
-    it("should extract test ID from request using default configured header name", async () => {
-      const { scenarist } = await createTestSetup();
-      const req = {
-        headers: { "x-scenarist-test-id": "test-123" },
-      } as NextApiRequest;
-
-      const headers = scenarist.getHeaders(req);
-
-      expect(headers).toEqual({ "x-scenarist-test-id": "test-123" });
-    });
-
-    it("should use default test ID when header is missing", async () => {
-      const { scenarist } = await createTestSetup();
-      const req = {
-        headers: {},
-      } as NextApiRequest;
-
-      const headers = scenarist.getHeaders(req);
-
-      expect(headers).toEqual({ "x-scenarist-test-id": "default-test" });
-    });
-
-    it("should respect custom default test ID from config", async () => {
-      clearAllGlobals();
-      const scenarist = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-        defaultTestId: "my-default",
-      });
-
-      if (!scenarist) {
-        throw new Error("Scenarist should not be undefined in tests");
-      }
-
-      const req = {
-        headers: {},
-      } as NextApiRequest;
-
-      const headers = scenarist.getHeaders(req);
-
-      expect(headers).toEqual({ "x-scenarist-test-id": "my-default" });
-    });
-
-    it("should handle header value as array (take first element)", async () => {
-      clearAllGlobals();
-      const { scenarist } = await createTestSetup();
-      const req = {
-        headers: { "x-scenarist-test-id": ["test-123", "test-456"] },
-      } as NextApiRequest;
-
-      const headers = scenarist.getHeaders(req);
-
-      expect(headers).toEqual({ "x-scenarist-test-id": "test-123" });
-    });
-
-    it("should work with GetServerSidePropsContext.req type (IncomingMessage with cookies)", async () => {
-      clearAllGlobals();
-      const { scenarist } = await createTestSetup();
-
-      // Type from GetServerSidePropsContext: IncomingMessage & { cookies: NextApiRequestCookies }
-      const req = {
-        headers: { "x-scenarist-test-id": "ssr-test-123" },
-        cookies: {},
-      } as IncomingMessage & { cookies: NextApiRequestCookies };
-
-      const headers = scenarist.getHeaders(req);
-
-      expect(headers).toEqual({ "x-scenarist-test-id": "ssr-test-123" });
     });
   });
 });

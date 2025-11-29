@@ -30,15 +30,19 @@ Together, you get:
 ## Architecture
 
 ```typescript
+import { headers } from 'next/headers';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+
 // Server Component (unchanged - no API routes needed!)
 export default async function CheckoutPage() {
   // Database call - testcontainer provides real PostgreSQL with seeded data
   const user = await db.user.findUnique({ where: { id: userId } });
 
   // External API - Scenarist intercepts and mocks
+  const headersList = await headers();
   const response = await fetch('https://api.stripe.com/v1/charges', {
     method: 'POST',
-    headers: scenarist.getHeaders(request),
+    headers: getScenaristHeadersFromReadonlyHeaders(headersList),
     body: JSON.stringify({ amount: user.cartTotal }),
   });
 

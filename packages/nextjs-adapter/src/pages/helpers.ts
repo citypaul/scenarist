@@ -1,4 +1,11 @@
 import type { IncomingMessage } from "http";
+import { SCENARIST_TEST_ID_HEADER } from "@scenarist/core";
+
+/**
+ * Fallback constant for default test ID when scenarist is undefined (production builds).
+ * In development/test, this is overridden by values from scenarist.config.
+ */
+const FALLBACK_DEFAULT_TEST_ID = "default-test";
 
 /**
  * Type for request objects that have headers.
@@ -52,5 +59,18 @@ export function getScenaristHeaders(
   req: RequestWithHeaders,
 ): Record<string, string> {
   const scenarist = global.__scenarist_instance_pages;
-  return scenarist?.getHeaders(req) ?? {};
+  if (!scenarist) {
+    return {};
+  }
+
+  const defaultTestId =
+    scenarist.config?.defaultTestId ?? FALLBACK_DEFAULT_TEST_ID;
+  const headerValue = req.headers[SCENARIST_TEST_ID_HEADER];
+  const testId =
+    (Array.isArray(headerValue) ? headerValue[0] : headerValue) ??
+    defaultTestId;
+
+  return {
+    [SCENARIST_TEST_ID_HEADER]: testId,
+  };
 }

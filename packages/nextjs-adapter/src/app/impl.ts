@@ -7,7 +7,6 @@ import type {
 import {
   InMemoryScenarioRegistry,
   InMemoryScenarioStore,
-  SCENARIST_TEST_ID_HEADER,
 } from "@scenarist/core";
 import { createScenaristBase } from "../common/create-scenarist-base.js";
 import { createScenarioEndpoint } from "./endpoints.js";
@@ -68,73 +67,6 @@ export type AppScenarist = Omit<ScenaristAdapter<never>, "middleware"> & {
    * ```
    */
   createScenarioEndpoint: () => ReturnType<typeof createScenarioEndpoint>;
-
-  /**
-   * Extract Scenarist infrastructure headers from the request.
-   *
-   * This helper respects the configured test ID header name and default test ID,
-   * ensuring headers are forwarded correctly when making external API calls.
-   *
-   * Works with Web standard Request objects (App Router, Server Components, Route Handlers).
-   *
-   * @param req - The Web standard Request object
-   * @returns Object with single entry: configured test ID header name → value from request or default
-   *
-   * @example
-   * ```typescript
-   * // Route Handler
-   * export async function GET(request: Request) {
-   *   const response = await fetch('http://localhost:3001/products', {
-   *     headers: scenarist.getHeaders(request),
-   *   });
-   * }
-   *
-   * // Server Component
-   * async function ProductsPage() {
-   *   const response = await fetch('http://localhost:3001/products', {
-   *     headers: scenarist.getHeaders(request),
-   *   });
-   * }
-   * ```
-   */
-  getHeaders: (req: Request) => Record<string, string>;
-
-  /**
-   * Extract Scenarist infrastructure headers from ReadonlyHeaders.
-   *
-   * This helper is designed for Next.js Server Components that use headers() from 'next/headers',
-   * which returns ReadonlyHeaders (not a Request object).
-   *
-   * Respects the configured test ID header name and default test ID,
-   * ensuring headers are forwarded correctly when making external API calls.
-   *
-   * @param headers - The ReadonlyHeaders object from headers() in 'next/headers'
-   * @returns Object with single entry: configured test ID header name → value from headers or default
-   *
-   * @example
-   * ```typescript
-   * // Server Component
-   * import { headers } from 'next/headers';
-   * import { scenarist } from '@/lib/scenarist';
-   *
-   * export default async function ProductsPage() {
-   *   const headersList = await headers();
-   *
-   *   const response = await fetch('http://localhost:3001/products', {
-   *     headers: {
-   *       ...scenarist.getHeadersFromReadonlyHeaders(headersList),
-   *       'x-user-tier': 'premium',
-   *     },
-   *   });
-   *
-   *   const data = await response.json();
-   *   return <ProductList products={data.products} />;
-   * }
-   * ```
-   */
-  getHeadersFromReadonlyHeaders: (headers: {
-    get(name: string): string | null;
-  }) => Record<string, string>;
 };
 
 /**
@@ -208,22 +140,6 @@ export const createScenaristImpl = (
     listScenarios: () => manager.listScenarios(),
     clearScenario: (testId) => manager.clearScenario(testId),
     createScenarioEndpoint: () => createScenarioEndpoint(manager, config),
-    getHeaders: (req: Request): Record<string, string> => {
-      const testId =
-        req.headers.get(SCENARIST_TEST_ID_HEADER) || config.defaultTestId;
-      return {
-        [SCENARIST_TEST_ID_HEADER]: testId,
-      };
-    },
-    getHeadersFromReadonlyHeaders: (headers: {
-      get(name: string): string | null;
-    }): Record<string, string> => {
-      const testId =
-        headers.get(SCENARIST_TEST_ID_HEADER) || config.defaultTestId;
-      return {
-        [SCENARIST_TEST_ID_HEADER]: testId,
-      };
-    },
     start: () => {
       // Singleton guard - prevents duplicate MSW initialization
       // Next.js (Turbopack) creates multiple module instances, so this ensures
