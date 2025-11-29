@@ -8,15 +8,13 @@ on:
       - "SECURITY.md"
       - ".gitleaks.toml"
       - ".github/dependabot.yml"
-      # CI/CD workflows (potential attack vector)
-      - ".github/workflows/**"
-      - ".github/actions/**"
-      # ESLint security rules
-      - "internal/eslint-config/**"
-      # Package configs (dependency changes)
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "**/package.json"
+      # Security-specific workflows only (not all workflows)
+      - ".github/workflows/codeql.yml"
+      - ".github/workflows/scorecard.yml"
+      - ".github/workflows/semgrep.yml"
+      - ".github/workflows/secrets-scan.yml"
+      - ".github/workflows/dependency-review.yml"
+      - ".github/workflows/label-security.yml"
 
 permissions:
   contents: read
