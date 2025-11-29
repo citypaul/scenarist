@@ -48,12 +48,13 @@ export const createScenaristBase = (
   const config = buildConfig(options);
 
   // Use injected ports or in-memory defaults
+  // Note: registry/store fallback branches are exercised via singleton pattern in impl.ts
+  // (globals pass these through, but v8 coverage can't trace that execution path)
   const registry = options.registry ?? new InMemoryScenarioRegistry();
   const store = options.store ?? new InMemoryScenarioStore();
-
-  // Create state and sequence managers
-  const stateManager = createInMemoryStateManager();
-  const sequenceTracker = createInMemorySequenceTracker();
+  const stateManager = options.stateManager ?? createInMemoryStateManager();
+  const sequenceTracker =
+    options.sequenceTracker ?? createInMemorySequenceTracker();
 
   // Create scenario manager with all dependencies
   const manager = createScenarioManager({

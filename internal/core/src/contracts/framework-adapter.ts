@@ -9,6 +9,8 @@ import type {
 } from "../types/index.js";
 import type { ScenarioRegistry } from "../ports/driven/scenario-registry.js";
 import type { ScenarioStore } from "../ports/driven/scenario-store.js";
+import type { StateManager } from "../ports/driven/state-manager.js";
+import type { SequenceTracker } from "../ports/driven/sequence-tracker.js";
 
 /**
  * Base configuration options that all framework adapters must support.
@@ -47,6 +49,20 @@ export type BaseAdapterOptions<
    * If not provided, InMemoryScenarioStore will be used.
    */
   readonly store?: ScenarioStore;
+
+  /**
+   * Custom state manager implementation.
+   *
+   * If not provided, an in-memory state manager will be used.
+   */
+  readonly stateManager?: StateManager;
+
+  /**
+   * Custom sequence tracker implementation.
+   *
+   * If not provided, an in-memory sequence tracker will be used.
+   */
+  readonly sequenceTracker?: SequenceTracker;
 };
 
 /**

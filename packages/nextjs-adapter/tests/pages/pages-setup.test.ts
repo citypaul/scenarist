@@ -128,10 +128,14 @@ describe("Pages Router createScenarist", () => {
   describe("Singleton guard for createScenarist() instance", () => {
     // Clean up all global state between tests
     const clearAllGlobals = () => {
-      delete (global as any).__scenarist_instance_pages;
-      delete (global as any).__scenarist_registry_pages;
-      delete (global as any).__scenarist_store_pages;
-      delete (global as any).__scenarist_msw_started_pages;
+      delete (global as unknown as Record<string, unknown>)
+        .__scenarist_instance_pages;
+      delete (global as unknown as Record<string, unknown>)
+        .__scenarist_registry_pages;
+      delete (global as unknown as Record<string, unknown>)
+        .__scenarist_store_pages;
+      delete (global as unknown as Record<string, unknown>)
+        .__scenarist_msw_started_pages;
     };
 
     // Clear globals before each test to ensure test isolation
@@ -239,12 +243,134 @@ describe("Pages Router createScenarist", () => {
       // Original config should be preserved
       expect(instance2.config.enabled).toBe(true); // Not false!
     });
+
+    it("should reuse existing registry/store when instance is cleared but globals persist", async () => {
+      // First call creates everything
+      const instance1 = createScenarist({
+        enabled: true,
+        scenarios: testScenarios,
+      });
+
+      if (!instance1) {
+        throw new Error("Instance should not be undefined in tests");
+      }
+
+      // Store references to the global registry and store
+      const originalRegistry = (global as unknown as Record<string, unknown>)
+        .__scenarist_registry_pages;
+      const originalStore = (global as unknown as Record<string, unknown>)
+        .__scenarist_store_pages;
+
+      // Clear ONLY the instance, leaving registry and store intact
+      // This simulates HMR clearing some globals but not others
+      delete (global as unknown as Record<string, unknown>)
+        .__scenarist_instance_pages;
+
+      // Second call should reuse existing registry and store
+      const instance2 = createScenarist({
+        enabled: true,
+        scenarios: testScenarios,
+      });
+
+      if (!instance2) {
+        throw new Error("Instance should not be undefined in tests");
+      }
+
+      // Verify the same registry and store are being used
+      expect(
+        (global as unknown as Record<string, unknown>)
+          .__scenarist_registry_pages,
+      ).toBe(originalRegistry);
+      expect(
+        (global as unknown as Record<string, unknown>).__scenarist_store_pages,
+      ).toBe(originalStore);
+
+      // New instance should work with the reused registry/store
+      instance2.switchScenario("test-reuse-1", "premium");
+      const active = instance2.getActiveScenario("test-reuse-1");
+      expect(active).toEqual({
+        scenarioId: "premium",
+      });
+    });
+
+    it("should reuse existing registry when store is missing", async () => {
+      // First call creates everything
+      createScenarist({
+        enabled: true,
+        scenarios: testScenarios,
+      });
+
+      const originalRegistry = (global as unknown as Record<string, unknown>)
+        .__scenarist_registry_pages;
+
+      // Clear instance and store, leaving only registry
+      delete (global as unknown as Record<string, unknown>)
+        .__scenarist_instance_pages;
+      delete (global as unknown as Record<string, unknown>)
+        .__scenarist_store_pages;
+
+      // Second call should reuse registry and create new store
+      const instance2 = createScenarist({
+        enabled: true,
+        scenarios: testScenarios,
+      });
+
+      if (!instance2) {
+        throw new Error("Instance should not be undefined in tests");
+      }
+
+      // Registry should be reused, store should be new
+      expect(
+        (global as unknown as Record<string, unknown>)
+          .__scenarist_registry_pages,
+      ).toBe(originalRegistry);
+      expect(
+        (global as unknown as Record<string, unknown>).__scenarist_store_pages,
+      ).toBeDefined();
+    });
+
+    it("should reuse existing store when registry is missing", async () => {
+      // First call creates everything
+      createScenarist({
+        enabled: true,
+        scenarios: testScenarios,
+      });
+
+      const originalStore = (global as unknown as Record<string, unknown>)
+        .__scenarist_store_pages;
+
+      // Clear instance and registry, leaving only store
+      delete (global as unknown as Record<string, unknown>)
+        .__scenarist_instance_pages;
+      delete (global as unknown as Record<string, unknown>)
+        .__scenarist_registry_pages;
+
+      // Second call should create new registry and reuse store
+      const instance2 = createScenarist({
+        enabled: true,
+        scenarios: testScenarios,
+      });
+
+      if (!instance2) {
+        throw new Error("Instance should not be undefined in tests");
+      }
+
+      // Store should be reused, registry should be new
+      expect(
+        (global as unknown as Record<string, unknown>).__scenarist_store_pages,
+      ).toBe(originalStore);
+      expect(
+        (global as unknown as Record<string, unknown>)
+          .__scenarist_registry_pages,
+      ).toBeDefined();
+    });
   });
 
   describe("Singleton guard in start() method", () => {
     // Clean up global flag between tests
     const clearGlobalFlag = () => {
-      delete (global as any).__scenarist_msw_started_pages;
+      delete (global as unknown as Record<string, unknown>)
+        .__scenarist_msw_started_pages;
     };
 
     it("should start MSW on first start() call", async () => {
