@@ -5,15 +5,39 @@
  * OVERVIEW
  * ═══════════════════════════════════════════════════════════════════════════════
  *
- * This file demonstrates how to extend `@scenarist/playwright-helpers` for
+ * This file demonstrates ONE WAY to extend `@scenarist/playwright-helpers` for
  * applications that have DIRECT DATABASE ACCESS alongside HTTP APIs.
  *
- * **KEY INSIGHT**: Scenarist mocks HTTP responses, but if your app also queries
- * databases directly, you need to seed database state to match your scenarios.
- * This file shows that pattern.
+ * **KEY INSIGHT**: Scenarist mocks HTTP responses. If your app also queries
+ * databases or other data sources directly, you need SOME strategy to ensure
+ * that data matches your test scenarios. This file shows ONE such strategy:
+ * **repository seeding via an API endpoint**.
  *
  * ═══════════════════════════════════════════════════════════════════════════════
- * DO YOU NEED THIS PATTERN?
+ * ALTERNATIVE APPROACHES (This is NOT the only way!)
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *
+ * There are several valid strategies for handling direct database access in tests:
+ *
+ * 1. **Repository Seeding (this example)** - POST to a seed endpoint that
+ *    initializes scenario-specific data keyed by test ID
+ *
+ * 2. **In-Memory Repositories** - Use test ID to partition an in-memory store;
+ *    no seeding needed if your repository returns empty state by default
+ *
+ * 3. **Scenario-Aware Repositories** - Repository checks active scenario and
+ *    returns appropriate mock data without explicit seeding
+ *
+ * 4. **Transactional Rollback** - Each test runs in a database transaction
+ *    that's rolled back after the test completes
+ *
+ * 5. **Database Snapshots** - Reset database to a known snapshot before each test
+ *
+ * Choose the approach that fits your architecture. This example uses repository
+ * seeding because it's explicit and works well with the Repository Pattern.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * DO YOU NEED ANY OF THESE PATTERNS?
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * **NO - Most applications don't need this!** If your app ONLY communicates
@@ -34,14 +58,16 @@
  * - ✅ `switchScenario(page, scenarioId)` fixture
  * - ✅ Configuration via playwright.config.ts
  *
- * **YES - You need this pattern when:**
+ * **YES - You MAY need one of these patterns when:**
  * - Your app queries databases directly (not just via HTTP APIs)
  * - Tests need consistent state at BOTH HTTP and database layers
  * - You're using the Repository Pattern with test ID isolation
  *
  * ═══════════════════════════════════════════════════════════════════════════════
- * ARCHITECTURE: HOW THIS EXTENSION WORKS
+ * ARCHITECTURE: HOW THIS SPECIFIC EXTENSION WORKS
  * ═══════════════════════════════════════════════════════════════════════════════
+ *
+ * This example uses the "Repository Seeding" approach. Here's how it works:
  *
  * 1. We start with `withScenarios(scenarios)` as our base - the recommended API
  *
@@ -53,7 +79,7 @@
  *
  * 4. The extended switchScenario does TWO things:
  *    a. Switches HTTP mocks (same as base)
- *    b. Seeds repository with scenario data (our extension)
+ *    b. POSTs to a seed endpoint to initialize database state (our extension)
  *
  * **Note**: When overriding a fixture in Playwright, we can't "wrap" the original
  * fixture with the same name. We can only access OTHER fixtures as dependencies.
