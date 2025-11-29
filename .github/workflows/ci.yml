@@ -174,7 +174,7 @@ jobs:
         run: pnpm turbo test --filter=./packages/* --filter=./internal/*
 
       - name: Test with coverage (enforces 100% threshold)
-        run: pnpm turbo test --filter=@scenarist/core -- --coverage
+        run: pnpm turbo test --filter=@scenarist/core --filter=@scenarist/express-adapter -- --coverage
 
       - name: Upload coverage reports
         if: always()
