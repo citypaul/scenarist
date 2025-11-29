@@ -291,7 +291,7 @@ kill $PID
 ## Questions To Answer
 
 1. Is getServerSideProps running during Playwright test? ❓ UNKNOWN
-2. Does scenarist.getHeaders() extract the testId? ❓ UNKNOWN
+2. Does getScenaristHeaders() extract the testId? ❓ UNKNOWN
 3. Does MSW intercept the fetch to localhost:3001? ❓ UNKNOWN
 4. What scenario is active in MSW when fetch happens? ❓ UNKNOWN
 5. Does the premium mock's match criteria get evaluated? ❓ UNKNOWN

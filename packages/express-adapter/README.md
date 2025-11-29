@@ -536,7 +536,7 @@ app.get("/api/products", async (req, res) => {
 // Next.js - MUST manually forward headers
 const response = await fetch("http://external-api.com/products", {
   headers: {
-    ...getScenaristHeaders(req, scenarist), // Required!
+    ...getScenaristHeaders(req), // Required!
   },
 });
 ```

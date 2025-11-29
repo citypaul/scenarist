@@ -76,7 +76,7 @@ The core package (`packages/core/`) has **157 tests** covering:
 export async function GET(request: Request) {
   const response = await fetch("http://localhost:3001/products", {
     headers: {
-      ...getScenaristHeaders(request, scenarist), // ← Tested in adapter (Layer 2)
+      ...getScenaristHeaders(request), // ← Tested in adapter (Layer 2)
       "x-user-tier": request.headers.get("x-user-tier") || "standard",
     },
   });

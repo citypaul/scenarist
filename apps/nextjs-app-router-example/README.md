@@ -138,7 +138,7 @@ import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
 export async function GET(request: Request) {
   const response = await fetch("http://localhost:3001/products", {
     headers: {
-      ...getScenaristHeaders(request, scenarist), // Extract test ID + mock status
+      ...getScenaristHeaders(request), // Extract test ID
       "x-user-tier": request.headers.get("x-user-tier") || "standard",
     },
   });
@@ -160,7 +160,7 @@ export default async function handler(
 ) {
   const response = await fetch("http://localhost:3001/products", {
     headers: {
-      ...getScenaristHeaders(req, scenarist), // Different request type
+      ...getScenaristHeaders(req), // Extract test ID
       "x-user-tier": req.headers["x-user-tier"] || "standard",
     },
   });
@@ -277,12 +277,11 @@ export const scenarios = {
 ```typescript
 // app/api/products/route.ts
 import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
-import { scenarist } from "@/lib/scenarist";
 
 export async function GET(request: Request) {
   const response = await fetch("http://localhost:3001/products", {
     headers: {
-      ...getScenaristHeaders(request, scenarist), // Auto test ID + mock status
+      ...getScenaristHeaders(request), // Extract test ID
       "x-user-tier": request.headers.get("x-user-tier") || "standard",
     },
   });
