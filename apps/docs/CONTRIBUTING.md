@@ -46,7 +46,7 @@ Next.js
 
 **Always specify language identifiers** for syntax highlighting:
 
-````markdown
+`````markdown
 ✅ CORRECT:
 
 ````bash
@@ -66,7 +66,9 @@ npm install @scenarist/express-adapter
 export const scenarios = { ... };
 \```
 ````
-````
+`````
+
+`````
 
 ### Supported Language Identifiers
 
@@ -222,7 +224,8 @@ export function example() {
   // Implementation
 }
 \```
-````
+`````
+
 ````
 
 ## Consistency Checklist
@@ -378,3 +381,4 @@ sidebar: [
 ## Questions?
 
 If you're unsure about documentation standards, check existing framework documentation (Express, Next.js App Router, Next.js Pages Router) for reference examples.
+````

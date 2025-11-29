@@ -148,6 +148,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
 - **Verification:** Both Next.js example apps (App Router & Pages Router) successfully verified with `pnpm verify:treeshaking` - zero MSW code in production bundles
 
 5. Set up Changesets workflow (4 hours):
+
    ```bash
    pnpm add -Dw @changesets/cli
    pnpm changeset init
@@ -178,6 +179,7 @@ Scenarist is **80% ready for production release**. The core architecture, testin
    ```
 
 6. Test dry-run npm publish (1 hour):
+
    ```bash
    pnpm --filter=@scenarist/core exec npm publish --dry-run
    ```
