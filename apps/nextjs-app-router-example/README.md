@@ -18,7 +18,7 @@ This app showcases Scenarist's complete feature set with Next.js App Router:
 - ✅ **Runtime Scenario Switching** - Change backend behavior without app restart
 - ✅ **Request Content Matching** - Dynamic responses based on headers (tier: standard/premium)
 - ✅ **Stateful Mocks** - Cart state persistence across requests
-- ✅ **Playwright Helpers** - Type-safe scenario management with `withScenario()`
+- ✅ **Playwright Helpers** - Type-safe scenario management with `withScenarios()`
 
 ## Installation
 
@@ -319,19 +319,20 @@ pnpm test:e2e
 **Playwright Helpers:**
 
 ```typescript
-import { test as base } from "@playwright/test";
-import { withScenario } from "@scenarist/playwright-helpers";
+// tests/fixtures.ts
+import { withScenarios, expect } from "@scenarist/playwright-helpers";
+import { scenarios } from "../lib/scenarios";
 
-// Type-safe scenario switching
-const test = base.extend(
-  withScenario({
-    scenarios,
-    baseURL: "http://localhost:3002",
-  }),
-);
+export const test = withScenarios(scenarios);
+export { expect };
+```
+
+```typescript
+// tests/my-test.spec.ts
+import { test, expect } from "./fixtures";
 
 test("premium user sees premium pricing", async ({ page, switchScenario }) => {
-  await switchScenario("premiumUser"); // Type-safe scenario ID
+  await switchScenario(page, "premiumUser"); // Type-safe scenario ID
   await page.goto("/");
   // Test premium pricing...
 });
