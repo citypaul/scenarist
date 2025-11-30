@@ -376,21 +376,75 @@ jobs:
       - name: Run custom server tests
         run: pnpm --filter=${{ matrix.filter }} test:custom
 
-  # Job 10: Release Gate (always runs to ensure CI completes for release workflow)
-  # This job serves as a "success signal" for the release workflow, which triggers
-  # when CI completes on main. For version-only commits (no code changes), this
-  # is the only job that runs, allowing fast-path releases.
+  # Job 10: Release Gate (blocks merging until all tests pass)
+  # This job serves as a "success signal" for branch protection rules.
+  # - For code change PRs: Waits for ALL test jobs and fails if any fail
+  # - For Version PRs: Passes immediately (test jobs are skipped)
   release-gate:
     name: Release Gate
     runs-on: ubuntu-latest
-    needs: detect-changes
+    needs:
+      - detect-changes
+      - security-audit
+      - validation
+      - library-tests
+      - mocked-tests
+      - bruno-tests
+      - production-build-tests
+      - docs-production-tests
+      - docs-accessibility-tests
+      - custom-server-tests
     if: always()
     steps:
       - name: Check CI status
         run: |
+          echo "=== Release Gate Status Check ==="
           echo "Code changed: ${{ needs.detect-changes.outputs.code_changed }}"
-          if [[ "${{ needs.detect-changes.outputs.code_changed }}" == "true" ]]; then
-            echo "Full CI completed - code was tested"
-          else
-            echo "Fast-path CI - version/changelog only changes detected"
+          echo ""
+
+          # For Version PRs (no code changes), all test jobs are skipped - that's fine
+          if [[ "${{ needs.detect-changes.outputs.code_changed }}" == "false" ]]; then
+            echo "✅ Fast-path CI - version/changelog only changes detected"
+            echo "   Test jobs were skipped (expected behavior)"
+            exit 0
           fi
+
+          echo "Full CI run - checking all test job results..."
+          echo ""
+
+          # For code change PRs, verify all test jobs passed
+          # Jobs that were skipped due to code_changed=false are fine
+          # Jobs that failed or were cancelled should block the release
+
+          FAILED=false
+
+          check_job() {
+            local job_name=$1
+            local job_result=$2
+            if [[ "$job_result" == "failure" || "$job_result" == "cancelled" ]]; then
+              echo "❌ $job_name: $job_result"
+              FAILED=true
+            else
+              echo "✅ $job_name: $job_result"
+            fi
+          }
+
+          check_job "security-audit" "${{ needs.security-audit.result }}"
+          check_job "validation" "${{ needs.validation.result }}"
+          check_job "library-tests" "${{ needs.library-tests.result }}"
+          check_job "mocked-tests" "${{ needs.mocked-tests.result }}"
+          check_job "bruno-tests" "${{ needs.bruno-tests.result }}"
+          check_job "production-build-tests" "${{ needs.production-build-tests.result }}"
+          check_job "docs-production-tests" "${{ needs.docs-production-tests.result }}"
+          check_job "docs-accessibility-tests" "${{ needs.docs-accessibility-tests.result }}"
+          check_job "custom-server-tests" "${{ needs.custom-server-tests.result }}"
+
+          echo ""
+
+          if [[ "$FAILED" == "true" ]]; then
+            echo "❌ Release gate FAILED - one or more CI jobs failed or were cancelled"
+            echo "   Fix the failing jobs before merging"
+            exit 1
+          fi
+
+          echo "✅ Release gate PASSED - all CI jobs succeeded"
