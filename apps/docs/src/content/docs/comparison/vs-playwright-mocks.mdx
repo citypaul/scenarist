@@ -155,7 +155,7 @@ module.exports = {
 }
 ```
 
-**Status:** Experimental with known limitations—doesn't work with GET route handlers, some font loading issues reported.
+**Status:** Experimental with known limitations—doesn't intercept internal route handler calls (fetches using relative URLs within the same app), and some font loading issues reported.
 
 **Why Scenarist is still valuable:** Scenarist provides scenario management, test ID isolation, runtime switching, and Playwright fixtures on top of MSW—features you'd need to build yourself even with testProxy.
 

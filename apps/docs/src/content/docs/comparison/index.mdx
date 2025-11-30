@@ -39,8 +39,8 @@ Scenarist is built on [MSW](https://mswjs.io/) and adds a complete scenario mana
 | **Test isolation** | Per-test via header | Per-server instance | Per-test setup | Per-container | Per-page |
 | **Runtime switching** | Yes (single API call) | Yes (Admin API) | No | No | No |
 | **Server Components** | Full support | Yes (network proxy) | No (E2E) / Yes (integration) | Yes (with WireMock module) | No |
-| **Setup complexity** | npm install | Docker + network config | npm install | Docker required | Built-in |
-| **Parallel tests** | Built-in (header routing) | Multiple instances or scenarios | Manual isolation | Per-container | Per-page |
+| **Setup complexity** | npm install | JAR/Docker/npm | npm install | Docker required | Built-in |
+| **Parallel tests** | Built-in (header routing) | Multiple instances or scenarios | Scope/persist management | Per-container | Per-page |
 | **Test framework** | First-class Playwright | Generic HTTP | Generic | Generic | Built-in |
 | **Response sequences** | Built-in | Built-in (Scenarios) | Manual | Via mock server | Manual |
 | **Stateful mocks** | Built-in capture/inject | Built-in state machine | Manual | Via mock server | Manual |

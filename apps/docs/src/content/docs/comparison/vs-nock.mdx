@@ -6,7 +6,7 @@ description: Compare declarative scenario management with imperative per-test mo
 import { Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
 import WhatScenaristOffers from '../../../components/comparison/WhatScenaristOffers.astro';
 
-[Nock](https://github.com/nock/nock) is a popular HTTP mocking library for Node.js. Since v13, Nock uses [@mswjs/interceptors](https://github.com/mswjs/interceptors)—the same interception engine as MSW—making it robust and modern. Scenarist takes a different approach—declarative scenario definitions with built-in parallel test isolation.
+[Nock](https://github.com/nock/nock) is a popular HTTP mocking library for Node.js. Since v14, Nock uses [@mswjs/interceptors](https://github.com/mswjs/interceptors)—the same interception engine as MSW—making it robust and modern. Scenarist takes a different approach—declarative scenario definitions with built-in parallel test isolation.
 
 <WhatScenaristOffers />
 
@@ -16,7 +16,7 @@ import WhatScenaristOffers from '../../../components/comparison/WhatScenaristOff
 |--------|-----------|------|
 | **Approach** | Declarative scenarios | Imperative per-test setup |
 | **Test isolation** | Per-test via test ID | Manual scope management |
-| **Interception level** | Network (MSW) | @mswjs/interceptors (v13+) |
+| **Interception level** | Network (MSW) | @mswjs/interceptors (v14+) |
 | **Runtime switching** | Yes (API call) | No (reconfigure handlers) |
 | **Browser support** | Via MSW | Node.js only |
 | **Setup** | Framework adapters | Standalone library |

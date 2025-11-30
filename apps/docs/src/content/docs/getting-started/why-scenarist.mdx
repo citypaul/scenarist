@@ -78,7 +78,7 @@ export default async function CheckoutPage() {
 
 ### The Requirement: Network Requests
 
-Scenarist intercepts HTTP requests that traverse the network. This works because MSW (Mock Service Worker) operates at the fetch level.
+Scenarist intercepts HTTP requests that traverse the network. This works because MSW (Mock Service Worker) operates at the network level, intercepting requests from any HTTP client (fetch, axios, etc.).
 
 **What this means in practice:**
 
@@ -100,7 +100,7 @@ const products = await fetch("http://localhost:3000/api/products");
 - **Direct database access** (PostgreSQL, MongoDB, Prisma) - no HTTP request
 - **Internal API routes** on the same host/port - Next.js internal routing
 - **File system operations** - no HTTP request
-- **WebSocket connections** - different protocol
+- **WebSocket connections** - MSW supports WebSockets, but Scenarist's scenario system focuses on HTTP
 
 **If your app uses direct database access:** See [Testing Database Apps](/guides/testing-database-apps) for strategies. We recommend the [Repository Pattern](/guides/testing-database-apps/repository-pattern) for scalable parallel testing with the same test ID isolation model as Scenarist.
 
@@ -108,7 +108,7 @@ const products = await fetch("http://localhost:3000/api/products");
 
 ### Why Framework Documentation Recommends E2E
 
-This gap is evident in how framework authors struggle to provide testing guidance. The Next.js documentation states: _"Since async Server Components are new to the React ecosystem, Next.js recommends using end-to-end testing."_ Remix notes: _"There aren't standard ways of testing components that have Remix code."_ SvelteKit faces similar challenges with server route testing.
+This gap is evident in how framework authors struggle to provide testing guidance. The [Next.js testing docs](https://nextjs.org/docs/app/building-your-application/testing) focus primarily on unit testing and E2E testing, acknowledging that async Server Components present unique testing challenges. [Remix testing guidance](https://remix.run/docs/en/main/guides/testing) notes the complexity of testing components that depend on Remix context and loaders. SvelteKit faces similar challenges with server route testing.
 
 The pattern is clear: when "frontend" components run on the server and call external APIs directly, traditional testing approaches break down. **Scenarist fills this gap** by testing real server-side code with mocked external APIs.
 
@@ -148,7 +148,7 @@ Scenarist tests server-side HTTP behavior, not complete user workflows. Browser 
 
 ## Limitations and Trade-offs
 
-**HTTP only**: Scenarist intercepts HTTP requests only. It cannot mock database calls, file system operations, or WebSocket connections. For apps with direct database access, see [Testing Database Apps](/guides/testing-database-apps) for recommended strategies.
+**HTTP only**: Scenarist intercepts HTTP requests only. It cannot mock database calls, file system operations, or WebSocket connections (MSW supports WebSockets, but Scenarist's scenario system is designed for HTTP request/response patterns). For apps with direct database access, see [Testing Database Apps](/guides/testing-database-apps) for recommended strategies.
 
 **Database parallelism**: While Scenarist enables parallel HTTP tests via test ID isolation, database testing requires different strategies. We recommend the [Repository Pattern](/guides/testing-database-apps/repository-pattern), which provides the same test ID isolation model for database access. See [Parallelism Options](/guides/testing-database-apps/parallelism-options) for all approaches and trade-offs.
 
