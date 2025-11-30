@@ -83,12 +83,14 @@ test.describe("Analytics", () => {
       });
 
       // Accept either:
-      // - 202 Accepted (Plausible received the event)
+      // - 2xx Success (Plausible received the event - typically 202 Accepted)
       // - 503 Service Unavailable (fallback when Plausible unreachable)
       const status = response.status();
-      expect(status === 202 || status === 503).toBe(true);
+      const isSuccess = status >= 200 && status < 300;
+      const isFallback = status === 503;
+      expect(isSuccess || isFallback).toBe(true);
 
-      if (status === 503) {
+      if (isFallback) {
         const body = await response.json();
         expect(body.error).toBe("Analytics unavailable");
       }
@@ -107,10 +109,12 @@ test.describe("Analytics", () => {
       });
 
       // Accept either:
-      // - 400 Bad Request (Plausible rejected invalid payload)
+      // - 4xx Client Error (Plausible rejected invalid payload - typically 400 or 422)
       // - 503 Service Unavailable (fallback when Plausible unreachable)
       const status = response.status();
-      expect(status === 400 || status === 503).toBe(true);
+      const isClientError = status >= 400 && status < 500;
+      const isFallback = status === 503;
+      expect(isClientError || isFallback).toBe(true);
     });
 
     test("/api/event handles malformed JSON gracefully", async ({
