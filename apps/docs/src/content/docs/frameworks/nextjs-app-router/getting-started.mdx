@@ -4,6 +4,7 @@ description: Set up Scenarist with Next.js App Router in 5 minutes
 ---
 
 import { Aside } from '@astrojs/starlight/components';
+import NextJsSingletonExplanation from '../../../../components/nextjs/NextJsSingletonExplanation.astro';
 
 Test your Next.js App Router application with Server Components, Route Handlers, and Server Actions all executing. No mocking of Next.js internals required.
 
@@ -127,7 +128,11 @@ export default createScenarist({ enabled: true, scenarios });
 export const scenarist = createScenarist({ enabled: true, scenarios });
 ```
 
-**Why this matters:** Scenarist handles a Next.js-specific issue for you. Next.js can cause module duplication, where the same file is loaded multiple times in the same process ([see Next.js Discussion #68572](https://github.com/vercel/next.js/discussions/68572)). This breaks the singleton pattern and can cause:
+**Why this matters:** Scenarist handles a Next.js-specific issue for you.
+
+<NextJsSingletonExplanation variant="inline" />
+
+Without protection, this causes:
 
 - `[MSW] Multiple handlers with the same URL` warnings
 - Intermittent 500 errors from MSW

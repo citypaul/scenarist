@@ -7,15 +7,14 @@ Playwright test helpers for [Scenarist](https://scenarist.io) scenario managemen
 
 ## 📖 Documentation
 
-**Full documentation at [scenarist.io](https://scenarist.io)**
+**→ [Playwright Integration Guide](https://scenarist.io/testing/playwright-integration)** — Fixtures, type-safe scenarios, test isolation
 
-| Topic                      | Link                                                                                               |
-| -------------------------- | -------------------------------------------------------------------------------------------------- |
-| **Why Scenarist?**         | [scenarist.io/getting-started/why-scenarist](https://scenarist.io/getting-started/why-scenarist)   |
-| **Playwright Integration** | [scenarist.io/testing/playwright-integration](https://scenarist.io/testing/playwright-integration) |
-| **Tool Comparison**        | [scenarist.io/comparison](https://scenarist.io/comparison)                                         |
-| **Parallel Testing**       | [scenarist.io/testing/parallel-testing](https://scenarist.io/testing/parallel-testing)             |
-| **Testing Philosophy**     | [scenarist.io/concepts/philosophy](https://scenarist.io/concepts/philosophy)                       |
+| Topic                 | Link                                                                                             |
+| --------------------- | ------------------------------------------------------------------------------------------------ |
+| **Why Scenarist?**    | [scenarist.io/getting-started/why-scenarist](https://scenarist.io/getting-started/why-scenarist) |
+| **Parallel Testing**  | [scenarist.io/testing/parallel-testing](https://scenarist.io/testing/parallel-testing)           |
+| **Tool Comparison**   | [scenarist.io/comparison](https://scenarist.io/comparison)                                       |
+| **Dynamic Responses** | [scenarist.io/concepts/dynamic-responses](https://scenarist.io/concepts/dynamic-responses)       |
 
 ## Installation
 

@@ -5,6 +5,17 @@
 
 Express.js adapter for [Scenarist](https://scenarist.io) - manage MSW mock scenarios in your Express applications for testing **and** development.
 
+## 📖 Documentation
+
+**→ [Express Getting Started Guide](https://scenarist.io/frameworks/express/getting-started)** — Full setup instructions and examples
+
+| Topic                 | Link                                                                                             |
+| --------------------- | ------------------------------------------------------------------------------------------------ |
+| **Why Scenarist?**    | [scenarist.io/getting-started/why-scenarist](https://scenarist.io/getting-started/why-scenarist) |
+| **Tool Comparison**   | [scenarist.io/comparison](https://scenarist.io/comparison)                                       |
+| **Parallel Testing**  | [scenarist.io/testing/parallel-testing](https://scenarist.io/testing/parallel-testing)           |
+| **Dynamic Responses** | [scenarist.io/concepts/dynamic-responses](https://scenarist.io/concepts/dynamic-responses)       |
+
 ## What is Scenarist?
 
 **Scenarist** enables concurrent tests to run with different backend states by switching mock scenarios at runtime via test IDs. Your real application code executes while external API responses are controlled by scenarios. No application restarts needed, no complex per-test mocking, just simple scenario switching.

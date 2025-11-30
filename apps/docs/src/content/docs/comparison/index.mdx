@@ -4,6 +4,7 @@ description: How Scenarist compares to WireMock, Nock, Testcontainers, Playwrigh
 ---
 
 import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import NextJsSingletonExplanation from '../../../components/nextjs/NextJsSingletonExplanation.astro';
 
 Choosing the right testing tool depends on your architecture, team, and what you're testing. This guide helps you understand where Scenarist fits and when other tools might be better suited.
 
@@ -27,10 +28,12 @@ Scenarist is built on [MSW](https://mswjs.io/) and adds a complete scenario mana
   <Card title="Response Sequences" icon="list-format">
     Ever tested a polling UI that shows pending → processing → complete? Most tools need complex state management. <a href="/concepts/dynamic-responses">Scenarist: three lines of config</a>.
   </Card>
-  <Card title="Developer Tools (Roadmap)" icon="puzzle">
-    <a href="/roadmap">Planned browser-based plugin</a> for switching scenarios during development—instant visual scenario exploration without code changes.
+  <Card title="Next.js Multi-Process (Solved)" icon="setting">
+    Next.js has <a href="https://github.com/vercel/next.js/discussions/68572">documented singleton issues</a> that break MSW. Scenarist's adapter includes built-in <code>globalThis</code> guards—one stable MSW instance regardless of module loading.
   </Card>
 </CardGrid>
+
+<NextJsSingletonExplanation variant="detailed" />
 
 ### The Parallel Testing Advantage
 
@@ -111,12 +114,12 @@ Scenarist is built on top of [Mock Service Worker (MSW)](https://mswjs.io/)—th
 - Proven reliability and active maintenance
 
 **What Scenarist adds:**
-- **Test ID isolation** — Parallel tests with different scenarios
-- **Runtime switching** — Change scenarios without restart
-- **First-class Playwright support** — Dedicated fixtures with type-safe scenario switching and automatic test ID isolation
-- **Response sequences** — Built-in support for polling, retry flows, state machines
-- **Stateful mocks** — Capture values from requests, inject into responses (state isolated per test ID)
-- **Advanced matching** — Body, headers, query params, regex patterns
+- **[Test ID isolation](/testing/parallel-testing)** — Parallel tests with different scenarios
+- **[Runtime switching](/concepts/how-it-works#runtime-scenario-switching)** — Change scenarios without restart
+- **[First-class Playwright support](/testing/playwright-integration)** — Dedicated fixtures with type-safe scenario switching and automatic test ID isolation
+- **[Response sequences](/concepts/dynamic-responses#response-sequences)** — Built-in support for polling, retry flows, state machines
+- **[Stateful mocks](/concepts/dynamic-responses#stateful-mocks)** — Capture values from requests, inject into responses (state isolated per test ID)
+- **[Advanced matching](/concepts/dynamic-responses#request-matching)** — Body, headers, query params, regex patterns
 - **Framework adapters** — Express, Next.js integration out of the box
 
 If you need low-level control or use MSW for non-testing purposes (API development, storybook), use MSW directly. If you need scenario management for testing, Scenarist handles that layer.

@@ -319,6 +319,10 @@ Built with hexagonal architecture (ports & adapters). First-class adapters for E
 
 Strict TypeScript types for scenarios, configs, and APIs. Catch errors at compile-time. Excellent IntelliSense and autocomplete support.
 
+### 🔧 Next.js Multi-Process Handling (Solved)
+
+Next.js has a [well-documented singleton problem](https://github.com/vercel/next.js/discussions/68572) where modules get bundled multiple times, breaking the singleton pattern. This causes [MSW integration issues](https://github.com/mswjs/msw/issues/1644) with multiple conflicting server instances. Scenarist's Next.js adapter includes built-in singleton protection using `globalThis` guards—you get a single, stable MSW instance regardless of how Next.js loads your modules. No manual workarounds required.
+
 ### 🎨 Scenario Variants for Data-Driven Testing
 
 Parameterize scenarios with variants. Test the same flow with different user tiers, payment methods, or feature flags without duplicating scenario definitions.

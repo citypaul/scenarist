@@ -1,0 +1,69 @@
+---
+// Shared Next.js singleton/multi-process explanation component.
+// Ensures consistency across documentation pages and centralizes updates.
+
+interface Props {
+  /**
+   * Variant determines the level of detail and formatting:
+   * - "brief": Problem + solution summary (for why-scenarist, general overviews)
+   * - "detailed": Full adapter features list (for comparison pages)
+   * - "inline": Just the core explanation without heading (for embedding)
+   */
+  variant?: "brief" | "detailed" | "inline";
+
+  /**
+   * Whether to show the section heading.
+   * Default: true for brief/detailed, false for inline
+   */
+  showHeading?: boolean;
+
+  /**
+   * Heading level to use (h2 or h3).
+   * Default: "h3"
+   */
+  headingLevel?: "h2" | "h3";
+}
+
+const {
+  variant = "brief",
+  showHeading = variant !== "inline",
+  headingLevel = "h3",
+} = Astro.props;
+
+const HeadingTag = headingLevel;
+const headingId = "nextjs-multi-process-handling";
+---
+
+{showHeading && variant === "brief" && (
+  <HeadingTag id={headingId}>Next.js Multi-Process Handling (Solved)</HeadingTag>
+)}
+
+{showHeading && variant === "detailed" && (
+  <HeadingTag id={headingId}>Framework Adapters Solve Real Problems</HeadingTag>
+)}
+
+{variant === "detailed" && (
+  <p>Scenarist's adapters aren't thin wrappers—they solve framework-specific challenges that would otherwise require significant boilerplate:</p>
+)}
+
+{variant === "detailed" ? (
+  <Fragment>
+    <p><strong>Next.js Adapter:</strong></p>
+    <ul>
+      <li><strong><a href="https://github.com/vercel/next.js/discussions/68572">Module duplication protection</a></strong> — Next.js dev mode and Turbopack can load modules multiple times, causing <code>[MSW] Multiple handlers with the same URL</code> errors and memory leaks. Scenarist's built-in singleton pattern (<code>global.__scenarist_instance</code>) handles this automatically.</li>
+      <li><strong>Pages + App Router isolation</strong> — Separate global state keys enable gradual migration without scenario cross-contamination.</li>
+      <li><strong>Conditional exports</strong> — Zero MSW code in production bundles via automatic tree-shaking.</li>
+    </ul>
+    <p>Without these solutions, you'd need to understand Next.js internals and implement the <code>globalThis</code> singleton pattern yourself—Scenarist handles it with a simple <code>export const</code>.</p>
+  </Fragment>
+) : (
+  <Fragment>
+    <p>
+      {variant === "brief" && "Next.js presents a unique challenge for MSW-based testing. "}
+      It has a <a href="https://github.com/vercel/next.js/discussions/68572">well-documented singleton problem</a> where webpack bundles the same module multiple times, breaking classic singleton patterns. This is compounded by <a href="https://github.com/mswjs/msw/issues/1644">MSW's challenges with Next.js's process model</a>—Next.js keeps multiple Node.js processes that make global module patches difficult to maintain.
+    </p>
+    <p>
+      <strong>Scenarist solves this automatically.</strong> The Next.js adapter includes built-in <code>globalThis</code> singleton guards that ensure only one MSW instance exists, regardless of how Next.js loads your modules. You don't need to understand Next.js internals or implement manual workarounds—just use <code>export const scenarist = createScenarist(...)</code> and Scenarist handles the complexity.
+    </p>
+  </Fragment>
+)}
