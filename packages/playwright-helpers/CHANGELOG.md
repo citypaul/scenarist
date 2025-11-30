@@ -1,5 +1,13 @@
 # @scenarist/playwright-helpers
 
+## 0.1.11
+
+### Patch Changes
+
+- [#290](https://github.com/citypaul/scenarist/pull/290) [`dd3b8db`](https://github.com/citypaul/scenarist/commit/dd3b8db64e5b55d2f84ccd918caa5dc4372f0d11) Thanks [@citypaul](https://github.com/citypaul)! - Add tool comparison link to documentation tables
+
+  Adds link to new comparison documentation section in package README documentation tables.
+
 ## 0.1.10
 
 ### Patch Changes
