@@ -4,19 +4,11 @@ description: Compare declarative scenario management with imperative per-test mo
 ---
 
 import { Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+import WhatScenaristOffers from '../../../components/comparison/WhatScenaristOffers.astro';
 
 [Nock](https://github.com/nock/nock) is a popular HTTP mocking library for Node.js. It intercepts requests at the `http`/`https` module level, making it lighter weight than MSW's network-level interception. Scenarist takes a different approach—declarative scenario definitions with built-in parallel test isolation.
 
-## What Scenarist Offers
-
-Before diving into comparisons, here's what Scenarist brings to the table:
-
-- **Test ID Isolation** — Run hundreds of parallel tests with different scenarios against one server
-- **Runtime Switching** — Change scenarios mid-test without restarts (retry flows, error recovery)
-- **First-Class Playwright** — Dedicated fixtures with type-safe scenarios and automatic test ID isolation
-- **Response Sequences** — Built-in polling, retry flows, state machines
-- **Stateful Mocks** — Capture request values, inject into responses (shopping carts, wizards)
-- **Advanced Matching** — Body, headers, query params, regex with specificity-based selection
+<WhatScenaristOffers />
 
 ## At a Glance
 

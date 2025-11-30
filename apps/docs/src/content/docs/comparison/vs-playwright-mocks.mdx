@@ -4,6 +4,7 @@ description: Compare server-side request interception with browser-side mocking 
 ---
 
 import { Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+import WhatScenaristOffers from '../../../components/comparison/WhatScenaristOffers.astro';
 
 Playwright includes [built-in request interception](https://playwright.dev/docs/mock#mocking-with-har-files) via `page.route()`. This works great for client-side requests. Scenarist intercepts requests on the server—essential for Server Components, API routes, and middleware.
 
@@ -11,16 +12,7 @@ Playwright includes [built-in request interception](https://playwright.dev/docs/
 This page compares Scenarist with **Playwright's built-in `page.route()` API**—browser-side request interception. This is different from Scenarist's `@scenarist/playwright-helpers` package, which provides Playwright test fixtures for server-side scenario management. The two can work together: use Scenarist for server-side mocking with first-class Playwright fixtures, and `page.route()` for browser-specific needs.
 :::
 
-## What Scenarist Offers
-
-Before diving into comparisons, here's what Scenarist brings to the table:
-
-- **Test ID Isolation** — Run hundreds of parallel tests with different scenarios against one server
-- **Runtime Switching** — Change scenarios mid-test without restarts (retry flows, error recovery)
-- **First-Class Playwright** — Dedicated fixtures with type-safe scenarios and automatic test ID isolation
-- **Response Sequences** — Built-in polling, retry flows, state machines
-- **Stateful Mocks** — Capture request values, inject into responses (shopping carts, wizards)
-- **Advanced Matching** — Body, headers, query params, regex with specificity-based selection
+<WhatScenaristOffers />
 
 ## At a Glance
 

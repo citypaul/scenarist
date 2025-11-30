@@ -4,19 +4,11 @@ description: Mocking external APIs vs running real containerized services - comp
 ---
 
 import { Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+import WhatScenaristOffers from '../../../components/comparison/WhatScenaristOffers.astro';
 
 [Testcontainers](https://testcontainers.com/) runs real services in Docker containers for testing—PostgreSQL, Redis, Kafka, and more. Scenarist mocks HTTP APIs. These tools solve **different problems** and are often **complementary** rather than competing.
 
-## What Scenarist Offers
-
-Before diving into comparisons, here's what Scenarist brings to the table:
-
-- **Test ID Isolation** — Run hundreds of parallel tests with different scenarios against one server
-- **Runtime Switching** — Change scenarios mid-test without restarts (retry flows, error recovery)
-- **First-Class Playwright** — Dedicated fixtures with type-safe scenarios and automatic test ID isolation
-- **Response Sequences** — Built-in polling, retry flows, state machines
-- **Stateful Mocks** — Capture request values, inject into responses (shopping carts, wizards)
-- **Advanced Matching** — Body, headers, query params, regex with specificity-based selection
+<WhatScenaristOffers />
 
 ## Different Problems, Different Solutions
 

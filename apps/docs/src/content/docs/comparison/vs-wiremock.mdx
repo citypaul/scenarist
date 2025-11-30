@@ -4,19 +4,11 @@ description: Compare in-process network mocking with server-based mock servers f
 ---
 
 import { Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+import WhatScenaristOffers from '../../../components/comparison/WhatScenaristOffers.astro';
 
 [WireMock](https://wiremock.org/) is a mature, widely-adopted mock server for simulating HTTP APIs. It runs as a standalone Java process and can be used from any language. Scenarist takes a different approach—intercepting requests within your Node.js process using MSW.
 
-## What Scenarist Offers
-
-Before diving into comparisons, here's what Scenarist brings to the table:
-
-- **Test ID Isolation** — Run hundreds of parallel tests with different scenarios against one server
-- **Runtime Switching** — Change scenarios mid-test without restarts (retry flows, error recovery)
-- **First-Class Playwright** — Dedicated fixtures with type-safe scenarios and automatic test ID isolation
-- **Response Sequences** — Built-in polling, retry flows, state machines
-- **Stateful Mocks** — Capture request values, inject into responses (shopping carts, wizards)
-- **Advanced Matching** — Body, headers, query params, regex with specificity-based selection
+<WhatScenaristOffers />
 
 ## At a Glance
 

@@ -4,19 +4,11 @@ description: How Scenarist builds on Mock Service Worker and when to use each
 ---
 
 import { Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+import WhatScenaristOffers from '../../../components/comparison/WhatScenaristOffers.astro';
 
 Scenarist is built on top of [Mock Service Worker (MSW)](https://mswjs.io/)—we don't compete with MSW, we extend it. Understanding this relationship helps you decide when to use MSW directly vs when Scenarist's scenario layer adds value.
 
-## What Scenarist Offers
-
-Scenarist adds a complete scenario management layer on top of MSW:
-
-- **Test ID Isolation** — Run hundreds of parallel tests with different scenarios against one server
-- **Runtime Switching** — Change scenarios mid-test without restarts (retry flows, error recovery)
-- **First-Class Playwright** — Dedicated fixtures with type-safe scenarios and automatic test ID isolation
-- **Response Sequences** — Built-in polling, retry flows, state machines
-- **Stateful Mocks** — Capture request values, inject into responses (shopping carts, wizards)
-- **Advanced Matching** — Body, headers, query params, regex with specificity-based selection
+<WhatScenaristOffers />
 
 ## The Relationship
 
