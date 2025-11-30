@@ -117,7 +117,7 @@ See the [complete Express example tests](https://github.com/citypaul/scenarist/t
 
 ### Full-Stack Testing with Playwright (Optional)
 
-If you have a **full-stack application** with an Express backend and want browser-based E2E testing, add the Playwright helpers:
+If you have a **full-stack application** with an Express backend and want browser-based scenario testing, add the Playwright helpers:
 
 ```bash
 # pnpm

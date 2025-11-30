@@ -1,6 +1,22 @@
 ---
 title: Why Scenarist?
-description: Understanding the testing gap in modern full-stack frameworks and how Scenarist addresses it
+description: Understanding scenario-based testing and how Scenarist fills the gap between unit tests and end-to-end tests
+---
+
+## What is Scenario-Based Testing?
+
+**Scenario-based testing** is an integration testing approach where your real application code executes while external dependencies (third-party APIs, microservices) return controlled responses. Unlike true end-to-end tests that use zero mocks, scenario-based tests mock only the external services you don't control.
+
+| Testing Approach         | Your Code | External APIs | Best For                                          |
+| ------------------------ | --------- | ------------- | ------------------------------------------------- |
+| **Unit Tests**           | Mocked    | Mocked        | Isolated function logic                           |
+| **Scenario-Based Tests** | Real      | Mocked        | Application behavior with controlled dependencies |
+| **End-to-End Tests**     | Real      | Real          | Full system validation (production-like)          |
+
+**Why "scenario-based"?** Because you define complete backend _scenarios_ (success, error, timeout, user tiers) and switch between them at runtime. Each test selects a scenario that describes the complete external API state, enabling comprehensive testing without external dependencies.
+
+**The key distinction from E2E:** True end-to-end tests use real external APIs with zero mocks—ideal for validating complete production behavior, but slow, expensive, and limited in edge case coverage. Scenario-based tests give you the speed of unit tests with the realism of integration tests by running your real code against controlled external responses.
+
 ---
 
 ## The Testing Gap

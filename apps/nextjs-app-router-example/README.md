@@ -13,7 +13,7 @@ This app showcases Scenarist's complete feature set with Next.js App Router:
 - ✅ **Product Catalog** - Browse products with tier-based pricing (request matching)
 - ✅ **Shopping Cart** - Add items with state management (stateful mocks)
 - ✅ **Route Handler Testing** - Test Next.js Route Handlers with MSW integration
-- ✅ **E2E Testing** - Full browser testing with Playwright
+- ✅ **Scenario-Based Browser Testing** - Full browser testing with Playwright and scenario switching
 - ✅ **Test ID Isolation** - Run multiple tests concurrently with independent scenarios
 - ✅ **Runtime Scenario Switching** - Change backend behavior without app restart
 - ✅ **Request Content Matching** - Dynamic responses based on headers (tier: standard/premium)

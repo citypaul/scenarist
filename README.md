@@ -1,10 +1,24 @@
 # Scenarist 🎭
 
-**Mock External APIs in E2E Tests. Switch Scenarios Instantly. Run Tests in Parallel.**
+**Scenario-Based Testing for Modern Web Applications. Switch Backend States Instantly. Run Tests in Parallel.**
 
 Test your Next.js Server Components, Express routes, and API handlers with controlled external API responses. No app restarts. No test conflicts. Built on MSW with runtime scenario management and test ID isolation.
 
 Express and Next.js adapters available—your real application code runs, only external HTTP calls are mocked.
+
+## What is Scenario-Based Testing?
+
+**Scenario-based testing** is an integration testing approach where your real application code executes while external dependencies (third-party APIs, microservices) return controlled responses. Unlike true end-to-end tests that use zero mocks, scenario-based tests mock only the external services you don't control.
+
+**The key distinction:**
+
+| Testing Approach         | Your Code | External APIs | Best For                                          |
+| ------------------------ | --------- | ------------- | ------------------------------------------------- |
+| **Unit Tests**           | Mocked    | Mocked        | Isolated function logic                           |
+| **Scenario-Based Tests** | Real      | Mocked        | Application behavior with controlled dependencies |
+| **End-to-End Tests**     | Real      | Real          | Full system validation (production-like)          |
+
+**Why "scenario-based"?** Because you define complete backend _scenarios_ (success, error, timeout, user tiers) and switch between them at runtime. Each test selects a scenario that describes the complete external API state, enabling comprehensive testing without external dependencies.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/citypaul/scenarist/ci.yml?branch=main&label=CI)](https://github.com/citypaul/scenarist/actions)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/citypaul/scenarist/badge)](https://securityscorecards.dev/viewer/?uri=github.com/citypaul/scenarist)
@@ -18,15 +32,33 @@ Express and Next.js adapters available—your real application code runs, only e
 
 ---
 
+## 📖 Documentation
+
+**Full documentation at [scenarist.io](https://scenarist.io)**
+
+| Topic                       | Link                                                                                                                           |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **Why Scenarist?**          | [scenarist.io/getting-started/why-scenarist](https://scenarist.io/getting-started/why-scenarist)                               |
+| **Quick Start**             | [scenarist.io/getting-started/quick-start](https://scenarist.io/getting-started/quick-start)                                   |
+| **Testing Philosophy**      | [scenarist.io/concepts/philosophy](https://scenarist.io/concepts/philosophy)                                                   |
+| **Architecture**            | [scenarist.io/concepts/architecture](https://scenarist.io/concepts/architecture)                                               |
+| **Express Guide**           | [scenarist.io/frameworks/express/getting-started](https://scenarist.io/frameworks/express/getting-started)                     |
+| **Next.js App Router**      | [scenarist.io/frameworks/nextjs-app-router/getting-started](https://scenarist.io/frameworks/nextjs-app-router/getting-started) |
+| **React Server Components** | [scenarist.io/frameworks/nextjs-app-router/rsc-guide](https://scenarist.io/frameworks/nextjs-app-router/rsc-guide)             |
+| **Parallel Testing**        | [scenarist.io/testing/parallel-testing](https://scenarist.io/testing/parallel-testing)                                         |
+| **Dynamic Responses**       | [scenarist.io/concepts/dynamic-responses](https://scenarist.io/concepts/dynamic-responses)                                     |
+
+---
+
 ## Test Your Real Application with Mocked External APIs
 
-Scenarist lets you write **E2E tests** where **your actual application code executes**—Express routes, Next.js Server Components, API handlers, middleware, business logic—all of it runs for real. Only external HTTP calls to third-party services (Stripe, Auth0, SendGrid, AWS) are mocked.
+Scenarist lets you write **scenario-based tests** where **your actual application code executes**—Express routes, Next.js Server Components, API handlers, middleware, business logic—all of it runs for real. Only external HTTP calls to third-party services (Stripe, Auth0, SendGrid, AWS) are mocked.
 
 ### Why This Matters
 
 Testing full-stack applications is hard:
 
-- **E2E tests with real APIs** → Brittle, slow, expensive, hard to test edge cases
+- **End-to-end tests with real APIs** → Brittle, slow, expensive, hard to test edge cases
 - **Traditional mocking** → Requires app restarts, tests conflict, framework lock-in
 - **MSW alone** → No scenario management, manual setup per test
 
@@ -411,7 +443,7 @@ pnpm add @scenarist/nextjs-adapter msw
 yarn add @scenarist/nextjs-adapter msw
 ```
 
-**Playwright Helpers (for E2E tests):**
+**Playwright Helpers (for scenario-based browser tests):**
 
 ```bash
 # npm
@@ -1218,7 +1250,7 @@ Built with:
 - [Vitest](https://vitest.dev/) - Testing framework
 - [Turborepo](https://turbo.build/) - Monorepo tooling
 
-Inspired by hexagonal architecture patterns and the testing community's need for better E2E mocking.
+Inspired by hexagonal architecture patterns and the testing community's need for better scenario-based testing tools.
 
 ---
 
