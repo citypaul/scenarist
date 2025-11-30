@@ -644,8 +644,8 @@ Scenarist is **80% ready for production release**. The core architecture, testin
    - Ensure public npm access
    - Prevent private publish errors
 
-10. **Add Changesets release workflow** (2 hours)
-    - Automated release PRs
+10. **Add Changesets release workflow** (2 hours) ✅ COMPLETE
+    - Direct publish after CI passes
     - Streamlined releases
 
 11. **Add automated release notes** (2 hours)

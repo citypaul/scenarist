@@ -127,22 +127,17 @@ git merge release/rc
 git push origin main
 ```
 
-### 3. Changesets Creates PR
+### 3. Automatic Release
 
 The release workflow on `main`:
 
-1. Detects changesets
-2. Creates "Version Packages" PR
-3. Updates versions to stable (e.g., `1.0.0`)
+1. Runs after CI passes
+2. Detects pending changesets
+3. Versions packages (e.g., `1.0.0`)
 4. Updates CHANGELOGs
-
-### 4. Merge Version PR
-
-Merging the "Version Packages" PR:
-
-1. Publishes to npm with `@latest` tag
-2. Creates GitHub Release
-3. Creates git tag
+5. Commits directly to main
+6. Publishes to npm with `@latest` tag
+7. Creates GitHub Release with git tag
 
 ---
 
@@ -178,7 +173,7 @@ git add . && git commit -m "chore: prepare stable release"
 git checkout main
 git merge release/rc
 git push origin main
-# Then merge the "Version Packages" PR
+# Release happens automatically after CI passes
 ```
 
 ---
@@ -193,7 +188,7 @@ git checkout main
 pnpm changeset  # select 'patch'
 git add . && git commit -m "fix: urgent fix"
 git push origin main
-# Merge the "Version Packages" PR
+# Release happens automatically after CI passes
 ```
 
 ---
