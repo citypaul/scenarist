@@ -2,7 +2,13 @@ import type { APIRoute } from "astro";
 
 export const prerender = false;
 
+// 5 second timeout to prevent hanging in CI when external service is unreachable
+const FETCH_TIMEOUT_MS = 5000;
+
 export const POST: APIRoute = async ({ request }) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
   try {
     const body = await request.text();
 
@@ -15,7 +21,10 @@ export const POST: APIRoute = async ({ request }) => {
         "X-Forwarded-For": request.headers.get("CF-Connecting-IP") ?? "",
       },
       body,
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     const responseBody = await response.text();
 
@@ -26,6 +35,7 @@ export const POST: APIRoute = async ({ request }) => {
       },
     });
   } catch (error) {
+    clearTimeout(timeoutId);
     console.error("Analytics proxy error:", error);
     return new Response(JSON.stringify({ error: "Analytics unavailable" }), {
       status: 503,
