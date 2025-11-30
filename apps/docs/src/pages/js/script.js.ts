@@ -2,25 +2,35 @@ import type { APIRoute } from "astro";
 
 export const prerender = false;
 
-const FALLBACK_SCRIPT =
-  "// Analytics unavailable\nwindow.plausible = function() {};";
+// Mock script for testing - mimics real Plausible script structure
+const MOCK_SCRIPT = `// Mock Plausible Analytics Script
+(function() {
+  'use strict';
+  window.plausible = window.plausible || function() {
+    (window.plausible.q = window.plausible.q || []).push(arguments);
+  };
+})();`;
 
-// 5 second timeout to prevent hanging in CI when external service is unreachable
-const FETCH_TIMEOUT_MS = 5000;
-
-export const GET: APIRoute = async () => {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
-  try {
-    const response = await fetch("https://plausible.io/js/script.js", {
-      signal: controller.signal,
+export const GET: APIRoute = async ({ locals }) => {
+  // In test mode, return mock response without calling external service
+  const runtime = locals.runtime as
+    | { env?: { MOCK_ANALYTICS?: string } }
+    | undefined;
+  if (runtime?.env?.MOCK_ANALYTICS === "true") {
+    return new Response(MOCK_SCRIPT, {
+      headers: {
+        "Content-Type": "application/javascript",
+        "Cache-Control": "public, max-age=86400",
+      },
     });
+  }
 
-    clearTimeout(timeoutId);
+  // Production: proxy to real Plausible
+  try {
+    const response = await fetch("https://plausible.io/js/script.js");
 
     if (!response.ok) {
-      return new Response(FALLBACK_SCRIPT, {
+      return new Response(MOCK_SCRIPT, {
         headers: {
           "Content-Type": "application/javascript",
           "Cache-Control": "public, max-age=60",
@@ -38,9 +48,8 @@ export const GET: APIRoute = async () => {
       },
     });
   } catch (error) {
-    clearTimeout(timeoutId);
     console.error("Analytics script proxy error:", error);
-    return new Response(FALLBACK_SCRIPT, {
+    return new Response(MOCK_SCRIPT, {
       headers: {
         "Content-Type": "application/javascript",
         "Cache-Control": "public, max-age=60",

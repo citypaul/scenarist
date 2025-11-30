@@ -33,7 +33,10 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: "pnpm preview",
+    // Pass MOCK_ANALYTICS to wrangler so proxy endpoints return mock responses
+    // This ensures tests are deterministic and don't depend on external services
+    command:
+      "wrangler pages dev dist --port 4321 --binding MOCK_ANALYTICS=true",
     url: "http://localhost:4321",
     reuseExistingServer: !process.env.CI,
   },

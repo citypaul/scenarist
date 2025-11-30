@@ -2,13 +2,60 @@ import type { APIRoute } from "astro";
 
 export const prerender = false;
 
-// 5 second timeout to prevent hanging in CI when external service is unreachable
-const FETCH_TIMEOUT_MS = 5000;
+export const POST: APIRoute = async ({ request, locals }) => {
+  // In test mode, return mock response without calling external service
+  const runtime = locals.runtime as
+    | { env?: { MOCK_ANALYTICS?: string } }
+    | undefined;
+  if (runtime?.env?.MOCK_ANALYTICS === "true") {
+    // Validate the request body structure for realistic testing
+    try {
+      const body = await request.text();
 
-export const POST: APIRoute = async ({ request }) => {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+      // Empty body is invalid
+      if (!body || body.trim() === "") {
+        return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
 
+      const data = JSON.parse(body);
+
+      // Must be an object, not a primitive (handles stringified strings)
+      if (typeof data !== "object" || data === null) {
+        return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      // Check for required Plausible event fields
+      if (!data.n || !data.u || !data.d) {
+        return new Response(
+          JSON.stringify({ error: "Missing required fields" }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      // Valid event - return success
+      return new Response("ok", {
+        status: 202,
+        headers: { "Content-Type": "text/plain" },
+      });
+    } catch {
+      // Invalid JSON
+      return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  }
+
+  // Production: proxy to real Plausible
   try {
     const body = await request.text();
 
@@ -21,10 +68,7 @@ export const POST: APIRoute = async ({ request }) => {
         "X-Forwarded-For": request.headers.get("CF-Connecting-IP") ?? "",
       },
       body,
-      signal: controller.signal,
     });
-
-    clearTimeout(timeoutId);
 
     const responseBody = await response.text();
 
@@ -35,7 +79,6 @@ export const POST: APIRoute = async ({ request }) => {
       },
     });
   } catch (error) {
-    clearTimeout(timeoutId);
     console.error("Analytics proxy error:", error);
     return new Response(JSON.stringify({ error: "Analytics unavailable" }), {
       status: 503,
