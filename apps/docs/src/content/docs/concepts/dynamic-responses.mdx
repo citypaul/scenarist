@@ -667,6 +667,8 @@ const mock: ScenaristMock = {
 
 Capture data from requests and inject it into subsequent responses, enabling stateful scenarios like shopping carts.
 
+**State is isolated per test ID.** Each parallel test maintains its own state—one test's captured cart items never leak into another test's responses. This isolation is automatic via the test ID header.
+
 ### Basic State Capture and Injection
 
 ```typescript

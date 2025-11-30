@@ -25,7 +25,7 @@ Scenarist is built on [MSW](https://mswjs.io/) and adds a complete scenario mana
     Built-in support for polling APIs, retry flows, and state machines. Return different responses on successive calls.
   </Card>
   <Card title="Stateful Mocks" icon="seti:db">
-    Capture values from requests and inject them into responses. Build realistic multi-step flows like shopping carts.
+    Capture values from requests and inject them into responses. State is isolated per test ID, so parallel tests never conflict.
   </Card>
   <Card title="Advanced Matching" icon="magnifier">
     Match requests by body, headers, query params, and regex patterns. Specificity-based selection means no careful ordering required.
@@ -87,7 +87,7 @@ Scenarist is built on top of [Mock Service Worker (MSW)](https://mswjs.io/)—th
 - **Runtime switching** — Change scenarios without restart
 - **First-class Playwright support** — Dedicated fixtures with type-safe scenario switching and automatic test ID isolation
 - **Response sequences** — Built-in support for polling, retry flows, state machines
-- **Stateful mocks** — Capture values from requests, inject into responses
+- **Stateful mocks** — Capture values from requests, inject into responses (state isolated per test ID)
 - **Advanced matching** — Body, headers, query params, regex patterns
 - **Framework adapters** — Express, Next.js integration out of the box
 
