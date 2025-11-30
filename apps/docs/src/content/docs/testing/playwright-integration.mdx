@@ -92,6 +92,21 @@ export default defineConfig<ScenaristOptions>({
 });
 ```
 
+:::tip[Cross-Origin API Servers]
+When your API server runs on a different host or port than your frontend, use an absolute URL:
+
+```typescript
+export default defineConfig<ScenaristOptions>({
+  use: {
+    baseURL: 'http://localhost:3000',  // Frontend (for page.goto)
+    scenaristEndpoint: 'http://localhost:9090/__scenario__',  // API server
+  },
+});
+```
+
+Absolute URLs (starting with `http://` or `https://`) are used directly without prepending `baseURL`.
+:::
+
 ### Clean Test Organization
 
 All tests import from the same fixtures file, ensuring consistency:
@@ -265,6 +280,54 @@ test('staging environment test', async ({ page, switchScenario }) => {
 
   await page.goto('/dashboard');
   // Test runs against staging with custom endpoint
+});
+```
+
+## Cross-Origin API Servers
+
+When your API server runs on a different host or port than your frontend, use an **absolute URL** for `scenaristEndpoint`. This is common in architectures where:
+
+- Frontend and API are separate services on different ports
+- You're testing against a staging or production API
+- Your test infrastructure uses a dedicated mock server
+
+### Configuration
+
+```typescript
+// playwright.config.ts
+import { defineConfig } from '@playwright/test';
+import type { ScenaristOptions } from '@scenarist/playwright-helpers';
+
+// Frontend: http://localhost:3000
+// API Server: http://localhost:9090
+export default defineConfig<ScenaristOptions>({
+  use: {
+    baseURL: 'http://localhost:3000',  // For Playwright navigation (page.goto)
+    scenaristEndpoint: 'http://localhost:9090/__scenario__',  // Absolute URL to API
+  },
+});
+```
+
+### How It Works
+
+| Endpoint Type | Example | Behavior |
+|---------------|---------|----------|
+| Relative path | `/api/__scenario__` | Prepended with `baseURL` → `http://localhost:3000/api/__scenario__` |
+| Absolute URL | `http://localhost:9090/__scenario__` | Used directly (ignores `baseURL`) |
+
+### Per-Test Cross-Origin Override
+
+You can also override for specific tests:
+
+```typescript
+import { test, expect } from './fixtures';
+
+test('test against separate API server', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'premiumUser', {
+    endpoint: 'http://api.staging.example.com/__scenario__',  // Absolute URL
+  });
+
+  await page.goto('/dashboard');
 });
 ```
 
