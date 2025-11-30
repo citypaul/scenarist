@@ -1,0 +1,563 @@
+---
+title: Scenarist vs WireMock
+description: Compare in-process network mocking with server-based mock servers for API testing
+---
+
+import { Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+
+[WireMock](https://wiremock.org/) is a mature, widely-adopted mock server for simulating HTTP APIs. It runs as a standalone Java process and can be used from any language. Scenarist takes a different approach—intercepting requests within your Node.js process using MSW.
+
+## What Scenarist Offers
+
+Before diving into comparisons, here's what Scenarist brings to the table:
+
+- **Test ID Isolation** — Run hundreds of parallel tests with different scenarios against one server
+- **Runtime Switching** — Change scenarios mid-test without restarts (retry flows, error recovery)
+- **First-Class Playwright** — Dedicated fixtures with type-safe scenarios and automatic test ID isolation
+- **Response Sequences** — Built-in polling, retry flows, state machines
+- **Stateful Mocks** — Capture request values, inject into responses (shopping carts, wizards)
+- **Advanced Matching** — Body, headers, query params, regex with specificity-based selection
+
+## At a Glance
+
+| Aspect | Scenarist | WireMock |
+|--------|-----------|----------|
+| **Architecture** | In-process (MSW) | Standalone server |
+| **Language** | TypeScript/JavaScript | Language-agnostic |
+| **Test isolation** | Per-test via test ID | Per-server instance |
+| **Runtime switching** | Yes (single API call) | Requires server restart/reset |
+| **Setup** | npm install | Java + server management |
+| **Test framework integration** | First-class Playwright fixtures | Generic HTTP API |
+| **Response sequences** | Built-in (polling, state machines) | Scenarios extension |
+| **Stateful mocks** | Built-in state capture/injection | Stateful behavior extension |
+| **Recording** | Not supported | Built-in record/playback |
+
+## Key Differences
+
+### Architecture: In-Process vs Standalone
+
+<Tabs>
+  <TabItem label="Scenarist">
+```typescript
+// Mocks run in the same process as your app
+import { createScenarist } from '@scenarist/express-adapter';
+
+export const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  scenarios: {
+    default: {
+      mocks: [{
+        url: 'https://api.stripe.com/v1/charges',
+        method: 'POST',
+        response: { status: 200, body: { id: 'ch_123' } }
+      }]
+    }
+  }
+});
+
+// No external process to manage
+// No network latency between your app and mocks
+// Debugging in the same process
+```
+  </TabItem>
+  <TabItem label="WireMock">
+```java
+// Standalone server - must be started separately
+// docker run -p 8080:8080 wiremock/wiremock
+
+// Then configure via API or JSON files
+{
+  "request": {
+    "method": "POST",
+    "url": "/v1/charges"
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": { "id": "ch_123" }
+  }
+}
+
+// Your app calls WireMock instead of real API
+// STRIPE_API_URL=http://localhost:8080 npm test
+```
+  </TabItem>
+</Tabs>
+
+**Trade-off:** Scenarist's in-process approach means faster setup and no external dependencies, but it only works in Node.js. WireMock's server approach works with any language but requires infrastructure management.
+
+### Test Isolation
+
+<Tabs>
+  <TabItem label="Scenarist">
+```typescript
+// Each test gets isolated scenarios via test ID
+test('payment success', async ({ page, switchScenario }) => {
+  // This test sees 'payment-success' responses
+  await switchScenario(page, 'payment-success');
+  await page.goto('/checkout');
+  await expect(page.locator('.success')).toBeVisible();
+});
+
+test('payment declined', async ({ page, switchScenario }) => {
+  // Same app, same time, different scenario
+  await switchScenario(page, 'payment-declined');
+  await page.goto('/checkout');
+  await expect(page.locator('.error')).toBeVisible();
+});
+
+// Both tests run in parallel against ONE server
+// Test ID header routes to correct scenario
+```
+  </TabItem>
+  <TabItem label="WireMock">
+```typescript
+// Each test typically needs its own WireMock instance
+// Or careful state management between tests
+
+beforeEach(async () => {
+  // Reset all stubs
+  await fetch('http://localhost:8080/__admin/mappings/reset', {
+    method: 'POST'
+  });
+
+  // Configure for this specific test
+  await fetch('http://localhost:8080/__admin/mappings', {
+    method: 'POST',
+    body: JSON.stringify({
+      request: { method: 'POST', url: '/v1/charges' },
+      response: { status: 200, jsonBody: { id: 'ch_123' } }
+    })
+  });
+});
+
+// Parallel tests require multiple WireMock instances
+// Or sophisticated scenario management
+```
+  </TabItem>
+</Tabs>
+
+**Trade-off:** Scenarist's test ID system was designed specifically for parallel test isolation. WireMock can achieve similar results but requires more infrastructure (multiple instances) or careful state management.
+
+### Runtime Scenario Switching
+
+<Tabs>
+  <TabItem label="Scenarist">
+```typescript
+// Switch scenarios mid-test without restart
+test('retry after failure', async ({ page, switchScenario }) => {
+  // Start with failure
+  await switchScenario(page, 'payment-timeout');
+  await page.goto('/checkout');
+  await page.click('[data-testid="submit"]');
+  await expect(page.locator('.retry-button')).toBeVisible();
+
+  // Switch to success - same test, same page
+  await switchScenario(page, 'payment-success');
+  await page.click('.retry-button');
+  await expect(page.locator('.success')).toBeVisible();
+});
+```
+  </TabItem>
+  <TabItem label="WireMock">
+```typescript
+// Changing scenarios requires API calls or restart
+test('retry after failure', async ({ page }) => {
+  // Set up failure scenario
+  await fetch('http://localhost:8080/__admin/mappings', {
+    method: 'POST',
+    body: JSON.stringify({
+      request: { method: 'POST', url: '/v1/charges' },
+      response: { status: 504, body: 'Gateway Timeout' }
+    })
+  });
+
+  await page.goto('/checkout');
+  await page.click('[data-testid="submit"]');
+  await expect(page.locator('.retry-button')).toBeVisible();
+
+  // Delete and recreate mapping for success
+  await fetch('http://localhost:8080/__admin/mappings/reset', {
+    method: 'POST'
+  });
+  await fetch('http://localhost:8080/__admin/mappings', {
+    method: 'POST',
+    body: JSON.stringify({
+      request: { method: 'POST', url: '/v1/charges' },
+      response: { status: 200, jsonBody: { id: 'ch_123' } }
+    })
+  });
+
+  await page.click('.retry-button');
+});
+```
+  </TabItem>
+</Tabs>
+
+**Trade-off:** Scenarist's runtime switching is a single API call. WireMock requires managing stub state through its admin API, which can be error-prone in parallel test environments.
+
+### First-Class Playwright Integration
+
+Scenarist provides dedicated Playwright fixtures that handle test ID generation, scenario switching, and header propagation automatically.
+
+<Tabs>
+  <TabItem label="Scenarist">
+```typescript
+// tests/fixtures.ts - One-time setup
+import { withScenarios, expect } from '@scenarist/playwright-helpers';
+import { scenarios } from '../lib/scenarios';
+
+export const test = withScenarios(scenarios);
+export { expect };
+
+// tests/checkout.spec.ts - Clean, type-safe tests
+import { test, expect } from './fixtures';
+
+test('premium user checkout', async ({ page, switchScenario }) => {
+  // Type-safe scenario ID with autocomplete
+  await switchScenario(page, 'premium-user');
+
+  await page.goto('/checkout');
+  await expect(page.locator('.premium-discount')).toBeVisible();
+});
+
+test('payment declined', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'payment-declined');
+
+  await page.goto('/checkout');
+  await page.click('[data-testid="submit"]');
+  await expect(page.locator('.error-message')).toContainText('declined');
+});
+```
+  </TabItem>
+  <TabItem label="WireMock">
+```typescript
+// tests/checkout.spec.ts - Manual setup in each test
+import { test, expect } from '@playwright/test';
+
+test('premium user checkout', async ({ page }) => {
+  // Generate unique ID manually
+  const testId = `test-${Date.now()}-${Math.random()}`;
+
+  // Configure WireMock via HTTP
+  await fetch('http://localhost:8080/__admin/mappings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      request: { method: 'GET', url: '/api/user' },
+      response: {
+        status: 200,
+        jsonBody: { tier: 'premium' }
+      }
+    })
+  });
+
+  // Set headers manually
+  await page.setExtraHTTPHeaders({ 'x-test-id': testId });
+
+  await page.goto('/checkout');
+  await expect(page.locator('.premium-discount')).toBeVisible();
+
+  // Clean up for parallel safety
+  await fetch('http://localhost:8080/__admin/mappings/reset', {
+    method: 'POST'
+  });
+});
+```
+  </TabItem>
+</Tabs>
+
+**Trade-off:** Scenarist's Playwright helpers provide automatic test ID isolation—each test gets its own scenario state without manual header management. WireMock requires manual HTTP calls and careful state management. Future Scenarist releases plan to add similar first-class support for Cypress.
+
+### Built-in Dynamic Response Features
+
+Scenarist includes advanced response capabilities out of the box that require extensions or custom code in WireMock.
+
+#### Response Sequences (Polling, State Machines)
+
+<Tabs>
+  <TabItem label="Scenarist">
+```typescript
+// Built-in sequence support
+{
+  method: 'GET',
+  url: 'https://api.example.com/job/:id/status',
+  sequence: {
+    responses: [
+      { status: 200, body: { status: 'pending' } },
+      { status: 200, body: { status: 'processing' } },
+      { status: 200, body: { status: 'complete', result: 'success' } }
+    ],
+    repeat: 'last'  // Stay at final response
+  }
+}
+
+// Perfect for testing polling UIs
+test('shows job progress', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'job-processing');
+  await page.goto('/jobs/123');
+
+  await expect(page.locator('.status')).toContainText('pending');
+  await page.click('[data-testid="refresh"]');
+  await expect(page.locator('.status')).toContainText('processing');
+  await page.click('[data-testid="refresh"]');
+  await expect(page.locator('.status')).toContainText('complete');
+});
+```
+  </TabItem>
+  <TabItem label="WireMock">
+```java
+// Requires WireMock Scenarios extension
+// More complex setup with state machine
+
+// State 1: Initial
+stubFor(get(urlEqualTo("/job/123/status"))
+  .inScenario("Job Progress")
+  .whenScenarioStateIs(STARTED)
+  .willReturn(aResponse()
+    .withBody("{\"status\": \"pending\"}")
+  )
+  .willSetStateTo("processing"));
+
+// State 2: Processing
+stubFor(get(urlEqualTo("/job/123/status"))
+  .inScenario("Job Progress")
+  .whenScenarioStateIs("processing")
+  .willReturn(aResponse()
+    .withBody("{\"status\": \"processing\"}")
+  )
+  .willSetStateTo("complete"));
+
+// State 3: Complete
+stubFor(get(urlEqualTo("/job/123/status"))
+  .inScenario("Job Progress")
+  .whenScenarioStateIs("complete")
+  .willReturn(aResponse()
+    .withBody("{\"status\": \"complete\", \"result\": \"success\"}")
+  ));
+```
+  </TabItem>
+</Tabs>
+
+#### Advanced Request Matching
+
+<Tabs>
+  <TabItem label="Scenarist">
+```typescript
+// Declarative matching with body, headers, query, regex
+{
+  method: 'POST',
+  url: 'https://api.stripe.com/v1/charges',
+  match: {
+    body: {
+      amount: 5000,
+      currency: 'usd',
+      metadata: { orderId: /^order-\d+$/ }  // Regex support
+    },
+    headers: {
+      'idempotency-key': /.+/  // Must be present
+    }
+  },
+  response: { status: 200, body: { id: 'ch_premium_123' } }
+}
+
+// Specificity-based selection - most specific match wins
+// No need to carefully order your mocks
+```
+  </TabItem>
+  <TabItem label="WireMock">
+```json
+{
+  "request": {
+    "method": "POST",
+    "url": "/v1/charges",
+    "bodyPatterns": [
+      { "matchesJsonPath": "$.amount" },
+      { "matchesJsonPath": "$.currency" },
+      { "matchesJsonPath": "$.metadata.orderId",
+        "matches": "^order-\\d+$" }
+    ],
+    "headers": {
+      "idempotency-key": { "matches": ".+" }
+    }
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": { "id": "ch_premium_123" }
+  }
+}
+```
+  </TabItem>
+</Tabs>
+
+#### Stateful Mocks (Capture & Inject)
+
+<Tabs>
+  <TabItem label="Scenarist">
+```typescript
+// Capture state from requests, inject into responses
+const scenarios = {
+  'cart-flow': {
+    mocks: [
+      // Capture item when added to cart
+      {
+        method: 'POST',
+        url: '*/api/cart/items',
+        captureState: {
+          'cartItems[]': 'body.item'  // Append to array
+        },
+        response: { status: 201, body: { success: true } }
+      },
+      // Inject captured state into response
+      {
+        method: 'GET',
+        url: '*/api/cart',
+        response: {
+          status: 200,
+          body: {
+            items: '{{state.cartItems}}',
+            count: '{{state.cartItems.length}}'
+          }
+        }
+      }
+    ]
+  }
+};
+
+// Test multi-step flows with stateful behavior
+test('cart accumulates items', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'cart-flow');
+
+  await page.goto('/products');
+  await page.click('[data-product="widget"]');
+  await page.click('[data-product="gadget"]');
+
+  await page.goto('/cart');
+  await expect(page.locator('.cart-count')).toContainText('2');
+});
+```
+  </TabItem>
+  <TabItem label="WireMock">
+```java
+// Requires custom extension or external state management
+// WireMock's stateful behavior is limited to scenario states
+
+// Option 1: Use WireMock's built-in scenarios (limited)
+// Can only track which "state" you're in, not capture data
+
+// Option 2: Custom extension with external storage
+public class CartStateExtension implements Extension {
+  private Map<String, List<Item>> cartState = new HashMap<>();
+
+  // Complex implementation required...
+}
+
+// Option 3: Use a real service/database for state
+// Defeats the purpose of mocking
+```
+  </TabItem>
+</Tabs>
+
+**Trade-off:** Scenarist's dynamic response features are built-in and declarative. WireMock can achieve similar results but requires extensions, custom code, or careful orchestration of its scenario state machine.
+
+## When to Choose Scenarist
+
+<CardGrid>
+  <Card title="TypeScript-first development" icon="seti:typescript">
+    Scenarios are TypeScript objects with full type safety. IDE autocomplete, compile-time errors, refactoring support.
+  </Card>
+  <Card title="No infrastructure overhead" icon="rocket">
+    No Java runtime, no Docker, no server management. Just npm install and configure.
+  </Card>
+  <Card title="Parallel test isolation" icon="random">
+    Built-in test ID system lets hundreds of tests run simultaneously with different scenarios.
+  </Card>
+  <Card title="First-class Playwright support" icon="seti:playwright">
+    Dedicated fixtures with automatic test ID isolation. Each test gets its own scenario state with type-safe switching.
+  </Card>
+  <Card title="Built-in dynamic responses" icon="list-format">
+    Response sequences, advanced matching (body/headers/query/regex), and stateful mocks included out of the box.
+  </Card>
+  <Card title="Modern frameworks" icon="puzzle">
+    First-class support for Next.js Server Components, Express middleware, and other Node.js frameworks.
+  </Card>
+</CardGrid>
+
+## When to Choose WireMock
+
+<CardGrid>
+  <Card title="Polyglot environment" icon="seti:json">
+    Your team uses multiple languages (Java, Python, .NET). WireMock works with any HTTP client.
+  </Card>
+  <Card title="Record and playback" icon="seti:video">
+    Need to capture real API interactions and replay them. WireMock's recording is battle-tested.
+  </Card>
+  <Card title="Existing WireMock investment" icon="approve-check">
+    Team already knows WireMock, has existing stub libraries, or uses WireMock Cloud.
+  </Card>
+  <Card title="Contract testing" icon="document">
+    Using WireMock for contract testing with Spring Cloud Contract or similar frameworks.
+  </Card>
+</CardGrid>
+
+## Migration Considerations
+
+### From WireMock to Scenarist
+
+If you're considering migrating from WireMock:
+
+1. **Stub definitions translate directly** — WireMock JSON mappings map cleanly to Scenarist scenarios
+2. **Test isolation improves** — No more managing multiple WireMock instances for parallel tests
+3. **Recording doesn't migrate** — You'll lose record/playback capabilities
+
+```typescript
+// WireMock JSON
+{
+  "request": {
+    "method": "POST",
+    "url": "/v1/charges",
+    "bodyPatterns": [{ "matchesJsonPath": "$.amount" }]
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": { "id": "ch_123", "status": "succeeded" }
+  }
+}
+
+// Equivalent Scenarist scenario
+{
+  method: 'POST',
+  url: 'https://api.stripe.com/v1/charges',
+  match: { body: { amount: /.*/ } },
+  response: {
+    status: 200,
+    body: { id: 'ch_123', status: 'succeeded' }
+  }
+}
+```
+
+### Using Both Together
+
+You can use WireMock and Scenarist together:
+
+- **WireMock** for services your team doesn't own (microservices from other teams)
+- **Scenarist** for third-party APIs you need to test scenarios for (Stripe, Auth0)
+
+Point your app at WireMock for internal services while Scenarist mocks external APIs.
+
+## Summary
+
+| Factor | Scenarist Wins | WireMock Wins |
+|--------|---------------|---------------|
+| Setup simplicity | ✓ | |
+| TypeScript integration | ✓ | |
+| Parallel test isolation | ✓ | |
+| Runtime switching | ✓ | |
+| Playwright integration | ✓ | |
+| Built-in sequences | ✓ | |
+| Stateful mocks | ✓ | |
+| Language support | | ✓ |
+| Record/playback | | ✓ |
+| Ecosystem maturity | | ✓ |
+| Contract testing | | ✓ |
+
+**Bottom line:** Choose Scenarist for TypeScript/JavaScript projects where you want simple setup, built-in parallel test isolation, first-class Playwright support, and advanced features like response sequences and stateful mocks out of the box. Choose WireMock for polyglot environments, when you need recording, or when you're already invested in the WireMock ecosystem.

@@ -72,6 +72,7 @@ This package provides complete Next.js integration for Scenarist's scenario mana
 | **Getting Started (App Router)**     | [scenarist.io/frameworks/nextjs-app-router/getting-started](https://scenarist.io/frameworks/nextjs-app-router/getting-started)     |
 | **Getting Started (Pages Router)**   | [scenarist.io/frameworks/nextjs-pages-router/getting-started](https://scenarist.io/frameworks/nextjs-pages-router/getting-started) |
 | **🎯 React Server Components Guide** | [scenarist.io/frameworks/nextjs-app-router/rsc-guide](https://scenarist.io/frameworks/nextjs-app-router/rsc-guide)                 |
+| **Tool Comparison**                  | [scenarist.io/comparison](https://scenarist.io/comparison)                                                                         |
 | **Parallel Testing**                 | [scenarist.io/testing/parallel-testing](https://scenarist.io/testing/parallel-testing)                                             |
 | **Testing Philosophy**               | [scenarist.io/concepts/philosophy](https://scenarist.io/concepts/philosophy)                                                       |
 

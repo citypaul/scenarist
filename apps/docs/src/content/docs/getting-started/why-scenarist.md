@@ -152,6 +152,8 @@ This follows Test-Driven Development principles: tests document expected behavio
 | Speed                              | Fast                 | Slow                   | Fast                 |
 | Scenario coverage                  | High (with mocking)  | Low (speed constraint) | High                 |
 
+**Looking for tool comparisons?** See our [Tool Comparison](/comparison) guide for detailed comparisons with WireMock, Nock, Testcontainers, and Playwright mocks.
+
 None of these approaches replaces the others—they serve different purposes:
 
 - **Unit tests** verify individual functions and modules in isolation

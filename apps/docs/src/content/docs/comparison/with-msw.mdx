@@ -1,0 +1,322 @@
+---
+title: Scenarist + MSW
+description: How Scenarist builds on Mock Service Worker and when to use each
+---
+
+import { Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+
+Scenarist is built on top of [Mock Service Worker (MSW)](https://mswjs.io/)—we don't compete with MSW, we extend it. Understanding this relationship helps you decide when to use MSW directly vs when Scenarist's scenario layer adds value.
+
+## What Scenarist Offers
+
+Scenarist adds a complete scenario management layer on top of MSW:
+
+- **Test ID Isolation** — Run hundreds of parallel tests with different scenarios against one server
+- **Runtime Switching** — Change scenarios mid-test without restarts (retry flows, error recovery)
+- **First-Class Playwright** — Dedicated fixtures with type-safe scenarios and automatic test ID isolation
+- **Response Sequences** — Built-in polling, retry flows, state machines
+- **Stateful Mocks** — Capture request values, inject into responses (shopping carts, wizards)
+- **Advanced Matching** — Body, headers, query params, regex with specificity-based selection
+
+## The Relationship
+
+```
+┌─────────────────────────────────────────────┐
+│              Your Test Suite                │
+│  ┌───────────────────────────────────────┐  │
+│  │           Scenarist                   │  │
+│  │  • Scenario management                │  │
+│  │  • Test ID isolation                  │  │
+│  │  • Runtime switching                  │  │
+│  │  • Framework adapters                 │  │
+│  │  ┌─────────────────────────────────┐  │  │
+│  │  │            MSW                  │  │  │
+│  │  │  • Request interception         │  │  │
+│  │  │  • Network-level mocking        │  │  │
+│  │  │  • Handler matching             │  │  │
+│  │  └─────────────────────────────────┘  │  │
+│  └───────────────────────────────────────┘  │
+└─────────────────────────────────────────────┘
+```
+
+**MSW provides the foundation:**
+- Intercepts HTTP/HTTPS requests at the network level
+- Works with any HTTP client (fetch, axios, got, etc.)
+- Proven, battle-tested, actively maintained
+
+**Scenarist adds the testing layer:**
+- Scenario management (group mocks by test case)
+- Test ID isolation (parallel tests with different states)
+- Runtime switching (change scenarios without restart)
+- Framework adapters (Express, Next.js integration)
+
+## When to Use MSW Directly
+
+<CardGrid>
+  <Card title="Storybook/Development" icon="seti:storybook">
+    Mocking APIs during development or Storybook stories. No test isolation needed.
+  </Card>
+  <Card title="Single-Test Mocking" icon="seti:test">
+    Simple tests where each test defines its own handlers inline. No scenario sharing.
+  </Card>
+  <Card title="API Design/Prototyping" icon="pencil">
+    Building frontend before backend exists. Interactive development, not testing.
+  </Card>
+  <Card title="Maximum Control" icon="setting">
+    Need low-level MSW features like request timing, custom resolvers, or websocket mocking.
+  </Card>
+</CardGrid>
+
+### Example: MSW for Development
+
+```typescript
+// src/mocks/handlers.ts - MSW for development
+import { http, HttpResponse } from 'msw';
+
+export const handlers = [
+  http.get('/api/user', () => {
+    return HttpResponse.json({
+      id: 'user-123',
+      name: 'Development User',
+      email: 'dev@example.com'
+    });
+  }),
+
+  http.post('/api/login', async ({ request }) => {
+    const body = await request.json();
+    if (body.email === 'test@example.com') {
+      return HttpResponse.json({ token: 'mock-jwt-token' });
+    }
+    return HttpResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+  })
+];
+
+// Use in browser with setupWorker for Storybook
+// Use in Node with setupServer for development server
+```
+
+**This is a great use of MSW directly.** No test isolation needed, no scenario switching—just consistent mock data for development.
+
+## When to Use Scenarist
+
+<CardGrid>
+  <Card title="Parallel Testing" icon="random">
+    Multiple tests running simultaneously need different API states. Test ID isolation is essential.
+  </Card>
+  <Card title="Scenario Libraries" icon="open-book">
+    Reusable scenarios across test suites. "payment-success", "payment-declined", "auth-timeout" used everywhere.
+  </Card>
+  <Card title="Runtime Switching" icon="forward">
+    Tests that change scenarios mid-execution. Retry flows, state transitions, multi-step user journeys.
+  </Card>
+  <Card title="Framework Integration" icon="puzzle">
+    Testing Next.js Server Components, Express middleware, or other server-side code with scenarios.
+  </Card>
+</CardGrid>
+
+### Example: Scenarist for Parallel Tests
+
+```typescript
+// scenarios/payment.ts - Scenarist for testing
+const scenarios = {
+  default: {
+    mocks: [{ url: 'https://api.stripe.com/v1/charges', response: { status: 200, body: { id: 'ch_123' } } }]
+  },
+  'payment-success': {
+    mocks: [{ url: 'https://api.stripe.com/v1/charges', response: { status: 200, body: { id: 'ch_456', status: 'succeeded' } } }]
+  },
+  'payment-declined': {
+    mocks: [{ url: 'https://api.stripe.com/v1/charges', response: { status: 402, body: { error: { code: 'card_declined' } } } }]
+  },
+  'payment-timeout': {
+    mocks: [{ url: 'https://api.stripe.com/v1/charges', response: { status: 504, delay: 30000 } }]
+  }
+} as const satisfies ScenaristScenarios;
+
+// payment.spec.ts - Tests run in parallel
+test('shows success message', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'payment-success');
+  // Test isolation via x-test-id header
+});
+
+test('shows decline message', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'payment-declined');
+  // Different scenario, same time, same server
+});
+
+test('shows timeout message', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'payment-timeout');
+  // Third scenario, all running in parallel
+});
+```
+
+**This is where Scenarist shines.** Multiple tests, different scenarios, running simultaneously against one server instance.
+
+## The Scenario Management Problem
+
+MSW is excellent at intercepting requests. But as your test suite grows, you face challenges:
+
+### Challenge 1: Parallel Test Isolation
+
+<Tabs>
+  <TabItem label="MSW Only">
+```typescript
+// Problem: All tests share the same handlers
+// Test A and Test B run simultaneously
+// Which response does each test get?
+
+beforeEach(() => {
+  server.use(
+    http.post('/api/payment', () => {
+      return HttpResponse.json({ status: 'succeeded' });
+    })
+  );
+});
+
+test('Test A - expects success', async () => { /* ... */ });
+test('Test B - expects failure', async () => {
+  // How do we make THIS test see a different response?
+  // server.use() would affect Test A too!
+});
+```
+  </TabItem>
+  <TabItem label="With Scenarist">
+```typescript
+// Solution: Test ID routes to correct scenario
+test('Test A - expects success', async ({ switchScenario }) => {
+  await switchScenario(page, 'payment-success');
+  // x-test-id: test-a → payment-success scenario
+});
+
+test('Test B - expects failure', async ({ switchScenario }) => {
+  await switchScenario(page, 'payment-declined');
+  // x-test-id: test-b → payment-declined scenario
+  // Both run in parallel, isolated by test ID
+});
+```
+  </TabItem>
+</Tabs>
+
+### Challenge 2: Scenario Reuse
+
+<Tabs>
+  <TabItem label="MSW Only">
+```typescript
+// Problem: Duplicating handler setup across tests
+// payment.test.ts
+beforeEach(() => {
+  server.use(
+    http.post('/api/payment', () => HttpResponse.json({ status: 'succeeded' })),
+    http.get('/api/user', () => HttpResponse.json({ tier: 'premium' }))
+  );
+});
+
+// checkout.test.ts - same setup duplicated
+beforeEach(() => {
+  server.use(
+    http.post('/api/payment', () => HttpResponse.json({ status: 'succeeded' })),
+    http.get('/api/user', () => HttpResponse.json({ tier: 'premium' }))
+  );
+});
+
+// What if payment API response format changes?
+// Update everywhere!
+```
+  </TabItem>
+  <TabItem label="With Scenarist">
+```typescript
+// Solution: Centralized scenario definitions
+// scenarios/index.ts
+export const scenarios = {
+  'premium-checkout': {
+    mocks: [
+      { url: '/api/payment', response: { body: { status: 'succeeded' } } },
+      { url: '/api/user', response: { body: { tier: 'premium' } } }
+    ]
+  }
+} as const satisfies ScenaristScenarios;
+
+// All tests reference the same scenario
+// payment.test.ts
+await switchScenario(page, 'premium-checkout');
+
+// checkout.test.ts
+await switchScenario(page, 'premium-checkout');
+
+// Change in one place, tests stay green
+```
+  </TabItem>
+</Tabs>
+
+### Challenge 3: Runtime Switching
+
+<Tabs>
+  <TabItem label="MSW Only">
+```typescript
+// Problem: Changing handlers mid-test
+test('retry after failure', async () => {
+  // Set up failure
+  server.use(http.post('/api/payment', () => HttpResponse.error()));
+
+  await page.click('#submit');
+  await expect(page.locator('.retry')).toBeVisible();
+
+  // Need to change to success...
+  server.resetHandlers(); // Affects other parallel tests!
+  server.use(http.post('/api/payment', () => HttpResponse.json({ status: 'ok' })));
+
+  await page.click('.retry');
+});
+```
+  </TabItem>
+  <TabItem label="With Scenarist">
+```typescript
+// Solution: Runtime switching per test ID
+test('retry after failure', async ({ switchScenario }) => {
+  await switchScenario(page, 'payment-timeout');
+  await page.click('#submit');
+  await expect(page.locator('.retry')).toBeVisible();
+
+  // Switch scenario for THIS test only
+  await switchScenario(page, 'payment-success');
+  await page.click('.retry');
+  await expect(page.locator('.success')).toBeVisible();
+});
+```
+  </TabItem>
+</Tabs>
+
+## Using Both Together
+
+You can use MSW directly for some use cases while using Scenarist for testing:
+
+```typescript
+// src/mocks/browser.ts - MSW for Storybook
+import { setupWorker } from 'msw/browser';
+import { handlers } from './handlers';
+
+export const worker = setupWorker(...handlers);
+
+// scenarios/index.ts - Scenarist for tests
+export const scenarios = {
+  default: { mocks: [...] },
+  'edge-case': { mocks: [...] }
+} as const satisfies ScenaristScenarios;
+```
+
+**They don't conflict.** MSW handles development/Storybook. Scenarist handles your test suite with scenario management.
+
+## Summary
+
+| Use Case | MSW Directly | Scenarist |
+|----------|--------------|-----------|
+| Development mocking | ✓ | |
+| Storybook | ✓ | |
+| API prototyping | ✓ | |
+| Simple single-test mocks | ✓ | ✓ |
+| Parallel test isolation | | ✓ |
+| Scenario libraries | | ✓ |
+| Runtime switching | | ✓ |
+| Framework adapters | | ✓ |
+
+**Bottom line:** MSW is the foundation for all request interception. Use it directly when you need simple mocking. Use Scenarist when you need scenario management for testing—parallel isolation, runtime switching, and reusable scenario libraries.

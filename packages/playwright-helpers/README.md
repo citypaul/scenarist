@@ -13,6 +13,7 @@ Playwright test helpers for [Scenarist](https://scenarist.io) scenario managemen
 | -------------------------- | -------------------------------------------------------------------------------------------------- |
 | **Why Scenarist?**         | [scenarist.io/getting-started/why-scenarist](https://scenarist.io/getting-started/why-scenarist)   |
 | **Playwright Integration** | [scenarist.io/testing/playwright-integration](https://scenarist.io/testing/playwright-integration) |
+| **Tool Comparison**        | [scenarist.io/comparison](https://scenarist.io/comparison)                                         |
 | **Parallel Testing**       | [scenarist.io/testing/parallel-testing](https://scenarist.io/testing/parallel-testing)             |
 | **Testing Philosophy**     | [scenarist.io/concepts/philosophy](https://scenarist.io/concepts/philosophy)                       |
 

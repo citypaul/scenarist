@@ -40,6 +40,7 @@ Express and Next.js adapters available—your real application code runs, only e
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | **Why Scenarist?**          | [scenarist.io/getting-started/why-scenarist](https://scenarist.io/getting-started/why-scenarist)                               |
 | **Quick Start**             | [scenarist.io/getting-started/quick-start](https://scenarist.io/getting-started/quick-start)                                   |
+| **Tool Comparison**         | [scenarist.io/comparison](https://scenarist.io/comparison)                                                                     |
 | **Testing Philosophy**      | [scenarist.io/concepts/philosophy](https://scenarist.io/concepts/philosophy)                                                   |
 | **Architecture**            | [scenarist.io/concepts/architecture](https://scenarist.io/concepts/architecture)                                               |
 | **Express Guide**           | [scenarist.io/frameworks/express/getting-started](https://scenarist.io/frameworks/express/getting-started)                     |

@@ -1,0 +1,342 @@
+---
+title: Scenarist vs Nock
+description: Compare declarative scenario management with imperative per-test mock setup
+---
+
+import { Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+
+[Nock](https://github.com/nock/nock) is a popular HTTP mocking library for Node.js. It intercepts requests at the `http`/`https` module level, making it lighter weight than MSW's network-level interception. Scenarist takes a different approach—declarative scenario definitions with built-in parallel test isolation.
+
+## What Scenarist Offers
+
+Before diving into comparisons, here's what Scenarist brings to the table:
+
+- **Test ID Isolation** — Run hundreds of parallel tests with different scenarios against one server
+- **Runtime Switching** — Change scenarios mid-test without restarts (retry flows, error recovery)
+- **First-Class Playwright** — Dedicated fixtures with type-safe scenarios and automatic test ID isolation
+- **Response Sequences** — Built-in polling, retry flows, state machines
+- **Stateful Mocks** — Capture request values, inject into responses (shopping carts, wizards)
+- **Advanced Matching** — Body, headers, query params, regex with specificity-based selection
+
+## At a Glance
+
+| Aspect | Scenarist | Nock |
+|--------|-----------|------|
+| **Approach** | Declarative scenarios | Imperative per-test setup |
+| **Test isolation** | Per-test via test ID | Manual scope management |
+| **Interception level** | Network (MSW) | Node.js http module |
+| **Runtime switching** | Yes (API call) | No (reconfigure handlers) |
+| **Browser support** | Via MSW | Node.js only |
+| **Setup** | Framework adapters | Standalone library |
+
+## Key Differences
+
+### Declarative vs Imperative
+
+<Tabs>
+  <TabItem label="Scenarist">
+```typescript
+// Declarative - describe what, not how
+const scenarios = {
+  'user-premium': {
+    mocks: [{
+      url: 'https://api.stripe.com/v1/customers/cus_123',
+      response: {
+        status: 200,
+        body: { id: 'cus_123', subscriptions: { data: [{ status: 'active' }] } }
+      }
+    }]
+  },
+  'user-free': {
+    mocks: [{
+      url: 'https://api.stripe.com/v1/customers/cus_123',
+      response: {
+        status: 200,
+        body: { id: 'cus_123', subscriptions: { data: [] } }
+      }
+    }]
+  }
+} as const satisfies ScenaristScenarios;
+
+// Tests select scenarios by name
+test('premium features visible', async ({ switchScenario }) => {
+  await switchScenario(page, 'user-premium');
+});
+```
+  </TabItem>
+  <TabItem label="Nock">
+```typescript
+// Imperative - describe how to respond
+beforeEach(() => {
+  nock.cleanAll();
+});
+
+test('premium features visible', async () => {
+  // Set up mock inline for this test
+  nock('https://api.stripe.com')
+    .get('/v1/customers/cus_123')
+    .reply(200, {
+      id: 'cus_123',
+      subscriptions: { data: [{ status: 'active' }] }
+    });
+
+  // Test code...
+});
+
+test('free features visible', async () => {
+  // Different setup for this test
+  nock('https://api.stripe.com')
+    .get('/v1/customers/cus_123')
+    .reply(200, {
+      id: 'cus_123',
+      subscriptions: { data: [] }
+    });
+
+  // Test code...
+});
+```
+  </TabItem>
+</Tabs>
+
+**Trade-off:** Scenarist's declarative approach makes scenarios reusable and inspectable—you can see all scenarios in one place. Nock's imperative approach is more flexible for one-off mocks but can lead to duplication.
+
+### Parallel Test Isolation
+
+<Tabs>
+  <TabItem label="Scenarist">
+```typescript
+// Built-in test isolation via test ID
+test.describe.parallel('Payment flows', () => {
+  test('success flow', async ({ page, switchScenario }) => {
+    // x-test-id header routes to this scenario
+    await switchScenario(page, 'payment-success');
+    // Other tests can run simultaneously with different scenarios
+  });
+
+  test('failure flow', async ({ page, switchScenario }) => {
+    await switchScenario(page, 'payment-declined');
+    // Same server, same time, isolated by test ID
+  });
+});
+```
+  </TabItem>
+  <TabItem label="Nock">
+```typescript
+// Manual isolation - requires careful scoping
+test.describe('Payment flows', () => {
+  // Serial execution to avoid conflicts
+  test.describe.serial('success flow', () => {
+    test.beforeEach(() => {
+      nock.cleanAll();
+      nock('https://api.stripe.com')
+        .post('/v1/charges')
+        .reply(200, { status: 'succeeded' });
+    });
+
+    test('shows success', async () => { /* ... */ });
+  });
+
+  test.describe.serial('failure flow', () => {
+    test.beforeEach(() => {
+      nock.cleanAll();
+      nock('https://api.stripe.com')
+        .post('/v1/charges')
+        .reply(402, { error: 'declined' });
+    });
+
+    test('shows error', async () => { /* ... */ });
+  });
+});
+
+// Parallel tests with Nock require careful isolation
+// or separate test processes
+```
+  </TabItem>
+</Tabs>
+
+**Trade-off:** Scenarist was designed specifically for parallel test isolation. Nock can work with parallel tests but requires careful scope management to avoid mock leakage between tests.
+
+### Request Matching
+
+<Tabs>
+  <TabItem label="Scenarist">
+```typescript
+// Declarative matching patterns
+{
+  method: 'POST',
+  url: 'https://api.stripe.com/v1/charges',
+  match: {
+    body: {
+      amount: 5000,
+      currency: 'usd'
+    },
+    headers: {
+      'idempotency-key': /^[a-f0-9-]+$/
+    }
+  },
+  response: {
+    status: 200,
+    body: { id: 'ch_123' }
+  }
+}
+```
+  </TabItem>
+  <TabItem label="Nock">
+```typescript
+// Fluent API for matching
+nock('https://api.stripe.com')
+  .post('/v1/charges', {
+    amount: 5000,
+    currency: 'usd'
+  })
+  .matchHeader('idempotency-key', /^[a-f0-9-]+$/)
+  .reply(200, { id: 'ch_123' });
+
+// Or with function matchers
+nock('https://api.stripe.com')
+  .post('/v1/charges', (body) => body.amount > 0)
+  .reply(200, { id: 'ch_123' });
+```
+  </TabItem>
+</Tabs>
+
+**Trade-off:** Both offer rich matching capabilities. Nock allows function matchers for maximum flexibility. Scenarist's declarative patterns are more restrictive but enable inspection and composition.
+
+### Scope and Cleanup
+
+<Tabs>
+  <TabItem label="Scenarist">
+```typescript
+// Scenarios persist - switch between them
+test('multi-step flow', async ({ switchScenario }) => {
+  // Start with error
+  await switchScenario(page, 'payment-timeout');
+  await page.click('#submit');
+
+  // Switch to success for retry
+  await switchScenario(page, 'payment-success');
+  await page.click('#retry');
+
+  // No cleanup needed - test ID isolation
+});
+```
+  </TabItem>
+  <TabItem label="Nock">
+```typescript
+// Interceptors are consumed once by default
+test('multi-step flow', async () => {
+  // First call
+  nock('https://api.stripe.com')
+    .post('/v1/charges')
+    .reply(504, 'timeout');
+
+  await page.click('#submit');
+
+  // Interceptor consumed - need another
+  nock('https://api.stripe.com')
+    .post('/v1/charges')
+    .reply(200, { status: 'succeeded' });
+
+  await page.click('#retry');
+
+  // Can use .persist() for multiple calls
+  // nock(...).persist().reply(...)
+});
+```
+  </TabItem>
+</Tabs>
+
+**Trade-off:** Nock's one-time consumption is explicit about expected call counts. Scenarist's persistent scenarios are simpler for flows where the same endpoint is called multiple times.
+
+## When to Choose Scenarist
+
+<CardGrid>
+  <Card title="Parallel test isolation" icon="random">
+    Built-in test ID system enables hundreds of tests with different scenarios running simultaneously.
+  </Card>
+  <Card title="Scenario libraries" icon="open-book">
+    Define scenarios once, reuse everywhere. Changes in one place update all tests.
+  </Card>
+  <Card title="Server-side testing" icon="seti:nodejs">
+    Full framework integration for Next.js Server Components, Express middleware.
+  </Card>
+  <Card title="Runtime switching" icon="forward">
+    Change scenarios mid-test without cleanup/setup. Test retry flows, state machines.
+  </Card>
+</CardGrid>
+
+## When to Choose Nock
+
+<CardGrid>
+  <Card title="Lightweight mocking" icon="seti:javascript">
+    No MSW dependency. Lighter footprint for simple Node.js unit tests.
+  </Card>
+  <Card title="One-off mocks" icon="seti:test">
+    Tests that need unique, specific mocks not reused elsewhere.
+  </Card>
+  <Card title="Call counting" icon="seti:info">
+    Built-in assertions on call counts. Verify exactly N requests were made.
+  </Card>
+  <Card title="Existing investment" icon="approve-check">
+    Team already uses Nock. Migration cost outweighs benefits.
+  </Card>
+</CardGrid>
+
+## Migration Considerations
+
+### From Nock to Scenarist
+
+```typescript
+// Nock - inline definitions
+beforeEach(() => {
+  nock('https://api.stripe.com')
+    .get('/v1/customers/cus_123')
+    .reply(200, { id: 'cus_123', name: 'Test Customer' });
+
+  nock('https://api.sendgrid.com')
+    .post('/v3/mail/send')
+    .reply(202);
+});
+
+// Scenarist - centralized scenarios
+const scenarios = {
+  default: {
+    mocks: [
+      {
+        url: 'https://api.stripe.com/v1/customers/cus_123',
+        response: { status: 200, body: { id: 'cus_123', name: 'Test Customer' } }
+      },
+      {
+        url: 'https://api.sendgrid.com/v3/mail/send',
+        method: 'POST',
+        response: { status: 202 }
+      }
+    ]
+  }
+} as const satisfies ScenaristScenarios;
+```
+
+**Migration benefits:**
+- Scenarios become visible in one place
+- Test isolation improves automatically
+- Runtime switching becomes possible
+
+**Migration costs:**
+- Learn declarative patterns instead of fluent API
+- Convert inline mocks to scenarios
+- Set up framework adapter
+
+## Summary
+
+| Factor | Scenarist Wins | Nock Wins |
+|--------|---------------|-----------|
+| Parallel isolation | ✓ | |
+| Scenario reuse | ✓ | |
+| Runtime switching | ✓ | |
+| TypeScript integration | ✓ | |
+| Lightweight footprint | | ✓ |
+| Function matchers | | ✓ |
+| Call count assertions | | ✓ |
+| One-off test mocks | | ✓ |
+
+**Bottom line:** Choose Scenarist for scenario-based testing with parallel isolation and runtime switching. Choose Nock for lightweight, imperative mocking in simpler test suites or when you need maximum flexibility with function matchers.
