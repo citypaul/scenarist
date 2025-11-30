@@ -33,18 +33,6 @@ This creates a testing challenge:
 
 <WhatScenaristOffers intro={false} />
 
-## Quick Navigation
-
-**Choose your path based on what you need:**
-
-| If you want to...                | Go to...                                                |
-| -------------------------------- | ------------------------------------------------------- |
-| See how Scenarist works          | [How it works](/concepts/how-it-works)                  |
-| Learn about dynamic capabilities | [Capabilities](/concepts/dynamic-responses)             |
-| Compare with unit/E2E tests      | [Comparison](#comparison-with-other-testing-approaches) |
-| Understand limitations           | [Limitations](#limitations-and-trade-offs)              |
-| Start implementing               | [Getting Started](#getting-started)                     |
-
 ---
 
 ## Testing Options and Their Trade-offs
@@ -144,44 +132,18 @@ This follows Test-Driven Development principles: tests document expected behavio
 
 [Learn about our testing philosophy →](/concepts/philosophy)
 
-## Comparison with Other Testing Approaches
+## Comparing Testing Approaches
 
-| Aspect                             | Unit Tests           | E2E Tests              | Scenarist            |
-| ---------------------------------- | -------------------- | ---------------------- | -------------------- |
-| HTTP layer                         | Mocked               | Real                   | Real                 |
-| Backend execution                  | Real (but isolated)  | Real                   | Real                 |
-| External APIs                      | Mocked               | Real or mocked         | Mocked via scenarios |
-| Tests behavior over implementation | No (mocks internals) | Yes                    | Yes                  |
-| Parallel execution                 | Yes                  | Typically no           | Yes                  |
-| Speed                              | Fast                 | Slow                   | Fast                 |
-| Scenario coverage                  | High (with mocking)  | Low (speed constraint) | High                 |
-
-**Looking for tool comparisons?** See our [Tool Comparison](/comparison) guide for detailed comparisons with WireMock, Nock, Testcontainers, and Playwright mocks.
-
-None of these approaches replaces the others—they serve different purposes:
+Scenarist fills a gap between unit tests and end-to-end tests. Each approach serves different purposes—they complement rather than replace each other:
 
 - **Unit tests** verify individual functions and modules in isolation
 - **Scenarist** verifies HTTP-level behavior with different external API scenarios
 - **E2E tests** verify the complete user experience including browser interactions
 
-## When to Use Scenarist
+For detailed comparisons with other tools (WireMock, Nock, Testcontainers, Playwright mocks), see our [Tool Comparison](/comparison) guide. The comparison includes a [decision guide](/comparison#making-the-decision) to help you choose the right approach for your needs.
 
-Consider Scenarist when:
-
-- Testing middleware chains, routing logic, or request/response handling
-- Verifying backend behavior under different external API responses
-- Testing scenarios where external APIs are slow, rate-limited, or expensive
-- Running many test scenarios in parallel against the same server
-- Testing modern frameworks (Next.js Server Components, Remix loaders) where unit testing requires complex framework mocking
-
-Consider alternatives when:
-
-- Testing isolated functions (use unit tests) or complete user workflows with browser interactions (use E2E tests)
-- Validating integration with real third-party services or API contract specifications (use integration/contract tests)
-- Working with frontend-only applications with no HTTP layer
-
-:::caution[Not a Replacement for E2E Testing]
-Scenarist tests HTTP-level backend behavior, not complete user workflows. Browser interactions, JavaScript execution, visual rendering, and client-side state management still require end-to-end tests. Use Scenarist to complement E2E tests, not replace them.
+:::caution[Scenarist Complements E2E Testing]
+Scenarist tests server-side HTTP behavior, not complete user workflows. Browser interactions, JavaScript execution, and visual rendering still require end-to-end tests. Use Scenarist alongside E2E tests, not as a replacement.
 :::
 
 ## Limitations and Trade-offs
@@ -195,8 +157,6 @@ Scenarist tests HTTP-level backend behavior, not complete user workflows. Browse
 **Mock maintenance**: Scenario definitions need updates when external APIs change. Scenarist doesn't validate that mocks match real API contracts—this is a deliberate trade-off for test isolation and speed.
 
 **Learning curve**: Understanding scenario definitions, test ID isolation, and the relationship between mocks and real backend code requires initial investment. The documentation and examples aim to reduce this learning time.
-
-**Not a replacement for E2E testing**: Scenarist tests backend HTTP behavior, not complete user workflows. Browser interactions, JavaScript execution, and visual verification still require E2E tests.
 
 ## Getting Started
 

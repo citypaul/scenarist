@@ -135,7 +135,14 @@ If you need low-level control or use MSW for non-testing purposes (API developme
 - Testing **infrastructure integration** (Redis, Kafka, Elasticsearch)
 - Want **production-like** environment in tests
 
-Testcontainers and Scenarist solve different problems—they're often complementary.
+Testcontainers and Scenarist solve different problems—they're often **complementary**. Many teams use both: Testcontainers for databases, Scenarist for external HTTP APIs.
+
+:::tip[Database Testing with Scenarist]
+If your app uses databases, see our [Testing Database Apps](/guides/testing-database-apps) guide for comprehensive options including:
+- **[Repository Pattern](/guides/testing-database-apps/repository-pattern)** — Test ID isolation for databases (our recommendation)
+- **[Testcontainers Hybrid](/guides/testing-database-apps/testcontainers-hybrid)** — Use both tools together
+- **[Parallelism Options](/guides/testing-database-apps/parallelism-options)** — Compare all approaches and trade-offs
+:::
 
 [Compare: Scenarist vs Testcontainers →](/comparison/vs-testcontainers)
 
@@ -208,6 +215,8 @@ Still not sure? Here's a decision tree:
 - Yes → WireMock
 - No → Scenarist or Nock
 
-**7. Do you need to test real database/service behavior?**
-- Yes → Testcontainers (complements Scenarist for external APIs)
-- No → Scenarist for mocked external APIs
+**7. Does your app use databases alongside external HTTP APIs?**
+- Yes → See [Testing Database Apps](/guides/testing-database-apps) for options:
+  - [Repository Pattern](/guides/testing-database-apps/repository-pattern) for test ID isolation (recommended)
+  - [Testcontainers Hybrid](/guides/testing-database-apps/testcontainers-hybrid) for real database + mocked APIs
+- No (HTTP APIs only) → Scenarist handles everything
