@@ -25,12 +25,38 @@ Scenarist is built on [MSW](https://mswjs.io/) and adds a complete scenario mana
     Dedicated <a href="/testing/playwright-integration">fixtures</a> with type-safe scenario switching and automatic test ID handling. Each test gets isolated state without manual header management.
   </Card>
   <Card title="Response Sequences" icon="list-format">
-    Built-in support for polling APIs, retry flows, and state machines. <a href="/concepts/dynamic-responses">Return different responses</a> on successive calls.
+    Ever tested a polling UI that shows pending → processing → complete? Most tools need complex state management. <a href="/concepts/dynamic-responses">Scenarist: three lines of config</a>.
   </Card>
   <Card title="Developer Tools (Roadmap)" icon="puzzle">
     <a href="/roadmap">Planned browser-based plugin</a> for switching scenarios during development—instant visual scenario exploration without code changes.
   </Card>
 </CardGrid>
+
+### The Parallel Testing Advantage
+
+Most mock tools require separate instances for parallel test isolation. Scenarist uses header-based routing instead:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Traditional approach: 10 parallel tests = 10 mock servers     │
+│                                                                 │
+│   Test 1 → WireMock:8081    Test 6 → WireMock:8086             │
+│   Test 2 → WireMock:8082    Test 7 → WireMock:8087             │
+│   Test 3 → WireMock:8083    Test 8 → WireMock:8088             │
+│   Test 4 → WireMock:8084    Test 9 → WireMock:8089             │
+│   Test 5 → WireMock:8085    Test 10 → WireMock:8090            │
+├─────────────────────────────────────────────────────────────────┤
+│  Scenarist: 10 parallel tests = 1 server, 10 headers           │
+│                                                                 │
+│   Test 1 ─┬─ x-scenarist-test-id: test-1 ─┬─→ scenario-a       │
+│   Test 2 ─┤  x-scenarist-test-id: test-2 ─┤─→ scenario-b       │
+│   ...     ├─────────► App Server ─────────┤   ...              │
+│   Test 9 ─┤  x-scenarist-test-id: test-9 ─┤─→ scenario-a       │
+│   Test 10─┴─ x-scenarist-test-id: test-10─┴─→ scenario-c       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Result:** No container orchestration, no port allocation, no startup overhead. Tests run faster and CI stays simple.
 
 ## Quick Comparison Matrix
 
@@ -109,6 +135,17 @@ If you need low-level control or use MSW for non-testing purposes (API developme
 - Need **stateful mocks** that capture request data and inject it into responses
 - Working in **TypeScript/JavaScript** ecosystems
 - Testing how your app handles various **external API scenarios** (errors, timeouts, edge cases)
+
+### When NOT to use Scenarist
+
+Being explicit about when Scenarist isn't the right choice:
+
+- **Pure client-side SPAs** — If all HTTP calls originate in the browser, [Playwright's built-in mocks](/comparison/vs-playwright-mocks) may be simpler
+- **Java/Python/.NET shops** — WireMock's ecosystem is better suited for non-JavaScript teams
+- **Need recording/playback** — Use Nock (nockBack) or WireMock if you need to capture real API responses
+- **Simple unit tests without parallelism** — Nock is lighter-weight if you don't need scenario management
+- **Database testing** — Scenarist mocks HTTP only. See [Testing Database Apps](/guides/testing-database-apps) for database strategies
+- **Contract testing** — Use WireMock with Spring Cloud Contract or similar frameworks
 
 ### Choose WireMock when...
 

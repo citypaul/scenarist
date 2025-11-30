@@ -15,7 +15,7 @@ import WhatScenaristOffers from '../../../components/comparison/WhatScenaristOff
 | Aspect | Scenarist | WireMock |
 |--------|-----------|----------|
 | **Architecture** | In-process (MSW) | Standalone server |
-| **Language** | TypeScript/JavaScript | Language-agnostic (Node.js via [wiremock npm](https://www.npmjs.com/package/wiremock) or wiremock-captain) |
+| **Language** | TypeScript/JavaScript | Language-agnostic (Node.js via [wiremock](https://www.npmjs.com/package/wiremock) CLI or [wiremock-captain](https://www.npmjs.com/package/wiremock-captain) client) |
 | **Test isolation** | Per-test via header | Per-server instance or Scenarios |
 | **Runtime switching** | Yes (single API call) | Yes (Admin API) |
 | **Setup** | npm install | JAR, Docker, or npm + network configuration |
@@ -546,7 +546,7 @@ Point your app at WireMock for internal services while Scenarist mocks external 
 | Factor | Scenarist | WireMock |
 |--------|-----------|----------|
 | Setup simplicity | ✓ npm install | JAR/Docker/npm + network config |
-| TypeScript integration | ✓ Native | Via wiremock-captain |
+| TypeScript integration | ✓ Native | Via wiremock-captain client |
 | Parallel test isolation | ✓ Header-based | Multiple instances |
 | Runtime switching | ✓ Single API call | Admin API |
 | Playwright integration | ✓ First-class fixtures | Manual HTTP calls |

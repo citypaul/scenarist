@@ -8,6 +8,10 @@ import WhatScenaristOffers from '../../../components/comparison/WhatScenaristOff
 
 [Nock](https://github.com/nock/nock) is a popular HTTP mocking library for Node.js. Since v14, Nock uses [@mswjs/interceptors](https://github.com/mswjs/interceptors)—the same interception engine as MSW—making it robust and modern. Scenarist takes a different approach—declarative scenario definitions with built-in parallel test isolation.
 
+:::note[Same Interception, Different Management]
+Both Nock (v14+) and Scenarist use @mswjs/interceptors under the hood—the interception quality is identical. The difference is purely in scenario management: how you define mocks, isolate tests, and switch between states.
+:::
+
 <WhatScenaristOffers />
 
 ## At a Glance
@@ -17,7 +21,7 @@ import WhatScenaristOffers from '../../../components/comparison/WhatScenaristOff
 | **Approach** | Declarative scenarios | Imperative per-test setup |
 | **Test isolation** | Per-test via test ID | Manual scope management |
 | **Interception level** | Network (MSW) | @mswjs/interceptors (v14+) |
-| **Runtime switching** | Yes (API call) | No (reconfigure handlers) |
+| **Runtime switching** | Yes (API call) | Manual (cleanAll + reconfigure) |
 | **Browser support** | Via MSW | Node.js only |
 | **Setup** | Framework adapters | Standalone library |
 | **TypeScript** | Native (scenarios are TS) | Built-in definitions |
@@ -390,5 +394,9 @@ const scenarios = {
 | Function matchers | Declarative patterns | ✓ Full flexibility |
 | Call count assertions | Not built-in | ✓ Built-in |
 | Integration tests | ✓ Works | ✓ Works |
+
+:::tip[Why No Recording?]
+Scenarist intentionally doesn't support recording. Scenarios are **declarative definitions** of expected behavior—you define what your app should handle upfront, not capture what happened to happen during a test run. This makes scenarios reviewable, version-controllable, and independent of external API availability. If you need recorded fixtures, Nock's nockBack is excellent.
+:::
 
 **Bottom line:** Choose Scenarist for scenario-based testing with Server Components (where Nock can't reach across processes), parallel test isolation, and runtime switching. Choose Nock for integration tests in the same process, when you need fixture recording (nockBack), or when you need function matchers and call counting.
