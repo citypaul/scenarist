@@ -1,0 +1,148 @@
+---
+title: Roadmap
+description: Planned features and future direction for Scenarist
+---
+
+import { Card, CardGrid, Aside } from '@astrojs/starlight/components';
+
+Scenarist is evolving based on community needs. This page outlines planned features we're considering. **We're waiting for community feedback before building these**—if something here would help your workflow, let us know!
+
+<Aside type="tip" title="Help shape the roadmap">
+  Your input matters. Open an issue or discussion on [GitHub](https://github.com/citypaul/scenarist/discussions) to share your thoughts on these features or suggest new ones.
+</Aside>
+
+## Scenarist DevTools
+
+**Status:** Planned — awaiting community feedback
+
+We're exploring a browser-based developer tool for scenario management, similar in spirit to [React Query DevTools](https://tanstack.com/query/latest/docs/react/devtools) or [Redux DevTools](https://redux.js.org/tutorials/fundamentals/part-4-store#redux-devtools)—but framework-agnostic.
+
+### The Vision
+
+A floating panel in your browser that lets you:
+
+- **See active scenario** — Know exactly which scenario is active for the current session
+- **Switch scenarios instantly** — Click to change scenarios without touching code or restarting the server
+- **Browse available scenarios** — See all registered scenarios with their descriptions
+- **Explore scenario details** — Inspect what each scenario mocks before switching to it
+
+```
+┌─────────────────────────────────────────────────┐
+│  Scenarist DevTools                    [−] [×]  │
+├─────────────────────────────────────────────────┤
+│  Active: premium-user                           │
+│  ─────────────────────────────────────────────  │
+│  Available Scenarios:                           │
+│                                                 │
+│  ○ default           Happy path baseline        │
+│  ● premium-user      Premium tier with all      │
+│                      features unlocked          │
+│  ○ payment-declined  Card declined at checkout  │
+│  ○ api-timeout       External APIs are slow     │
+│  ○ rate-limited      API returns 429            │
+│                                                 │
+│  [View Details]              [Switch Scenario]  │
+└─────────────────────────────────────────────────┘
+```
+
+### Use Cases
+
+<CardGrid>
+  <Card title="Local Development" icon="laptop">
+    Quickly explore different application states while developing. See how your UI handles premium users, error states, or edge cases without mocking code changes.
+  </Card>
+  <Card title="Manual QA" icon="approve-check">
+    QA engineers can switch scenarios to test specific user journeys without developer assistance. "Show me what happens when payment fails."
+  </Card>
+  <Card title="Stakeholder Demos" icon="seti:video">
+    Product owners and stakeholders can explore different scenarios during demos. "Let me show you the premium user experience" — click, done.
+  </Card>
+  <Card title="Design Reviews" icon="pencil">
+    Designers can see how their work looks with different data states. Empty states, error states, loading states — all accessible without code.
+  </Card>
+</CardGrid>
+
+### Key Design Principles
+
+**Framework-Agnostic**
+Unlike React-specific devtools, Scenarist DevTools would work with any framework—React, Vue, Svelte, Angular, Solid, or vanilla JavaScript. The tool communicates with your Scenarist server, not with framework internals.
+
+**Non-Production by Default**
+The DevTools would only be available in development and testing environments. Your production bundle stays clean with zero overhead. Optionally, you could enable it in non-production environments (staging, QA) for stakeholder testing.
+
+**Simple Integration**
+A single script tag or import—that's it. No complex configuration. The tool discovers your scenarios automatically from the server.
+
+### Tell Us What You Need
+
+Before we build this, we want to hear from you:
+
+- Would this tool help your workflow?
+- What features are most important to you?
+- Would you use it primarily for development, testing, or demos?
+- What frameworks are you using?
+
+**[Share your thoughts on GitHub →](https://github.com/citypaul/scenarist/discussions)**
+
+---
+
+## Additional Framework Adapters
+
+**Status:** Planned — prioritized by community demand
+
+Scenarist currently supports **Express** and **Next.js** (App Router and Pages Router). We're planning adapters for additional frameworks to bring scenario-based testing to more ecosystems.
+
+### Planned Adapters
+
+<CardGrid>
+  <Card title="SvelteKit" icon="seti:svelte">
+    Full support for SvelteKit's server-side rendering and API routes.
+  </Card>
+  <Card title="Angular" icon="seti:angular">
+    Adapter for Angular Universal and Angular SSR applications.
+  </Card>
+  <Card title="Solid Start" icon="seti:javascript">
+    Support for Solid's meta-framework with SSR and API routes.
+  </Card>
+  <Card title="Remix" icon="seti:react">
+    Adapter for Remix loaders and actions.
+  </Card>
+  <Card title="Nuxt" icon="seti:vue">
+    Support for Nuxt's server routes and SSR.
+  </Card>
+  <Card title="Hono" icon="seti:typescript">
+    Lightweight adapter for Hono's multi-runtime framework.
+  </Card>
+</CardGrid>
+
+### Prioritization
+
+We'll prioritize adapters based on community demand. If you're using a framework not listed here, or want to see a specific adapter prioritized, let us know!
+
+**[Request an adapter on GitHub →](https://github.com/citypaul/scenarist/discussions)**
+
+---
+
+## Community Contributions
+
+Scenarist is open source. If you're interested in contributing to any of these features—or proposing new ones—we'd love to collaborate.
+
+- **[GitHub Repository](https://github.com/citypaul/scenarist)** — Star the repo, open issues, submit PRs
+- **[Discussions](https://github.com/citypaul/scenarist/discussions)** — Share ideas and feedback
+- **[Contributing Guide](https://github.com/citypaul/scenarist/blob/main/CONTRIBUTING.md)** — How to contribute
+
+---
+
+## Current Capabilities
+
+While we work on future features, Scenarist already provides:
+
+- **Test ID isolation** — Parallel tests with different scenarios
+- **Runtime switching** — Change scenarios mid-test
+- **First-class Playwright fixtures** — Type-safe scenario management
+- **Response sequences** — Polling, retry flows, state machines
+- **Stateful mocks** — Capture and inject request data
+- **Advanced matching** — Body, headers, query, regex patterns
+- **Production safety** — Zero overhead in production bundles
+
+[Get started with Scenarist →](/getting-started/quick-start)

@@ -246,6 +246,10 @@ export default defineConfig({
             { label: "Architecture", slug: "concepts/architecture" },
           ],
         },
+        {
+          label: "Roadmap",
+          slug: "roadmap",
+        },
       ],
       customCss: ["./src/styles/custom.css"],
     }),
