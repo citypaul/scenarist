@@ -132,14 +132,15 @@ test.describe("switchScenario - Playwright Integration", () => {
       page,
     }) => {
       // API on different port than frontend - absolute URL should work
-      await switchScenario(page, "testScenario", {
+      const testId = await switchScenario(page, "testScenario", {
         baseURL: BASE_URL, // Frontend URL (should be ignored for absolute endpoint)
         endpoint: `${API_SERVER_URL}/__scenario__`, // Absolute URL to API server
       });
 
       // Should hit API_SERVER_URL directly, not BASE_URL + endpoint
-      // MSW handler on API_SERVER_URL validates correct endpoint was used
-      expect(true).toBe(true);
+      // MSW has onUnhandledRequest: "error", so malformed URL would fail
+      // Success means the absolute URL was used correctly
+      expect(testId).toMatch(/^test-testScenario-/);
     });
   });
 
