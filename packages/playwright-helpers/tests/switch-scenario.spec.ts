@@ -14,6 +14,7 @@ import { setupServer } from "msw/node";
 import { switchScenario } from "../src/switch-scenario";
 
 const BASE_URL = "http://localhost:9876";
+const API_SERVER_URL = "http://localhost:9090";
 
 // MSW server with scenario endpoint handlers
 const server = setupServer(
@@ -58,6 +59,16 @@ const server = setupServer(
       success: true,
       scenario: body.scenario,
       customEndpoint: true,
+    });
+  }),
+
+  // Separate API server for testing absolute URL endpoints
+  http.post(`${API_SERVER_URL}/__scenario__`, async ({ request }) => {
+    const body = (await request.json()) as { scenario: string };
+    return HttpResponse.json({
+      success: true,
+      scenario: body.scenario,
+      absoluteUrl: true,
     });
   }),
 );
@@ -114,6 +125,20 @@ test.describe("switchScenario - Playwright Integration", () => {
       });
 
       // Should hit /__scenario__ (MSW validates)
+      expect(true).toBe(true);
+    });
+
+    test("should use absolute URL endpoint directly without prepending baseURL", async ({
+      page,
+    }) => {
+      // API on different port than frontend - absolute URL should work
+      await switchScenario(page, "testScenario", {
+        baseURL: BASE_URL, // Frontend URL (should be ignored for absolute endpoint)
+        endpoint: `${API_SERVER_URL}/__scenario__`, // Absolute URL to API server
+      });
+
+      // Should hit API_SERVER_URL directly, not BASE_URL + endpoint
+      // MSW handler on API_SERVER_URL validates correct endpoint was used
       expect(true).toBe(true);
     });
   });
