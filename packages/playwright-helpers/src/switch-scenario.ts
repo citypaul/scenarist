@@ -106,7 +106,10 @@ export const switchScenario = async (
   await establishTestIdInterception(page, testId);
 
   // Call scenario endpoint
-  const url = `${baseURL}${endpoint}`;
+  // Support absolute URLs for when API is on different host/port than frontend
+  const isAbsoluteUrl =
+    endpoint.startsWith("http://") || endpoint.startsWith("https://");
+  const url = isAbsoluteUrl ? endpoint : `${baseURL}${endpoint}`;
   const response = await page.request.post(url, {
     headers: { [SCENARIST_TEST_ID_HEADER]: testId },
     data: {
