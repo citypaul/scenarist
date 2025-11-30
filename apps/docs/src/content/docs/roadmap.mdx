@@ -120,6 +120,70 @@ We'll prioritize adapters based on community demand. If you're using a framework
 
 ---
 
+## Cypress Helpers
+
+**Status:** Planned — awaiting community feedback
+
+Scenarist currently provides [first-class Playwright fixtures](/testing/playwright-integration) with type-safe scenario switching and automatic test ID handling. We're planning equivalent support for Cypress.
+
+### What Cypress Helpers Would Provide
+
+<CardGrid>
+  <Card title="Type-Safe Scenarios" icon="seti:typescript">
+    Autocomplete for scenario IDs, compile-time validation, and full TypeScript support—just like our Playwright fixtures.
+  </Card>
+  <Card title="Automatic Test Isolation" icon="random">
+    Each Cypress test gets a unique test ID. Run tests in parallel with different scenarios, no conflicts.
+  </Card>
+  <Card title="Custom Commands" icon="seti:powershell">
+    `cy.switchScenario('premium-user')` — simple, readable commands that handle all the HTTP plumbing.
+  </Card>
+  <Card title="Intercept Integration" icon="forward">
+    Works alongside Cypress's `cy.intercept()` for browser-side mocks while Scenarist handles server-side scenarios.
+  </Card>
+</CardGrid>
+
+### Example API (Draft)
+
+```typescript
+// cypress/support/e2e.ts
+import { withScenarios } from '@scenarist/cypress-helpers';
+import { scenarios } from '../../lib/scenarios';
+
+withScenarios(scenarios);
+
+// cypress/e2e/checkout.cy.ts
+describe('Checkout', () => {
+  it('shows premium pricing for premium users', () => {
+    cy.switchScenario('premium-user'); // Type-safe! Autocomplete works
+
+    cy.visit('/checkout');
+    cy.contains('Premium Plan').should('be.visible');
+    cy.contains('$99.00').should('be.visible');
+  });
+
+  it('handles payment failure gracefully', () => {
+    cy.switchScenario('payment-declined');
+
+    cy.visit('/checkout');
+    cy.get('[data-testid="pay-button"]').click();
+    cy.contains('Payment declined').should('be.visible');
+  });
+});
+```
+
+### Tell Us What You Need
+
+If you're using Cypress and want first-class Scenarist support:
+
+- What features are most important to you?
+- How do you currently handle scenario switching in Cypress?
+- Would you prefer custom commands, fixtures, or a different API?
+
+**[Share your Cypress use case on GitHub →](https://github.com/citypaul/scenarist/discussions)**
+
+---
+
 ## Community Contributions
 
 Scenarist is open source. If you're interested in contributing to any of these features—or proposing new ones—we'd love to collaborate.
