@@ -28,16 +28,37 @@ jobs:
         uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
         id: filter
         with:
+          # Detects actual code changes vs version-only changes (from Version PRs)
+          # Version PRs modify: package.json, CHANGELOG.md, .changeset/ (all excluded below)
+          # This allows Version PR merges to get fast-path CI (~30s vs ~10min)
           filters: |
             code:
-              - 'packages/**'
-              - 'internal/**'
+              - 'packages/**/*.ts'
+              - 'packages/**/*.tsx'
+              - 'packages/**/*.js'
+              - 'packages/**/*.mjs'
+              - 'packages/**/*.cjs'
+              - 'packages/**/*.json'
+              - '!packages/**/package.json'
+              - '!packages/**/CHANGELOG.md'
+              - '!packages/**/test-results/**'
+              - 'internal/**/*.ts'
+              - 'internal/**/*.tsx'
+              - 'internal/**/*.js'
+              - 'internal/**/*.mjs'
+              - 'internal/**/*.cjs'
+              - 'internal/**/*.json'
+              - '!internal/**/package.json'
+              - '!internal/**/CHANGELOG.md'
+              - '!internal/**/test-results/**'
               - 'apps/**'
+              - '!apps/**/CHANGELOG.md'
+              - '!apps/**/test-results/**'
+              - '!.changeset/**'
               - '.github/**'
               - 'package.json'
               - 'pnpm-lock.yaml'
               - 'turbo.json'
-              - '!**/CHANGELOG.md'
 
   # Job 1: Security Audit (runs early to fail fast on vulnerabilities)
   # Skipped for version-only commits (no new dependencies)
