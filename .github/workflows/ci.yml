@@ -14,9 +14,37 @@ permissions:
   contents: read
 
 jobs:
-  # Job 0: Security Audit (runs early to fail fast on vulnerabilities)
+  # Job 0: Detect what changed (enables skipping CI for version-only commits)
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      code_changed: ${{ steps.filter.outputs.code }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+
+      - name: Detect code changes
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        id: filter
+        with:
+          filters: |
+            code:
+              - 'packages/**'
+              - 'internal/**'
+              - 'apps/**'
+              - '.github/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'turbo.json'
+              - '!**/CHANGELOG.md'
+
+  # Job 1: Security Audit (runs early to fail fast on vulnerabilities)
+  # Skipped for version-only commits (no new dependencies)
   security-audit:
     name: Security Audit
+    needs: detect-changes
+    if: needs.detect-changes.outputs.code_changed == 'true'
     timeout-minutes: 5
     runs-on: ubuntu-latest
 
@@ -51,9 +79,12 @@ jobs:
       - name: Check licenses
         run: pnpm license:check
 
-  # Job 1: Setup and Build (shared by all other jobs)
+  # Job 2: Setup and Build (shared by all other jobs)
+  # Skipped for version-only commits (no code to build)
   setup-and-build:
     name: Setup and Build
+    needs: detect-changes
+    if: needs.detect-changes.outputs.code_changed == 'true'
     timeout-minutes: 10
     runs-on: ubuntu-latest
 
@@ -328,3 +359,22 @@ jobs:
 
       - name: Run custom server tests
         run: pnpm --filter=${{ matrix.filter }} test:custom
+
+  # Job 10: Release Gate (always runs to ensure CI completes for release workflow)
+  # This job serves as a "success signal" for the release workflow, which triggers
+  # when CI completes on main. For version-only commits (no code changes), this
+  # is the only job that runs, allowing fast-path releases.
+  release-gate:
+    name: Release Gate
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: always()
+    steps:
+      - name: Check CI status
+        run: |
+          echo "Code changed: ${{ needs.detect-changes.outputs.code_changed }}"
+          if [[ "${{ needs.detect-changes.outputs.code_changed }}" == "true" ]]; then
+            echo "Full CI completed - code was tested"
+          else
+            echo "Fast-path CI - version/changelog only changes detected"
+          fi
