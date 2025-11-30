@@ -4,6 +4,7 @@ description: How Scenarist compares to WireMock, Nock, Testcontainers, Playwrigh
 ---
 
 import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import NextJsSingletonExplanation from '../../../components/nextjs/NextJsSingletonExplanation.astro';
 
 Choosing the right testing tool depends on your architecture, team, and what you're testing. This guide helps you understand where Scenarist fits and when other tools might be better suited.
 
@@ -32,17 +33,7 @@ Scenarist is built on [MSW](https://mswjs.io/) and adds a complete scenario mana
   </Card>
 </CardGrid>
 
-### Framework Adapters Solve Real Problems
-
-Scenarist's adapters aren't thin wrappers—they solve framework-specific challenges that would otherwise require significant boilerplate:
-
-**Next.js Adapter:**
-- **[Module duplication protection](https://github.com/vercel/next.js/discussions/68572)** — Next.js dev mode and Turbopack can load modules multiple times, causing `[MSW] Multiple handlers with the same URL` errors and memory leaks. Scenarist's built-in singleton pattern (`global.__scenarist_instance`) handles this automatically.
-- **App Router private folders** — Folders starting with `_` are private in App Router. Scenarist documents the `%5F` URL encoding workaround for `/__scenario__` endpoints.
-- **Pages + App Router isolation** — Separate global state keys enable gradual migration without scenario cross-contamination.
-- **Conditional exports** — Zero MSW code in production bundles via automatic tree-shaking.
-
-Without these solutions, you'd need to understand Next.js internals and implement the `globalThis` singleton pattern yourself—Scenarist handles it with a simple `export const`.
+<NextJsSingletonExplanation variant="detailed" />
 
 ### The Parallel Testing Advantage
 

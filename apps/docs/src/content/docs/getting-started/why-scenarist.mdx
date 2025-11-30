@@ -4,6 +4,7 @@ description: Understanding scenario-based testing and how Scenarist fills the ga
 ---
 
 import WhatScenaristOffers from '../../../components/comparison/WhatScenaristOffers.astro';
+import NextJsSingletonExplanation from '../../../components/nextjs/NextJsSingletonExplanation.astro';
 
 ## What is Scenario-Based Testing?
 
@@ -47,11 +48,7 @@ This creates a testing challenge:
 
 **Test extensive external API scenarios in parallel** without expensive cloud API calls or complex test infrastructure.
 
-### Next.js Multi-Process Handling (Solved)
-
-Next.js presents a unique challenge for MSW-based testing. It has a [well-documented singleton problem](https://github.com/vercel/next.js/discussions/68572) where webpack bundles the same module multiple times, breaking classic singleton patterns. This is compounded by [MSW's challenges with Next.js's process model](https://github.com/mswjs/msw/issues/1644)—Next.js keeps multiple Node.js processes that make global module patches difficult to maintain.
-
-**Scenarist solves this automatically.** The Next.js adapter includes built-in `globalThis` singleton guards that ensure only one MSW instance exists, regardless of how Next.js loads your modules. You don't need to understand Next.js internals or implement manual workarounds—just use `export const scenarist = createScenarist(...)` and Scenarist handles the complexity.
+<NextJsSingletonExplanation variant="brief" />
 
 ## What You Can Test
 
