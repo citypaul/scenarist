@@ -51,7 +51,6 @@ const headingId = "nextjs-multi-process-handling";
     <p><strong>Next.js Adapter:</strong></p>
     <ul>
       <li><strong><a href="https://github.com/vercel/next.js/discussions/68572">Module duplication protection</a></strong> — Next.js dev mode and Turbopack can load modules multiple times, causing <code>[MSW] Multiple handlers with the same URL</code> errors and memory leaks. Scenarist's built-in singleton pattern (<code>global.__scenarist_instance</code>) handles this automatically.</li>
-      <li><strong>App Router private folders</strong> — Folders starting with <code>_</code> are private in App Router. Scenarist documents the <code>%5F</code> URL encoding workaround for <code>/__scenario__</code> endpoints.</li>
       <li><strong>Pages + App Router isolation</strong> — Separate global state keys enable gradual migration without scenario cross-contamination.</li>
       <li><strong>Conditional exports</strong> — Zero MSW code in production bundles via automatic tree-shaking.</li>
     </ul>
