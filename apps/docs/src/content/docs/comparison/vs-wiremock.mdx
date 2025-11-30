@@ -15,14 +15,15 @@ import WhatScenaristOffers from '../../../components/comparison/WhatScenaristOff
 | Aspect | Scenarist | WireMock |
 |--------|-----------|----------|
 | **Architecture** | In-process (MSW) | Standalone server |
-| **Language** | TypeScript/JavaScript | Language-agnostic |
-| **Test isolation** | Per-test via test ID | Per-server instance |
-| **Runtime switching** | Yes (single API call) | Requires server restart/reset |
-| **Setup** | npm install | Java + server management |
+| **Language** | TypeScript/JavaScript | Language-agnostic (Node.js via wiremock-captain) |
+| **Test isolation** | Per-test via header | Per-server instance or Scenarios |
+| **Runtime switching** | Yes (single API call) | Yes (Admin API) |
+| **Setup** | npm install | Docker + network configuration |
 | **Test framework integration** | First-class Playwright fixtures | Generic HTTP API |
-| **Response sequences** | Built-in (polling, state machines) | Scenarios extension |
-| **Stateful mocks** | Built-in state capture/injection | Stateful behavior extension |
+| **Response sequences** | Built-in (polling, state machines) | Built-in (Scenarios feature) |
+| **Stateful mocks** | Built-in capture/inject per test ID | Built-in state machine |
 | **Recording** | Not supported | Built-in record/playback |
+| **Templating** | Template strings | Handlebars templating |
 
 ## Key Differences
 
@@ -75,7 +76,7 @@ export const scenarist = createScenarist({
   </TabItem>
 </Tabs>
 
-**Trade-off:** Scenarist's in-process approach means faster setup and no external dependencies, but it only works in Node.js. WireMock's server approach works with any language but requires infrastructure management.
+**Trade-off:** Scenarist's in-process approach means simpler setup—just npm install and configure. No Docker, no network proxies, no environment variables to manage. WireMock's server approach works with any language but requires Docker, network configuration, and proxy setup to route your app's requests to WireMock.
 
 ### Test Isolation
 
@@ -185,7 +186,7 @@ test('retry after failure', async ({ page }) => {
   </TabItem>
 </Tabs>
 
-**Trade-off:** Scenarist's runtime switching is a single API call. WireMock requires managing stub state through its admin API, which can be error-prone in parallel test environments.
+**Trade-off:** Both tools support runtime switching. Scenarist uses a single API call that automatically routes by test ID. WireMock's Admin API is powerful but requires managing stub state and can be more complex in parallel test environments where you need to coordinate which test sees which stubs.
 
 ### First-Class Playwright Integration
 
@@ -260,9 +261,9 @@ test('premium user checkout', async ({ page }) => {
 
 **Trade-off:** Scenarist's Playwright helpers provide automatic test ID isolation—each test gets its own scenario state without manual header management. WireMock requires manual HTTP calls and careful state management. Future Scenarist releases plan to add similar first-class support for Cypress.
 
-### Built-in Dynamic Response Features
+### Dynamic Response Features
 
-Scenarist includes advanced response capabilities out of the box that require extensions or custom code in WireMock.
+Both Scenarist and WireMock support dynamic responses, but with different approaches and trade-offs.
 
 #### Response Sequences (Polling, State Machines)
 
@@ -298,9 +299,7 @@ test('shows job progress', async ({ page, switchScenario }) => {
   </TabItem>
   <TabItem label="WireMock">
 ```java
-// Requires WireMock Scenarios extension
-// More complex setup with state machine
-
+// WireMock's built-in Scenarios feature (state machine)
 // State 1: Initial
 stubFor(get(urlEqualTo("/job/123/status"))
   .inScenario("Job Progress")
@@ -329,6 +328,8 @@ stubFor(get(urlEqualTo("/job/123/status"))
 ```
   </TabItem>
 </Tabs>
+
+**Trade-off:** Both tools have built-in sequence/state machine support. Scenarist's approach is declarative and isolated per test ID. WireMock's Scenarios are powerful state machines but the state is global to the WireMock instance—parallel tests need separate instances or careful coordination.
 
 #### Advanced Request Matching
 
@@ -430,44 +431,48 @@ test('cart accumulates items', async ({ page, switchScenario }) => {
   </TabItem>
   <TabItem label="WireMock">
 ```java
-// Requires custom extension or external state management
-// WireMock's stateful behavior is limited to scenario states
+// WireMock Scenarios track state transitions (which state you're in)
+// but don't capture/inject arbitrary data from requests
 
-// Option 1: Use WireMock's built-in scenarios (limited)
-// Can only track which "state" you're in, not capture data
+// Built-in: State machine transitions
+stubFor(post("/api/cart/items")
+  .inScenario("Cart")
+  .whenScenarioStateIs(STARTED)
+  .willReturn(aResponse().withStatus(201))
+  .willSetStateTo("has-items"));
 
-// Option 2: Custom extension with external storage
-public class CartStateExtension implements Extension {
-  private Map<String, List<Item>> cartState = new HashMap<>();
+stubFor(get("/api/cart")
+  .inScenario("Cart")
+  .whenScenarioStateIs("has-items")
+  .willReturn(aResponse()
+    .withBody("{\"items\": [...]}"))); // Static response
 
-  // Complex implementation required...
-}
-
-// Option 3: Use a real service/database for state
-// Defeats the purpose of mocking
+// For data capture/injection: Custom extension or Handlebars templating
+// Handlebars can access request data:
+// {{request.body}} or {{jsonPath request.body '$.item'}}
 ```
   </TabItem>
 </Tabs>
 
-**Trade-off:** Scenarist's dynamic response features are built-in and declarative. WireMock can achieve similar results but requires extensions, custom code, or careful orchestration of its scenario state machine.
+**Trade-off:** WireMock's Scenarios handle state transitions (tracking which state you're in). Scenarist's state capture goes further—capturing arbitrary data from requests and injecting it into subsequent responses—with per-test-ID isolation for parallel tests. WireMock can achieve data capture via Handlebars templating but state is global to the instance.
 
 ## When to Choose Scenarist
 
 <CardGrid>
+  <Card title="Simple setup" icon="rocket">
+    Just npm install and configure scenarios. No Docker, no network proxies, no environment variables to manage.
+  </Card>
   <Card title="TypeScript-first development" icon="seti:typescript">
     Scenarios are TypeScript objects with full type safety. IDE autocomplete, compile-time errors, refactoring support.
   </Card>
-  <Card title="No infrastructure overhead" icon="rocket">
-    No Java runtime, no Docker, no server management. Just npm install and configure.
-  </Card>
   <Card title="Parallel test isolation" icon="random">
-    Built-in test ID system lets hundreds of tests run simultaneously with different scenarios.
+    Built-in test ID system lets hundreds of tests run simultaneously with different scenarios—no separate instances needed.
   </Card>
   <Card title="First-class Playwright support" icon="seti:playwright">
-    Dedicated fixtures with automatic test ID isolation. Each test gets its own scenario state with type-safe switching.
+    Dedicated fixtures with automatic test ID handling. Each test gets its own scenario state with type-safe switching.
   </Card>
-  <Card title="Built-in dynamic responses" icon="list-format">
-    Response sequences, advanced matching, and stateful mocks (state isolated per test ID) included out of the box.
+  <Card title="Per-test-ID state isolation" icon="list-format">
+    Response sequences and stateful mocks are isolated per test ID—parallel tests never share state.
   </Card>
   <Card title="Modern frameworks" icon="puzzle">
     First-class support for Next.js Server Components, Express middleware, and other Node.js frameworks.
@@ -538,18 +543,18 @@ Point your app at WireMock for internal services while Scenarist mocks external 
 
 ## Summary
 
-| Factor | Scenarist Wins | WireMock Wins |
-|--------|---------------|---------------|
-| Setup simplicity | ✓ | |
-| TypeScript integration | ✓ | |
-| Parallel test isolation | ✓ | |
-| Runtime switching | ✓ | |
-| Playwright integration | ✓ | |
-| Built-in sequences | ✓ | |
-| Stateful mocks | ✓ | |
-| Language support | | ✓ |
-| Record/playback | | ✓ |
-| Ecosystem maturity | | ✓ |
-| Contract testing | | ✓ |
+| Factor | Scenarist | WireMock |
+|--------|-----------|----------|
+| Setup simplicity | ✓ npm install | Docker + network config |
+| TypeScript integration | ✓ Native | Via wiremock-captain |
+| Parallel test isolation | ✓ Header-based | Multiple instances |
+| Runtime switching | ✓ Single API call | Admin API |
+| Playwright integration | ✓ First-class fixtures | Manual HTTP calls |
+| Response sequences | ✓ Built-in | ✓ Built-in (Scenarios) |
+| Stateful mocks | ✓ Per-test-ID isolation | ✓ Global state machine |
+| Language support | JavaScript/TypeScript | ✓ Any language |
+| Record/playback | Not supported | ✓ Built-in |
+| Ecosystem maturity | Newer | ✓ Battle-tested |
+| Contract testing | Not supported | ✓ Spring Cloud Contract |
 
-**Bottom line:** Choose Scenarist for TypeScript/JavaScript projects where you want simple setup, built-in parallel test isolation, first-class Playwright support, and advanced features like response sequences and stateful mocks out of the box. Choose WireMock for polyglot environments, when you need recording, or when you're already invested in the WireMock ecosystem.
+**Bottom line:** Choose Scenarist for TypeScript/JavaScript projects where you value simple setup (no Docker/network config), header-based parallel test isolation, and first-class Playwright support. Choose WireMock for polyglot environments, when you need recording, contract testing, or when you're already invested in the WireMock ecosystem. Both tools are capable—the choice is primarily about simplicity vs. language flexibility.

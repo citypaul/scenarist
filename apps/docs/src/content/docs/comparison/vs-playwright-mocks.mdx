@@ -6,7 +6,7 @@ description: Compare server-side request interception with browser-side mocking 
 import { Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
 import WhatScenaristOffers from '../../../components/comparison/WhatScenaristOffers.astro';
 
-Playwright includes [built-in request interception](https://playwright.dev/docs/mock#mocking-with-har-files) via `page.route()`. This works great for client-side requests. Scenarist intercepts requests on the server—essential for Server Components, API routes, and middleware.
+Playwright includes [built-in request interception](https://playwright.dev/docs/mock) via `page.route()` and HAR file recording. This works great for client-side requests. Scenarist intercepts requests on the server—essential for scenario-based testing of Server Components, API routes, and middleware.
 
 :::note[Terminology clarification]
 This page compares Scenarist with **Playwright's built-in `page.route()` API**—browser-side request interception. This is different from Scenarist's `@scenarist/playwright-helpers` package, which provides Playwright test fixtures for server-side scenario management. The two can work together: use Scenarist for server-side mocking with first-class Playwright fixtures, and `page.route()` for browser-specific needs.
@@ -24,6 +24,8 @@ This page compares Scenarist with **Playwright's built-in `page.route()` API**�
 | **Client-side fetch** | ✓ Yes | ✓ Yes |
 | **Setup** | Framework adapter | Built into Playwright |
 | **Test isolation** | Per-test via test ID | Per-page |
+| **HAR recording** | Not supported | ✓ Built-in |
+| **Next.js 15 testProxy** | Not needed (built-in) | ✓ Experimental support |
 
 ## The Critical Difference: Where Requests Originate
 
@@ -117,6 +119,45 @@ test('displays products', async ({ page }) => {
 ```
   </TabItem>
 </Tabs>
+
+## Playwright's Additional Features
+
+### HAR File Recording
+
+Playwright can record and replay HTTP traffic using HAR (HTTP Archive) files:
+
+```typescript
+// Record HAR during test
+await page.routeFromHAR('recording.har', {
+  url: '**/api/**',
+  update: true, // Record mode
+});
+
+// Replay HAR in subsequent tests
+await page.routeFromHAR('recording.har', {
+  url: '**/api/**',
+  update: false, // Replay mode
+});
+```
+
+**Limitation:** HAR only captures browser-level requests. Server-side requests (Server Components, API routes) are never recorded because they don't pass through the browser.
+
+### Next.js 15 Experimental testProxy
+
+Next.js 15 introduced an experimental `testProxy` feature that proxies server-side fetch calls, allowing MSW to intercept them:
+
+```javascript
+// next.config.js
+module.exports = {
+  experimental: {
+    testProxy: true,
+  },
+}
+```
+
+**Status:** Experimental with known limitations—doesn't work with GET route handlers, some font loading issues reported.
+
+**Why Scenarist is still valuable:** Scenarist provides scenario management, test ID isolation, runtime switching, and Playwright fixtures on top of MSW—features you'd need to build yourself even with testProxy.
 
 ## When Each Tool Works
 
@@ -295,13 +336,15 @@ test('complete user flow', async ({ page, switchScenario }) => {
 
 | Capability | Scenarist | Playwright Mocks |
 |------------|-----------|------------------|
-| Server Components | ✓ | ✗ |
+| Server Components | ✓ | ✗ (or experimental testProxy) |
 | API Routes | ✓ | ✗ |
 | Middleware | ✓ | ✗ |
 | SSR data fetching | ✓ | ✗ |
 | Client-side fetch | ✓ | ✓ |
-| Zero setup | | ✓ |
-| Parallel isolation | ✓ | |
-| Scenario management | ✓ | |
+| Zero setup | Framework adapter | ✓ Built-in |
+| Parallel isolation | ✓ Per-test-ID | Per-page |
+| Scenario management | ✓ | Manual |
+| HAR recording | Not supported | ✓ |
+| Runtime switching | ✓ | Manual |
 
-**Bottom line:** If you're testing modern server-rendered applications (Next.js App Router, Remix, etc.), you need Scenarist for server-side request interception. Playwright mocks are great for pure client-side apps or supplementing Scenarist for browser-specific needs.
+**Bottom line:** For scenario-based testing of modern server-rendered applications (Next.js App Router, Remix, etc.), Scenarist provides server-side request interception with scenario management and test ID isolation. Playwright mocks are great for pure client-side apps, HAR recording, or supplementing Scenarist for browser-specific needs. Next.js 15's experimental testProxy may help with server-side interception, but Scenarist still provides the scenario management layer.

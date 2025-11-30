@@ -37,10 +37,13 @@ Scenarist is built on top of [Mock Service Worker (MSW)](https://mswjs.io/)—we
 - Proven, battle-tested, actively maintained
 
 **Scenarist adds the testing layer:**
-- Scenario management (group mocks by test case)
-- Test ID isolation (parallel tests with different states)
-- Runtime switching (change scenarios without restart)
-- Framework adapters (Express, Next.js integration)
+- Scenario management (group mocks by test case, switch at runtime)
+- Complete test ID isolation (scenarios, sequences, and captured state—all per test ID)
+- Declarative scenario definitions (inspectable, composable, type-safe)
+- Framework adapters (Express, Next.js integration out of the box)
+- First-class Playwright fixtures (automatic test ID handling)
+
+*Note: MSW v2.2.0+ added `server.boundary()` for isolating handler registrations in concurrent tests. Scenarist's test ID system provides broader isolation—including sequence positions and captured state—and works with any test framework.*
 
 ## When to Use MSW Directly
 
@@ -150,44 +153,51 @@ MSW is excellent at intercepting requests. But as your test suite grows, you fac
 
 ### Challenge 1: Parallel Test Isolation
 
+MSW v2.2.0+ introduced `server.boundary()` to help with parallel test isolation by scoping handler registrations. However, Scenarist takes a different approach with broader isolation.
+
 <Tabs>
-  <TabItem label="MSW Only">
+  <TabItem label="MSW server.boundary()">
 ```typescript
-// Problem: All tests share the same handlers
-// Test A and Test B run simultaneously
-// Which response does each test get?
+// MSW v2.2.0+ - server.boundary() isolates handler registrations
+import { server } from './mocks/server';
 
-beforeEach(() => {
-  server.use(
-    http.post('/api/payment', () => {
-      return HttpResponse.json({ status: 'succeeded' });
-    })
-  );
-});
+test.concurrent('Test A', server.boundary(async () => {
+  server.use(http.post('/api/payment', () =>
+    HttpResponse.json({ status: 'succeeded' })
+  ));
+  // Handler only visible within this boundary
+}));
 
-test('Test A - expects success', async () => { /* ... */ });
-test('Test B - expects failure', async () => {
-  // How do we make THIS test see a different response?
-  // server.use() would affect Test A too!
-});
+test.concurrent('Test B', server.boundary(async () => {
+  server.use(http.post('/api/payment', () =>
+    HttpResponse.json({ status: 'failed' })
+  ));
+  // Different handler, isolated from Test A
+}));
+
+// ✅ Handler registration is isolated
+// ⚠️ Other state (sequences, captured data) is NOT isolated
 ```
   </TabItem>
-  <TabItem label="With Scenarist">
+  <TabItem label="Scenarist">
 ```typescript
-// Solution: Test ID routes to correct scenario
+// Scenarist - complete isolation via test ID
 test('Test A - expects success', async ({ switchScenario }) => {
   await switchScenario(page, 'payment-success');
   // x-test-id: test-a → payment-success scenario
+  // Sequences, state capture, everything isolated
 });
 
 test('Test B - expects failure', async ({ switchScenario }) => {
   await switchScenario(page, 'payment-declined');
   // x-test-id: test-b → payment-declined scenario
-  // Both run in parallel, isolated by test ID
+  // Complete isolation including sequences and captured state
 });
 ```
   </TabItem>
 </Tabs>
+
+**Key difference:** `server.boundary()` isolates handler *registrations* (which `server.use()` calls are visible). Scenarist isolates *everything*—the active scenario, sequence positions, and captured state—all keyed by test ID.
 
 ### Challenge 2: Scenario Reuse
 
@@ -306,9 +316,11 @@ export const scenarios = {
 | Storybook | ✓ | |
 | API prototyping | ✓ | |
 | Simple single-test mocks | ✓ | ✓ |
-| Parallel test isolation | | ✓ |
+| Handler isolation (concurrent tests) | ✓ (server.boundary) | ✓ (test ID) |
+| Complete state isolation (sequences, captured data) | | ✓ |
 | Scenario libraries | | ✓ |
-| Runtime switching | | ✓ |
+| Runtime scenario switching | | ✓ |
 | Framework adapters | | ✓ |
+| Playwright fixtures | | ✓ |
 
-**Bottom line:** MSW is the foundation for all request interception. Use it directly when you need simple mocking. Use Scenarist when you need scenario management for testing—parallel isolation, runtime switching, and reusable scenario libraries.
+**Bottom line:** MSW is the foundation for all request interception. MSW v2.2.0+ added `server.boundary()` for handler isolation in concurrent tests. Use MSW directly for development mocking or simple test scenarios. Use Scenarist when you need scenario management—complete per-test-ID isolation (including sequences and state), runtime switching, and reusable scenario libraries with first-class Playwright support.

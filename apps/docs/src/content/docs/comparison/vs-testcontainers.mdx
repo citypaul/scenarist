@@ -145,21 +145,49 @@ test('creates order and sends confirmation', async ({ page, switchScenario }) =>
 });
 ```
 
-## Why Not Use Testcontainers for Everything?
+## Can Testcontainers Mock HTTP APIs?
 
-You **can't** containerize third-party APIs:
+**Yes, but with more complexity.** Testcontainers has modules for HTTP mock servers:
 
-| Service | Containerizable? | Why Not? |
-|---------|------------------|----------|
-| PostgreSQL | ✓ Yes | Open source, official images |
-| Redis | ✓ Yes | Open source, official images |
-| Kafka | ✓ Yes | Open source, official images |
-| **Stripe** | ✗ No | Proprietary SaaS, no container |
-| **Auth0** | ✗ No | Proprietary SaaS, no container |
-| **SendGrid** | ✗ No | Proprietary SaaS, no container |
-| **Twilio** | ✗ No | Proprietary SaaS, no container |
+| Module | Package | Status |
+|--------|---------|--------|
+| MockServer | `@testcontainers/mockserver` | Official |
+| WireMock | `@wiremock/wiremock-testcontainers-node` | Community |
 
-For services you can't run locally, you need HTTP mocking—that's where Scenarist fits.
+```typescript
+// Testcontainers with WireMock for HTTP mocking
+import { WireMockContainer } from '@wiremock/wiremock-testcontainers-node';
+
+const container = await new WireMockContainer()
+  .withMapping({
+    request: { method: 'GET', urlPath: '/v1/products' },
+    response: { status: 200, jsonBody: { products: [] } }
+  })
+  .start();
+
+// Point your app at the container
+process.env.STRIPE_API_URL = container.getBaseUrl();
+```
+
+**Trade-offs vs Scenarist:**
+
+| Factor | Testcontainers + WireMock | Scenarist |
+|--------|---------------------------|-----------|
+| Setup | Docker + container management | npm install |
+| Startup time | Seconds (container spin-up) | Instant (in-process) |
+| Test isolation | Per-container (heavier) | Per-header (lightweight) |
+| Runtime switching | Admin API | Single API call |
+| Network config | Required (proxy/env vars) | None (in-process) |
+
+**When HTTP mocking via Testcontainers makes sense:**
+- You're already heavily invested in Testcontainers
+- You want identical mocking approach to your Java/Go services
+- You need WireMock's specific features (recording, contract testing)
+
+**When Scenarist is simpler:**
+- You want the lightest possible setup
+- You're already in a Node.js/TypeScript environment
+- You value instant test startup over container isolation
 
 ## Why Not Use Scenarist for Everything?
 
@@ -213,12 +241,14 @@ const result = await db.query(`
 |--------|----------------|-----------|
 | Databases | ✓ Best choice | Not recommended |
 | Message queues | ✓ Best choice | Not recommended |
-| Third-party APIs | Not possible | ✓ Best choice |
-| Error scenarios | Limited | ✓ Full control |
-| Startup time | Slower | ✓ Instant |
-| Resource usage | Higher | ✓ Minimal |
+| HTTP API mocking | ✓ Via WireMock/MockServer | ✓ Built-in |
+| Setup complexity | Docker + containers | npm install |
+| Startup time | Seconds (containers) | ✓ Instant |
+| Resource usage | Higher (containers) | ✓ Minimal |
 | Fidelity | ✓ Real behavior | Controlled |
-| Parallel isolation | Per-container | ✓ Built-in |
+| Parallel isolation | Per-container | ✓ Per-header (lightweight) |
+| Runtime switching | Admin API | ✓ Single API call |
+| Playwright fixtures | Manual setup | ✓ First-class support |
 
 ## Hybrid Architecture
 

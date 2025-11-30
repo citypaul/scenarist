@@ -12,23 +12,23 @@ Choosing the right testing tool depends on your architecture, team, and what you
 Scenarist is built on [MSW](https://mswjs.io/) and adds a complete scenario management layer designed for modern testing workflows:
 
 <CardGrid>
+  <Card title="Simple Architecture" icon="rocket">
+    Just an HTTP header. No Docker, no separate processes, no network proxies. Install, configure scenarios, test.
+  </Card>
   <Card title="Test ID Isolation" icon="random">
-    Run hundreds of parallel tests with different scenarios against a single server. Each test gets isolated state via unique test IDs.
+    Run hundreds of parallel tests with different scenarios against a single server. Each test's header routes to its own scenario.
   </Card>
   <Card title="Runtime Switching" icon="forward">
     Change scenarios mid-test without restarts. Perfect for testing retry flows, error recovery, and multi-step user journeys.
   </Card>
   <Card title="First-Class Playwright" icon="seti:playwright">
-    Dedicated fixtures with type-safe scenario switching and automatic test ID generation. Each test gets isolated state without manual header management.
+    Dedicated fixtures with type-safe scenario switching and automatic test ID handling. Each test gets isolated state without manual header management.
   </Card>
   <Card title="Response Sequences" icon="list-format">
     Built-in support for polling APIs, retry flows, and state machines. Return different responses on successive calls.
   </Card>
-  <Card title="Stateful Mocks" icon="seti:db">
-    Capture values from requests and inject them into responses. State is isolated per test ID, so parallel tests never conflict.
-  </Card>
-  <Card title="Advanced Matching" icon="magnifier">
-    Match requests by body, headers, query params, and regex patterns. Specificity-based selection means no careful ordering required.
+  <Card title="Developer Tools (Roadmap)" icon="puzzle">
+    Planned browser-based plugin for switching scenarios during development—instant visual scenario exploration without code changes.
   </Card>
 </CardGrid>
 
@@ -36,15 +36,17 @@ Scenarist is built on [MSW](https://mswjs.io/) and adds a complete scenario mana
 
 | Feature | Scenarist | WireMock | Nock | Testcontainers | Playwright Mocks |
 |---------|-----------|----------|------|----------------|------------------|
-| **Test isolation** | Per-test via test ID | Per-server instance | Per-test setup | Per-container | Per-page |
-| **Runtime switching** | Yes (API call) | Requires restart | No | No | No |
-| **Server Components** | Full support | Yes | Partial | Yes | No |
-| **Setup complexity** | npm install | Java/Docker | npm install | Docker required | Built-in |
-| **Parallel tests** | Built-in isolation | Multiple instances | Manual | Per-container | Per-page |
+| **Test isolation** | Per-test via header | Per-server instance | Per-test setup | Per-container | Per-page |
+| **Runtime switching** | Yes (single API call) | Yes (Admin API) | No | No | No |
+| **Server Components** | Full support | Yes (network proxy) | No (E2E) / Yes (integration) | Yes (with WireMock module) | No |
+| **Setup complexity** | npm install | Docker + network config | npm install | Docker required | Built-in |
+| **Parallel tests** | Built-in (header routing) | Multiple instances or scenarios | Manual isolation | Per-container | Per-page |
 | **Test framework** | First-class Playwright | Generic HTTP | Generic | Generic | Built-in |
-| **Response sequences** | Built-in | Extension required | Manual | N/A | Manual |
-| **Stateful mocks** | Built-in capture/inject | Extension required | Manual | N/A | Manual |
+| **Response sequences** | Built-in | Built-in (Scenarios) | Manual | Via mock server | Manual |
+| **Stateful mocks** | Built-in capture/inject | Built-in state machine | Manual | Via mock server | Manual |
 | **Language** | TypeScript/JS | Language-agnostic | JavaScript | Language-agnostic | JavaScript |
+
+*Note: "Server Components" refers to E2E testing of React Server Components where requests originate on the server.*
 
 ## Understanding the Categories
 
@@ -191,7 +193,7 @@ Still not sure? Here's a decision tree:
 - No → Any tool works
 
 **3. Do you need to switch scenarios during a test?**
-- Yes → Scenarist (only tool with runtime switching)
+- Yes → Scenarist (single API call) or WireMock (Admin API)
 - No → Any tool works
 
 **4. Are you using Playwright for E2E testing?**
@@ -199,7 +201,7 @@ Still not sure? Here's a decision tree:
 - No → Any tool works
 
 **5. Do you need response sequences or stateful mocks?**
-- Yes → Scenarist (built-in) or WireMock (requires extensions)
+- Yes → Scenarist (built-in, per-test-ID isolation) or WireMock (built-in Scenarios)
 - No → Any tool works
 
 **6. Are you in a non-JavaScript environment?**
