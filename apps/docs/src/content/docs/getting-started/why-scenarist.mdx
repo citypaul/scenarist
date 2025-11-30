@@ -3,6 +3,8 @@ title: Why Scenarist?
 description: Understanding scenario-based testing and how Scenarist fills the gap between unit tests and end-to-end tests
 ---
 
+import WhatScenaristOffers from '../../../components/comparison/WhatScenaristOffers.astro';
+
 ## What is Scenario-Based Testing?
 
 **Scenario-based testing** is an integration testing approach where your real application code executes while external dependencies (third-party APIs, microservices) return controlled responses. Unlike true end-to-end tests that use zero mocks, scenario-based tests mock only the external services you don't control.
@@ -28,6 +30,8 @@ This creates a testing challenge:
 **Server Components, loaders, and API routes** execute server-side but are defined alongside components. Your UI code calls external APIs directly on the server. Testing this requires either mocking framework internals or running full end-to-end tests.
 
 **Traditional backend services** call the same external APIs. Testing payment flows, authentication errors, or email delivery requires simulating different API responses.
+
+<WhatScenaristOffers intro={false} />
 
 ## Quick Navigation
 

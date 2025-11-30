@@ -1,11 +1,22 @@
 ---
-// Shared "What Scenarist Offers" section for comparison pages.
-// This component ensures consistency across all comparison documentation
+// Shared "What Scenarist Offers" section for documentation pages.
+// This component ensures consistency across comparison and getting started pages
 // and makes future updates easier to maintain.
+
+interface Props {
+  /**
+   * Optional intro text to display below the heading.
+   * Pass `false` to hide the intro entirely, or a string for custom text.
+   * Default: "Before diving into comparisons, here's what Scenarist brings to the table:"
+   */
+  intro?: string | false;
+}
+
+const { intro = "Before diving into comparisons, here's what Scenarist brings to the table:" } = Astro.props;
 ---
 
 <h2 id="what-scenarist-offers">What Scenarist Offers</h2>
-<p>Before diving into comparisons, here's what Scenarist brings to the table:</p>
+{intro && <p>{intro}</p>}
 <ul>
   <li><strong><a href="/concepts/architecture">Simple Architecture</a></strong> — Just an HTTP header (<code>x-scenarist-test-id</code>). No Docker, no separate processes, no complex network configuration</li>
   <li><strong><a href="/testing/parallel-testing">Test ID Isolation</a></strong> — Run hundreds of parallel tests with different scenarios against one server. Each test's header routes to its own scenario</li>
