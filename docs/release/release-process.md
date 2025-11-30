@@ -127,22 +127,17 @@ git merge release/rc
 git push origin main
 ```
 
-### 3. Changesets Creates PR
+### 3. Automatic Release
 
 The release workflow on `main`:
 
-1. Detects changesets
-2. Creates "Version Packages" PR
-3. Updates versions to stable (e.g., `1.0.0`)
+1. Runs after CI passes
+2. Detects pending changesets
+3. Versions packages (e.g., `1.0.0`)
 4. Updates CHANGELOGs
-
-### 4. Merge Version PR
-
-Merging the "Version Packages" PR:
-
-1. Publishes to npm with `@latest` tag
-2. Creates GitHub Release
-3. Creates git tag
+5. Commits directly to main
+6. Publishes to npm with `@latest` tag
+7. Creates GitHub Release with git tag
 
 ---
 
@@ -178,7 +173,7 @@ git add . && git commit -m "chore: prepare stable release"
 git checkout main
 git merge release/rc
 git push origin main
-# Then merge the "Version Packages" PR
+# Release happens automatically after CI passes
 ```
 
 ---
@@ -193,7 +188,7 @@ git checkout main
 pnpm changeset  # select 'patch'
 git add . && git commit -m "fix: urgent fix"
 git push origin main
-# Merge the "Version Packages" PR
+# Release happens automatically after CI passes
 ```
 
 ---
@@ -235,3 +230,42 @@ permissions:
 ```
 
 And trusted publishing is configured on npmjs.com.
+
+---
+
+## GitHub Configuration
+
+### Required Secrets
+
+The release workflow requires a `RELEASE_PAT` secret (Personal Access Token) to push version commits directly to main.
+
+#### Creating a Fine-Grained PAT (Recommended)
+
+1. Go to GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens
+2. Click "Generate new token"
+3. Configure:
+   - **Token name:** `scenarist-release`
+   - **Expiration:** 90 days (set a reminder to rotate)
+   - **Repository access:** Only select repositories → `citypaul/scenarist`
+   - **Permissions:**
+     | Permission | Access |
+     |------------|--------|
+     | Contents | Read and write |
+     | Metadata | Read-only (auto-selected) |
+
+4. Generate and copy the token
+5. Add to repository: Settings → Secrets and variables → Actions → New repository secret
+   - Name: `RELEASE_PAT`
+   - Value: (paste token)
+
+#### Why Not GITHUB_TOKEN?
+
+The default `GITHUB_TOKEN` cannot push commits that trigger workflows (to prevent infinite loops). Since the release workflow pushes version commits to main, it needs a PAT to ensure subsequent CI runs are triggered.
+
+#### Token Rotation
+
+Fine-grained PATs have a maximum expiration of 1 year. Set a calendar reminder to rotate the token before expiration. When rotating:
+
+1. Create new token with same permissions
+2. Update the `RELEASE_PAT` secret
+3. Delete the old token
