@@ -133,7 +133,7 @@ yarn add @scenarist/express-adapter msw
 yarn add -D @scenarist/playwright-helpers @playwright/test
 ```
 
-Use Playwright helpers when you need to test user interactions through a browser (clicks, form submissions, visual verification).
+Use [Playwright helpers](/testing/playwright-integration) when you need to test user interactions through a browser (clicks, form submissions, visual verification).
 
 **Peer dependencies:** `express@^4.18.0 || ^5.0.0`, `msw@^2.0.0`
 
