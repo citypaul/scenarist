@@ -127,17 +127,25 @@ git merge release/rc
 git push origin main
 ```
 
-### 3. Automatic Release
+### 3. Version PR Created
 
 The release workflow on `main`:
 
 1. Runs after CI passes
 2. Detects pending changesets
-3. Versions packages (e.g., `1.0.0`)
-4. Updates CHANGELOGs
-5. Commits directly to main
-6. Publishes to npm with `@latest` tag
-7. Creates GitHub Release with git tag
+3. Creates a "Version Packages" PR with:
+   - Bumped versions (e.g., `1.0.0`)
+   - Updated CHANGELOGs
+   - Deleted changeset files
+
+### 4. Merge Version PR → Publish
+
+When you merge the Version PR:
+
+1. **Fast-path CI runs** (~30 seconds) - since only version/changelog files changed, expensive tests are skipped
+2. Release workflow detects no pending changesets
+3. Publishes to npm with `@latest` tag
+4. Creates GitHub Release with git tag
 
 ---
 
@@ -173,7 +181,7 @@ git add . && git commit -m "chore: prepare stable release"
 git checkout main
 git merge release/rc
 git push origin main
-# Release happens automatically after CI passes
+# CI runs → Version PR created → Merge it → Fast CI → Publish
 ```
 
 ---
@@ -188,7 +196,7 @@ git checkout main
 pnpm changeset  # select 'patch'
 git add . && git commit -m "fix: urgent fix"
 git push origin main
-# Release happens automatically after CI passes
+# CI runs → Version PR created → Merge it → Fast CI → Publish
 ```
 
 ---
@@ -237,7 +245,7 @@ And trusted publishing is configured on npmjs.com.
 
 ### Required Secrets
 
-The release workflow requires a `RELEASE_PAT` secret (Personal Access Token) to push version commits directly to main.
+The release workflow requires a `RELEASE_PAT` secret (Personal Access Token) to create Version PRs and push to the release branch.
 
 #### Creating a Fine-Grained PAT (Recommended)
 
@@ -251,6 +259,7 @@ The release workflow requires a `RELEASE_PAT` secret (Personal Access Token) to 
      | Permission | Access |
      |------------|--------|
      | Contents | Read and write |
+     | Pull requests | Read and write |
      | Metadata | Read-only (auto-selected) |
 
 4. Generate and copy the token
@@ -260,7 +269,12 @@ The release workflow requires a `RELEASE_PAT` secret (Personal Access Token) to 
 
 #### Why Not GITHUB_TOKEN?
 
-The default `GITHUB_TOKEN` cannot push commits that trigger workflows (to prevent infinite loops). Since the release workflow pushes version commits to main, it needs a PAT to ensure subsequent CI runs are triggered.
+The default `GITHUB_TOKEN` cannot:
+
+1. Create PRs that trigger CI workflows (to prevent infinite loops)
+2. Push commits that trigger workflows
+
+Since the release workflow creates Version PRs and needs CI to run on them, it requires a PAT.
 
 #### Token Rotation
 

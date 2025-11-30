@@ -57,16 +57,17 @@ jobs:
           npm install -g npm@11.6.4
           echo "npm version: $(npm --version)"
 
-      - name: Version and Publish
+      - name: Create Release Pull Request or Publish
         id: changesets
         uses: changesets/action@8eb63fb4cfc7f9643537c7d39d0b68c835012a19 # v1.5.3
         with:
           version: pnpm changeset version
           publish: pnpm changeset publish
+          title: 'chore: release packages'
           commit: 'chore: release packages'
           createGithubReleases: true
         env:
-          # PAT required to push version commits directly to main
+          # PAT required to create Version PR and push to changeset-release branch
           GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}
           NPM_CONFIG_PROVENANCE: true
 
