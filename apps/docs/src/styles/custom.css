@@ -102,16 +102,27 @@ nav.sidebar {
   border-radius: 0.75rem;
 }
 
-/* Links */
+/* Links - underlined for accessibility (WCAG link-in-text-block) */
 .sl-markdown-content a {
   color: var(--color-primary);
-  text-decoration: none;
-  border-bottom: 1px solid transparent;
-  transition: border-color 0.15s ease;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+  text-underline-offset: 0.15em;
+  transition: text-decoration-color 0.15s ease;
 }
 
 .sl-markdown-content a:hover {
-  border-bottom-color: var(--color-primary);
+  text-decoration-color: var(--color-primary);
+}
+
+/* Links inside Asides need darker color for contrast against colored backgrounds (WCAG color-contrast) */
+[data-theme='light'] .starlight-aside a {
+  color: #5B21B6; /* violet-800: 5.94:1 on note bg, 5.44:1 on tip bg */
+  text-decoration-color: color-mix(in srgb, #5B21B6 40%, transparent);
+}
+
+[data-theme='light'] .starlight-aside a:hover {
+  text-decoration-color: #5B21B6;
 }
 
 /* Cards */
@@ -119,6 +130,17 @@ nav.sidebar {
   background: var(--surface-base);
   border: 1px solid var(--surface-border);
   border-radius: 0.75rem;
+}
+
+/* Tables - keyboard accessible scrollable regions (WCAG scrollable-region-focusable) */
+.sl-markdown-content table[tabindex="0"] {
+  outline: none;
+}
+
+.sl-markdown-content table[tabindex="0"]:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
 }
 
 /* ===== MERMAID DIAGRAMS ===== */

@@ -130,6 +130,13 @@ export default defineConfig({
             src: "/js/script.js",
           },
         },
+        // Accessibility: Make tables keyboard accessible when scrollable (WCAG scrollable-region-focusable)
+        // Tables can become scrollable at different viewport sizes, so we add tabindex to all
+        // and use CSS :focus-visible to only show focus ring when appropriate
+        {
+          tag: "script",
+          content: `document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('.sl-markdown-content table').forEach(function(t){t.setAttribute('tabindex','0');t.setAttribute('role','group');t.setAttribute('aria-label','Data table')})});`,
+        },
       ],
       social: [
         {

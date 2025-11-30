@@ -15,9 +15,49 @@ import AxeBuilder from "@axe-core/playwright";
  * more detailed violation reporting.
  */
 
+/**
+ * Pages to test for accessibility
+ *
+ * Organized by the custom Starlight components they contain:
+ * - Tabs/TabItem: Interactive tab components (contrast, keyboard navigation)
+ * - Card/CardGrid: Card layouts
+ * - Aside: Warning/note boxes
+ * - FileTree: File structure diagrams
+ * - LinkCard: Link cards
+ */
 const PAGES = [
+  // Core pages (basic structure)
   { name: "Landing Page", url: "/" },
   { name: "Quick Start Page", url: "/getting-started/quick-start" },
+
+  // Pages with Tabs component (primary concern for contrast)
+  { name: "Philosophy Page (Tabs)", url: "/concepts/philosophy" },
+  { name: "Best Practices Page (Tabs)", url: "/testing/best-practices" },
+  {
+    name: "RSC Guide Page (Tabs)",
+    url: "/frameworks/nextjs-app-router/rsc-guide",
+  },
+
+  // Pages with FileTree component
+  {
+    name: "Express Example App (FileTree)",
+    url: "/frameworks/express/example-app",
+  },
+  {
+    name: "Next.js App Router Example (FileTree)",
+    url: "/frameworks/nextjs-app-router/example-app",
+  },
+  {
+    name: "Next.js Pages Router Example (FileTree)",
+    url: "/frameworks/nextjs-pages-router/example-app",
+  },
+
+  // Pages with Card/CardGrid + Aside
+  {
+    name: "Database Testing Guide (Card)",
+    url: "/guides/testing-database-apps",
+  },
+  { name: "Production Safety (Aside)", url: "/concepts/production-safety" },
 ];
 
 const VIEWPORTS = [
