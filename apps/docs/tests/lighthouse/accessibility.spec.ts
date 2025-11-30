@@ -200,4 +200,49 @@ test.describe("Accessibility - Specific checks", () => {
     const focusedElement = page.locator(":focus");
     await expect(focusedElement).toBeVisible();
   });
+
+  test("Tabs component - should support keyboard navigation between tabs", async ({
+    page,
+  }) => {
+    // Use Philosophy page which has a Tabs component
+    await page.goto("/concepts/philosophy");
+    await page.waitForLoadState("networkidle");
+
+    // Find the tablist
+    const tablist = page.locator('[role="tablist"]');
+    await expect(tablist).toBeVisible();
+
+    // Get all tabs
+    const tabs = page.locator('[role="tab"]');
+    const tabCount = await tabs.count();
+    expect(tabCount).toBeGreaterThanOrEqual(2);
+
+    // Focus the first tab by clicking it
+    const firstTab = tabs.first();
+    await firstTab.click();
+    await expect(firstTab).toBeFocused();
+
+    // Verify first tab is selected
+    await expect(firstTab).toHaveAttribute("aria-selected", "true");
+
+    // Press ArrowRight to move to next tab
+    await page.keyboard.press("ArrowRight");
+
+    // Second tab should now be focused
+    const secondTab = tabs.nth(1);
+    await expect(secondTab).toBeFocused();
+
+    // Press ArrowLeft to move back to first tab
+    await page.keyboard.press("ArrowLeft");
+    await expect(firstTab).toBeFocused();
+
+    // Press End to move to last tab
+    await page.keyboard.press("End");
+    const lastTab = tabs.last();
+    await expect(lastTab).toBeFocused();
+
+    // Press Home to move to first tab
+    await page.keyboard.press("Home");
+    await expect(firstTab).toBeFocused();
+  });
 });
