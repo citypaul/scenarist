@@ -15,9 +15,49 @@ import AxeBuilder from "@axe-core/playwright";
  * more detailed violation reporting.
  */
 
+/**
+ * Pages to test for accessibility
+ *
+ * Organized by the custom Starlight components they contain:
+ * - Tabs/TabItem: Interactive tab components (contrast, keyboard navigation)
+ * - Card/CardGrid: Card layouts
+ * - Aside: Warning/note boxes
+ * - FileTree: File structure diagrams
+ * - LinkCard: Link cards
+ */
 const PAGES = [
+  // Core pages (basic structure)
   { name: "Landing Page", url: "/" },
   { name: "Quick Start Page", url: "/getting-started/quick-start" },
+
+  // Pages with Tabs component (primary concern for contrast)
+  { name: "Philosophy Page (Tabs)", url: "/concepts/philosophy" },
+  { name: "Best Practices Page (Tabs)", url: "/testing/best-practices" },
+  {
+    name: "RSC Guide Page (Tabs)",
+    url: "/frameworks/nextjs-app-router/rsc-guide",
+  },
+
+  // Pages with FileTree component
+  {
+    name: "Express Example App (FileTree)",
+    url: "/frameworks/express/example-app",
+  },
+  {
+    name: "Next.js App Router Example (FileTree)",
+    url: "/frameworks/nextjs-app-router/example-app",
+  },
+  {
+    name: "Next.js Pages Router Example (FileTree)",
+    url: "/frameworks/nextjs-pages-router/example-app",
+  },
+
+  // Pages with Card/CardGrid + Aside
+  {
+    name: "Database Testing Guide (Card)",
+    url: "/guides/testing-database-apps",
+  },
+  { name: "Production Safety (Aside)", url: "/concepts/production-safety" },
 ];
 
 const VIEWPORTS = [
@@ -159,5 +199,50 @@ test.describe("Accessibility - Specific checks", () => {
 
     const focusedElement = page.locator(":focus");
     await expect(focusedElement).toBeVisible();
+  });
+
+  test("Tabs component - should support keyboard navigation between tabs", async ({
+    page,
+  }) => {
+    // Use Philosophy page which has a Tabs component
+    await page.goto("/concepts/philosophy");
+    await page.waitForLoadState("networkidle");
+
+    // Find the tablist
+    const tablist = page.locator('[role="tablist"]');
+    await expect(tablist).toBeVisible();
+
+    // Get all tabs
+    const tabs = page.locator('[role="tab"]');
+    const tabCount = await tabs.count();
+    expect(tabCount).toBeGreaterThanOrEqual(2);
+
+    // Focus the first tab by clicking it
+    const firstTab = tabs.first();
+    await firstTab.click();
+    await expect(firstTab).toBeFocused();
+
+    // Verify first tab is selected
+    await expect(firstTab).toHaveAttribute("aria-selected", "true");
+
+    // Press ArrowRight to move to next tab
+    await page.keyboard.press("ArrowRight");
+
+    // Second tab should now be focused
+    const secondTab = tabs.nth(1);
+    await expect(secondTab).toBeFocused();
+
+    // Press ArrowLeft to move back to first tab
+    await page.keyboard.press("ArrowLeft");
+    await expect(firstTab).toBeFocused();
+
+    // Press End to move to last tab
+    await page.keyboard.press("End");
+    const lastTab = tabs.last();
+    await expect(lastTab).toBeFocused();
+
+    // Press Home to move to first tab
+    await page.keyboard.press("Home");
+    await expect(firstTab).toBeFocused();
   });
 });
