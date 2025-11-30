@@ -25,48 +25,35 @@ jobs:
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
 
       - name: Detect code changes
-        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
         id: filter
-        with:
-          # Detects actual code changes vs version-only changes (from Version PRs)
-          # Version PRs modify: package.json, CHANGELOG.md, .changeset/ (all excluded below)
-          # This allows Version PR merges to get fast-path CI (~30s vs ~10min)
-          #
-          # IMPORTANT: Exclusions MUST come BEFORE inclusions!
-          # dorny/paths-filter uses "first match wins" - if a file matches an
-          # inclusion pattern before an exclusion, it will be included.
-          filters: |
-            code:
-              # Exclusions first (Version PR files) - order matters!
-              # dorny/paths-filter uses "first match wins"
-              - '!packages/**/package.json'
-              - '!packages/**/CHANGELOG.md'
-              - '!packages/**/test-results/**'
-              - '!internal/**/package.json'
-              - '!internal/**/CHANGELOG.md'
-              - '!internal/**/test-results/**'
-              - '!apps/**/package.json'
-              - '!apps/**/CHANGELOG.md'
-              - '!apps/**/test-results/**'
-              - '!.changeset/**'
-              # Then inclusions (files not matched above)
-              - 'packages/**/*.ts'
-              - 'packages/**/*.tsx'
-              - 'packages/**/*.js'
-              - 'packages/**/*.mjs'
-              - 'packages/**/*.cjs'
-              - 'packages/**/*.json'
-              - 'internal/**/*.ts'
-              - 'internal/**/*.tsx'
-              - 'internal/**/*.js'
-              - 'internal/**/*.mjs'
-              - 'internal/**/*.cjs'
-              - 'internal/**/*.json'
-              - 'apps/**'
-              - '.github/**'
-              - 'package.json'
-              - 'pnpm-lock.yaml'
-              - 'turbo.json'
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          # Version PRs from changesets use branch "changeset-release/main"
+          # These only contain version bumps and CHANGELOG updates - skip full CI
+
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            if [[ "$HEAD_REF" == "changeset-release/main" ]]; then
+              echo "Version PR detected (branch: changeset-release/main)"
+              echo "code=false" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+          fi
+
+          # For push events to main, check if this is a Version PR merge
+          # Version PR merges have commit message starting with "chore: release packages"
+          if [[ "$EVENT_NAME" == "push" ]]; then
+            COMMIT_MSG=$(git log -1 --pretty=%s)
+            if [[ "$COMMIT_MSG" == "chore: release packages"* ]]; then
+              echo "Version PR merge detected (commit: $COMMIT_MSG)"
+              echo "code=false" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+          fi
+
+          echo "Regular PR/push detected - running full CI"
+          echo "code=true" >> $GITHUB_OUTPUT
 
   # Job 1: Security Audit (runs early to fail fast on vulnerabilities)
   # Skipped for version-only commits (no new dependencies)
