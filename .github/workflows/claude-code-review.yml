@@ -28,13 +28,23 @@ jobs:
       id-token: write
 
     steps:
-      - name: Check if workflow file changed
-        id: workflow-changed
+      - name: Check if should skip review
+        id: should-skip
         env:
           GH_TOKEN: ${{ github.token }}
+          HEAD_REF: ${{ github.head_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
         run: |
+          # Skip for Version PRs (only version bumps and CHANGELOG updates)
+          if [[ "$HEAD_REF" == "changeset-release/main" ]]; then
+            echo "Version PR detected - skipping Claude review"
+            echo "skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
           # Get list of changed files in this PR
-          CHANGED_FILES=$(gh pr diff ${{ github.event.pull_request.number }} --name-only --repo ${{ github.repository }})
+          CHANGED_FILES=$(gh pr diff "$PR_NUMBER" --name-only --repo "$REPO")
 
           # Check if this workflow file is in the changed files
           if echo "$CHANGED_FILES" | grep -q "^.github/workflows/claude-code-review.yml$"; then
@@ -45,13 +55,13 @@ jobs:
           fi
 
       - name: Checkout repository
-        if: steps.workflow-changed.outputs.skip != 'true'
+        if: steps.should-skip.outputs.skip != 'true'
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           fetch-depth: 1
 
       - name: Run Claude Code Review
-        if: steps.workflow-changed.outputs.skip != 'true'
+        if: steps.should-skip.outputs.skip != 'true'
         id: claude-review
         uses: anthropics/claude-code-action@426380f01bad0a17200865605a85cb28926dccbf # v1.0.9
         with:

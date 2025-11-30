@@ -15,10 +15,26 @@ jobs:
     timeout-minutes: 5
 
     steps:
+      # Version PRs only modify package.json, CHANGELOG.md, and .changeset files
+      # No new dependencies to review - skip expensive analysis
+      - name: Check for Version PR
+        id: check-version-pr
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          if [[ "$HEAD_REF" == "changeset-release/main" ]]; then
+            echo "Version PR detected - skipping dependency review"
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Checkout
+        if: steps.check-version-pr.outputs.skip != 'true'
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
 
       - name: Dependency Review
+        if: steps.check-version-pr.outputs.skip != 'true'
         uses: actions/dependency-review-action@3c4e3dcb1aa7874d2c16be7d79418e9b7efd6261 # v4.8.2
         with:
           # Block PRs introducing high or critical vulnerabilities
