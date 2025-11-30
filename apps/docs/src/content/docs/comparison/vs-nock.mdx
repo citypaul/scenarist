@@ -1,0 +1,402 @@
+---
+title: Scenarist vs Nock
+description: Compare declarative scenario management with imperative per-test mock setup
+---
+
+import { Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+import WhatScenaristOffers from '../../../components/comparison/WhatScenaristOffers.astro';
+
+[Nock](https://github.com/nock/nock) is a popular HTTP mocking library for Node.js. Since v14, Nock uses [@mswjs/interceptors](https://github.com/mswjs/interceptors)—the same interception engine as MSW—making it robust and modern. Scenarist takes a different approach—declarative scenario definitions with built-in parallel test isolation.
+
+:::note[Same Interception, Different Management]
+Both Nock (v14+) and Scenarist use @mswjs/interceptors under the hood—the interception quality is identical. The difference is purely in scenario management: how you define mocks, isolate tests, and switch between states.
+:::
+
+<WhatScenaristOffers />
+
+## At a Glance
+
+| Aspect | Scenarist | Nock |
+|--------|-----------|------|
+| **Approach** | Declarative scenarios | Imperative per-test setup |
+| **Test isolation** | Per-test via test ID | Manual scope management |
+| **Interception level** | Network (MSW) | @mswjs/interceptors (v14+) |
+| **Runtime switching** | Yes (API call) | Manual (cleanAll + reconfigure) |
+| **Browser support** | Via MSW | Node.js only |
+| **Setup** | Framework adapters | Standalone library |
+| **TypeScript** | Native (scenarios are TS) | Built-in definitions |
+| **Recording** | Not supported | nockBack fixture recording |
+| **RSC scenario testing** | ✓ (server-side interception) | ✗ (process isolation issue) |
+
+## Key Differences
+
+### Declarative vs Imperative
+
+<Tabs>
+  <TabItem label="Scenarist">
+```typescript
+// Declarative - describe what, not how
+const scenarios = {
+  'user-premium': {
+    mocks: [{
+      url: 'https://api.stripe.com/v1/customers/cus_123',
+      response: {
+        status: 200,
+        body: { id: 'cus_123', subscriptions: { data: [{ status: 'active' }] } }
+      }
+    }]
+  },
+  'user-free': {
+    mocks: [{
+      url: 'https://api.stripe.com/v1/customers/cus_123',
+      response: {
+        status: 200,
+        body: { id: 'cus_123', subscriptions: { data: [] } }
+      }
+    }]
+  }
+} as const satisfies ScenaristScenarios;
+
+// Tests select scenarios by name
+test('premium features visible', async ({ switchScenario }) => {
+  await switchScenario(page, 'user-premium');
+});
+```
+  </TabItem>
+  <TabItem label="Nock">
+```typescript
+// Imperative - describe how to respond
+beforeEach(() => {
+  nock.cleanAll();
+});
+
+test('premium features visible', async () => {
+  // Set up mock inline for this test
+  nock('https://api.stripe.com')
+    .get('/v1/customers/cus_123')
+    .reply(200, {
+      id: 'cus_123',
+      subscriptions: { data: [{ status: 'active' }] }
+    });
+
+  // Test code...
+});
+
+test('free features visible', async () => {
+  // Different setup for this test
+  nock('https://api.stripe.com')
+    .get('/v1/customers/cus_123')
+    .reply(200, {
+      id: 'cus_123',
+      subscriptions: { data: [] }
+    });
+
+  // Test code...
+});
+```
+  </TabItem>
+</Tabs>
+
+**Trade-off:** Scenarist's declarative approach makes scenarios reusable and inspectable—you can see all scenarios in one place. Nock's imperative approach is more flexible for one-off mocks but can lead to duplication.
+
+### Parallel Test Isolation
+
+<Tabs>
+  <TabItem label="Scenarist">
+```typescript
+// Built-in test isolation via test ID
+test.describe.parallel('Payment flows', () => {
+  test('success flow', async ({ page, switchScenario }) => {
+    // x-test-id header routes to this scenario
+    await switchScenario(page, 'payment-success');
+    // Other tests can run simultaneously with different scenarios
+  });
+
+  test('failure flow', async ({ page, switchScenario }) => {
+    await switchScenario(page, 'payment-declined');
+    // Same server, same time, isolated by test ID
+  });
+});
+```
+  </TabItem>
+  <TabItem label="Nock">
+```typescript
+// Manual isolation - requires careful scoping
+test.describe('Payment flows', () => {
+  // Serial execution to avoid conflicts
+  test.describe.serial('success flow', () => {
+    test.beforeEach(() => {
+      nock.cleanAll();
+      nock('https://api.stripe.com')
+        .post('/v1/charges')
+        .reply(200, { status: 'succeeded' });
+    });
+
+    test('shows success', async () => { /* ... */ });
+  });
+
+  test.describe.serial('failure flow', () => {
+    test.beforeEach(() => {
+      nock.cleanAll();
+      nock('https://api.stripe.com')
+        .post('/v1/charges')
+        .reply(402, { error: 'declined' });
+    });
+
+    test('shows error', async () => { /* ... */ });
+  });
+});
+
+// Parallel tests with Nock require careful isolation
+// or separate test processes
+```
+  </TabItem>
+</Tabs>
+
+**Trade-off:** Scenarist was designed specifically for parallel test isolation. Nock can work with parallel tests but requires careful scope management to avoid mock leakage between tests.
+
+### Request Matching
+
+<Tabs>
+  <TabItem label="Scenarist">
+```typescript
+// Declarative matching patterns
+{
+  method: 'POST',
+  url: 'https://api.stripe.com/v1/charges',
+  match: {
+    body: {
+      amount: 5000,
+      currency: 'usd'
+    },
+    headers: {
+      'idempotency-key': /^[a-f0-9-]+$/
+    }
+  },
+  response: {
+    status: 200,
+    body: { id: 'ch_123' }
+  }
+}
+```
+  </TabItem>
+  <TabItem label="Nock">
+```typescript
+// Fluent API for matching
+nock('https://api.stripe.com')
+  .post('/v1/charges', {
+    amount: 5000,
+    currency: 'usd'
+  })
+  .matchHeader('idempotency-key', /^[a-f0-9-]+$/)
+  .reply(200, { id: 'ch_123' });
+
+// Or with function matchers
+nock('https://api.stripe.com')
+  .post('/v1/charges', (body) => body.amount > 0)
+  .reply(200, { id: 'ch_123' });
+```
+  </TabItem>
+</Tabs>
+
+**Trade-off:** Both offer rich matching capabilities. Nock allows function matchers for maximum flexibility. Scenarist's declarative patterns are more restrictive but enable inspection and composition.
+
+### Scope and Cleanup
+
+<Tabs>
+  <TabItem label="Scenarist">
+```typescript
+// Scenarios persist - switch between them
+test('multi-step flow', async ({ switchScenario }) => {
+  // Start with error
+  await switchScenario(page, 'payment-timeout');
+  await page.click('#submit');
+
+  // Switch to success for retry
+  await switchScenario(page, 'payment-success');
+  await page.click('#retry');
+
+  // No cleanup needed - test ID isolation
+});
+```
+  </TabItem>
+  <TabItem label="Nock">
+```typescript
+// Interceptors are consumed once by default
+test('multi-step flow', async () => {
+  // First call
+  nock('https://api.stripe.com')
+    .post('/v1/charges')
+    .reply(504, 'timeout');
+
+  await page.click('#submit');
+
+  // Interceptor consumed - need another
+  nock('https://api.stripe.com')
+    .post('/v1/charges')
+    .reply(200, { status: 'succeeded' });
+
+  await page.click('#retry');
+
+  // Can use .persist() for multiple calls
+  // nock(...).persist().reply(...)
+});
+```
+  </TabItem>
+</Tabs>
+
+**Trade-off:** Nock's one-time consumption is explicit about expected call counts. Scenarist's persistent scenarios are simpler for flows where the same endpoint is called multiple times.
+
+### Server Component Testing: The Process Isolation Problem
+
+Nock intercepts requests in the **current Node.js process**. In E2E testing with Playwright, your test runs in one process while the Next.js server runs in a **separate process**—Nock in the test process can't intercept requests from the server process.
+
+<Tabs>
+  <TabItem label="E2E Testing (Nock Fails)">
+```typescript
+// ❌ E2E Test - FAILS
+// Test process
+import nock from 'nock';
+
+nock('https://api.stripe.com')
+  .get('/v1/products')
+  .reply(200, { products: [] });
+
+// Playwright launches browser, browser requests page from Next.js server
+// Next.js server (SEPARATE PROCESS) fetches from Stripe
+// Nock never sees it - the request goes to real Stripe
+await page.goto('/products'); // Fails or uses real API
+```
+  </TabItem>
+  <TabItem label="Integration Testing (Nock Works)">
+```typescript
+// ✅ Integration Test - WORKS (same process)
+import nock from 'nock';
+import { renderToString } from 'react-dom/server';
+import ProductsPage from './app/products/page';
+
+nock('https://api.stripe.com')
+  .get('/v1/products')
+  .reply(200, { products: [{ id: 'prod_1' }] });
+
+// Rendering happens in the SAME process as the test
+const html = await renderToString(<ProductsPage />);
+expect(html).toContain('prod_1'); // ✓ Works
+```
+  </TabItem>
+  <TabItem label="Scenarist E2E (Works)">
+```typescript
+// ✅ E2E Test - WORKS
+// Scenarist runs inside the Next.js server process
+// Test ID header routes requests to correct scenario
+
+test('shows products', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'products-available');
+
+  await page.goto('/products');
+  // Next.js server's fetch is intercepted by MSW (Scenarist)
+  await expect(page.locator('.product')).toHaveCount(3);
+});
+```
+  </TabItem>
+</Tabs>
+
+**Key insight:** Scenarist runs inside your application server (via framework adapters), so it intercepts requests where they originate. Nock runs in your test process and can only intercept requests made from that process.
+
+## When to Choose Scenarist
+
+<CardGrid>
+  <Card title="Scenario-based testing with Server Components" icon="seti:react">
+    Scenarist's server-side interception works across process boundaries. Nock can't intercept requests from a separate Next.js server process.
+  </Card>
+  <Card title="Parallel test isolation" icon="random">
+    Built-in test ID system enables hundreds of tests with different scenarios running simultaneously.
+  </Card>
+  <Card title="Scenario libraries" icon="open-book">
+    Define scenarios once, reuse everywhere. Changes in one place update all tests.
+  </Card>
+  <Card title="Runtime switching" icon="forward">
+    Change scenarios mid-test without cleanup/setup. Test retry flows, state machines.
+  </Card>
+</CardGrid>
+
+## When to Choose Nock
+
+<CardGrid>
+  <Card title="Integration tests (same process)" icon="seti:nodejs">
+    When test and server run in the same process, Nock works great. E2E with separate processes—use Scenarist.
+  </Card>
+  <Card title="Fixture recording (nockBack)" icon="seti:video">
+    Record real HTTP interactions to JSON files, replay in tests. Great for contract snapshots.
+  </Card>
+  <Card title="Call counting" icon="seti:info">
+    Built-in assertions on call counts. Verify exactly N requests were made.
+  </Card>
+  <Card title="Existing investment" icon="approve-check">
+    Team already uses Nock. Migration cost outweighs benefits for integration tests.
+  </Card>
+</CardGrid>
+
+## Migration Considerations
+
+### From Nock to Scenarist
+
+```typescript
+// Nock - inline definitions
+beforeEach(() => {
+  nock('https://api.stripe.com')
+    .get('/v1/customers/cus_123')
+    .reply(200, { id: 'cus_123', name: 'Test Customer' });
+
+  nock('https://api.sendgrid.com')
+    .post('/v3/mail/send')
+    .reply(202);
+});
+
+// Scenarist - centralized scenarios
+const scenarios = {
+  default: {
+    mocks: [
+      {
+        url: 'https://api.stripe.com/v1/customers/cus_123',
+        response: { status: 200, body: { id: 'cus_123', name: 'Test Customer' } }
+      },
+      {
+        url: 'https://api.sendgrid.com/v3/mail/send',
+        method: 'POST',
+        response: { status: 202 }
+      }
+    ]
+  }
+} as const satisfies ScenaristScenarios;
+```
+
+**Migration benefits:**
+- Scenarios become visible in one place
+- Test isolation improves automatically
+- Runtime switching becomes possible
+
+**Migration costs:**
+- Learn declarative patterns instead of fluent API
+- Convert inline mocks to scenarios
+- Set up framework adapter
+
+## Summary
+
+| Factor | Scenarist | Nock |
+|--------|-----------|------|
+| RSC scenario testing | ✓ Works (server-side) | ✗ Process isolation issue |
+| Parallel isolation | ✓ Built-in (test ID) | Manual |
+| Scenario reuse | ✓ Declarative | Manual extraction |
+| Runtime switching | ✓ Single API call | Reconfigure handlers |
+| TypeScript | ✓ Native | ✓ Built-in definitions |
+| Recording | Not supported | ✓ nockBack |
+| Function matchers | Declarative patterns | ✓ Full flexibility |
+| Call count assertions | Not built-in | ✓ Built-in |
+| Integration tests | ✓ Works | ✓ Works |
+
+:::tip[Why No Recording?]
+Scenarist intentionally doesn't support recording. Scenarios are **declarative definitions** of expected behavior—you define what your app should handle upfront, not capture what happened to happen during a test run. This makes scenarios reviewable, version-controllable, and independent of external API availability. If you need recorded fixtures, Nock's nockBack is excellent.
+:::
+
+**Bottom line:** Choose Scenarist for scenario-based testing with Server Components (where Nock can't reach across processes), parallel test isolation, and runtime switching. Choose Nock for integration tests in the same process, when you need fixture recording (nockBack), or when you need function matchers and call counting.

@@ -286,7 +286,7 @@ test.describe('Products Page - React Server Components', () => {
 
 ## Pattern 2: Stateful Mocks with RSC
 
-Stateful mocks capture data from one request and inject it into later responses. This is essential for testing flows like shopping carts where state builds up across multiple requests.
+Stateful mocks capture data from one request and inject it into later responses. This is essential for testing flows like shopping carts where state builds up across multiple requests. **State is isolated per test ID**, so parallel tests never conflict—each test maintains its own cart state.
 
 ### Example: Server-Side Cart
 

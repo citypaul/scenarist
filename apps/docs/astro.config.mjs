@@ -166,6 +166,17 @@ export default defineConfig({
           ],
         },
         {
+          label: "Comparison",
+          items: [
+            { label: "Overview", slug: "comparison" },
+            { label: "Scenarist + MSW", slug: "comparison/with-msw" },
+            { label: "vs WireMock", slug: "comparison/vs-wiremock" },
+            { label: "vs Nock", slug: "comparison/vs-nock" },
+            { label: "vs Testcontainers", slug: "comparison/vs-testcontainers" },
+            { label: "vs Playwright Mocks", slug: "comparison/vs-playwright-mocks" },
+          ],
+        },
+        {
           label: "Framework Guides",
           items: [
             {
@@ -234,6 +245,10 @@ export default defineConfig({
             { label: "Verification", slug: "reference/verification" },
             { label: "Architecture", slug: "concepts/architecture" },
           ],
+        },
+        {
+          label: "Roadmap",
+          slug: "roadmap",
         },
       ],
       customCss: ["./src/styles/custom.css"],

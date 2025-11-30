@@ -179,7 +179,7 @@ Use **sequences** for APIs that return different responses on subsequent calls:
 
 ### When to Use Stateful Mocks
 
-Use **state capture** when responses depend on previous requests:
+Use **state capture** when responses depend on previous requests. State is isolated per test ID, so parallel tests each maintain their own state without conflicts:
 
 ```typescript
 // Capture item added to cart

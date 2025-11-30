@@ -425,7 +425,7 @@ After 3 calls, sequence exhausts and fallback mock returns 429 error.
 
 ## Feature 3: Stateful Mocks
 
-Capture state from requests and inject it into responses for dynamic behavior:
+Capture state from requests and inject it into responses for dynamic behavior. **State is isolated per test ID**—parallel tests each maintain independent state, so one test's cart items never appear in another test's responses:
 
 ```typescript
 // Import from your framework's adapter package (all adapters re-export these types)

@@ -3,6 +3,8 @@ title: Why Scenarist?
 description: Understanding scenario-based testing and how Scenarist fills the gap between unit tests and end-to-end tests
 ---
 
+import WhatScenaristOffers from '../../../components/comparison/WhatScenaristOffers.astro';
+
 ## What is Scenario-Based Testing?
 
 **Scenario-based testing** is an integration testing approach where your real application code executes while external dependencies (third-party APIs, microservices) return controlled responses. Unlike true end-to-end tests that use zero mocks, scenario-based tests mock only the external services you don't control.
@@ -29,17 +31,7 @@ This creates a testing challenge:
 
 **Traditional backend services** call the same external APIs. Testing payment flows, authentication errors, or email delivery requires simulating different API responses.
 
-## Quick Navigation
-
-**Choose your path based on what you need:**
-
-| If you want to...                | Go to...                                                |
-| -------------------------------- | ------------------------------------------------------- |
-| See how Scenarist works          | [How it works](/concepts/how-it-works)                  |
-| Learn about dynamic capabilities | [Capabilities](/concepts/dynamic-responses)             |
-| Compare with unit/E2E tests      | [Comparison](#comparison-with-other-testing-approaches) |
-| Understand limitations           | [Limitations](#limitations-and-trade-offs)              |
-| Start implementing               | [Getting Started](#getting-started)                     |
+<WhatScenaristOffers intro={false} />
 
 ---
 
@@ -86,7 +78,7 @@ export default async function CheckoutPage() {
 
 ### The Requirement: Network Requests
 
-Scenarist intercepts HTTP requests that traverse the network. This works because MSW (Mock Service Worker) operates at the fetch level.
+Scenarist intercepts HTTP requests that traverse the network. This works because MSW (Mock Service Worker) operates at the network level, intercepting requests from any HTTP client (fetch, axios, etc.).
 
 **What this means in practice:**
 
@@ -108,7 +100,7 @@ const products = await fetch("http://localhost:3000/api/products");
 - **Direct database access** (PostgreSQL, MongoDB, Prisma) - no HTTP request
 - **Internal API routes** on the same host/port - Next.js internal routing
 - **File system operations** - no HTTP request
-- **WebSocket connections** - different protocol
+- **WebSocket connections** - MSW supports WebSockets, but Scenarist's scenario system focuses on HTTP
 
 **If your app uses direct database access:** See [Testing Database Apps](/guides/testing-database-apps) for strategies. We recommend the [Repository Pattern](/guides/testing-database-apps/repository-pattern) for scalable parallel testing with the same test ID isolation model as Scenarist.
 
@@ -116,7 +108,7 @@ const products = await fetch("http://localhost:3000/api/products");
 
 ### Why Framework Documentation Recommends E2E
 
-This gap is evident in how framework authors struggle to provide testing guidance. The Next.js documentation states: _"Since async Server Components are new to the React ecosystem, Next.js recommends using end-to-end testing."_ Remix notes: _"There aren't standard ways of testing components that have Remix code."_ SvelteKit faces similar challenges with server route testing.
+This gap is evident in how framework authors struggle to provide testing guidance. The [Next.js testing docs](https://nextjs.org/docs/app/building-your-application/testing) focus primarily on unit testing and E2E testing, acknowledging that async Server Components present unique testing challenges. [Remix testing guidance](https://remix.run/docs/en/main/guides/testing) notes the complexity of testing components that depend on Remix context and loaders. SvelteKit faces similar challenges with server route testing.
 
 The pattern is clear: when "frontend" components run on the server and call external APIs directly, traditional testing approaches break down. **Scenarist fills this gap** by testing real server-side code with mocked external APIs.
 
@@ -140,47 +132,23 @@ This follows Test-Driven Development principles: tests document expected behavio
 
 [Learn about our testing philosophy →](/concepts/philosophy)
 
-## Comparison with Other Testing Approaches
+## Comparing Testing Approaches
 
-| Aspect                             | Unit Tests           | E2E Tests              | Scenarist            |
-| ---------------------------------- | -------------------- | ---------------------- | -------------------- |
-| HTTP layer                         | Mocked               | Real                   | Real                 |
-| Backend execution                  | Real (but isolated)  | Real                   | Real                 |
-| External APIs                      | Mocked               | Real or mocked         | Mocked via scenarios |
-| Tests behavior over implementation | No (mocks internals) | Yes                    | Yes                  |
-| Parallel execution                 | Yes                  | Typically no           | Yes                  |
-| Speed                              | Fast                 | Slow                   | Fast                 |
-| Scenario coverage                  | High (with mocking)  | Low (speed constraint) | High                 |
-
-None of these approaches replaces the others—they serve different purposes:
+Scenarist fills a gap between unit tests and end-to-end tests. Each approach serves different purposes—they complement rather than replace each other:
 
 - **Unit tests** verify individual functions and modules in isolation
 - **Scenarist** verifies HTTP-level behavior with different external API scenarios
 - **E2E tests** verify the complete user experience including browser interactions
 
-## When to Use Scenarist
+For detailed comparisons with other tools (WireMock, Nock, Testcontainers, Playwright mocks), see our [Tool Comparison](/comparison) guide. The comparison includes a [decision guide](/comparison#making-the-decision) to help you choose the right approach for your needs.
 
-Consider Scenarist when:
-
-- Testing middleware chains, routing logic, or request/response handling
-- Verifying backend behavior under different external API responses
-- Testing scenarios where external APIs are slow, rate-limited, or expensive
-- Running many test scenarios in parallel against the same server
-- Testing modern frameworks (Next.js Server Components, Remix loaders) where unit testing requires complex framework mocking
-
-Consider alternatives when:
-
-- Testing isolated functions (use unit tests) or complete user workflows with browser interactions (use E2E tests)
-- Validating integration with real third-party services or API contract specifications (use integration/contract tests)
-- Working with frontend-only applications with no HTTP layer
-
-:::caution[Not a Replacement for E2E Testing]
-Scenarist tests HTTP-level backend behavior, not complete user workflows. Browser interactions, JavaScript execution, visual rendering, and client-side state management still require end-to-end tests. Use Scenarist to complement E2E tests, not replace them.
+:::caution[Scenarist Complements E2E Testing]
+Scenarist tests server-side HTTP behavior, not complete user workflows. Browser interactions, JavaScript execution, and visual rendering still require end-to-end tests. Use Scenarist alongside E2E tests, not as a replacement.
 :::
 
 ## Limitations and Trade-offs
 
-**HTTP only**: Scenarist intercepts HTTP requests only. It cannot mock database calls, file system operations, or WebSocket connections. For apps with direct database access, see [Testing Database Apps](/guides/testing-database-apps) for recommended strategies.
+**HTTP only**: Scenarist intercepts HTTP requests only. It cannot mock database calls, file system operations, or WebSocket connections (MSW supports WebSockets, but Scenarist's scenario system is designed for HTTP request/response patterns). For apps with direct database access, see [Testing Database Apps](/guides/testing-database-apps) for recommended strategies.
 
 **Database parallelism**: While Scenarist enables parallel HTTP tests via test ID isolation, database testing requires different strategies. We recommend the [Repository Pattern](/guides/testing-database-apps/repository-pattern), which provides the same test ID isolation model for database access. See [Parallelism Options](/guides/testing-database-apps/parallelism-options) for all approaches and trade-offs.
 
@@ -189,8 +157,6 @@ Scenarist tests HTTP-level backend behavior, not complete user workflows. Browse
 **Mock maintenance**: Scenario definitions need updates when external APIs change. Scenarist doesn't validate that mocks match real API contracts—this is a deliberate trade-off for test isolation and speed.
 
 **Learning curve**: Understanding scenario definitions, test ID isolation, and the relationship between mocks and real backend code requires initial investment. The documentation and examples aim to reduce this learning time.
-
-**Not a replacement for E2E testing**: Scenarist tests backend HTTP behavior, not complete user workflows. Browser interactions, JavaScript execution, and visual verification still require E2E tests.
 
 ## Getting Started
 

@@ -1,0 +1,350 @@
+---
+title: Scenarist vs Playwright Mocks
+description: Compare server-side request interception with browser-side mocking for modern web applications
+---
+
+import { Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+import WhatScenaristOffers from '../../../components/comparison/WhatScenaristOffers.astro';
+
+Playwright includes [built-in request interception](https://playwright.dev/docs/mock) via `page.route()` and HAR file recording. This works great for client-side requests. Scenarist intercepts requests on the server—essential for scenario-based testing of Server Components, API routes, and middleware.
+
+:::note[Terminology clarification]
+This page compares Scenarist with **Playwright's built-in `page.route()` API**—browser-side request interception. This is different from Scenarist's `@scenarist/playwright-helpers` package, which provides Playwright test fixtures for server-side scenario management. The two can work together: use Scenarist for server-side mocking with first-class Playwright fixtures, and `page.route()` for browser-specific needs.
+:::
+
+<WhatScenaristOffers />
+
+## At a Glance
+
+| Aspect | Scenarist | Playwright Mocks |
+|--------|-----------|------------------|
+| **Intercepts at** | Server (Node.js) | Browser |
+| **Server Components** | ✓ Full support | ✗ Cannot intercept |
+| **API Routes** | ✓ Full support | ✗ Cannot intercept |
+| **Client-side fetch** | ✓ Yes | ✓ Yes |
+| **Setup** | Framework adapter | Built into Playwright |
+| **Test isolation** | Per-test via test ID | Per-page |
+| **HAR recording** | Not supported | ✓ Built-in |
+| **Next.js 15 testProxy** | Not needed (built-in) | ✓ Experimental support |
+
+## The Critical Difference: Where Requests Originate
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│    Browser                          Server (Node.js)            │
+│    ────────                         ─────────────────           │
+│                                                                 │
+│    ┌──────────────┐                 ┌──────────────────────┐    │
+│    │ Client       │   HTTP Request  │ Server Component     │    │
+│    │ Component    │ ──────────────► │                      │    │
+│    │              │                 │  const data = await  │    │
+│    │ onClick:     │                 │    fetch('https://   │    │
+│    │  fetch('/api')                 │    api.stripe.com')  │    │
+│    │              │                 │                      │    │
+│    └──────┬───────┘                 └──────────┬───────────┘    │
+│           │                                    │                │
+│           │ ◄── Playwright                     │                │
+│           │     can intercept                  │ ◄── Scenarist  │
+│           │                                    │     intercepts │
+│           ▼                                    ▼                │
+│    ┌──────────────┐                 ┌──────────────────────┐    │
+│    │ External API │                 │ External API         │    │
+│    │ (from        │                 │ (from server)        │    │
+│    │  browser)    │                 │                      │    │
+│    └──────────────┘                 └──────────────────────┘    │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Playwright's `page.route()`** intercepts requests that originate in the browser.
+
+**Scenarist** intercepts requests that originate on the server (Node.js).
+
+For Server Components, API routes, and middleware—the server makes HTTP requests that never touch the browser. Playwright can't see them.
+
+## Example: Server Component
+
+<Tabs>
+  <TabItem label="Scenarist (Works)">
+```typescript
+// app/checkout/page.tsx - Server Component
+export default async function CheckoutPage() {
+  // This fetch runs on the SERVER
+  const products = await fetch('https://api.stripe.com/v1/products');
+  const data = await products.json();
+
+  return <ProductList products={data.products} />;
+}
+
+// checkout.spec.ts
+test('displays products', async ({ page, switchScenario }) => {
+  // Scenarist intercepts the server-side fetch
+  await switchScenario(page, 'products-available');
+
+  await page.goto('/checkout');
+
+  // Server Component received mocked Stripe response
+  await expect(page.locator('.product')).toHaveCount(3);
+});
+```
+  </TabItem>
+  <TabItem label="Playwright Mocks (Cannot Work)">
+```typescript
+// app/checkout/page.tsx - Server Component
+export default async function CheckoutPage() {
+  // This fetch runs on the SERVER
+  const products = await fetch('https://api.stripe.com/v1/products');
+  const data = await products.json();
+
+  return <ProductList products={data.products} />;
+}
+
+// checkout.spec.ts
+test('displays products', async ({ page }) => {
+  // ❌ This CANNOT intercept server-side fetches
+  await page.route('**/api.stripe.com/**', route => {
+    route.fulfill({
+      status: 200,
+      body: JSON.stringify({ products: [...] })
+    });
+  });
+
+  await page.goto('/checkout');
+
+  // The Server Component already fetched from real Stripe
+  // Browser route handler never saw the request
+  // Test sees real Stripe data (or fails if no API key)
+});
+```
+  </TabItem>
+</Tabs>
+
+## Playwright's Additional Features
+
+### HAR File Recording
+
+Playwright can record and replay HTTP traffic using HAR (HTTP Archive) files:
+
+```typescript
+// Record HAR during test
+await page.routeFromHAR('recording.har', {
+  url: '**/api/**',
+  update: true, // Record mode
+});
+
+// Replay HAR in subsequent tests
+await page.routeFromHAR('recording.har', {
+  url: '**/api/**',
+  update: false, // Replay mode
+});
+```
+
+**Limitation:** HAR only captures browser-level requests. Server-side requests (Server Components, API routes) are never recorded because they don't pass through the browser.
+
+### Next.js 15 Experimental testProxy
+
+Next.js 15 introduced an experimental `testProxy` feature that proxies server-side fetch calls, allowing MSW to intercept them:
+
+```javascript
+// next.config.js
+module.exports = {
+  experimental: {
+    testProxy: true,
+  },
+}
+```
+
+**Status:** Experimental with known limitations—doesn't intercept internal route handler calls (fetches using relative URLs within the same app), and some font loading issues reported.
+
+**Why Scenarist is still valuable:** Scenarist provides scenario management, test ID isolation, runtime switching, and Playwright fixtures on top of MSW—features you'd need to build yourself even with testProxy.
+
+## When Each Tool Works
+
+### Playwright Mocks Work For
+
+<CardGrid>
+  <Card title="Client-side SPAs" icon="seti:react">
+    React, Vue, Angular apps where all fetches originate in the browser.
+  </Card>
+  <Card title="Client Components" icon="seti:javascript">
+    Next.js Client Components that fetch data on the client side.
+  </Card>
+  <Card title="Static sites" icon="seti:html">
+    Pre-rendered pages where dynamic data is fetched client-side.
+  </Card>
+  <Card title="Zero-config mocking" icon="setting">
+    Built into Playwright—no additional setup required.
+  </Card>
+</CardGrid>
+
+### Scenarist Works For
+
+<CardGrid>
+  <Card title="Server Components" icon="seti:react">
+    Next.js/React Server Components that fetch data during SSR.
+  </Card>
+  <Card title="API Routes" icon="seti:nodejs">
+    Next.js API routes, Express endpoints that call external APIs.
+  </Card>
+  <Card title="Middleware" icon="puzzle">
+    Authentication middleware, edge functions that make HTTP calls.
+  </Card>
+  <Card title="Mixed architectures" icon="random">
+    Apps with both client and server-side data fetching.
+  </Card>
+</CardGrid>
+
+## Code Comparison
+
+### Client-Side Fetch (Both Work)
+
+<Tabs>
+  <TabItem label="Playwright Mocks">
+```typescript
+// components/UserProfile.tsx - Client Component
+'use client';
+
+export function UserProfile() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    // Client-side fetch - browser makes the request
+    fetch('/api/user').then(r => r.json()).then(setUser);
+  }, []);
+
+  return <div>{user?.name}</div>;
+}
+
+// profile.spec.ts
+test('shows user name', async ({ page }) => {
+  // ✓ Works - intercepts browser request
+  await page.route('**/api/user', route => {
+    route.fulfill({
+      status: 200,
+      body: JSON.stringify({ name: 'Test User' })
+    });
+  });
+
+  await page.goto('/profile');
+  await expect(page.locator('div')).toContainText('Test User');
+});
+```
+  </TabItem>
+  <TabItem label="Scenarist">
+```typescript
+// Same client component
+
+// profile.spec.ts
+test('shows user name', async ({ page, switchScenario }) => {
+  // ✓ Works - Scenarist can intercept client-side fetches too
+  // (via MSW in the browser worker)
+  await switchScenario(page, 'user-profile');
+
+  await page.goto('/profile');
+  await expect(page.locator('div')).toContainText('Test User');
+});
+```
+  </TabItem>
+</Tabs>
+
+### Server-Side Fetch (Only Scenarist Works)
+
+<Tabs>
+  <TabItem label="Scenarist (Works)">
+```typescript
+// app/dashboard/page.tsx - Server Component
+export default async function Dashboard() {
+  // Server-side fetch - runs in Node.js
+  const analytics = await fetch('https://api.analytics.com/data', {
+    headers: { 'Authorization': `Bearer ${process.env.ANALYTICS_KEY}` }
+  });
+
+  return <AnalyticsChart data={await analytics.json()} />;
+}
+
+// dashboard.spec.ts
+test('displays analytics', async ({ page, switchScenario }) => {
+  // ✓ Scenarist intercepts server-side fetch
+  await switchScenario(page, 'analytics-data');
+
+  await page.goto('/dashboard');
+  await expect(page.locator('.chart')).toBeVisible();
+});
+```
+  </TabItem>
+  <TabItem label="Playwright Mocks (Cannot Work)">
+```typescript
+// Same Server Component
+
+// dashboard.spec.ts
+test('displays analytics', async ({ page }) => {
+  // ❌ Cannot intercept - request never reaches browser
+  await page.route('**/api.analytics.com/**', route => {
+    route.fulfill({ /* ... */ });
+  });
+
+  await page.goto('/dashboard');
+  // Server already made real request to analytics API
+  // Test fails or shows real data
+});
+```
+  </TabItem>
+</Tabs>
+
+## Using Both Together
+
+For apps with both client and server-side fetching, you might use both tools:
+
+```typescript
+// Mixed architecture test
+test('complete user flow', async ({ page, switchScenario }) => {
+  // Scenarist handles server-side fetches (Server Components, API routes)
+  await switchScenario(page, 'user-flow-success');
+
+  await page.goto('/dashboard'); // Server Component fetches analytics
+
+  // Playwright route for a specific client-side mock
+  // (e.g., a third-party widget that loads in browser)
+  await page.route('**/widget.thirdparty.com/**', route => {
+    route.fulfill({ status: 200, body: '{}' });
+  });
+
+  await page.click('#load-widget');
+  await expect(page.locator('.widget')).toBeVisible();
+});
+```
+
+**However**, Scenarist can handle both client and server-side requests, so you typically don't need Playwright mocks if you're already using Scenarist.
+
+## Decision Guide
+
+**Are you testing Server Components, API routes, or middleware?**
+- Yes → Use Scenarist (Playwright mocks cannot intercept these)
+
+**Is your app a pure client-side SPA?**
+- Yes → Playwright mocks may be sufficient
+
+**Do you need parallel test isolation with different scenarios?**
+- Yes → Use Scenarist (built-in test ID isolation)
+
+**Do you want zero additional setup?**
+- Yes, for simple cases → Playwright mocks are built-in
+- For comprehensive testing → Scenarist is worth the setup
+
+## Summary
+
+| Capability | Scenarist | Playwright Mocks |
+|------------|-----------|------------------|
+| Server Components | ✓ | ✗ (or experimental testProxy) |
+| API Routes | ✓ | ✗ |
+| Middleware | ✓ | ✗ |
+| SSR data fetching | ✓ | ✗ |
+| Client-side fetch | ✓ | ✓ |
+| Zero setup | Framework adapter | ✓ Built-in |
+| Parallel isolation | ✓ Per-test-ID | Per-page |
+| Scenario management | ✓ | Manual |
+| HAR recording | Not supported | ✓ |
+| Runtime switching | ✓ | Manual |
+
+**Bottom line:** For scenario-based testing of modern server-rendered applications (Next.js App Router, Remix, etc.), Scenarist provides server-side request interception with scenario management and test ID isolation. Playwright mocks are great for pure client-side apps, HAR recording, or supplementing Scenarist for browser-specific needs. Next.js 15's experimental testProxy may help with server-side interception, but Scenarist still provides the scenario management layer.
