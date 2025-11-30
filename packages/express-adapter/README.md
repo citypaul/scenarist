@@ -1073,7 +1073,7 @@ The example includes:
 
 - Complete Express application with GitHub, Weather, and Stripe API integrations
 - 7 different scenario definitions
-- 20 passing E2E tests demonstrating all features
+- 20 passing scenario-based tests demonstrating all features
 - Comprehensive documentation and usage patterns
 
 ## Documentation

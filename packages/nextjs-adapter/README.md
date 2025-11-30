@@ -1507,62 +1507,6 @@ The adapter uses **package.json conditional exports** to provide different entry
 
 **For architectural rationale, see:** [Tree-Shaking Investigation](../../docs/investigations/tree-shaking-dynamic-imports-vs-conditional-exports.md)
 
----
-
-## Development & Testing
-
-### Test Coverage Exception
-
-**For users:** This package is production-ready and fully tested. The function coverage gap described below does not affect functionality or safety - it's an architectural pattern that will be resolved with integration tests in Phase 0.
-
-**For developers:** This package has an explicit exception to the project's 100% coverage requirement.
-
-**Current Coverage:**
-
-- Lines: 100% ✅
-- Statements: 100% ✅
-- Branches: 100% ✅
-- Functions: **93.2%** (explicit exception - improved from 86% after refactoring)
-
-**Reason for Exception:**
-
-Arrow functions passed to `createDynamicHandler()` in `src/common/create-scenarist-base.ts` are only executed when MSW handles actual HTTP requests:
-
-```typescript
-const handler = createDynamicHandler({
-  getTestId: () => currentTestId,              // Only called during HTTP request
-  getActiveScenario: (testId) => ...,          // Only called during HTTP request
-  getScenarioDefinition: (scenarioId) => ...,  // Only called during HTTP request
-});
-```
-
-Adapter unit tests focus on Layer 2 (translation layer):
-
-- Request context extraction
-- Endpoint request/response handling
-- Framework-specific edge cases
-
-These tests do NOT make real HTTP requests, so the handler arrow functions are never executed.
-
-**Resolution:**
-
-Phase 0 (Next.js example app) will add integration tests that:
-
-- Make real HTTP requests (like Express example app does with supertest)
-- Trigger MSW handlers
-- Execute the remaining arrow functions
-- Achieve 100% combined coverage across adapter + example app
-
-**Precedent:**
-
-The Express adapter follows the same pattern:
-
-- Adapter unit tests: `packages/express-adapter/tests/`
-- Integration tests: `apps/express-example/tests/` (with supertest)
-- Combined result: 100% coverage
-
-**This is the ONLY explicit exception to the 100% coverage rule in the project.**
-
 ## Documentation
 
 📖 **[Full Documentation](https://scenarist.io)** - Complete guides, API reference, and examples.

@@ -6,6 +6,8 @@ This file provides guidance to Claude Code when working with this repository. Fo
 
 **Scenarist** is a hexagonal architecture library for MSW-based mock scenarios in scenario-based testing. It enables concurrent tests with different backend states via test IDs, allowing runtime scenario switching without application restarts. Your real application code executes while external API responses are controlled by scenarios.
 
+**What is scenario-based testing?** An integration testing approach where your real application code executes while external dependencies (third-party APIs) return controlled responses. Unlike true end-to-end tests (zero mocks), scenario-based tests mock only external services you don't control—giving you the speed of unit tests with the realism of integration tests.
+
 **Status:** Production-ready v1.0 candidate. 314 tests passing across all packages with 100% coverage. TypeScript strict mode enforced throughout.
 
 **Key Capabilities:**
@@ -273,7 +275,7 @@ internal/                    (PRIVATE - workspace dependencies only)
 └── typescript-config/       # Shared TypeScript config
 
 apps/
-├── express-example/         # Express app with E2E tests
+├── express-example/         # Express app with scenario-based tests
 ├── nextjs-app-router-example/  # Next.js App Router example
 ├── nextjs-pages-router-example/ # Next.js Pages Router example
 └── docs/                    # Documentation site (Astro/Starlight)

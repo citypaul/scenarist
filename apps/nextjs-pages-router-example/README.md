@@ -12,7 +12,7 @@ Once implementation phases are complete, this app will demonstrate:
 
 - ✅ **Product Catalog** - Browse products with Scenarist scenario switching
 - ✅ **API Route Testing** - Test Next.js API routes with MSW integration
-- ✅ **E2E Testing** - Full browser testing with Playwright
+- ✅ **Scenario-Based Browser Testing** - Full browser testing with Playwright and scenario switching
 - ✅ **Test ID Isolation** - Run multiple tests concurrently with independent scenarios
 - ✅ **Runtime Scenario Switching** - Change backend behavior without app restart
 

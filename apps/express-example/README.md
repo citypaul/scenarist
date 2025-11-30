@@ -1,6 +1,6 @@
 # Scenarist Express Example
 
-This example demonstrates how to use Scenarist with an Express application for powerful E2E testing with runtime scenario switching.
+This example demonstrates how to use Scenarist with an Express application for powerful scenario-based testing with runtime scenario switching.
 
 ## What This Example Shows
 
@@ -8,7 +8,7 @@ This example demonstrates how to use Scenarist with an Express application for p
 - ✅ **Test ID Isolation** - Run multiple tests concurrently with different scenarios
 - ✅ **Default Scenario Fallback** - Partial scenarios automatically fall back to default for unmocked endpoints
 - ✅ **Real API Integration** - Your actual Express routes call external APIs (mocked by MSW)
-- ✅ **Complete E2E Tests** - Full integration tests with supertest
+- ✅ **Complete Integration Tests** - Full integration tests with supertest using scenario-based mocking
 
 ## Running the Example
 
