@@ -41,7 +41,7 @@ Scenarist is built on top of [Mock Service Worker (MSW)](https://mswjs.io/)—we
 - Complete test ID isolation (scenarios, sequences, and captured state—all per test ID)
 - Declarative scenario definitions (inspectable, composable, type-safe)
 - Framework adapters (Express, Next.js integration out of the box)
-- First-class Playwright fixtures (automatic test ID handling)
+- [First-class Playwright fixtures](/testing/playwright-integration) (automatic test ID handling)
 
 *Note: MSW v2.2.0+ added `server.boundary()` for isolating handler registrations in concurrent tests. Scenarist's test ID system provides broader isolation—including sequence positions and captured state—and works with any test framework.*
 

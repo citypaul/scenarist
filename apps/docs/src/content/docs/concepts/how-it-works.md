@@ -163,7 +163,7 @@ export const scenarios = {
 } as const satisfies ScenaristScenarios;
 ```
 
-**Step 3: Set up Playwright fixtures** (one-time setup)
+**Step 3: [Set up Playwright fixtures](/testing/playwright-integration)** (one-time setup)
 
 ```typescript
 // tests/fixtures.ts
@@ -200,7 +200,7 @@ test("premium users access advanced features", async ({
 
 1. Framework adapter integrates Scenarist into your Next.js app
 2. Scenarios define how external APIs behave
-3. Playwright fixtures create type-safe test helpers with scenario autocomplete
+3. [Playwright fixtures](/testing/playwright-integration) create type-safe test helpers with scenario autocomplete
 4. Tests import from fixtures (not @playwright/test directly)
 5. Test switches to scenario and makes real HTTP requests
 6. Your backend code executes with production behavior
