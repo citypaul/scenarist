@@ -64,17 +64,17 @@ This package provides complete Next.js integration for Scenarist's scenario mana
 
 ## 📖 Documentation
 
-**Full documentation at [scenarist.io](https://scenarist.io)**
+**Choose your router:**
 
-| Topic                                | Link                                                                                                                               |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| **Why Scenarist?**                   | [scenarist.io/getting-started/why-scenarist](https://scenarist.io/getting-started/why-scenarist)                                   |
-| **Getting Started (App Router)**     | [scenarist.io/frameworks/nextjs-app-router/getting-started](https://scenarist.io/frameworks/nextjs-app-router/getting-started)     |
-| **Getting Started (Pages Router)**   | [scenarist.io/frameworks/nextjs-pages-router/getting-started](https://scenarist.io/frameworks/nextjs-pages-router/getting-started) |
-| **🎯 React Server Components Guide** | [scenarist.io/frameworks/nextjs-app-router/rsc-guide](https://scenarist.io/frameworks/nextjs-app-router/rsc-guide)                 |
-| **Tool Comparison**                  | [scenarist.io/comparison](https://scenarist.io/comparison)                                                                         |
-| **Parallel Testing**                 | [scenarist.io/testing/parallel-testing](https://scenarist.io/testing/parallel-testing)                                             |
-| **Testing Philosophy**               | [scenarist.io/concepts/philosophy](https://scenarist.io/concepts/philosophy)                                                       |
+- **→ [App Router Getting Started](https://scenarist.io/frameworks/nextjs-app-router/getting-started)** — Server Components, Route Handlers, Server Actions
+- **→ [Pages Router Getting Started](https://scenarist.io/frameworks/nextjs-pages-router/getting-started)** — API Routes, getServerSideProps, getStaticProps
+
+| Topic                                | Link                                                                                                               |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| **🎯 React Server Components Guide** | [scenarist.io/frameworks/nextjs-app-router/rsc-guide](https://scenarist.io/frameworks/nextjs-app-router/rsc-guide) |
+| **Why Scenarist?**                   | [scenarist.io/getting-started/why-scenarist](https://scenarist.io/getting-started/why-scenarist)                   |
+| **Tool Comparison**                  | [scenarist.io/comparison](https://scenarist.io/comparison)                                                         |
+| **Parallel Testing**                 | [scenarist.io/testing/parallel-testing](https://scenarist.io/testing/parallel-testing)                             |
 
 ## Core Capabilities
 
