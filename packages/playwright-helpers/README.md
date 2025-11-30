@@ -233,11 +233,13 @@ test("premium user scenario", async ({ page }) => {
 ```typescript
 type SwitchScenarioOptions = {
   readonly baseURL: string; // Base URL of your application
-  readonly endpoint?: string; // Scenario endpoint path (default: '/__scenario__')
+  readonly endpoint?: string; // Scenario endpoint path or absolute URL (default: '/__scenario__')
   readonly testIdHeader?: string; // Test ID header name (default: 'x-scenarist-test-id')
   readonly variant?: string; // Optional scenario variant
 };
 ```
+
+> **Tip:** Use an absolute URL for `endpoint` when your API runs on a different host/port than the frontend. See [Cross-Origin API Servers](#cross-origin-api-servers).
 
 #### What it does
 
@@ -330,7 +332,33 @@ export default defineConfig({
 
 **Available options:**
 
-- `scenaristEndpoint?: string` - The endpoint path for scenario switching (default: `'/api/__scenario__'`)
+- `scenaristEndpoint?: string` - The endpoint path or absolute URL for scenario switching (default: `'/api/__scenario__'`)
+
+### Cross-Origin API Servers
+
+When your API server runs on a different host or port than your frontend, use an **absolute URL** for `scenaristEndpoint`:
+
+```typescript
+// Frontend: http://localhost:3000
+// API Server: http://localhost:9090
+export default defineConfig<ScenaristOptions>({
+  use: {
+    baseURL: "http://localhost:3000", // Frontend URL (for Playwright navigation)
+    scenaristEndpoint: "http://localhost:9090/__scenario__", // Absolute URL to API
+  },
+});
+```
+
+**How it works:**
+
+- **Relative paths** (e.g., `/api/__scenario__`) are prepended with `baseURL`
+- **Absolute URLs** (starting with `http://` or `https://`) are used directly, ignoring `baseURL`
+
+This is useful when:
+
+- Your API and frontend are separate services on different ports
+- You're testing against a staging/production API endpoint
+- Your test infrastructure uses a separate mock server
 
 #### `switchScenario` (Fixture)
 
