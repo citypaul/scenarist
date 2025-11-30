@@ -27,8 +27,8 @@ Scenarist is built on [MSW](https://mswjs.io/) and adds a complete scenario mana
   <Card title="Response Sequences" icon="list-format">
     Ever tested a polling UI that shows pending → processing → complete? Most tools need complex state management. <a href="/concepts/dynamic-responses">Scenarist: three lines of config</a>.
   </Card>
-  <Card title="Developer Tools (Roadmap)" icon="puzzle">
-    <a href="/roadmap">Planned browser-based plugin</a> for switching scenarios during development—instant visual scenario exploration without code changes.
+  <Card title="Next.js Multi-Process (Solved)" icon="setting">
+    Next.js has <a href="https://github.com/vercel/next.js/discussions/68572">documented singleton issues</a> that break MSW. Scenarist's adapter includes built-in <code>globalThis</code> guards—one stable MSW instance regardless of module loading.
   </Card>
 </CardGrid>
 

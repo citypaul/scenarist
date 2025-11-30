@@ -355,9 +355,16 @@ if (typeof window === "undefined" && scenarist) {
 > export const scenarist = createScenarist({ enabled: true, scenarios });
 > ```
 >
-> **Why:** Next.js dev server (and Turbopack) can load the same module multiple times. If you call `createScenarist()` repeatedly, you'll get multiple MSW servers conflicting with each other, causing `[MSW] Multiple handlers with the same URL` warnings and intermittent 500 errors.
+> **Why:** Next.js has a [well-documented singleton problem](https://github.com/vercel/next.js/discussions/68572) where webpack bundles modules multiple times across different chunks, breaking the classic JavaScript singleton pattern. This is compounded by [MSW's process model challenges with Next.js](https://github.com/mswjs/msw/issues/1644)—Next.js keeps multiple Node.js processes that make global module patches difficult to maintain.
 >
-> The singleton pattern inside `createScenarist()` prevents this - but ONLY if you export a constant. Wrapping in a function breaks the singleton protection.
+> **Symptoms of this problem:**
+>
+> - `[MSW] Multiple handlers with the same URL pattern` warnings
+> - Intermittent 500 errors during tests
+> - Scenarios not switching properly
+> - Different tests getting wrong scenario responses
+>
+> **How Scenarist solves this:** The `createScenarist()` function includes built-in singleton protection using `globalThis` guards, ensuring only ONE MSW instance exists even when Next.js duplicates your module. This protection **only works if you export a constant**—wrapping in a function bypasses the singleton guard.
 
 ### 3. Create Scenario Endpoint
 

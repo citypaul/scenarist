@@ -474,8 +474,8 @@ stubFor(get("/api/cart")
   <Card title="Per-test-ID state isolation" icon="list-format">
     Response sequences and stateful mocks are isolated per test ID—parallel tests never share state.
   </Card>
-  <Card title="Modern frameworks" icon="puzzle">
-    First-class support for Next.js Server Components, Express middleware, and other Node.js frameworks.
+  <Card title="Next.js multi-process handling" icon="puzzle">
+    Next.js has <a href="https://github.com/vercel/next.js/discussions/68572">documented singleton issues</a> that break MSW. Scenarist's adapter includes built-in <code>globalThis</code> guards—one stable MSW instance regardless of how Next.js loads modules.
   </Card>
 </CardGrid>
 
@@ -552,6 +552,7 @@ Point your app at WireMock for internal services while Scenarist mocks external 
 | Playwright integration | ✓ First-class fixtures | Manual HTTP calls |
 | Response sequences | ✓ Built-in | ✓ Built-in (Scenarios) |
 | Stateful mocks | ✓ Per-test-ID isolation | ✓ Global state machine |
+| Next.js multi-process | ✓ [Built-in singleton guards](https://github.com/vercel/next.js/discussions/68572) | Manual workarounds needed |
 | Language support | JavaScript/TypeScript | ✓ Any language |
 | Record/playback | Not supported | ✓ Built-in |
 | Ecosystem maturity | Newer | ✓ Battle-tested |

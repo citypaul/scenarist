@@ -127,7 +127,7 @@ export default createScenarist({ enabled: true, scenarios });
 export const scenarist = createScenarist({ enabled: true, scenarios });
 ```
 
-**Why this matters:** Scenarist handles a Next.js-specific issue for you. Next.js can cause module duplication, where the same file is loaded multiple times in the same process ([see Next.js Discussion #68572](https://github.com/vercel/next.js/discussions/68572)). This breaks the singleton pattern and can cause:
+**Why this matters:** Scenarist handles a Next.js-specific issue for you. Next.js has a [well-documented singleton problem](https://github.com/vercel/next.js/discussions/68572) where webpack bundles modules multiple times, breaking classic singleton patterns. This is compounded by [MSW's challenges with Next.js's process model](https://github.com/mswjs/msw/issues/1644). Without protection, this causes:
 
 - `[MSW] Multiple handlers with the same URL` warnings
 - Intermittent 500 errors from MSW
