@@ -21,7 +21,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
       id-token: write
     # Only run if CI succeeded
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
@@ -57,22 +56,68 @@ jobs:
           npm install -g npm@11.6.4
           echo "npm version: $(npm --version)"
 
-      - name: Version and Publish
+      - name: Check for changesets
         id: changesets
-        uses: changesets/action@8eb63fb4cfc7f9643537c7d39d0b68c835012a19 # v1.5.3
-        with:
-          version: pnpm changeset version
-          publish: pnpm changeset publish
-          commit: 'chore: release packages'
-          createGithubReleases: true
+        run: |
+          # Check if there are any changeset files (excluding README.md and config.json)
+          CHANGESETS=$(find .changeset -name "*.md" ! -name "README.md" 2>/dev/null | wc -l)
+          echo "count=$CHANGESETS" >> $GITHUB_OUTPUT
+          if [ "$CHANGESETS" -gt 0 ]; then
+            echo "Found $CHANGESETS changeset(s)"
+          else
+            echo "No changesets found"
+          fi
+
+      - name: Configure git
+        if: steps.changesets.outputs.count != '0'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Version packages
+        if: steps.changesets.outputs.count != '0'
+        run: pnpm changeset version
+
+      - name: Commit and push version changes
+        if: steps.changesets.outputs.count != '0'
+        run: |
+          git add .
+          git commit -m "chore: release packages"
+          git push origin main
         env:
-          # PAT required to push version commits directly to main
           GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}
+
+      - name: Publish to npm
+        id: publish
+        run: |
+          OUTPUT=$(pnpm changeset publish 2>&1) || true
+          echo "$OUTPUT"
+          if echo "$OUTPUT" | grep -q "New tag:"; then
+            echo "published=true" >> $GITHUB_OUTPUT
+            # Extract published packages for release notes
+            echo "$OUTPUT" | grep "New tag:" | sed 's/New tag: //' > published-tags.txt
+          else
+            echo "published=false" >> $GITHUB_OUTPUT
+          fi
+        env:
           NPM_CONFIG_PROVENANCE: true
+
+      - name: Create GitHub releases
+        if: steps.publish.outputs.published == 'true'
+        run: |
+          # Create a release for each published tag
+          if [ -f published-tags.txt ]; then
+            while IFS= read -r tag; do
+              echo "Creating release for $tag"
+              gh release create "$tag" --generate-notes || echo "Release $tag may already exist"
+            done < published-tags.txt
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}
 
       # SBOM generation only runs after successful publish
       - name: Generate SBOM
-        if: steps.changesets.outputs.published == 'true'
+        if: steps.publish.outputs.published == 'true'
         uses: anchore/sbom-action@8e94d75ddd33f69f691467e42275782e4bfefe84 # v0.20.9
         with:
           format: cyclonedx-json
@@ -80,15 +125,15 @@ jobs:
           upload-artifact: false
 
       - name: Install Cosign
-        if: steps.changesets.outputs.published == 'true'
+        if: steps.publish.outputs.published == 'true'
         uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
 
       - name: Sign SBOM with Sigstore
-        if: steps.changesets.outputs.published == 'true'
+        if: steps.publish.outputs.published == 'true'
         run: cosign sign-blob --yes --bundle sbom.json.bundle sbom.json
 
       - name: Upload SBOM artifact
-        if: steps.changesets.outputs.published == 'true'
+        if: steps.publish.outputs.published == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v5.0.0
         with:
           name: sbom
