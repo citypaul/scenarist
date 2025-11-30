@@ -1,6 +1,6 @@
 {
   "name": "@scenarist/nextjs-adapter",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "Next.js adapter for Scenarist (Pages Router and App Router)",
   "author": "Paul Hammond (citypaul) <paul@packsoftware.co.uk>",
   "license": "MIT",

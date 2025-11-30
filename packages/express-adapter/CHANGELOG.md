@@ -1,5 +1,14 @@
 # @scenarist/express-adapter
 
+## 0.1.12
+
+### Patch Changes
+
+- [#292](https://github.com/citypaul/scenarist/pull/292) [`3f8345e`](https://github.com/citypaul/scenarist/commit/3f8345e773aec1d5632463e94482fcf5576ce2cd) Thanks [@citypaul](https://github.com/citypaul)! - ### Documentation
+  - Document Next.js multi-process singleton fix with links to GitHub issues ([vercel/next.js#68572](https://github.com/vercel/next.js/discussions/68572), [mswjs/msw#1644](https://github.com/mswjs/msw/issues/1644))
+  - Add prominent package-specific documentation links to each README
+  - Improve Next.js adapter README with router-specific getting started links (App Router / Pages Router)
+
 ## 0.1.11
 
 ### Patch Changes
