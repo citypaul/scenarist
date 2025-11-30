@@ -1,5 +1,15 @@
 # @scenarist/playwright-helpers
 
+## 0.1.10
+
+### Patch Changes
+
+- [#285](https://github.com/citypaul/scenarist/pull/285) [`e855d57`](https://github.com/citypaul/scenarist/commit/e855d57dcdc32e0f508d45321e8712180b3557e3) Thanks [@citypaul](https://github.com/citypaul)! - docs: clarify scenario-based testing terminology
+  - Add clear definition of "scenario-based testing" to distinguish from true E2E tests
+  - Update terminology from "E2E tests" to "scenario-based tests" where appropriate
+  - Remove internal testing documentation from package READMEs (consumer-focused)
+  - Add prominent documentation links to scenarist.io
+
 ## 0.1.9
 
 ### Patch Changes
