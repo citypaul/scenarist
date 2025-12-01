@@ -5,7 +5,7 @@ import request from "supertest";
 import { createTestFixtures } from "./test-helpers.js";
 import { scenarios } from "../src/scenarios.js";
 
-const fixtures = await createTestFixtures();
+const fixtures = createTestFixtures();
 
 describe("Dynamic Content Matching E2E (Phase 1)", () => {
   afterAll(async () => {

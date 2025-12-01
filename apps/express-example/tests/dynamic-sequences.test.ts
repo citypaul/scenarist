@@ -4,7 +4,7 @@ import request from "supertest";
 
 import { createTestFixtures } from "./test-helpers.js";
 
-const fixtures = await createTestFixtures();
+const fixtures = createTestFixtures();
 
 describe("Dynamic Response Sequences E2E (Phase 2)", () => {
   afterAll(async () => {

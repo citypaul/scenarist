@@ -32,33 +32,15 @@ describe("setup-scenarist.ts - Production Tree-Shaking", () => {
     process.env.NODE_ENV = originalEnv;
   });
 
-  describe("Production mode (NODE_ENV=production)", () => {
-    it("should return undefined when NODE_ENV is production", async () => {
-      process.env.NODE_ENV = "production";
-
-      // Dynamic import to get fresh module with updated env
-      const { createScenarist } = await import(
-        "../src/setup/setup-scenarist.js"
-      );
-
-      const result = await createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
-
-      expect(result).toBeUndefined();
-    });
-  });
-
   describe("Non-production mode (development/test)", () => {
     it("should return ExpressScenarist instance when NODE_ENV is development", async () => {
       process.env.NODE_ENV = "development";
 
-      const { createScenarist } = await import(
-        "../src/setup/setup-scenarist.js"
-      );
+      // Dynamic import to get fresh module with updated env
+      const { createScenarist } =
+        await import("../src/setup/setup-scenarist.js");
 
-      const result = await createScenarist({
+      const result = createScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
@@ -74,11 +56,10 @@ describe("setup-scenarist.ts - Production Tree-Shaking", () => {
     it("should return instance when NODE_ENV is test", async () => {
       process.env.NODE_ENV = "test";
 
-      const { createScenarist } = await import(
-        "../src/setup/setup-scenarist.js"
-      );
+      const { createScenarist } =
+        await import("../src/setup/setup-scenarist.js");
 
-      const result = await createScenarist({
+      const result = createScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
@@ -89,11 +70,10 @@ describe("setup-scenarist.ts - Production Tree-Shaking", () => {
     it("should return instance when NODE_ENV is undefined", async () => {
       delete process.env.NODE_ENV;
 
-      const { createScenarist } = await import(
-        "../src/setup/setup-scenarist.js"
-      );
+      const { createScenarist } =
+        await import("../src/setup/setup-scenarist.js");
 
-      const result = await createScenarist({
+      const result = createScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
@@ -104,11 +84,10 @@ describe("setup-scenarist.ts - Production Tree-Shaking", () => {
     it("should maintain type safety with generic parameter", async () => {
       process.env.NODE_ENV = "development";
 
-      const { createScenarist } = await import(
-        "../src/setup/setup-scenarist.js"
-      );
+      const { createScenarist } =
+        await import("../src/setup/setup-scenarist.js");
 
-      const result = await createScenarist({
+      const result = createScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
@@ -132,11 +111,10 @@ describe("setup-scenarist.ts - Production Tree-Shaking", () => {
     it("should have working config with correct default values", async () => {
       process.env.NODE_ENV = "development";
 
-      const { createScenarist } = await import(
-        "../src/setup/setup-scenarist.js"
-      );
+      const { createScenarist } =
+        await import("../src/setup/setup-scenarist.js");
 
-      const result = await createScenarist({
+      const result = createScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
@@ -151,15 +129,14 @@ describe("setup-scenarist.ts - Production Tree-Shaking", () => {
   });
 
   describe("Type checking", () => {
-    it("should have correct return type Promise<ExpressScenarist | undefined>", async () => {
+    it("should have correct return type ExpressScenarist | undefined", async () => {
       process.env.NODE_ENV = "development";
 
-      const { createScenarist } = await import(
-        "../src/setup/setup-scenarist.js"
-      );
+      const { createScenarist } =
+        await import("../src/setup/setup-scenarist.js");
 
       // This test verifies TypeScript types are correct
-      const result = await createScenarist({
+      const result = createScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
@@ -189,7 +166,7 @@ describe("production.ts - Production Entry Point", () => {
     // Import production.ts directly (simulates production export condition)
     const { createScenarist } = await import("../src/setup/production.js");
 
-    const result = await createScenarist({
+    const result = createScenarist({
       enabled: true,
       scenarios: testScenarios,
     });

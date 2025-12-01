@@ -82,10 +82,10 @@ export const mockScenarioManager = (
  *
  * Note: Named createTestScenarist to distinguish from the public createScenarist API.
  */
-export const createTestScenarist = async <T extends ScenaristScenarios>(
+export const createTestScenarist = <T extends ScenaristScenarios>(
   options: ExpressAdapterOptions<T>,
-): Promise<ExpressScenarist<T>> => {
-  const scenarist = await createScenaristImpl(options);
+): ExpressScenarist<T> => {
+  const scenarist = createScenaristImpl(options);
 
   if (!scenarist) {
     throw new Error(

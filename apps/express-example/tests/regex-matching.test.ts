@@ -26,7 +26,7 @@ import { scenarios } from "../src/scenarios.js";
  * 4. MSW intercepts, matches x-campaign against /premium|vip/i
  * 5. Returns premium user data
  */
-const fixtures = await createTestFixtures();
+const fixtures = createTestFixtures();
 
 describe("Regex Pattern Matching E2E (Server-Side)", () => {
   afterAll(async () => {

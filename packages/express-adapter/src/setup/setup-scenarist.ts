@@ -1,43 +1,33 @@
-import type { ScenaristScenarios } from "@scenarist/core";
-
 // Re-export types from impl for public API
 export type { ExpressAdapterOptions, ExpressScenarist } from "./impl.js";
 
 /**
  * Create a Scenarist instance for Express.
  *
- * In production (NODE_ENV=production), this returns undefined to enable
- * tree-shaking of all Scenarist code. In development/test environments,
- * it returns a fully-functional ExpressScenarist instance.
+ * Production tree-shaking is handled via conditional exports in package.json:
+ * - Development/test: Uses this file (imports impl.js with full MSW setup)
+ * - Production builds: Uses production.js (returns undefined, zero imports)
  *
- * This pattern uses dynamic import to enable tree-shaking: the impl.js module
- * is only loaded when needed (non-production). Combined with sideEffects: false,
- * bundlers can eliminate the entire impl.js module from production builds.
+ * This ensures all test code is eliminated from production bundles.
  *
  * @example
  * ```typescript
- * const scenarist = await createScenarist({
+ * // src/app.ts
+ * import { createScenarist } from '@scenarist/express-adapter';
+ * import { scenarios } from './scenarios';
+ *
+ * export const scenarist = createScenarist({
  *   enabled: true,
  *   scenarios,
  * });
  *
  * if (scenarist) {
  *   app.use(scenarist.middleware);
- *   beforeAll(() => scenarist.start());
- *   afterAll(() => scenarist.stop());
  * }
+ *
+ * // tests/setup.ts
+ * beforeAll(() => scenarist?.start());
+ * afterAll(() => scenarist?.stop());
  * ```
  */
-export const createScenarist = async <T extends ScenaristScenarios>(
-  options: import("./impl.js").ExpressAdapterOptions<T>,
-): Promise<import("./impl.js").ExpressScenarist<T> | undefined> => {
-  // In production, return undefined without loading impl.js
-  // Dynamic import below is never executed, enabling tree-shaking
-  if (process.env.NODE_ENV === "production") {
-    return undefined;
-  }
-
-  // In non-production, dynamically import and create instance
-  const { createScenaristImpl } = await import("./impl.js");
-  return createScenaristImpl(options);
-};
+export { createScenaristImpl as createScenarist } from "./impl.js";

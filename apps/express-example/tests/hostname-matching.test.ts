@@ -13,7 +13,7 @@ import { scenarios } from "../src/scenarios.js";
  * - Full URL patterns (http://localhost:3000/api/data) - Hostname-specific (match ONLY specified hostname)
  * - Native RegExp patterns (/\/api\/data/) - Origin-agnostic (MSW weak comparison)
  */
-const fixtures = await createTestFixtures();
+const fixtures = createTestFixtures();
 
 describe("Hostname Matching - Express", () => {
   afterAll(async () => {

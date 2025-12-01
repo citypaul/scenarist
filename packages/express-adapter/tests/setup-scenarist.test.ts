@@ -273,8 +273,8 @@ const testScenarios = {
 } as const satisfies ScenaristScenarios;
 
 describe("createScenarist", () => {
-  it("should return object with all expected properties", async () => {
-    const scenarist = await createTestScenarist({
+  it("should return object with all expected properties", () => {
+    const scenarist = createTestScenarist({
       enabled: true,
       scenarios: testScenarios,
       strictMode: false,
@@ -291,8 +291,8 @@ describe("createScenarist", () => {
     expect(scenarist).toHaveProperty("stop");
   });
 
-  it("should expose config with correct default values", async () => {
-    const scenarist = await createTestScenarist({
+  it("should expose config with correct default values", () => {
+    const scenarist = createTestScenarist({
       enabled: true,
       scenarios: testScenarios,
     });
@@ -302,8 +302,8 @@ describe("createScenarist", () => {
     expect(scenarist.config.strictMode).toBe(false);
   });
 
-  it("should expose config with custom values when provided", async () => {
-    const scenarist = await createTestScenarist({
+  it("should expose config with custom values when provided", () => {
+    const scenarist = createTestScenarist({
       enabled: true,
       scenarios: testScenarios,
       endpoints: {
@@ -319,7 +319,7 @@ describe("createScenarist", () => {
   });
 
   it("should create working middleware that uses config values", async () => {
-    const scenarist = await createTestScenarist({
+    const scenarist = createTestScenarist({
       enabled: true,
       scenarios: testScenarios,
       strictMode: false,
@@ -340,7 +340,7 @@ describe("createScenarist", () => {
   });
 
   it("should intercept external API calls based on registered scenario", async () => {
-    const scenarist = await createTestScenarist({
+    const scenarist = createTestScenarist({
       enabled: true,
       scenarios: testScenarios,
       strictMode: false,
@@ -373,8 +373,8 @@ describe("createScenarist", () => {
     expect(response.body.message).toBe("mocked response");
   });
 
-  it("should have all scenarios registered at initialization", async () => {
-    const scenarist = await createTestScenarist({
+  it("should have all scenarios registered at initialization", () => {
+    const scenarist = createTestScenarist({
       enabled: true,
       scenarios: testScenarios,
     });
@@ -386,8 +386,8 @@ describe("createScenarist", () => {
     expect(scenarios.find((s) => s.id === "scenario-3")).toBeDefined();
   });
 
-  it("should switch scenario programmatically", async () => {
-    const scenarist = await createTestScenarist({
+  it("should switch scenario programmatically", () => {
+    const scenarist = createTestScenarist({
       enabled: true,
       scenarios: testScenarios,
     });
@@ -400,8 +400,8 @@ describe("createScenarist", () => {
     expect(activeScenario).toEqual({ scenarioId: "test-scenario" });
   });
 
-  it("should retrieve scenario by ID", async () => {
-    const scenarist = await createTestScenarist({
+  it("should retrieve scenario by ID", () => {
+    const scenarist = createTestScenarist({
       enabled: true,
       scenarios: testScenarios,
     });
@@ -412,8 +412,8 @@ describe("createScenarist", () => {
     expect(scenario?.id).toBe("test-scenario");
   });
 
-  it("should clear active scenario for a test ID", async () => {
-    const scenarist = await createTestScenarist({
+  it("should clear active scenario for a test ID", () => {
+    const scenarist = createTestScenarist({
       enabled: true,
       scenarios: testScenarios,
     });
@@ -431,7 +431,7 @@ describe("createScenarist", () => {
 
   describe("Phase 3: Stateful Mocks", () => {
     it("should capture state from request and inject into response template", async () => {
-      const scenarist = await createTestScenarist({
+      const scenarist = createTestScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
@@ -480,7 +480,7 @@ describe("createScenarist", () => {
     });
 
     it("should reset state when switching scenarios", async () => {
-      const scenarist = await createTestScenarist({
+      const scenarist = createTestScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
@@ -533,7 +533,7 @@ describe("createScenarist", () => {
     });
 
     it("should isolate state per test ID", async () => {
-      const scenarist = await createTestScenarist({
+      const scenarist = createTestScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
@@ -598,7 +598,7 @@ describe("createScenarist", () => {
     });
 
     it("should append items to array state", async () => {
-      const scenarist = await createTestScenarist({
+      const scenarist = createTestScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
@@ -656,7 +656,7 @@ describe("createScenarist", () => {
     });
 
     it("should support array length templates", async () => {
-      const scenarist = await createTestScenarist({
+      const scenarist = createTestScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
@@ -715,7 +715,7 @@ describe("createScenarist", () => {
     });
 
     it("should support nested path templates", async () => {
-      const scenarist = await createTestScenarist({
+      const scenarist = createTestScenarist({
         enabled: true,
         scenarios: testScenarios,
       });
@@ -781,7 +781,7 @@ describe("createScenarist", () => {
     });
 
     it("should handle missing state keys gracefully (templates remain as-is)", async () => {
-      const scenarist = await createTestScenarist({
+      const scenarist = createTestScenarist({
         enabled: true,
         scenarios: testScenarios,
       });

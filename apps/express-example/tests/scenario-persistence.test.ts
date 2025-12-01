@@ -4,7 +4,7 @@ import { afterAll, describe, expect, it } from "vitest";
 
 import { createTestFixtures } from "./test-helpers.js";
 
-const fixtures = await createTestFixtures();
+const fixtures = createTestFixtures();
 
 describe("Scenario Persistence Across Multiple Requests E2E", () => {
   afterAll(async () => {

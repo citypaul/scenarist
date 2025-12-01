@@ -25,8 +25,8 @@ import { scenarios } from "./scenarios.js";
  * - No configuration needed - it just works!
  *
  * **How it works:**
- * 1. Adapter checks `process.env.NODE_ENV === 'production'`
- * 2. Returns `undefined` without loading any Scenarist code
+ * 1. Conditional exports in package.json point to production.ts in production builds
+ * 2. production.ts returns `undefined` without loading any Scenarist code
  * 3. Bundlers perform dead code elimination
  * 4. Result: Zero test code in production bundles
  *
@@ -36,17 +36,17 @@ import { scenarios } from "./scenarios.js";
  *
  * **Learn more:** https://scenarist.io/introduction/production-safety
  */
-export const createApp = async (): Promise<{
+export const createApp = (): {
   app: Express;
   scenarist: ExpressScenarist<typeof scenarios> | undefined;
-}> => {
+} => {
   const app = express();
 
   // Parse JSON bodies
   app.use(express.json());
 
   // Initialize Scenarist (automatically returns undefined in production)
-  const scenarist = await createScenarist({
+  const scenarist = createScenarist({
     enabled: true,
     scenarios, // All scenarios registered at initialization (must include 'default')
     strictMode: false, // Allow passthrough for unmocked requests

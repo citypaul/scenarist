@@ -4,7 +4,7 @@ import request from "supertest";
 
 import { createTestFixtures } from "./test-helpers.js";
 
-const fixtures = await createTestFixtures();
+const fixtures = createTestFixtures();
 
 describe("Default Scenario Fallback E2E", () => {
   afterAll(async () => {

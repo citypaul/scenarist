@@ -4,7 +4,7 @@ import request from "supertest";
 
 import { createTestFixtures } from "./test-helpers.js";
 
-const fixtures = await createTestFixtures();
+const fixtures = createTestFixtures();
 
 describe("Test ID Isolation E2E", () => {
   afterAll(async () => {
