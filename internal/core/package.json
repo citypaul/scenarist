@@ -1,6 +1,6 @@
 {
   "name": "@scenarist/core",
-  "version": "0.1.3",
+  "version": "0.1.15",
   "description": "Internal: Hexagonal architecture core for scenario-based testing with MSW",
   "author": "Paul Hammond (citypaul) <paul@packsoftware.co.uk>",
   "license": "MIT",
