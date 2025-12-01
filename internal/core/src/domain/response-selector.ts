@@ -14,6 +14,7 @@ import { ResponseSelectionError } from "../ports/driven/response-selector.js";
 import { extractFromPath } from "./path-extraction.js";
 import { applyTemplates } from "./template-replacement.js";
 import { matchesRegex } from "./regex-matching.js";
+import { createStateResponseResolver } from "./state-response-resolver.js";
 import type { MatchValue } from "../schemas/scenario-definition.js";
 
 const SPECIFICITY_RANGES = {
@@ -121,13 +122,14 @@ export const createResponseSelector = (
         const { mockWithParams, mockIndex } = bestMatch;
         const mock = mockWithParams.mock;
 
-        // Select response (either single or from sequence)
+        // Select response (single, sequence, or stateResponse)
         const response = selectResponseFromMock(
           testId,
           scenarioId,
           mockIndex,
           mock,
           sequenceTracker,
+          stateManager,
         );
 
         if (!response) {
@@ -175,14 +177,15 @@ export const createResponseSelector = (
 };
 
 /**
- * Select a response from a mock (either single response or from sequence).
+ * Select a response from a mock (single response, sequence, or stateResponse).
  *
- * @param testId - Test ID for sequence tracking
+ * @param testId - Test ID for sequence/state tracking
  * @param scenarioId - Scenario ID for sequence tracking
  * @param mockIndex - Index of the mock in the mocks array
  * @param mock - The mock definition
  * @param sequenceTracker - Optional sequence tracker for Phase 2
- * @returns ScenaristResponse or null if mock has neither response nor sequence
+ * @param stateManager - Optional state manager for stateResponse
+ * @returns ScenaristResponse or null if mock has no response type
  */
 const selectResponseFromMock = (
   testId: string,
@@ -190,6 +193,7 @@ const selectResponseFromMock = (
   mockIndex: number,
   mock: ScenaristMock,
   sequenceTracker?: SequenceTracker,
+  stateManager?: StateManager,
 ): ScenaristResponse | null => {
   // Phase 2: If mock has a sequence, use sequence tracker
   if (mock.sequence) {
@@ -223,13 +227,47 @@ const selectResponseFromMock = (
     return response;
   }
 
+  // State-aware response: evaluate conditions against current state
+  if (mock.stateResponse) {
+    return resolveStateResponse(testId, mock.stateResponse, stateManager);
+  }
+
   // Phase 1: Single response
   if (mock.response) {
     return mock.response;
   }
 
-  // Neither response nor sequence defined
+  // No response type defined
   return null;
+};
+
+/**
+ * Resolve a stateResponse configuration to a single response.
+ *
+ * Uses the StateResponseResolver to evaluate conditions against
+ * current test state and return the appropriate response.
+ *
+ * @param testId - Test ID for state isolation
+ * @param stateResponse - The stateResponse configuration
+ * @param stateManager - Optional state manager for state lookup
+ * @returns The resolved response (matching condition or default)
+ */
+const resolveStateResponse = (
+  testId: string,
+  stateResponse: NonNullable<ScenaristMock["stateResponse"]>,
+  stateManager?: StateManager,
+): ScenaristResponse => {
+  // Without stateManager, always return default
+  if (!stateManager) {
+    return stateResponse.default;
+  }
+
+  // Get current state for this test
+  const currentState = stateManager.getAll(testId);
+
+  // Create resolver and evaluate conditions
+  const resolver = createStateResponseResolver();
+  return resolver.resolveResponse(stateResponse, currentState);
 };
 
 /**

@@ -4161,4 +4161,369 @@ describe("ResponseSelector - Regex Matching", () => {
       }
     });
   });
+
+  describe("State Response Resolution (stateResponse)", () => {
+    it("should return default response when no conditions match", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/status",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const stateManager = createInMemoryStateManager();
+      // No state set
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "GET",
+          url: "/api/status",
+          stateResponse: {
+            default: { status: 200, body: { state: "initial" } },
+            conditions: [
+              {
+                when: { step: "reviewed" },
+                then: { status: 200, body: { state: "reviewed" } },
+              },
+            ],
+          },
+        },
+      ];
+
+      const selector = createResponseSelector({ stateManager });
+      const result = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({ state: "initial" });
+      }
+    });
+
+    it("should return matching condition response when state matches", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/status",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const stateManager = createInMemoryStateManager();
+      stateManager.set("test-1", "step", "reviewed");
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "GET",
+          url: "/api/status",
+          stateResponse: {
+            default: { status: 200, body: { state: "initial" } },
+            conditions: [
+              {
+                when: { step: "reviewed" },
+                then: { status: 200, body: { state: "reviewed" } },
+              },
+            ],
+          },
+        },
+      ];
+
+      const selector = createResponseSelector({ stateManager });
+      const result = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({ state: "reviewed" });
+      }
+    });
+
+    it("should select most specific condition when multiple match", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/status",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const stateManager = createInMemoryStateManager();
+      stateManager.set("test-1", "step", "reviewed");
+      stateManager.set("test-1", "approved", true);
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "GET",
+          url: "/api/status",
+          stateResponse: {
+            default: { status: 200, body: { state: "initial" } },
+            conditions: [
+              {
+                when: { step: "reviewed" },
+                then: { status: 200, body: { state: "reviewed" } },
+              },
+              {
+                when: { step: "reviewed", approved: true },
+                then: { status: 200, body: { state: "approved" } },
+              },
+            ],
+          },
+        },
+      ];
+
+      const selector = createResponseSelector({ stateManager });
+      const result = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        // More specific condition (2 keys) wins
+        expect(result.data.body).toEqual({ state: "approved" });
+      }
+    });
+
+    it("should apply template replacement to stateResponse", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/status",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const stateManager = createInMemoryStateManager();
+      stateManager.set("test-1", "step", "reviewed");
+      stateManager.set("test-1", "userId", "user-123");
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "GET",
+          url: "/api/status",
+          stateResponse: {
+            default: { status: 200, body: { state: "initial" } },
+            conditions: [
+              {
+                when: { step: "reviewed" },
+                then: {
+                  status: 200,
+                  body: {
+                    state: "reviewed",
+                    reviewedBy: "{{state.userId}}",
+                  },
+                },
+              },
+            ],
+          },
+        },
+      ];
+
+      const selector = createResponseSelector({ stateManager });
+      const result = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({
+          state: "reviewed",
+          reviewedBy: "user-123",
+        });
+      }
+    });
+
+    it("should isolate stateResponse by test ID", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/status",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const stateManager = createInMemoryStateManager();
+      stateManager.set("test-1", "step", "reviewed");
+      stateManager.set("test-2", "step", "pending");
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "GET",
+          url: "/api/status",
+          stateResponse: {
+            default: { status: 200, body: { state: "initial" } },
+            conditions: [
+              {
+                when: { step: "reviewed" },
+                then: { status: 200, body: { state: "reviewed" } },
+              },
+            ],
+          },
+        },
+      ];
+
+      const selector = createResponseSelector({ stateManager });
+
+      const result1 = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+
+      const result2 = selector.selectResponse(
+        "test-2",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+
+      expect(result1.success).toBe(true);
+      expect(result2.success).toBe(true);
+      if (result1.success && result2.success) {
+        expect(result1.data.body).toEqual({ state: "reviewed" });
+        expect(result2.data.body).toEqual({ state: "initial" }); // Default
+      }
+    });
+
+    it("should return default when stateManager not provided", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/status",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "GET",
+          url: "/api/status",
+          stateResponse: {
+            default: { status: 200, body: { state: "initial" } },
+            conditions: [
+              {
+                when: { step: "reviewed" },
+                then: { status: 200, body: { state: "reviewed" } },
+              },
+            ],
+          },
+        },
+      ];
+
+      // No stateManager provided
+      const selector = createResponseSelector();
+      const result = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        // Without stateManager, always returns default
+        expect(result.data.body).toEqual({ state: "initial" });
+      }
+    });
+
+    it("should handle empty conditions array", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/status",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const stateManager = createInMemoryStateManager();
+      stateManager.set("test-1", "step", "reviewed");
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "GET",
+          url: "/api/status",
+          stateResponse: {
+            default: { status: 200, body: { state: "default-only" } },
+            conditions: [],
+          },
+        },
+      ];
+
+      const selector = createResponseSelector({ stateManager });
+      const result = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({ state: "default-only" });
+      }
+    });
+
+    it("should work with match criteria and stateResponse together", () => {
+      const context: HttpRequestContext = {
+        method: "POST",
+        url: "/api/action",
+        body: { action: "approve" },
+        headers: {},
+        query: {},
+      };
+
+      const stateManager = createInMemoryStateManager();
+      stateManager.set("test-1", "authorized", true);
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "POST",
+          url: "/api/action",
+          match: { body: { action: "approve" } },
+          stateResponse: {
+            default: { status: 403, body: { error: "unauthorized" } },
+            conditions: [
+              {
+                when: { authorized: true },
+                then: { status: 200, body: { result: "approved" } },
+              },
+            ],
+          },
+        },
+        {
+          method: "POST",
+          url: "/api/action",
+          response: { status: 400, body: { error: "bad request" } },
+        },
+      ];
+
+      const selector = createResponseSelector({ stateManager });
+      const result = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({ result: "approved" });
+      }
+    });
+  });
 });
