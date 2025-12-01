@@ -1,5 +1,20 @@
 # @scenarist/express-adapter
 
+## 0.1.16
+
+### Patch Changes
+
+- [#302](https://github.com/citypaul/scenarist/pull/302) [`55be2ec`](https://github.com/citypaul/scenarist/commit/55be2ec37db61eef11f57abda595ef8efef734b1) Thanks [@citypaul](https://github.com/citypaul)! - Sync all package versions and add internal packages to fixed version group
+
+  This release ensures all Scenarist packages are versioned together:
+  - Added `@scenarist/core` and `@scenarist/msw-adapter` to the fixed version group
+  - All packages now release with synchronized version numbers
+  - Prevents version drift between internal and published packages
+
+- Updated dependencies [[`55be2ec`](https://github.com/citypaul/scenarist/commit/55be2ec37db61eef11f57abda595ef8efef734b1)]:
+  - @scenarist/core@0.1.16
+  - @scenarist/msw-adapter@0.1.16
+
 ## 0.1.15
 
 ### Patch Changes
