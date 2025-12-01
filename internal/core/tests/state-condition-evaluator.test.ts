@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import fc from "fast-check";
 import { createStateConditionEvaluator } from "../src/domain/state-condition-evaluator.js";
 import type { StateCondition } from "../src/schemas/state-aware-mocking.js";
 
@@ -321,4 +322,199 @@ describe("StateConditionEvaluator", () => {
       expect(result).toBeUndefined();
     });
   });
+
+  /**
+   * Property-Based Tests
+   *
+   * These tests verify that invariant properties hold for all possible inputs,
+   * not just example cases. Key properties:
+   *
+   * 1. Specificity invariant: Most specific matching condition always wins
+   * 2. Matching correctness: Condition matches iff all keys match
+   * 3. Order independence: Specificity takes precedence over array order
+   */
+  describe("property-based tests", () => {
+    /**
+     * Generates a random state object with primitive values.
+     * Uses keys a-e to keep state manageable for testing.
+     */
+    const stateArb = fc.record({
+      a: fc.oneof(fc.boolean(), fc.integer(), fc.string()),
+      b: fc.oneof(fc.boolean(), fc.integer(), fc.string()),
+      c: fc.oneof(fc.boolean(), fc.integer(), fc.string()),
+      d: fc.oneof(fc.boolean(), fc.integer(), fc.string()),
+      e: fc.oneof(fc.boolean(), fc.integer(), fc.string()),
+    });
+
+    /**
+     * Generates a condition that will match a subset of the given state.
+     * Returns the condition and the keys it uses for specificity calculation.
+     */
+    const conditionFromState = (
+      state: Record<string, unknown>,
+      keyCount: number,
+    ) => {
+      const keys = Object.keys(state).slice(0, keyCount);
+      const when: Record<string, unknown> = {};
+      for (const key of keys) {
+        when[key] = state[key];
+      }
+      return {
+        when,
+        then: { status: 200, body: { keys: keyCount } },
+      };
+    };
+
+    it("PROPERTY: Most specific matching condition always wins", () => {
+      fc.assert(
+        fc.property(stateArb, (state) => {
+          const evaluator = createStateConditionEvaluator();
+
+          // Create conditions with varying specificity (1, 2, 3, 4, 5 keys)
+          // Shuffle to ensure order doesn't matter
+          const conditions: StateCondition[] = fc.sample(
+            fc.shuffledSubarray([
+              conditionFromState(state, 1),
+              conditionFromState(state, 2),
+              conditionFromState(state, 3),
+              conditionFromState(state, 4),
+              conditionFromState(state, 5),
+            ]),
+            1,
+          )[0] as StateCondition[];
+
+          const result = evaluator.findMatchingCondition(conditions, state);
+
+          if (result) {
+            // The selected condition should be the most specific one
+            const resultSpecificity = Object.keys(result.when).length;
+            for (const cond of conditions) {
+              const condSpecificity = Object.keys(cond.when).length;
+              // No other matching condition should have higher specificity
+              if (stateMatchesWhen(state, cond.when)) {
+                expect(resultSpecificity).toBeGreaterThanOrEqual(
+                  condSpecificity,
+                );
+              }
+            }
+          }
+
+          return true;
+        }),
+        { numRuns: 500 },
+      );
+    });
+
+    it("PROPERTY: Condition matches iff all keys in 'when' exist in state with equal values", () => {
+      fc.assert(
+        fc.property(
+          stateArb,
+          fc.integer({ min: 1, max: 5 }),
+          (state, keyCount) => {
+            const evaluator = createStateConditionEvaluator();
+            const condition = conditionFromState(state, keyCount);
+            const conditions: StateCondition[] = [condition];
+
+            // With the exact state, condition should match
+            const result1 = evaluator.findMatchingCondition(conditions, state);
+            expect(result1).toBeDefined();
+
+            // With a modified value, condition should NOT match
+            const modifiedState = {
+              ...state,
+              a: "MODIFIED_VALUE_THAT_WONT_MATCH",
+            };
+            if (Object.keys(condition.when).includes("a")) {
+              const result2 = evaluator.findMatchingCondition(
+                conditions,
+                modifiedState,
+              );
+              expect(result2).toBeUndefined();
+            }
+
+            return true;
+          },
+        ),
+        { numRuns: 500 },
+      );
+    });
+
+    it("PROPERTY: Empty conditions array always returns undefined", () => {
+      fc.assert(
+        fc.property(stateArb, (state) => {
+          const evaluator = createStateConditionEvaluator();
+          const result = evaluator.findMatchingCondition([], state);
+          expect(result).toBeUndefined();
+          return true;
+        }),
+        { numRuns: 100 },
+      );
+    });
+
+    it("PROPERTY: Non-matching conditions always return undefined", () => {
+      const nonMatchingCondition: StateCondition = {
+        when: { nonExistentKey: "valueWontMatch" },
+        then: { status: 404 },
+      };
+
+      fc.assert(
+        fc.property(stateArb, (state) => {
+          const evaluator = createStateConditionEvaluator();
+          const result = evaluator.findMatchingCondition(
+            [nonMatchingCondition],
+            state,
+          );
+          expect(result).toBeUndefined();
+          return true;
+        }),
+        { numRuns: 200 },
+      );
+    });
+
+    it("PROPERTY: Result is always from the conditions array or undefined", () => {
+      fc.assert(
+        fc.property(
+          stateArb,
+          fc.array(fc.integer({ min: 1, max: 5 }), {
+            minLength: 1,
+            maxLength: 5,
+          }),
+          (state, keyCounts) => {
+            const evaluator = createStateConditionEvaluator();
+            const conditions = keyCounts.map((kc) =>
+              conditionFromState(state, kc),
+            );
+
+            const result = evaluator.findMatchingCondition(conditions, state);
+
+            // Result must either be undefined or one of the conditions
+            if (result !== undefined) {
+              const isFromConditions = conditions.some(
+                (c) => JSON.stringify(c) === JSON.stringify(result),
+              );
+              expect(isFromConditions).toBe(true);
+            }
+
+            return true;
+          },
+        ),
+        { numRuns: 300 },
+      );
+    });
+  });
 });
+
+/**
+ * Helper to check if a state matches a 'when' clause.
+ */
+const stateMatchesWhen = (
+  state: Record<string, unknown>,
+  when: Record<string, unknown>,
+): boolean => {
+  for (const [key, value] of Object.entries(when)) {
+    if (!(key in state) || state[key] !== value) {
+      return false;
+    }
+  }
+  return true;
+};
