@@ -1,7 +1,4 @@
-import type {
-  StatefulMockResponse,
-  StateCondition,
-} from "../schemas/state-aware-mocking.js";
+import type { StatefulMockResponse } from "../schemas/state-aware-mocking.js";
 import type { ScenaristResponse } from "../schemas/scenario-definition.js";
 import { createStateConditionEvaluator } from "./state-condition-evaluator.js";
 import type { StateConditionEvaluator } from "./state-condition-evaluator.js";

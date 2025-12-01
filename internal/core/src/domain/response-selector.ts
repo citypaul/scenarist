@@ -80,7 +80,7 @@ export const createResponseSelector = (
         // Check if this mock has match criteria
         if (mock.match) {
           // If match criteria exists, check if it matches the request
-          if (matchesCriteria(context, mock.match)) {
+          if (matchesCriteria(context, mock.match, testId, stateManager)) {
             // Match criteria always have higher priority than fallbacks
             // Base specificity ensures even 1 field beats any fallback
             const specificity =
@@ -241,11 +241,13 @@ const selectResponseFromMock = (
  * - Each body field = +1 point
  * - Each header = +1 point
  * - Each query param = +1 point
+ * - Each state key = +1 point
  *
  * Example:
  * { body: { itemType: 'premium' } } = 1 point
  * { body: { itemType: 'premium', quantity: 5 }, headers: { 'x-tier': 'gold' } } = 3 points
  * { url: '/api/products', body: { itemType: 'premium' } } = 2 points
+ * { state: { step: 'reviewed', approved: true } } = 2 points
  */
 const calculateSpecificity = (
   criteria: NonNullable<ScenaristMock["match"]>,
@@ -268,16 +270,27 @@ const calculateSpecificity = (
     score += Object.keys(criteria.query).length;
   }
 
+  if (criteria.state) {
+    score += Object.keys(criteria.state).length;
+  }
+
   return score;
 };
 
 /**
  * Check if request context matches the specified criteria.
  * All specified criteria must match for the overall match to succeed.
+ *
+ * @param context - HTTP request context
+ * @param criteria - Match criteria from mock definition
+ * @param testId - Test ID for state isolation
+ * @param stateManager - Optional state manager for state-based matching
  */
 const matchesCriteria = (
   context: HttpRequestContext,
   criteria: NonNullable<ScenaristMock["match"]>,
+  testId: string,
+  stateManager?: StateManager,
 ): boolean => {
   // Check URL match (exact match or pattern)
   if (criteria.url) {
@@ -307,8 +320,99 @@ const matchesCriteria = (
     }
   }
 
+  // Check state match (partial match on current test state)
+  if (criteria.state) {
+    if (!matchesState(criteria.state, testId, stateManager)) {
+      return false;
+    }
+  }
+
   // All criteria matched
   return true;
+};
+
+/**
+ * Check if current test state matches the specified state criteria.
+ * All keys in criteria must exist in state with equal values (partial match).
+ *
+ * @param stateCriteria - Required state key-value pairs
+ * @param testId - Test ID for state isolation
+ * @param stateManager - State manager to retrieve current state
+ * @returns true if all criteria keys match, false otherwise
+ */
+const matchesState = (
+  stateCriteria: Readonly<Record<string, unknown>>,
+  testId: string,
+  stateManager?: StateManager,
+): boolean => {
+  // Without stateManager, state matching always fails
+  if (!stateManager) {
+    return false;
+  }
+
+  const currentState = stateManager.getAll(testId);
+
+  // All keys in criteria must exist in state with equal values
+  for (const [key, expectedValue] of Object.entries(stateCriteria)) {
+    if (!(key in currentState)) {
+      return false;
+    }
+
+    // Deep equality check for values (handles primitives, null, objects)
+    if (!isDeepEqual(currentState[key], expectedValue)) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+/**
+ * Deep equality check for state values.
+ * Handles primitives, null, arrays, and objects.
+ */
+const isDeepEqual = (a: unknown, b: unknown): boolean => {
+  // Handle primitives and null
+  if (a === b) {
+    return true;
+  }
+
+  // If either is null/undefined after the === check, they're not equal
+  if (a == null || b == null) {
+    return false;
+  }
+
+  // Handle different types
+  if (typeof a !== typeof b) {
+    return false;
+  }
+
+  // Handle arrays
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) {
+      return false;
+    }
+    return a.every((val, index) => isDeepEqual(val, b[index]));
+  }
+
+  // Handle objects
+  if (typeof a === "object" && typeof b === "object") {
+    const aKeys = Object.keys(a as Record<string, unknown>);
+    const bKeys = Object.keys(b as Record<string, unknown>);
+
+    if (aKeys.length !== bKeys.length) {
+      return false;
+    }
+
+    return aKeys.every((key) =>
+      isDeepEqual(
+        (a as Record<string, unknown>)[key],
+        (b as Record<string, unknown>)[key],
+      ),
+    );
+  }
+
+  return false;
 };
 
 /**
