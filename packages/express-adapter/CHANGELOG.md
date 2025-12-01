@@ -1,5 +1,19 @@
 # @scenarist/express-adapter
 
+## 0.1.13
+
+### Patch Changes
+
+- [#296](https://github.com/citypaul/scenarist/pull/296) [`7f3b441`](https://github.com/citypaul/scenarist/commit/7f3b44154bcb2009a5216cd63135a2baaf26a85b) Thanks [@citypaul](https://github.com/citypaul)! - docs: fix Express createScenarist() documentation to show async/await pattern
+
+  The `createScenarist()` function in the Express adapter returns a `Promise<ExpressScenarist<T> | undefined>`, but documentation examples incorrectly showed synchronous usage without `await`. This caused TypeScript errors when users followed the documentation.
+
+  **Changes:**
+  - Updated all Express documentation to use `await createScenarist(...)`
+  - Added factory function pattern for test setup (avoiding `let` variables)
+  - Fixed examples in README.md, getting-started.mdx, example-app.mdx, and related docs
+  - Added explicit notes that createScenarist is async where relevant
+
 ## 0.1.12
 
 ### Patch Changes
