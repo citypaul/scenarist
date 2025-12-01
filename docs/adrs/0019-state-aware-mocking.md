@@ -35,11 +35,11 @@ We need tests to express **intent** ("after POST, GETs return new state") not **
 
 Adopt **explicit state mutation pattern** with three new capabilities:
 
-| Capability               | Purpose                                                    |
-| ------------------------ | ---------------------------------------------------------- |
-| `stateResponse`          | Return different responses based on current test state     |
-| `afterResponse.setState` | Mutate test state after returning a response               |
-| `match.state`            | Select which mock handles a request based on current state |
+| Capability               | Purpose                                                        |
+| ------------------------ | -------------------------------------------------------------- |
+| `stateResponse`          | Return different responses based on current test state         |
+| `afterResponse.setState` | Mutate test state after returning a response                   |
+| `match.state`            | Determines which mock handles a request based on current state |
 
 **Example:**
 
@@ -75,6 +75,76 @@ Tests now express **intent** ("after POST, GETs return new state") not **call co
 4. **Initial typing**: `Record<string, unknown>` - Schema-based typing deferred to prove concept first (Issue #305). Pragmatic path to value.
 
 5. **Multi-transition via `match.state`** - Same endpoint can handle different state transitions based on current state. Solves "same POST, different outcomes" problem.
+
+## Type Safety Migration Path
+
+Initial implementation uses `Record<string, unknown>` for pragmatic delivery. Migration to schema-based typing (Issue #305):
+
+**Phase 1 (This ADR):** `Record<string, unknown>` - proves concept, gathers feedback
+
+**Phase 2 (Issue #305):** Optional schema validation
+
+```typescript
+const scenario = defineStatefulScenario({
+  id: 'workflow',
+  stateSchema: z.object({
+    step: z.enum(['initial', 'reviewed', 'approved']),
+    checked: z.boolean(),
+  }),
+  mocks: [...] // TypeScript infers state shape from schema
+});
+```
+
+Schema-based typing will provide: autocomplete for state keys, compile-time errors for invalid state, runtime validation in development mode.
+
+## State Reset Behavior
+
+Per ADR-0005, state follows existing reset semantics:
+
+| Event                          | Behavior                                              |
+| ------------------------------ | ----------------------------------------------------- |
+| Scenario switch                | State cleared (idempotent tests)                      |
+| Test ends (cleanup)            | State cleared for that test ID                        |
+| Variant switch (same scenario) | State preserved (same scenario context)               |
+| No explicit cleanup            | State persists until test ID reused or server restart |
+
+**Nested scenario switches:** Each switch clears state. No state inheritance between scenarios.
+
+## Composition with Existing Features
+
+### Precedence Rules
+
+When multiple response mechanisms are present:
+
+1. `match` criteria (including `match.state`) filter which mock handles request
+2. Response determination: `stateResponse` > `sequence` > `response`
+3. `afterResponse.setState` executes after any response type
+
+### Feature Combinations
+
+| Combination                           | Behavior                                                       |
+| ------------------------------------- | -------------------------------------------------------------- |
+| `stateResponse` + `sequence`          | Invalid - use one or the other                                 |
+| `sequence` + `afterResponse.setState` | ✅ Valid - state mutates after each sequence response          |
+| `match.state` + `match.body`          | ✅ Valid - both must match (AND logic)                         |
+| `match.state` + `stateResponse`       | ✅ Valid - state selects mock, then conditions select response |
+
+### Match Criteria Order of Operations
+
+1. Filter mocks by `method` + `url`
+2. Filter by `match.state` (if present)
+3. Filter by other `match` criteria (`body`, `headers`, `query`)
+4. Select most specific match (existing specificity rules)
+5. Resolve response (`stateResponse` conditions or direct `response`)
+6. Execute `afterResponse.setState` (if present)
+
+## Performance Characteristics
+
+- **State lookup:** O(1) via `Map<testId, Record<string, unknown>>`
+- **Condition evaluation:** O(n) where n = number of conditions (typically < 10)
+- **Memory:** One state object per active test ID (cleaned on test end)
+
+**Practical limits:** No hard limits on conditions. For scenarios with > 20 conditions, consider splitting into multiple scenarios for clarity.
 
 ## Consequences
 
