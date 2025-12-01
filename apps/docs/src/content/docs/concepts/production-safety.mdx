@@ -18,7 +18,7 @@ import { scenarios } from "./scenarios";
 // In production: returns undefined
 // In development/test: returns working Scenarist instance
 // Note: createScenarist is async - use await
-export const scenarist = await createScenarist({
+export const scenarist = createScenarist({
   enabled: true,
   scenarios,
 });
@@ -660,7 +660,7 @@ This prevents accidentally calling test methods in production code.
 ```typescript
 import { createScenarist } from "@scenarist/express-adapter";
 
-export const scenarist = await createScenarist({
+export const scenarist = createScenarist({
   enabled: true,
   scenarios,
 });

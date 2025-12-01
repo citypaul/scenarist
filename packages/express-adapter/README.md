@@ -187,13 +187,13 @@ import express from "express";
 import { createScenarist } from "@scenarist/express-adapter";
 import { scenarios } from "./scenarios";
 
-// Use async factory pattern for Express apps
-export const createApp = async () => {
+// Factory function for Express app setup
+export const createApp = () => {
   const app = express();
   app.use(express.json());
 
-  // Create Scenarist instance (async - returns Promise)
-  const scenarist = await createScenarist({
+  // Create Scenarist instance (synchronous)
+  const scenarist = createScenarist({
     enabled: process.env.NODE_ENV === "test",
     scenarios, // All scenarios registered upfront
     strictMode: false,
@@ -224,27 +224,23 @@ import request from "supertest";
 import { createApp } from "../src/app";
 
 // Factory function for test setup - no let variables
-const createTestSetup = async () => {
-  const { app, scenarist } = await createApp();
+const createTestSetup = () => {
+  const { app, scenarist } = createApp();
   return { app, scenarist };
 };
 
 describe("User API", () => {
-  const testContext = createTestSetup();
+  const { app, scenarist } = createTestSetup();
 
-  beforeAll(async () => {
-    const { scenarist } = await testContext;
+  beforeAll(() => {
     scenarist?.start();
   });
 
   afterAll(async () => {
-    const { scenarist } = await testContext;
-    scenarist?.stop();
+    await scenarist?.stop();
   });
 
   it("should return admin user", async () => {
-    const { app } = await testContext;
-
     // Set scenario for this test
     await request(app)
       .post("/__scenario__")
@@ -268,7 +264,7 @@ describe("User API", () => {
 
 Creates a Scenarist instance with everything wired automatically.
 
-**Note:** This function is **async** and returns a `Promise`. Always use `await` when calling it.
+**Note:** This function is **synchronous** and returns the instance directly (or `undefined` in production).
 
 **Parameters:**
 
@@ -326,7 +322,7 @@ const scenarios = {
 } as const satisfies ScenaristScenarios;
 
 // Note: createScenarist is async - use await
-const scenarist = await createScenarist({
+const scenarist = createScenarist({
   enabled: true,
   scenarios,
   strictMode: false,
@@ -652,7 +648,7 @@ const scenarios = {
 } as const satisfies ScenaristScenarios;
 
 // Note: createScenarist is async - use await
-const scenarist = await createScenarist({
+const scenarist = createScenarist({
   enabled: true,
   scenarios, // 'default' key is validated at runtime
 });
@@ -679,7 +675,7 @@ import { scenarios } from "./scenarios";
 
 // Note: createScenarist is async - must use await
 export const createTestSetup = async () => {
-  const scenarist = await createScenarist({
+  const scenarist = createScenarist({
     enabled: true,
     scenarios, // ✅ Autocomplete + type-checked!
   });
@@ -773,7 +769,7 @@ Enable scenario switching during development:
 
 ```typescript
 // Note: createScenarist is async - use await
-const scenarist = await createScenarist({
+const scenarist = createScenarist({
   enabled:
     process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test",
   scenarios,
@@ -801,14 +797,14 @@ curl http://localhost:3000/__scenario__
 // Note: All createScenarist calls are async - use await
 
 // Test-only
-const scenarist = await createScenarist({
+const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === "test",
   scenarios,
   strictMode: true, // Fail if any unmocked request
 });
 
 // Development and test
-const scenarist = await createScenarist({
+const scenarist = createScenarist({
   enabled:
     process.env.NODE_ENV === "test" || process.env.NODE_ENV === "development",
   scenarios,
@@ -816,7 +812,7 @@ const scenarist = await createScenarist({
 });
 
 // Opt-in with environment variable
-const scenarist = await createScenarist({
+const scenarist = createScenarist({
   enabled: process.env.ENABLE_MOCKING === "true",
   scenarios,
   strictMode: false,
@@ -827,7 +823,7 @@ const scenarist = await createScenarist({
 
 ```typescript
 // Note: createScenarist is async - use await
-const scenarist = await createScenarist({
+const scenarist = createScenarist({
   enabled: true,
   scenarios,
   headers: {
@@ -1069,7 +1065,7 @@ const scenarios = {
 } as const satisfies ScenaristScenarios;
 
 // Note: createScenarist is async - use await
-const scenarist = await createScenarist({
+const scenarist = createScenarist({
   enabled: true,
   scenarios,
 });

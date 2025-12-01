@@ -20,7 +20,7 @@ import { scenarios } from "../src/scenarios.js";
  * - Verifies automatic default fallback behavior
  */
 
-const fixtures = await createTestFixtures();
+const fixtures = createTestFixtures();
 
 describe("String Matching Strategies - Express", () => {
   afterAll(async () => {

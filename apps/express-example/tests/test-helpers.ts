@@ -20,7 +20,7 @@ import { scenarios } from "../src/scenarios.js";
  *
  * Usage:
  * ```typescript
- * const fixtures = await createTestFixtures();
+ * const fixtures = createTestFixtures();
  *
  * describe('My Tests', () => {
  *   afterAll(async () => {
@@ -36,12 +36,12 @@ import { scenarios } from "../src/scenarios.js";
  * });
  * ```
  */
-export const createTestFixtures = async (): Promise<{
+export const createTestFixtures = (): {
   app: Express;
   scenarist: ExpressScenarist<typeof scenarios>;
   cleanup: () => Promise<void>;
-}> => {
-  const setup = await createApp();
+} => {
+  const setup = createApp();
 
   if (!setup.scenarist) {
     throw new Error(

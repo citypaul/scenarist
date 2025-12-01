@@ -13,7 +13,7 @@ The `enabled` flag controls whether Scenarist's testing infrastructure is active
 import { createScenarist } from "@scenarist/express-adapter";
 
 // Note: createScenarist is async - use await
-const scenarist = await createScenarist({
+const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === "test", // Only in test environment
   scenarios,
 });
@@ -69,7 +69,7 @@ Scenarist provides multiple layers of production safety:
 ### 1. Configuration Check
 
 ```typescript
-const scenarist = await createScenarist({
+const scenarist = createScenarist({
   enabled: process.env.NODE_ENV !== "production", // Explicit check
   scenarios,
 });
@@ -82,7 +82,7 @@ const scenarist = await createScenarist({
 Even if `enabled` accidentally left as `true`, endpoints can be configured to non-standard paths:
 
 ```typescript
-const scenarist = await createScenarist({
+const scenarist = createScenarist({
   enabled: true,
   scenarios,
   endpoints: {
@@ -411,7 +411,7 @@ sequenceStore.set("test-def456:scenario:mockIndex", { position: 0 });
 Complete configuration options related to ephemeral endpoints:
 
 ```typescript
-const scenarist = await createScenarist({
+const scenarist = createScenarist({
   // Enable/disable testing infrastructure
   enabled: process.env.NODE_ENV === "test",
 

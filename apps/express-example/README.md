@@ -167,7 +167,7 @@ export const createApp = async () => {
   app.use(express.json());
 
   // createScenarist is async - always use await
-  const scenarist = await createScenarist({
+  const scenarist = createScenarist({
     enabled: true,
     scenarios,
     strictMode: false, // Allow passthrough for unmocked requests

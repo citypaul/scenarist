@@ -4,7 +4,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import type { Request, Response } from "express";
 
 import { createTestFixtures } from "./test-helpers.js";
-const fixtures = await createTestFixtures();
+const fixtures = createTestFixtures();
 
 describe("Stateful Scenarios E2E (Phase 3)", () => {
   afterAll(async () => {

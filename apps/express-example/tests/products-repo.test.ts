@@ -67,7 +67,7 @@ import { createTestFixtures } from "./test-helpers.js";
 
 import { describe, it, expect } from "vitest";
 import request from "supertest";
-const fixtures = await createTestFixtures();
+const fixtures = createTestFixtures();
 
 describe("Products with Repository Pattern", () => {
   // Start MSW for HTTP mocking

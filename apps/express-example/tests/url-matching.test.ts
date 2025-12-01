@@ -25,7 +25,7 @@ import { scenarios } from "../src/scenarios.js";
  * Uses factory pattern to avoid let/any violations
  */
 // Use top-level await to create fixtures once before all tests
-const fixtures = await createTestFixtures();
+const fixtures = createTestFixtures();
 
 describe("URL Matching Strategies - Express", () => {
   afterAll(async () => {

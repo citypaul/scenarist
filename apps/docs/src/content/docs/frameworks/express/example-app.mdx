@@ -91,7 +91,7 @@ export const createApp = async () => {
   const app = express();
 
   // Create Scenarist instance (async - returns Promise)
-  const scenarist = await createScenarist({
+  const scenarist = createScenarist({
     enabled: process.env.NODE_ENV === "test",
     scenarios,
   });

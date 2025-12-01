@@ -36,7 +36,7 @@ import WhatScenaristOffers from "../../../components/comparison/WhatScenaristOff
 import { createScenarist } from '@scenarist/express-adapter';
 
 // Note: createScenarist is async - use await
-export const scenarist = await createScenarist({
+export const scenarist = createScenarist({
 enabled: process.env.NODE_ENV === 'test',
 scenarios: {
 default: {

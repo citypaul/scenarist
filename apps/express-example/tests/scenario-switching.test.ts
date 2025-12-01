@@ -5,7 +5,7 @@ import request from "supertest";
 import { createTestFixtures } from "./test-helpers.js";
 import { scenarios } from "../src/scenarios.js";
 
-const fixtures = await createTestFixtures();
+const fixtures = createTestFixtures();
 
 describe("Scenario Switching E2E", () => {
   afterAll(async () => {

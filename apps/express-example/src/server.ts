@@ -6,8 +6,8 @@ import { createApp } from "./app.js";
  * This file is the entry point for running the server directly.
  * Tests should import from './app.js' instead.
  */
-const main = async () => {
-  const { app, scenarist } = await createApp();
+const main = () => {
+  const { app, scenarist } = createApp();
 
   // Start MSW (only in non-production)
   if (scenarist) {
@@ -25,4 +25,4 @@ const main = async () => {
   });
 };
 
-main().catch(console.error);
+main();
