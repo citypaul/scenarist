@@ -378,20 +378,25 @@ Minimal - just wire core and MSW adapter together:
    - Mutual exclusion refinement: at most one of response/sequence/stateResponse
    - `afterResponse` can combine with any response type
 
-### Phase 2: Response-Selector Integration 🚧 IN PROGRESS
+### Phase 2: Response-Selector Integration ✅ COMPLETE
 
-6. **match.state Integration** 🚧
-   - Add state matching to `matchesCriteria` function
-   - Include state keys in specificity calculation
-   - Pass current state through the matching flow
+6. **match.state Integration** ✅
+   - Added state matching to `matchesCriteria` function
+   - State keys included in specificity calculation
+   - Deep equality check for state values (handles primitives, objects, arrays)
+   - 13 tests covering state matching scenarios
 
-7. **stateResponse Resolution**
-   - Integrate `StateResponseResolver` into `selectResponseFromMock`
-   - Handle `stateResponse` alongside `response` and `sequence`
+7. **stateResponse Resolution** ✅
+   - Integrated `StateResponseResolver` into `selectResponseFromMock`
+   - Handles `stateResponse` alongside `response` and `sequence`
+   - Returns default response when no conditions match or no stateManager
+   - 8 tests covering stateResponse scenarios
 
-8. **afterResponse.setState Integration**
-   - Call `stateManager.merge()` after response is returned
+8. **afterResponse.setState Integration** ✅
+   - Calls `stateManager.merge()` after response is returned
    - Works with all three response types (response/sequence/stateResponse)
+   - Enables state machine patterns with match.state + afterResponse
+   - 8 tests including full state machine demo
 
 ### Phase 3: Adapter Wiring
 
