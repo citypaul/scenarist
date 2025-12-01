@@ -3,8 +3,8 @@ title: Scenarist vs WireMock
 description: Compare in-process network mocking with server-based mock servers for API testing
 ---
 
-import { Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
-import WhatScenaristOffers from '../../../components/comparison/WhatScenaristOffers.astro';
+import { Tabs, TabItem, Card, CardGrid } from "@astrojs/starlight/components";
+import WhatScenaristOffers from "../../../components/comparison/WhatScenaristOffers.astro";
 
 [WireMock](https://wiremock.org/) is a mature, widely-adopted mock server for simulating HTTP APIs. It runs as a standalone Java process and can be used from any language. Scenarist takes a different approach—intercepting requests within your Node.js process using MSW.
 
@@ -12,18 +12,18 @@ import WhatScenaristOffers from '../../../components/comparison/WhatScenaristOff
 
 ## At a Glance
 
-| Aspect | Scenarist | WireMock |
-|--------|-----------|----------|
-| **Architecture** | In-process (MSW) | Standalone server |
-| **Language** | TypeScript/JavaScript | Language-agnostic (Node.js via [wiremock](https://www.npmjs.com/package/wiremock) CLI or [wiremock-captain](https://www.npmjs.com/package/wiremock-captain) client) |
-| **Test isolation** | Per-test via header | Per-server instance or Scenarios |
-| **Runtime switching** | Yes (single API call) | Yes (Admin API) |
-| **Setup** | npm install | JAR, Docker, or npm + network configuration |
-| **Test framework integration** | First-class Playwright fixtures | Generic HTTP API |
-| **Response sequences** | Built-in (polling, state machines) | Built-in (Scenarios feature) |
-| **Stateful mocks** | Built-in capture/inject per test ID | Built-in state machine |
-| **Recording** | Not supported | Built-in record/playback |
-| **Templating** | Template strings | Handlebars templating |
+| Aspect                         | Scenarist                           | WireMock                                                                                                                                                            |
+| ------------------------------ | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Architecture**               | In-process (MSW)                    | Standalone server                                                                                                                                                   |
+| **Language**                   | TypeScript/JavaScript               | Language-agnostic (Node.js via [wiremock](https://www.npmjs.com/package/wiremock) CLI or [wiremock-captain](https://www.npmjs.com/package/wiremock-captain) client) |
+| **Test isolation**             | Per-test via header                 | Per-server instance or Scenarios                                                                                                                                    |
+| **Runtime switching**          | Yes (single API call)               | Yes (Admin API)                                                                                                                                                     |
+| **Setup**                      | npm install                         | JAR, Docker, or npm + network configuration                                                                                                                         |
+| **Test framework integration** | First-class Playwright fixtures     | Generic HTTP API                                                                                                                                                    |
+| **Response sequences**         | Built-in (polling, state machines)  | Built-in (Scenarios feature)                                                                                                                                        |
+| **Stateful mocks**             | Built-in capture/inject per test ID | Built-in state machine                                                                                                                                              |
+| **Recording**                  | Not supported                       | Built-in record/playback                                                                                                                                            |
+| **Templating**                 | Template strings                    | Handlebars templating                                                                                                                                               |
 
 ## Key Differences
 
@@ -35,23 +35,25 @@ import WhatScenaristOffers from '../../../components/comparison/WhatScenaristOff
 // Mocks run in the same process as your app
 import { createScenarist } from '@scenarist/express-adapter';
 
-export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
-  scenarios: {
-    default: {
-      mocks: [{
-        url: 'https://api.stripe.com/v1/charges',
-        method: 'POST',
-        response: { status: 200, body: { id: 'ch_123' } }
-      }]
-    }
-  }
+// Note: createScenarist is async - use await
+export const scenarist = await createScenarist({
+enabled: process.env.NODE_ENV === 'test',
+scenarios: {
+default: {
+mocks: [{
+url: 'https://api.stripe.com/v1/charges',
+method: 'POST',
+response: { status: 200, body: { id: 'ch_123' } }
+}]
+}
+}
 });
 
 // No external process to manage
 // No network latency between your app and mocks
 // Debugging in the same process
-```
+
+````
   </TabItem>
   <TabItem label="WireMock">
 ```java
@@ -72,7 +74,8 @@ export const scenarist = createScenarist({
 
 // Your app calls WireMock instead of real API
 // STRIPE_API_URL=http://localhost:8080 npm test
-```
+````
+
   </TabItem>
 </Tabs>
 
@@ -92,15 +95,16 @@ test('payment success', async ({ page, switchScenario }) => {
 });
 
 test('payment declined', async ({ page, switchScenario }) => {
-  // Same app, same time, different scenario
-  await switchScenario(page, 'payment-declined');
-  await page.goto('/checkout');
-  await expect(page.locator('.error')).toBeVisible();
+// Same app, same time, different scenario
+await switchScenario(page, 'payment-declined');
+await page.goto('/checkout');
+await expect(page.locator('.error')).toBeVisible();
 });
 
 // Both tests run in parallel against ONE server
 // Test ID header routes to correct scenario
-```
+
+````
   </TabItem>
   <TabItem label="WireMock">
 ```typescript
@@ -125,7 +129,8 @@ beforeEach(async () => {
 
 // Parallel tests require multiple WireMock instances
 // Or sophisticated scenario management
-```
+````
+
   </TabItem>
 </Tabs>
 
@@ -144,12 +149,13 @@ test('retry after failure', async ({ page, switchScenario }) => {
   await page.click('[data-testid="submit"]');
   await expect(page.locator('.retry-button')).toBeVisible();
 
-  // Switch to success - same test, same page
-  await switchScenario(page, 'payment-success');
-  await page.click('.retry-button');
-  await expect(page.locator('.success')).toBeVisible();
+// Switch to success - same test, same page
+await switchScenario(page, 'payment-success');
+await page.click('.retry-button');
+await expect(page.locator('.success')).toBeVisible();
 });
-```
+
+````
   </TabItem>
   <TabItem label="WireMock">
 ```typescript
@@ -182,7 +188,8 @@ test('retry after failure', async ({ page }) => {
 
   await page.click('.retry-button');
 });
-```
+````
+
   </TabItem>
 </Tabs>
 
@@ -206,21 +213,22 @@ export { expect };
 import { test, expect } from './fixtures';
 
 test('premium user checkout', async ({ page, switchScenario }) => {
-  // Type-safe scenario ID with autocomplete
-  await switchScenario(page, 'premium-user');
+// Type-safe scenario ID with autocomplete
+await switchScenario(page, 'premium-user');
 
-  await page.goto('/checkout');
-  await expect(page.locator('.premium-discount')).toBeVisible();
+await page.goto('/checkout');
+await expect(page.locator('.premium-discount')).toBeVisible();
 });
 
 test('payment declined', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'payment-declined');
+await switchScenario(page, 'payment-declined');
 
-  await page.goto('/checkout');
-  await page.click('[data-testid="submit"]');
-  await expect(page.locator('.error-message')).toContainText('declined');
+await page.goto('/checkout');
+await page.click('[data-testid="submit"]');
+await expect(page.locator('.error-message')).toContainText('declined');
 });
-```
+
+````
   </TabItem>
   <TabItem label="WireMock">
 ```typescript
@@ -255,7 +263,8 @@ test('premium user checkout', async ({ page }) => {
     method: 'POST'
   });
 });
-```
+````
+
   </TabItem>
 </Tabs>
 
@@ -286,16 +295,17 @@ Both Scenarist and WireMock support dynamic responses, but with different approa
 
 // Perfect for testing polling UIs
 test('shows job progress', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'job-processing');
-  await page.goto('/jobs/123');
+await switchScenario(page, 'job-processing');
+await page.goto('/jobs/123');
 
-  await expect(page.locator('.status')).toContainText('pending');
-  await page.click('[data-testid="refresh"]');
-  await expect(page.locator('.status')).toContainText('processing');
-  await page.click('[data-testid="refresh"]');
-  await expect(page.locator('.status')).toContainText('complete');
+await expect(page.locator('.status')).toContainText('pending');
+await page.click('[data-testid="refresh"]');
+await expect(page.locator('.status')).toContainText('processing');
+await page.click('[data-testid="refresh"]');
+await expect(page.locator('.status')).toContainText('complete');
 });
-```
+
+````
   </TabItem>
   <TabItem label="WireMock">
 ```java
@@ -325,7 +335,8 @@ stubFor(get(urlEqualTo("/job/123/status"))
   .willReturn(aResponse()
     .withBody("{\"status\": \"complete\", \"result\": \"success\"}")
   ));
-```
+````
+
   </TabItem>
 </Tabs>
 
@@ -355,7 +366,8 @@ stubFor(get(urlEqualTo("/job/123/status"))
 
 // Specificity-based selection - most specific match wins
 // No need to carefully order your mocks
-```
+
+````
   </TabItem>
   <TabItem label="WireMock">
 ```json
@@ -378,7 +390,8 @@ stubFor(get(urlEqualTo("/job/123/status"))
     "jsonBody": { "id": "ch_premium_123" }
   }
 }
-```
+````
+
   </TabItem>
 </Tabs>
 
@@ -418,16 +431,17 @@ const scenarios = {
 
 // Test multi-step flows with stateful behavior
 test('cart accumulates items', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'cart-flow');
+await switchScenario(page, 'cart-flow');
 
-  await page.goto('/products');
-  await page.click('[data-product="widget"]');
-  await page.click('[data-product="gadget"]');
+await page.goto('/products');
+await page.click('[data-product="widget"]');
+await page.click('[data-product="gadget"]');
 
-  await page.goto('/cart');
-  await expect(page.locator('.cart-count')).toContainText('2');
+await page.goto('/cart');
+await expect(page.locator('.cart-count')).toContainText('2');
 });
-```
+
+````
   </TabItem>
   <TabItem label="WireMock">
 ```java
@@ -450,7 +464,8 @@ stubFor(get("/api/cart")
 // For data capture/injection: Custom extension or Handlebars templating
 // Handlebars can access request data:
 // {{request.body}} or {{jsonPath request.body '$.item'}}
-```
+````
+
   </TabItem>
 </Tabs>
 
@@ -460,22 +475,33 @@ stubFor(get("/api/cart")
 
 <CardGrid>
   <Card title="Simple setup" icon="rocket">
-    Just npm install and configure scenarios. No separate server process or network configuration required.
+    Just npm install and configure scenarios. No separate server process or
+    network configuration required.
   </Card>
   <Card title="TypeScript-first development" icon="seti:typescript">
-    Scenarios are TypeScript objects with full type safety. IDE autocomplete, compile-time errors, refactoring support.
+    Scenarios are TypeScript objects with full type safety. IDE autocomplete,
+    compile-time errors, refactoring support.
   </Card>
   <Card title="Parallel test isolation" icon="random">
-    Built-in test ID system lets hundreds of tests run simultaneously with different scenarios—no separate instances needed.
+    Built-in test ID system lets hundreds of tests run simultaneously with
+    different scenarios—no separate instances needed.
   </Card>
   <Card title="First-class Playwright support" icon="seti:playwright">
-    Dedicated fixtures with automatic test ID handling. Each test gets its own scenario state with type-safe switching.
+    Dedicated fixtures with automatic test ID handling. Each test gets its own
+    scenario state with type-safe switching.
   </Card>
   <Card title="Per-test-ID state isolation" icon="list-format">
-    Response sequences and stateful mocks are isolated per test ID—parallel tests never share state.
+    Response sequences and stateful mocks are isolated per test ID—parallel
+    tests never share state.
   </Card>
   <Card title="Next.js multi-process handling" icon="puzzle">
-    Next.js has <a href="https://github.com/vercel/next.js/discussions/68572">documented singleton issues</a> that break MSW. Scenarist's adapter includes built-in <code>globalThis</code> guards—one stable MSW instance regardless of how Next.js loads modules.
+    Next.js has{" "}
+    <a href="https://github.com/vercel/next.js/discussions/68572">
+      documented singleton issues
+    </a>{" "}
+    that break MSW. Scenarist's adapter includes built-in{" "}
+    <code>globalThis</code> guards—one stable MSW instance regardless of how
+    Next.js loads modules.
   </Card>
 </CardGrid>
 
@@ -483,16 +509,20 @@ stubFor(get("/api/cart")
 
 <CardGrid>
   <Card title="Polyglot environment" icon="seti:json">
-    Your team uses multiple languages (Java, Python, .NET). WireMock works with any HTTP client.
+    Your team uses multiple languages (Java, Python, .NET). WireMock works with
+    any HTTP client.
   </Card>
   <Card title="Record and playback" icon="seti:video">
-    Need to capture real API interactions and replay them. WireMock's recording is battle-tested.
+    Need to capture real API interactions and replay them. WireMock's recording
+    is battle-tested.
   </Card>
   <Card title="Existing WireMock investment" icon="approve-check">
-    Team already knows WireMock, has existing stub libraries, or uses WireMock Cloud.
+    Team already knows WireMock, has existing stub libraries, or uses WireMock
+    Cloud.
   </Card>
   <Card title="Contract testing" icon="document">
-    Using WireMock for contract testing with Spring Cloud Contract or similar frameworks.
+    Using WireMock for contract testing with Spring Cloud Contract or similar
+    frameworks.
   </Card>
 </CardGrid>
 
@@ -543,19 +573,19 @@ Point your app at WireMock for internal services while Scenarist mocks external 
 
 ## Summary
 
-| Factor | Scenarist | WireMock |
-|--------|-----------|----------|
-| Setup simplicity | ✓ npm install | JAR/Docker/npm + network config |
-| TypeScript integration | ✓ Native | Via wiremock-captain client |
-| Parallel test isolation | ✓ Header-based | Multiple instances |
-| Runtime switching | ✓ Single API call | Admin API |
-| Playwright integration | ✓ First-class fixtures | Manual HTTP calls |
-| Response sequences | ✓ Built-in | ✓ Built-in (Scenarios) |
-| Stateful mocks | ✓ Per-test-ID isolation | ✓ Global state machine |
-| Next.js multi-process | ✓ [Built-in singleton guards](https://github.com/vercel/next.js/discussions/68572) | Manual workarounds needed |
-| Language support | JavaScript/TypeScript | ✓ Any language |
-| Record/playback | Not supported | ✓ Built-in |
-| Ecosystem maturity | Newer | ✓ Battle-tested |
-| Contract testing | Not supported | ✓ Spring Cloud Contract |
+| Factor                  | Scenarist                                                                          | WireMock                        |
+| ----------------------- | ---------------------------------------------------------------------------------- | ------------------------------- |
+| Setup simplicity        | ✓ npm install                                                                      | JAR/Docker/npm + network config |
+| TypeScript integration  | ✓ Native                                                                           | Via wiremock-captain client     |
+| Parallel test isolation | ✓ Header-based                                                                     | Multiple instances              |
+| Runtime switching       | ✓ Single API call                                                                  | Admin API                       |
+| Playwright integration  | ✓ First-class fixtures                                                             | Manual HTTP calls               |
+| Response sequences      | ✓ Built-in                                                                         | ✓ Built-in (Scenarios)          |
+| Stateful mocks          | ✓ Per-test-ID isolation                                                            | ✓ Global state machine          |
+| Next.js multi-process   | ✓ [Built-in singleton guards](https://github.com/vercel/next.js/discussions/68572) | Manual workarounds needed       |
+| Language support        | JavaScript/TypeScript                                                              | ✓ Any language                  |
+| Record/playback         | Not supported                                                                      | ✓ Built-in                      |
+| Ecosystem maturity      | Newer                                                                              | ✓ Battle-tested                 |
+| Contract testing        | Not supported                                                                      | ✓ Spring Cloud Contract         |
 
 **Bottom line:** For Node.js projects, Scenarist keeps you in a single ecosystem—TypeScript scenarios, npm dependencies, Playwright fixtures, no context-switching to Java or Docker. Choose Scenarist when you value in-process simplicity, header-based parallel test isolation, and first-class Playwright support. Choose WireMock when you're in a polyglot environment, need recording, contract testing, or when your team already has WireMock expertise. Both tools are capable—the choice is primarily about staying in your ecosystem vs. language flexibility.

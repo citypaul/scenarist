@@ -3,7 +3,7 @@ title: Production Safety
 description: How Scenarist ensures zero test code in production bundles
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Aside } from "@astrojs/starlight/components";
 
 Scenarist is **safe to use in production** - your test mocking code will never reach production users.
 
@@ -12,12 +12,13 @@ Scenarist is **safe to use in production** - your test mocking code will never r
 When you deploy to production with `NODE_ENV=production`, Scenarist automatically returns `undefined` without loading any test code. Your bundler (Webpack, Vite, esbuild, etc.) then performs **tree-shaking** to eliminate all Scenarist code from your production bundle.
 
 ```typescript
-import { createScenarist } from '@scenarist/express-adapter';
-import { scenarios } from './scenarios';
+import { createScenarist } from "@scenarist/express-adapter";
+import { scenarios } from "./scenarios";
 
 // In production: returns undefined
 // In development/test: returns working Scenarist instance
-export const scenarist = createScenarist({
+// Note: createScenarist is async - use await
+export const scenarist = await createScenarist({
   enabled: true,
   scenarios,
 });
@@ -30,8 +31,8 @@ All Scenarist adapters use a **production wrapper** that checks `NODE_ENV` befor
 ```typescript
 // Simplified view of what happens inside createScenarist()
 export const createScenarist = (options) => {
-  if (process.env.NODE_ENV === 'production') {
-    return undefined;  // ← Returns immediately, no test code loaded
+  if (process.env.NODE_ENV === "production") {
+    return undefined; // ← Returns immediately, no test code loaded
   }
 
   // Development/test: load implementation
@@ -40,6 +41,7 @@ export const createScenarist = (options) => {
 ```
 
 This pattern ensures:
+
 - ✅ **Zero runtime impact** - Production code paths never execute test logic
 - ✅ **Automatic tree-shaking** - Bundlers eliminate dead code
 - ✅ **No configuration needed** - Works automatically based on NODE_ENV
@@ -196,7 +198,9 @@ du -sh dist/ .next/static/ build/
 **Express (Automatic for Unbundled, Configuration for Bundled):**
 
 <Aside type="tip">
-**Most Express apps deploy unbundled code** and get automatic tree-shaking with zero configuration. Only bundled deployments require additional bundler setup.
+  **Most Express apps deploy unbundled code** and get automatic tree-shaking
+  with zero configuration. Only bundled deployments require additional bundler
+  setup.
 </Aside>
 
 **Unbundled Deployments (Most Common):**
@@ -209,6 +213,7 @@ NODE_ENV=production node src/server.js
 ```
 
 **How it works:**
+
 - `createScenarist()` returns `undefined` at runtime
 - Dynamic imports never execute
 - MSW code **never loads into memory**
@@ -231,7 +236,9 @@ kill $PID
 **Bundled Deployments (esbuild, webpack, Vite, rollup):**
 
 <Aside type="tip">
-Modern bundlers with **code splitting enabled** automatically tree-shake Scenarist with **zero configuration**. The implementation code is split into a separate chunk that is never loaded into memory.
+  Modern bundlers with **code splitting enabled** automatically tree-shake
+  Scenarist with **zero configuration**. The implementation code is split into a
+  separate chunk that is never loaded into memory.
 </Aside>
 
 **Default Approach (Zero Config):**
@@ -253,6 +260,7 @@ rollup -c
 ```
 
 **How it works:**
+
 1. Dynamic import creates code-splitting boundary
 2. Impl code split into separate chunk (e.g., `impl-ABC123.js`)
 3. DefinePlugin makes `if (process.env.NODE_ENV === 'production')` unreachable
@@ -260,6 +268,7 @@ rollup -c
 5. **Chunk file exists on disk but never loads into memory**
 
 **Verification:**
+
 ```bash
 # Build with code splitting
 NODE_ENV=production npm run build
@@ -279,6 +288,7 @@ kill $PID
 ```
 
 **Result:**
+
 - Entry point: ~27kb (94% smaller than single bundle)
 - Impl chunk: ~242kb (exists but never loaded)
 - **Effective delivery: 27kb** (same as conditional exports!)
@@ -289,7 +299,9 @@ kill $PID
 **Optional: Minimal Build Artifacts**
 
 <Aside type="caution">
-For teams needing absolute minimal build artifacts (not delivery size), Scenarist provides **conditional exports**. This requires a GLOBAL bundler flag that affects ALL packages.
+  For teams needing absolute minimal build artifacts (not delivery size),
+  Scenarist provides **conditional exports**. This requires a GLOBAL bundler
+  flag that affects ALL packages.
 </Aside>
 
 Scenarist uses **conditional package.json exports** to provide different entry points:
@@ -298,8 +310,8 @@ Scenarist uses **conditional package.json exports** to provide different entry p
 {
   "exports": {
     ".": {
-      "production": "./dist/setup/production.js",  // Zero dependencies
-      "default": "./dist/index.js"                 // Full implementation
+      "production": "./dist/setup/production.js", // Zero dependencies
+      "default": "./dist/index.js" // Full implementation
     }
   }
 }
@@ -308,55 +320,63 @@ Scenarist uses **conditional package.json exports** to provide different entry p
 The `"production"` condition is **custom** (not a Node.js built-in). Bundlers must be configured to recognize it:
 
 **esbuild:**
+
 ```bash
 esbuild --bundle --splitting --outdir=dist --define:process.env.NODE_ENV='"production"' --conditions=production
 ```
 
 **webpack:**
+
 ```js
 // webpack.config.js
 module.exports = {
-  mode: 'production',
+  mode: "production",
   resolve: {
-    conditionNames: ['production', 'import', 'require']
-  }
+    conditionNames: ["production", "import", "require"],
+  },
 };
 ```
 
 **Vite:**
+
 ```js
 // vite.config.js
 export default {
   resolve: {
-    conditions: ['production']
-  }
+    conditions: ["production"],
+  },
 };
 ```
 
 **rollup:**
+
 ```js
-import resolve from '@rollup/plugin-node-resolve';
+import resolve from "@rollup/plugin-node-resolve";
 
 export default {
   plugins: [
     resolve({
-      exportConditions: ['production']
-    })
-  ]
+      exportConditions: ["production"],
+    }),
+  ],
 };
 ```
 
 <Aside type="caution">
-**WARNING**: The `--conditions` flag is **GLOBAL** and affects ALL packages with conditional exports in your dependency tree, not just Scenarist. This could change behavior of other dependencies unexpectedly.
+  **WARNING**: The `--conditions` flag is **GLOBAL** and affects ALL packages
+  with conditional exports in your dependency tree, not just Scenarist. This
+  could change behavior of other dependencies unexpectedly.
 </Aside>
 
 **Trade-off:**
+
 - ✅ Smallest possible build artifacts (~298kb total vs ~27kb + ~242kb)
 - ⚠️ GLOBAL configuration affects all dependencies
 - ⚠️ May break other packages using conditional exports
 - ⚠️ Requires auditing dependency tree
 
 **When to use conditional exports:**
+
 - Build artifact size is critical (containers, CI/CD storage)
 - Disk space constrained environments
 - You've audited your dependency tree
@@ -453,8 +473,8 @@ name: Verify Production Safety
 on:
   pull_request:
     paths:
-      - 'package.json'
-      - 'src/**'
+      - "package.json"
+      - "src/**"
 
 jobs:
   verify-bundle:
@@ -505,6 +525,7 @@ Run: `npm run verify:production`
 #### What Success Looks Like
 
 **✅ Passing verification:**
+
 - Bundle analyzer shows NO `scenarist` or `msw` packages
 - `grep` search returns no matches (exit code 1)
 - Bundle size same as before adding Scenarist (±1KB)
@@ -512,6 +533,7 @@ Run: `npm run verify:production`
 - Production deployment works normally
 
 **❌ Failed verification (tree-shaking didn't work):**
+
 - Bundle contains `scenarist` or `msw` strings
 - Bundle size significantly larger than expected
 - `createScenarist` function visible in bundle
@@ -536,23 +558,25 @@ NODE_ENV=production npm run build
 Most bundlers enable tree-shaking by default in production mode. Verify config:
 
 **Webpack:**
+
 ```js
 // webpack.config.js
 module.exports = {
-  mode: 'production',  // ← Required
+  mode: "production", // ← Required
   optimization: {
-    usedExports: true,  // ← Should be true (default in production)
-    sideEffects: true,  // ← Should be true (default)
+    usedExports: true, // ← Should be true (default in production)
+    sideEffects: true, // ← Should be true (default)
   },
 };
 ```
 
 **Vite:**
+
 ```js
 // vite.config.js - tree-shaking automatic in production
 export default defineConfig({
   build: {
-    minify: 'terser',  // Or 'esbuild' - both tree-shake
+    minify: "terser", // Or 'esbuild' - both tree-shake
   },
 });
 ```
@@ -561,10 +585,10 @@ export default defineConfig({
 
 ```js
 // ❌ Wrong - prevents tree-shaking
-const scenarist = require('@scenarist/express-adapter');
+const scenarist = require("@scenarist/express-adapter");
 
 // ✅ Correct - enables tree-shaking
-import { createScenarist } from '@scenarist/express-adapter';
+import { createScenarist } from "@scenarist/express-adapter";
 ```
 
 **4. package.json sideEffects field:**
@@ -586,8 +610,8 @@ Ensure TypeScript preserves ES modules:
 // tsconfig.json
 {
   "compilerOptions": {
-    "module": "ES2020",     // ← Or "ESNext", not "CommonJS"
-    "moduleResolution": "bundler",  // ← Or "node16"
+    "module": "ES2020", // ← Or "ESNext", not "CommonJS"
+    "moduleResolution": "bundler" // ← Or "node16"
   }
 }
 ```
@@ -608,6 +632,7 @@ If tree-shaking still fails after checking the above:
    - Output of `npm ls @scenarist/*`
 
 For additional help, see:
+
 - [Production Tree-Shaking Verification](/reference/verification#production-tree-shaking-verification) - Verify code splitting works correctly
 - [Header Propagation in Parallel Tests](/reference/verification#header-propagation-in-parallel-tests) - Troubleshoot test isolation issues
 
@@ -633,7 +658,7 @@ This prevents accidentally calling test methods in production code.
 ### Express
 
 ```typescript
-import { createScenarist } from '@scenarist/express-adapter';
+import { createScenarist } from "@scenarist/express-adapter";
 
 export const scenarist = await createScenarist({
   enabled: true,
@@ -642,7 +667,7 @@ export const scenarist = await createScenarist({
 
 // Type-safe null check required
 if (scenarist) {
-  scenarist.start();  // Only runs in development/test
+  scenarist.start(); // Only runs in development/test
 }
 ```
 
@@ -652,7 +677,7 @@ Both Next.js adapters use the **synchronous pattern** with conditional exports f
 
 ```typescript
 // lib/scenarist.ts
-import { createScenarist } from '@scenarist/nextjs-adapter/app';
+import { createScenarist } from "@scenarist/nextjs-adapter/app";
 // or: import { createScenarist } from '@scenarist/nextjs-adapter/pages';
 
 // Synchronous - no async/await needed
@@ -662,12 +687,13 @@ export const scenarist = createScenarist({
 });
 
 // MSW auto-starts in development/test (when scenarist is defined)
-if (typeof window === 'undefined' && scenarist) {
+if (typeof window === "undefined" && scenarist) {
   scenarist.start();
 }
 ```
 
 **Production behavior:**
+
 - ✅ **Conditional exports** resolve to `production.js` which returns `undefined` immediately
 - ✅ **Zero imports** in production.js guarantees tree-shaking
 - ✅ **Zero configuration:** Works automatically based on `NODE_ENV`
@@ -678,13 +704,13 @@ To avoid `scenarist?.method() ?? fallback` patterns everywhere, both adapters ex
 
 ```typescript
 // App Router API Route
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/app';
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
 
 export async function GET(request: Request) {
-  const response = await fetch('http://localhost:3001/products', {
+  const response = await fetch("http://localhost:3001/products", {
     headers: {
-      ...getScenaristHeaders(request),  // Always safe, no guards needed
-      'x-user-tier': 'premium',
+      ...getScenaristHeaders(request), // Always safe, no guards needed
+      "x-user-tier": "premium",
     },
   });
 }
@@ -692,13 +718,13 @@ export async function GET(request: Request) {
 
 ```typescript
 // App Router Server Component
-import { headers } from 'next/headers';
-import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+import { headers } from "next/headers";
+import { getScenaristHeadersFromReadonlyHeaders } from "@scenarist/nextjs-adapter/app";
 
 export default async function ProductsPage() {
   const headersList = await headers();
 
-  const response = await fetch('http://localhost:3001/products', {
+  const response = await fetch("http://localhost:3001/products", {
     headers: getScenaristHeadersFromReadonlyHeaders(headersList),
   });
 }
@@ -706,16 +732,17 @@ export default async function ProductsPage() {
 
 ```typescript
 // Pages Router API Route
-import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/pages";
 
 export default async function handler(req, res) {
-  const response = await fetch('http://localhost:3001/products', {
+  const response = await fetch("http://localhost:3001/products", {
     headers: getScenaristHeaders(req),
   });
 }
 ```
 
 **Available helpers:**
+
 - **App Router:**
   - `getScenaristHeaders(request)` - Extract Scenarist headers from Request
   - `getScenaristHeadersFromReadonlyHeaders(headers)` - Extract Scenarist headers from ReadonlyHeaders
@@ -733,6 +760,7 @@ These helpers access global singletons and return safe defaults in production (e
 **No.** Even without `NODE_ENV=production`, Scenarist only activates when explicitly started. The `scenarist?.start()` call is typically in development server setup, not production runtime.
 
 However, **you should always set NODE_ENV=production** for:
+
 - Optimal performance
 - Correct framework behavior
 - Automatic tree-shaking
@@ -740,16 +768,19 @@ However, **you should always set NODE_ENV=production** for:
 ### What about CI/CD environments?
 
 CI/CD environments should use:
+
 - `NODE_ENV=test` for running tests
 - `NODE_ENV=production` for building production bundles
 
 Scenarist works in both modes:
+
 - **Test mode:** Full functionality for scenario-based tests
 - **Production mode:** Returns undefined, enabling tree-shaking
 
 ### Can I verify tree-shaking before deploying?
 
 Yes! See the [Production Tree-Shaking Verification](/reference/verification#production-tree-shaking-verification) section for:
+
 - Step-by-step verification with lsof (proves chunk never loads)
 - Bundle size analysis
 - Build artifact inspection
@@ -768,11 +799,13 @@ If your bundler doesn't tree-shake Scenarist:
 ## Best Practices
 
 1. **Always use `NODE_ENV=production` for production builds**
+
    ```bash
    NODE_ENV=production npm run build
    ```
 
 2. **Add null checks where you use Scenarist**
+
    ```typescript
    if (scenarist) {
      scenarist.start();
@@ -780,6 +813,7 @@ If your bundler doesn't tree-shake Scenarist:
    ```
 
 3. **Verify bundle size in CI/CD**
+
    ```yaml
    - name: Check bundle size
      run: npm run build && npm run analyze
@@ -794,12 +828,12 @@ If your bundler doesn't tree-shake Scenarist:
 
 Scenarist is designed for production safety:
 
-| Aspect | Guarantee |
-|--------|-----------|
-| Production runtime | Zero test code execution |
-| Bundle size | Zero Scenarist code after tree-shaking |
-| Configuration | No environment-specific config needed |
-| Type safety | TypeScript enforces null checks |
-| Performance | No runtime overhead in production |
+| Aspect             | Guarantee                              |
+| ------------------ | -------------------------------------- |
+| Production runtime | Zero test code execution               |
+| Bundle size        | Zero Scenarist code after tree-shaking |
+| Configuration      | No environment-specific config needed  |
+| Type safety        | TypeScript enforces null checks        |
+| Performance        | No runtime overhead in production      |
 
 **The bottom line:** Scenarist's production wrapper + tree-shaking = zero production impact.
