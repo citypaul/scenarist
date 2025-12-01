@@ -1,5 +1,22 @@
 # @scenarist/playwright-helpers
 
+## 0.1.15
+
+### Patch Changes
+
+- [#300](https://github.com/citypaul/scenarist/pull/300) [`ec071b0`](https://github.com/citypaul/scenarist/commit/ec071b079c3e1c28312ca6471fc57259b3db85d8) Thanks [@citypaul](https://github.com/citypaul)! - Fix dependency declarations to prevent version conflicts
+
+  **@scenarist/playwright-helpers:**
+  - Move `@playwright/test` from dependencies to peerDependencies
+  - Prevents bundling Playwright, allowing consumers to use their own installation
+
+  **@scenarist/core:**
+  - Remove unused `msw` dependency (was never imported in source code)
+  - Core is a pure hexagonal domain with no MSW dependency; MSW integration lives in msw-adapter
+
+- Updated dependencies [[`ec071b0`](https://github.com/citypaul/scenarist/commit/ec071b079c3e1c28312ca6471fc57259b3db85d8)]:
+  - @scenarist/core@0.1.3
+
 ## 0.1.14
 
 ## 0.1.13
