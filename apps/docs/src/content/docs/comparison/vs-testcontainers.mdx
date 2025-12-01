@@ -100,7 +100,6 @@ process.env.DATABASE_URL = postgres.getConnectionUri();
 
 // Scenarist for external APIs
 // Stripe, SendGrid, etc. are mocked - they don't have containers
-// Note: createScenarist is async - use await
 export const scenarist = createScenarist({
   enabled: true,
   scenarios: {

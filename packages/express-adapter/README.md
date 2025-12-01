@@ -321,7 +321,6 @@ const scenarios = {
   error: errorScenario,
 } as const satisfies ScenaristScenarios;
 
-// Note: createScenarist is async - use await
 const scenarist = createScenarist({
   enabled: true,
   scenarios,
@@ -647,7 +646,6 @@ const scenarios = {
   },
 } as const satisfies ScenaristScenarios;
 
-// Note: createScenarist is async - use await
 const scenarist = createScenarist({
   enabled: true,
   scenarios, // 'default' key is validated at runtime
@@ -670,11 +668,10 @@ export const scenarios = {
   stripeFailure: stripeFailureScenario,
 } as const satisfies ScenaristScenarios;
 
-// setup.ts - create scenarist with type parameter (async)
+// setup.ts - create scenarist with type parameter
 import { scenarios } from "./scenarios";
 
-// Note: createScenarist is async - must use await
-export const createTestSetup = async () => {
+export const createTestSetup = () => {
   const scenarist = createScenarist({
     enabled: true,
     scenarios, // ✅ Autocomplete + type-checked!
@@ -683,7 +680,7 @@ export const createTestSetup = async () => {
 };
 
 // test.ts - type-safe scenario switching
-const scenarist = await createTestSetup();
+const scenarist = createTestSetup();
 scenarist?.switchScenario("test-123", "success"); // ✅ Autocomplete works!
 scenarist?.switchScenario("test-123", "invalid-name"); // ❌ TypeScript error!
 
@@ -768,7 +765,6 @@ describe("API Tests", () => {
 Enable scenario switching during development:
 
 ```typescript
-// Note: createScenarist is async - use await
 const scenarist = createScenarist({
   enabled:
     process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test",
@@ -794,8 +790,6 @@ curl http://localhost:3000/__scenario__
 ### Environment-Specific
 
 ```typescript
-// Note: All createScenarist calls are async - use await
-
 // Test-only
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === "test",
@@ -822,7 +816,6 @@ const scenarist = createScenarist({
 ### Custom Headers and Endpoints
 
 ```typescript
-// Note: createScenarist is async - use await
 const scenarist = createScenarist({
   enabled: true,
   scenarios,
@@ -1064,7 +1057,6 @@ const scenarios = {
   myScenario: myScenario, // ✅ Registered
 } as const satisfies ScenaristScenarios;
 
-// Note: createScenarist is async - use await
 const scenarist = createScenarist({
   enabled: true,
   scenarios,

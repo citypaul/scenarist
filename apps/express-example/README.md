@@ -166,7 +166,6 @@ export const createApp = async () => {
   const app = express();
   app.use(express.json());
 
-  // createScenarist is async - always use await
   const scenarist = createScenarist({
     enabled: true,
     scenarios,

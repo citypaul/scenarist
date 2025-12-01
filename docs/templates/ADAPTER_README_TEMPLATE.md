@@ -119,8 +119,6 @@ export const successScenario: ScenaristScenario = {
 import { createScenarist } from "@scenarist/[framework]-adapter";
 import { successScenario } from "./scenarios";
 
-// Note: For Express adapter, createScenarist is async - use await
-// Check your specific adapter documentation for sync/async behavior
 export const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === "test",
   defaultScenario: successScenario,

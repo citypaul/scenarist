@@ -35,18 +35,19 @@ import WhatScenaristOffers from "../../../components/comparison/WhatScenaristOff
 // Mocks run in the same process as your app
 import { createScenarist } from '@scenarist/express-adapter';
 
-// Note: createScenarist is async - use await
 export const scenarist = createScenarist({
-enabled: process.env.NODE_ENV === 'test',
-scenarios: {
-default: {
-mocks: [{
-url: 'https://api.stripe.com/v1/charges',
-method: 'POST',
-response: { status: 200, body: { id: 'ch_123' } }
-}]
-}
-}
+  enabled: process.env.NODE_ENV === "test",
+  scenarios: {
+    default: {
+      mocks: [
+        {
+          url: "https://api.stripe.com/v1/charges",
+          method: "POST",
+          response: { status: 200, body: { id: "ch_123" } },
+        },
+      ],
+    },
+  },
 });
 
 // No external process to manage

@@ -12,7 +12,6 @@ The `enabled` flag controls whether Scenarist's testing infrastructure is active
 ```typescript
 import { createScenarist } from "@scenarist/express-adapter";
 
-// Note: createScenarist is async - use await
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === "test", // Only in test environment
   scenarios,
