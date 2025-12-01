@@ -76,6 +76,7 @@ export const ScenaristMatchSchema = z.object({
   body: z.record(z.string(), MatchValueSchema).optional(),
   headers: z.record(z.string(), MatchValueSchema).optional(),
   query: z.record(z.string(), MatchValueSchema).optional(),
+  state: z.record(z.string(), z.unknown()).optional(),
 });
 export type ScenaristMatch = z.infer<typeof ScenaristMatchSchema>;
 

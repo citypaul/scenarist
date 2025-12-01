@@ -57,6 +57,22 @@ export class InMemoryStateManager implements StateManager {
     this.storage.delete(testId);
   }
 
+  merge(testId: string, partial: Record<string, unknown>): void {
+    const currentState = this.getOrCreateTestState(testId);
+
+    // Filter out dangerous keys and shallow merge
+    for (const [key, value] of Object.entries(partial)) {
+      if (!isDangerousKey(key)) {
+        Object.defineProperty(currentState, key, {
+          value,
+          writable: true,
+          enumerable: true,
+          configurable: true,
+        });
+      }
+    }
+  }
+
   private getOrCreateTestState(testId: string): Record<string, unknown> {
     let testState = this.storage.get(testId);
     if (!testState) {
