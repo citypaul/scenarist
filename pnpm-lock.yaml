@@ -518,13 +518,13 @@ importers:
 
   packages/playwright-helpers:
     dependencies:
-      '@playwright/test':
-        specifier: ^1.57.0
-        version: 1.57.0
       '@scenarist/core':
         specifier: workspace:*
         version: link:../../internal/core
     devDependencies:
+      '@playwright/test':
+        specifier: ^1.57.0
+        version: 1.57.0
       '@scenarist/eslint-config':
         specifier: workspace:*
         version: link:../../internal/eslint-config

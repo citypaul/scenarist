@@ -51,10 +51,13 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@playwright/test": "^1.57.0",
     "@scenarist/core": "workspace:*"
   },
+  "peerDependencies": {
+    "@playwright/test": "^1.0.0"
+  },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@scenarist/eslint-config": "workspace:*",
     "@scenarist/typescript-config": "workspace:*",
     "@types/node": "^24.10.1",
