@@ -314,9 +314,6 @@ importers:
 
   internal/core:
     dependencies:
-      msw:
-        specifier: ^2.12.3
-        version: 2.12.3(@types/node@24.10.1)(typescript@5.9.3)
       redos-detector:
         specifier: ^6.1.2
         version: 6.1.2
@@ -518,13 +515,13 @@ importers:
 
   packages/playwright-helpers:
     dependencies:
-      '@playwright/test':
-        specifier: ^1.57.0
-        version: 1.57.0
       '@scenarist/core':
         specifier: workspace:*
         version: link:../../internal/core
     devDependencies:
+      '@playwright/test':
+        specifier: ^1.57.0
+        version: 1.57.0
       '@scenarist/eslint-config':
         specifier: workspace:*
         version: link:../../internal/eslint-config
