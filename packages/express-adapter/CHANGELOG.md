@@ -1,5 +1,23 @@
 # @scenarist/express-adapter
 
+## 0.1.14
+
+### Patch Changes
+
+- [#298](https://github.com/citypaul/scenarist/pull/298) [`fef07e4`](https://github.com/citypaul/scenarist/commit/fef07e4111ab0114dc860ef7e95a902237a72459) Thanks [@citypaul](https://github.com/citypaul)! - Simplify `createScenarist()` to synchronous API, aligning with Next.js adapters
+
+  **API Change:**
+
+  ```typescript
+  // Before (async)
+  const scenarist = await createScenarist({ enabled: true, scenarios });
+
+  // After (sync)
+  const scenarist = createScenarist({ enabled, scenarios });
+  ```
+
+  Investigation proved dynamic imports don't enable tree-shaking (conditional exports do), so the async pattern was unnecessary. This change provides a consistent developer experience across all Scenarist adapters.
+
 ## 0.1.13
 
 ### Patch Changes
