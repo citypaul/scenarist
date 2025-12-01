@@ -4526,4 +4526,393 @@ describe("ResponseSelector - Regex Matching", () => {
       }
     });
   });
+
+  describe("After Response State Mutation (afterResponse.setState)", () => {
+    it("should mutate state after response is returned", () => {
+      const context: HttpRequestContext = {
+        method: "POST",
+        url: "/api/action",
+        body: { action: "start" },
+        headers: {},
+        query: {},
+      };
+
+      const stateManager = createInMemoryStateManager();
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "POST",
+          url: "/api/action",
+          response: { status: 200, body: { success: true } },
+          afterResponse: {
+            setState: { step: "started", timestamp: 12345 },
+          },
+        },
+      ];
+
+      const selector = createResponseSelector({ stateManager });
+
+      // Before: no state
+      expect(stateManager.getAll("test-1")).toEqual({});
+
+      const result = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+
+      expect(result.success).toBe(true);
+
+      // After: state should be mutated
+      expect(stateManager.getAll("test-1")).toEqual({
+        step: "started",
+        timestamp: 12345,
+      });
+    });
+
+    it("should merge setState with existing state", () => {
+      const context: HttpRequestContext = {
+        method: "POST",
+        url: "/api/action",
+        body: {},
+        headers: {},
+        query: {},
+      };
+
+      const stateManager = createInMemoryStateManager();
+      stateManager.set("test-1", "existingKey", "existingValue");
+      stateManager.set("test-1", "step", "initial");
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "POST",
+          url: "/api/action",
+          response: { status: 200, body: { success: true } },
+          afterResponse: {
+            setState: { step: "updated", newKey: "newValue" },
+          },
+        },
+      ];
+
+      const selector = createResponseSelector({ stateManager });
+      selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+
+      // Should merge: overwrite step, keep existingKey, add newKey
+      expect(stateManager.getAll("test-1")).toEqual({
+        existingKey: "existingValue",
+        step: "updated",
+        newKey: "newValue",
+      });
+    });
+
+    it("should isolate afterResponse state by test ID", () => {
+      const context: HttpRequestContext = {
+        method: "POST",
+        url: "/api/action",
+        body: {},
+        headers: {},
+        query: {},
+      };
+
+      const stateManager = createInMemoryStateManager();
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "POST",
+          url: "/api/action",
+          response: { status: 200, body: { success: true } },
+          afterResponse: {
+            setState: { step: "completed" },
+          },
+        },
+      ];
+
+      const selector = createResponseSelector({ stateManager });
+
+      // test-1 triggers afterResponse
+      selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+
+      // test-1 should have state, test-2 should not
+      expect(stateManager.getAll("test-1")).toEqual({ step: "completed" });
+      expect(stateManager.getAll("test-2")).toEqual({});
+    });
+
+    it("should not apply afterResponse without stateManager", () => {
+      const context: HttpRequestContext = {
+        method: "POST",
+        url: "/api/action",
+        body: {},
+        headers: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "POST",
+          url: "/api/action",
+          response: { status: 200, body: { success: true } },
+          afterResponse: {
+            setState: { step: "completed" },
+          },
+        },
+      ];
+
+      // No stateManager provided - should still return response successfully
+      const selector = createResponseSelector();
+      const result = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({ success: true });
+      }
+    });
+
+    it("should work with response and afterResponse", () => {
+      const context: HttpRequestContext = {
+        method: "POST",
+        url: "/api/review",
+        body: {},
+        headers: {},
+        query: {},
+      };
+
+      const stateManager = createInMemoryStateManager();
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "POST",
+          url: "/api/review",
+          response: { status: 200, body: { reviewed: true } },
+          afterResponse: {
+            setState: { reviewed: true },
+          },
+        },
+      ];
+
+      const selector = createResponseSelector({ stateManager });
+      const result = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({ reviewed: true });
+      }
+      expect(stateManager.getAll("test-1")).toEqual({ reviewed: true });
+    });
+
+    it("should work with stateResponse and afterResponse", () => {
+      const context: HttpRequestContext = {
+        method: "POST",
+        url: "/api/approve",
+        body: {},
+        headers: {},
+        query: {},
+      };
+
+      const stateManager = createInMemoryStateManager();
+      stateManager.set("test-1", "authorized", true);
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "POST",
+          url: "/api/approve",
+          stateResponse: {
+            default: { status: 403, body: { error: "unauthorized" } },
+            conditions: [
+              {
+                when: { authorized: true },
+                then: { status: 200, body: { approved: true } },
+              },
+            ],
+          },
+          afterResponse: {
+            setState: { step: "approved" },
+          },
+        },
+      ];
+
+      const selector = createResponseSelector({ stateManager });
+      const result = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({ approved: true });
+      }
+      expect(stateManager.getAll("test-1")).toEqual({
+        authorized: true,
+        step: "approved",
+      });
+    });
+
+    it("should work with sequence and afterResponse", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/poll",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const stateManager = createInMemoryStateManager();
+      const sequenceTracker = createInMemorySequenceTracker();
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "GET",
+          url: "/api/poll",
+          sequence: {
+            responses: [
+              { status: 200, body: { status: "pending" } },
+              { status: 200, body: { status: "complete" } },
+            ],
+          },
+          afterResponse: {
+            setState: { polled: true },
+          },
+        },
+      ];
+
+      const selector = createResponseSelector({
+        stateManager,
+        sequenceTracker,
+      });
+
+      // First request
+      const result1 = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+
+      expect(result1.success).toBe(true);
+      if (result1.success) {
+        expect(result1.data.body).toEqual({ status: "pending" });
+      }
+      expect(stateManager.getAll("test-1")).toEqual({ polled: true });
+
+      // Second request
+      const result2 = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+
+      expect(result2.success).toBe(true);
+      if (result2.success) {
+        expect(result2.data.body).toEqual({ status: "complete" });
+      }
+    });
+
+    it("should enable state machine patterns with afterResponse and match.state", () => {
+      const context: HttpRequestContext = {
+        method: "POST",
+        url: "/api/workflow",
+        body: {},
+        headers: {},
+        query: {},
+      };
+
+      const stateManager = createInMemoryStateManager();
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        // Step 2: reviewed -> approved
+        {
+          method: "POST",
+          url: "/api/workflow",
+          match: { state: { step: "reviewed" } },
+          response: { status: 200, body: { step: "approved" } },
+          afterResponse: {
+            setState: { step: "approved" },
+          },
+        },
+        // Step 1: initial -> reviewed
+        {
+          method: "POST",
+          url: "/api/workflow",
+          match: { state: { step: "initial" } },
+          response: { status: 200, body: { step: "reviewed" } },
+          afterResponse: {
+            setState: { step: "reviewed" },
+          },
+        },
+        // Initial state (fallback)
+        {
+          method: "POST",
+          url: "/api/workflow",
+          response: { status: 200, body: { step: "initial" } },
+          afterResponse: {
+            setState: { step: "initial" },
+          },
+        },
+      ];
+
+      const selector = createResponseSelector({ stateManager });
+
+      // First call: no state -> sets initial
+      const result1 = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+      expect(result1.success).toBe(true);
+      if (result1.success) {
+        expect(result1.data.body).toEqual({ step: "initial" });
+      }
+      expect(stateManager.get("test-1", "step")).toBe("initial");
+
+      // Second call: initial -> reviewed
+      const result2 = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+      expect(result2.success).toBe(true);
+      if (result2.success) {
+        expect(result2.data.body).toEqual({ step: "reviewed" });
+      }
+      expect(stateManager.get("test-1", "step")).toBe("reviewed");
+
+      // Third call: reviewed -> approved
+      const result3 = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+      expect(result3.success).toBe(true);
+      if (result3.success) {
+        expect(result3.data.body).toEqual({ step: "approved" });
+      }
+      expect(stateManager.get("test-1", "step")).toBe("approved");
+    });
+  });
 });

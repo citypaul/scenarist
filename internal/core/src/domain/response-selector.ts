@@ -162,6 +162,11 @@ export const createResponseSelector = (
           ) as ScenaristResponse;
         }
 
+        // Apply afterResponse.setState to mutate state for subsequent requests
+        if (mock.afterResponse?.setState && stateManager) {
+          stateManager.merge(testId, mock.afterResponse.setState);
+        }
+
         return { success: true, data: finalResponse };
       }
 
