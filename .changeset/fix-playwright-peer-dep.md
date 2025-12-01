@@ -1,10 +1,16 @@
 ---
 "@scenarist/playwright-helpers": patch
+"@scenarist/core": patch
 ---
 
-Move @playwright/test from dependencies to peerDependencies
+Fix dependency declarations to prevent version conflicts
 
-Previously, @playwright/test was declared as a direct dependency, causing consumers
-to install a bundled version of Playwright that could conflict with their own
-installation. This is now correctly declared as a peerDependency, allowing consumers
-to use their existing Playwright installation.
+**@scenarist/playwright-helpers:**
+
+- Move `@playwright/test` from dependencies to peerDependencies
+- Prevents bundling Playwright, allowing consumers to use their own installation
+
+**@scenarist/core:**
+
+- Remove unused `msw` dependency (was never imported in source code)
+- Core is a pure hexagonal domain with no MSW dependency; MSW integration lives in msw-adapter

@@ -54,7 +54,6 @@
     "typecheck": "tsc --project tsconfig.typecheck.json --noEmit"
   },
   "dependencies": {
-    "msw": "^2.12.3",
     "redos-detector": "^6.1.2",
     "zod": "^4.1.13"
   },
