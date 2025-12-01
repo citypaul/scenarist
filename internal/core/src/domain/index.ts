@@ -10,3 +10,4 @@ export {
   createStateResponseResolver,
   type StateResponseResolver,
 } from "./state-response-resolver.js";
+export { deepEquals } from "./deep-equals.js";

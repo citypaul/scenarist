@@ -390,13 +390,23 @@ describe("InMemoryStateManager", () => {
     it("should ignore dangerous keys in merge", () => {
       const stateManager = createInMemoryStateManager();
 
-      stateManager.merge("test-1", {
-        __proto__: { polluted: true },
-        safe: "value",
+      // Create object with dangerous keys as regular enumerable properties
+      // (Object literal { __proto__: ... } has special semantics)
+      const maliciousPartial: Record<string, unknown> = { safe: "value" };
+      Object.defineProperty(maliciousPartial, "constructor", {
+        value: { polluted: true },
+        enumerable: true,
+      });
+      Object.defineProperty(maliciousPartial, "prototype", {
+        value: { polluted: true },
+        enumerable: true,
       });
 
-      // Should not pollute prototype
-      expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+      stateManager.merge("test-1", maliciousPartial);
+
+      // Should not set dangerous keys
+      expect(stateManager.get("test-1", "constructor")).toBeUndefined();
+      expect(stateManager.get("test-1", "prototype")).toBeUndefined();
       // Should set safe key
       expect(stateManager.get("test-1", "safe")).toBe("value");
     });

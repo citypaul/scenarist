@@ -15,6 +15,7 @@ import { extractFromPath } from "./path-extraction.js";
 import { applyTemplates } from "./template-replacement.js";
 import { matchesRegex } from "./regex-matching.js";
 import { createStateResponseResolver } from "./state-response-resolver.js";
+import { deepEquals } from "./deep-equals.js";
 import type { MatchValue } from "../schemas/scenario-definition.js";
 
 const SPECIFICITY_RANGES = {
@@ -402,60 +403,12 @@ const matchesState = (
     }
 
     // Deep equality check for values (handles primitives, null, objects)
-    if (!isDeepEqual(currentState[key], expectedValue)) {
+    if (!deepEquals(currentState[key], expectedValue)) {
       return false;
     }
   }
 
   return true;
-};
-
-/**
- * Deep equality check for state values.
- * Handles primitives, null, arrays, and objects.
- */
-const isDeepEqual = (a: unknown, b: unknown): boolean => {
-  // Handle primitives and null
-  if (a === b) {
-    return true;
-  }
-
-  // If either is null/undefined after the === check, they're not equal
-  if (a == null || b == null) {
-    return false;
-  }
-
-  // Handle different types
-  if (typeof a !== typeof b) {
-    return false;
-  }
-
-  // Handle arrays
-  if (Array.isArray(a) && Array.isArray(b)) {
-    if (a.length !== b.length) {
-      return false;
-    }
-    return a.every((val, index) => isDeepEqual(val, b[index]));
-  }
-
-  // Handle objects
-  if (typeof a === "object" && typeof b === "object") {
-    const aKeys = Object.keys(a as Record<string, unknown>);
-    const bKeys = Object.keys(b as Record<string, unknown>);
-
-    if (aKeys.length !== bKeys.length) {
-      return false;
-    }
-
-    return aKeys.every((key) =>
-      isDeepEqual(
-        (a as Record<string, unknown>)[key],
-        (b as Record<string, unknown>)[key],
-      ),
-    );
-  }
-
-  return false;
 };
 
 /**
