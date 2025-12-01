@@ -154,23 +154,40 @@ yarn add @scenarist/express-adapter
 ### 2. Setup Scenarist
 
 ```typescript
-import { createScenarist } from "@scenarist/express-adapter";
+import express from "express";
+import {
+  createScenarist,
+  type ExpressScenarist,
+} from "@scenarist/express-adapter";
+import { scenarios } from "./scenarios";
 
-const scenarist = createScenarist({
-  enabled: true,
-  strictMode: false, // Allow passthrough for unmocked requests
-});
+// Use async factory pattern for Express apps
+export const createApp = async () => {
+  const app = express();
+  app.use(express.json());
 
-// Register scenarios
-scenarist.registerScenario(defaultScenario);
-scenarist.registerScenario(successScenario);
-scenarist.registerScenario(errorScenario);
+  // createScenarist is async - always use await
+  const scenarist = await createScenarist({
+    enabled: true,
+    scenarios,
+    strictMode: false, // Allow passthrough for unmocked requests
+  });
 
-// Apply middleware
-app.use(scenarist.middleware);
+  // Apply middleware only if scenarist is defined
+  if (scenarist) {
+    app.use(scenarist.middleware);
+  }
 
-// Start MSW
-scenarist.start();
+  // Your routes
+  app.get("/api/github/user/:username", async (req, res) => {
+    const { username } = req.params;
+    const response = await fetch(`https://api.github.com/users/${username}`);
+    const data = await response.json();
+    res.status(response.status).json(data);
+  });
+
+  return { app, scenarist };
+};
 ```
 
 ### 3. Define Scenarios
@@ -226,16 +243,32 @@ router.get("/api/github/user/:username", async (req, res) => {
 Tests can switch scenarios dynamically and are isolated by test ID:
 
 ```typescript
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import request from "supertest";
+import { createApp } from "../src/app";
+
+// Factory function for test setup - no let variables
+const createTestSetup = async () => {
+  const { app, scenarist } = await createApp();
+  return { app, scenarist };
+};
+
 describe("GitHub API Integration", () => {
-  beforeAll(() => {
-    scenarist.start();
+  const testContext = createTestSetup();
+
+  beforeAll(async () => {
+    const { scenarist } = await testContext;
+    scenarist?.start();
   });
 
-  afterAll(() => {
-    scenarist.stop();
+  afterAll(async () => {
+    const { scenarist } = await testContext;
+    scenarist?.stop();
   });
 
   it("should return user data when using success scenario", async () => {
+    const { app } = await testContext;
+
     // Switch to success scenario for this test
     await request(app)
       .post("/__scenario__")
@@ -252,6 +285,8 @@ describe("GitHub API Integration", () => {
   });
 
   it("should return 404 when using error scenario", async () => {
+    const { app } = await testContext;
+
     // Switch to error scenario for this test
     await request(app)
       .post("/__scenario__")

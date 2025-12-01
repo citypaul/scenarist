@@ -3,8 +3,8 @@ title: Scenarist vs Testcontainers
 description: Mocking external APIs vs running real containerized services - complementary approaches
 ---
 
-import { Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
-import WhatScenaristOffers from '../../../components/comparison/WhatScenaristOffers.astro';
+import { Tabs, TabItem, Card, CardGrid } from "@astrojs/starlight/components";
+import WhatScenaristOffers from "../../../components/comparison/WhatScenaristOffers.astro";
 
 [Testcontainers](https://testcontainers.com/) runs real services in Docker containers for testing—PostgreSQL, Redis, Kafka, and more. Scenarist mocks HTTP APIs. These tools solve **different problems** and are often **complementary** rather than competing.
 
@@ -36,14 +36,14 @@ import WhatScenaristOffers from '../../../components/comparison/WhatScenaristOff
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-| Aspect | Testcontainers | Scenarist |
-|--------|----------------|-----------|
-| **Purpose** | Run real services | Mock HTTP APIs |
-| **Use case** | Databases, message queues | Third-party APIs |
-| **What runs** | Actual software in Docker | Your app with mocked responses |
-| **Fidelity** | Real behavior | Controlled scenarios |
-| **Startup time** | Seconds to minutes | Instant |
-| **Resource usage** | Container per service | In-process |
+| Aspect             | Testcontainers            | Scenarist                      |
+| ------------------ | ------------------------- | ------------------------------ |
+| **Purpose**        | Run real services         | Mock HTTP APIs                 |
+| **Use case**       | Databases, message queues | Third-party APIs               |
+| **What runs**      | Actual software in Docker | Your app with mocked responses |
+| **Fidelity**       | Real behavior             | Controlled scenarios           |
+| **Startup time**   | Seconds to minutes        | Instant                        |
+| **Resource usage** | Container per service     | In-process                     |
 
 ## When Each Tool Applies
 
@@ -51,7 +51,8 @@ import WhatScenaristOffers from '../../../components/comparison/WhatScenaristOff
 
 <CardGrid>
   <Card title="Database testing" icon="seti:db">
-    PostgreSQL, MySQL, MongoDB, Redis. Test real queries, migrations, transactions.
+    PostgreSQL, MySQL, MongoDB, Redis. Test real queries, migrations,
+    transactions.
   </Card>
   <Card title="Message queues" icon="seti:shell">
     Kafka, RabbitMQ, SQS (LocalStack). Test actual message processing.
@@ -68,7 +69,8 @@ import WhatScenaristOffers from '../../../components/comparison/WhatScenaristOff
 
 <CardGrid>
   <Card title="External HTTP APIs" icon="seti:json">
-    Stripe, Auth0, SendGrid, Twilio. APIs you don't control and can't run locally.
+    Stripe, Auth0, SendGrid, Twilio. APIs you don't control and can't run
+    locally.
   </Card>
   <Card title="Error scenarios" icon="warning">
     Test how your app handles API timeouts, rate limits, specific error codes.
@@ -89,59 +91,61 @@ A typical application might use **both** tools:
 // test-setup.ts
 
 // Testcontainers for your database
-import { PostgreSqlContainer } from '@testcontainers/postgresql';
+import { PostgreSqlContainer } from "@testcontainers/postgresql";
 
-const postgres = await new PostgreSqlContainer()
-  .withDatabase('testdb')
-  .start();
+const postgres = await new PostgreSqlContainer().withDatabase("testdb").start();
 
 // Your app connects to real PostgreSQL in Docker
 process.env.DATABASE_URL = postgres.getConnectionUri();
 
 // Scenarist for external APIs
 // Stripe, SendGrid, etc. are mocked - they don't have containers
-export const scenarist = createScenarist({
+// Note: createScenarist is async - use await
+export const scenarist = await createScenarist({
   enabled: true,
   scenarios: {
     default: {
       mocks: [
         {
-          url: 'https://api.stripe.com/v1/charges',
-          method: 'POST',
-          response: { status: 200, body: { id: 'ch_123' } }
+          url: "https://api.stripe.com/v1/charges",
+          method: "POST",
+          response: { status: 200, body: { id: "ch_123" } },
         },
         {
-          url: 'https://api.sendgrid.com/v3/mail/send',
-          method: 'POST',
-          response: { status: 202 }
-        }
-      ]
-    }
-  }
+          url: "https://api.sendgrid.com/v3/mail/send",
+          method: "POST",
+          response: { status: 202 },
+        },
+      ],
+    },
+  },
 });
 ```
 
 ```typescript
 // checkout.spec.ts
-test('creates order and sends confirmation', async ({ page, switchScenario }) => {
+test("creates order and sends confirmation", async ({
+  page,
+  switchScenario,
+}) => {
   // Database operations use real PostgreSQL (Testcontainers)
   // Stripe payment uses mocked API (Scenarist)
   // SendGrid email uses mocked API (Scenarist)
 
-  await switchScenario(page, 'payment-success');
+  await switchScenario(page, "payment-success");
 
-  await page.goto('/checkout');
-  await page.fill('[name="card"]', '4242424242424242');
-  await page.click('#submit');
+  await page.goto("/checkout");
+  await page.fill('[name="card"]', "4242424242424242");
+  await page.click("#submit");
 
   // Real database write happened
   // Mocked Stripe returned success
   // Mocked SendGrid accepted email
-  await expect(page.locator('.success')).toBeVisible();
+  await expect(page.locator(".success")).toBeVisible();
 
   // Verify database state (real PostgreSQL)
-  const order = await db.query('SELECT * FROM orders WHERE id = $1', [orderId]);
-  expect(order.status).toBe('completed');
+  const order = await db.query("SELECT * FROM orders WHERE id = $1", [orderId]);
+  expect(order.status).toBe("completed");
 });
 ```
 
@@ -149,19 +153,19 @@ test('creates order and sends confirmation', async ({ page, switchScenario }) =>
 
 **Yes, but with more complexity.** Testcontainers has modules for HTTP mock servers:
 
-| Module | Package | Status |
-|--------|---------|--------|
-| MockServer | `@testcontainers/mockserver` | Official |
-| WireMock | `@wiremock/wiremock-testcontainers-node` | [Official Partner](https://testcontainers.com/modules/wiremock/) |
+| Module     | Package                                  | Status                                                           |
+| ---------- | ---------------------------------------- | ---------------------------------------------------------------- |
+| MockServer | `@testcontainers/mockserver`             | Official                                                         |
+| WireMock   | `@wiremock/wiremock-testcontainers-node` | [Official Partner](https://testcontainers.com/modules/wiremock/) |
 
 ```typescript
 // Testcontainers with WireMock for HTTP mocking
-import { WireMockContainer } from '@wiremock/wiremock-testcontainers-node';
+import { WireMockContainer } from "@wiremock/wiremock-testcontainers-node";
 
 const container = await new WireMockContainer()
   .withMapping({
-    request: { method: 'GET', urlPath: '/v1/products' },
-    response: { status: 200, jsonBody: { products: [] } }
+    request: { method: "GET", urlPath: "/v1/products" },
+    response: { status: 200, jsonBody: { products: [] } },
   })
   .start();
 
@@ -171,20 +175,22 @@ process.env.STRIPE_API_URL = container.getBaseUrl();
 
 **Trade-offs vs Scenarist:**
 
-| Factor | Testcontainers + WireMock | Scenarist |
-|--------|---------------------------|-----------|
-| Setup | Docker + container management | npm install |
-| Startup time | Seconds (container spin-up) | Instant (in-process) |
-| Test isolation | Per-container (heavier) | Per-header (lightweight) |
-| Runtime switching | Admin API | Single API call |
-| Network config | Required (proxy/env vars) | None (in-process) |
+| Factor            | Testcontainers + WireMock     | Scenarist                |
+| ----------------- | ----------------------------- | ------------------------ |
+| Setup             | Docker + container management | npm install              |
+| Startup time      | Seconds (container spin-up)   | Instant (in-process)     |
+| Test isolation    | Per-container (heavier)       | Per-header (lightweight) |
+| Runtime switching | Admin API                     | Single API call          |
+| Network config    | Required (proxy/env vars)     | None (in-process)        |
 
 **When HTTP mocking via Testcontainers makes sense:**
+
 - You're already heavily invested in Testcontainers
 - You want identical mocking approach to your Java/Go services
 - You need WireMock's specific features (recording, contract testing)
 
 **When Scenarist is simpler:**
+
 - You want the lightest possible setup
 - You're already in a Node.js/TypeScript environment
 - You value instant test startup over container isolation
@@ -211,7 +217,8 @@ Mocking databases is possible but loses fidelity:
 // - Transaction behavior
 // - Migration testing
 // - Performance characteristics
-```
+
+````
   </TabItem>
   <TabItem label="Real Database (Better)">
 ```typescript
@@ -227,28 +234,30 @@ const result = await db.query(`
 
 // Real constraints, real behavior
 // Your ORM/query builder works exactly like production
-```
+````
+
   </TabItem>
 </Tabs>
 
 **Rule of thumb:**
+
 - **Use Testcontainers** for services you own or can run locally
 - **Use Scenarist** for services you don't control (third-party APIs)
 
 ## Comparison Summary
 
-| Factor | Testcontainers | Scenarist |
-|--------|----------------|-----------|
-| Databases | ✓ Best choice | Not recommended |
-| Message queues | ✓ Best choice | Not recommended |
-| HTTP API mocking | ✓ Via WireMock/MockServer | ✓ Built-in |
-| Setup complexity | Docker + containers | npm install |
-| Startup time | Seconds (containers) | ✓ Instant |
-| Resource usage | Higher (containers) | ✓ Minimal |
-| Fidelity | ✓ Real behavior | Controlled |
-| Parallel isolation | Per-container | ✓ Per-header (lightweight) |
-| Runtime switching | Admin API | ✓ Single API call |
-| Playwright fixtures | Manual setup | ✓ First-class support |
+| Factor              | Testcontainers            | Scenarist                  |
+| ------------------- | ------------------------- | -------------------------- |
+| Databases           | ✓ Best choice             | Not recommended            |
+| Message queues      | ✓ Best choice             | Not recommended            |
+| HTTP API mocking    | ✓ Via WireMock/MockServer | ✓ Built-in                 |
+| Setup complexity    | Docker + containers       | npm install                |
+| Startup time        | Seconds (containers)      | ✓ Instant                  |
+| Resource usage      | Higher (containers)       | ✓ Minimal                  |
+| Fidelity            | ✓ Real behavior           | Controlled                 |
+| Parallel isolation  | Per-container             | ✓ Per-header (lightweight) |
+| Runtime switching   | Admin API                 | ✓ Single API call          |
+| Playwright fixtures | Manual setup              | ✓ First-class support      |
 
 ## Hybrid Architecture
 
@@ -282,6 +291,7 @@ For comprehensive testing, use both:
 ```
 
 **This hybrid approach gives you:**
+
 - Real database behavior (Testcontainers)
 - Controlled external API scenarios (Scenarist)
 - Comprehensive test coverage

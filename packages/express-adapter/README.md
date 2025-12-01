@@ -182,56 +182,69 @@ export const scenarios = {
 ### 2. Create Scenarist Instance
 
 ```typescript
-// test/setup.ts
+// src/app.ts
+import express from "express";
 import { createScenarist } from "@scenarist/express-adapter";
 import { scenarios } from "./scenarios";
 
-export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === "test",
-  scenarios, // All scenarios registered upfront
-  strictMode: false,
-});
+// Use async factory pattern for Express apps
+export const createApp = async () => {
+  const app = express();
+  app.use(express.json());
+
+  // Create Scenarist instance (async - returns Promise)
+  const scenarist = await createScenarist({
+    enabled: process.env.NODE_ENV === "test",
+    scenarios, // All scenarios registered upfront
+    strictMode: false,
+  });
+
+  // Add Scenarist middleware (only if enabled)
+  if (scenarist) {
+    app.use(scenarist.middleware);
+  }
+
+  // Your application routes
+  app.get("/api/user", async (req, res) => {
+    const response = await fetch("https://api.example.com/user");
+    const user = await response.json();
+    res.json(user);
+  });
+
+  return { app, scenarist };
+};
 ```
 
-### 3. Add to Express App
-
-```typescript
-// src/app.ts
-import express from "express";
-import { scenarist } from "../test/setup";
-
-const app = express();
-app.use(express.json());
-
-// Add Scenarist middleware (includes everything)
-if (process.env.NODE_ENV === "test") {
-  app.use(scenarist.middleware);
-}
-
-// Your application routes
-app.get("/api/user", async (req, res) => {
-  const response = await fetch("https://api.example.com/user");
-  const user = await response.json();
-  res.json(user);
-});
-
-export { app };
-```
-
-### 4. Use in Tests
+### 3. Use in Tests
 
 ```typescript
 // test/api.test.ts
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
-import { app } from "../src/app";
-import { scenarist } from "./setup";
+import { createApp } from "../src/app";
+
+// Factory function for test setup - no let variables
+const createTestSetup = async () => {
+  const { app, scenarist } = await createApp();
+  return { app, scenarist };
+};
 
 describe("User API", () => {
-  beforeAll(() => scenarist.start());
-  afterAll(() => scenarist.stop());
+  const testContext = createTestSetup();
+
+  beforeAll(async () => {
+    const { scenarist } = await testContext;
+    scenarist?.start();
+  });
+
+  afterAll(async () => {
+    const { scenarist } = await testContext;
+    scenarist?.stop();
+  });
 
   it("should return admin user", async () => {
+    const { app } = await testContext;
+
     // Set scenario for this test
     await request(app)
       .post("/__scenario__")
@@ -255,6 +268,8 @@ describe("User API", () => {
 
 Creates a Scenarist instance with everything wired automatically.
 
+**Note:** This function is **async** and returns a `Promise`. Always use `await` when calling it.
+
 **Parameters:**
 
 ```typescript
@@ -276,6 +291,12 @@ type ExpressAdapterOptions<T extends ScenaristScenarios> = {
 ```
 
 **Returns:**
+
+```typescript
+Promise<ExpressScenarist<T> | undefined>;
+```
+
+Where `ExpressScenarist<T>` is:
 
 ```typescript
 type ExpressScenarist<T extends ScenaristScenarios> = {
@@ -304,16 +325,20 @@ const scenarios = {
   error: errorScenario,
 } as const satisfies ScenaristScenarios;
 
-const scenarist = createScenarist({
+// Note: createScenarist is async - use await
+const scenarist = await createScenarist({
   enabled: true,
   scenarios,
   strictMode: false,
 });
 
-app.use(scenarist.middleware);
+// Only apply middleware if scenarist is defined (not production)
+if (scenarist) {
+  app.use(scenarist.middleware);
 
-beforeAll(() => scenarist.start());
-afterAll(() => scenarist.stop());
+  beforeAll(() => scenarist.start());
+  afterAll(() => scenarist.stop());
+}
 ```
 
 ### Scenario Endpoints
@@ -626,7 +651,8 @@ const scenarios = {
   },
 } as const satisfies ScenaristScenarios;
 
-const scenarist = createScenarist({
+// Note: createScenarist is async - use await
+const scenarist = await createScenarist({
   enabled: true,
   scenarios, // 'default' key is validated at runtime
 });
@@ -648,17 +674,22 @@ export const scenarios = {
   stripeFailure: stripeFailureScenario,
 } as const satisfies ScenaristScenarios;
 
-// setup.ts - create scenarist with type parameter
+// setup.ts - create scenarist with type parameter (async)
 import { scenarios } from "./scenarios";
 
-export const scenarist = createScenarist({
-  enabled: true,
-  scenarios, // ✅ Autocomplete + type-checked!
-});
+// Note: createScenarist is async - must use await
+export const createTestSetup = async () => {
+  const scenarist = await createScenarist({
+    enabled: true,
+    scenarios, // ✅ Autocomplete + type-checked!
+  });
+  return scenarist;
+};
 
 // test.ts - type-safe scenario switching
-scenarist.switchScenario("test-123", "success"); // ✅ Autocomplete works!
-scenarist.switchScenario("test-123", "invalid-name"); // ❌ TypeScript error!
+const scenarist = await createTestSetup();
+scenarist?.switchScenario("test-123", "success"); // ✅ Autocomplete works!
+scenarist?.switchScenario("test-123", "invalid-name"); // ❌ TypeScript error!
 
 await request(app)
   .post(scenarist.config.endpoints.setScenario)
@@ -741,7 +772,8 @@ describe("API Tests", () => {
 Enable scenario switching during development:
 
 ```typescript
-const scenarist = createScenarist({
+// Note: createScenarist is async - use await
+const scenarist = await createScenarist({
   enabled:
     process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test",
   scenarios,
@@ -766,15 +798,17 @@ curl http://localhost:3000/__scenario__
 ### Environment-Specific
 
 ```typescript
+// Note: All createScenarist calls are async - use await
+
 // Test-only
-const scenarist = createScenarist({
+const scenarist = await createScenarist({
   enabled: process.env.NODE_ENV === "test",
   scenarios,
   strictMode: true, // Fail if any unmocked request
 });
 
 // Development and test
-const scenarist = createScenarist({
+const scenarist = await createScenarist({
   enabled:
     process.env.NODE_ENV === "test" || process.env.NODE_ENV === "development",
   scenarios,
@@ -782,7 +816,7 @@ const scenarist = createScenarist({
 });
 
 // Opt-in with environment variable
-const scenarist = createScenarist({
+const scenarist = await createScenarist({
   enabled: process.env.ENABLE_MOCKING === "true",
   scenarios,
   strictMode: false,
@@ -792,7 +826,8 @@ const scenarist = createScenarist({
 ### Custom Headers and Endpoints
 
 ```typescript
-const scenarist = createScenarist({
+// Note: createScenarist is async - use await
+const scenarist = await createScenarist({
   enabled: true,
   scenarios,
   headers: {
@@ -1033,7 +1068,8 @@ const scenarios = {
   myScenario: myScenario, // ✅ Registered
 } as const satisfies ScenaristScenarios;
 
-const scenarist = createScenarist({
+// Note: createScenarist is async - use await
+const scenarist = await createScenarist({
   enabled: true,
   scenarios,
 });
