@@ -8,7 +8,28 @@
 
 Sequence-based mocking is fragile with **stateless backend architectures** because we can't predict how many API calls occur before a state-changing operation. The count varies due to React re-renders, middleware, and async timing.
 
-Current workaround requires magic numbers (`Array(11).fill(...)`) discovered through trial-and-error.
+### The Problem
+
+Current workaround requires magic numbers discovered through trial-and-error:
+
+```typescript
+// Ineligible scenario - needs exactly 11 "appStarted" before "quoteDecline"
+sequence: {
+  responses: [
+    ...Array(11).fill({ body: { state: 'appStarted' } }),
+    { body: { state: 'quoteDecline' } },
+  ],
+  repeat: 'last'
+}
+```
+
+**Why this is problematic:**
+
+- Fragile - any change to React components can break it
+- Non-obvious - why 11? Not documented anywhere
+- Different per scenario - each journey has different call patterns
+
+We need tests to express **intent** ("after POST, GETs return new state") not **call counts** ("11 GETs then POST").
 
 ## Decision
 
@@ -45,11 +66,15 @@ Tests now express **intent** ("after POST, GETs return new state") not **call co
 
 ## Key Design Decisions
 
-1. **Declarative patterns only** - `when` is partial object matching, not functions (per ADR-0013)
-2. **State scoped per test** - Uses existing `x-scenarist-test-id` mechanism
-3. **Specificity-based selection** - Most specific condition wins (consistent with `match` behavior)
-4. **Initial typing**: `Record<string, unknown>` - schema-based typing deferred (Issue #305)
-5. **Multi-transition via `match.state`** - Same endpoint can handle different state transitions
+1. **Declarative patterns only** - `when` is partial object matching, not functions (per ADR-0013). Enables inspection, composition, and maintains serializability.
+
+2. **State scoped per test** - Uses existing `x-scenarist-test-id` mechanism. No new infrastructure needed; concurrent tests remain isolated.
+
+3. **Specificity-based selection** - Most specific condition wins (more keys = more specific). Consistent with existing `match` behavior, eliminates ordering concerns.
+
+4. **Initial typing**: `Record<string, unknown>` - Schema-based typing deferred to prove concept first (Issue #305). Pragmatic path to value.
+
+5. **Multi-transition via `match.state`** - Same endpoint can handle different state transitions based on current state. Solves "same POST, different outcomes" problem.
 
 ## Consequences
 
