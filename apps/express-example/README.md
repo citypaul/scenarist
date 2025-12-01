@@ -247,27 +247,23 @@ import request from "supertest";
 import { createApp } from "../src/app";
 
 // Factory function for test setup - no let variables
-const createTestSetup = async () => {
-  const { app, scenarist } = await createApp();
+const createTestSetup = () => {
+  const { app, scenarist } = createApp();
   return { app, scenarist };
 };
 
 describe("GitHub API Integration", () => {
-  const testContext = createTestSetup();
+  const { app, scenarist } = createTestSetup();
 
-  beforeAll(async () => {
-    const { scenarist } = await testContext;
+  beforeAll(() => {
     scenarist?.start();
   });
 
   afterAll(async () => {
-    const { scenarist } = await testContext;
-    scenarist?.stop();
+    await scenarist?.stop();
   });
 
   it("should return user data when using success scenario", async () => {
-    const { app } = await testContext;
-
     // Switch to success scenario for this test
     await request(app)
       .post("/__scenario__")
@@ -284,8 +280,6 @@ describe("GitHub API Integration", () => {
   });
 
   it("should return 404 when using error scenario", async () => {
-    const { app } = await testContext;
-
     // Switch to error scenario for this test
     await request(app)
       .post("/__scenario__")
