@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ScenaristResponseSchema } from "./scenario-definition.js";
+import { ScenaristResponseSchema } from "./response.js";
 
 /**
  * Zod schemas for state-aware mocking (ADR-0019).

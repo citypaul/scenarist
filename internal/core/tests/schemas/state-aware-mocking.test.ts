@@ -4,7 +4,10 @@ import {
   StatefulMockResponseSchema,
   StateAfterResponseSchema,
 } from "../../src/schemas/state-aware-mocking.js";
-import { ScenaristMatchSchema } from "../../src/schemas/scenario-definition.js";
+import {
+  ScenaristMatchSchema,
+  ScenaristMockSchema,
+} from "../../src/schemas/scenario-definition.js";
 
 /**
  * State-Aware Mocking Schema Tests (ADR-0019)
@@ -223,6 +226,138 @@ describe("ScenaristMatchSchema with state", () => {
     };
 
     const result = ScenaristMatchSchema.safeParse(multiKeyState);
+
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("ScenaristMockSchema with stateResponse", () => {
+  it("should accept mock with stateResponse instead of response", () => {
+    const mockWithStateResponse = {
+      method: "GET",
+      url: "/api/status",
+      stateResponse: {
+        default: { status: 200, body: { state: "initial" } },
+        conditions: [
+          {
+            when: { checked: true },
+            then: { status: 200, body: { state: "reviewed" } },
+          },
+        ],
+      },
+    };
+
+    const result = ScenaristMockSchema.safeParse(mockWithStateResponse);
+
+    expect(result.success).toBe(true);
+  });
+
+  it("should accept mock with stateResponse and match criteria", () => {
+    const mockWithMatchAndStateResponse = {
+      method: "POST",
+      url: "/api/review",
+      match: { body: { action: "approve" } },
+      stateResponse: {
+        default: { status: 200, body: { result: "pending" } },
+        conditions: [
+          {
+            when: { authorized: true },
+            then: { status: 200, body: { result: "approved" } },
+          },
+        ],
+      },
+    };
+
+    const result = ScenaristMockSchema.safeParse(mockWithMatchAndStateResponse);
+
+    expect(result.success).toBe(true);
+  });
+
+  it("should reject mock with both response and stateResponse", () => {
+    const mockWithBoth = {
+      method: "GET",
+      url: "/api/status",
+      response: { status: 200, body: { static: true } },
+      stateResponse: {
+        default: { status: 200, body: { state: "initial" } },
+        conditions: [],
+      },
+    };
+
+    const result = ScenaristMockSchema.safeParse(mockWithBoth);
+
+    expect(result.success).toBe(false);
+  });
+
+  it("should reject mock with both sequence and stateResponse", () => {
+    const mockWithBoth = {
+      method: "GET",
+      url: "/api/status",
+      sequence: {
+        responses: [{ status: 200, body: { step: 1 } }],
+      },
+      stateResponse: {
+        default: { status: 200, body: { state: "initial" } },
+        conditions: [],
+      },
+    };
+
+    const result = ScenaristMockSchema.safeParse(mockWithBoth);
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("ScenaristMockSchema with afterResponse", () => {
+  it("should accept mock with response and afterResponse", () => {
+    const mockWithAfterResponse = {
+      method: "POST",
+      url: "/api/action",
+      response: { status: 200, body: { success: true } },
+      afterResponse: {
+        setState: { actionCompleted: true },
+      },
+    };
+
+    const result = ScenaristMockSchema.safeParse(mockWithAfterResponse);
+
+    expect(result.success).toBe(true);
+  });
+
+  it("should accept mock with stateResponse and afterResponse", () => {
+    const mockWithBoth = {
+      method: "POST",
+      url: "/api/action",
+      stateResponse: {
+        default: { status: 200, body: { state: "initial" } },
+        conditions: [],
+      },
+      afterResponse: {
+        setState: { step: "completed" },
+      },
+    };
+
+    const result = ScenaristMockSchema.safeParse(mockWithBoth);
+
+    expect(result.success).toBe(true);
+  });
+
+  it("should accept mock with sequence and afterResponse", () => {
+    const mockWithSequenceAndAfter = {
+      method: "GET",
+      url: "/api/poll",
+      sequence: {
+        responses: [
+          { status: 200, body: { status: "pending" } },
+          { status: 200, body: { status: "complete" } },
+        ],
+      },
+      afterResponse: {
+        setState: { pollCount: 1 },
+      },
+    };
+
+    const result = ScenaristMockSchema.safeParse(mockWithSequenceAndAfter);
 
     expect(result.success).toBe(true);
   });
