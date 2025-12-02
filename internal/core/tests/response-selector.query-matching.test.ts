@@ -1,16 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type {
-  ScenaristMock,
-  ScenaristMockWithParams,
-  HttpRequestContext,
-} from "../src/types/index.js";
+import type { ScenaristMock, HttpRequestContext } from "../src/types/index.js";
 import { createResponseSelector } from "../src/domain/response-selector.js";
-
-const wrapMocks = (
-  mocks: ReadonlyArray<ScenaristMock>,
-): ReadonlyArray<ScenaristMockWithParams> => {
-  return mocks.map((mock) => ({ mock, params: {} }));
-};
+import { wrapMocks } from "./helpers/wrap-mocks.js";
 
 describe("ResponseSelector - Query Matching", () => {
   describe("Match on Query Parameters (Exact Match)", () => {

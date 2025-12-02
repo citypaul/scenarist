@@ -1,20 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type {
-  ScenaristMock,
-  ScenaristMockWithParams,
-  HttpRequestContext,
-} from "../src/types/index.js";
+import type { ScenaristMock, HttpRequestContext } from "../src/types/index.js";
 import { createResponseSelector } from "../src/domain/response-selector.js";
-
-/**
- * Helper to wrap mocks in ScenaristMockWithParams format.
- * The ResponseSelector expects mocks with extracted path params, but these tests don't use path params, so we wrap with empty params.
- */
-const wrapMocks = (
-  mocks: ReadonlyArray<ScenaristMock>,
-): ReadonlyArray<ScenaristMockWithParams> => {
-  return mocks.map((mock) => ({ mock, params: {} }));
-};
+import { wrapMocks } from "./helpers/wrap-mocks.js";
 
 describe("ResponseSelector - Header Matching", () => {
   describe("Match on Request Headers (Exact Match)", () => {
