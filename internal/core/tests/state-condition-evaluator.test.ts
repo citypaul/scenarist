@@ -326,12 +326,29 @@ describe("StateConditionEvaluator", () => {
   /**
    * Property-Based Tests
    *
-   * These tests verify that invariant properties hold for all possible inputs,
-   * not just example cases. Key properties:
+   * Unlike example-based tests that check specific inputs, property-based tests
+   * verify that invariants hold for ALL possible inputs. The test framework
+   * (fast-check) generates hundreds of random inputs and checks each one.
    *
-   * 1. Specificity invariant: Most specific matching condition always wins
-   * 2. Matching correctness: Condition matches iff all keys match
-   * 3. Order independence: Specificity takes precedence over array order
+   * Why property-based testing is valuable here:
+   * - The evaluator has mathematical properties that must always hold
+   * - Edge cases (empty arrays, single conditions, ties) are hard to enumerate
+   * - Random generation discovers cases humans wouldn't think to write
+   *
+   * Key invariants being verified:
+   *
+   * 1. SPECIFICITY INVARIANT: The most specific matching condition always wins.
+   *    If condition A has 3 matching keys and condition B has 2, A wins regardless
+   *    of their order in the array.
+   *
+   * 2. MATCHING CORRECTNESS: A condition matches iff ALL keys in its 'when' clause
+   *    exist in the state with equal values. Partial matches don't count.
+   *
+   * 3. ORDER INDEPENDENCE: Shuffling the conditions array doesn't change which
+   *    condition wins (only specificity matters, not position).
+   *
+   * 4. RESULT INTEGRITY: The result is always either undefined (no match) or
+   *    one of the conditions from the input array (never fabricated).
    */
   describe("property-based tests", () => {
     /**

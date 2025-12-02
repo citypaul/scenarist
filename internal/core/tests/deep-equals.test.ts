@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import fc from "fast-check";
 import { deepEquals } from "../src/domain/deep-equals.js";
 
 /**
@@ -173,6 +174,105 @@ describe("deepEquals", () => {
       };
 
       expect(deepEquals(a, b)).toBe(false);
+    });
+  });
+
+  /**
+   * Property-Based Tests
+   *
+   * Property-based testing verifies that mathematical invariants hold for ALL
+   * possible inputs, not just hand-picked examples. The test framework (fast-check)
+   * generates hundreds of random inputs and checks that the property holds for each.
+   *
+   * This is particularly valuable for deepEquals because equality comparison
+   * has well-defined mathematical properties that must hold universally:
+   *
+   * 1. Reflexivity: Every value equals itself
+   * 2. Symmetry: If a equals b, then b equals a
+   * 3. JSON consistency: Structurally identical JSON values are equal
+   *
+   * Property-based tests can discover edge cases that example-based tests miss,
+   * such as unusual Unicode strings, deeply nested structures, or boundary values.
+   */
+  describe("property-based tests", () => {
+    /**
+     * Arbitrary for generating JSON-like values (primitives, arrays, objects).
+     * Limits depth to avoid stack overflow and keep tests fast.
+     */
+    const jsonValueArb: fc.Arbitrary<unknown> = fc.letrec((tie) => ({
+      value: fc.oneof(
+        { depthIdentifier: "json" },
+        fc.constant(null),
+        fc.boolean(),
+        fc.integer(),
+        fc.double({ noNaN: true, noDefaultInfinity: true }),
+        fc.string(),
+        fc.array(tie("value") as fc.Arbitrary<unknown>, { maxLength: 5 }),
+        fc.dictionary(
+          fc.string({ minLength: 1, maxLength: 10 }),
+          tie("value") as fc.Arbitrary<unknown>,
+          { maxKeys: 5 },
+        ),
+      ),
+    })).value;
+
+    it("PROPERTY: Reflexivity - every value equals itself", () => {
+      fc.assert(
+        fc.property(jsonValueArb, (value) => {
+          expect(deepEquals(value, value)).toBe(true);
+        }),
+        { numRuns: 500 },
+      );
+    });
+
+    it("PROPERTY: Symmetry - equality is symmetric", () => {
+      fc.assert(
+        fc.property(jsonValueArb, jsonValueArb, (a, b) => {
+          const aEqualsB = deepEquals(a, b);
+          const bEqualsA = deepEquals(b, a);
+          expect(aEqualsB).toBe(bEqualsA);
+        }),
+        { numRuns: 500 },
+      );
+    });
+
+    it("PROPERTY: JSON-equivalent values are equal", () => {
+      fc.assert(
+        fc.property(jsonValueArb, (value) => {
+          // Round-trip through JSON creates a structurally identical copy
+          const serialized = JSON.stringify(value);
+          const deserialized = JSON.parse(serialized) as unknown;
+
+          expect(deepEquals(value, deserialized)).toBe(true);
+        }),
+        { numRuns: 500 },
+      );
+    });
+
+    it("PROPERTY: Different JSON strings imply unequal values", () => {
+      fc.assert(
+        fc.property(jsonValueArb, jsonValueArb, (a, b) => {
+          const jsonA = JSON.stringify(a);
+          const jsonB = JSON.stringify(b);
+
+          // If JSON representations differ, values must be unequal
+          if (jsonA !== jsonB) {
+            expect(deepEquals(a, b)).toBe(false);
+          }
+        }),
+        { numRuns: 500 },
+      );
+    });
+
+    it("PROPERTY: Cloned objects are equal", () => {
+      fc.assert(
+        fc.property(jsonValueArb, (value) => {
+          // Deep clone via JSON round-trip
+          const clone = JSON.parse(JSON.stringify(value)) as unknown;
+          expect(deepEquals(value, clone)).toBe(true);
+        }),
+        { numRuns: 300 },
+      );
     });
   });
 });
