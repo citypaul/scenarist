@@ -341,57 +341,84 @@ Minimal - just wire core and MSW adapter together:
 
 ## Implementation Phases
 
-### Phase 1: Core Foundation (TDD)
+> **Important Decisions:**
+>
+> - **No backward compatibility concerns** - no real consumers yet
+> - **Extend existing StateManager** - not a new TestStateStore port (simpler, less confusing)
+> - **Property-based tests** - use fast-check where invariants can be expressed
 
-1. **Types & Schemas**
-   - Define `StateCondition`, `StatefulMockResponse`, `StateAfterResponse`
-   - Add `state` to `MatchCriteria`
+### Phase 1: Core Foundation (TDD) ✅ COMPLETE
+
+1. **Types & Schemas** ✅
+   - `StateConditionSchema`, `StatefulMockResponseSchema`, `StateAfterResponseSchema`
+   - `StateMatchCriteriaSchema` added to `ScenaristMatchSchema`
    - Zod schemas with validation
+   - Extracted `ScenaristResponseSchema` to `response.ts` to avoid circular dependencies
 
-2. **TestStateStore Port & Adapter**
-   - `TestStateStore` interface: `get(testId)`, `set(testId, state)`, `merge(testId, partial)`, `clear(testId)`
-   - `InMemoryTestStateStore` implementation
+2. **StateManager.merge() Method** ✅
+   - Extended existing `StateManager` port with `merge(testId, partial)` method
+   - `InMemoryStateManager` implementation with prototype pollution protection
+   - 8 behavior tests
 
-3. **State Condition Evaluator**
-   - `evaluateStateConditions(conditions, state)` → `MockResponse | null`
-   - Specificity-based selection with tests
+3. **State Condition Evaluator** ✅
+   - `createStateConditionEvaluator()` → `StateConditionEvaluator`
+   - Specificity-based selection (most specific condition wins)
+   - Deep equality for objects/arrays
+   - **Property-based tests** verify invariants:
+     - Most specific matching condition always wins
+     - Condition matches iff all keys match
+     - Result is from conditions array or undefined
 
-4. **State Response Resolver**
-   - `resolveStateResponse(mock, state)` → `MockResponse`
-   - Handles `stateResponse` vs `response` vs `sequence`
+4. **State Response Resolver** ✅
+   - `createStateResponseResolver()` → `StateResponseResolver`
+   - Resolves `stateResponse` → matching condition or default
 
-### Phase 2: MSW Integration
+5. **Mock Schema Updates** ✅
+   - Added `stateResponse` and `afterResponse` fields to `ScenaristMockSchema`
+   - Mutual exclusion refinement: at most one of response/sequence/stateResponse
+   - `afterResponse` can combine with any response type
 
-5. **Handler Factory Updates**
-   - Accept `TestStateStore` dependency
-   - Call `resolveStateResponse` when building handler
-   - Handle `afterResponse.setState`
+### Phase 2: Response-Selector Integration ✅ COMPLETE
 
-6. **Match Criteria Extension**
-   - Add `match.state` to mock filtering
-   - Integrate with existing specificity calculation
+6. **match.state Integration** ✅
+   - Added state matching to `matchesCriteria` function
+   - State keys included in specificity calculation
+   - Deep equality check for state values (handles primitives, objects, arrays)
+   - 13 tests covering state matching scenarios
 
-7. **State Reset on Scenario Switch**
-   - Clear test state when `setScenario` called
-   - Integrate with ADR-0005 behavior
+7. **stateResponse Resolution** ✅
+   - Integrated `StateResponseResolver` into `selectResponseFromMock`
+   - Handles `stateResponse` alongside `response` and `sequence`
+   - Returns default response when no conditions match or no stateManager
+   - 8 tests covering stateResponse scenarios
+
+8. **afterResponse.setState Integration** ✅
+   - Calls `stateManager.merge()` after response is returned
+   - Works with all three response types (response/sequence/stateResponse)
+   - Enables state machine patterns with match.state + afterResponse
+   - 8 tests including full state machine demo
 
 ### Phase 3: Adapter Wiring
 
-8. **Express Adapter**
-   - Wire state store through setup
-   - Verify E2E flow works
+9. **MSW Adapter**
+   - Wire StateManager into handler creation
+   - Ensure test ID flows through request handling
 
-9. **Next.js Adapters**
-   - Wire state store for App Router
-   - Wire state store for Pages Router
+10. **Express Adapter**
+    - Wire state store through setup
+    - Verify E2E flow works
+
+11. **Next.js Adapters**
+    - Wire state store for App Router
+    - Wire state store for Pages Router
 
 ### Phase 4: Example Apps (Proof)
 
-10. **Express Example App**
+12. **Express Example App**
     - Add scenario using state-aware mocking
     - Playwright test proving it works
 
-11. **Next.js Example Apps**
+13. **Next.js Example Apps**
     - Add scenarios to both App Router and Pages Router examples
     - Playwright tests proving it works
 

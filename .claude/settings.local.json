@@ -25,7 +25,9 @@
       "Bash(git checkout:*)",
       "Bash(git pull:*)",
       "Bash(pnpm --filter=@scenarist/docs typecheck:*)",
-      "Bash(pnpm --filter=@scenarist/docs test)"
+      "Bash(pnpm --filter=@scenarist/docs test)",
+      "Bash(pnpm --filter=@scenarist/core test:*)",
+      "Bash(pnpm --filter=@scenarist/core typecheck:*)"
     ],
     "deny": [],
     "ask": []

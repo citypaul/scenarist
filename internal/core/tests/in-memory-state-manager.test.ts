@@ -292,4 +292,123 @@ describe("InMemoryStateManager", () => {
       expect(result).toBeUndefined();
     });
   });
+
+  /**
+   * Merge Tests (ADR-0019: State-Aware Mocking)
+   *
+   * The merge() method supports afterResponse.setState which
+   * shallow-merges partial state into the current test state.
+   */
+  describe("merge", () => {
+    it("should merge partial state into empty state", () => {
+      const stateManager = createInMemoryStateManager();
+
+      stateManager.merge("test-1", { checked: true });
+
+      expect(stateManager.getAll("test-1")).toEqual({ checked: true });
+    });
+
+    it("should merge partial state into existing state", () => {
+      const stateManager = createInMemoryStateManager();
+
+      stateManager.set("test-1", "step", "initial");
+      stateManager.merge("test-1", { checked: true });
+
+      expect(stateManager.getAll("test-1")).toEqual({
+        step: "initial",
+        checked: true,
+      });
+    });
+
+    it("should overwrite existing keys when merging", () => {
+      const stateManager = createInMemoryStateManager();
+
+      stateManager.set("test-1", "step", "initial");
+      stateManager.merge("test-1", { step: "reviewed" });
+
+      expect(stateManager.get("test-1", "step")).toBe("reviewed");
+    });
+
+    it("should preserve keys not in the partial state", () => {
+      const stateManager = createInMemoryStateManager();
+
+      stateManager.set("test-1", "a", 1);
+      stateManager.set("test-1", "b", 2);
+      stateManager.set("test-1", "c", 3);
+
+      stateManager.merge("test-1", { b: 20 });
+
+      expect(stateManager.getAll("test-1")).toEqual({ a: 1, b: 20, c: 3 });
+    });
+
+    it("should isolate merge between different test IDs", () => {
+      const stateManager = createInMemoryStateManager();
+
+      stateManager.set("test-1", "key", "value1");
+      stateManager.set("test-2", "key", "value2");
+
+      stateManager.merge("test-1", { newKey: "new1" });
+
+      expect(stateManager.getAll("test-1")).toEqual({
+        key: "value1",
+        newKey: "new1",
+      });
+      expect(stateManager.getAll("test-2")).toEqual({ key: "value2" });
+    });
+
+    it("should handle merging multiple keys at once", () => {
+      const stateManager = createInMemoryStateManager();
+
+      stateManager.merge("test-1", {
+        step: "reviewed",
+        checked: true,
+        count: 5,
+      });
+
+      expect(stateManager.getAll("test-1")).toEqual({
+        step: "reviewed",
+        checked: true,
+        count: 5,
+      });
+    });
+
+    it("should handle merging complex values", () => {
+      const stateManager = createInMemoryStateManager();
+
+      stateManager.merge("test-1", {
+        user: { name: "Alice", age: 30 },
+        items: ["a", "b", "c"],
+      });
+
+      expect(stateManager.get("test-1", "user")).toEqual({
+        name: "Alice",
+        age: 30,
+      });
+      expect(stateManager.get("test-1", "items")).toEqual(["a", "b", "c"]);
+    });
+
+    it("should ignore dangerous keys in merge", () => {
+      const stateManager = createInMemoryStateManager();
+
+      // Create object with dangerous keys as regular enumerable properties
+      // (Object literal { __proto__: ... } has special semantics)
+      const maliciousPartial: Record<string, unknown> = { safe: "value" };
+      Object.defineProperty(maliciousPartial, "constructor", {
+        value: { polluted: true },
+        enumerable: true,
+      });
+      Object.defineProperty(maliciousPartial, "prototype", {
+        value: { polluted: true },
+        enumerable: true,
+      });
+
+      stateManager.merge("test-1", maliciousPartial);
+
+      // Should not set dangerous keys
+      expect(stateManager.get("test-1", "constructor")).toBeUndefined();
+      expect(stateManager.get("test-1", "prototype")).toBeUndefined();
+      // Should set safe key
+      expect(stateManager.get("test-1", "safe")).toBe("value");
+    });
+  });
 });

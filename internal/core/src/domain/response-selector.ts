@@ -14,6 +14,8 @@ import { ResponseSelectionError } from "../ports/driven/response-selector.js";
 import { extractFromPath } from "./path-extraction.js";
 import { applyTemplates } from "./template-replacement.js";
 import { matchesRegex } from "./regex-matching.js";
+import { createStateResponseResolver } from "./state-response-resolver.js";
+import { deepEquals } from "./deep-equals.js";
 import type { MatchValue } from "../schemas/scenario-definition.js";
 
 const SPECIFICITY_RANGES = {
@@ -80,7 +82,7 @@ export const createResponseSelector = (
         // Check if this mock has match criteria
         if (mock.match) {
           // If match criteria exists, check if it matches the request
-          if (matchesCriteria(context, mock.match)) {
+          if (matchesCriteria(context, mock.match, testId, stateManager)) {
             // Match criteria always have higher priority than fallbacks
             // Base specificity ensures even 1 field beats any fallback
             const specificity =
@@ -121,13 +123,14 @@ export const createResponseSelector = (
         const { mockWithParams, mockIndex } = bestMatch;
         const mock = mockWithParams.mock;
 
-        // Select response (either single or from sequence)
+        // Select response (single, sequence, or stateResponse)
         const response = selectResponseFromMock(
           testId,
           scenarioId,
           mockIndex,
           mock,
           sequenceTracker,
+          stateManager,
         );
 
         if (!response) {
@@ -160,6 +163,11 @@ export const createResponseSelector = (
           ) as ScenaristResponse;
         }
 
+        // Apply afterResponse.setState to mutate state for subsequent requests
+        if (mock.afterResponse?.setState && stateManager) {
+          stateManager.merge(testId, mock.afterResponse.setState);
+        }
+
         return { success: true, data: finalResponse };
       }
 
@@ -175,14 +183,15 @@ export const createResponseSelector = (
 };
 
 /**
- * Select a response from a mock (either single response or from sequence).
+ * Select a response from a mock (single response, sequence, or stateResponse).
  *
- * @param testId - Test ID for sequence tracking
+ * @param testId - Test ID for sequence/state tracking
  * @param scenarioId - Scenario ID for sequence tracking
  * @param mockIndex - Index of the mock in the mocks array
  * @param mock - The mock definition
  * @param sequenceTracker - Optional sequence tracker for Phase 2
- * @returns ScenaristResponse or null if mock has neither response nor sequence
+ * @param stateManager - Optional state manager for stateResponse
+ * @returns ScenaristResponse or null if mock has no response type
  */
 const selectResponseFromMock = (
   testId: string,
@@ -190,6 +199,7 @@ const selectResponseFromMock = (
   mockIndex: number,
   mock: ScenaristMock,
   sequenceTracker?: SequenceTracker,
+  stateManager?: StateManager,
 ): ScenaristResponse | null => {
   // Phase 2: If mock has a sequence, use sequence tracker
   if (mock.sequence) {
@@ -223,13 +233,47 @@ const selectResponseFromMock = (
     return response;
   }
 
+  // State-aware response: evaluate conditions against current state
+  if (mock.stateResponse) {
+    return resolveStateResponse(testId, mock.stateResponse, stateManager);
+  }
+
   // Phase 1: Single response
   if (mock.response) {
     return mock.response;
   }
 
-  // Neither response nor sequence defined
+  // No response type defined
   return null;
+};
+
+/**
+ * Resolve a stateResponse configuration to a single response.
+ *
+ * Uses the StateResponseResolver to evaluate conditions against
+ * current test state and return the appropriate response.
+ *
+ * @param testId - Test ID for state isolation
+ * @param stateResponse - The stateResponse configuration
+ * @param stateManager - Optional state manager for state lookup
+ * @returns The resolved response (matching condition or default)
+ */
+const resolveStateResponse = (
+  testId: string,
+  stateResponse: NonNullable<ScenaristMock["stateResponse"]>,
+  stateManager?: StateManager,
+): ScenaristResponse => {
+  // Without stateManager, always return default
+  if (!stateManager) {
+    return stateResponse.default;
+  }
+
+  // Get current state for this test
+  const currentState = stateManager.getAll(testId);
+
+  // Create resolver and evaluate conditions
+  const resolver = createStateResponseResolver();
+  return resolver.resolveResponse(stateResponse, currentState);
 };
 
 /**
@@ -241,11 +285,13 @@ const selectResponseFromMock = (
  * - Each body field = +1 point
  * - Each header = +1 point
  * - Each query param = +1 point
+ * - Each state key = +1 point
  *
  * Example:
  * { body: { itemType: 'premium' } } = 1 point
  * { body: { itemType: 'premium', quantity: 5 }, headers: { 'x-tier': 'gold' } } = 3 points
  * { url: '/api/products', body: { itemType: 'premium' } } = 2 points
+ * { state: { step: 'reviewed', approved: true } } = 2 points
  */
 const calculateSpecificity = (
   criteria: NonNullable<ScenaristMock["match"]>,
@@ -268,16 +314,27 @@ const calculateSpecificity = (
     score += Object.keys(criteria.query).length;
   }
 
+  if (criteria.state) {
+    score += Object.keys(criteria.state).length;
+  }
+
   return score;
 };
 
 /**
  * Check if request context matches the specified criteria.
  * All specified criteria must match for the overall match to succeed.
+ *
+ * @param context - HTTP request context
+ * @param criteria - Match criteria from mock definition
+ * @param testId - Test ID for state isolation
+ * @param stateManager - Optional state manager for state-based matching
  */
 const matchesCriteria = (
   context: HttpRequestContext,
   criteria: NonNullable<ScenaristMock["match"]>,
+  testId: string,
+  stateManager?: StateManager,
 ): boolean => {
   // Check URL match (exact match or pattern)
   if (criteria.url) {
@@ -307,7 +364,50 @@ const matchesCriteria = (
     }
   }
 
+  // Check state match (partial match on current test state)
+  if (criteria.state) {
+    if (!matchesState(criteria.state, testId, stateManager)) {
+      return false;
+    }
+  }
+
   // All criteria matched
+  return true;
+};
+
+/**
+ * Check if current test state matches the specified state criteria.
+ * All keys in criteria must exist in state with equal values (partial match).
+ *
+ * @param stateCriteria - Required state key-value pairs
+ * @param testId - Test ID for state isolation
+ * @param stateManager - State manager to retrieve current state
+ * @returns true if all criteria keys match, false otherwise
+ */
+const matchesState = (
+  stateCriteria: Readonly<Record<string, unknown>>,
+  testId: string,
+  stateManager?: StateManager,
+): boolean => {
+  // Without stateManager, state matching always fails
+  if (!stateManager) {
+    return false;
+  }
+
+  const currentState = stateManager.getAll(testId);
+
+  // All keys in criteria must exist in state with equal values
+  for (const [key, expectedValue] of Object.entries(stateCriteria)) {
+    if (!(key in currentState)) {
+      return false;
+    }
+
+    // Deep equality check for values (handles primitives, null, objects)
+    if (!deepEquals(currentState[key], expectedValue)) {
+      return false;
+    }
+  }
+
   return true;
 };
 

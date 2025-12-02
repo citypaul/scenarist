@@ -44,3 +44,13 @@ export {
   SerializedRegexSchema,
   type SerializedRegex,
 } from "./match-criteria.js";
+export {
+  StateConditionSchema,
+  StatefulMockResponseSchema,
+  StateAfterResponseSchema,
+  StateMatchCriteriaSchema,
+  type StateCondition,
+  type StatefulMockResponse,
+  type StateAfterResponse,
+  type StateMatchCriteria,
+} from "./state-aware-mocking.js";

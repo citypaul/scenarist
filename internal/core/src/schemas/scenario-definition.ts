@@ -1,5 +1,13 @@
 import { z } from "zod";
 import { SerializedRegexSchema } from "./match-criteria.js";
+import { ScenaristResponseSchema } from "./response.js";
+import {
+  StatefulMockResponseSchema,
+  StateAfterResponseSchema,
+} from "./state-aware-mocking.js";
+
+// Re-export from response.ts (no backward compatibility concerns - no consumers yet)
+export { ScenaristResponseSchema, type ScenaristResponse } from "./response.js";
 
 /**
  * Zod schemas for scenario definitions.
@@ -19,14 +27,6 @@ export const HttpMethodSchema = z.enum([
   "HEAD",
 ]);
 export type HttpMethod = z.infer<typeof HttpMethodSchema>;
-
-export const ScenaristResponseSchema = z.object({
-  status: z.number().int().min(100).max(599),
-  body: z.unknown().optional(),
-  headers: z.record(z.string(), z.string()).optional(),
-  delay: z.number().nonnegative().optional(),
-});
-export type ScenaristResponse = z.infer<typeof ScenaristResponseSchema>;
 
 /**
  * Match value supports 6 matching strategies:
@@ -76,6 +76,7 @@ export const ScenaristMatchSchema = z.object({
   body: z.record(z.string(), MatchValueSchema).optional(),
   headers: z.record(z.string(), MatchValueSchema).optional(),
   query: z.record(z.string(), MatchValueSchema).optional(),
+  state: z.record(z.string(), z.unknown()).optional(),
 });
 export type ScenaristMatch = z.infer<typeof ScenaristMatchSchema>;
 
@@ -104,14 +105,35 @@ export const ScenaristUrlPatternSchema = z.union([
 ]);
 export type ScenaristUrlPattern = z.infer<typeof ScenaristUrlPatternSchema>;
 
-export const ScenaristMockSchema = z.object({
-  method: HttpMethodSchema,
-  url: ScenaristUrlPatternSchema,
-  match: ScenaristMatchSchema.optional(),
-  response: ScenaristResponseSchema.optional(),
-  sequence: ScenaristSequenceSchema.optional(),
-  captureState: ScenaristCaptureConfigSchema.optional(),
-});
+/**
+ * ScenaristMock schema with mutual exclusion constraint.
+ *
+ * A mock can have exactly ONE of: response, sequence, or stateResponse.
+ * The afterResponse field can be combined with any of these.
+ */
+export const ScenaristMockSchema = z
+  .object({
+    method: HttpMethodSchema,
+    url: ScenaristUrlPatternSchema,
+    match: ScenaristMatchSchema.optional(),
+    response: ScenaristResponseSchema.optional(),
+    sequence: ScenaristSequenceSchema.optional(),
+    stateResponse: StatefulMockResponseSchema.optional(),
+    captureState: ScenaristCaptureConfigSchema.optional(),
+    afterResponse: StateAfterResponseSchema.optional(),
+  })
+  .refine(
+    (mock) => {
+      const responseTypes = [mock.response, mock.sequence, mock.stateResponse];
+      const definedCount = responseTypes.filter((r) => r !== undefined).length;
+      // Allow 0 (for fallback mocks) or exactly 1
+      return definedCount <= 1;
+    },
+    {
+      message:
+        "A mock can have at most one of: response, sequence, or stateResponse",
+    },
+  );
 export type ScenaristMock = z.infer<typeof ScenaristMockSchema>;
 
 export const ScenaristScenarioSchema = z.object({

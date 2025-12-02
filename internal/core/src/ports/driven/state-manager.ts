@@ -55,4 +55,15 @@ export interface StateManager {
    * @param testId - Test identifier
    */
   reset(testId: string): void;
+
+  /**
+   * Merge partial state into existing state for a test ID (ADR-0019).
+   *
+   * Performs a shallow merge: `{ ...currentState, ...partial }`.
+   * Used by afterResponse.setState to update test state after mock responses.
+   *
+   * @param testId - Test identifier for state isolation
+   * @param partial - Partial state to merge into existing state
+   */
+  merge(testId: string, partial: Record<string, unknown>): void;
 }
