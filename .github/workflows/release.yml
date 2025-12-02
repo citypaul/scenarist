@@ -71,6 +71,29 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}
           NPM_CONFIG_PROVENANCE: true
 
+      # When changesets creates/updates a Version PR, the push doesn't trigger CI
+      # because GITHUB_TOKEN (even PATs) don't trigger workflows on pushes by default.
+      # Close/reopen the PR to trigger CI on the new commit.
+      # @see https://docs.github.com/en/actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow
+      - name: Trigger CI on Version PR
+        if: steps.changesets.outputs.hasChangesets == 'true' && steps.changesets.outputs.published != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
+        run: |
+          echo "Version PR created/updated - triggering CI..."
+
+          # Find the Version PR by branch name
+          PR_NUMBER=$(gh pr list --head changeset-release/main --json number --jq '.[0].number')
+
+          if [ -n "$PR_NUMBER" ]; then
+            echo "Found Version PR #$PR_NUMBER, closing and reopening to trigger CI..."
+            gh pr close "$PR_NUMBER"
+            gh pr reopen "$PR_NUMBER"
+            echo "✅ CI triggered on Version PR #$PR_NUMBER"
+          else
+            echo "⚠️ No Version PR found on branch changeset-release/main"
+          fi
+
       # SBOM generation only runs after successful publish
       - name: Generate SBOM
         if: steps.changesets.outputs.published == 'true'
