@@ -1,5 +1,17 @@
 # @scenarist/core
 
+## 0.2.1
+
+### Patch Changes
+
+- [#317](https://github.com/citypaul/scenarist/pull/317) [`630c3ec`](https://github.com/citypaul/scenarist/commit/630c3ec4063ca3ccc846b5e1e89697988a050809) Thanks [@citypaul](https://github.com/citypaul)! - fix: give stateResponse mocks same fallback specificity as sequence mocks
+
+  Fixed a bug where `stateResponse` mocks received specificity 0 while `sequence` mocks received specificity 1, causing sequences in default scenarios to always override stateResponse mocks in active scenarios.
+
+  The fix ensures both `sequence` and `stateResponse` mocks have equal fallback specificity (1), allowing the "last fallback wins" tiebreaker to work correctly when overriding default scenario mocks.
+
+  Fixes #316
+
 ## 0.2.0
 
 ### Minor Changes
