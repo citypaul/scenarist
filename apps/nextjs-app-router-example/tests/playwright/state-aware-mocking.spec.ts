@@ -1,7 +1,7 @@
 /**
  * State-Aware Mocking Scenario-Based Tests (ADR-0019)
  *
- * Tests the three new state-aware mocking capabilities:
+ * Tests the three new state-aware mocking capabilities through UI interactions:
  * 1. stateResponse - Conditional responses based on current state
  * 2. afterResponse.setState - Mutate state after returning a response
  * 3. match.state - Select mocks based on current state
@@ -27,42 +27,40 @@ test.describe("State-Aware Mocking (ADR-0019)", () => {
     test("should return different responses based on workflow state", async ({
       page,
       switchScenario,
-      baseURL,
     }) => {
       await switchScenario(page, "loanApplication");
 
-      // Initial state - no step set, returns default "pending"
-      const status1 = await page.request.get(`${baseURL}/api/loan/status`);
-      expect(status1.ok()).toBe(true);
-      const status1Data = await status1.json();
-      expect(status1Data.status).toBe("pending");
-      expect(status1Data.message).toBe("Application not yet submitted");
+      // Navigate to loan application page
+      await page.goto("/loan");
 
-      // Submit application - sets state.step = "submitted" via afterResponse.setState
-      const submit = await page.request.post(`${baseURL}/api/loan/submit`, {
-        data: { amount: 10000 },
-      });
-      expect(submit.ok()).toBe(true);
-      const submitData = await submit.json();
-      expect(submitData.success).toBe(true);
+      // Verify initial state - "pending"
+      await expect(page.getByRole("status")).toContainText("pending");
+      await expect(page.getByTestId("status-message")).toContainText(
+        "Application not yet submitted",
+      );
 
-      // After submit - stateResponse condition matches step = "submitted"
-      const status2 = await page.request.get(`${baseURL}/api/loan/status`);
-      expect(status2.ok()).toBe(true);
-      const status2Data = await status2.json();
-      expect(status2Data.status).toBe("reviewing");
-      expect(status2Data.message).toBe("Application under review");
+      // Submit application - triggers afterResponse.setState
+      await page.getByRole("button", { name: "Submit Application" }).click();
 
-      // Review completes - sets state.step = "reviewed"
-      const review = await page.request.post(`${baseURL}/api/loan/review`);
-      expect(review.ok()).toBe(true);
+      // Wait for status to update to "reviewing"
+      await expect(page.getByRole("status")).toContainText("reviewing");
+      await expect(page.getByTestId("status-message")).toContainText(
+        "Application under review",
+      );
 
-      // After review - stateResponse condition matches step = "reviewed"
-      const status3 = await page.request.get(`${baseURL}/api/loan/status`);
-      expect(status3.ok()).toBe(true);
-      const status3Data = await status3.json();
-      expect(status3Data.status).toBe("approved");
-      expect(status3Data.message).toBe("Application approved");
+      // Complete review - triggers another state change
+      await page.getByRole("button", { name: "Complete Review" }).click();
+
+      // Wait for status to update to "approved"
+      await expect(page.getByRole("status")).toContainText("approved");
+      await expect(page.getByTestId("status-message")).toContainText(
+        "Application approved",
+      );
+
+      // Verify the congratulations section appears
+      await expect(
+        page.getByRole("heading", { name: "Congratulations!" }),
+      ).toBeVisible();
     });
   });
 
@@ -79,34 +77,25 @@ test.describe("State-Aware Mocking (ADR-0019)", () => {
     test("should select different mocks based on feature flag state", async ({
       page,
       switchScenario,
-      baseURL,
     }) => {
       await switchScenario(page, "featureFlags");
 
-      // Initial state - no feature flags, returns standard pricing
-      const pricing1 = await page.request.get(`${baseURL}/api/pricing`);
-      expect(pricing1.ok()).toBe(true);
-      const pricing1Data = await pricing1.json();
-      expect(pricing1Data.tier).toBe("standard");
-      expect(pricing1Data.price).toBe(100);
+      // Navigate to pricing page
+      await page.goto("/pricing");
 
-      // Enable premium feature flag
-      const enableFlag = await page.request.post(`${baseURL}/api/features`, {
-        data: { flag: "premium_pricing", enabled: true },
-      });
-      expect(enableFlag.ok()).toBe(true);
-      const enableFlagData = await enableFlag.json();
-      expect(enableFlagData).toEqual({
-        success: true,
-        message: "Feature flag updated",
-      });
+      // Verify initial state - standard pricing
+      await expect(page.getByRole("status").first()).toContainText("standard");
+      await expect(page.getByText("£100/month")).toBeVisible();
 
-      // Now pricing returns premium tier (mock selected via match.state)
-      const pricing2 = await page.request.get(`${baseURL}/api/pricing`);
-      expect(pricing2.ok()).toBe(true);
-      const pricing2Data = await pricing2.json();
-      expect(pricing2Data.tier).toBe("premium");
-      expect(pricing2Data.price).toBe(50);
+      // Enable premium feature flag by clicking the toggle
+      await page
+        .getByRole("button", { name: /enable premium pricing/i })
+        .click();
+
+      // Wait for pricing to update to premium tier
+      await expect(page.getByRole("status").first()).toContainText("premium");
+      await expect(page.getByText("£50/month")).toBeVisible();
+      await expect(page.getByText("50% off")).toBeVisible();
     });
   });
 
@@ -114,22 +103,18 @@ test.describe("State-Aware Mocking (ADR-0019)", () => {
     test("should maintain independent workflow state for different test IDs", async ({
       page,
       switchScenario,
-      baseURL,
     }) => {
       // This test verifies that state is isolated per test ID
       // Each test run gets a unique scenaristTestId, so state is isolated
 
       await switchScenario(page, "loanApplication");
 
-      // Submit application in this test's context
-      await page.request.post(`${baseURL}/api/loan/submit`, {
-        data: { amount: 10000 },
-      });
+      // Navigate to loan page and submit application
+      await page.goto("/loan");
+      await page.getByRole("button", { name: "Submit Application" }).click();
 
       // This test's state should be "reviewing"
-      const status = await page.request.get(`${baseURL}/api/loan/status`);
-      const statusData = await status.json();
-      expect(statusData.status).toBe("reviewing");
+      await expect(page.getByRole("status")).toContainText("reviewing");
 
       // Note: A parallel test with different scenaristTestId would have
       // independent state and would see "pending" status
@@ -140,27 +125,23 @@ test.describe("State-Aware Mocking (ADR-0019)", () => {
     test("should reset state when switching scenarios", async ({
       page,
       switchScenario,
-      baseURL,
     }) => {
       await switchScenario(page, "loanApplication");
 
-      // Advance to "reviewing" state
-      await page.request.post(`${baseURL}/api/loan/submit`, {
-        data: { amount: 10000 },
-      });
-
-      const status1 = await page.request.get(`${baseURL}/api/loan/status`);
-      const status1Data = await status1.json();
-      expect(status1Data.status).toBe("reviewing");
+      // Navigate and advance to "reviewing" state
+      await page.goto("/loan");
+      await page.getByRole("button", { name: "Submit Application" }).click();
+      await expect(page.getByRole("status")).toContainText("reviewing");
 
       // Switch to different scenario and back
       await switchScenario(page, "default");
       await switchScenario(page, "loanApplication");
 
+      // Navigate to loan page again
+      await page.goto("/loan");
+
       // State should be reset - back to "pending"
-      const status2 = await page.request.get(`${baseURL}/api/loan/status`);
-      const status2Data = await status2.json();
-      expect(status2Data.status).toBe("pending");
+      await expect(page.getByRole("status")).toContainText("pending");
     });
   });
 });
