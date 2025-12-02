@@ -318,7 +318,7 @@ apps/docs/src/content/docs/{path}.mdx →  https://scenarist.io/{path}
 | `introduction/installation.md` | https://scenarist.io/introduction/installation |
 | `getting-started/philosophy.mdx` | https://scenarist.io/getting-started/philosophy |
 | `concepts/how-it-works.md` | https://scenarist.io/concepts/how-it-works |
-| `concepts/dynamic-responses/index.mdx` | https://scenarist.io/concepts/dynamic-responses |
+| `scenarios/basic-structure.mdx` | https://scenarist.io/scenarios/basic-structure |
 | `frameworks/nextjs-app-router/rsc-guide.mdx` | https://scenarist.io/frameworks/nextjs-app-router/rsc-guide |
 | `testing/playwright-integration.mdx` | https://scenarist.io/testing/playwright-integration |
 | `reference/api.mdx` | https://scenarist.io/reference/api |

@@ -117,25 +117,23 @@ You are working on the Scenarist documentation restructure. You have been assign
    - **Old URL**: https://scenarist.io/introduction/scenario-format
    - **New URL**: https://scenarist.io/concepts/scenario-format
 
-3. **#197 - docs: Move default-mocks.mdx to concepts/**
-   - Move `introduction/default-mocks.mdx` to `concepts/default-mocks.mdx`
+3. **#197 - docs: Move default-mocks.mdx to scenarios/**
+   - Move `introduction/default-mocks.mdx` to `scenarios/default-scenarios.mdx`
    - Update any internal links
    - **Old URL**: https://scenarist.io/introduction/default-mocks
-   - **New URL**: https://scenarist.io/concepts/default-mocks
+   - **New URL**: https://scenarist.io/scenarios/default-scenarios
 
-4. **#198 - docs: Split capabilities.mdx into dynamic-responses directory**
-   - Split `introduction/capabilities.mdx` (878 lines) into 4 files:
-   - Create new directory `concepts/dynamic-responses/` with:
-     1. `index.mdx` (~100 lines) - Overview linking to sub-pages
-     2. `content-matching.mdx` (~250 lines) - Request Content Matching section
-     3. `sequences.mdx` (~150 lines) - Response Sequences section
-     4. `stateful-mocks.mdx` (~200 lines) - Stateful Mocks section
-   - **Old URL**: https://scenarist.io/introduction/capabilities
+4. **#198 - docs: Scenario documentation is now in scenarios/ directory**
+   - Scenarios documentation has been reorganized into dedicated pages:
    - **New URLs**:
-     - https://scenarist.io/concepts/dynamic-responses
-     - https://scenarist.io/concepts/dynamic-responses/content-matching
-     - https://scenarist.io/concepts/dynamic-responses/sequences
-     - https://scenarist.io/concepts/dynamic-responses/stateful-mocks
+     - https://scenarist.io/scenarios/basic-structure
+     - https://scenarist.io/scenarios/request-matching
+     - https://scenarist.io/scenarios/pattern-matching
+     - https://scenarist.io/scenarios/response-sequences
+     - https://scenarist.io/scenarios/stateful-mocks
+     - https://scenarist.io/scenarios/default-scenarios
+     - https://scenarist.io/scenarios/combining-features
+     - https://scenarist.io/scenarios/real-world-examples
 
 5. **#199 - docs: Refactor production-safety.mdx (shorten to ~300 lines)**
    - Move `introduction/production-safety.mdx` to `concepts/production-safety.mdx`
