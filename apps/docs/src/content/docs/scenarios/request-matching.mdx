@@ -1,0 +1,287 @@
+---
+title: Request Matching
+description: Return different responses based on request body, headers, and query parameters
+---
+
+## What This Enables
+
+Return different responses for the same URL based on request content. Multiple mocks can exist for the same URL, and Scenarist selects the most specific match.
+
+**Use cases:**
+- Different pricing for premium vs standard users
+- Different API responses based on version header
+- Different data based on query parameters
+- Tiered functionality based on request content
+
+## When to Use
+
+Use request matching when:
+- Same endpoint returns different responses based on who's calling
+- You need to test different request payloads
+- API behavior varies by header values (API version, user tier, locale)
+- Query parameters change the response
+
+## Match Criteria
+
+Match on request body, headers, or query parameters using the `match` field:
+
+```typescript
+import type { ScenaristMock } from '@scenarist/express-adapter';
+
+const mock: ScenaristMock = {
+  method: 'POST',
+  url: '/api/checkout',
+  match: {
+    body: { tier: 'premium' },           // Partial body match
+    headers: { 'x-api-version': 'v2' },  // Exact header match
+    query: { detailed: 'true' },         // Exact query param match
+  },
+  response: { status: 200, body: { discount: 20 } }
+};
+```
+
+### Body Matching (Partial)
+
+Body matching is **partial** - only specified fields must match. The request can have additional fields:
+
+```typescript
+match: {
+  body: { itemType: 'premium' }  // Only checks itemType field
+}
+
+// Matches these requests:
+// { itemType: 'premium', quantity: 5, color: 'red' } ✓
+// { itemType: 'premium' } ✓
+// { itemType: 'standard' } ✗
+```
+
+### Header Matching (Exact)
+
+Header matching is **exact** for specified keys:
+
+```typescript
+match: {
+  headers: {
+    'x-user-tier': 'premium',
+    'x-region': 'eu',
+  }
+}
+// Request must have these headers with exact values
+```
+
+### Query Parameter Matching (Exact)
+
+Query parameter matching is **exact** for specified keys:
+
+```typescript
+match: {
+  query: {
+    detailed: 'true',
+    units: 'metric',
+  }
+}
+// Request must have these query params with exact values
+```
+
+### Combined Matching
+
+All criteria must match (AND logic):
+
+```typescript
+match: {
+  body: { itemType: 'premium' },
+  headers: { 'x-user-tier': 'gold' },
+  query: { region: 'us' },
+}
+// All three must match for this mock to be selected
+```
+
+## Specificity-Based Selection
+
+When multiple mocks match the same URL, Scenarist uses **specificity scoring** to choose the best match:
+
+- Each body field = +1 point
+- Each header = +1 point
+- Each query param = +1 point
+- No match criteria = 0 points (fallback)
+
+**Most specific mock wins**, regardless of order.
+
+```typescript
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
+const scenario: ScenaristScenario = {
+  id: 'tiered-pricing',
+  name: 'Tiered Pricing',
+  description: 'Different pricing based on specificity',
+  mocks: [
+    // Specificity: 2 (body.tier + body.category)
+    {
+      method: 'POST',
+      url: '/api/products',
+      match: {
+        body: { tier: 'premium', category: 'electronics' }
+      },
+      response: { status: 200, body: { discount: 30 } }
+    },
+    // Specificity: 1 (body.tier only)
+    {
+      method: 'POST',
+      url: '/api/products',
+      match: {
+        body: { tier: 'premium' }
+      },
+      response: { status: 200, body: { discount: 20 } }
+    },
+    // Specificity: 0 (no match criteria, fallback)
+    {
+      method: 'POST',
+      url: '/api/products',
+      response: { status: 200, body: { discount: 10 } }
+    }
+  ]
+};
+
+// Request with tier='premium' and category='electronics'
+// → Returns 30% discount (specificity 2 wins)
+
+// Request with tier='premium' only
+// → Returns 20% discount (specificity 1 wins)
+
+// Request with neither
+// → Returns 10% discount (fallback)
+```
+
+## OR Logic
+
+Since match criteria use AND logic, implement OR logic with separate mocks:
+
+```typescript
+mocks: [
+  // Mock 1: Premium users
+  {
+    method: 'GET',
+    url: '/api/products',
+    match: { headers: { 'x-tier': 'premium' } },
+    response: { status: 200, body: { pricing: 'discounted' } }
+  },
+  // Mock 2: VIP users (OR - separate mock)
+  {
+    method: 'GET',
+    url: '/api/products',
+    match: { headers: { 'x-tier': 'vip' } },
+    response: { status: 200, body: { pricing: 'discounted' } }
+  },
+  // Fallback: Standard users
+  {
+    method: 'GET',
+    url: '/api/products',
+    response: { status: 200, body: { pricing: 'standard' } }
+  }
+]
+```
+
+For OR logic within a single field, use regex in [Pattern Matching →](/scenarios/pattern-matching):
+
+```typescript
+match: {
+  headers: {
+    'x-tier': { regex: { source: '^(premium|vip|enterprise)$', flags: '' } }
+  }
+}
+// Matches x-tier='premium' OR 'vip' OR 'enterprise' in one mock
+```
+
+## Tiebreaker Rules
+
+When multiple mocks have **equal specificity**:
+
+**Mocks with match criteria (specificity > 0):** First match wins
+
+```typescript
+mocks: [
+  // Both have specificity: 1
+  {
+    match: { body: { type: 'premium' } },
+    response: { body: { discount: 20 } },  // ← Wins (first)
+  },
+  {
+    match: { body: { type: 'premium' } },
+    response: { body: { discount: 15 } },
+  },
+]
+```
+
+**Fallback mocks (specificity = 0):** Last match wins
+
+This enables active scenarios to override default scenario fallbacks:
+
+```typescript
+// Default scenario fallback + active scenario fallback
+mocks: [
+  { response: { body: { tier: 'standard' } } },  // From default
+  { response: { body: { tier: 'premium' } } },   // From active ← Wins (last)
+]
+```
+
+## Real-World Example
+
+```typescript
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
+export const tieredPricingScenario: ScenaristScenario = {
+  id: 'tiered-pricing',
+  name: 'Tiered Pricing',
+  description: 'Different pricing based on user tier and item type',
+  mocks: [
+    // Premium users buying premium items - best discount
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      match: {
+        body: { itemType: 'premium' },
+        headers: { 'x-user-tier': 'gold' },
+      },
+      response: {
+        status: 200,
+        body: { amount: 7000, discount: 'gold_premium_30' },
+      },
+    },
+    // Premium items (any user)
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      match: { body: { itemType: 'premium' } },
+      response: {
+        status: 200,
+        body: { amount: 8000, discount: 'premium_20' },
+      },
+    },
+    // Standard items
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      match: { body: { itemType: 'standard' } },
+      response: {
+        status: 200,
+        body: { amount: 10000 },
+      },
+    },
+    // Fallback for other item types
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      response: {
+        status: 200,
+        body: { amount: 5000 },
+      },
+    },
+  ],
+};
+```
+
+## Next Steps
+
+- [Pattern Matching →](/scenarios/pattern-matching) - Regex and string patterns for flexible matching
+- [Response Sequences →](/scenarios/response-sequences) - Combine matching with sequences
+- [Combining Features →](/scenarios/combining-features) - Use matching with other features

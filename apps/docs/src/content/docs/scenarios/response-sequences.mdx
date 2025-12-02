@@ -1,0 +1,258 @@
+---
+title: Response Sequences
+description: Multi-step responses for polling, async workflows, and state progression
+---
+
+## What This Enables
+
+Return different responses on successive calls to the same endpoint. Each request advances through a sequence of predefined responses.
+
+**Use cases:**
+- **Polling patterns:** Job status: pending → processing → complete
+- **Async workflows:** Payment: initiated → authorized → captured
+- **Rate limiting:** Allow N requests, then return 429
+- **Retry scenarios:** Fail twice, succeed on third attempt
+
+## When to Use
+
+Use response sequences when:
+- Behavior changes based on **number of calls** (not request content)
+- Testing polling or async job status
+- Simulating progressive workflows
+- Testing retry logic or rate limits
+
+**Not for request content differences** - use [Request Matching](/scenarios/request-matching) instead.
+
+## Basic Sequence
+
+Replace `response` with `sequence` containing an array of responses:
+
+```typescript
+import type { ScenaristMock } from '@scenarist/express-adapter';
+
+const mock: ScenaristMock = {
+  method: 'GET',
+  url: '/api/job/status',
+  sequence: {
+    responses: [
+      { status: 200, body: { status: 'pending' } },
+      { status: 200, body: { status: 'processing' } },
+      { status: 200, body: { status: 'complete' } }
+    ],
+    repeat: 'last'  // Options: 'last' | 'cycle' | 'none'
+  }
+};
+```
+
+**Behavior:**
+1. First request → `{ status: 'pending' }`
+2. Second request → `{ status: 'processing' }`
+3. Third request → `{ status: 'complete' }`
+4. Fourth+ requests → `{ status: 'complete' }` (repeats last)
+
+## Repeat Modes
+
+### `repeat: 'last'` (Default)
+
+Repeat the final response indefinitely after sequence exhausts:
+
+```typescript
+sequence: {
+  responses: [
+    { status: 200, body: { status: 'pending' } },
+    { status: 200, body: { status: 'complete' } }
+  ],
+  repeat: 'last'
+}
+```
+
+```
+Call 1 → pending
+Call 2 → complete
+Call 3 → complete (repeats)
+Call 4 → complete (repeats)
+```
+
+**Use for:** Most polling scenarios where final state persists.
+
+### `repeat: 'cycle'`
+
+Loop back to the first response after sequence exhausts:
+
+```typescript
+sequence: {
+  responses: [
+    { status: 200, body: { weather: 'sunny' } },
+    { status: 200, body: { weather: 'cloudy' } },
+    { status: 200, body: { weather: 'rainy' } }
+  ],
+  repeat: 'cycle'
+}
+```
+
+```
+Call 1 → sunny
+Call 2 → cloudy
+Call 3 → rainy
+Call 4 → sunny (cycles back)
+Call 5 → cloudy
+```
+
+**Use for:** Rotating data, round-robin behavior.
+
+### `repeat: 'none'`
+
+Sequence exhausts completely, allowing fallback to next mock:
+
+```typescript
+sequence: {
+  responses: [
+    { status: 200, body: { attempt: 1 } },
+    { status: 200, body: { attempt: 2 } },
+    { status: 200, body: { attempt: 3 } }
+  ],
+  repeat: 'none'
+}
+```
+
+```
+Call 1 → attempt 1
+Call 2 → attempt 2
+Call 3 → attempt 3
+Call 4 → [Exhausted - falls through to next mock]
+```
+
+**Use for:** Rate limiting, limited-use tokens, finite sequences.
+
+## Sequence with Fallback
+
+Combine `repeat: 'none'` with a fallback mock for rate limiting:
+
+```typescript
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
+const scenario: ScenaristScenario = {
+  id: 'rate-limited',
+  name: 'Rate Limited API',
+  description: 'Allow 3 requests, then rate limit',
+  mocks: [
+    // First 3 requests succeed
+    {
+      method: 'POST',
+      url: '/api/payment',
+      sequence: {
+        responses: [
+          { status: 200, body: { id: 'pay_1', status: 'pending' } },
+          { status: 200, body: { id: 'pay_2', status: 'pending' } },
+          { status: 200, body: { id: 'pay_3', status: 'succeeded' } },
+        ],
+        repeat: 'none',  // Exhausts after 3 calls
+      },
+    },
+    // Request 4+ hits this fallback
+    {
+      method: 'POST',
+      url: '/api/payment',
+      response: {
+        status: 429,
+        body: { error: 'Rate limit exceeded' },
+      },
+    },
+  ],
+};
+```
+
+## GitHub Job Polling Example
+
+```typescript
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
+export const githubPollingScenario: ScenaristScenario = {
+  id: 'github-polling',
+  name: 'GitHub Job Polling',
+  description: 'Simulates async job progression',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.github.com/repos/:owner/:repo/actions/runs/:id',
+      sequence: {
+        responses: [
+          { status: 200, body: { status: 'queued', progress: 0 } },
+          { status: 200, body: { status: 'in_progress', progress: 50 } },
+          { status: 200, body: { status: 'completed', progress: 100 } },
+        ],
+        repeat: 'last',
+      },
+    },
+  ],
+};
+```
+
+## Combining Sequences with Matching
+
+Sequences can be combined with [Request Matching](/scenarios/request-matching):
+
+```typescript
+{
+  method: 'GET',
+  url: '/api/onboarding/step',
+  match: {
+    headers: { 'x-tier': 'premium' }
+  },
+  sequence: {
+    responses: [
+      { status: 200, body: { step: 1, message: 'Welcome!' } },
+      { status: 200, body: { step: 2, message: 'Configure...' } },
+      { status: 200, body: { step: 3, message: 'Complete!' } }
+    ],
+    repeat: 'last'
+  }
+}
+```
+
+**Important:** Only **matching requests** advance the sequence. Non-matching requests don't affect sequence position.
+
+```
+Request with x-tier: premium → Step 1
+Request without x-tier header → [Doesn't match, doesn't advance]
+Request with x-tier: premium → Step 2
+Request with x-tier: premium → Step 3
+```
+
+## Retry Simulation
+
+Test retry logic by failing then succeeding:
+
+```typescript
+{
+  method: 'POST',
+  url: '/api/external-service',
+  sequence: {
+    responses: [
+      { status: 503, body: { error: 'Service unavailable' } },
+      { status: 503, body: { error: 'Service unavailable' } },
+      { status: 200, body: { success: true } },
+    ],
+    repeat: 'last'
+  }
+}
+
+// Call 1 → 503 (retry)
+// Call 2 → 503 (retry)
+// Call 3 → 200 (success)
+// Call 4+ → 200 (stable)
+```
+
+## Sequence Reset
+
+Sequences reset when:
+- Test switches to a different scenario
+- New test starts (different test ID)
+
+Each test has isolated sequence state - parallel tests don't affect each other's sequence positions.
+
+## Next Steps
+
+- [Request Matching →](/scenarios/request-matching) - Combine sequences with matching
+- [Stateful Mocks →](/scenarios/stateful-mocks) - Capture state as sequence progresses
+- [Combining Features →](/scenarios/combining-features) - Use all features together

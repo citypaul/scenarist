@@ -1,0 +1,300 @@
+---
+title: Stateful Mocks
+description: Capture state from requests and inject it into responses
+---
+
+## What This Enables
+
+Capture data from requests and inject it into subsequent responses. Build state over multiple requests that affects later responses.
+
+**Use cases:**
+- **Shopping cart:** Add items, cart endpoint shows accumulated items
+- **User profiles:** Submit data, profile endpoint reflects it
+- **Session data:** Capture authentication, use in later requests
+- **Form workflows:** Capture step data, show in confirmation
+
+## When to Use
+
+Use stateful mocks when:
+- Later responses should reflect earlier request data
+- Testing multi-step workflows where data accumulates
+- Need to verify data flows through your application correctly
+
+**Not for call-count behavior** - use [Response Sequences](/scenarios/response-sequences) instead.
+
+## Basic State Capture and Injection
+
+```typescript
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
+const scenario: ScenaristScenario = {
+  id: 'user-profile',
+  name: 'User Profile State',
+  description: 'Captures profile updates and injects into responses',
+  mocks: [
+    // Capture state from POST request
+    {
+      method: 'POST',
+      url: '/api/profile/update',
+      captureState: {
+        userName: 'body.name',    // Capture from body.name
+        userEmail: 'body.email',  // Capture from body.email
+      },
+      response: { status: 200, body: { success: true } }
+    },
+    // Inject state into GET response
+    {
+      method: 'GET',
+      url: '/api/profile',
+      response: {
+        status: 200,
+        body: {
+          name: '{{state.userName}}',   // Inject captured value
+          email: '{{state.userEmail}}', // Inject captured value
+        }
+      }
+    }
+  ]
+};
+```
+
+**Workflow:**
+1. POST to `/api/profile/update` with `{ name: 'Alice', email: 'alice@example.com' }`
+2. Scenarist captures `userName='Alice'`, `userEmail='alice@example.com'`
+3. GET to `/api/profile` returns `{ name: 'Alice', email: 'alice@example.com' }`
+
+## State Capture Syntax
+
+### Path Expressions
+
+Extract values from request body, headers, or query:
+
+```typescript
+captureState: {
+  userId: 'body.user.id',           // Nested body field
+  email: 'headers.x-user-email',    // Header value
+  region: 'query.region',           // Query parameter
+}
+```
+
+**Request example:**
+```json
+// Body: { "user": { "id": "usr_123", "name": "Alice" } }
+// Headers: { "x-user-email": "alice@example.com" }
+// Query: ?region=eu
+
+// Captures:
+// userId = 'usr_123'
+// email = 'alice@example.com'
+// region = 'eu'
+```
+
+### Array Append Syntax
+
+Build arrays over multiple requests using `[]` suffix:
+
+```typescript
+captureState: {
+  'cartItems[]': 'body.productId',  // Appends to array
+  'tags[]': 'body.tag',             // Another array
+}
+```
+
+**Behavior across requests:**
+```typescript
+// Request 1: { productId: 'prod-1' }
+// State: { cartItems: ['prod-1'] }
+
+// Request 2: { productId: 'prod-2' }
+// State: { cartItems: ['prod-1', 'prod-2'] }
+
+// Request 3: { productId: 'prod-3' }
+// State: { cartItems: ['prod-1', 'prod-2', 'prod-3'] }
+```
+
+### Nested Path Support
+
+Capture deeply nested values:
+
+```typescript
+captureState: {
+  userName: 'body.user.profile.displayName',
+  billingCountry: 'body.payment.address.country',
+}
+```
+
+## State Injection Syntax
+
+### Template Syntax
+
+Inject captured state into responses using `{{state.key}}`:
+
+```typescript
+response: {
+  status: 200,
+  body: {
+    user: '{{state.userId}}',           // Scalar value
+    items: '{{state.cartItems}}',       // Array
+    count: '{{state.cartItems.length}}', // Array property
+    profile: {
+      name: '{{state.userName}}',       // Nested injection
+    },
+  },
+}
+```
+
+### Missing State
+
+When state key doesn't exist, the template string remains as-is:
+
+```typescript
+// If state.userName is not captured:
+body: { name: '{{state.userName}}' }
+// Returns: { name: '{{state.userName}}' }
+
+// If state.cartItems is not captured:
+body: { items: '{{state.cartItems}}' }
+// Returns: { items: '{{state.cartItems}}' }
+```
+
+## Shopping Cart Example
+
+```typescript
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
+export const shoppingCartScenario: ScenaristScenario = {
+  id: 'shopping-cart',
+  name: 'Shopping Cart',
+  description: 'Cart with state persistence across requests',
+  mocks: [
+    // Add item - captures product ID
+    {
+      method: 'POST',
+      url: 'https://api.store.com/cart/add',
+      captureState: {
+        'cartItems[]': 'body.productId',  // Append to array
+      },
+      response: {
+        status: 200,
+        body: { success: true },
+      },
+    },
+    // Get cart - injects captured items
+    {
+      method: 'GET',
+      url: 'https://api.store.com/cart',
+      response: {
+        status: 200,
+        body: {
+          items: '{{state.cartItems}}',
+          count: '{{state.cartItems.length}}',
+        },
+      },
+    },
+    // Clear cart - resets by setting to empty array
+    {
+      method: 'DELETE',
+      url: 'https://api.store.com/cart',
+      captureState: {
+        cartItems: 'body.resetTo',  // Overwrite (not append)
+      },
+      response: {
+        status: 200,
+        body: { cleared: true },
+      },
+    },
+  ],
+};
+```
+
+## State Isolation Per Test ID
+
+**State is isolated per test ID.** Each parallel test maintains independent state:
+
+```typescript
+// Test 1 (test-id: abc-123)
+POST /api/cart/add { productId: 'prod-1' }
+GET /api/cart  // Returns { items: ['prod-1'] }
+
+// Test 2 (test-id: xyz-789) - runs simultaneously
+POST /api/cart/add { productId: 'prod-999' }
+GET /api/cart  // Returns { items: ['prod-999'] }
+
+// No interference - each test has isolated state
+```
+
+This isolation is automatic via the test ID header.
+
+## State Lifecycle
+
+1. **Capture:** Extract values from request when mock is matched
+2. **Store:** Save values keyed by test ID (isolated per test)
+3. **Inject:** Replace templates in responses with stored values
+4. **Reset:** Clear state when scenario switches (clean slate)
+
+### State Reset
+
+State resets when:
+- Test switches to a different scenario via `switchScenario()`
+- New test starts with a different test ID
+
+```typescript
+test('cart workflow', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'shopping-cart');
+
+  // Add items...
+  await fetch('/api/cart/add', { body: { productId: 'prod-1' } });
+  // State: { cartItems: ['prod-1'] }
+
+  // Switch to different scenario
+  await switchScenario(page, 'different-scenario');
+  // State is cleared
+
+  await switchScenario(page, 'shopping-cart');
+  // State is empty - cart is now empty
+});
+```
+
+## Combining with Other Features
+
+State capture works with [Request Matching](/scenarios/request-matching):
+
+```typescript
+{
+  method: 'POST',
+  url: '/api/cart/add',
+  match: {
+    body: { itemType: 'premium' }  // Only capture premium items
+  },
+  captureState: {
+    'premiumItems[]': 'body.productId',
+  },
+  response: { status: 200, body: { success: true } }
+}
+```
+
+State capture also works with [Response Sequences](/scenarios/response-sequences):
+
+```typescript
+{
+  method: 'POST',
+  url: '/api/onboarding',
+  sequence: {
+    responses: [
+      { status: 200, body: { step: 1 } },
+      { status: 200, body: { step: 2 } },
+      { status: 200, body: { step: 3 } },
+    ],
+    repeat: 'last'
+  },
+  captureState: {
+    'completedSteps[]': 'body.stepNumber',
+  }
+}
+```
+
+## Next Steps
+
+- [Request Matching →](/scenarios/request-matching) - Combine state with matching
+- [Response Sequences →](/scenarios/response-sequences) - Capture state through sequences
+- [Combining Features →](/scenarios/combining-features) - Use all features together

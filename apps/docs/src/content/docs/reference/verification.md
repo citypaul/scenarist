@@ -903,7 +903,7 @@ If verification reveals issues:
    - [Express →](/frameworks/express/getting-started)
 
 2. **Check scenario definitions** - Verify mocks match external APIs
-   - [Scenario Format →](/concepts/scenario-format)
+   - [Writing Scenarios →](/scenarios/overview)
 
 3. **Examine test setup** - Ensure test isolation is working
    - [How it works: Test Isolation →](/concepts/how-it-works#how-test-isolation-works-complete-request-flow)
