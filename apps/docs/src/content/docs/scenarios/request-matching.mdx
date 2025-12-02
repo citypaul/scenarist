@@ -257,6 +257,98 @@ mocks: [
 ]
 ```
 
+## Mock Type Priority
+
+When comparing fallback mocks (no match criteria), **dynamic response types have higher priority** than simple responses:
+
+| Mock Type | Fallback Priority |
+|-----------|-------------------|
+| `sequence` | 1 (higher) |
+| `stateResponse` | 1 (higher) |
+| `response` | 0 (lower) |
+
+This means a `sequence` or `stateResponse` from the default scenario **cannot** be overridden by a simple `response` from the active scenario.
+
+### Example: Override Limitation
+
+```typescript
+// Default scenario has a sequence
+const defaultScenario = {
+  mocks: [
+    {
+      method: 'GET',
+      url: '/api/job/status',
+      sequence: {
+        responses: [
+          { status: 200, body: { status: 'pending' } },
+          { status: 200, body: { status: 'complete' } }
+        ],
+        repeat: 'last'
+      }
+    }
+  ]
+};
+
+// Active scenario tries to override with simple response
+const activeScenario = {
+  mocks: [
+    {
+      method: 'GET',
+      url: '/api/job/status',
+      response: { status: 200, body: { status: 'error' } }  // ❌ Won't override!
+    }
+  ]
+};
+```
+
+**Result:** Default's `sequence` (priority 1) wins over active's `response` (priority 0).
+
+### How to Override Dynamic Response Types
+
+To override a `sequence` or `stateResponse`, use one of these approaches:
+
+**Option 1: Use the same mock type**
+
+```typescript
+// ✅ sequence overrides sequence
+mocks: [
+  {
+    method: 'GET',
+    url: '/api/job/status',
+    sequence: {
+      responses: [{ status: 200, body: { status: 'error' } }],
+      repeat: 'last'
+    }
+  }
+]
+
+// ✅ stateResponse overrides sequence
+mocks: [
+  {
+    method: 'GET',
+    url: '/api/job/status',
+    stateResponse: {
+      default: { status: 200, body: { status: 'error' } }
+    }
+  }
+]
+```
+
+**Option 2: Add match criteria (priority 100+)**
+
+```typescript
+// ✅ response with match criteria overrides sequence fallback
+mocks: [
+  {
+    method: 'GET',
+    url: '/api/job/status',
+    match: { headers: { 'x-force-error': 'true' } },
+    response: { status: 200, body: { status: 'error' } }
+  }
+]
+// Now send requests with x-force-error: true header
+```
+
 ## Real-World Example
 
 ```typescript

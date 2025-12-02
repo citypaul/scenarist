@@ -167,7 +167,7 @@ mocks: [
 
 ## Tiebreaker: Last Fallback Wins
 
-When multiple mocks have **equal specificity = 0** (no match criteria), the last one wins:
+When multiple mocks have **equal specificity** (no match criteria), the last one wins:
 
 ```typescript
 // Mocks collected for same URL:
@@ -178,6 +178,12 @@ When multiple mocks have **equal specificity = 0** (no match criteria), the last
 ```
 
 This allows active scenarios to override default fallbacks without needing match criteria.
+
+:::note[Mock Type Priority]
+This tiebreaker applies when mocks have the same fallback priority. `sequence` and `stateResponse` mocks have higher priority (1) than simple `response` mocks (0). A `response` mock **cannot** override a `sequence` or `stateResponse` mock without match criteria.
+
+See [Mock Type Priority](/scenarios/request-matching#mock-type-priority) for details and workarounds.
+:::
 
 ## Complete Example
 
