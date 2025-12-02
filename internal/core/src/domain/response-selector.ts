@@ -100,11 +100,13 @@ export const createResponseSelector = (
         }
 
         // No match criteria = fallback mock (always matches)
-        // Sequences get higher priority than simple responses
-        // This ensures sequences are selected over simple fallback responses
-        const fallbackSpecificity = mock.sequence
-          ? SPECIFICITY_RANGES.SEQUENCE_FALLBACK
-          : SPECIFICITY_RANGES.SIMPLE_FALLBACK;
+        // Dynamic response types (sequence, stateResponse) get higher priority than simple responses
+        // This ensures they are selected over simple fallback responses
+        // Both sequence and stateResponse get the same specificity (Issue #316 fix)
+        const fallbackSpecificity =
+          mock.sequence || mock.stateResponse
+            ? SPECIFICITY_RANGES.SEQUENCE_FALLBACK
+            : SPECIFICITY_RANGES.SIMPLE_FALLBACK;
 
         if (!bestMatch || fallbackSpecificity >= bestMatch.specificity) {
           // For equal specificity fallbacks, last wins
