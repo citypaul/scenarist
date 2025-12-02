@@ -5,37 +5,130 @@ description: Flexible matching with regex, contains, startsWith, endsWith strate
 
 ## What This Enables
 
-Match request values using flexible patterns instead of exact strings. Useful for dynamic values like campaign codes, user agents, email domains, and file extensions.
+Match URLs and request values using flexible patterns instead of exact strings. Useful for dynamic URLs, campaign codes, user agents, email domains, and file extensions.
 
 **Use cases:**
+- Version-agnostic API matching: `/api/v1/...`, `/api/v2/...`
+- Origin-agnostic URL patterns: Match any host
 - Marketing campaigns: `x-campaign: summer-premium-2024`
 - User agent detection: Mobile vs Desktop
 - Email domain filtering: `@company.com`
 - File type validation: `.pdf`, `.jpg`
-- API version matching: `v1`, `v2`, `v3`
 
 ## When to Use
 
 Use pattern matching when:
+- URL contains variable parts (API versions, numeric IDs)
+- You need origin-agnostic URL matching (any host)
 - Values contain variable parts (IDs, timestamps, campaigns)
 - You need substring matching (contains, prefix, suffix)
 - Multiple values should match the same mock (OR logic)
 - Exact string matching is too rigid
 
-## Matching Strategies
+## URL Pattern Matching
 
-Scenarist provides **6 matching strategies** that work in body, headers, and query:
+The mock's `url` field accepts **native JavaScript RegExp** for flexible URL matching:
+
+### Native RegExp (Recommended)
+
+```typescript
+// Match any API version
+{
+  method: 'GET',
+  url: /https:\/\/api\.example\.com\/v\d+\/users/,
+  response: { status: 200, body: { users: [] } }
+}
+// Matches: https://api.example.com/v1/users ✓
+// Matches: https://api.example.com/v2/users ✓
+// Matches: https://api.example.com/v99/users ✓
+```
+
+### Origin-Agnostic Patterns
+
+RegExp uses **weak comparison** (partial matching), making it perfect for matching URLs regardless of host:
+
+```typescript
+// Match any origin
+{
+  method: 'GET',
+  url: /\/api\/products$/,
+  response: { status: 200, body: { products: [] } }
+}
+// Matches: http://localhost:3000/api/products ✓
+// Matches: https://api.example.com/api/products ✓
+// Matches: https://staging.myapp.io/api/products ✓
+```
+
+### Common URL Patterns
+
+```typescript
+// Numeric IDs only
+url: /\/users\/\d+$/
+// Matches: /users/123, /users/456789
+// Doesn't match: /users/abc, /users/
+
+// Any path segment
+url: /\/api\/[^/]+\/items/
+// Matches: /api/v1/items, /api/beta/items
+
+// Multiple path params
+url: /\/users\/\d+\/posts\/\d+/
+// Matches: /users/1/posts/42
+```
+
+### Case-Insensitive URL Matching
+
+```typescript
+url: /\/api\/users/i  // Note the 'i' flag
+// Matches: /api/users, /API/USERS, /Api/Users
+```
+
+## Match Criteria URL Patterns
+
+In addition to the mock's `url` field, you can use pattern matching in `match.url` for more refined control:
+
+```typescript
+{
+  method: 'GET',
+  url: 'https://api.github.com/users/:username',  // Base pattern
+  match: {
+    url: /\/users\/\d+$/  // Only match numeric usernames
+  },
+  response: { status: 200, body: { type: 'numeric-user' } }
+}
+```
+
+This is useful when you want path parameters for some cases but regex matching for others.
+
+## Value Matching Strategies
+
+Scenarist provides **6 matching strategies** that work in URL, body, headers, and query:
 
 | Strategy | Syntax | Behavior |
 |----------|--------|----------|
 | Plain String | `'value'` | Exact match (default) |
+| Native RegExp | `/pattern/flags` | Pattern match (recommended for URL) |
 | Equals | `{ equals: 'value' }` | Explicit exact match |
 | Contains | `{ contains: 'substring' }` | Value contains substring |
 | Starts With | `{ startsWith: 'prefix' }` | Value starts with prefix |
 | Ends With | `{ endsWith: 'suffix' }` | Value ends with suffix |
-| Regex | `{ regex: { source: 'pattern', flags: 'i' } }` | Full regex pattern |
+| Serialized Regex | `{ regex: { source: 'pattern', flags: 'i' } }` | JSON-safe regex pattern |
 
 ## Strategy Examples
+
+### Native RegExp
+
+Use native JavaScript RegExp for pattern matching (works in `url` and `match.url`):
+
+```typescript
+// In mock url field
+url: /\/api\/v\d+\/users/
+
+// In match.url field
+match: {
+  url: /\/users\/\d+$/
+}
+```
 
 ### Contains
 
@@ -82,9 +175,9 @@ match: {
 // Doesn't match: 'document.docx' ✗
 ```
 
-### Regex
+### Serialized Regex
 
-Match values with a regular expression:
+For JSON-safe scenarios (stored in files or databases), use serialized regex:
 
 ```typescript
 match: {
@@ -100,35 +193,60 @@ match: {
 // Doesn't match: 'standard-sale' ✗
 ```
 
+:::tip[Native vs Serialized Regex]
+- **Native RegExp** (`/pattern/`): Use in TypeScript code for better readability
+- **Serialized Regex** (`{ regex: { source, flags } }`): Use when scenarios must be JSON-serializable
+:::
+
 ## Where Strategies Apply
 
-All 6 strategies work in:
+All strategies work in:
 
-- ✅ **Request Body** (`match.body`)
-- ✅ **Request Headers** (`match.headers`)
-- ✅ **Query Parameters** (`match.query`)
+- ✅ **Mock URL** (`url` field) - Native RegExp only
+- ✅ **Match URL** (`match.url`) - All strategies
+- ✅ **Request Body** (`match.body`) - All strategies
+- ✅ **Request Headers** (`match.headers`) - All strategies
+- ✅ **Query Parameters** (`match.query`) - All strategies
 
 ```typescript
-match: {
-  body: {
-    email: { contains: '@company.com' },
-    apiKey: { startsWith: 'sk_' },
+{
+  method: 'GET',
+  url: /\/api\/v\d+\/products/,  // Native RegExp in url
+  match: {
+    url: { contains: '/featured' },  // Strategy in match.url
+    body: {
+      email: { contains: '@company.com' },
+      apiKey: { startsWith: 'sk_' },
+    },
+    headers: {
+      'user-agent': { contains: 'Mobile' },
+      'referer': { endsWith: '/checkout' },
+    },
+    query: {
+      category: { regex: { source: '^(tech|science)$', flags: 'i' } },
+    }
   },
-  headers: {
-    'user-agent': { contains: 'Mobile' },
-    'referer': { endsWith: '/checkout' },
-  },
-  query: {
-    category: { regex: { source: '^(tech|science)$', flags: 'i' } },
-  }
+  response: { status: 200, body: { ... } }
 }
 ```
 
 ## Regex Reference
 
-### Syntax
+### Native RegExp Syntax
 
 ```typescript
+// In url field or match.url
+url: /pattern/flags
+
+// Examples
+url: /\/api\/users\/\d+/      // No flags
+url: /\/api\/users/i          // Case-insensitive
+```
+
+### Serialized Regex Syntax
+
+```typescript
+// In match.body, match.headers, match.query, or match.url
 {
   regex: {
     source: 'pattern',  // Regex pattern (without delimiters)

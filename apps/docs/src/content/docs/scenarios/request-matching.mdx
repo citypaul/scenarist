@@ -23,7 +23,7 @@ Use request matching when:
 
 ## Match Criteria
 
-Match on request body, headers, or query parameters using the `match` field:
+Match on URL, request body, headers, or query parameters using the `match` field:
 
 ```typescript
 import type { ScenaristMock } from '@scenarist/express-adapter';
@@ -32,12 +32,44 @@ const mock: ScenaristMock = {
   method: 'POST',
   url: '/api/checkout',
   match: {
+    url: /\/checkout$/,                  // URL pattern (native RegExp)
     body: { tier: 'premium' },           // Partial body match
     headers: { 'x-api-version': 'v2' },  // Exact header match
     query: { detailed: 'true' },         // Exact query param match
   },
   response: { status: 200, body: { discount: 20 } }
 };
+```
+
+### URL Matching
+
+Match URLs using strings, RegExp, or pattern strategies:
+
+```typescript
+// Native RegExp (recommended)
+match: {
+  url: /\/users\/\d+$/  // Match numeric user IDs only
+}
+
+// String strategies
+match: {
+  url: { contains: '/api/v2/' }     // URL contains substring
+  url: { startsWith: 'https://' }   // URL starts with prefix
+  url: { endsWith: '/checkout' }    // URL ends with suffix
+}
+```
+
+This is useful when your mock's `url` field uses path parameters but you need finer control:
+
+```typescript
+{
+  method: 'GET',
+  url: 'https://api.github.com/users/:username',  // Accepts any username
+  match: {
+    url: /\/users\/\d+$/  // But only match numeric usernames
+  },
+  response: { status: 200, body: { type: 'numeric-user' } }
+}
 ```
 
 ### Body Matching (Partial)
@@ -100,6 +132,7 @@ match: {
 
 When multiple mocks match the same URL, Scenarist uses **specificity scoring** to choose the best match:
 
+- URL match = +1 point
 - Each body field = +1 point
 - Each header = +1 point
 - Each query param = +1 point

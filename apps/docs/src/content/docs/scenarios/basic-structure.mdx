@@ -99,7 +99,7 @@ Supported methods:
 
 ## URL Patterns
 
-URLs support three matching styles:
+URLs support four matching styles:
 
 ### Exact Match
 ```typescript
@@ -121,6 +121,31 @@ url: 'https://api.example.com/users/*'
 // Matches: https://api.example.com/users/123
 // Matches: https://api.example.com/users/123/profile
 ```
+
+### Regular Expressions
+
+Use native JavaScript RegExp for complex URL matching:
+
+```typescript
+// Match any API version
+url: /https:\/\/api\.example\.com\/v\d+\/users/
+// Matches: https://api.example.com/v1/users
+// Matches: https://api.example.com/v2/users
+// Matches: https://api.example.com/v99/users
+
+// Match numeric IDs only
+url: /\/users\/\d+$/
+// Matches: /users/123
+// Matches: /users/456789
+// Doesn't match: /users/abc
+
+// Origin-agnostic matching (matches any host)
+url: /\/api\/products$/
+// Matches: http://localhost:3000/api/products
+// Matches: https://api.example.com/api/products
+```
+
+RegExp uses **weak comparison** (partial matching), making it ideal for origin-agnostic patterns. See [Pattern Matching →](/scenarios/pattern-matching) for advanced regex patterns.
 
 ## Response Structure
 
