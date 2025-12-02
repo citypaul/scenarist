@@ -398,27 +398,46 @@ Minimal - just wire core and MSW adapter together:
    - Enables state machine patterns with match.state + afterResponse
    - 8 tests including full state machine demo
 
-### Phase 3: Adapter Wiring
+### Phase 3: Adapter Wiring (One PR per adapter)
 
-9. **MSW Adapter**
+Each adapter gets its own PR to keep changes focused and reviewable.
+
+#### Phase 3.1: MSW Adapter 🚧 IN PROGRESS
+
+**Branch:** `feat/state-aware-mocking-msw-adapter`
+
+9. **MSW Adapter Wiring**
    - Wire StateManager into handler creation
    - Ensure test ID flows through request handling
+   - State reset on scenario switch (per ADR-0005)
 
-10. **Express Adapter**
+#### Phase 3.2: Express Adapter
+
+**Branch:** `feat/state-aware-mocking-express-adapter`
+
+10. **Express Adapter Wiring**
     - Wire state store through setup
-    - Verify E2E flow works
+    - Pass StateManager to MSW adapter
+    - Add E2E tests with Playwright
 
-11. **Next.js Adapters**
+#### Phase 3.3: Next.js Adapters
+
+**Branch:** `feat/state-aware-mocking-nextjs-adapters`
+
+11. **Next.js Adapter Wiring**
     - Wire state store for App Router
     - Wire state store for Pages Router
+    - Add E2E tests for both routers
 
-### Phase 4: Example Apps (Proof)
+### Phase 4: Example Apps (Proof - combined with adapter PRs)
 
-12. **Express Example App**
+Example app tests are included in each adapter PR to prove the feature works end-to-end.
+
+12. **Express Example** (included in Phase 3.2)
     - Add scenario using state-aware mocking
     - Playwright test proving it works
 
-13. **Next.js Example Apps**
+13. **Next.js Examples** (included in Phase 3.3)
     - Add scenarios to both App Router and Pages Router examples
     - Playwright tests proving it works
 
