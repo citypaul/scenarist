@@ -2,6 +2,17 @@
 
 This document contains technical details for implementing ADR-0019 (State-Aware Mocking).
 
+## Implementation Status: ✅ COMPLETE
+
+| Phase                                  | Status      | PR         |
+| -------------------------------------- | ----------- | ---------- |
+| Phase 1: Core Foundation               | ✅ Complete | #307       |
+| Phase 2: Response-Selector Integration | ✅ Complete | #307       |
+| Phase 3: Adapter Wiring                | ✅ Complete | #309, #310 |
+| Phase 4: Example Apps                  | ✅ Complete | #309, #310 |
+
+All three example applications (Express, Next.js App Router, Next.js Pages Router) have been updated with state-aware mocking scenarios and scenario-based tests.
+
 ## API Design
 
 ### 1. Reading State: `stateResponse`
@@ -398,7 +409,7 @@ Minimal - just wire core and MSW adapter together:
    - Enables state machine patterns with match.state + afterResponse
    - 8 tests including full state machine demo
 
-### Phase 3: Adapter Wiring ✅ COMPLETE (Express), 🔄 IN PROGRESS (Next.js)
+### Phase 3: Adapter Wiring ✅ COMPLETE
 
 9. **MSW Adapter** ✅ COMPLETE (no changes needed)
    - StateManager already wired into handler creation via ResponseSelector
@@ -408,25 +419,26 @@ Minimal - just wire core and MSW adapter together:
 10. **Express Adapter** ✅ COMPLETE (no changes needed)
     - Adapter is a thin pass-through layer
     - State-aware mocking handled entirely by core + MSW adapter
-    - E2E tests in example app verify full integration
+    - Scenario-based tests in example app verify full integration
 
-11. **Next.js Adapters** ⏳ PENDING
-    - Verify state store works for App Router
-    - Verify state store works for Pages Router
-    - Expected: No adapter changes needed (same architecture as Express)
+11. **Next.js Adapters** ✅ COMPLETE (no changes needed)
+    - Both App Router and Pages Router adapters work without modification
+    - Same architecture as Express - adapters are thin pass-through layers
+    - All state-aware logic handled by core's ResponseSelector
 
-### Phase 4: Example Apps (Proof) ✅ COMPLETE (Express), ⏳ PENDING (Next.js)
+### Phase 4: Example Apps (Proof) ✅ COMPLETE
 
 12. **Express Example App** ✅ COMPLETE (PR #309)
     - Added `loanApplicationScenario` (stateResponse + afterResponse.setState)
     - Added `featureFlagsScenario` (match.state + captureState)
-    - 4 E2E tests covering all state-aware mocking features
+    - 4 scenario-based tests covering all state-aware mocking features
     - Tests: workflow state transitions, feature flag toggling, state isolation, state reset
 
-13. **Next.js Example Apps** ⏳ PENDING
-    - Add scenarios to both App Router and Pages Router examples
-    - E2E tests proving it works
-    - Expected: Similar scenarios to Express example
+13. **Next.js Example Apps** ✅ COMPLETE (PR #310)
+    - Added same scenarios to both App Router and Pages Router examples
+    - Added API routes for loan workflow and feature flags
+    - 4 Playwright scenario-based tests per example (identical coverage to Express)
+    - Tests: workflow state transitions, feature flag toggling, state isolation, state reset
 
 ### Key Learnings from Implementation
 
@@ -575,9 +587,9 @@ describe('Express adapter state-aware mocking', () => {
 // packages/nextjs-adapter - pages/state-aware-mocking.test.ts (similar)
 ```
 
-### Level 4: Example App Tests (`apps/*/e2e/*.spec.ts`)
+### Level 4: Example App Tests (`apps/*/tests/playwright/*.spec.ts`)
 
-**Purpose**: Full E2E tests with Playwright proving real-world scenarios work
+**Purpose**: Full scenario-based tests with Playwright proving real-world scenarios work
 **Why**: Catches framework idiosyncrasies, proves feature works in realistic conditions
 
 **Critical**: These are NOT just "smoke tests" - they test ALL functionality with real frameworks. Framework-specific quirks are often only discovered at this level.
@@ -590,8 +602,10 @@ describe('Express adapter state-aware mocking', () => {
 | Real-world scenario      | Full loan application / checkout / auth flow                           |
 
 ```typescript
-// apps/express-example/e2e/state-aware-mocking.spec.ts
-test.describe("State-Aware Mocking", () => {
+// apps/express-example/tests/state-aware-mocking.test.ts (supertest)
+// apps/nextjs-app-router-example/tests/playwright/state-aware-mocking.spec.ts
+// apps/nextjs-pages-router-example/tests/playwright/state-aware-mocking.spec.ts
+test.describe("State-Aware Mocking (ADR-0019)", () => {
   test.describe("stateResponse", () => {
     test("should return default response when state is empty", async ({
       page,
@@ -661,9 +675,6 @@ test.describe("State-Aware Mocking", () => {
     });
   });
 });
-
-// apps/nextjs-app-router-example/e2e/state-aware-mocking.spec.ts (similar)
-// apps/nextjs-pages-router-example/e2e/state-aware-mocking.spec.ts (similar)
 ```
 
 ### Test Coverage Summary
