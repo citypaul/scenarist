@@ -12,6 +12,7 @@ import { setupStringMatchingRoutes } from "./routes/string-matching.js";
 import { setupUrlMatchingRoutes } from "./routes/url-matching.js";
 import { setupHostnameMatchingRoutes } from "./routes/hostname-matching.js";
 import { setupProductsRepoRoutes } from "./routes/products-repo.js";
+import { setupStateAwareRoutes } from "./routes/state-aware.js";
 import { scenarios } from "./scenarios.js";
 
 /**
@@ -68,6 +69,7 @@ export const createApp = (): {
   setupUrlMatchingRoutes(router);
   setupHostnameMatchingRoutes(router);
   setupProductsRepoRoutes(router);
+  setupStateAwareRoutes(router);
   app.use(router);
 
   // Health check endpoint
