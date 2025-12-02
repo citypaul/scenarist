@@ -402,14 +402,21 @@ Minimal - just wire core and MSW adapter together:
 
 Each adapter gets its own PR to keep changes focused and reviewable.
 
-#### Phase 3.1: MSW Adapter 🚧 IN PROGRESS
+#### Phase 3.1: MSW Adapter ✅ COMPLETE (No changes needed)
 
-**Branch:** `feat/state-aware-mocking-msw-adapter`
+**Analysis:** The MSW adapter is a pass-through layer. It receives a `ResponseSelector`
+from the framework adapter and delegates all response selection to it. Since:
 
-9. **MSW Adapter Wiring**
-   - Wire StateManager into handler creation
-   - Ensure test ID flows through request handling
-   - State reset on scenario switch (per ADR-0005)
+- Core's `ResponseSelector` already handles state-aware mocking (Phase 2)
+- Core's `ScenarioManager` already resets state on scenario switch
+- Framework adapters (Express/Next.js) wire `StateManager` to `ResponseSelector`
+
+The MSW adapter requires **no code changes** for state-aware mocking to work.
+
+9. **MSW Adapter Verification** ✅
+   - StateManager wired via ResponseSelector (handled by framework adapters)
+   - Test ID flows through request handling (existing `x-scenarist-test-id` header)
+   - State reset on scenario switch (core's ScenarioManager line 120-121)
 
 #### Phase 3.2: Express Adapter
 
