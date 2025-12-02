@@ -1,5 +1,60 @@
 # @scenarist/core
 
+## 0.2.0
+
+### Minor Changes
+
+- [#310](https://github.com/citypaul/scenarist/pull/310) [`ec877f8`](https://github.com/citypaul/scenarist/commit/ec877f8dbe67f65ec5d3449f6dbca4b942685470) Thanks [@citypaul](https://github.com/citypaul)! - feat: State-aware mocking (ADR-0019) now complete across all adapters
+
+  Adds three new state-aware mocking capabilities that enable state machine patterns where mock behavior changes based on accumulated state from previous requests:
+  - **stateResponse**: Return different responses based on current test state
+  - **afterResponse.setState**: Mutate state after returning a response
+  - **match.state + captureState**: Select mocks based on captured state
+
+  Example usage:
+
+  ```typescript
+  const loanWorkflow: ScenaristScenario = {
+    id: "loanApplication",
+    mocks: [
+      {
+        method: "GET",
+        url: "https://api.example.com/loan/status",
+        stateResponse: {
+          default: { status: 200, body: { status: "pending" } },
+          conditions: [
+            {
+              when: { step: "submitted" },
+              then: { status: 200, body: { status: "reviewing" } },
+            },
+            {
+              when: { step: "reviewed" },
+              then: { status: 200, body: { status: "approved" } },
+            },
+          ],
+        },
+      },
+      {
+        method: "POST",
+        url: "https://api.example.com/loan/submit",
+        response: { status: 200, body: { success: true } },
+        afterResponse: { setState: { step: "submitted" } },
+      },
+    ],
+  };
+  ```
+
+  State is automatically isolated per test ID and reset when switching scenarios.
+
+### Patch Changes
+
+- [#313](https://github.com/citypaul/scenarist/pull/313) [`b819820`](https://github.com/citypaul/scenarist/commit/b8198205caf10145c27e0b10c67b02715ba743c3) Thanks [@citypaul](https://github.com/citypaul)! - docs: Add state-aware mocking documentation
+  - Add comprehensive documentation page for state-aware mocking (ADR-0019)
+  - Document three capabilities: state-driven responses, state transitions, and state-driven matching
+  - Update stateful-mocks page to differentiate from state-aware mocking
+  - Update combining-features page with state-aware mocking examples
+  - Update all package READMEs with state-aware mocking links
+
 ## 0.1.16
 
 ### Patch Changes
