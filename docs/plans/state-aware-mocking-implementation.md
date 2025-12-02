@@ -398,29 +398,58 @@ Minimal - just wire core and MSW adapter together:
    - Enables state machine patterns with match.state + afterResponse
    - 8 tests including full state machine demo
 
-### Phase 3: Adapter Wiring
+### Phase 3: Adapter Wiring ✅ COMPLETE (Express), 🔄 IN PROGRESS (Next.js)
 
-9. **MSW Adapter**
-   - Wire StateManager into handler creation
-   - Ensure test ID flows through request handling
+9. **MSW Adapter** ✅ COMPLETE (no changes needed)
+   - StateManager already wired into handler creation via ResponseSelector
+   - Test ID flows through AsyncLocalStorage (existing infrastructure)
+   - All state-aware features handled by core's ResponseSelector
 
-10. **Express Adapter**
-    - Wire state store through setup
-    - Verify E2E flow works
+10. **Express Adapter** ✅ COMPLETE (no changes needed)
+    - Adapter is a thin pass-through layer
+    - State-aware mocking handled entirely by core + MSW adapter
+    - E2E tests in example app verify full integration
 
-11. **Next.js Adapters**
-    - Wire state store for App Router
-    - Wire state store for Pages Router
+11. **Next.js Adapters** ⏳ PENDING
+    - Verify state store works for App Router
+    - Verify state store works for Pages Router
+    - Expected: No adapter changes needed (same architecture as Express)
 
-### Phase 4: Example Apps (Proof)
+### Phase 4: Example Apps (Proof) ✅ COMPLETE (Express), ⏳ PENDING (Next.js)
 
-12. **Express Example App**
-    - Add scenario using state-aware mocking
-    - Playwright test proving it works
+12. **Express Example App** ✅ COMPLETE (PR #309)
+    - Added `loanApplicationScenario` (stateResponse + afterResponse.setState)
+    - Added `featureFlagsScenario` (match.state + captureState)
+    - 4 E2E tests covering all state-aware mocking features
+    - Tests: workflow state transitions, feature flag toggling, state isolation, state reset
 
-13. **Next.js Example Apps**
+13. **Next.js Example Apps** ⏳ PENDING
     - Add scenarios to both App Router and Pages Router examples
-    - Playwright tests proving it works
+    - E2E tests proving it works
+    - Expected: Similar scenarios to Express example
+
+### Key Learnings from Implementation
+
+**State keys are literal strings, not nested paths:**
+
+```typescript
+// ✅ CORRECT - Simple key
+captureState: { premiumEnabled: "body.enabled" }
+match: { state: { premiumEnabled: true } }
+
+// ❌ WRONG - Dot-notation key doesn't work as nested path
+captureState: { "features.premium_pricing": "body.enabled" }
+match: { state: { "features.premium_pricing": true } }
+```
+
+The state key `"features.premium_pricing"` is stored and matched as a literal string, not as a nested object path. Use simple keys for clarity.
+
+**Adapters are thin pass-through layers:**
+
+- Express and MSW adapters required NO code changes for state-aware mocking
+- All state-aware logic lives in core's ResponseSelector
+- Adapters just pass scenarios through and propagate test IDs
+- E2E tests in example apps are the right place to verify integration
 
 ---
 
