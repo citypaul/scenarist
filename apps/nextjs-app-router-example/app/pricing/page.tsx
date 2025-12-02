@@ -151,6 +151,7 @@ export default function PricingPage() {
 
         {/* Current Pricing Display */}
         <section
+          role="region"
           aria-label="Current pricing"
           className="mb-8 bg-white p-6 rounded-lg shadow"
         >

@@ -83,8 +83,13 @@ test.describe("State-Aware Mocking (ADR-0019)", () => {
       // Navigate to pricing page
       await page.goto("/pricing");
 
-      // Verify initial state - standard pricing
-      await expect(page.getByRole("status").first()).toContainText("standard");
+      // Verify initial state - standard pricing (look in "Current pricing" section)
+      const pricingSection = page.getByRole("region", {
+        name: "Current pricing",
+      });
+      await expect(pricingSection.getByRole("status")).toContainText(
+        "standard",
+      );
       await expect(page.getByText("£100/month")).toBeVisible();
 
       // Enable premium feature flag by clicking the toggle
@@ -93,9 +98,9 @@ test.describe("State-Aware Mocking (ADR-0019)", () => {
         .click();
 
       // Wait for pricing to update to premium tier
-      await expect(page.getByRole("status").first()).toContainText("premium");
+      await expect(pricingSection.getByRole("status")).toContainText("premium");
       await expect(page.getByText("£50/month")).toBeVisible();
-      await expect(page.getByText("50% off")).toBeVisible();
+      await expect(pricingSection.getByText("50% off")).toBeVisible();
     });
   });
 

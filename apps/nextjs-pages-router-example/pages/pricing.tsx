@@ -197,7 +197,9 @@ export default function PricingPage() {
       </div>
 
       {/* Current Pricing Display */}
-      <div
+      <section
+        role="region"
+        aria-label="Current pricing"
         style={{
           backgroundColor: "#fff",
           padding: "20px",
@@ -249,7 +251,7 @@ export default function PricingPage() {
         ) : (
           <p style={{ color: "#ef4444" }}>Failed to load pricing</p>
         )}
-      </div>
+      </section>
 
       {/* Pricing Comparison */}
       <div
