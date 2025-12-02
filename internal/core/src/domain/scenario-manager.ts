@@ -70,7 +70,7 @@ export const createScenarioManager = ({
         const errorMessages = validationResult.error.issues.map(
           (err) => `${err.path.join(".")}: ${err.message}`,
         );
-        const scenarioId = (definition as any)?.id || "<unknown>";
+        const scenarioId = (definition as { id?: string })?.id || "<unknown>";
         throw new ScenarioValidationError(
           `Invalid scenario definition for '${scenarioId}': ${errorMessages.join(", ")}`,
           errorMessages,

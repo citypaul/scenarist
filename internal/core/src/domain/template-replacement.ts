@@ -65,6 +65,7 @@ export const applyTemplates = (
   if (typeof value === "object" && value !== null) {
     const result: Record<string, unknown> = {};
     for (const [key, val] of Object.entries(value)) {
+      // eslint-disable-next-line security/detect-object-injection -- Key from Object.entries iteration
       result[key] = applyTemplates(val, normalizedData);
     }
     return result;
@@ -89,6 +90,7 @@ const resolveTemplatePath = (
   path: string,
 ): unknown => {
   // Get the root object (state or params)
+  // eslint-disable-next-line security/detect-object-injection -- Prefix validated as 'state' or 'params' by regex
   const root = templateData[prefix];
 
   // Guard: Prefix doesn't exist (e.g., no params provided)
@@ -113,6 +115,7 @@ const resolveTemplatePath = (
 
     // Traverse object
     const record = current as Record<string, unknown>;
+    // eslint-disable-next-line security/detect-object-injection -- Segment from split() iteration
     current = record[segment];
 
     // Guard: Return undefined if property doesn't exist

@@ -73,6 +73,7 @@ const stateMatchesCondition = (
       return false;
     }
 
+    // eslint-disable-next-line security/detect-object-injection -- Key from Object.entries iteration
     const actualValue = state[key];
 
     if (!deepEquals(actualValue, expectedValue)) {

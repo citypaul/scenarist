@@ -63,7 +63,7 @@ export const createResponseSelector = (
 
       // Find all matching mocks and score them by specificity
       for (let mockIndex = 0; mockIndex < mocks.length; mockIndex++) {
-        // Index is guaranteed in bounds by loop condition (0 <= mockIndex < length)
+        // eslint-disable-next-line security/detect-object-injection -- Index bounded by loop (0 <= i < length)
         const mockWithParams = mocks[mockIndex]!;
         const mock = mockWithParams.mock;
 
@@ -220,6 +220,7 @@ const selectResponseFromMock = (
     // Get response at current position
     // Note: Exhausted sequences are skipped during matching phase,
     // so position should always be valid here
+    // eslint-disable-next-line security/detect-object-injection -- Position bounded by sequence tracker
     const response = mock.sequence.responses[position]!;
 
     // Advance position for next call
@@ -405,6 +406,7 @@ const matchesState = (
     }
 
     // Deep equality check for values (handles primitives, null, objects)
+    // eslint-disable-next-line security/detect-object-injection -- Key from Object.entries iteration
     if (!deepEquals(currentState[key], expectedValue)) {
       return false;
     }
@@ -432,6 +434,7 @@ const matchesBody = (
 
   // Check all required fields exist in request body with matching values
   for (const [key, criteriaValue] of Object.entries(criteriaBody)) {
+    // eslint-disable-next-line security/detect-object-injection -- Key from Object.entries iteration
     const requestValue = body[key];
 
     // Convert to string for matching (type coercion like headers/query)
@@ -543,6 +546,7 @@ const matchesHeaders = (
 
   for (const [key, value] of Object.entries(criteriaHeaders)) {
     const normalizedKey = normalizeHeaderName(key);
+    // eslint-disable-next-line security/detect-object-injection -- Key normalized from Object.entries iteration
     const requestValue = normalizedRequest[normalizedKey];
 
     if (!requestValue || !matchesValue(requestValue, value)) {
@@ -563,6 +567,7 @@ const matchesQuery = (
 ): boolean => {
   // Check all required query params exist with exact matching values
   for (const [key, value] of Object.entries(criteriaQuery)) {
+    // eslint-disable-next-line security/detect-object-injection -- Key from Object.entries iteration
     const requestValue = requestQuery[key];
 
     if (!requestValue || !matchesValue(requestValue, value)) {

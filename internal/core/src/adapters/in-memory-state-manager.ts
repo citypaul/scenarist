@@ -104,6 +104,7 @@ export class InMemoryStateManager implements StateManager {
       return;
     }
 
+    // eslint-disable-next-line security/detect-object-injection -- Guarded by isDangerousKey and Object.hasOwn
     const existingValue = Object.hasOwn(obj, key) ? obj[key] : undefined;
     if (
       typeof existingValue !== "object" ||
@@ -118,6 +119,7 @@ export class InMemoryStateManager implements StateManager {
       });
     }
 
+    // eslint-disable-next-line security/detect-object-injection -- Guarded by isDangerousKey, Object.hasOwn, and Object.defineProperty
     const nested = obj[key] as Record<string, unknown>;
     this.setNestedValue(nested, path.slice(1), value);
   }
@@ -138,6 +140,7 @@ export class InMemoryStateManager implements StateManager {
       return undefined;
     }
 
+    // eslint-disable-next-line security/detect-object-injection -- Guarded by isDangerousKey and Object.hasOwn
     const value = obj[key];
 
     if (path.length === 1) {
