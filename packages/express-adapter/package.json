@@ -1,6 +1,6 @@
 {
   "name": "@scenarist/express-adapter",
-  "version": "0.1.16",
+  "version": "0.2.0",
   "description": "Express middleware adapter for Scenarist",
   "author": "Paul Hammond (citypaul) <paul@packsoftware.co.uk>",
   "license": "MIT",
