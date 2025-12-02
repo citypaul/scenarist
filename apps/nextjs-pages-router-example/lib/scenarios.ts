@@ -964,6 +964,163 @@ export const hostnameMatchingScenario: ScenaristScenario = {
 };
 
 /**
+ * Loan Application Workflow (ADR-0019 - State-Aware Mocking)
+ *
+ * Demonstrates:
+ * - stateResponse: Different responses based on current state (state.step)
+ * - afterResponse.setState: Advancing workflow state after response
+ *
+ * Flow:
+ * 1. Initial: GET /loan/status → "pending" (no state)
+ * 2. POST /loan/submit → sets state.step = "submitted"
+ * 3. GET /loan/status → "reviewing" (matches step = "submitted")
+ * 4. POST /loan/review → sets state.step = "reviewed"
+ * 5. GET /loan/status → "approved" (matches step = "reviewed")
+ */
+export const loanApplicationScenario: ScenaristScenario = {
+  id: "loanApplication",
+  name: "Loan Application Workflow",
+  description:
+    "State-aware loan workflow with stateResponse and afterResponse.setState",
+  mocks: [
+    // GET /loan/status - Returns different responses based on workflow state
+    {
+      method: "GET",
+      url: "https://api.loans.com/loan/status",
+      stateResponse: {
+        default: {
+          status: 200,
+          body: {
+            status: "pending",
+            message: "Application not yet submitted",
+          },
+        },
+        conditions: [
+          {
+            when: { step: "submitted" },
+            then: {
+              status: 200,
+              body: {
+                status: "reviewing",
+                message: "Application under review",
+              },
+            },
+          },
+          {
+            when: { step: "reviewed" },
+            then: {
+              status: 200,
+              body: {
+                status: "approved",
+                message: "Application approved",
+              },
+            },
+          },
+        ],
+      },
+    },
+    // POST /loan/submit - Sets state.step = "submitted"
+    {
+      method: "POST",
+      url: "https://api.loans.com/loan/submit",
+      response: {
+        status: 200,
+        body: {
+          success: true,
+          message: "Application submitted successfully",
+        },
+      },
+      afterResponse: {
+        setState: { step: "submitted" },
+      },
+    },
+    // POST /loan/review - Sets state.step = "reviewed"
+    {
+      method: "POST",
+      url: "https://api.loans.com/loan/review",
+      response: {
+        status: 200,
+        body: {
+          success: true,
+          message: "Review completed",
+        },
+      },
+      afterResponse: {
+        setState: { step: "reviewed" },
+      },
+    },
+  ],
+};
+
+/**
+ * Feature Flags Scenario (ADR-0019 - State-Aware Mocking)
+ *
+ * Demonstrates:
+ * - match.state: Selecting different mocks based on feature flag state
+ * - captureState: Capturing feature flag value from request body
+ *
+ * Unlike stateResponse (one mock, many responses), match.state selects
+ * WHICH mock handles the request based on current state.
+ *
+ * Flow:
+ * 1. Initial: GET /pricing → standard pricing (no feature flag)
+ * 2. POST /features → captures state.premiumEnabled = true
+ * 3. GET /pricing → premium pricing (match.state selects premium mock)
+ */
+export const featureFlagsScenario: ScenaristScenario = {
+  id: "featureFlags",
+  name: "Feature Flags",
+  description: "State-based mock selection with match.state",
+  mocks: [
+    // POST /features - Captures feature flag state
+    // Note: Using simple key "premiumEnabled" instead of dot-notation
+    // because state keys are treated as literal strings
+    {
+      method: "POST",
+      url: "https://api.features.com/features",
+      captureState: {
+        premiumEnabled: "body.enabled",
+      },
+      response: {
+        status: 200,
+        body: {
+          success: true,
+          message: "Feature flag updated",
+        },
+      },
+    },
+    // GET /pricing with premium feature flag enabled (match.state)
+    {
+      method: "GET",
+      url: "https://api.pricing.com/pricing",
+      match: {
+        state: { premiumEnabled: true },
+      },
+      response: {
+        status: 200,
+        body: {
+          tier: "premium",
+          price: 50,
+          discount: "50% off",
+        },
+      },
+    },
+    // GET /pricing fallback (standard pricing, no feature flag)
+    {
+      method: "GET",
+      url: "https://api.pricing.com/pricing",
+      response: {
+        status: 200,
+        body: {
+          tier: "standard",
+          price: 100,
+        },
+      },
+    },
+  ],
+};
+
+/**
  * All scenarios for registration and type-safe access
  */
 export const scenarios = {
@@ -979,4 +1136,6 @@ export const scenarios = {
   stringMatching: stringMatchingScenario,
   urlMatching: urlMatchingScenario,
   hostnameMatching: hostnameMatchingScenario,
+  loanApplication: loanApplicationScenario,
+  featureFlags: featureFlagsScenario,
 } as const satisfies ScenaristScenarios;

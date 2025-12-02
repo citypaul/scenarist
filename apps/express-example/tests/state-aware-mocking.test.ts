@@ -6,7 +6,7 @@ import { createTestFixtures } from "./test-helpers.js";
 const fixtures = createTestFixtures();
 
 /**
- * State-Aware Mocking E2E Tests (ADR-0019)
+ * State-Aware Mocking Scenario-Based Tests (ADR-0019)
  *
  * Tests the three new state-aware mocking capabilities:
  * 1. stateResponse - Conditional responses based on current state
@@ -16,7 +16,7 @@ const fixtures = createTestFixtures();
  * These features enable state machine patterns where mock behavior
  * changes based on accumulated state from previous requests.
  */
-describe("State-Aware Mocking E2E (ADR-0019)", () => {
+describe("State-Aware Mocking (ADR-0019)", () => {
   afterAll(async () => {
     await fixtures.cleanup();
   });
