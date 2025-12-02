@@ -159,10 +159,22 @@ export default defineConfig({
           items: [
             { label: "Philosophy", slug: "concepts/philosophy" },
             { label: "How It Works", slug: "concepts/how-it-works" },
-            { label: "Scenario Format", slug: "concepts/scenario-format" },
-            { label: "Default Mocks", slug: "concepts/default-mocks" },
-            { label: "Dynamic Responses", slug: "concepts/dynamic-responses" },
             { label: "Production Safety", slug: "concepts/production-safety" },
+          ],
+        },
+        {
+          label: "Writing Scenarios",
+          items: [
+            { label: "Overview", slug: "scenarios/overview" },
+            { label: "Basic Structure", slug: "scenarios/basic-structure" },
+            { label: "Request Matching", slug: "scenarios/request-matching" },
+            { label: "Pattern Matching", slug: "scenarios/pattern-matching" },
+            { label: "Response Sequences", slug: "scenarios/response-sequences" },
+            { label: "Stateful Mocks", slug: "scenarios/stateful-mocks" },
+            { label: "State-Aware Mocking", slug: "scenarios/state-aware-mocking" },
+            { label: "Default Scenarios", slug: "scenarios/default-scenarios" },
+            { label: "Combining Features", slug: "scenarios/combining-features" },
+            { label: "TypeScript Patterns", slug: "scenarios/typescript-patterns" },
           ],
         },
         {

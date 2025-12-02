@@ -1,0 +1,103 @@
+---
+title: Writing Scenarios Overview
+description: Learn how to write Scenarist scenarios with all available features
+---
+
+Scenarist scenarios are **declarative TypeScript objects** that describe what mock responses to return. This guide helps you navigate the scenario features and choose the right ones for your tests.
+
+## What Scenarios Can Do
+
+| Feature | What It Enables | When to Use |
+|---------|-----------------|-------------|
+| [Basic Structure](/scenarios/basic-structure) | Define mock responses for HTTP requests | Every scenario needs this |
+| [Request Matching](/scenarios/request-matching) | Return different responses for same URL based on request content | Different responses for different users, tiers, or request data |
+| [Pattern Matching](/scenarios/pattern-matching) | Match using regex, contains, startsWith, endsWith | Campaign codes, user agents, email domains, dynamic values |
+| [Response Sequences](/scenarios/response-sequences) | Return different responses on successive calls | Polling, async job status, multi-step workflows |
+| [Stateful Mocks](/scenarios/stateful-mocks) | Capture data from requests, inject into later responses | Shopping carts, user profiles, accumulated data |
+| [Default Scenarios](/scenarios/default-scenarios) | Define baseline mocks, override only what changes | DRY scenarios, avoid duplication |
+| [Combining Features](/scenarios/combining-features) | Use all features together | Complex realistic workflows |
+| [TypeScript Patterns](/scenarios/typescript-patterns) | Type-safe scenario definitions | Autocomplete, compile-time errors |
+
+## Which Feature Do I Need?
+
+**Start here:** Every scenario needs the [Basic Structure](/scenarios/basic-structure) - this defines your mocks with method, URL, and response.
+
+Then ask yourself:
+
+### "I need different responses for the same URL"
+
+**Based on request content?** Use [Request Matching](/scenarios/request-matching)
+- Different pricing for premium vs standard users
+- Different responses based on API version header
+- Different data based on query parameters
+
+**Based on how many times it's called?** Use [Response Sequences](/scenarios/response-sequences)
+- Job status: pending → processing → complete
+- Polling patterns
+- Retry scenarios
+
+### "I need to match dynamic values"
+
+Use [Pattern Matching](/scenarios/pattern-matching) for:
+- Campaign codes: `x-campaign: summer-premium-2024`
+- User agents: `Mobile`, `Chrome`, `Safari`
+- Email domains: `@company.com`
+- File extensions: `.pdf`, `.jpg`
+
+### "I need responses to reflect earlier requests"
+
+Use [Stateful Mocks](/scenarios/stateful-mocks) for:
+- Shopping cart that accumulates items
+- User profile that reflects submitted data
+- Session data that persists across requests
+
+### "I'm duplicating mocks across scenarios"
+
+Use [Default Scenarios](/scenarios/default-scenarios) to:
+- Define happy path once in 'default'
+- Override only what changes in specialized scenarios
+- Keep scenarios DRY
+
+### "I need all of the above"
+
+See [Combining Features](/scenarios/combining-features) for examples of using multiple features together.
+
+## Quick Example
+
+A minimal scenario with all required fields:
+
+```typescript
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
+export const myScenario: ScenaristScenario = {
+  id: 'my-scenario',                    // Unique identifier
+  name: 'My Scenario',                  // Human-readable name
+  description: 'What this scenario tests',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.example.com/user',
+      response: {
+        status: 200,
+        body: { id: 1, name: 'Test User' },
+      },
+    },
+  ],
+};
+```
+
+## Why Declarative?
+
+Scenarist enforces **declarative patterns** - scenarios describe WHAT to return, not HOW to decide. No imperative functions with hidden if/else logic. This leads to:
+
+1. **Visible intent** - Match criteria show what matters
+2. **Composable features** - Specificity-based selection, automatic fallback
+3. **Testable scenarios** - Can validate statically with TypeScript
+
+[Learn more about the philosophy →](/concepts/philosophy#3-declarative-beats-imperative-for-test-setup)
+
+## Next Steps
+
+- [Basic Structure →](/scenarios/basic-structure) - Start with the fundamentals
+- [Request Matching →](/scenarios/request-matching) - Different responses for same URL
+- [Response Sequences →](/scenarios/response-sequences) - Polling and async workflows

@@ -9,12 +9,15 @@ Playwright test helpers for [Scenarist](https://scenarist.io) scenario managemen
 
 **→ [Playwright Integration Guide](https://scenarist.io/testing/playwright-integration)** — Fixtures, type-safe scenarios, test isolation
 
-| Topic                 | Link                                                                                             |
-| --------------------- | ------------------------------------------------------------------------------------------------ |
-| **Why Scenarist?**    | [scenarist.io/getting-started/why-scenarist](https://scenarist.io/getting-started/why-scenarist) |
-| **Parallel Testing**  | [scenarist.io/testing/parallel-testing](https://scenarist.io/testing/parallel-testing)           |
-| **Tool Comparison**   | [scenarist.io/comparison](https://scenarist.io/comparison)                                       |
-| **Dynamic Responses** | [scenarist.io/concepts/dynamic-responses](https://scenarist.io/concepts/dynamic-responses)       |
+| Topic                   | Link                                                                                             |
+| ----------------------- | ------------------------------------------------------------------------------------------------ |
+| **Why Scenarist?**      | [scenarist.io/getting-started/why-scenarist](https://scenarist.io/getting-started/why-scenarist) |
+| **Parallel Testing**    | [scenarist.io/testing/parallel-testing](https://scenarist.io/testing/parallel-testing)           |
+| **Tool Comparison**     | [scenarist.io/comparison](https://scenarist.io/comparison)                                       |
+| **Writing Scenarios**   | [scenarist.io/scenarios/basic-structure](https://scenarist.io/scenarios/basic-structure)         |
+| **Request Matching**    | [scenarist.io/scenarios/request-matching](https://scenarist.io/scenarios/request-matching)       |
+| **Response Sequences**  | [scenarist.io/scenarios/response-sequences](https://scenarist.io/scenarios/response-sequences)   |
+| **State-Aware Mocking** | [scenarist.io/scenarios/state-aware-mocking](https://scenarist.io/scenarios/state-aware-mocking) |
 
 ## Installation
 

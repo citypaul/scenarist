@@ -1,0 +1,428 @@
+---
+title: Pattern Matching
+description: Flexible matching with regex, contains, startsWith, endsWith strategies
+---
+
+## What This Enables
+
+Match URLs and request values using flexible patterns instead of exact strings. Useful for dynamic URLs, campaign codes, user agents, email domains, and file extensions.
+
+**Use cases:**
+- Version-agnostic API matching: `/api/v1/...`, `/api/v2/...`
+- Origin-agnostic URL patterns: Match any host
+- Marketing campaigns: `x-campaign: summer-premium-2024`
+- User agent detection: Mobile vs Desktop
+- Email domain filtering: `@company.com`
+- File type validation: `.pdf`, `.jpg`
+
+## When to Use
+
+Use pattern matching when:
+- URL contains variable parts (API versions, numeric IDs)
+- You need origin-agnostic URL matching (any host)
+- Values contain variable parts (IDs, timestamps, campaigns)
+- You need substring matching (contains, prefix, suffix)
+- Multiple values should match the same mock (OR logic)
+- Exact string matching is too rigid
+
+## URL Pattern Matching
+
+The mock's `url` field accepts **native JavaScript RegExp** for flexible URL matching:
+
+### Native RegExp (Recommended)
+
+```typescript
+// Match any API version
+{
+  method: 'GET',
+  url: /https:\/\/api\.example\.com\/v\d+\/users/,
+  response: { status: 200, body: { users: [] } }
+}
+// Matches: https://api.example.com/v1/users ✓
+// Matches: https://api.example.com/v2/users ✓
+// Matches: https://api.example.com/v99/users ✓
+```
+
+### Origin-Agnostic Patterns
+
+RegExp uses **weak comparison** (partial matching), making it perfect for matching URLs regardless of host:
+
+```typescript
+// Match any origin
+{
+  method: 'GET',
+  url: /\/api\/products$/,
+  response: { status: 200, body: { products: [] } }
+}
+// Matches: http://localhost:3000/api/products ✓
+// Matches: https://api.example.com/api/products ✓
+// Matches: https://staging.myapp.io/api/products ✓
+```
+
+### Common URL Patterns
+
+```typescript
+// Numeric IDs only
+url: /\/users\/\d+$/
+// Matches: /users/123, /users/456789
+// Doesn't match: /users/abc, /users/
+
+// Any path segment
+url: /\/api\/[^/]+\/items/
+// Matches: /api/v1/items, /api/beta/items
+
+// Multiple path params
+url: /\/users\/\d+\/posts\/\d+/
+// Matches: /users/1/posts/42
+```
+
+### Case-Insensitive URL Matching
+
+```typescript
+url: /\/api\/users/i  // Note the 'i' flag
+// Matches: /api/users, /API/USERS, /Api/Users
+```
+
+## Match Criteria URL Patterns
+
+In addition to the mock's `url` field, you can use pattern matching in `match.url` for more refined control:
+
+```typescript
+{
+  method: 'GET',
+  url: 'https://api.github.com/users/:username',  // Base pattern
+  match: {
+    url: /\/users\/\d+$/  // Only match numeric usernames
+  },
+  response: { status: 200, body: { type: 'numeric-user' } }
+}
+```
+
+This is useful when you want path parameters for some cases but regex matching for others.
+
+## Value Matching Strategies
+
+Scenarist provides **6 matching strategies** that work in URL, body, headers, and query:
+
+| Strategy | Syntax | Behavior |
+|----------|--------|----------|
+| Plain String | `'value'` | Exact match (default) |
+| Native RegExp | `/pattern/flags` | Pattern match (recommended for URL) |
+| Equals | `{ equals: 'value' }` | Explicit exact match |
+| Contains | `{ contains: 'substring' }` | Value contains substring |
+| Starts With | `{ startsWith: 'prefix' }` | Value starts with prefix |
+| Ends With | `{ endsWith: 'suffix' }` | Value ends with suffix |
+| Serialized Regex | `{ regex: { source: 'pattern', flags: 'i' } }` | JSON-safe regex pattern |
+
+## Strategy Examples
+
+### Native RegExp
+
+Use native JavaScript RegExp for pattern matching (works in `url` and `match.url`):
+
+```typescript
+// In mock url field
+url: /\/api\/v\d+\/users/
+
+// In match.url field
+match: {
+  url: /\/users\/\d+$/
+}
+```
+
+### Contains
+
+Match values containing a substring:
+
+```typescript
+match: {
+  headers: {
+    'user-agent': { contains: 'Mobile' }
+  }
+}
+// Matches: 'Mozilla/5.0 (iPhone; Mobile)' ✓
+// Matches: 'Mobile Safari' ✓
+// Doesn't match: 'Chrome Desktop' ✗
+```
+
+### Starts With
+
+Match values with a prefix:
+
+```typescript
+match: {
+  body: {
+    apiKey: { startsWith: 'sk_' }
+  }
+}
+// Matches: 'sk_live_abc123' ✓
+// Matches: 'sk_test_xyz789' ✓
+// Doesn't match: 'pk_live_abc123' ✗
+```
+
+### Ends With
+
+Match values with a suffix:
+
+```typescript
+match: {
+  body: {
+    filename: { endsWith: '.pdf' }
+  }
+}
+// Matches: 'report.pdf' ✓
+// Matches: 'invoice_2024.pdf' ✓
+// Doesn't match: 'document.docx' ✗
+```
+
+### Serialized Regex
+
+For JSON-safe scenarios (stored in files or databases), use serialized regex:
+
+```typescript
+match: {
+  headers: {
+    'x-campaign': {
+      regex: { source: 'premium|vip|exclusive', flags: 'i' }
+    }
+  }
+}
+// Matches: 'summer-premium-sale' ✓
+// Matches: 'early-VIP-access' ✓ (case-insensitive)
+// Matches: 'exclusive-members-2024' ✓
+// Doesn't match: 'standard-sale' ✗
+```
+
+:::tip[Native vs Serialized Regex]
+- **Native RegExp** (`/pattern/`): Use in TypeScript code for better readability
+- **Serialized Regex** (`{ regex: { source, flags } }`): Use when scenarios must be JSON-serializable
+:::
+
+## Where Strategies Apply
+
+All strategies work in:
+
+- ✅ **Mock URL** (`url` field) - Native RegExp only
+- ✅ **Match URL** (`match.url`) - All strategies
+- ✅ **Request Body** (`match.body`) - All strategies
+- ✅ **Request Headers** (`match.headers`) - All strategies
+- ✅ **Query Parameters** (`match.query`) - All strategies
+
+```typescript
+{
+  method: 'GET',
+  url: /\/api\/v\d+\/products/,  // Native RegExp in url
+  match: {
+    url: { contains: '/featured' },  // Strategy in match.url
+    body: {
+      email: { contains: '@company.com' },
+      apiKey: { startsWith: 'sk_' },
+    },
+    headers: {
+      'user-agent': { contains: 'Mobile' },
+      'referer': { endsWith: '/checkout' },
+    },
+    query: {
+      category: { regex: { source: '^(tech|science)$', flags: 'i' } },
+    }
+  },
+  response: { status: 200, body: { ... } }
+}
+```
+
+## Regex Reference
+
+### Native RegExp Syntax
+
+```typescript
+// In url field or match.url
+url: /pattern/flags
+
+// Examples
+url: /\/api\/users\/\d+/      // No flags
+url: /\/api\/users/i          // Case-insensitive
+```
+
+### Serialized Regex Syntax
+
+```typescript
+// In match.body, match.headers, match.query, or match.url
+{
+  regex: {
+    source: 'pattern',  // Regex pattern (without delimiters)
+    flags: 'i'          // Optional flags
+  }
+}
+```
+
+### Supported Flags
+
+| Flag | Name | Description |
+|------|------|-------------|
+| `i` | Case-insensitive | Most common - matches regardless of case |
+| `m` | Multiline | `^` and `$` match line boundaries |
+| `s` | Dotall | `.` matches newlines |
+| `u` | Unicode | Enables Unicode features |
+| `v` | Unicode sets | Enhanced Unicode support |
+
+```typescript
+// Case-insensitive (most common)
+{ regex: { source: 'premium|vip', flags: 'i' } }
+
+// Multiple flags
+{ regex: { source: '/api/v\\d+/', flags: 'im' } }
+```
+
+### Common Patterns
+
+**Alternatives (OR logic):**
+```typescript
+{ regex: { source: 'premium|vip|enterprise', flags: 'i' } }
+```
+
+**Exact match from options:**
+```typescript
+{ regex: { source: '^(tech|science|health)$', flags: 'i' } }
+```
+
+**Numeric patterns:**
+```typescript
+// Version numbers (v1, v2, v3)
+{ regex: { source: 'v\\d+', flags: '' } }
+
+// Semver (1.2.3)
+{ regex: { source: '^\\d+\\.\\d+\\.\\d+$', flags: '' } }
+```
+
+**Email domains:**
+```typescript
+{ regex: { source: '@(gmail|yahoo|outlook)\\.com$', flags: 'i' } }
+```
+
+**File extensions:**
+```typescript
+{ regex: { source: '\\.(jpg|png|gif|webp)$', flags: 'i' } }
+```
+
+## Real-World Examples
+
+### Marketing Campaigns
+
+```typescript
+import type { ScenaristMock } from '@scenarist/express-adapter';
+
+const campaignMock: ScenaristMock = {
+  method: 'GET',
+  url: '/api/products',
+  match: {
+    headers: {
+      'x-campaign': {
+        regex: { source: 'premium|vip|exclusive', flags: 'i' }
+      }
+    }
+  },
+  response: {
+    status: 200,
+    body: { pricing: 'premium', discount: 25 }
+  }
+};
+```
+
+### Mobile Detection
+
+```typescript
+const mobileMock: ScenaristMock = {
+  method: 'GET',
+  url: '/api/config',
+  match: {
+    headers: {
+      'user-agent': {
+        regex: { source: '(iPhone|iPad|Android)', flags: 'i' }
+      }
+    }
+  },
+  response: {
+    status: 200,
+    body: { layout: 'mobile', features: ['touch', 'swipe'] }
+  }
+};
+```
+
+### Referer Patterns
+
+```typescript
+const checkoutMock: ScenaristMock = {
+  method: 'POST',
+  url: '/api/checkout',
+  match: {
+    headers: {
+      'referer': {
+        regex: { source: '/checkout/(confirm|review)', flags: '' }
+      }
+    }
+  },
+  response: { status: 200, body: { allowCheckout: true } }
+};
+```
+
+### Email Domain Filtering
+
+```typescript
+const emailMock: ScenaristMock = {
+  method: 'GET',
+  url: '/api/search',
+  match: {
+    query: {
+      email: {
+        regex: { source: '@(gmail|yahoo|outlook)\\.com$', flags: 'i' }
+      }
+    }
+  },
+  response: { status: 200, body: { provider: 'common-email' } }
+};
+```
+
+## Security: ReDoS Protection
+
+Scenarist validates all regex patterns for **ReDoS (Regular Expression Denial of Service)** vulnerabilities:
+
+```typescript
+// ✅ SAFE - Simple alternation
+{ regex: { source: 'premium|vip', flags: 'i' } }
+
+// ✅ SAFE - Character classes
+{ regex: { source: '[A-Z]{3}-\\d{4}', flags: '' } }
+
+// ❌ REJECTED - Catastrophic backtracking risk
+{ regex: { source: '(a+)+b', flags: '' } }
+// Error: Regex pattern may cause ReDoS attack
+```
+
+**Protection mechanisms:**
+- Pattern validation using `redos-detector` before scenario registration
+- Unsafe patterns rejected immediately with clear error messages
+- No runtime regex compilation for invalid patterns
+
+## Combining with Other Matching
+
+Pattern matching combines with other match criteria (AND logic):
+
+```typescript
+match: {
+  body: {
+    itemType: { contains: 'premium' },     // Pattern matching
+    category: 'electronics',                // Exact matching
+  },
+  headers: {
+    'x-campaign': { regex: { source: 'summer|winter', flags: 'i' } },
+    'x-region': 'eu',                       // Exact matching
+  }
+}
+// ALL criteria must match
+```
+
+## Next Steps
+
+- [Request Matching →](/scenarios/request-matching) - Basic matching concepts
+- [Response Sequences →](/scenarios/response-sequences) - Combine patterns with sequences
+- [Combining Features →](/scenarios/combining-features) - Use all features together

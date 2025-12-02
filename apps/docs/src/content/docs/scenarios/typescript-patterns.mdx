@@ -1,0 +1,291 @@
+---
+title: TypeScript Patterns
+description: Type-safe scenario definitions with autocomplete and compile-time validation
+---
+
+## What This Enables
+
+Type-safe scenario definitions that provide autocomplete in tests and catch errors at compile time.
+
+**Use cases:**
+- **Autocomplete:** `switchScenario(page, '...')` suggests valid scenario IDs
+- **Compile-time errors:** Typos in scenario names caught immediately
+- **Structure validation:** Missing required fields caught at compile time
+- **Refactoring safety:** Rename scenarios confidently
+
+## The Scenarios Object Pattern
+
+Organize scenarios in a typed object:
+
+```typescript
+import type { ScenaristScenarios } from '@scenarist/express-adapter';
+
+export const scenarios = {
+  default: defaultScenario,        // Required: 'default' key
+  success: successScenario,
+  error: errorScenario,
+  premiumUser: premiumUserScenario,
+} as const satisfies ScenaristScenarios;
+```
+
+## Why `as const satisfies`
+
+The `as const satisfies ScenaristScenarios` pattern is essential for type safety. Each part serves a distinct purpose:
+
+### `as const` - Preserves Literal Types
+
+```typescript
+// WITHOUT as const - scenario IDs become generic 'string'
+const scenarios = {
+  default: defaultScenario,
+  premiumUser: premiumUserScenario,
+};
+type ScenarioId = keyof typeof scenarios;
+// Result: string (not useful for autocomplete)
+
+// WITH as const - scenario IDs are preserved as literal types
+const scenarios = {
+  default: defaultScenario,
+  premiumUser: premiumUserScenario,
+} as const;
+type ScenarioId = keyof typeof scenarios;
+// Result: 'default' | 'premiumUser' (enables autocomplete!)
+```
+
+### `satisfies ScenaristScenarios` - Validates Structure
+
+```typescript
+// Using : type annotation WIDENS the type (loses literals)
+const scenarios: ScenaristScenarios = {
+  default: defaultScenario,
+  premiumUser: premiumUserScenario,
+};
+type ScenarioId = keyof typeof scenarios;
+// Result: string (annotation widened the type)
+
+// Using satisfies VALIDATES without widening
+const scenarios = {
+  default: defaultScenario,
+  premiumUser: premiumUserScenario,
+} as const satisfies ScenaristScenarios;
+type ScenarioId = keyof typeof scenarios;
+// Result: 'default' | 'premiumUser' (validated AND preserved!)
+```
+
+### Together They Enable
+
+1. **Autocomplete in tests:** `switchScenario(page, '...')` suggests valid scenario IDs
+2. **Compile-time errors:** `switchScenario(page, 'typo')` fails immediately
+3. **Structure validation:** Missing fields caught at compile time
+
+```typescript
+// In your Playwright tests:
+await switchScenario(page, 'premiumUser');  // ✅ Autocomplete works
+await switchScenario(page, 'typo');          // ❌ TypeScript error
+```
+
+### Comparison
+
+| Pattern | Autocomplete | Validation |
+|---------|-------------|------------|
+| `as const satisfies ScenaristScenarios` | ✅ | ✅ |
+| `as const` only | ✅ | ❌ |
+| `satisfies` only | ❌ | ✅ |
+| `: ScenaristScenarios` annotation | ❌ | ✅ |
+
+## Extracting ScenarioId Type
+
+Create a type for valid scenario IDs:
+
+```typescript
+export const scenarios = {
+  default: defaultScenario,
+  success: successScenario,
+  error: errorScenario,
+} as const satisfies ScenaristScenarios;
+
+// Extract scenario ID type
+export type ScenarioId = keyof typeof scenarios;
+// 'default' | 'success' | 'error'
+
+// Use in helper functions
+export function getScenario(id: ScenarioId) {
+  return scenarios[id];
+}
+```
+
+## Import Patterns
+
+Types are re-exported from all adapter packages:
+
+```typescript
+// Express
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/express-adapter';
+
+// Next.js App Router
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/nextjs-adapter/app';
+
+// Next.js Pages Router
+import type { ScenaristScenario, ScenaristScenarios } from '@scenarist/nextjs-adapter/pages';
+```
+
+## Complete Example
+
+```typescript
+// lib/scenarios.ts
+import type {
+  ScenaristScenario,
+  ScenaristScenarios,
+} from '@scenarist/express-adapter';
+
+// Define individual scenarios
+const defaultScenario: ScenaristScenario = {
+  id: 'default',
+  name: 'Happy Path',
+  description: 'All external APIs succeed',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.example.com/user',
+      response: { status: 200, body: { name: 'Test User' } },
+    },
+  ],
+};
+
+const errorScenario: ScenaristScenario = {
+  id: 'error',
+  name: 'API Error',
+  description: 'External API returns error',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.example.com/user',
+      response: { status: 500, body: { error: 'Server Error' } },
+    },
+  ],
+};
+
+const premiumUserScenario: ScenaristScenario = {
+  id: 'premium-user',
+  name: 'Premium User',
+  description: 'User has premium tier',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'https://api.example.com/user',
+      response: { status: 200, body: { name: 'Premium User', tier: 'premium' } },
+    },
+  ],
+};
+
+// Export typed scenarios object
+export const scenarios = {
+  default: defaultScenario,
+  error: errorScenario,
+  premiumUser: premiumUserScenario,
+} as const satisfies ScenaristScenarios;
+
+// Export scenario ID type for use in tests
+export type ScenarioId = keyof typeof scenarios;
+```
+
+## Using in Tests
+
+```typescript
+// tests/example.spec.ts
+import { test, expect } from '@playwright/test';
+import type { ScenarioId } from '../lib/scenarios';
+
+// Type-safe fixture
+test.extend<{ switchScenario: (id: ScenarioId) => Promise<void> }>({
+  switchScenario: async ({ page }, use) => {
+    await use(async (id: ScenarioId) => {
+      await page.request.post('/__scenario__', {
+        data: { scenario: id },
+      });
+    });
+  },
+});
+
+test('handles premium user', async ({ page, switchScenario }) => {
+  await switchScenario('premiumUser');  // ✅ Autocomplete
+  await switchScenario('typo');          // ❌ TypeScript error
+});
+```
+
+## Organizing Large Scenario Sets
+
+For many scenarios, organize by feature:
+
+```typescript
+// scenarios/auth.ts
+export const authScenarios = {
+  loggedIn: loggedInScenario,
+  loggedOut: loggedOutScenario,
+  sessionExpired: sessionExpiredScenario,
+};
+
+// scenarios/payment.ts
+export const paymentScenarios = {
+  paymentSuccess: paymentSuccessScenario,
+  paymentDeclined: paymentDeclinedScenario,
+  paymentPending: paymentPendingScenario,
+};
+
+// scenarios/index.ts
+import { authScenarios } from './auth';
+import { paymentScenarios } from './payment';
+
+export const scenarios = {
+  default: defaultScenario,
+  ...authScenarios,
+  ...paymentScenarios,
+} as const satisfies ScenaristScenarios;
+
+export type ScenarioId = keyof typeof scenarios;
+```
+
+## Type Errors You'll See
+
+### Missing 'default' Key
+
+```typescript
+const scenarios = {
+  success: successScenario,
+  // ❌ Error: Property 'default' is missing
+} as const satisfies ScenaristScenarios;
+```
+
+### Invalid Scenario Structure
+
+```typescript
+const badScenario: ScenaristScenario = {
+  id: 'bad',
+  // ❌ Error: Property 'name' is missing
+  // ❌ Error: Property 'description' is missing
+  mocks: [],
+};
+```
+
+### Invalid Mock Structure
+
+```typescript
+const scenario: ScenaristScenario = {
+  id: 'test',
+  name: 'Test',
+  description: 'Test scenario',
+  mocks: [
+    {
+      method: 'GET',
+      url: '/api/test',
+      // ❌ Error: Must have 'response' or 'sequence'
+    },
+  ],
+};
+```
+
+## Next Steps
+
+- [Basic Structure →](/scenarios/basic-structure) - Scenario definition fundamentals
+- [Default Scenarios →](/scenarios/default-scenarios) - The required 'default' key
+- [Overview →](/scenarios/overview) - Feature decision guide

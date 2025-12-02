@@ -1,0 +1,291 @@
+---
+title: Basic Structure
+description: Foundational scenario definition with mocks, methods, URLs, and responses
+---
+
+## What This Enables
+
+Define HTTP mock responses that intercept requests to external APIs during tests. Every scenario needs this foundational structure.
+
+**Use cases:**
+- Mock any external API (Stripe, GitHub, Auth0, etc.)
+- Return controlled responses during tests
+- Define once, use across all tests
+
+## Scenario Structure
+
+Every scenario requires these fields:
+
+```typescript
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
+export const myScenario: ScenaristScenario = {
+  id: 'my-scenario',                    // Unique identifier (required)
+  name: 'My Scenario',                  // Human-readable name (required)
+  description: 'What this scenario represents',  // Documentation (required)
+  mocks: [                              // Array of mock definitions (required)
+    {
+      method: 'GET',
+      url: 'https://api.example.com/user',
+      response: {
+        status: 200,
+        body: { id: 1, name: 'Test User' },
+      },
+    },
+  ],
+};
+```
+
+### Required Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `string` | Unique identifier used when switching scenarios in tests |
+| `name` | `string` | Human-readable name for documentation and tooling |
+| `description` | `string` | Explains when and why to use this scenario |
+| `mocks` | `array` | Array of mock definitions (at least one required) |
+
+## Mock Definition
+
+Each mock requires a `method`, `url`, and **either** a `response` or `sequence`.
+
+### Simple Response Mock
+
+```typescript
+{
+  method: 'GET',                        // HTTP method (required)
+  url: 'https://api.example.com/user',  // URL pattern (required)
+  response: {                           // Single static response
+    status: 200,
+    body: { id: 1, name: 'Test User' },
+    headers: { 'x-custom': 'value' },   // Optional
+    delay: 1000,                        // Optional delay in ms
+  },
+}
+```
+
+### Sequence Mock
+
+For multiple responses (polling, async operations), use `sequence` instead of `response`:
+
+```typescript
+{
+  method: 'GET',
+  url: 'https://api.example.com/job/:id',
+  sequence: {                           // Response sequence
+    responses: [                        // Array of responses
+      { status: 200, body: { status: 'pending' } },
+      { status: 200, body: { status: 'complete' } },
+    ],
+    repeat: 'last',                     // 'last' | 'cycle' | 'none'
+  },
+}
+```
+
+See [Response Sequences →](/scenarios/response-sequences) for details.
+
+## HTTP Methods
+
+Supported methods:
+- `GET`, `POST`, `PUT`, `DELETE`, `PATCH`, `OPTIONS`, `HEAD`
+
+```typescript
+{ method: 'GET', url: '...', response: {...} }
+{ method: 'POST', url: '...', response: {...} }
+{ method: 'PUT', url: '...', response: {...} }
+{ method: 'DELETE', url: '...', response: {...} }
+{ method: 'PATCH', url: '...', response: {...} }
+```
+
+## URL Patterns
+
+URLs support four matching styles:
+
+### Exact Match
+```typescript
+url: 'https://api.example.com/users'
+// Matches: https://api.example.com/users
+// Doesn't match: https://api.example.com/users/123
+```
+
+### Path Parameters
+```typescript
+url: 'https://api.example.com/users/:id'
+// Matches: https://api.example.com/users/123
+// Matches: https://api.example.com/users/abc
+```
+
+### Glob Patterns
+```typescript
+url: 'https://api.example.com/users/*'
+// Matches: https://api.example.com/users/123
+// Matches: https://api.example.com/users/123/profile
+```
+
+### Regular Expressions
+
+Use native JavaScript RegExp for complex URL matching:
+
+```typescript
+// Match any API version
+url: /https:\/\/api\.example\.com\/v\d+\/users/
+// Matches: https://api.example.com/v1/users
+// Matches: https://api.example.com/v2/users
+// Matches: https://api.example.com/v99/users
+
+// Match numeric IDs only
+url: /\/users\/\d+$/
+// Matches: /users/123
+// Matches: /users/456789
+// Doesn't match: /users/abc
+
+// Origin-agnostic matching (matches any host)
+url: /\/api\/products$/
+// Matches: http://localhost:3000/api/products
+// Matches: https://api.example.com/api/products
+```
+
+RegExp uses **weak comparison** (partial matching), making it ideal for origin-agnostic patterns. See [Pattern Matching →](/scenarios/pattern-matching) for advanced regex patterns.
+
+## Response Structure
+
+Every response (single or in sequence) contains:
+
+```typescript
+response: {
+  status: 200,          // HTTP status code (100-599, required)
+  body: {               // Response body (any value, optional)
+    id: 1,
+    data: 'example',
+  },
+  headers: {            // Response headers (string key-value pairs, optional)
+    'x-custom': 'value',
+    'x-request-id': 'abc123',
+  },
+  delay: 1000,          // Delay in milliseconds (optional)
+}
+```
+
+### Status Codes
+
+Any valid HTTP status code (100-599):
+
+```typescript
+// Success
+{ status: 200, body: { success: true } }
+{ status: 201, body: { id: 'created-123' } }
+{ status: 204 }  // No content
+
+// Client errors
+{ status: 400, body: { error: 'Bad Request' } }
+{ status: 401, body: { error: 'Unauthorized' } }
+{ status: 404, body: { error: 'Not Found' } }
+
+// Server errors
+{ status: 500, body: { error: 'Internal Server Error' } }
+{ status: 503, body: { error: 'Service Unavailable' } }
+```
+
+### Response Body
+
+The `body` field accepts any JSON-serializable value:
+
+```typescript
+// Object
+body: { id: 1, name: 'User', roles: ['admin', 'user'] }
+
+// Array
+body: [{ id: 1 }, { id: 2 }, { id: 3 }]
+
+// Primitive
+body: 'Success'
+body: 42
+body: true
+
+// Null
+body: null
+```
+
+### Response Headers
+
+Custom headers as string key-value pairs:
+
+```typescript
+headers: {
+  'content-type': 'application/json',
+  'x-request-id': 'req-123',
+  'x-ratelimit-remaining': '99',
+}
+```
+
+### Response Delay
+
+Simulate network latency or slow responses:
+
+```typescript
+// Simulate 2-second API response
+{
+  method: 'GET',
+  url: 'https://api.slow.com/data',
+  response: {
+    status: 200,
+    body: { data: 'result' },
+    delay: 2000,  // 2 seconds
+  },
+}
+```
+
+## Complete Example
+
+```typescript
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
+export const defaultScenario: ScenaristScenario = {
+  id: 'default',
+  name: 'Happy Path',
+  description: 'All external APIs succeed with valid responses',
+  mocks: [
+    // GitHub API - successful user lookup
+    {
+      method: 'GET',
+      url: 'https://api.github.com/users/:username',
+      response: {
+        status: 200,
+        body: {
+          login: 'octocat',
+          name: 'The Octocat',
+          public_repos: 8,
+        },
+      },
+    },
+    // Stripe API - successful payment
+    {
+      method: 'POST',
+      url: 'https://api.stripe.com/v1/charges',
+      response: {
+        status: 200,
+        body: {
+          id: 'ch_123',
+          status: 'succeeded',
+          amount: 5000,
+        },
+      },
+    },
+    // SendGrid API - email sent
+    {
+      method: 'POST',
+      url: 'https://api.sendgrid.com/v3/mail/send',
+      response: {
+        status: 202,
+        body: { message_id: 'msg_123' },
+      },
+    },
+  ],
+};
+```
+
+## Next Steps
+
+- [Request Matching →](/scenarios/request-matching) - Different responses for same URL
+- [Response Sequences →](/scenarios/response-sequences) - Polling and async workflows
+- [Default Scenarios →](/scenarios/default-scenarios) - DRY scenario patterns

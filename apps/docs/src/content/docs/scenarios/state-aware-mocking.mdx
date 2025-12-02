@@ -1,0 +1,432 @@
+---
+title: State-Aware Mocking
+description: Conditional responses and state transitions for workflow testing
+---
+
+## What This Enables
+
+Build state machines where mock responses depend on accumulated state from previous requests. Perfect for testing workflows where the same endpoint returns different data based on what happened earlier.
+
+**Use cases:**
+- **Loan applications:** Status changes from "pending" → "reviewing" → "approved" based on form submissions
+- **Multi-step workflows:** Same GET returns different data after POSTs modify state
+- **Feature flags:** Toggle behavior via API, subsequent requests reflect the change
+- **Authentication flows:** Login sets state, protected endpoints check it
+
+:::note[State-Aware vs Stateful Mocks]
+**[Stateful Mocks](/scenarios/stateful-mocks)** capture data from requests and inject it into responses (data flow). **State-Aware Mocking** uses accumulated state to **change behavior** - selecting different responses or different mocks based on workflow state (control flow).
+:::
+
+## The Problem It Solves
+
+[Response Sequences](/scenarios/response-sequences) work when you can predict the exact number of calls:
+
+```typescript
+// This works IF you know there will be exactly 3 calls before the POST
+sequence: {
+  responses: [
+    { body: { status: 'pending' } },
+    { body: { status: 'pending' } },
+    { body: { status: 'pending' } },
+    { body: { status: 'approved' } },
+  ]
+}
+```
+
+But with modern frontends (React re-renders, middleware, async timing), call counts are unpredictable. You might need 11 "pending" responses in one test and 15 in another.
+
+**State-aware mocking solves this:** Response changes based on **state**, not **call count**.
+
+## Three Capabilities
+
+| Capability | Purpose | Category |
+|------------|---------|----------|
+| [`stateResponse`](#state-driven-responses-stateresponse) | Return different responses based on current state | State-Driven Responses |
+| [`afterResponse.setState`](#state-transitions-afterresponsesetstate) | Mutate state after returning a response | State Transitions |
+| [`match.state`](#state-driven-matching-matchstate) | Select which mock handles a request based on state | State-Driven Matching |
+
+## State-Driven Responses: `stateResponse`
+
+Return different responses from a single mock based on current test state. Use when one endpoint needs multiple possible responses depending on accumulated workflow state.
+
+```typescript
+import type { ScenaristMock } from '@scenarist/express-adapter';
+
+const mock: ScenaristMock = {
+  method: 'GET',
+  url: '/api/application/status',
+  stateResponse: {
+    default: {
+      status: 200,
+      body: { status: 'pending', message: 'Application not yet submitted' }
+    },
+    conditions: [
+      {
+        when: { step: 'submitted' },
+        then: {
+          status: 200,
+          body: { status: 'reviewing', message: 'Under review' }
+        }
+      },
+      {
+        when: { step: 'reviewed' },
+        then: {
+          status: 200,
+          body: { status: 'approved', message: 'Application approved' }
+        }
+      }
+    ]
+  }
+};
+```
+
+**Behavior:**
+- If state is empty or has no matching condition → returns `default` response
+- If `state.step === 'submitted'` → returns "reviewing" response
+- If `state.step === 'reviewed'` → returns "approved" response
+
+### Specificity-Based Selection
+
+When multiple conditions match, the most specific one wins (more keys = more specific):
+
+```typescript
+conditions: [
+  // Specificity: 1 (one key)
+  { when: { step: 'reviewed' }, then: { body: { tier: 'basic' } } },
+  // Specificity: 2 (two keys) - wins when both match
+  { when: { step: 'reviewed', urgent: true }, then: { body: { tier: 'priority' } } }
+]
+
+// State: { step: 'reviewed', urgent: true }
+// → Returns 'priority' (2 keys beats 1 key)
+```
+
+## State Transitions: `afterResponse.setState`
+
+Mutate test state **after** returning a response. Use to advance workflow state when a request completes.
+
+```typescript
+{
+  method: 'POST',
+  url: '/api/application/submit',
+  response: {
+    status: 200,
+    body: { success: true, message: 'Submitted' }
+  },
+  afterResponse: {
+    setState: { step: 'submitted' }
+  }
+}
+```
+
+**Behavior:**
+1. Mock returns the response (`{ success: true }`)
+2. **After** response is sent, state is updated (`step: 'submitted'`)
+3. Subsequent requests see the new state
+
+### Works with Any Response Type
+
+`afterResponse.setState` combines with `response`, `sequence`, or `stateResponse`:
+
+```typescript
+// With sequence
+{
+  method: 'POST',
+  url: '/api/verify',
+  sequence: {
+    responses: [
+      { status: 200, body: { verified: false } },
+      { status: 200, body: { verified: true } }
+    ],
+    repeat: 'last'
+  },
+  afterResponse: {
+    setState: { verificationAttempted: true }
+  }
+}
+
+// With stateResponse
+{
+  method: 'POST',
+  url: '/api/process',
+  stateResponse: {
+    default: { body: { processed: false } },
+    conditions: [
+      { when: { ready: true }, then: { body: { processed: true } } }
+    ]
+  },
+  afterResponse: {
+    setState: { processAttempted: true }
+  }
+}
+```
+
+## State-Driven Matching: `match.state`
+
+Select which mock handles a request based on current state. Different from `stateResponse` (one mock, many responses) - this selects **which mock**.
+
+```typescript
+// Same endpoint, different mocks based on state
+const mocks = [
+  // When step is 'initial' → transition to 'reviewed'
+  {
+    method: 'POST',
+    url: '/api/review',
+    match: { state: { step: 'initial' } },
+    response: { body: { newStatus: 'pending_approval' } },
+    afterResponse: { setState: { step: 'reviewed' } }
+  },
+  // When step is 'reviewed' → transition to 'approved'
+  {
+    method: 'POST',
+    url: '/api/review',
+    match: { state: { step: 'reviewed' } },
+    response: { body: { newStatus: 'approved' } },
+    afterResponse: { setState: { step: 'approved' } }
+  },
+  // Fallback (no state match) → transition to 'reviewed'
+  {
+    method: 'POST',
+    url: '/api/review',
+    response: { body: { newStatus: 'pending_approval' } },
+    afterResponse: { setState: { step: 'reviewed' } }
+  }
+];
+```
+
+**Use case:** Same endpoint needs completely different behavior (not just different response data) based on workflow state.
+
+### Combined with Other Match Criteria
+
+`match.state` works with existing match criteria (AND logic):
+
+```typescript
+{
+  method: 'POST',
+  url: '/api/review',
+  match: {
+    state: { step: 'pending_review' },
+    body: { decision: 'approve' }
+  },
+  response: { body: { status: 'approved' } },
+  afterResponse: { setState: { step: 'approved' } }
+},
+{
+  method: 'POST',
+  url: '/api/review',
+  match: {
+    state: { step: 'pending_review' },
+    body: { decision: 'reject' }
+  },
+  response: { body: { status: 'rejected' } },
+  afterResponse: { setState: { step: 'rejected' } }
+}
+```
+
+## Complete Example: Loan Application
+
+```typescript
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
+export const loanApplicationScenario: ScenaristScenario = {
+  id: 'loan-application',
+  name: 'Loan Application Workflow',
+  description: 'State-aware loan workflow with automatic state transitions',
+  mocks: [
+    // GET status - responds based on workflow state
+    {
+      method: 'GET',
+      url: 'https://api.loans.com/application/status',
+      stateResponse: {
+        default: {
+          status: 200,
+          body: { status: 'pending', message: 'Not yet submitted' }
+        },
+        conditions: [
+          {
+            when: { step: 'submitted' },
+            then: {
+              status: 200,
+              body: { status: 'reviewing', message: 'Under review' }
+            }
+          },
+          {
+            when: { step: 'reviewed' },
+            then: {
+              status: 200,
+              body: { status: 'approved', message: 'Approved!' }
+            }
+          }
+        ]
+      }
+    },
+    // POST submit - advances state to 'submitted'
+    {
+      method: 'POST',
+      url: 'https://api.loans.com/application/submit',
+      response: {
+        status: 200,
+        body: { success: true, message: 'Application submitted' }
+      },
+      afterResponse: {
+        setState: { step: 'submitted' }
+      }
+    },
+    // POST review - advances state to 'reviewed'
+    {
+      method: 'POST',
+      url: 'https://api.loans.com/application/review',
+      response: {
+        status: 200,
+        body: { success: true, message: 'Review completed' }
+      },
+      afterResponse: {
+        setState: { step: 'reviewed' }
+      }
+    }
+  ]
+};
+```
+
+**Test workflow:**
+```typescript
+test('loan application workflow', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'loan-application');
+
+  // Initial state - pending
+  await page.goto('/application');
+  await expect(page.getByText('Not yet submitted')).toBeVisible();
+
+  // Submit form - advances state
+  await page.click('[data-action="submit"]');
+
+  // Now shows reviewing
+  await page.goto('/application');
+  await expect(page.getByText('Under review')).toBeVisible();
+
+  // Complete review - advances state again
+  await page.click('[data-action="review"]');
+
+  // Now shows approved
+  await page.goto('/application');
+  await expect(page.getByText('Approved!')).toBeVisible();
+});
+```
+
+## Complete Example: Feature Flags
+
+```typescript
+export const featureFlagsScenario: ScenaristScenario = {
+  id: 'feature-flags',
+  name: 'Feature Flags',
+  description: 'Toggle features via API, subsequent requests reflect changes',
+  mocks: [
+    // Toggle feature flag - captures state
+    {
+      method: 'POST',
+      url: 'https://api.features.com/flags',
+      captureState: {
+        premiumEnabled: 'body.enabled'
+      },
+      response: {
+        status: 200,
+        body: { success: true, message: 'Flag updated' }
+      }
+    },
+    // GET pricing - premium when flag enabled (match.state)
+    {
+      method: 'GET',
+      url: 'https://api.pricing.com/pricing',
+      match: {
+        state: { premiumEnabled: true }
+      },
+      response: {
+        status: 200,
+        body: { tier: 'premium', price: 50, discount: '50% off' }
+      }
+    },
+    // GET pricing - standard (fallback)
+    {
+      method: 'GET',
+      url: 'https://api.pricing.com/pricing',
+      response: {
+        status: 200,
+        body: { tier: 'standard', price: 100 }
+      }
+    }
+  ]
+};
+```
+
+## When to Use What
+
+| Feature | Use When |
+|---------|----------|
+| `stateResponse` | One endpoint, multiple possible responses based on accumulated state |
+| `afterResponse.setState` | Need to advance workflow state after a request |
+| `match.state` | Same endpoint needs completely different mock behavior based on state |
+| `captureState` | Need to capture request data for injection into responses |
+| `sequence` | Behavior depends on call count (predictable number of calls) |
+
+## State vs Sequences
+
+| Aspect | State-Aware Mocking | Sequences |
+|--------|---------------------|-----------|
+| Changes based on | Accumulated state | Call count |
+| Predictable calls | Not required | Required |
+| Use case | Workflows, state machines | Polling with known count |
+| Resilience | Resilient to re-renders | Fragile with variable calls |
+
+**Rule of thumb:** If you find yourself padding sequences with extra responses "just in case," switch to state-aware mocking.
+
+## State Isolation
+
+State is isolated per test ID - parallel tests don't interfere:
+
+```typescript
+// Test 1 (test-id: abc-123)
+POST /submit → state.step = 'submitted'
+GET /status → 'reviewing'
+
+// Test 2 (test-id: xyz-789) - simultaneous
+GET /status → 'pending' (independent state)
+```
+
+## State Reset
+
+State resets when:
+- Scenario switches (clean slate for new scenario)
+- Test ends (test ID cleaned up)
+
+This ensures idempotent tests.
+
+## Combining with Other Features
+
+State-aware mocking combines with all existing features:
+
+```typescript
+{
+  method: 'POST',
+  url: '/api/checkout',
+  match: {
+    state: { cartReady: true },           // State matching
+    headers: { 'x-tier': 'premium' }      // Request matching
+  },
+  stateResponse: {
+    default: { body: { discount: 10 } },
+    conditions: [
+      { when: { loyaltyTier: 'gold' }, then: { body: { discount: 20 } } }
+    ]
+  },
+  afterResponse: {
+    setState: { checkoutComplete: true }
+  }
+}
+```
+
+## Next Steps
+
+- [Stateful Mocks →](/scenarios/stateful-mocks) - Capture and inject request data
+- [Response Sequences →](/scenarios/response-sequences) - Call-count based responses
+- [Request Matching →](/scenarios/request-matching) - Match on request content
+- [Combining Features →](/scenarios/combining-features) - Use all features together

@@ -47,7 +47,8 @@ Express and Next.js adapters available—your real application code runs, only e
 | **Next.js App Router**      | [scenarist.io/frameworks/nextjs-app-router/getting-started](https://scenarist.io/frameworks/nextjs-app-router/getting-started) |
 | **React Server Components** | [scenarist.io/frameworks/nextjs-app-router/rsc-guide](https://scenarist.io/frameworks/nextjs-app-router/rsc-guide)             |
 | **Parallel Testing**        | [scenarist.io/testing/parallel-testing](https://scenarist.io/testing/parallel-testing)                                         |
-| **Dynamic Responses**       | [scenarist.io/concepts/dynamic-responses](https://scenarist.io/concepts/dynamic-responses)                                     |
+| **Writing Scenarios**       | [scenarist.io/scenarios/basic-structure](https://scenarist.io/scenarios/basic-structure)                                       |
+| **State-Aware Mocking**     | [scenarist.io/scenarios/state-aware-mocking](https://scenarist.io/scenarios/state-aware-mocking)                               |
 
 ---
 

@@ -1,0 +1,402 @@
+---
+title: Combining Features
+description: Use request matching, sequences, stateful mocks, and state-aware mocking together
+---
+
+## What This Enables
+
+Combine all scenario features to create powerful, realistic test scenarios. Features work independently while maintaining their guarantees.
+
+**Use cases:**
+- Premium onboarding with progress tracking
+- User-specific workflows with state capture
+- Conditional sequences based on request content
+- Complex multi-step business processes
+- State machine workflows with automatic transitions
+
+## Feature Combinations
+
+| Combination | What It Does |
+|-------------|--------------|
+| Matching + Sequences | Only matching requests advance the sequence |
+| Matching + State Capture | Capture different data based on request content |
+| Sequences + State Capture | Capture data as sequence progresses |
+| State-Aware + Matching | Mock selection based on accumulated state |
+| State-Aware + State Capture | Capture data that drives conditional responses |
+| All Features | Full workflow simulation with state machines |
+
+## Matching + Sequences
+
+Only requests that match the criteria advance through the sequence:
+
+```typescript
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
+const scenario: ScenaristScenario = {
+  id: 'premium-onboarding',
+  name: 'Premium Onboarding',
+  description: 'Premium users get onboarding sequence, others see upgrade message',
+  mocks: [
+    // Premium users advance through onboarding
+    {
+      method: 'GET',
+      url: '/api/onboarding/step',
+      match: {
+        headers: { 'x-tier': 'premium' }
+      },
+      sequence: {
+        responses: [
+          { status: 200, body: { step: 1, message: 'Welcome!' } },
+          { status: 200, body: { step: 2, message: 'Configure...' } },
+          { status: 200, body: { step: 3, message: 'Complete!' } },
+        ],
+        repeat: 'last',
+      },
+    },
+    // Standard users see upgrade message (no sequence)
+    {
+      method: 'GET',
+      url: '/api/onboarding/step',
+      response: {
+        status: 200,
+        body: { message: 'Upgrade to premium for onboarding' },
+      },
+    },
+  ],
+};
+```
+
+**Key insight:** Non-matching requests (standard users) don't advance the premium sequence. The sequence position is preserved for the next matching request.
+
+```
+Premium request 1 → Step 1
+Standard request → "Upgrade" message (sequence unchanged)
+Premium request 2 → Step 2
+Premium request 3 → Step 3
+```
+
+## Matching + State
+
+Capture different data based on request content:
+
+```typescript
+const scenario: ScenaristScenario = {
+  id: 'tiered-cart',
+  name: 'Tiered Shopping Cart',
+  description: 'Separate cart tracking for premium and standard items',
+  mocks: [
+    // Capture premium items
+    {
+      method: 'POST',
+      url: '/api/cart/add',
+      match: { body: { tier: 'premium' } },
+      captureState: {
+        'premiumItems[]': 'body.productId',
+      },
+      response: { status: 200, body: { added: true, tier: 'premium' } },
+    },
+    // Capture standard items
+    {
+      method: 'POST',
+      url: '/api/cart/add',
+      match: { body: { tier: 'standard' } },
+      captureState: {
+        'standardItems[]': 'body.productId',
+      },
+      response: { status: 200, body: { added: true, tier: 'standard' } },
+    },
+    // Cart shows both
+    {
+      method: 'GET',
+      url: '/api/cart',
+      response: {
+        status: 200,
+        body: {
+          premium: '{{state.premiumItems}}',
+          standard: '{{state.standardItems}}',
+        },
+      },
+    },
+  ],
+};
+```
+
+## Sequences + State
+
+Capture data as the sequence progresses:
+
+```typescript
+const scenario: ScenaristScenario = {
+  id: 'job-tracking',
+  name: 'Job Progress Tracking',
+  description: 'Capture progress through job sequence',
+  mocks: [
+    // Job status with progress capture
+    {
+      method: 'GET',
+      url: '/api/job/:id/status',
+      sequence: {
+        responses: [
+          { status: 200, body: { status: 'queued', progress: 0 } },
+          { status: 200, body: { status: 'running', progress: 50 } },
+          { status: 200, body: { status: 'complete', progress: 100 } },
+        ],
+        repeat: 'last',
+      },
+      captureState: {
+        lastStatus: 'body.status',
+        lastProgress: 'body.progress',
+      },
+    },
+    // Dashboard shows captured progress
+    {
+      method: 'GET',
+      url: '/api/dashboard',
+      response: {
+        status: 200,
+        body: {
+          jobStatus: '{{state.lastStatus}}',
+          jobProgress: '{{state.lastProgress}}',
+        },
+      },
+    },
+  ],
+};
+```
+
+**Note:** `captureState` captures from the **request**, not the response. To track sequence progress in state, include progress info in the request or use a separate tracking mechanism.
+
+## All Three Together
+
+Complete example combining matching, sequences, and state:
+
+```typescript
+import type { ScenaristScenario } from '@scenarist/express-adapter';
+
+export const premiumOnboardingScenario: ScenaristScenario = {
+  id: 'premium-onboarding-full',
+  name: 'Premium User Onboarding',
+  description: 'Multi-step onboarding with state and sequences for premium users',
+  mocks: [
+    // Premium users: Onboarding sequence with profile capture
+    {
+      method: 'POST',
+      url: '/api/onboarding',
+      match: {
+        headers: { 'x-tier': 'premium' }
+      },
+      sequence: {
+        responses: [
+          { status: 200, body: { step: 1, message: 'Welcome premium user!' } },
+          { status: 200, body: { step: 2, message: 'Set up your profile' } },
+          { status: 200, body: { step: 3, message: 'You are all set!' } },
+        ],
+        repeat: 'last',
+      },
+      captureState: {
+        'profileData.name': 'body.name',
+        'profileData.preferences[]': 'body.preference',
+        'completedSteps[]': 'body.stepNumber',
+      },
+    },
+
+    // Standard users: Simple upgrade prompt
+    {
+      method: 'POST',
+      url: '/api/onboarding',
+      response: {
+        status: 200,
+        body: { message: 'Upgrade to premium for full onboarding' },
+      },
+    },
+
+    // Dashboard: Shows captured profile and progress
+    {
+      method: 'GET',
+      url: '/api/dashboard',
+      response: {
+        status: 200,
+        body: {
+          profile: {
+            name: '{{state.profileData.name}}',
+            preferences: '{{state.profileData.preferences}}',
+          },
+          onboarding: {
+            completedSteps: '{{state.completedSteps}}',
+            isComplete: '{{state.completedSteps.length >= 3}}',
+          },
+        },
+      },
+    },
+  ],
+};
+```
+
+**This enables:**
+1. Premium header triggers premium onboarding sequence
+2. Each step captures profile data from request
+3. Standard users get upgrade message (don't advance sequence)
+4. Dashboard shows accumulated profile and progress
+5. All isolated per test ID for parallel execution
+
+## Real-World Workflow Example
+
+E-commerce checkout with tier-based pricing and order tracking:
+
+```typescript
+export const checkoutWorkflowScenario: ScenaristScenario = {
+  id: 'checkout-workflow',
+  name: 'Checkout Workflow',
+  description: 'Complete checkout with pricing tiers and order tracking',
+  mocks: [
+    // Add to cart - track items by tier
+    {
+      method: 'POST',
+      url: '/api/cart/add',
+      match: { body: { itemType: 'premium' } },
+      captureState: {
+        'cart.premiumItems[]': 'body.productId',
+      },
+      response: { status: 200, body: { added: true } },
+    },
+    {
+      method: 'POST',
+      url: '/api/cart/add',
+      captureState: {
+        'cart.standardItems[]': 'body.productId',
+      },
+      response: { status: 200, body: { added: true } },
+    },
+
+    // Checkout - premium users get discount
+    {
+      method: 'POST',
+      url: '/api/checkout',
+      match: { headers: { 'x-tier': 'premium' } },
+      captureState: {
+        orderId: 'body.orderId',
+      },
+      response: {
+        status: 200,
+        body: { discount: 20, orderId: '{{state.orderId}}' },
+      },
+    },
+    {
+      method: 'POST',
+      url: '/api/checkout',
+      captureState: {
+        orderId: 'body.orderId',
+      },
+      response: {
+        status: 200,
+        body: { discount: 0, orderId: '{{state.orderId}}' },
+      },
+    },
+
+    // Order status - sequence through fulfillment
+    {
+      method: 'GET',
+      url: '/api/order/:id/status',
+      sequence: {
+        responses: [
+          { status: 200, body: { status: 'pending' } },
+          { status: 200, body: { status: 'processing' } },
+          { status: 200, body: { status: 'shipped' } },
+          { status: 200, body: { status: 'delivered' } },
+        ],
+        repeat: 'last',
+      },
+    },
+
+    // Order summary - shows cart contents and order
+    {
+      method: 'GET',
+      url: '/api/order/summary',
+      response: {
+        status: 200,
+        body: {
+          orderId: '{{state.orderId}}',
+          premiumItems: '{{state.cart.premiumItems}}',
+          standardItems: '{{state.cart.standardItems}}',
+        },
+      },
+    },
+  ],
+};
+```
+
+## State-Aware + Request Matching
+
+Use `match.state` with other match criteria for powerful state machines:
+
+```typescript
+const scenario: ScenaristScenario = {
+  id: 'approval-workflow',
+  name: 'Approval Workflow',
+  description: 'State-driven approval with role-based decisions',
+  mocks: [
+    // Approve from pending_review state (admin only)
+    {
+      method: 'POST',
+      url: '/api/application/decision',
+      match: {
+        state: { step: 'pending_review' },
+        body: { decision: 'approve' },
+        headers: { 'x-role': 'admin' }
+      },
+      response: { status: 200, body: { status: 'approved' } },
+      afterResponse: { setState: { step: 'approved' } }
+    },
+    // Reject from pending_review state (any reviewer)
+    {
+      method: 'POST',
+      url: '/api/application/decision',
+      match: {
+        state: { step: 'pending_review' },
+        body: { decision: 'reject' }
+      },
+      response: { status: 200, body: { status: 'rejected' } },
+      afterResponse: { setState: { step: 'rejected' } }
+    },
+    // Status endpoint with stateResponse
+    {
+      method: 'GET',
+      url: '/api/application/status',
+      stateResponse: {
+        default: { body: { status: 'pending' } },
+        conditions: [
+          { when: { step: 'pending_review' }, then: { body: { status: 'in_review' } } },
+          { when: { step: 'approved' }, then: { body: { status: 'approved' } } },
+          { when: { step: 'rejected' }, then: { body: { status: 'rejected' } } }
+        ]
+      }
+    }
+  ]
+};
+```
+
+**This enables:**
+1. `match.state` determines which mock handles the decision
+2. Additional match criteria (body, headers) add role-based logic
+3. `afterResponse.setState` advances the workflow
+4. `stateResponse` provides status based on accumulated state
+
+## Best Practices
+
+1. **Keep it focused:** Each scenario should test a specific workflow, not everything
+2. **Use default scenario:** Define happy path in default, override only differences
+3. **Document intent:** Use clear `name` and `description` fields
+4. **Consider test isolation:** State is per-test-ID, so parallel tests are safe
+5. **Choose the right tool:**
+   - Use `captureState` + templates for data flow
+   - Use `stateResponse` for conditional responses
+   - Use `match.state` for state-driven mock routing
+   - Use `sequence` when call counts are predictable
+
+## Next Steps
+
+- [State-Aware Mocking →](/scenarios/state-aware-mocking) - State-driven behavior
+- [Request Matching →](/scenarios/request-matching) - Matching criteria details
+- [Response Sequences →](/scenarios/response-sequences) - Sequence behavior
+- [Stateful Mocks →](/scenarios/stateful-mocks) - State capture and injection
+- [Default Scenarios →](/scenarios/default-scenarios) - DRY patterns
