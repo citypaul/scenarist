@@ -171,6 +171,7 @@ export default defineConfig({
             { label: "Pattern Matching", slug: "scenarios/pattern-matching" },
             { label: "Response Sequences", slug: "scenarios/response-sequences" },
             { label: "Stateful Mocks", slug: "scenarios/stateful-mocks" },
+            { label: "State-Aware Mocking", slug: "scenarios/state-aware-mocking" },
             { label: "Default Scenarios", slug: "scenarios/default-scenarios" },
             { label: "Combining Features", slug: "scenarios/combining-features" },
             { label: "TypeScript Patterns", slug: "scenarios/typescript-patterns" },

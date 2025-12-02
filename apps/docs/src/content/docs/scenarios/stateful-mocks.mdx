@@ -13,6 +13,10 @@ Capture data from requests and inject it into subsequent responses. Build state 
 - **Session data:** Capture authentication, use in later requests
 - **Form workflows:** Capture step data, show in confirmation
 
+:::note[Stateful Mocks vs State-Aware Mocking]
+**Stateful Mocks** (this page) capture data from requests and inject it into responses - state is a **data carrier**. **[State-Aware Mocking](/scenarios/state-aware-mocking)** uses state to **change mock behavior** - selecting different responses or different mocks based on workflow state (control flow).
+:::
+
 ## When to Use
 
 Use stateful mocks when:
@@ -295,6 +299,7 @@ State capture also works with [Response Sequences](/scenarios/response-sequences
 
 ## Next Steps
 
+- [State-Aware Mocking →](/scenarios/state-aware-mocking) - Conditional responses based on state
 - [Request Matching →](/scenarios/request-matching) - Combine state with matching
 - [Response Sequences →](/scenarios/response-sequences) - Capture state through sequences
 - [Combining Features →](/scenarios/combining-features) - Use all features together

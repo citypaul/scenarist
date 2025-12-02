@@ -1,6 +1,6 @@
 ---
 title: Combining Features
-description: Use request matching, sequences, and stateful mocks together
+description: Use request matching, sequences, stateful mocks, and state-aware mocking together
 ---
 
 ## What This Enables
@@ -12,15 +12,18 @@ Combine all scenario features to create powerful, realistic test scenarios. Feat
 - User-specific workflows with state capture
 - Conditional sequences based on request content
 - Complex multi-step business processes
+- State machine workflows with automatic transitions
 
 ## Feature Combinations
 
 | Combination | What It Does |
 |-------------|--------------|
 | Matching + Sequences | Only matching requests advance the sequence |
-| Matching + State | Capture different data based on request content |
-| Sequences + State | Capture data as sequence progresses |
-| All Three | Full workflow simulation |
+| Matching + State Capture | Capture different data based on request content |
+| Sequences + State Capture | Capture data as sequence progresses |
+| State-Aware + Matching | Mock selection based on accumulated state |
+| State-Aware + State Capture | Capture data that drives conditional responses |
+| All Features | Full workflow simulation with state machines |
 
 ## Matching + Sequences
 
@@ -322,15 +325,77 @@ export const checkoutWorkflowScenario: ScenaristScenario = {
 };
 ```
 
+## State-Aware + Request Matching
+
+Use `match.state` with other match criteria for powerful state machines:
+
+```typescript
+const scenario: ScenaristScenario = {
+  id: 'approval-workflow',
+  name: 'Approval Workflow',
+  description: 'State-driven approval with role-based decisions',
+  mocks: [
+    // Approve from pending_review state (admin only)
+    {
+      method: 'POST',
+      url: '/api/application/decision',
+      match: {
+        state: { step: 'pending_review' },
+        body: { decision: 'approve' },
+        headers: { 'x-role': 'admin' }
+      },
+      response: { status: 200, body: { status: 'approved' } },
+      afterResponse: { setState: { step: 'approved' } }
+    },
+    // Reject from pending_review state (any reviewer)
+    {
+      method: 'POST',
+      url: '/api/application/decision',
+      match: {
+        state: { step: 'pending_review' },
+        body: { decision: 'reject' }
+      },
+      response: { status: 200, body: { status: 'rejected' } },
+      afterResponse: { setState: { step: 'rejected' } }
+    },
+    // Status endpoint with stateResponse
+    {
+      method: 'GET',
+      url: '/api/application/status',
+      stateResponse: {
+        default: { body: { status: 'pending' } },
+        conditions: [
+          { when: { step: 'pending_review' }, then: { body: { status: 'in_review' } } },
+          { when: { step: 'approved' }, then: { body: { status: 'approved' } } },
+          { when: { step: 'rejected' }, then: { body: { status: 'rejected' } } }
+        ]
+      }
+    }
+  ]
+};
+```
+
+**This enables:**
+1. `match.state` determines which mock handles the decision
+2. Additional match criteria (body, headers) add role-based logic
+3. `afterResponse.setState` advances the workflow
+4. `stateResponse` provides status based on accumulated state
+
 ## Best Practices
 
 1. **Keep it focused:** Each scenario should test a specific workflow, not everything
 2. **Use default scenario:** Define happy path in default, override only differences
 3. **Document intent:** Use clear `name` and `description` fields
 4. **Consider test isolation:** State is per-test-ID, so parallel tests are safe
+5. **Choose the right tool:**
+   - Use `captureState` + templates for data flow
+   - Use `stateResponse` for conditional responses
+   - Use `match.state` for state-driven mock routing
+   - Use `sequence` when call counts are predictable
 
 ## Next Steps
 
+- [State-Aware Mocking →](/scenarios/state-aware-mocking) - State-driven behavior
 - [Request Matching →](/scenarios/request-matching) - Matching criteria details
 - [Response Sequences →](/scenarios/response-sequences) - Sequence behavior
 - [Stateful Mocks →](/scenarios/stateful-mocks) - State capture and injection
