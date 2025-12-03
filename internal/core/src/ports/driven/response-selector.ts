@@ -4,9 +4,11 @@ import type {
   HttpRequestContext,
   ScenaristResult,
 } from "../../types/index.js";
+import { ScenaristError } from "../../types/errors.js";
 
 /**
  * Error type for response selection failures.
+ * @deprecated Use ScenaristError with ErrorCodes.NO_MOCK_FOUND instead
  */
 export class ResponseSelectionError extends Error {
   constructor(message: string) {
@@ -44,5 +46,5 @@ export interface ResponseSelector {
     scenarioId: string,
     context: HttpRequestContext,
     mocks: ReadonlyArray<ScenaristMockWithParams>,
-  ): ScenaristResult<ScenaristResponse, ResponseSelectionError>;
+  ): ScenaristResult<ScenaristResponse, ScenaristError>;
 }

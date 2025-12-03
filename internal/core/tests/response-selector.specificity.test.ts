@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ScenaristMock, HttpRequestContext } from "../src/types/index.js";
+import { ScenaristError, ErrorCodes } from "../src/types/errors.js";
 import { createResponseSelector } from "../src/domain/response-selector.js";
 import { createInMemorySequenceTracker } from "../src/adapters/in-memory-sequence-tracker.js";
 import { wrapMocks } from "./helpers/wrap-mocks.js";
@@ -206,6 +207,46 @@ describe("ResponseSelector - Specificity", () => {
       expect(result.success).toBe(false);
       if (!result.success) {
         expect(result.error.message).toContain("No mock matched");
+      }
+    });
+
+    it("should include testId, scenarioId, and requestInfo in error context when no mock matches", () => {
+      const context: HttpRequestContext = {
+        method: "PUT",
+        url: "/api/users/123",
+        body: { role: "admin" },
+        headers: { "content-type": "application/json" },
+        query: { verbose: "true" },
+      };
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "PUT",
+          url: "/api/users/123",
+          match: { body: { role: "superadmin" } },
+          response: { status: 200, body: { updated: true } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse(
+        "test-abc-456",
+        "user-update-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error).toBeInstanceOf(ScenaristError);
+        const error = result.error as ScenaristError;
+        expect(error.code).toBe(ErrorCodes.NO_MOCK_FOUND);
+        expect(error.context.testId).toBe("test-abc-456");
+        expect(error.context.scenarioId).toBe("user-update-scenario");
+        expect(error.context.requestInfo).toEqual({
+          method: "PUT",
+          url: "/api/users/123",
+        });
       }
     });
 

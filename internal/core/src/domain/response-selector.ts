@@ -11,7 +11,7 @@ import type {
   StateManager,
   Logger,
 } from "../ports/index.js";
-import { ResponseSelectionError } from "../ports/driven/response-selector.js";
+import { ScenaristError, ErrorCodes } from "../types/errors.js";
 import { extractFromPath } from "./path-extraction.js";
 import { applyTemplates } from "./template-replacement.js";
 import { matchesRegex } from "./regex-matching.js";
@@ -57,7 +57,7 @@ export const createResponseSelector = (
       scenarioId: string,
       context: HttpRequestContext,
       mocks: ReadonlyArray<ScenaristMockWithParams>,
-    ): ScenaristResult<ScenaristResponse, ResponseSelectionError> {
+    ): ScenaristResult<ScenaristResponse, ScenaristError> {
       const logContext = { testId, scenarioId };
 
       // Log the number of candidate mocks
@@ -175,8 +175,19 @@ export const createResponseSelector = (
         if (!response) {
           return {
             success: false,
-            error: new ResponseSelectionError(
+            error: new ScenaristError(
               `Mock has neither response nor sequence field`,
+              {
+                code: ErrorCodes.VALIDATION_ERROR,
+                context: {
+                  testId,
+                  scenarioId,
+                  mockInfo: {
+                    index: mockIndex,
+                  },
+                  hint: "Each mock must have a 'response', 'sequence', or 'stateResponse' field.",
+                },
+              },
             ),
           };
         }
@@ -219,8 +230,20 @@ export const createResponseSelector = (
 
       return {
         success: false,
-        error: new ResponseSelectionError(
+        error: new ScenaristError(
           `No mock matched for ${context.method} ${context.url}`,
+          {
+            code: ErrorCodes.NO_MOCK_FOUND,
+            context: {
+              testId,
+              scenarioId,
+              requestInfo: {
+                method: context.method,
+                url: context.url,
+              },
+              hint: "Add a fallback mock (without match criteria) to handle unmatched requests, or add a mock with matching criteria.",
+            },
+          },
         ),
       };
     },
