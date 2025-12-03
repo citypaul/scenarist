@@ -197,6 +197,31 @@ describe("ScenarioManager", () => {
       );
     });
 
+    it("should include scenarioId and hint in error context when registering duplicate scenario", () => {
+      const { manager } = createTestSetup();
+      const definition1 = createTestScenaristScenario(
+        "duplicate-test",
+        "First",
+      );
+      const definition2 = createTestScenaristScenario(
+        "duplicate-test",
+        "Second",
+      );
+
+      manager.registerScenario(definition1);
+
+      try {
+        manager.registerScenario(definition2);
+        expect.fail("Expected error to be thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(ScenaristError);
+        const scenaristError = error as ScenaristError;
+        expect(scenaristError.code).toBe(ErrorCodes.DUPLICATE_SCENARIO);
+        expect(scenaristError.context.scenarioId).toBe("duplicate-test");
+        expect(scenaristError.context.hint).toBeDefined();
+      }
+    });
+
     it("should not overwrite existing scenario when duplicate detected", () => {
       const { manager } = createTestSetup();
       const definition1 = createTestScenaristScenario("duplicate", "First");
@@ -227,6 +252,28 @@ describe("ScenarioManager", () => {
     });
 
     describe("validation", () => {
+      it("should include scenarioId and validation errors in error context when validation fails", () => {
+        const { manager } = createTestSetup();
+        const invalidScenario = {
+          id: "validation-error-test",
+          name: "Invalid",
+          // Missing required fields will cause validation error
+        } as any;
+
+        try {
+          manager.registerScenario(invalidScenario);
+          expect.fail("Expected error to be thrown");
+        } catch (error) {
+          expect(error).toBeInstanceOf(ScenaristError);
+          const scenaristError = error as ScenaristError;
+          expect(scenaristError.code).toBe(ErrorCodes.VALIDATION_ERROR);
+          expect(scenaristError.context.scenarioId).toBe(
+            "validation-error-test",
+          );
+          expect(scenaristError.context.hint).toBeDefined();
+        }
+      });
+
       it("should reject scenario with unsafe ReDoS pattern in regex", () => {
         const { manager } = createTestSetup();
         const unsafeScenario: ScenaristScenario = {

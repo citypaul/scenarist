@@ -15,24 +15,34 @@ import type {
 import { ScenaristScenarioSchema } from "../schemas/index.js";
 import { ScenaristError, ErrorCodes } from "../types/errors.js";
 
-class DuplicateScenarioError extends Error {
-  constructor(scenarioId: string) {
-    super(
-      `Scenario '${scenarioId}' is already registered. Each scenario must have a unique ID.`,
-    );
-    this.name = "DuplicateScenarioError";
-  }
-}
+const createDuplicateScenarioError = (scenarioId: string): ScenaristError => {
+  return new ScenaristError(
+    `Scenario '${scenarioId}' is already registered. Each scenario must have a unique ID.`,
+    {
+      code: ErrorCodes.DUPLICATE_SCENARIO,
+      context: {
+        scenarioId,
+        hint: "Use a different scenario ID, or remove the existing scenario before registering a new one.",
+      },
+    },
+  );
+};
 
-class ScenarioValidationError extends Error {
-  constructor(
-    message: string,
-    public readonly validationErrors: string[],
-  ) {
-    super(message);
-    this.name = "ScenarioValidationError";
-  }
-}
+const createScenarioValidationError = (
+  scenarioId: string,
+  validationErrors: string[],
+): ScenaristError => {
+  return new ScenaristError(
+    `Invalid scenario definition for '${scenarioId}': ${validationErrors.join(", ")}`,
+    {
+      code: ErrorCodes.VALIDATION_ERROR,
+      context: {
+        scenarioId,
+        hint: `Check your scenario definition. Validation errors: ${validationErrors.join("; ")}`,
+      },
+    },
+  );
+};
 
 /**
  * Factory function to create a ScenarioManager implementation.
@@ -70,10 +80,7 @@ export const createScenarioManager = ({
           (err) => `${err.path.join(".")}: ${err.message}`,
         );
         const scenarioId = (definition as { id?: string })?.id || "<unknown>";
-        throw new ScenarioValidationError(
-          `Invalid scenario definition for '${scenarioId}': ${errorMessages.join(", ")}`,
-          errorMessages,
-        );
+        throw createScenarioValidationError(scenarioId, errorMessages);
       }
 
       const existing = registry.get(definition.id);
@@ -85,7 +92,7 @@ export const createScenarioManager = ({
 
       // Prevent registering a different scenario with the same ID
       if (existing) {
-        throw new DuplicateScenarioError(definition.id);
+        throw createDuplicateScenarioError(definition.id);
       }
 
       registry.register(definition);
