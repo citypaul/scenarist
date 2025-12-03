@@ -363,8 +363,8 @@ describe("Dynamic Handler", () => {
       server.close();
     });
 
-    it("should handle non-JSON request body", async () => {
-      // This test ensures the catch block at line 39 is executed
+    it("should handle non-JSON request body gracefully", async () => {
+      // When request body cannot be parsed as JSON, handler should still match mocks
       const scenarios = new Map<string, ScenaristScenario>([
         [
           "upload-scenario",
@@ -413,8 +413,7 @@ describe("Dynamic Handler", () => {
       server.close();
     });
 
-    it("should extract query parameters from request", async () => {
-      // This test ensures the forEach loop at line 56 is executed
+    it("should match mocks based on query parameters", async () => {
       const scenarios = new Map<string, ScenaristScenario>([
         [
           "search-scenario",
@@ -465,8 +464,7 @@ describe("Dynamic Handler", () => {
       server.close();
     });
 
-    it("should skip default scenario mocks that do not match method", async () => {
-      // This test ensures the false branch of line 94 is executed
+    it("should not match default scenario mocks with different HTTP method", async () => {
       const scenarios = new Map<string, ScenaristScenario>([
         [
           "default",
@@ -530,8 +528,7 @@ describe("Dynamic Handler", () => {
       server.close();
     });
 
-    it("should handle active scenario definition not found", async () => {
-      // This test ensures line 104 false branch is executed
+    it("should fall back to default scenario when active scenario does not exist", async () => {
       const scenarios = new Map<string, ScenaristScenario>([
         [
           "default",
@@ -576,8 +573,7 @@ describe("Dynamic Handler", () => {
       server.close();
     });
 
-    it("should skip active scenario mocks that do not match URL", async () => {
-      // This test ensures the false branch of line 108 is executed
+    it("should not match active scenario mocks with different URL", async () => {
       const scenarios = new Map<string, ScenaristScenario>([
         [
           "default",
@@ -862,8 +858,40 @@ describe("Dynamic Handler", () => {
       server.close();
     });
 
-    it("should log warning via Logger and return 501 when onNoMockFound is 'warn' and strictMode is true", async () => {
-      // 'warn' behavior should log a warning via the Logger port and continue to strictMode logic
+    it("should continue silently when onNoMockFound is 'warn' but no logger is provided", async () => {
+      const getTestId = () => "test-123";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = () => undefined;
+
+      const errorBehaviors: ErrorBehaviors = {
+        onNoMockFound: "warn",
+        onSequenceExhausted: "throw",
+        onNoStateMatch: "throw",
+        onMissingTestId: "throw",
+      };
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: true,
+        responseSelector,
+        errorBehaviors,
+        // No logger provided - warn should silently continue
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch("https://api.example.com/users");
+
+      // Should continue to strictMode logic and return 501 (no crash, no warning logged)
+      expect(response.status).toBe(501);
+
+      server.close();
+    });
+
+    it("should log warning and continue to strictMode when onNoMockFound is 'warn' with logger", async () => {
       const mockLogger: Logger = {
         error: vi.fn(),
         warn: vi.fn(),
@@ -899,7 +927,6 @@ describe("Dynamic Handler", () => {
 
       const response = await fetch("https://api.example.com/users");
 
-      // 'warn' should log via Logger and then let strictMode handle it → 501
       expect(response.status).toBe(501);
       expect(mockLogger.warn).toHaveBeenCalledWith(
         "matching",
