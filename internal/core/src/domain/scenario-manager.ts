@@ -14,6 +14,7 @@ import type {
 } from "../types/index.js";
 import { ScenaristScenarioSchema } from "../schemas/index.js";
 import { ScenaristError, ErrorCodes } from "../types/errors.js";
+import { LogCategories, LogEvents } from "./log-events.js";
 
 const createDuplicateScenarioError = (scenarioId: string): ScenaristError => {
   return new ScenaristError(
@@ -98,8 +99,8 @@ export const createScenarioManager = ({
       registry.register(definition);
 
       logger.debug(
-        "scenario",
-        "scenario_registered",
+        LogCategories.SCENARIO,
+        LogEvents.SCENARIO_REGISTERED,
         {},
         {
           scenarioId: definition.id,
@@ -116,8 +117,8 @@ export const createScenarioManager = ({
 
       if (!definition) {
         logger.error(
-          "scenario",
-          "scenario_not_found",
+          LogCategories.SCENARIO,
+          LogEvents.SCENARIO_NOT_FOUND,
           { testId },
           {
             requestedScenarioId: scenarioId,
@@ -156,7 +157,12 @@ export const createScenarioManager = ({
         stateManager.reset(testId);
       }
 
-      logger.info("scenario", "scenario_switched", { testId, scenarioId }, {});
+      logger.info(
+        LogCategories.SCENARIO,
+        LogEvents.SCENARIO_SWITCHED,
+        { testId, scenarioId },
+        {},
+      );
 
       return { success: true, data: undefined };
     },
@@ -172,7 +178,12 @@ export const createScenarioManager = ({
     clearScenario(testId: string): void {
       store.delete(testId);
 
-      logger.debug("scenario", "scenario_cleared", { testId }, {});
+      logger.debug(
+        LogCategories.SCENARIO,
+        LogEvents.SCENARIO_CLEARED,
+        { testId },
+        {},
+      );
     },
 
     getScenarioById(id: string): ScenaristScenario | undefined {

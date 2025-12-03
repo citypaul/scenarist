@@ -19,6 +19,7 @@ import { createStateResponseResolver } from "./state-response-resolver.js";
 import { deepEquals } from "./deep-equals.js";
 import type { MatchValue } from "../schemas/scenario-definition.js";
 import { noOpLogger } from "../adapters/index.js";
+import { LogCategories, LogEvents } from "./log-events.js";
 
 const SPECIFICITY_RANGES = {
   MATCH_CRITERIA_BASE: 100,
@@ -61,9 +62,14 @@ export const createResponseSelector = (
       const logContext = { testId, scenarioId };
 
       // Log the number of candidate mocks
-      logger.debug("matching", "mock_candidates_found", logContext, {
-        count: mocks.length,
-      });
+      logger.debug(
+        LogCategories.MATCHING,
+        LogEvents.MOCK_CANDIDATES_FOUND,
+        logContext,
+        {
+          count: mocks.length,
+        },
+      );
 
       let bestMatch: {
         mockWithParams: ScenaristMockWithParams;
@@ -100,11 +106,16 @@ export const createResponseSelector = (
           );
 
           // Log the evaluation result
-          logger.debug("matching", "mock_match_evaluated", logContext, {
-            mockIndex,
-            matched,
-            hasCriteria: true,
-          });
+          logger.debug(
+            LogCategories.MATCHING,
+            LogEvents.MOCK_MATCH_EVALUATED,
+            logContext,
+            {
+              mockIndex,
+              matched,
+              hasCriteria: true,
+            },
+          );
 
           if (matched) {
             // Match criteria always have higher priority than fallbacks
@@ -125,11 +136,16 @@ export const createResponseSelector = (
 
         // No match criteria = fallback mock (always matches)
         // Log fallback evaluation
-        logger.debug("matching", "mock_match_evaluated", logContext, {
-          mockIndex,
-          matched: true,
-          hasCriteria: false,
-        });
+        logger.debug(
+          LogCategories.MATCHING,
+          LogEvents.MOCK_MATCH_EVALUATED,
+          logContext,
+          {
+            mockIndex,
+            matched: true,
+            hasCriteria: false,
+          },
+        );
 
         // Dynamic response types (sequence, stateResponse) get higher priority than simple responses
         // This ensures they are selected over simple fallback responses
@@ -157,10 +173,15 @@ export const createResponseSelector = (
         const mock = mockWithParams.mock;
 
         // Log successful selection
-        logger.info("matching", "mock_selected", logContext, {
-          mockIndex,
-          specificity,
-        });
+        logger.info(
+          LogCategories.MATCHING,
+          LogEvents.MOCK_SELECTED,
+          logContext,
+          {
+            mockIndex,
+            specificity,
+          },
+        );
 
         // Select response (single, sequence, or stateResponse)
         const response = selectResponseFromMock(
@@ -222,7 +243,7 @@ export const createResponseSelector = (
       }
 
       // No mock matched
-      logger.warn("matching", "mock_no_match", logContext, {
+      logger.warn(LogCategories.MATCHING, LogEvents.MOCK_NO_MATCH, logContext, {
         url: context.url,
         method: context.method,
         candidateCount: 0,
