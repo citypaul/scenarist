@@ -527,6 +527,51 @@ stubFor(get("/api/cart")
   </Card>
 </CardGrid>
 
+## Migration Considerations
+
+### From WireMock to Scenarist
+
+If you're considering migrating from WireMock:
+
+1. **Stub definitions translate directly** — WireMock JSON mappings map cleanly to Scenarist scenarios
+2. **Test isolation improves** — No more managing multiple WireMock instances for parallel tests
+3. **Recording doesn't migrate** — You'll lose record/playback capabilities
+
+```typescript
+// WireMock JSON
+{
+  "request": {
+    "method": "POST",
+    "url": "/v1/charges",
+    "bodyPatterns": [{ "matchesJsonPath": "$.amount" }]
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": { "id": "ch_123", "status": "succeeded" }
+  }
+}
+
+// Equivalent Scenarist scenario
+{
+  method: 'POST',
+  url: 'https://api.stripe.com/v1/charges',
+  match: { body: { amount: /.*/ } },
+  response: {
+    status: 200,
+    body: { id: 'ch_123', status: 'succeeded' }
+  }
+}
+```
+
+### Using Both Together
+
+You can use WireMock and Scenarist together:
+
+- **WireMock** for services your team doesn't own (microservices from other teams)
+- **Scenarist** for third-party APIs you need to test scenarios for (Stripe, Auth0)
+
+Point your app at WireMock for internal services while Scenarist mocks external APIs.
+
 ## Summary
 
 | Factor                  | Scenarist                                                                          | WireMock                        |
