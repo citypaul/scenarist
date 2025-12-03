@@ -7,6 +7,8 @@ import type {
   HttpRequestContext,
   HttpMethod,
   ResponseSelector,
+  ErrorBehaviors,
+  Logger,
 } from "@scenarist/core";
 import { buildResponse } from "../conversion/response-builder.js";
 import { matchesUrl } from "../matching/url-matcher.js";
@@ -19,6 +21,8 @@ export type DynamicHandlerOptions = {
   ) => ScenaristScenario | undefined;
   readonly strictMode: boolean;
   readonly responseSelector: ResponseSelector;
+  readonly errorBehaviors?: ErrorBehaviors;
+  readonly logger?: Logger;
 };
 
 /**
@@ -145,6 +149,20 @@ export const createDynamicHandler = (
 
     if (result.success) {
       return buildResponse(result.data);
+    }
+
+    // Handle error based on configured behavior
+    if (options.errorBehaviors?.onNoMockFound === "throw") {
+      throw result.error;
+    }
+
+    if (options.errorBehaviors?.onNoMockFound === "warn" && options.logger) {
+      options.logger.warn("matching", result.error.message, {
+        testId,
+        scenarioId,
+        requestUrl: context.url,
+        requestMethod: context.method,
+      });
     }
 
     if (options.strictMode) {

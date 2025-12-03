@@ -1,8 +1,17 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { setupServer } from "msw/node";
 import { createDynamicHandler } from "../src/handlers/dynamic-handler.js";
-import type { ActiveScenario, ScenaristScenario } from "@scenarist/core";
-import { createResponseSelector } from "@scenarist/core";
+import type {
+  ActiveScenario,
+  ScenaristScenario,
+  ErrorBehaviors,
+  Logger,
+} from "@scenarist/core";
+import {
+  createResponseSelector,
+  ScenaristError,
+  ErrorCodes,
+} from "@scenarist/core";
 import { mockDefinition, mockScenario } from "./factories.js";
 
 describe("Dynamic Handler", () => {
@@ -624,6 +633,185 @@ describe("Dynamic Handler", () => {
 
       expect(response.status).toBe(200);
       expect(data).toEqual({ source: "default" });
+
+      server.close();
+    });
+  });
+
+  describe("Error behaviors", () => {
+    it("should return 500 with error details when onNoMockFound is 'throw' and no mock matches", async () => {
+      const getTestId = () => "test-123";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = () => undefined;
+
+      const errorBehaviors: ErrorBehaviors = {
+        onNoMockFound: "throw",
+        onSequenceExhausted: "throw",
+        onNoStateMatch: "throw",
+        onMissingTestId: "throw",
+      };
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: true, // strictMode should be ignored when errorBehaviors is 'throw'
+        responseSelector,
+        errorBehaviors,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      // When error behavior is 'throw', the handler throws a ScenaristError
+      // MSW catches this and returns a 500 response
+      // This is different from strictMode=true which returns 501
+      const response = await fetch("https://api.example.com/users");
+
+      // Verify it's a 500 (MSW's error response) not 501 (our strictMode response)
+      expect(response.status).toBe(500);
+
+      server.close();
+    });
+
+    it("should return 501 when errorBehaviors is not set and strictMode is true", async () => {
+      // This verifies that when errorBehaviors is not provided, existing behavior works
+      const getTestId = () => "test-123";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = () => undefined;
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: true,
+        responseSelector,
+        // No errorBehaviors - should use default behavior (501 for strictMode)
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch("https://api.example.com/users");
+
+      expect(response.status).toBe(501);
+
+      server.close();
+    });
+
+    it("should return 501 when onNoMockFound is 'ignore' and strictMode is true", async () => {
+      // 'ignore' behavior should silently continue to strictMode logic
+      const getTestId = () => "test-123";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = () => undefined;
+
+      const errorBehaviors: ErrorBehaviors = {
+        onNoMockFound: "ignore",
+        onSequenceExhausted: "throw",
+        onNoStateMatch: "throw",
+        onMissingTestId: "throw",
+      };
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: true,
+        responseSelector,
+        errorBehaviors,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch("https://api.example.com/users");
+
+      // 'ignore' should let strictMode handle it → 501 response
+      expect(response.status).toBe(501);
+
+      server.close();
+    });
+
+    it("should passthrough when onNoMockFound is 'ignore' and strictMode is false", async () => {
+      // 'ignore' behavior with strictMode=false should passthrough
+      const getTestId = () => "test-123";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = () => undefined;
+
+      const errorBehaviors: ErrorBehaviors = {
+        onNoMockFound: "ignore",
+        onSequenceExhausted: "throw",
+        onNoStateMatch: "throw",
+        onMissingTestId: "throw",
+      };
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: false,
+        responseSelector,
+        errorBehaviors,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      // 'ignore' + strictMode=false should passthrough (network error for non-existent domain)
+      await expect(fetch("https://api.example.com/users")).rejects.toThrow();
+
+      server.close();
+    });
+
+    it("should log warning via Logger and return 501 when onNoMockFound is 'warn' and strictMode is true", async () => {
+      // 'warn' behavior should log a warning via the Logger port and continue to strictMode logic
+      const mockLogger: Logger = {
+        error: vi.fn(),
+        warn: vi.fn(),
+        info: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        isEnabled: () => true,
+      };
+
+      const getTestId = () => "test-123";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = () => undefined;
+
+      const errorBehaviors: ErrorBehaviors = {
+        onNoMockFound: "warn",
+        onSequenceExhausted: "throw",
+        onNoStateMatch: "throw",
+        onMissingTestId: "throw",
+      };
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: true,
+        responseSelector,
+        errorBehaviors,
+        logger: mockLogger,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch("https://api.example.com/users");
+
+      // 'warn' should log via Logger and then let strictMode handle it → 501
+      expect(response.status).toBe(501);
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        "matching",
+        expect.stringContaining("No mock matched"),
+        expect.objectContaining({
+          testId: "test-123",
+          scenarioId: "default",
+          requestUrl: expect.stringContaining("api.example.com"),
+          requestMethod: "GET",
+        }),
+      );
 
       server.close();
     });
