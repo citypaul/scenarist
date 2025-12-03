@@ -95,6 +95,7 @@ const traversePath = (obj: unknown, path: readonly string[]): unknown => {
   }
 
   const record = obj as Record<string, unknown>;
+  // eslint-disable-next-line security/detect-object-injection -- Key validated by Object.hasOwn and isDangerousKey guard
   const value = record[key];
 
   // Recursively traverse remaining path

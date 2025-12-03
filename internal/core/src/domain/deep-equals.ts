@@ -35,6 +35,7 @@ export const deepEquals = (a: unknown, b: unknown): boolean => {
       return false;
     }
     for (let i = 0; i < a.length; i++) {
+      // eslint-disable-next-line security/detect-object-injection -- Index bounded by array length check
       if (!deepEquals(a[i], b[i])) {
         return false;
       }
@@ -60,6 +61,7 @@ export const deepEquals = (a: unknown, b: unknown): boolean => {
       if (!(key in (b as Record<string, unknown>))) {
         return false;
       }
+      // eslint-disable-next-line security/detect-object-injection -- Keys from Object.keys (own properties only)
       if (
         !deepEquals(
           (a as Record<string, unknown>)[key],
