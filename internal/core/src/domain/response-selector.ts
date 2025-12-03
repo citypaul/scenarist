@@ -77,6 +77,9 @@ export const createResponseSelector = (
         specificity: number;
       } | null = null;
 
+      // Track if we skipped any exhausted sequences (for better error messages)
+      let skippedExhaustedSequences = false;
+
       // Find all matching mocks and score them by specificity
       for (let mockIndex = 0; mockIndex < mocks.length; mockIndex++) {
         // eslint-disable-next-line security/detect-object-injection -- Index bounded by loop (0 <= i < length)
@@ -91,6 +94,7 @@ export const createResponseSelector = (
             mockIndex,
           );
           if (exhausted) {
+            skippedExhaustedSequences = true;
             continue; // Skip to next mock, allowing fallback to be selected
           }
         }
@@ -242,7 +246,39 @@ export const createResponseSelector = (
         return { success: true, data: finalResponse };
       }
 
-      // No mock matched
+      // No mock matched - determine specific error type
+      if (skippedExhaustedSequences) {
+        // All matching mocks were exhausted sequences
+        logger.warn(
+          LogCategories.SEQUENCE,
+          LogEvents.SEQUENCE_EXHAUSTED,
+          logContext,
+          {
+            url: context.url,
+            method: context.method,
+          },
+        );
+
+        return {
+          success: false,
+          error: new ScenaristError(
+            `Sequence exhausted for ${context.method} ${context.url}. All responses have been consumed and repeat mode is 'none'.`,
+            {
+              code: ErrorCodes.SEQUENCE_EXHAUSTED,
+              context: {
+                testId,
+                scenarioId,
+                requestInfo: {
+                  method: context.method,
+                  url: context.url,
+                },
+                hint: "Add a fallback mock to handle requests after sequence exhaustion, or use repeat: 'last' or 'cycle' instead of 'none'.",
+              },
+            },
+          ),
+        };
+      }
+
       logger.warn(LogCategories.MATCHING, LogEvents.MOCK_NO_MATCH, logContext, {
         url: context.url,
         method: context.method,

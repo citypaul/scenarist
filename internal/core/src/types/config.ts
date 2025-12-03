@@ -18,8 +18,6 @@ export type ErrorBehaviors = {
   readonly onNoMockFound: ErrorBehavior;
   /** How to handle when a sequence is exhausted. Default: 'throw' */
   readonly onSequenceExhausted: ErrorBehavior;
-  /** How to handle when no stateResponse condition matches. Default: 'throw' */
-  readonly onNoStateMatch: ErrorBehavior;
   /** How to handle when x-scenarist-test-id header is missing. Default: 'throw' */
   readonly onMissingTestId: ErrorBehavior;
 };

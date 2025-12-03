@@ -9,6 +9,7 @@ import type {
 } from "@scenarist/core";
 import {
   createResponseSelector,
+  createInMemorySequenceTracker,
   ScenaristError,
   ErrorCodes,
 } from "@scenarist/core";
@@ -643,7 +644,6 @@ describe("Dynamic Handler", () => {
       const errorBehaviors: ErrorBehaviors = {
         onNoMockFound: "throw",
         onSequenceExhausted: "throw",
-        onNoStateMatch: "throw",
         onMissingTestId: "throw",
       };
 
@@ -704,7 +704,6 @@ describe("Dynamic Handler", () => {
       const errorBehaviors: ErrorBehaviors = {
         onNoMockFound: "ignore",
         onSequenceExhausted: "throw",
-        onNoStateMatch: "throw",
         onMissingTestId: "throw",
       };
 
@@ -737,7 +736,6 @@ describe("Dynamic Handler", () => {
       const errorBehaviors: ErrorBehaviors = {
         onNoMockFound: "ignore",
         onSequenceExhausted: "throw",
-        onNoStateMatch: "throw",
         onMissingTestId: "throw",
       };
 
@@ -866,7 +864,6 @@ describe("Dynamic Handler", () => {
       const errorBehaviors: ErrorBehaviors = {
         onNoMockFound: "warn",
         onSequenceExhausted: "throw",
-        onNoStateMatch: "throw",
         onMissingTestId: "throw",
       };
 
@@ -908,7 +905,6 @@ describe("Dynamic Handler", () => {
       const errorBehaviors: ErrorBehaviors = {
         onNoMockFound: "warn",
         onSequenceExhausted: "throw",
-        onNoStateMatch: "throw",
         onMissingTestId: "throw",
       };
 
@@ -941,6 +937,160 @@ describe("Dynamic Handler", () => {
 
       server.close();
     });
+
+    it("should use onSequenceExhausted behavior when sequence is exhausted", async () => {
+      // Use unique test ID to avoid state pollution from other tests
+      const testId = `sequence-exhaust-warn-${Date.now()}`;
+
+      // Create fresh responseSelector with sequenceTracker to track sequence positions
+      const sequenceTracker = createInMemorySequenceTracker();
+      const isolatedResponseSelector = createResponseSelector({
+        sequenceTracker,
+      });
+
+      const mockLogger: Logger = {
+        error: vi.fn(),
+        warn: vi.fn(),
+        info: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        isEnabled: () => true,
+      };
+
+      const scenarios = new Map<string, ScenaristScenario>([
+        [
+          "default",
+          mockScenario({
+            id: "default",
+            mocks: [
+              {
+                method: "GET",
+                url: "https://api.example.com/status",
+                // sequence is top-level, not nested inside response
+                sequence: {
+                  responses: [{ status: 202, body: { state: "processing" } }],
+                  repeat: "none",
+                },
+              },
+            ],
+          }),
+        ],
+      ]);
+
+      const getTestId = () => testId;
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = (scenarioId: string) =>
+        scenarios.get(scenarioId);
+
+      // onNoMockFound is 'throw' but onSequenceExhausted is 'warn'
+      // When sequence exhausts, it should use onSequenceExhausted behavior (warn), not onNoMockFound (throw)
+      const errorBehaviors: ErrorBehaviors = {
+        onNoMockFound: "throw",
+        onSequenceExhausted: "warn",
+        onMissingTestId: "throw",
+      };
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: true,
+        responseSelector: isolatedResponseSelector,
+        errorBehaviors,
+        logger: mockLogger,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      // First request exhausts the sequence
+      const response1 = await fetch("https://api.example.com/status");
+      expect(response1.status).toBe(202);
+
+      // Second request should trigger SEQUENCE_EXHAUSTED
+      // With onSequenceExhausted: 'warn', it should warn and continue to strictMode (501)
+      // NOT throw (which would result in 500)
+      const response2 = await fetch("https://api.example.com/status");
+
+      // Should be 501 (strictMode), not 500 (thrown error)
+      expect(response2.status).toBe(501);
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        "matching",
+        expect.stringContaining("exhausted"),
+        expect.objectContaining({
+          testId,
+          scenarioId: "default",
+        }),
+      );
+
+      server.close();
+    });
+
+    it("should throw when onSequenceExhausted is 'throw' and sequence is exhausted", async () => {
+      // Use unique test ID to avoid state pollution from other tests
+      const testId = `sequence-exhaust-throw-${Date.now()}`;
+
+      // Create fresh responseSelector with sequenceTracker to track sequence positions
+      const sequenceTracker = createInMemorySequenceTracker();
+      const isolatedResponseSelector = createResponseSelector({
+        sequenceTracker,
+      });
+
+      const scenarios = new Map<string, ScenaristScenario>([
+        [
+          "default",
+          mockScenario({
+            id: "default",
+            mocks: [
+              {
+                method: "GET",
+                url: "https://api.example.com/status",
+                // sequence is top-level, not nested inside response
+                sequence: {
+                  responses: [{ status: 202, body: { state: "processing" } }],
+                  repeat: "none",
+                },
+              },
+            ],
+          }),
+        ],
+      ]);
+
+      const getTestId = () => testId;
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = (scenarioId: string) =>
+        scenarios.get(scenarioId);
+
+      const errorBehaviors: ErrorBehaviors = {
+        onNoMockFound: "warn", // Set to warn so we can distinguish from SEQUENCE_EXHAUSTED throw
+        onSequenceExhausted: "throw",
+        onMissingTestId: "throw",
+      };
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: true,
+        responseSelector: isolatedResponseSelector,
+        errorBehaviors,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      // Exhaust the sequence
+      await fetch("https://api.example.com/status");
+
+      // Second request should throw SEQUENCE_EXHAUSTED → 500
+      const response2 = await fetch("https://api.example.com/status");
+
+      expect(response2.status).toBe(500);
+      const body = await response2.json();
+      expect(body.code).toBe("SEQUENCE_EXHAUSTED");
+
+      server.close();
+    });
   });
 
   describe("Missing test ID handling", () => {
@@ -968,7 +1118,6 @@ describe("Dynamic Handler", () => {
       const errorBehaviors: ErrorBehaviors = {
         onNoMockFound: "throw",
         onSequenceExhausted: "throw",
-        onNoStateMatch: "throw",
         onMissingTestId: "throw",
       };
 
@@ -1027,7 +1176,6 @@ describe("Dynamic Handler", () => {
       const errorBehaviors: ErrorBehaviors = {
         onNoMockFound: "throw",
         onSequenceExhausted: "throw",
-        onNoStateMatch: "throw",
         onMissingTestId: "warn",
       };
 
@@ -1085,7 +1233,6 @@ describe("Dynamic Handler", () => {
       const errorBehaviors: ErrorBehaviors = {
         onNoMockFound: "throw",
         onSequenceExhausted: "throw",
-        onNoStateMatch: "throw",
         onMissingTestId: "ignore",
       };
 

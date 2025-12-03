@@ -13,7 +13,6 @@ import { ScenariosObjectSchema } from "../schemas/index.js";
 const DEFAULT_ERROR_BEHAVIORS: ErrorBehaviors = {
   onNoMockFound: "throw",
   onSequenceExhausted: "throw",
-  onNoStateMatch: "throw",
   onMissingTestId: "throw",
 };
 

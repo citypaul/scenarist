@@ -188,12 +188,19 @@ export const createDynamicHandler = (
         return buildResponse(result.data);
       }
 
+      // Determine which error behavior to use based on error code
+      const errorCode = result.error.code;
+      const errorBehavior =
+        errorCode === ErrorCodes.SEQUENCE_EXHAUSTED
+          ? options.errorBehaviors?.onSequenceExhausted
+          : options.errorBehaviors?.onNoMockFound;
+
       // Handle error based on configured behavior
-      if (options.errorBehaviors?.onNoMockFound === "throw") {
+      if (errorBehavior === "throw") {
         throw result.error;
       }
 
-      if (options.errorBehaviors?.onNoMockFound === "warn" && options.logger) {
+      if (errorBehavior === "warn" && options.logger) {
         options.logger.warn("matching", result.error.message, {
           testId,
           scenarioId,

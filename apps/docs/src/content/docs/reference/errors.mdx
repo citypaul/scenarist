@@ -14,8 +14,7 @@ Scenarist provides comprehensive error handling with rich context, actionable hi
 | `SCENARIO_NOT_FOUND` | Attempted to switch to a scenario that hasn't been registered | `switchScenario()` with unknown ID |
 | `DUPLICATE_SCENARIO` | Attempted to register a scenario with an ID that already exists | `registerScenario()` with duplicate ID |
 | `NO_MOCK_FOUND` | No mock matched the incoming request | Request handling with `strictMode: true` or `errorBehaviors.onNoMockFound: 'throw'` |
-| `SEQUENCE_EXHAUSTED` | Sequence with `repeat: 'none'` has no more responses | Request to exhausted sequence |
-| `NO_STATE_MATCH` | stateResponse has no matching condition and no default | Request with unmatched state |
+| `SEQUENCE_EXHAUSTED` | Sequence with `repeat: 'none'` has no more responses and no fallback mock | Request to exhausted sequence |
 | `MISSING_TEST_ID` | Request arrived without the x-scenarist-test-id header | Request without test context |
 | `VALIDATION_ERROR` | Scenario definition failed schema validation | `registerScenario()` with invalid definition |
 
@@ -72,7 +71,6 @@ const scenarist = createScenarist({
   errorBehaviors: {
     onNoMockFound: 'warn',        // Log warning, continue
     onSequenceExhausted: 'throw', // Throw error (fail test)
-    onNoStateMatch: 'ignore',     // Silently continue
     onMissingTestId: 'warn',      // Log warning, use default scenario
   },
 });
@@ -100,7 +98,6 @@ All behaviors default to `throw` for strict-by-default testing:
 const DEFAULT_ERROR_BEHAVIORS = {
   onNoMockFound: 'throw',
   onSequenceExhausted: 'throw',
-  onNoStateMatch: 'throw',
   onMissingTestId: 'throw',
 };
 ```
@@ -230,7 +227,6 @@ export const ErrorCodes = {
   DUPLICATE_SCENARIO: 'DUPLICATE_SCENARIO',
   NO_MOCK_FOUND: 'NO_MOCK_FOUND',
   SEQUENCE_EXHAUSTED: 'SEQUENCE_EXHAUSTED',
-  NO_STATE_MATCH: 'NO_STATE_MATCH',
   MISSING_TEST_ID: 'MISSING_TEST_ID',
   VALIDATION_ERROR: 'VALIDATION_ERROR',
 } as const;
@@ -244,7 +240,6 @@ type ErrorBehavior = 'throw' | 'warn' | 'ignore';
 type ErrorBehaviors = {
   readonly onNoMockFound: ErrorBehavior;
   readonly onSequenceExhausted: ErrorBehavior;
-  readonly onNoStateMatch: ErrorBehavior;
   readonly onMissingTestId: ErrorBehavior;
 };
 ```
