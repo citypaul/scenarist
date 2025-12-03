@@ -3,6 +3,7 @@ import { buildConfig } from "../src/domain/config-builder.js";
 import type {
   ScenaristScenario,
   ScenaristScenarios,
+  ScenaristConfig,
 } from "../src/types/index.js";
 
 const mockDefaultScenario: ScenaristScenario = {
@@ -161,6 +162,56 @@ describe("buildConfig", () => {
           scenarios: scenariosOnlyDefault,
         }),
       ).not.toThrow();
+    });
+  });
+
+  describe("Error Behaviors", () => {
+    it("should apply default error behaviors when not specified", () => {
+      const config = buildConfig({
+        enabled: true,
+        scenarios: mockScenarios,
+      });
+
+      // Default is 'throw' for all error types (strict by default)
+      expect(config.errorBehaviors.onNoMockFound).toBe("throw");
+      expect(config.errorBehaviors.onSequenceExhausted).toBe("throw");
+      expect(config.errorBehaviors.onNoStateMatch).toBe("throw");
+      expect(config.errorBehaviors.onMissingTestId).toBe("throw");
+    });
+
+    it("should allow overriding individual error behaviors", () => {
+      const config = buildConfig({
+        enabled: true,
+        scenarios: mockScenarios,
+        errorBehaviors: {
+          onNoMockFound: "warn",
+          onMissingTestId: "ignore",
+        },
+      });
+
+      expect(config.errorBehaviors.onNoMockFound).toBe("warn");
+      expect(config.errorBehaviors.onMissingTestId).toBe("ignore");
+      // Others should still be default
+      expect(config.errorBehaviors.onSequenceExhausted).toBe("throw");
+      expect(config.errorBehaviors.onNoStateMatch).toBe("throw");
+    });
+
+    it("should allow setting all error behaviors to warn for lenient mode", () => {
+      const config = buildConfig({
+        enabled: true,
+        scenarios: mockScenarios,
+        errorBehaviors: {
+          onNoMockFound: "warn",
+          onSequenceExhausted: "warn",
+          onNoStateMatch: "warn",
+          onMissingTestId: "warn",
+        },
+      });
+
+      expect(config.errorBehaviors.onNoMockFound).toBe("warn");
+      expect(config.errorBehaviors.onSequenceExhausted).toBe("warn");
+      expect(config.errorBehaviors.onNoStateMatch).toBe("warn");
+      expect(config.errorBehaviors.onMissingTestId).toBe("warn");
     });
   });
 });

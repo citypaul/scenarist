@@ -1,6 +1,30 @@
 import type { ScenaristScenarios } from "./scenario.js";
 
 /**
+ * How errors should be handled when they occur.
+ *
+ * - `throw`: Throw ScenaristError (strict - test fails with clear message)
+ * - `warn`: Log at warn level, return undefined (let strictMode decide next step)
+ * - `ignore`: Return undefined silently (let strictMode decide next step)
+ */
+export type ErrorBehavior = "throw" | "warn" | "ignore";
+
+/**
+ * Configuration for how different error types should be handled.
+ * Default is 'throw' for all (strict by default).
+ */
+export type ErrorBehaviors = {
+  /** How to handle when no mock matches a request. Default: 'throw' */
+  readonly onNoMockFound: ErrorBehavior;
+  /** How to handle when a sequence is exhausted. Default: 'throw' */
+  readonly onSequenceExhausted: ErrorBehavior;
+  /** How to handle when no stateResponse condition matches. Default: 'throw' */
+  readonly onNoStateMatch: ErrorBehavior;
+  /** How to handle when x-scenarist-test-id header is missing. Default: 'throw' */
+  readonly onMissingTestId: ErrorBehavior;
+};
+
+/**
  * Configuration for the scenario management system.
  * All properties are readonly for immutability.
  */
@@ -39,6 +63,12 @@ export type ScenaristConfig = {
    * The default test ID to use when no x-scenarist-test-id header is present.
    */
   readonly defaultTestId: string;
+
+  /**
+   * How different error types should be handled.
+   * Default is 'throw' for all (strict by default).
+   */
+  readonly errorBehaviors: ErrorBehaviors;
 };
 
 /**
@@ -73,4 +103,8 @@ export type ScenaristConfigInput<
    */
   readonly scenarios: T;
   readonly defaultTestId?: string;
+  /**
+   * Optional error behavior overrides. Missing values use 'throw' as default.
+   */
+  readonly errorBehaviors?: Partial<ErrorBehaviors>;
 };
