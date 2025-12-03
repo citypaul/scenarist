@@ -1,6 +1,18 @@
 /**
+ * Type guard to check if a value is a plain object (Record).
+ * Used to properly narrow types after typeof checks.
+ */
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+};
+
+/**
  * Applies templates to a value.
  * Replaces {{state.key}} and {{params.key}} patterns with actual values.
+ *
+ * Note: This function preserves the structure of the input value.
+ * Callers passing typed objects (like ScenaristResponse) can safely
+ * cast the return value back to the input type.
  *
  * @param value - Value to apply templates to (string, object, array, or primitive)
  * @param templateData - Object containing state and params for template replacement.
@@ -113,10 +125,12 @@ const resolveTemplatePath = (
       return current.length;
     }
 
-    // Traverse object
-    const record = current as Record<string, unknown>;
+    // Traverse object - use type guard for proper narrowing
+    if (!isRecord(current)) {
+      return undefined;
+    }
     // eslint-disable-next-line security/detect-object-injection -- Segment from split() iteration
-    current = record[segment];
+    current = current[segment];
 
     // Guard: Return undefined if property doesn't exist
     if (current === undefined) {

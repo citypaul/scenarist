@@ -73,10 +73,24 @@ export const config = [
         },
       ],
       "@typescript-eslint/no-explicit-any": "error",
+      // Disallow type assertions - prefer type guards and proper typing
+      "@typescript-eslint/consistent-type-assertions": [
+        "error",
+        {
+          assertionStyle: "never",
+        },
+      ],
     },
   },
   {
     ignores: ["dist/**"],
+  },
+  // Allow type assertions in test files (needed for testing error conditions)
+  {
+    files: ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx", "**/tests/**/*.ts"],
+    rules: {
+      "@typescript-eslint/consistent-type-assertions": "off",
+    },
   },
   // CommonJS files (.cjs) need Node.js globals and CommonJS patterns
   {

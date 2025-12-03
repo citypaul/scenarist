@@ -1,4 +1,12 @@
 /**
+ * Type guard to check if a value is a plain object (Record).
+ * Used to properly narrow types after typeof checks.
+ */
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+};
+
+/**
  * Deep equality comparison for values.
  *
  * Supports primitives, null, undefined, arrays, and objects.
@@ -48,26 +56,21 @@ export const deepEquals = (a: unknown, b: unknown): boolean => {
     return false;
   }
 
-  // Handle objects
-  if (typeof a === "object" && typeof b === "object") {
-    const aKeys = Object.keys(a as Record<string, unknown>);
-    const bKeys = Object.keys(b as Record<string, unknown>);
+  // Handle objects (use type guard instead of type assertion)
+  if (isRecord(a) && isRecord(b)) {
+    const aKeys = Object.keys(a);
+    const bKeys = Object.keys(b);
 
     if (aKeys.length !== bKeys.length) {
       return false;
     }
 
     for (const key of aKeys) {
-      if (!(key in (b as Record<string, unknown>))) {
+      if (!(key in b)) {
         return false;
       }
       // eslint-disable-next-line security/detect-object-injection -- Keys from Object.keys (own properties only)
-      if (
-        !deepEquals(
-          (a as Record<string, unknown>)[key],
-          (b as Record<string, unknown>)[key],
-        )
-      ) {
+      if (!deepEquals(a[key], b[key])) {
         return false;
       }
     }
