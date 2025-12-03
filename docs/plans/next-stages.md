@@ -21,7 +21,7 @@
 - Next.js Pages Router example (e-commerce flow)
 - Next.js App Router example (Server Components + stateful mocks)
 
-✅ **Test Coverage:** 300+ tests across all packages, 100% coverage maintained
+✅ **Test Coverage:** 500+ tests across all packages, 100% coverage maintained
 ✅ **Documentation:** Complete (core-functionality.md, stateful-mocks.md, 12 ADRs, CLAUDE.md)
 
 **What's Missing for v1.0 Release:**
@@ -819,6 +819,7 @@ Do we need:
 - ✅ Automatic default fallback feature
 - ✅ Parallel test execution with singleton fix
 - ✅ Documentation cleanup (PR #80)
+- ✅ Logging infrastructure (#320) - ConsoleLogger, NoOpLogger, scenario/matching events
 
 **Current Priority: Documentation Site**
 

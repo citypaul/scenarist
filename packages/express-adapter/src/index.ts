@@ -26,3 +26,18 @@ export type {
   ScenaristConfig,
   ScenaristResult,
 } from "@scenarist/core";
+
+// Logger exports - for debugging and observability
+export {
+  noOpLogger,
+  createNoOpLogger,
+  createConsoleLogger,
+} from "@scenarist/core";
+export type {
+  Logger,
+  LogLevel,
+  LogCategory,
+  LogContext,
+  ConsoleLoggerConfig,
+  LogFormat,
+} from "@scenarist/core";

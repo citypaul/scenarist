@@ -9,12 +9,22 @@
  * Never wrap in a function or default export - module duplication requires this pattern.
  */
 
-import { createScenarist } from "@scenarist/nextjs-adapter/app";
+import {
+  createScenarist,
+  createConsoleLogger,
+} from "@scenarist/nextjs-adapter/app";
 import { scenarios } from "./scenarios";
 
 export const scenarist = createScenarist({
   enabled: true,
   scenarios,
+  // Enable logging via SCENARIST_LOG=1 environment variable
+  logger: process.env.SCENARIST_LOG
+    ? createConsoleLogger({
+        level: "debug",
+        categories: ["scenario", "matching"],
+      })
+    : undefined,
 });
 
 // Start MSW in Node.js environment

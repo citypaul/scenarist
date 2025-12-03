@@ -7,6 +7,7 @@ import {
   InMemoryScenarioStore,
   createInMemorySequenceTracker,
   createInMemoryStateManager,
+  noOpLogger,
   SCENARIST_TEST_ID_HEADER,
   type BaseAdapterOptions,
   type ScenaristConfig,
@@ -46,6 +47,7 @@ export const createScenaristBase = (
   options: BaseAdapterOptions,
 ): ScenaristBaseSetup => {
   const config = buildConfig(options);
+  const logger = options.logger ?? noOpLogger;
 
   // Use injected ports or in-memory defaults
   // Note: registry/store fallback branches are exercised via singleton pattern in impl.ts
@@ -62,6 +64,7 @@ export const createScenaristBase = (
     store,
     stateManager,
     sequenceTracker,
+    logger,
   });
 
   // Register all scenarios upfront from scenarios object
@@ -73,6 +76,7 @@ export const createScenaristBase = (
   const responseSelector = createResponseSelector({
     sequenceTracker,
     stateManager,
+    logger,
   });
 
   // Mutable ref to current test ID (updated by adapter methods)

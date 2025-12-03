@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev --port 3002",
+    "dev:logs": "SCENARIST_LOG=1 next dev --port 3002",
     "build": "next build",
     "build:production": "NODE_ENV=production next build",
     "start": "next start --port 3002",
@@ -13,6 +14,7 @@
     "test": "pnpm test:e2e",
     "test:e2e": "playwright test --project=chromium",
     "test:e2e:ui": "playwright test --project=chromium --ui",
+    "test:logs": "SCENARIST_LOG=1 playwright test --project=chromium",
     "test:custom": "SERVER_MODE=custom playwright test --project=chromium",
     "test:production": "playwright test --config=playwright.production.config.ts",
     "verify:treeshaking": "pnpm build:production && ! grep -rE '(setupWorker|startWorker|http\\.(get|post|put|delete|patch)|HttpResponse\\.json)' .next/ --exclude-dir=cache"

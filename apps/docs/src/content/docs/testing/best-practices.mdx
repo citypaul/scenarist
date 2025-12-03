@@ -456,8 +456,45 @@ const rateLimitedScenario: ScenaristScenario = {
 };
 ```
 
+## Debugging with Logging
+
+When tests fail unexpectedly, enable Scenarist's logging to see what's happening:
+
+```typescript
+import { createConsoleLogger } from '@scenarist/express-adapter';
+
+const scenarist = createScenarist({
+  enabled: true,
+  scenarios,
+  logger: createConsoleLogger({
+    level: 'debug',
+    categories: ['matching', 'scenario'],
+  }),
+});
+```
+
+**Common debugging scenarios:**
+
+| Problem | What to Check | Log Category |
+|---------|---------------|--------------|
+| Wrong mock selected | Specificity scores | `matching` (debug level) |
+| Mock not matching | Match criteria evaluation | `matching` (debug level) |
+| State not captured | State capture events | `state` (debug level) |
+| Scenario not switching | Scenario switch events | `scenario` (info level) |
+
+<Aside type="tip" title="Environment Variable Pattern">
+Add logging without code changes:
+
+```bash
+SCENARIST_LOG=1 SCENARIST_LOG_LEVEL=debug pnpm test -- --grep "failing test"
+```
+
+See [Logging Reference](/reference/logging#environment-variable-pattern) for setup.
+</Aside>
+
 ## Next Steps
 
+- [Logging Reference](/reference/logging) - Full logging configuration and API
 - [Parallel Testing](/testing/parallel-testing) - Run tests concurrently with isolated scenarios
 - [Playwright Integration](/testing/playwright-integration) - Set up type-safe fixtures
 - [Testing Philosophy](/concepts/philosophy) - Core principles behind Scenarist

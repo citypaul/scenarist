@@ -88,6 +88,13 @@ interface RequestContext {
   getQuery(): Record<string, string>;
 }
 
+// Driven port for observability
+interface Logger {
+  info(category: LogCategory, message: string, context: LogContext, data?: Record<string, unknown>): void;
+  debug(category: LogCategory, message: string, context: LogContext, data?: Record<string, unknown>): void;
+  // ... error, warn, trace methods
+}
+
 interface ScenarioRegistry {
   register(definition: ScenaristScenario): void;
   get(scenarioId: string): ScenaristScenario | undefined;
@@ -429,6 +436,7 @@ import {
   InMemoryScenarioStore,
   InMemoryStateManager,
   InMemorySequenceTracker,
+  noOpLogger,  // Silent by default
 } from '@scenarist/core';  // Internal package
 
 const registry = new InMemoryScenarioRegistry();
@@ -441,8 +449,11 @@ const scenarioManager = createScenarioManager({
   store,
   stateManager,
   sequenceTracker,
+  logger: noOpLogger,  // Injected dependency
 });
 ```
+
+For debugging, you can inject a `ConsoleLogger` instead. See [Logging Reference](/reference/logging) for details.
 
 ## Declarative Patterns: Why Scenarios Are Data, Not Functions
 

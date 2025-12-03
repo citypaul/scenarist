@@ -5,6 +5,11 @@ export default defineConfig({
     globals: true,
     environment: "node",
     fileParallelism: false,
+    // IMPORTANT: Required to see Scenarist logging output!
+    // By default, Vitest captures console output and only shows it for failed tests.
+    // This setting disables that behavior so all console.log/error calls are visible.
+    // Enable SCENARIST_LOG=1 to see scenario registration and switching logs.
+    disableConsoleIntercept: true,
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],

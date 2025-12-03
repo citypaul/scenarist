@@ -1,6 +1,15 @@
 // Re-export types from setup for public API
 export type { PagesAdapterOptions, PagesScenarist } from "./setup.js";
 
+// Re-export logger types from core
+export type {
+  Logger,
+  LogLevel,
+  LogCategory,
+  LogContext,
+  ConsoleLoggerConfig,
+} from "@scenarist/core";
+
 /**
  * Production-only entry point that returns undefined without loading test dependencies.
  *
@@ -15,6 +24,15 @@ export type { PagesAdapterOptions, PagesScenarist } from "./setup.js";
 export const createScenarist = (
   _options: import("./setup.js").PagesAdapterOptions,
 ): import("./setup.js").PagesScenarist | undefined => {
+  return undefined;
+};
+
+/**
+ * Production stub: Returns undefined (logging disabled in production)
+ */
+export const createConsoleLogger = (
+  _config: import("@scenarist/core").ConsoleLoggerConfig,
+): import("@scenarist/core").Logger | undefined => {
   return undefined;
 };
 

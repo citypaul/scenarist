@@ -231,6 +231,7 @@ export default defineConfig({
           items: [
             { label: "Playwright Integration", slug: "testing/playwright-integration" },
             { label: "Parallel Testing", slug: "testing/parallel-testing" },
+            { label: "Debugging with Logs", slug: "reference/logging" },
             { label: "Best Practices", slug: "testing/best-practices" },
           ],
         },
@@ -254,6 +255,7 @@ export default defineConfig({
           items: [
             { label: "API Endpoints", slug: "reference/api-endpoints" },
             { label: "Ephemeral Endpoints", slug: "reference/ephemeral-endpoints" },
+            { label: "Logging", slug: "reference/logging" },
             { label: "Verification", slug: "reference/verification" },
             { label: "Architecture", slug: "concepts/architecture" },
           ],

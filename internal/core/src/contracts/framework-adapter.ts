@@ -11,6 +11,7 @@ import type { ScenarioRegistry } from "../ports/driven/scenario-registry.js";
 import type { ScenarioStore } from "../ports/driven/scenario-store.js";
 import type { StateManager } from "../ports/driven/state-manager.js";
 import type { SequenceTracker } from "../ports/driven/sequence-tracker.js";
+import type { Logger } from "../ports/driven/logger.js";
 
 /**
  * Base configuration options that all framework adapters must support.
@@ -63,6 +64,24 @@ export type BaseAdapterOptions<
    * If not provided, an in-memory sequence tracker will be used.
    */
   readonly sequenceTracker?: SequenceTracker;
+
+  /**
+   * Logger implementation for debugging and observability.
+   *
+   * If not provided, NoOpLogger will be used (silent).
+   *
+   * @example
+   * ```typescript
+   * import { createConsoleLogger } from '@scenarist/express-adapter';
+   *
+   * const scenarist = createScenarist({
+   *   enabled: true,
+   *   scenarios,
+   *   logger: createConsoleLogger({ level: 'debug' }),
+   * });
+   * ```
+   */
+  readonly logger?: Logger;
 };
 
 /**

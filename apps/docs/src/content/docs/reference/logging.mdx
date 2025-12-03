@@ -1,0 +1,412 @@
+---
+title: Debugging with Logs
+description: Configure and use Scenarist's logging infrastructure for debugging scenario matching and observability
+---
+
+import { Aside, Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+
+Scenarist provides a flexible logging infrastructure for debugging scenario matching, state management, and request handling. Logging is **disabled by default** (silent) and can be enabled when needed.
+
+## Quick Start
+
+```typescript
+import { createScenarist, createConsoleLogger } from '@scenarist/express-adapter';
+// Or: import { createScenarist, createConsoleLogger } from '@scenarist/nextjs-adapter/app';
+
+const scenarist = createScenarist({
+  enabled: true,
+  scenarios,
+
+  // Enable logging with pretty format at info level
+  logger: createConsoleLogger({ level: 'info' }),
+});
+```
+
+## Logger Types
+
+Scenarist includes two logger implementations:
+
+<CardGrid>
+  <Card title="NoOpLogger" icon="close">
+    **Default.** Silent - no output. Zero overhead for production-like tests.
+  </Card>
+  <Card title="ConsoleLogger" icon="terminal">
+    Human-readable or JSON output. Great for debugging scenario matching issues.
+  </Card>
+</CardGrid>
+
+## ConsoleLogger
+
+The `ConsoleLogger` provides human-readable or JSON output to the console.
+
+### Basic Usage
+
+```typescript
+import { createConsoleLogger } from '@scenarist/express-adapter';
+
+// Pretty format (default) - colored, human-readable
+const logger = createConsoleLogger({ level: 'info' });
+
+// JSON format - for log aggregation tools
+const logger = createConsoleLogger({ level: 'info', format: 'json' });
+
+// Debug level with category filtering
+const logger = createConsoleLogger({
+  level: 'debug',
+  categories: ['matching', 'scenario'],
+});
+```
+
+### Configuration
+
+```typescript
+type ConsoleLoggerConfig = {
+  /** Minimum log level to output */
+  level: 'error' | 'warn' | 'info' | 'debug' | 'trace';
+
+  /** Output format (default: 'pretty') */
+  format?: 'pretty' | 'json';
+
+  /** Filter to specific categories (default: all categories) */
+  categories?: LogCategory[];
+};
+```
+
+### Log Levels
+
+Levels are hierarchical - each level includes all less verbose levels:
+
+| Level | Description | Use Case |
+|-------|-------------|----------|
+| `error` | Critical failures | Scenario not found, invalid config |
+| `warn` | Potential issues | No mock matched, sequence exhausted |
+| `info` | Key events | Scenario switched, mock selected |
+| `debug` | Decision logic | Match criteria evaluation, specificity scores |
+| `trace` | Verbose details | Request/response bodies, template replacement |
+
+<Aside type="tip" title="Start with 'info'">
+For most debugging, `level: 'info'` shows what matters: scenario switches and mock selections. Move to `debug` when you need to understand *why* a particular mock was or wasn't selected.
+</Aside>
+
+### Log Categories
+
+Filter logs to specific areas of concern:
+
+| Category | Description | Example Messages |
+|----------|-------------|-----------------|
+| `lifecycle` | Startup, shutdown | `scenarist_started`, `scenarist_stopped` |
+| `scenario` | Scenario switching | `scenario_switched`, `scenario_not_found` |
+| `matching` | Mock selection | `mock_selected`, `mock_no_match`, `mock_candidates_found` |
+| `sequence` | Sequence state | `sequence_advanced`, `sequence_exhausted` |
+| `state` | State capture | `state_captured`, `state_injected` |
+| `template` | Template replacement | `template_replaced` |
+| `request` | Request lifecycle | `request_received`, `response_sent` |
+
+```typescript
+// Only show matching and scenario logs
+const logger = createConsoleLogger({
+  level: 'debug',
+  categories: ['matching', 'scenario'],
+});
+```
+
+### Output Formats
+
+<Tabs>
+<TabItem label="Pretty Format">
+```
+12:34:56.789 INF 🎬 [test-user-login] scenario | scenario_switched scenarioId=premium-user
+12:34:56.801 INF 🎯 [test-user-login] matching | mock_selected mockIndex=2 specificity=5
+12:34:56.802 DBG 🎯 [test-user-login] matching | mock_match_evaluated mockIndex=0 matched=false
+12:34:56.803 DBG 🎯 [test-user-login] matching | mock_match_evaluated mockIndex=1 matched=true
+12:34:56.810 INF 💾 [test-user-login] state    | state_captured key=userId value=user-123
+12:34:56.815 WRN 🎯 [test-user-login] matching | mock_no_match url=/api/unknown candidateCount=0
+```
+
+**Features:**
+
+- Timestamps with milliseconds
+- Level indicators: `ERR`, `WRN`, `INF`, `DBG`, `TRC`
+- Category icons for visual scanning
+- Colored test IDs (persistent per test)
+- Key-value data fields
+
+</TabItem>
+<TabItem label="JSON Format">
+```json
+{"level":"info","category":"scenario","message":"scenario_switched","testId":"test-user-login","scenarioId":"premium-user","timestamp":1732650896789}
+{"level":"info","category":"matching","message":"mock_selected","testId":"test-user-login","data":{"mockIndex":2,"specificity":5},"timestamp":1732650896801}
+{"level":"debug","category":"matching","message":"mock_match_evaluated","testId":"test-user-login","data":{"mockIndex":0,"matched":false},"timestamp":1732650896802}
+```
+
+**Use for:** Log aggregation (Datadog, Splunk), structured queries, production debugging
+
+</TabItem>
+</Tabs>
+
+### Parallel Test Support
+
+When running tests in parallel, each test gets a unique test ID. The pretty format assigns **persistent colors** to each test ID, making it easy to trace logs from concurrent tests:
+
+```
+12:34:56.789 INF 🎯 [test-checkout-flow] matching | mock_selected
+12:34:56.790 INF 🎯 [test-payment-process] matching | mock_selected
+12:34:56.791 INF 🎯 [test-user-login] matching | mock_selected
+12:34:56.792 INF 💾 [test-checkout-flow] state | state_captured
+```
+
+Each test ID gets a unique color that remains consistent throughout the test run.
+
+## NoOpLogger
+
+The default logger - does nothing. Use for clean test output:
+
+```typescript
+import { noOpLogger, createNoOpLogger } from '@scenarist/express-adapter';
+
+// Singleton instance (recommended)
+const logger = noOpLogger;
+
+// Or create new instance (functionally identical)
+const logger = createNoOpLogger();
+```
+
+**When to use:**
+- Production-like test runs where you want clean output
+- CI/CD pipelines where logs would be noise
+- Any situation where you don't need Scenarist debugging
+
+<Aside type="note" title="Default Behavior">
+When no logger is specified, Scenarist uses `noOpLogger` automatically. You only need to import it if you're explicitly passing loggers around.
+</Aside>
+
+## Environment Variable Pattern
+
+For easy toggling without code changes:
+
+```typescript
+import { createScenarist, createConsoleLogger, noOpLogger } from '@scenarist/express-adapter';
+
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  scenarios,
+
+  // Enable logging via SCENARIST_LOG=1
+  logger: process.env.SCENARIST_LOG
+    ? createConsoleLogger({
+        level: (process.env.SCENARIST_LOG_LEVEL as any) || 'info',
+        format: (process.env.SCENARIST_LOG_FORMAT as any) || 'pretty',
+      })
+    : noOpLogger,
+});
+```
+
+Then run tests with logging:
+
+```bash
+# Enable info-level logging
+SCENARIST_LOG=1 pnpm test
+
+# Enable debug-level logging
+SCENARIST_LOG=1 SCENARIST_LOG_LEVEL=debug pnpm test
+
+# JSON format for CI
+SCENARIST_LOG=1 SCENARIST_LOG_FORMAT=json pnpm test
+```
+
+## Vitest Configuration
+
+<Aside type="caution" title="Required for Vitest">
+By default, Vitest captures console output and only displays it for **failed** tests. To see Scenarist logging output for all tests, you must configure Vitest to disable console interception.
+</Aside>
+
+Add `disableConsoleIntercept: true` to your `vitest.config.ts`:
+
+```typescript
+// vitest.config.ts
+import { defineConfig } from "vitest/config";
+
+export default defineConfig({
+  test: {
+    // REQUIRED: Show Scenarist logging output for all tests
+    // Without this, console output is only shown for failed tests
+    disableConsoleIntercept: true,
+
+    // ... your other config
+  },
+});
+```
+
+Then run tests with logging enabled:
+
+```bash
+SCENARIST_LOG=1 pnpm test
+```
+
+You'll see output like:
+
+```
+09:00:12.269 DBG [unknown] 🎬 scenario   scenario_registered scenarioId="default" mockCount=4
+09:00:12.270 DBG [unknown] 🎬 scenario   scenario_registered scenarioId="success" mockCount=3
+09:00:12.308 INF [my-test-id] 🎬 scenario   scenario_switched
+```
+
+## Debugging Common Issues
+
+### "Why isn't my mock being selected?"
+
+Enable debug logging for the `matching` category:
+
+```typescript
+const logger = createConsoleLogger({
+  level: 'debug',
+  categories: ['matching'],
+});
+```
+
+You'll see:
+- `mock_candidates_found` - How many mocks could potentially match
+- `mock_match_evaluated` - Each mock's evaluation result and specificity score
+- `mock_selected` - Which mock was chosen and why
+- `mock_no_match` - When no mock matched (with the URL that failed)
+
+### "What scenario is active?"
+
+Enable info logging for the `scenario` category:
+
+```typescript
+const logger = createConsoleLogger({
+  level: 'info',
+  categories: ['scenario'],
+});
+```
+
+You'll see:
+- `scenario_switched` - When a test switches scenarios
+- `scenario_not_found` - When a requested scenario doesn't exist
+
+### "Is state being captured correctly?"
+
+Enable debug logging for the `state` category:
+
+```typescript
+const logger = createConsoleLogger({
+  level: 'debug',
+  categories: ['state'],
+});
+```
+
+You'll see:
+- `state_captured` - When state is extracted from a response
+- `state_injected` - When state is injected into a mock
+
+## Custom Loggers
+
+Implement the `Logger` interface to integrate with your logging library:
+
+```typescript
+import type { Logger, LogCategory, LogContext } from '@scenarist/core';
+import pino from 'pino';
+
+const pinoInstance = pino({ level: 'debug' });
+
+const pinoLogger: Logger = {
+  error: (category, message, context, data) =>
+    pinoInstance.error({ category, ...context, ...data }, message),
+
+  warn: (category, message, context, data) =>
+    pinoInstance.warn({ category, ...context, ...data }, message),
+
+  info: (category, message, context, data) =>
+    pinoInstance.info({ category, ...context, ...data }, message),
+
+  debug: (category, message, context, data) =>
+    pinoInstance.debug({ category, ...context, ...data }, message),
+
+  trace: (category, message, context, data) =>
+    pinoInstance.trace({ category, ...context, ...data }, message),
+
+  isEnabled: (level) => pinoInstance.isLevelEnabled(level),
+};
+
+const scenarist = createScenarist({
+  enabled: true,
+  scenarios,
+  logger: pinoLogger,
+});
+```
+
+## API Reference
+
+### `createConsoleLogger(config)`
+
+Create a console logger with the specified configuration.
+
+```typescript
+function createConsoleLogger(config: ConsoleLoggerConfig): Logger;
+
+type ConsoleLoggerConfig = {
+  level: Exclude<LogLevel, 'silent'>;
+  format?: 'pretty' | 'json';
+  categories?: ReadonlyArray<LogCategory>;
+};
+```
+
+### `noOpLogger`
+
+Singleton logger that does nothing.
+
+```typescript
+const noOpLogger: Logger;
+```
+
+### `createNoOpLogger()`
+
+Factory function to create a no-op logger.
+
+```typescript
+function createNoOpLogger(): Logger;
+```
+
+### `Logger` Interface
+
+The port interface all loggers implement:
+
+```typescript
+interface Logger {
+  error(category: LogCategory, message: string, context: LogContext, data?: Record<string, unknown>): void;
+  warn(category: LogCategory, message: string, context: LogContext, data?: Record<string, unknown>): void;
+  info(category: LogCategory, message: string, context: LogContext, data?: Record<string, unknown>): void;
+  debug(category: LogCategory, message: string, context: LogContext, data?: Record<string, unknown>): void;
+  trace(category: LogCategory, message: string, context: LogContext, data?: Record<string, unknown>): void;
+  isEnabled(level: Exclude<LogLevel, 'silent'>): boolean;
+}
+```
+
+### Types
+
+```typescript
+type LogLevel = 'silent' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
+
+type LogCategory =
+  | 'lifecycle'
+  | 'scenario'
+  | 'matching'
+  | 'sequence'
+  | 'state'
+  | 'template'
+  | 'request';
+
+type LogContext = {
+  readonly testId?: string;
+  readonly scenarioId?: string;
+  readonly requestUrl?: string;
+  readonly requestMethod?: string;
+};
+```
+
+## Next Steps
+
+- [Testing Best Practices](/testing/best-practices) - Patterns for organizing tests
+- [Parallel Testing](/testing/parallel-testing) - Run tests concurrently
+- [Architecture](/concepts/architecture) - Understand the ports and adapters pattern

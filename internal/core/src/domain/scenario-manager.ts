@@ -4,7 +4,9 @@ import type {
   ScenarioStore,
   SequenceTracker,
   StateManager,
+  Logger,
 } from "../ports/index.js";
+import { noOpLogger } from "../adapters/index.js";
 import type {
   ActiveScenario,
   ScenaristResult,
@@ -47,6 +49,7 @@ class ScenarioValidationError extends Error {
  * - Any registry implementation (in-memory, Redis, files, remote)
  * - Any store implementation (in-memory, Redis, database)
  * - Any state manager implementation (in-memory, Redis, database)
+ * - Any logger implementation (console, file, remote)
  * - Proper testing with mock dependencies
  * - True hexagonal architecture
  */
@@ -55,11 +58,13 @@ export const createScenarioManager = ({
   store,
   stateManager,
   sequenceTracker,
+  logger = noOpLogger,
 }: {
   registry: ScenarioRegistry;
   store: ScenarioStore;
   stateManager?: StateManager;
   sequenceTracker?: SequenceTracker;
+  logger?: Logger;
 }): ScenarioManager => {
   return {
     registerScenario(definition: ScenaristScenario): void {
@@ -90,6 +95,16 @@ export const createScenarioManager = ({
       }
 
       registry.register(definition);
+
+      logger.debug(
+        "scenario",
+        "scenario_registered",
+        {},
+        {
+          scenarioId: definition.id,
+          mockCount: definition.mocks.length, // mocks is required by ScenaristScenarioSchema
+        },
+      );
     },
 
     switchScenario(
@@ -99,6 +114,15 @@ export const createScenarioManager = ({
       const definition = registry.get(scenarioId);
 
       if (!definition) {
+        logger.error(
+          "scenario",
+          "scenario_not_found",
+          { testId },
+          {
+            requestedScenarioId: scenarioId,
+          },
+        );
+
         return {
           success: false,
           error: new ScenarioNotFoundError(scenarioId),
@@ -121,6 +145,8 @@ export const createScenarioManager = ({
         stateManager.reset(testId);
       }
 
+      logger.info("scenario", "scenario_switched", { testId, scenarioId }, {});
+
       return { success: true, data: undefined };
     },
 
@@ -134,6 +160,8 @@ export const createScenarioManager = ({
 
     clearScenario(testId: string): void {
       store.delete(testId);
+
+      logger.debug("scenario", "scenario_cleared", { testId }, {});
     },
 
     getScenarioById(id: string): ScenaristScenario | undefined {

@@ -37,8 +37,9 @@ describe("setup-scenarist.ts - Production Tree-Shaking", () => {
       process.env.NODE_ENV = "development";
 
       // Dynamic import to get fresh module with updated env
-      const { createScenarist } =
-        await import("../src/setup/setup-scenarist.js");
+      const { createScenarist } = await import(
+        "../src/setup/setup-scenarist.js"
+      );
 
       const result = createScenarist({
         enabled: true,
@@ -56,8 +57,9 @@ describe("setup-scenarist.ts - Production Tree-Shaking", () => {
     it("should return instance when NODE_ENV is test", async () => {
       process.env.NODE_ENV = "test";
 
-      const { createScenarist } =
-        await import("../src/setup/setup-scenarist.js");
+      const { createScenarist } = await import(
+        "../src/setup/setup-scenarist.js"
+      );
 
       const result = createScenarist({
         enabled: true,
@@ -70,8 +72,9 @@ describe("setup-scenarist.ts - Production Tree-Shaking", () => {
     it("should return instance when NODE_ENV is undefined", async () => {
       delete process.env.NODE_ENV;
 
-      const { createScenarist } =
-        await import("../src/setup/setup-scenarist.js");
+      const { createScenarist } = await import(
+        "../src/setup/setup-scenarist.js"
+      );
 
       const result = createScenarist({
         enabled: true,
@@ -84,8 +87,9 @@ describe("setup-scenarist.ts - Production Tree-Shaking", () => {
     it("should maintain type safety with generic parameter", async () => {
       process.env.NODE_ENV = "development";
 
-      const { createScenarist } =
-        await import("../src/setup/setup-scenarist.js");
+      const { createScenarist } = await import(
+        "../src/setup/setup-scenarist.js"
+      );
 
       const result = createScenarist({
         enabled: true,
@@ -111,8 +115,9 @@ describe("setup-scenarist.ts - Production Tree-Shaking", () => {
     it("should have working config with correct default values", async () => {
       process.env.NODE_ENV = "development";
 
-      const { createScenarist } =
-        await import("../src/setup/setup-scenarist.js");
+      const { createScenarist } = await import(
+        "../src/setup/setup-scenarist.js"
+      );
 
       const result = createScenarist({
         enabled: true,
@@ -132,8 +137,9 @@ describe("setup-scenarist.ts - Production Tree-Shaking", () => {
     it("should have correct return type ExpressScenarist | undefined", async () => {
       process.env.NODE_ENV = "development";
 
-      const { createScenarist } =
-        await import("../src/setup/setup-scenarist.js");
+      const { createScenarist } = await import(
+        "../src/setup/setup-scenarist.js"
+      );
 
       // This test verifies TypeScript types are correct
       const result = createScenarist({
@@ -162,13 +168,26 @@ describe("setup-scenarist.ts - Production Tree-Shaking", () => {
  * any dependencies, guaranteeing zero bundle impact."
  */
 describe("production.ts - Production Entry Point", () => {
-  it("should return undefined regardless of NODE_ENV", async () => {
+  it("should return undefined from createScenarist regardless of options", async () => {
     // Import production.ts directly (simulates production export condition)
     const { createScenarist } = await import("../src/setup/production.js");
 
     const result = createScenarist({
       enabled: true,
       scenarios: testScenarios,
+    });
+
+    expect(result).toBeUndefined();
+  });
+
+  it("should return undefined from createConsoleLogger regardless of config", async () => {
+    // Business behavior: In production, createConsoleLogger returns undefined
+    // so logging code is tree-shaken from the bundle
+    const { createConsoleLogger } = await import("../src/setup/production.js");
+
+    const result = createConsoleLogger({
+      level: "debug",
+      format: "pretty",
     });
 
     expect(result).toBeUndefined();

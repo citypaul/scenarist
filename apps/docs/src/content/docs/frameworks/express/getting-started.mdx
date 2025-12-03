@@ -508,8 +508,28 @@ npm run build:production
 
 **For detailed configuration examples**, see the [Express Adapter README - Production Tree-Shaking](https://github.com/citypaul/scenarist/tree/main/packages/express-adapter#production-tree-shaking).
 
+## Debugging with Logging
+
+If mocks aren't matching as expected, enable logging to see what's happening:
+
+```typescript
+import { createScenarist, createConsoleLogger } from "@scenarist/express-adapter";
+
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === "test",
+  scenarios,
+  logger: createConsoleLogger({
+    level: "debug",
+    categories: ["matching", "scenario"],
+  }),
+});
+```
+
+This shows which mocks are being evaluated and why they match or don't. See [Logging Reference](/reference/logging) for all options.
+
 ## Next Steps
 
+- **Debugging:** Learn about [logging options](/reference/logging) for troubleshooting
 - **Production safety:** Learn why [Scenarist is safe for production](/concepts/production-safety)
 - **Example app:** See [complete Express example](https://github.com/citypaul/scenarist/tree/main/apps/express-example) with comprehensive test suite
 - **Architecture:** Learn [how Scenarist works](/concepts/architecture)

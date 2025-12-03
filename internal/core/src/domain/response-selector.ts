@@ -9,6 +9,7 @@ import type {
   ResponseSelector,
   SequenceTracker,
   StateManager,
+  Logger,
 } from "../ports/index.js";
 import { ResponseSelectionError } from "../ports/driven/response-selector.js";
 import { extractFromPath } from "./path-extraction.js";
@@ -17,6 +18,7 @@ import { matchesRegex } from "./regex-matching.js";
 import { createStateResponseResolver } from "./state-response-resolver.js";
 import { deepEquals } from "./deep-equals.js";
 import type { MatchValue } from "../schemas/scenario-definition.js";
+import { noOpLogger } from "../adapters/index.js";
 
 const SPECIFICITY_RANGES = {
   MATCH_CRITERIA_BASE: 100,
@@ -30,6 +32,7 @@ const SPECIFICITY_RANGES = {
 type CreateResponseSelectorOptions = {
   sequenceTracker?: SequenceTracker; // Optional for Phase 2
   stateManager?: StateManager; // Optional for Phase 3
+  logger?: Logger; // Optional for logging
 };
 
 /**
@@ -46,7 +49,7 @@ type CreateResponseSelectorOptions = {
 export const createResponseSelector = (
   options: CreateResponseSelectorOptions = {},
 ): ResponseSelector => {
-  const { sequenceTracker, stateManager } = options;
+  const { sequenceTracker, stateManager, logger = noOpLogger } = options;
 
   return {
     selectResponse(
@@ -55,6 +58,13 @@ export const createResponseSelector = (
       context: HttpRequestContext,
       mocks: ReadonlyArray<ScenaristMockWithParams>,
     ): ScenaristResult<ScenaristResponse, ResponseSelectionError> {
+      const logContext = { testId, scenarioId };
+
+      // Log the number of candidate mocks
+      logger.debug("matching", "mock_candidates_found", logContext, {
+        count: mocks.length,
+      });
+
       let bestMatch: {
         mockWithParams: ScenaristMockWithParams;
         mockIndex: number;
@@ -82,7 +92,21 @@ export const createResponseSelector = (
         // Check if this mock has match criteria
         if (mock.match) {
           // If match criteria exists, check if it matches the request
-          if (matchesCriteria(context, mock.match, testId, stateManager)) {
+          const matched = matchesCriteria(
+            context,
+            mock.match,
+            testId,
+            stateManager,
+          );
+
+          // Log the evaluation result
+          logger.debug("matching", "mock_match_evaluated", logContext, {
+            mockIndex,
+            matched,
+            hasCriteria: true,
+          });
+
+          if (matched) {
             // Match criteria always have higher priority than fallbacks
             // Base specificity ensures even 1 field beats any fallback
             const specificity =
@@ -100,6 +124,13 @@ export const createResponseSelector = (
         }
 
         // No match criteria = fallback mock (always matches)
+        // Log fallback evaluation
+        logger.debug("matching", "mock_match_evaluated", logContext, {
+          mockIndex,
+          matched: true,
+          hasCriteria: false,
+        });
+
         // Dynamic response types (sequence, stateResponse) get higher priority than simple responses
         // This ensures they are selected over simple fallback responses
         // Both sequence and stateResponse get the same specificity (Issue #316 fix)
@@ -122,8 +153,14 @@ export const createResponseSelector = (
 
       // Return the best matching mock
       if (bestMatch) {
-        const { mockWithParams, mockIndex } = bestMatch;
+        const { mockWithParams, mockIndex, specificity } = bestMatch;
         const mock = mockWithParams.mock;
+
+        // Log successful selection
+        logger.info("matching", "mock_selected", logContext, {
+          mockIndex,
+          specificity,
+        });
 
         // Select response (single, sequence, or stateResponse)
         const response = selectResponseFromMock(
@@ -174,6 +211,12 @@ export const createResponseSelector = (
       }
 
       // No mock matched
+      logger.warn("matching", "mock_no_match", logContext, {
+        url: context.url,
+        method: context.method,
+        candidateCount: 0,
+      });
+
       return {
         success: false,
         error: new ResponseSelectionError(

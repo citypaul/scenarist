@@ -39,8 +39,15 @@ export default defineConfig<ScenaristOptions>({
   ],
 
   webServer: {
-    command: useCustomServer ? "node server.cjs" : "pnpm dev",
+    command: useCustomServer
+      ? "node server.cjs"
+      : process.env.SCENARIST_LOG
+        ? "pnpm dev:logs"
+        : "pnpm dev",
     url: "http://localhost:3002",
     reuseExistingServer: !process.env.CI,
+    // Show server output (including Scenarist logs) when SCENARIST_LOG is set
+    stdout: process.env.SCENARIST_LOG ? "pipe" : "ignore",
+    stderr: "pipe",
   },
 });

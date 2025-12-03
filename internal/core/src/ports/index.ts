@@ -11,3 +11,10 @@ export type {
   SequencePosition,
 } from "./driven/sequence-tracker.js";
 export type { StateManager } from "./driven/state-manager.js";
+export type {
+  Logger,
+  LogLevel,
+  LogCategory,
+  LogContext,
+  LogEntry,
+} from "./driven/logger.js";

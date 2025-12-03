@@ -1,5 +1,6 @@
 import {
   createScenarist,
+  createConsoleLogger,
   type ExpressScenarist,
 } from "@scenarist/express-adapter";
 import express, { type Express } from "express";
@@ -51,6 +52,13 @@ export const createApp = (): {
     enabled: true,
     scenarios, // All scenarios registered at initialization (must include 'default')
     strictMode: false, // Allow passthrough for unmocked requests
+    // Enable logging via SCENARIST_LOG=1 environment variable
+    logger: process.env.SCENARIST_LOG
+      ? createConsoleLogger({
+          level: "debug",
+          categories: ["scenario", "matching"],
+        })
+      : undefined,
   });
 
   // Apply Scenarist middleware (only in non-production)

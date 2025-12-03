@@ -79,6 +79,7 @@ This package provides complete Next.js integration for Scenarist's scenario mana
 | **Request Matching**                 | [scenarist.io/scenarios/request-matching](https://scenarist.io/scenarios/request-matching)                         |
 | **Response Sequences**               | [scenarist.io/scenarios/response-sequences](https://scenarist.io/scenarios/response-sequences)                     |
 | **State-Aware Mocking**              | [scenarist.io/scenarios/state-aware-mocking](https://scenarist.io/scenarios/state-aware-mocking)                   |
+| **Logging & Debugging**              | [scenarist.io/reference/logging](https://scenarist.io/reference/logging)                                           |
 
 ## Core Capabilities
 
