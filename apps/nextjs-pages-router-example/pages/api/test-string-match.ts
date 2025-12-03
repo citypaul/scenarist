@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import "../../lib/scenarist";
+import { getString } from "../../lib/request-utils";
 
 type StrategyConfig = {
   readonly url: string;
@@ -7,7 +8,7 @@ type StrategyConfig = {
 };
 
 const buildTestIdHeader = (req: NextApiRequest): Record<string, string> => ({
-  "x-scenarist-test-id": (req.headers["x-scenarist-test-id"] as string) || "",
+  "x-scenarist-test-id": getString(req.headers["x-scenarist-test-id"]),
 });
 
 const buildStrategyConfig = (
@@ -18,18 +19,18 @@ const buildStrategyConfig = (
   return {
     contains: {
       url: "http://localhost:3001/products",
-      headers: { "x-campaign": (campaign as string) || "" },
+      headers: { "x-campaign": getString(campaign) },
     },
     startsWith: {
       url: "http://localhost:3001/api-keys",
-      headers: { "x-api-key": (apiKey as string) || "" },
+      headers: { "x-api-key": getString(apiKey) },
     },
     endsWith: {
-      url: `http://localhost:3001/users?email=${email || ""}`,
+      url: `http://localhost:3001/users?email=${getString(email)}`,
     },
     equals: {
       url: "http://localhost:3001/status",
-      headers: { "x-exact": (exact as string) || "" },
+      headers: { "x-exact": getString(exact) },
     },
   };
 };
@@ -50,7 +51,9 @@ export default async function handler(
 ) {
   const { strategy } = req.query;
   const strategyConfig = buildStrategyConfig(req);
-  const config = strategyConfig[strategy as string];
+  const strategyKey = getString(strategy);
+  // eslint-disable-next-line security/detect-object-injection -- strategyKey is from req.query, used as object key lookup
+  const config = strategyConfig[strategyKey];
 
   if (!config) {
     return res.status(400).json({ error: "No strategy specified" });

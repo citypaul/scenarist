@@ -14,6 +14,7 @@
 
 import type { GetServerSideProps } from "next";
 import { getScenaristHeaders } from "@scenarist/nextjs-adapter/pages";
+import { getString } from "../lib/request-utils";
 
 type HostnameMatchingResponse = {
   readonly patternType: string;
@@ -154,7 +155,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async (
   context,
 ) => {
   const { query } = context;
-  const testType = (query.test as string) || "unknown";
+  const testType = getString(query.test, "unknown");
   const userId = encodePathParam(query.userId, "123");
   const postId = encodePathParam(query.postId, "456");
 

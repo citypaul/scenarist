@@ -23,12 +23,10 @@ type CartItem = {
 const aggregateCartItems = (
   productIds: ReadonlyArray<number>,
 ): ReadonlyArray<CartItem> => {
-  const counts = productIds.reduce(
-    (acc, productId) => {
-      return { ...acc, [productId]: (acc[productId] ?? 0) + 1 };
-    },
-    {} as Record<number, number>,
-  );
+  const initialCounts: Record<number, number> = {};
+  const counts = productIds.reduce((acc, productId) => {
+    return { ...acc, [productId]: (acc[productId] ?? 0) + 1 };
+  }, initialCounts);
 
   return Object.entries(counts).map(([productId, quantity]) => ({
     productId: Number(productId),

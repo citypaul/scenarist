@@ -118,7 +118,7 @@ const fetchTestData = async (
           `http://localhost:3001/api/users/${userId}`,
           { headers: scenaristHeaders },
         );
-        const data = (await response.json()) as User;
+        const data: User = await response.json();
         return { success: true, data };
       }
 
@@ -128,7 +128,7 @@ const fetchTestData = async (
           `http://localhost:3001/api/weather/v1/${city}`,
           { headers: scenaristHeaders },
         );
-        const data = (await response.json()) as Weather;
+        const data: Weather = await response.json();
         return { success: true, data };
       }
 
@@ -139,7 +139,7 @@ const fetchTestData = async (
           `http://localhost:3001/api/weather/${version}/${city}`,
           { headers: scenaristHeaders },
         );
-        const data = (await response.json()) as Weather;
+        const data: Weather = await response.json();
         return { success: true, data };
       }
 
@@ -149,7 +149,7 @@ const fetchTestData = async (
           `http://localhost:3001/api/files/${filename}`,
           { headers: scenaristHeaders },
         );
-        const data = (await response.json()) as FileInfo;
+        const data: FileInfo = await response.json();
         return { success: true, data };
       }
 
@@ -164,7 +164,7 @@ const fetchTestData = async (
           },
           body: JSON.stringify({}),
         });
-        const data = (await response.json()) as Charge;
+        const data: Charge = await response.json();
         return { success: true, data };
       }
 
@@ -174,7 +174,7 @@ const fetchTestData = async (
           `http://localhost:3001/api/users/${userId}`,
           { headers: scenaristHeaders },
         );
-        const data = (await response.json()) as User;
+        const data: User = await response.json();
         return { success: true, data };
       }
 
@@ -185,7 +185,7 @@ const fetchTestData = async (
           `http://localhost:3001/api/users/${userId}/posts/${postId}`,
           { headers: scenaristHeaders },
         );
-        const data = (await response.json()) as Post;
+        const data: Post = await response.json();
         return { success: true, data };
       }
 
@@ -195,7 +195,7 @@ const fetchTestData = async (
           ? `http://localhost:3001/api/optional-files/${filename}`
           : "http://localhost:3001/api/optional-files";
         const response = await fetch(url, { headers: scenaristHeaders });
-        const data = (await response.json()) as OptionalFile;
+        const data: OptionalFile = await response.json();
         return { success: true, data };
       }
 
@@ -205,7 +205,7 @@ const fetchTestData = async (
           `http://localhost:3001/api/nested-files/${path}`,
           { headers: scenaristHeaders },
         );
-        const data = (await response.json()) as NestedPath;
+        const data: NestedPath = await response.json();
         return { success: true, data };
       }
 
@@ -215,7 +215,7 @@ const fetchTestData = async (
           `http://localhost:3001/api/orders/${orderId}`,
           { headers: scenaristHeaders },
         );
-        const data = (await response.json()) as Order;
+        const data: Order = await response.json();
         return { success: true, data };
       }
 

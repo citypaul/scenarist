@@ -7,6 +7,14 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
 };
 
 /**
+ * Security: Check if a property key could cause prototype pollution.
+ * @see https://github.com/citypaul/scenarist/security/code-scanning
+ */
+const isDangerousKey = (key: string): boolean => {
+  return key === "__proto__" || key === "constructor" || key === "prototype";
+};
+
+/**
  * Applies templates to a value.
  * Replaces {{state.key}} and {{params.key}} patterns with actual values.
  *
@@ -129,7 +137,13 @@ const resolveTemplatePath = (
     if (!isRecord(current)) {
       return undefined;
     }
-    // eslint-disable-next-line security/detect-object-injection -- Segment from split() iteration
+
+    // Security: Prevent prototype pollution attacks
+    if (isDangerousKey(segment) || !Object.hasOwn(current, segment)) {
+      return undefined;
+    }
+
+    // eslint-disable-next-line security/detect-object-injection -- Segment validated by isDangerousKey and Object.hasOwn checks
     current = current[segment];
 
     // Guard: Return undefined if property doesn't exist
