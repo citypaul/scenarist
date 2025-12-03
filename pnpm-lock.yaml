@@ -7,11 +7,6 @@ settings:
 overrides:
   body-parser: '>=2.2.1'
 
-patchedDependencies:
-  grpc-reflection-js@0.3.0:
-    hash: 5f2puryqrm55td7dagetdn6wue
-    path: patches/grpc-reflection-js@0.3.0.patch
-
 importers:
 
   .:
@@ -130,8 +125,8 @@ importers:
         specifier: ^5.3.4
         version: 5.3.4
       '@usebruno/cli':
-        specifier: ^2.14.3
-        version: 2.14.3(yup@1.7.1)
+        specifier: ^2.15.0
+        version: 2.15.0(yup@1.7.1)
       '@vitest/coverage-v8':
         specifier: ^4.0.14
         version: 4.0.14(vitest@4.0.14(@opentelemetry/api@1.9.0)(@types/node@24.10.1)(@vitest/ui@4.0.14)(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(msw@2.12.3(@types/node@24.10.1)(typescript@5.9.3))(tsx@4.20.6)(yaml@2.8.1))
@@ -3295,9 +3290,6 @@ packages:
   '@types/geojson@7946.0.16':
     resolution: {integrity: sha512-6C8nqWur3j98U6+lXDfTUWIfgvZU+EumvpHKcYjujKH7woYyLj2sUmff0tRhrqM7BohUw7Pz3ZB1jj2gW9Fvmg==}
 
-  '@types/google-protobuf@3.15.12':
-    resolution: {integrity: sha512-40um9QqwHjRS92qnOaDpL7RmDK15NuZYo9HihiJRbYkMQZlWnuH8AdvbMy8/o6lgLmKbDUKa+OALCltHdbOTpQ==}
-
   '@types/hast@3.0.4':
     resolution: {integrity: sha512-WPs+bbQw5aCj+x6laNGWLH3wviHtoCv/P3+otBhbOhJgG8qtpdAMlTCxLtsTWA7LH1Oh/bFCHsBn0TPS5m30EQ==}
 
@@ -3309,9 +3301,6 @@ packages:
 
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
-
-  '@types/lodash.set@4.3.9':
-    resolution: {integrity: sha512-KOxyNkZpbaggVmqbpr82N2tDVTx05/3/j0f50Es1prxrWB0XYf9p3QNxqcbWb7P1Q9wlvsUSlCFnwlPCIJ46PQ==}
 
   '@types/lodash@4.17.21':
     resolution: {integrity: sha512-FOvQ0YPD5NOfPgMzJihoT+Za5pdkDJWcbpuj1DjaKZIr/gxodQjY/uWEFlTNqW2ugXHUiL8lRQgw63dzKHZdeQ==}
@@ -3470,32 +3459,35 @@ packages:
   '@ungap/structured-clone@1.3.0':
     resolution: {integrity: sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g==}
 
-  '@usebruno/cli@2.14.3':
-    resolution: {integrity: sha512-JymdevzAmzl/bRH4AZYKN/+U+QMLGPKyGPUr85sCVg77YN+Jm6D9JkwEeC/d1nYE84NpTciGisyqFYkx9RJm7A==}
+  '@usebruno/cli@2.15.0':
+    resolution: {integrity: sha512-XrBDSroDnsZOD6tsR3RLnhpoJX29oJQiIbKwc6q00+i7/+RjmhogdKIub5m/K8gtYzyvyL/60iY7Uv+2m0Hu6A==}
     hasBin: true
 
-  '@usebruno/common@0.15.0':
-    resolution: {integrity: sha512-xUeibWDyETOuk576K9YPh7O2xCBcOSpsCSLG/aSZcnq8hUKBEOleBwYmdPydyjBl7BfxEJYNYh6W89bNEyls+Q==}
+  '@usebruno/common@0.16.0':
+    resolution: {integrity: sha512-6H3MISygtDVAfX2C/iPOFK7bcvnpOI2lPE93rsSU7ZL3uIa3pLIUd6YnmFeR8X4K5OTbNeZOZCwHl11/u2pisg==}
 
-  '@usebruno/converters@0.14.0':
-    resolution: {integrity: sha512-YE/sKKVB+SaUJR9c1a+Ku+c1d+uVK8uASkyVcV1DfNxBdFTlbsyrmuNXMnDCaefm9sZ/vd1eoAnsqSBIm/NEWA==}
+  '@usebruno/converters@0.15.0':
+    resolution: {integrity: sha512-zIRZNMUSz/tV5qSIEit9WJNxo5HULsTF8GKx61XjfJUBsth16RM+TJfWE6QGJOcQBtOeQwFmC6fN9T3qeQpdsQ==}
 
   '@usebruno/filestore@0.5.0':
     resolution: {integrity: sha512-eUodcxWgtivsWbhLxU8i0tmhQrDZm/8CWPq7SnGCnqAH+6aydCsc5o/YIulhXV2wU5DZMwU7+B5xNLDcgloJTA==}
 
-  '@usebruno/js@0.42.1':
-    resolution: {integrity: sha512-j+ZcKeKbiozCxiSQwbANNC8EY2w8+Z+H3AJCQ2HlKFRAgCu3onkxsksO+3z75NggoY9cxGSQRA3ZwEpKHwt96w==}
+  '@usebruno/js@0.43.0':
+    resolution: {integrity: sha512-9Ee0J4peaTIZysMDWBNFzp8drgQG6pyBuEqvBxNs4MgJ1Uv6G8ZyeDSRhcrzTJh9BXyri1IrG8yrGsMxMstLuw==}
     peerDependencies:
       '@usebruno/vm2': ^3.9.13
 
   '@usebruno/lang@0.31.0':
     resolution: {integrity: sha512-Vz80eTDT2e9a5P4ZcIDas6TMExcC8aMZjf570Apt988WCQbMcGfyEK0ETdm526A5VpuTvO44rtTU7Otd+CWvqw==}
 
+  '@usebruno/lang@0.32.0':
+    resolution: {integrity: sha512-LNv3SSThX5myY/PqTtSQ2MFH7PUx+aq3oWK9hOcxjnCg+AigaMBAMMeaVho2NEn8GBNjcBcsDYTxjsizUhq9SA==}
+
   '@usebruno/query@0.1.0':
     resolution: {integrity: sha512-+upwS01y6mMHS91pgh1Iu2nclish7N4otviIs7dJmNLI4AO3UyC3hEFzykls5A6p7mlbVSP2DCCFOPGThhPVCg==}
 
-  '@usebruno/requests@0.12.0':
-    resolution: {integrity: sha512-4Fed1x4NP/DlF5jiW3ZAjYK4Z8E4ua94IpDFZQYQsur+D9MFhLe8vgm/L4g3A4VGqXJGcB3ZUabzvaNqeVhQMg==}
+  '@usebruno/requests@0.13.0':
+    resolution: {integrity: sha512-bnbu3v/a9Rqp6ch847ZKdvpoyIbHiLpucWgQffrgxCxMHJ1mCrnOOl4q+li4mCAZQpfM6kKIR8uV77+Kyo9i6Q==}
 
   '@usebruno/schema@0.21.0':
     resolution: {integrity: sha512-8mdQEmr/9XkFCj4uS2rQsTSVCnFXFZDztTAjzoi/mADA3v3j/sC7s+Ydprf5MeWTbcYoYxgjzJjhLc6EPIRaGA==}
@@ -5262,8 +5254,8 @@ packages:
     resolution: {integrity: sha512-jhIXaOzy1sb8IyocaruWSn1TjmnBVs8Ayhcy83rmxNJ8q2uWKCAj3CnJY+KpGSXCueAPc0i05kVvVKtP1t9S3g==}
     engines: {node: '>=10'}
 
-  google-protobuf@3.21.4:
-    resolution: {integrity: sha512-MnG7N936zcKTco4Jd2PX2U96Kf9PxygAPKBug+74LHzmHXmceN16MmRcdgZv+DGef/S9YvQAfRsNCn4cjf9yyQ==}
+  google-protobuf@4.0.1:
+    resolution: {integrity: sha512-0I4mx3UtAwpcc8l9Ds5gHcwV2FyPdwvxxBcor8LusE4b6PjoFxEngZRBepjvuQ4B0eZ2iu/Vezh8oRsnpJ9UGA==}
 
   gopd@1.2.0:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
@@ -5279,10 +5271,10 @@ packages:
     resolution: {integrity: sha512-DKKrynuQRne0PNpEbzuEdHlYOMksHSUI8Zc9Unei5gTsMNA2/vMpoMz/yKba50pejK56qj98qM0SjYxAKi13gQ==}
     engines: {node: ^12.22.0 || ^14.16.0 || ^16.0.0 || >=17.0.0}
 
-  grpc-reflection-js@0.3.0:
-    resolution: {integrity: sha512-3lhTlQluPxVgbowCXA3tAZC3RJW+GSOUkguLNYl1QffYRiutUB3RDfPkQFTcrCFJgNiIIxx+iJkr8s3uSp3zWA==}
+  grpc-js-reflection-client@1.3.2:
+    resolution: {integrity: sha512-3oxe4/UIu+mHOb+J2M2Xgo/md7fNyxjDjezfwTDT48Xc3L6kuVszJZvBAgMWTN3WeYlZJkiU/p6ijaHa4KBeoA==}
     peerDependencies:
-      '@grpc/grpc-js': ^1.0.0
+      '@grpc/grpc-js': ^1.14.2
 
   h3@1.15.4:
     resolution: {integrity: sha512-z5cFQWDffyOe4vQ9xIqNfCZdV4p//vy6fBnr8Q1AWnVZ0teurKMG66rLj++TKwKPUP3u7iMUvrvKaEUiQw2QWQ==}
@@ -6071,9 +6063,6 @@ packages:
 
   lodash.once@4.1.1:
     resolution: {integrity: sha512-Sb487aTOCr9drQVL8pIxOzVhafOjZN9UU54hiN8PU3uAiSV7lx1yYNpbNmex2PK6dSJoNTSJUUswT651yww3Mg==}
-
-  lodash.set@4.3.2:
-    resolution: {integrity: sha512-4hNPN5jlm/N/HLMCO43v8BXKq9Z7QdAGc/VGrRD61w8gN9g/6jF9A4L1pbUgBLCffi0w9VsXfTOij5x8iTyFvg==}
 
   lodash.startcase@4.4.0:
     resolution: {integrity: sha512-+WKqsK294HMSc2jEbNgpHpd0JfIBhp7rEV4aqXWqFr6AlXov+SlcgB1Fv01y2kGe3Gc8nMW7VA0SrGuSkRfIEg==}
@@ -8894,7 +8883,7 @@ snapshots:
       '@aws-crypto/sha256-js': 5.2.0
       '@aws-crypto/supports-web-crypto': 5.2.0
       '@aws-crypto/util': 5.2.0
-      '@aws-sdk/types': 3.734.0
+      '@aws-sdk/types': 3.936.0
       '@aws-sdk/util-locate-window': 3.893.0
       '@smithy/util-utf8': 2.3.0
       tslib: 2.8.1
@@ -8902,7 +8891,7 @@ snapshots:
   '@aws-crypto/sha256-js@5.2.0':
     dependencies:
       '@aws-crypto/util': 5.2.0
-      '@aws-sdk/types': 3.734.0
+      '@aws-sdk/types': 3.936.0
       tslib: 2.8.1
 
   '@aws-crypto/supports-web-crypto@5.2.0':
@@ -8911,7 +8900,7 @@ snapshots:
 
   '@aws-crypto/util@5.2.0':
     dependencies:
-      '@aws-sdk/types': 3.734.0
+      '@aws-sdk/types': 3.936.0
       '@smithy/util-utf8': 2.3.0
       tslib: 2.8.1
 
@@ -12082,8 +12071,6 @@ snapshots:
 
   '@types/geojson@7946.0.16': {}
 
-  '@types/google-protobuf@3.15.12': {}
-
   '@types/hast@3.0.4':
     dependencies:
       '@types/unist': 3.0.3
@@ -12093,10 +12080,6 @@ snapshots:
   '@types/js-yaml@4.0.9': {}
 
   '@types/json-schema@7.0.15': {}
-
-  '@types/lodash.set@4.3.9':
-    dependencies:
-      '@types/lodash': 4.17.21
 
   '@types/lodash@4.17.21': {}
 
@@ -12299,15 +12282,15 @@ snapshots:
 
   '@ungap/structured-clone@1.3.0': {}
 
-  '@usebruno/cli@2.14.3(yup@1.7.1)':
+  '@usebruno/cli@2.15.0(yup@1.7.1)':
     dependencies:
       '@aws-sdk/credential-providers': 3.750.0
-      '@usebruno/common': 0.15.0
-      '@usebruno/converters': 0.14.0(yup@1.7.1)
+      '@usebruno/common': 0.16.0
+      '@usebruno/converters': 0.15.0(yup@1.7.1)
       '@usebruno/filestore': 0.5.0
-      '@usebruno/js': 0.42.1(@usebruno/vm2@3.9.19)(debug@4.4.3)
-      '@usebruno/lang': 0.31.0
-      '@usebruno/requests': 0.12.0
+      '@usebruno/js': 0.43.0(@usebruno/vm2@3.9.19)(debug@4.4.3)
+      '@usebruno/lang': 0.32.0
+      '@usebruno/requests': 0.13.0
       '@usebruno/vm2': 3.9.19
       aws4-axios: 3.4.0(axios@1.13.2(debug@4.4.3))
       axios: 1.13.2(debug@4.4.3)
@@ -12338,9 +12321,9 @@ snapshots:
       - utf-8-validate
       - yup
 
-  '@usebruno/common@0.15.0': {}
+  '@usebruno/common@0.16.0': {}
 
-  '@usebruno/converters@0.14.0(yup@1.7.1)':
+  '@usebruno/converters@0.15.0(yup@1.7.1)':
     dependencies:
       '@usebruno/schema': 0.21.0(yup@1.7.1)
       js-yaml: 4.1.1
@@ -12358,9 +12341,9 @@ snapshots:
       '@usebruno/lang': 0.31.0
       lodash: 4.17.21
 
-  '@usebruno/js@0.42.1(@usebruno/vm2@3.9.19)(debug@4.4.3)':
+  '@usebruno/js@0.43.0(@usebruno/vm2@3.9.19)(debug@4.4.3)':
     dependencies:
-      '@usebruno/common': 0.15.0
+      '@usebruno/common': 0.16.0
       '@usebruno/query': 0.1.0
       '@usebruno/vm2': 3.9.19
       ajv: 8.17.1
@@ -12397,9 +12380,16 @@ snapshots:
       lodash: 4.17.21
       ohm-js: 16.6.0
 
+  '@usebruno/lang@0.32.0':
+    dependencies:
+      arcsecond: 5.0.0
+      dotenv: 16.6.1
+      lodash: 4.17.21
+      ohm-js: 16.6.0
+
   '@usebruno/query@0.1.0': {}
 
-  '@usebruno/requests@0.12.0':
+  '@usebruno/requests@0.13.0':
     dependencies:
       '@faker-js/faker': 9.9.0
       '@grpc/grpc-js': 1.14.1
@@ -12407,7 +12397,8 @@ snapshots:
       '@types/qs': 6.14.0
       axios: 1.13.2(debug@4.4.3)
       debug: 4.4.3
-      grpc-reflection-js: 0.3.0(patch_hash=5f2puryqrm55td7dagetdn6wue)(@grpc/grpc-js@1.14.1)
+      google-protobuf: 4.0.1
+      grpc-js-reflection-client: 1.3.2(@grpc/grpc-js@1.14.1)
       is-ip: 5.0.1
       tough-cookie: 6.0.0
       ws: 8.18.3
@@ -14606,7 +14597,7 @@ snapshots:
       merge2: 1.4.1
       slash: 3.0.0
 
-  google-protobuf@3.21.4: {}
+  google-protobuf@4.0.1: {}
 
   gopd@1.2.0: {}
 
@@ -14616,13 +14607,11 @@ snapshots:
 
   graphql@16.12.0: {}
 
-  grpc-reflection-js@0.3.0(patch_hash=5f2puryqrm55td7dagetdn6wue)(@grpc/grpc-js@1.14.1):
+  grpc-js-reflection-client@1.3.2(@grpc/grpc-js@1.14.1):
     dependencies:
       '@grpc/grpc-js': 1.14.1
-      '@types/google-protobuf': 3.15.12
-      '@types/lodash.set': 4.3.9
-      google-protobuf: 3.21.4
-      lodash.set: 4.3.2
+      '@types/lodash': 4.17.21
+      lodash: 4.17.21
       protobufjs: 7.5.4
 
   h3@1.15.4:
@@ -15595,8 +15584,6 @@ snapshots:
   lodash.merge@4.6.2: {}
 
   lodash.once@4.1.1: {}
-
-  lodash.set@4.3.2: {}
 
   lodash.startcase@4.4.0: {}
 
