@@ -2,9 +2,9 @@
 
 **Issue**: [#320 - World-class logging infrastructure](https://github.com/citypaul/scenarist/issues/320)
 **Branch**: `feat/logging-infrastructure`
-**Status**: In Progress
-**Created**: 2024-12-03
-**Last Updated**: 2024-12-03
+**Status**: Complete
+**Created**: 2025-12-03
+**Last Updated**: 2025-12-03
 
 ---
 
@@ -62,38 +62,39 @@ After each commit, we pause to:
 | Add logger to BaseAdapterOptions | Done   | Optional Logger property        |
 | Export logger from adapters      | Done   | Re-exported from express/nextjs |
 
-### Phase 4: Core Integration (Partial)
+### Phase 4: Core Integration ✅
 
-| Task                                  | Status      | Notes                        |
-| ------------------------------------- | ----------- | ---------------------------- |
-| Add logger to createScenarioManager   | Done        | Inject via options           |
-| Add logging calls to ScenarioManager  | Done        | scenario_registered/switched |
-| Add logger to createResponseSelector  | Not Started | Inject via options           |
-| Add logging calls to ResponseSelector | Not Started | mock_selected, mock_no_match |
+| Task                                  | Status | Notes                                       |
+| ------------------------------------- | ------ | ------------------------------------------- |
+| Add logger to createScenarioManager   | Done   | Inject via options                          |
+| Add logging calls to ScenarioManager  | Done   | scenario_registered/switched/cleared/error  |
+| Add logger to createResponseSelector  | Done   | Inject via options                          |
+| Add logging calls to ResponseSelector | Done   | mock_candidates/evaluated/selected/no_match |
 
-### Phase 5: MSW Adapter Integration
+### Phase 5: MSW Adapter Integration ✅
 
-| Task                                | Status      | Notes                  |
-| ----------------------------------- | ----------- | ---------------------- |
-| Add logger to DynamicHandler        | Not Started | Inject via options     |
-| Add logging calls to DynamicHandler | Not Started | request_received, etc. |
+| Task                                 | Status | Notes                           |
+| ------------------------------------ | ------ | ------------------------------- |
+| Wire logger through ResponseSelector | Done   | Logger passed via adapter setup |
 
-### Phase 6: Framework Adapter Wiring (Partial)
+Note: DynamicHandler doesn't need direct logger access - it delegates to ResponseSelector which handles all matching logging.
 
-| Task                                        | Status      | Notes                |
-| ------------------------------------------- | ----------- | -------------------- |
-| Wire logger in Express adapter              | Done        | Pass through to core |
-| Wire logger in Next.js App Router adapter   | Not Started | Pass through to core |
-| Wire logger in Next.js Pages Router adapter | Not Started | Pass through to core |
+### Phase 6: Framework Adapter Wiring ✅
 
-### Phase 7: Example App Integration (Partial)
+| Task                            | Status | Notes                    |
+| ------------------------------- | ------ | ------------------------ |
+| Wire logger in Express adapter  | Done   | Pass through to core     |
+| Wire logger in Next.js adapters | Done   | Shared base handles both |
 
-| Task                                       | Status      | Notes                        |
-| ------------------------------------------ | ----------- | ---------------------------- |
-| Add logging to express-example app         | Done        | Env var: SCENARIST_LOG=1     |
-| Add logging to nextjs-app-router-example   | Not Started | Demo ConsoleLogger usage     |
-| Add logging to nextjs-pages-router-example | Not Started | Demo ConsoleLogger usage     |
-| Run tests with logging to verify output    | Done        | 314 tests pass, logs visible |
+### Phase 7: Example App Integration ✅
+
+| Task                                       | Status | Notes                         |
+| ------------------------------------------ | ------ | ----------------------------- |
+| Add logging to express-example app         | Done   | Env var: SCENARIST_LOG=1      |
+| Add logging to nextjs-app-router-example   | Done   | Demo ConsoleLogger usage      |
+| Add logging to nextjs-pages-router-example | Done   | Demo ConsoleLogger usage      |
+| Run tests with logging to verify output    | Done   | 500+ tests pass, logs visible |
+| Document Vitest configuration requirement  | Done   | disableConsoleIntercept: true |
 
 ---
 
@@ -324,12 +325,12 @@ const scenarist = createScenarist({
 
 ## Success Criteria
 
-- [ ] Trace any request by test ID
-- [ ] Identify exactly which mock matched and why
-- [ ] View sequence positions at any point
-- [ ] See state changes in real-time
-- [ ] Diagnose issues in minutes, not hours
-- [ ] Zero overhead when logging disabled
+- [x] Trace any request by test ID (testId in LogContext)
+- [x] Identify exactly which mock matched and why (mock_selected with specificity)
+- [x] View sequence positions at any point (sequence logging in ResponseSelector)
+- [x] See state changes in real-time (state logging in ResponseSelector)
+- [x] Diagnose issues in minutes, not hours (pretty format with colors)
+- [x] Zero overhead when logging disabled (noOpLogger default)
 
 ---
 
