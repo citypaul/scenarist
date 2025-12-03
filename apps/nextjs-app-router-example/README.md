@@ -72,6 +72,42 @@ pnpm --filter=@scenarist/nextjs-app-router-example lint
 pnpm --filter=@scenarist/nextjs-app-router-example build
 ```
 
+## Debugging with Logs
+
+Scenarist includes comprehensive logging to help you understand scenario matching, state management, and request handling.
+
+### Enable Logging
+
+```bash
+# Run tests with Scenarist logs visible
+pnpm test:logs
+
+# Run dev server with logs
+pnpm dev:logs
+```
+
+### What You'll See
+
+With logging enabled, you'll see detailed output for:
+
+- **Scenario events**: When scenarios are registered, switched, or cleared
+- **Mock matching**: Which mocks were evaluated, their specificity scores, and which one was selected
+- **State management**: State capture and injection for stateful mocks (like shopping cart)
+- **Sequences**: Position tracking for response sequences
+
+Example output:
+
+```
+09:49:09.713 INF [test-shopping-cart] 🎬 scenario   scenario_switched scenarioId="shoppingCart"
+09:49:09.715 DBG [test-shopping-cart] 🎯 matching   mock_candidates_found candidateCount=3 url="/cart/add" method="POST"
+09:49:09.716 INF [test-shopping-cart] 💾 state      state_captured key="items[]" pathExpression="body.productId"
+```
+
+### Learn More About Logging
+
+- [Logging Reference](https://scenarist.dev/reference/logging) - Full logging configuration options
+- [Log Levels & Categories](https://scenarist.dev/reference/logging#log-levels) - Understanding log levels and filtering
+
 ## Project Structure
 
 ```
@@ -543,12 +579,13 @@ See `.github/workflows/ci.yml` for details.
 
 ## Learn More
 
-- [Scenarist Documentation](../../README.md)
-- [Next.js Adapter Documentation](../../packages/nextjs-adapter/README.md)
-- [Playwright Helpers Documentation](../../packages/playwright-helpers/README.md)
-- [Implementation Plan](../../docs/plans/nextjs-pages-and-playwright-helpers.md)
+- [Scenarist Documentation](https://scenarist.dev) - Full documentation site
+- [Next.js App Router Guide](https://scenarist.dev/frameworks/nextjs-app-router/getting-started) - Step-by-step setup guide
+- [Logging Reference](https://scenarist.dev/reference/logging) - Debug your scenarios with logging
+- [Scenario Patterns](https://scenarist.dev/scenarios/overview) - Learn about matching, sequences, and stateful mocks
 - [Testing Philosophy](./TESTING.md) - Why example apps differ from production code
-- [Architecture Guide](../../CLAUDE.md)
+- [Next.js Adapter Package](../../packages/nextjs-adapter/README.md) - Package-level documentation
+- [Playwright Helpers Package](../../packages/playwright-helpers/README.md) - Type-safe test helpers
 
 ## Related Examples
 

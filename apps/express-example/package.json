@@ -6,9 +6,11 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "dev:logs": "SCENARIST_LOG=1 tsx watch src/server.ts",
     "start": "NODE_ENV=test tsx src/server.ts",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:logs": "SCENARIST_LOG=1 vitest run",
     "test:bruno": "cd bruno && bru run --env local",
     "test:bruno:ci": "concurrently --kill-others --success first -n SERVER,TESTS 'pnpm start' 'wait-on http://localhost:3000/health && pnpm test:bruno'",
     "test:production": "[ -f dist/server.js ] && echo 'Using cached production build...' || pnpm build:production && vitest run tests/production --config vitest.production.config.ts",
