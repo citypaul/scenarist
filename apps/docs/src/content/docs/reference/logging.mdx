@@ -405,6 +405,55 @@ type LogContext = {
 };
 ```
 
+## Performance Considerations
+
+Scenarist's logging is designed for minimal overhead:
+
+### NoOpLogger: Zero Cost
+
+When logging is disabled (the default), `noOpLogger` is used. Its methods are empty functions that V8's JIT compiler can inline and potentially eliminate entirely:
+
+```typescript
+// NoOpLogger implementation - effectively no-op
+export const noOpLogger: Logger = {
+  error: () => {},
+  warn: () => {},
+  info: () => {},
+  debug: () => {},
+  trace: () => {},
+  isEnabled: () => false,
+};
+```
+
+<Aside type="tip" title="Production Builds">
+In production builds, Scenarist is completely tree-shaken away (0KB). The logging infrastructure only exists in test bundles where performance is less critical.
+</Aside>
+
+### Lazy Evaluation
+
+For high-frequency code paths, use `isEnabled()` to skip expensive string formatting when logging is disabled:
+
+```typescript
+// Check before formatting expensive context
+if (logger.isEnabled('debug')) {
+  logger.debug('matching', 'Details', context, {
+    body: JSON.stringify(largeObject),  // Only formatted if needed
+    headers: Object.fromEntries(request.headers),
+  });
+}
+```
+
+This pattern ensures that expensive operations like:
+- JSON serialization
+- Object transformation
+- String concatenation
+
+...are only performed when the output will actually be used.
+
+### V8 Inlining
+
+Simple function calls like `logger.debug(category, message, context, data)` are candidates for V8's inlining optimization when hot. The straightforward signature and return type (`void`) help V8 make efficient inlining decisions.
+
 ## Next Steps
 
 - [Testing Best Practices](/testing/best-practices) - Patterns for organizing tests
