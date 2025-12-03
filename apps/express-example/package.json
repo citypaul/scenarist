@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@scenarist/express-adapter": "workspace:*",
-    "express": "^5.1.0",
+    "express": "^5.2.0",
     "zod": "^4.1.13"
   },
   "devDependencies": {
