@@ -10,7 +10,10 @@
  * protect against runtime errors while enabling tree-shaking.
  */
 
-import { createScenarist } from "@scenarist/nextjs-adapter/pages";
+import {
+  createScenarist,
+  createConsoleLogger,
+} from "@scenarist/nextjs-adapter/pages";
 import { scenarios } from "./scenarios";
 
 /**
@@ -29,6 +32,13 @@ import { scenarios } from "./scenarios";
 export const scenarist = createScenarist({
   enabled: true, // Always enabled in example app for demonstration
   scenarios, // All scenarios registered at initialization (must include 'default')
+  // Enable logging via SCENARIST_LOG=1 environment variable
+  logger: process.env.SCENARIST_LOG
+    ? createConsoleLogger({
+        level: "debug",
+        categories: ["scenario", "matching"],
+      })
+    : undefined,
 });
 
 /**
