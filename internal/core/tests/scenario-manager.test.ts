@@ -8,6 +8,7 @@ import type {
   SequencePosition,
 } from "../src/ports/index.js";
 import type { ActiveScenario, ScenaristScenario } from "../src/types/index.js";
+import { ScenaristError, ErrorCodes } from "../src/types/errors.js";
 
 // In-memory registry for testing (simple Map-based implementation)
 const createTestRegistry = (): ScenarioRegistry => {
@@ -196,6 +197,31 @@ describe("ScenarioManager", () => {
       );
     });
 
+    it("should include scenarioId and hint in error context when registering duplicate scenario", () => {
+      const { manager } = createTestSetup();
+      const definition1 = createTestScenaristScenario(
+        "duplicate-test",
+        "First",
+      );
+      const definition2 = createTestScenaristScenario(
+        "duplicate-test",
+        "Second",
+      );
+
+      manager.registerScenario(definition1);
+
+      try {
+        manager.registerScenario(definition2);
+        expect.fail("Expected error to be thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(ScenaristError);
+        const scenaristError = error as ScenaristError;
+        expect(scenaristError.code).toBe(ErrorCodes.DUPLICATE_SCENARIO);
+        expect(scenaristError.context.scenarioId).toBe("duplicate-test");
+        expect(scenaristError.context.hint).toBeDefined();
+      }
+    });
+
     it("should not overwrite existing scenario when duplicate detected", () => {
       const { manager } = createTestSetup();
       const definition1 = createTestScenaristScenario("duplicate", "First");
@@ -226,6 +252,28 @@ describe("ScenarioManager", () => {
     });
 
     describe("validation", () => {
+      it("should include scenarioId and validation errors in error context when validation fails", () => {
+        const { manager } = createTestSetup();
+        const invalidScenario = {
+          id: "validation-error-test",
+          name: "Invalid",
+          // Missing required fields will cause validation error
+        } as any;
+
+        try {
+          manager.registerScenario(invalidScenario);
+          expect.fail("Expected error to be thrown");
+        } catch (error) {
+          expect(error).toBeInstanceOf(ScenaristError);
+          const scenaristError = error as ScenaristError;
+          expect(scenaristError.code).toBe(ErrorCodes.VALIDATION_ERROR);
+          expect(scenaristError.context.scenarioId).toBe(
+            "validation-error-test",
+          );
+          expect(scenaristError.context.hint).toBeDefined();
+        }
+      });
+
       it("should reject scenario with unsafe ReDoS pattern in regex", () => {
         const { manager } = createTestSetup();
         const unsafeScenario: ScenaristScenario = {
@@ -519,6 +567,171 @@ describe("ScenarioManager", () => {
         const registered = manager.getScenarioById("equals-strategy");
         expect(registered).toBeDefined();
       });
+
+      it("should reject scenario with empty name", () => {
+        const { manager } = createTestSetup();
+        const emptyNameScenario = {
+          id: "empty-name",
+          name: "", // Empty name should be rejected
+          description: "Test",
+          mocks: [],
+        };
+
+        expect(() => {
+          manager.registerScenario(emptyNameScenario as any);
+        }).toThrow();
+      });
+
+      it("should reject scenario with status code below 100", () => {
+        const { manager } = createTestSetup();
+        const invalidStatusScenario = {
+          id: "invalid-status-low",
+          name: "Invalid Status Low",
+          description: "Test",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/test",
+              response: { status: 99, body: {} }, // Below minimum HTTP status
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(invalidStatusScenario as any);
+        }).toThrow();
+      });
+
+      it("should reject scenario with status code above 599", () => {
+        const { manager } = createTestSetup();
+        const invalidStatusScenario = {
+          id: "invalid-status-high",
+          name: "Invalid Status High",
+          description: "Test",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/test",
+              response: { status: 600, body: {} }, // Above maximum HTTP status
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(invalidStatusScenario as any);
+        }).toThrow();
+      });
+
+      it("should reject sequence with no responses", () => {
+        const { manager } = createTestSetup();
+        const emptySequenceScenario = {
+          id: "empty-sequence",
+          name: "Empty Sequence",
+          description: "Test",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/test",
+              sequence: { responses: [] }, // Sequence must have at least one response
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(emptySequenceScenario as any);
+        }).toThrow();
+      });
+
+      it("should reject stateResponse condition with empty when clause", () => {
+        const { manager } = createTestSetup();
+        const emptyWhenScenario = {
+          id: "empty-when",
+          name: "Empty When",
+          description: "Test",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/test",
+              stateResponse: {
+                default: { status: 200, body: {} },
+                conditions: [
+                  {
+                    when: {}, // when clause must have at least one key
+                    then: { status: 200, body: {} },
+                  },
+                ],
+              },
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(emptyWhenScenario as any);
+        }).toThrow();
+      });
+
+      it("should reject afterResponse with empty setState", () => {
+        const { manager } = createTestSetup();
+        const emptySetStateScenario = {
+          id: "empty-setstate",
+          name: "Empty SetState",
+          description: "Test",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/test",
+              response: { status: 200, body: {} },
+              afterResponse: {
+                setState: {}, // setState must have at least one key
+              },
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(emptySetStateScenario as any);
+        }).toThrow();
+      });
+
+      it("should reject scenario with empty URL", () => {
+        const { manager } = createTestSetup();
+        const emptyUrlScenario = {
+          id: "empty-url",
+          name: "Empty URL",
+          description: "Test",
+          mocks: [
+            {
+              method: "GET",
+              url: "", // URL must be non-empty
+              response: { status: 200, body: {} },
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(emptyUrlScenario as any);
+        }).toThrow();
+      });
+
+      it("should reject scenario with non-integer status code", () => {
+        const { manager } = createTestSetup();
+        const floatStatusScenario = {
+          id: "float-status",
+          name: "Float Status",
+          description: "Test",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/test",
+              response: { status: 200.5, body: {} }, // Status must be integer
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(floatStatusScenario as any);
+        }).toThrow();
+      });
     });
   });
 
@@ -547,6 +760,21 @@ describe("ScenarioManager", () => {
       if (!result.success) {
         expect(result.error.message).toContain("not found");
         expect(result.error.message).toContain("non-existent");
+      }
+    });
+
+    it("should include testId and scenarioId in error context when scenario not found", () => {
+      const { manager } = createTestSetup();
+
+      const result = manager.switchScenario("test-abc-123", "missing-scenario");
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error).toBeInstanceOf(ScenaristError);
+        const error = result.error as ScenaristError;
+        expect(error.code).toBe(ErrorCodes.SCENARIO_NOT_FOUND);
+        expect(error.context.testId).toBe("test-abc-123");
+        expect(error.context.scenarioId).toBe("missing-scenario");
       }
     });
 

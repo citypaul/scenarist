@@ -3,6 +3,7 @@ import type { ScenaristMock, HttpRequestContext } from "../src/types/index.js";
 import { createResponseSelector } from "../src/domain/response-selector.js";
 import { createInMemorySequenceTracker } from "../src/adapters/in-memory-sequence-tracker.js";
 import { wrapMocks } from "./helpers/wrap-mocks.js";
+import { ErrorCodes } from "../src/types/errors.js";
 
 describe("ResponseSelector - Sequences", () => {
   describe("Response Sequences (Phase 2)", () => {
@@ -712,6 +713,65 @@ describe("ResponseSelector - Sequences", () => {
         expect(result.error.message).toBe(
           "Mock has neither response nor sequence field",
         );
+      }
+    });
+
+    it("should return SEQUENCE_EXHAUSTED error when sequence exhausted with no fallback", () => {
+      const sequenceTracker = createInMemorySequenceTracker();
+      const selector = createResponseSelector({ sequenceTracker });
+
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/limited",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      // Only a sequence mock with repeat: 'none', no fallback
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "GET",
+          url: "/api/limited",
+          sequence: {
+            responses: [
+              { status: 200, body: { attempt: 1 } },
+              { status: 200, body: { attempt: 2 } },
+            ],
+            repeat: "none",
+          },
+        },
+      ];
+
+      // Exhaust the sequence
+      const result1 = selector.selectResponse(
+        "test-exhausted",
+        "limited-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+      expect(result1.success).toBe(true);
+
+      const result2 = selector.selectResponse(
+        "test-exhausted",
+        "limited-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+      expect(result2.success).toBe(true);
+
+      // Third call: sequence exhausted, no fallback - should get SEQUENCE_EXHAUSTED error
+      const result3 = selector.selectResponse(
+        "test-exhausted",
+        "limited-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+
+      expect(result3.success).toBe(false);
+      if (!result3.success) {
+        expect(result3.error.code).toBe(ErrorCodes.SEQUENCE_EXHAUSTED);
+        expect(result3.error.message).toContain("exhausted");
       }
     });
   });

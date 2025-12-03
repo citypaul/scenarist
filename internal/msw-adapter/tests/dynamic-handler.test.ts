@@ -1,8 +1,16 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { setupServer } from "msw/node";
 import { createDynamicHandler } from "../src/handlers/dynamic-handler.js";
-import type { ActiveScenario, ScenaristScenario } from "@scenarist/core";
-import { createResponseSelector } from "@scenarist/core";
+import type {
+  ActiveScenario,
+  ScenaristScenario,
+  ErrorBehaviors,
+  Logger,
+} from "@scenarist/core";
+import {
+  createResponseSelector,
+  createInMemorySequenceTracker,
+} from "@scenarist/core";
 import { mockDefinition, mockScenario } from "./factories.js";
 
 describe("Dynamic Handler", () => {
@@ -354,8 +362,8 @@ describe("Dynamic Handler", () => {
       server.close();
     });
 
-    it("should handle non-JSON request body", async () => {
-      // This test ensures the catch block at line 39 is executed
+    it("should handle non-JSON request body gracefully", async () => {
+      // When request body cannot be parsed as JSON, handler should still match mocks
       const scenarios = new Map<string, ScenaristScenario>([
         [
           "upload-scenario",
@@ -404,8 +412,7 @@ describe("Dynamic Handler", () => {
       server.close();
     });
 
-    it("should extract query parameters from request", async () => {
-      // This test ensures the forEach loop at line 56 is executed
+    it("should match mocks based on query parameters", async () => {
       const scenarios = new Map<string, ScenaristScenario>([
         [
           "search-scenario",
@@ -456,8 +463,7 @@ describe("Dynamic Handler", () => {
       server.close();
     });
 
-    it("should skip default scenario mocks that do not match method", async () => {
-      // This test ensures the false branch of line 94 is executed
+    it("should not match default scenario mocks with different HTTP method", async () => {
       const scenarios = new Map<string, ScenaristScenario>([
         [
           "default",
@@ -521,8 +527,7 @@ describe("Dynamic Handler", () => {
       server.close();
     });
 
-    it("should handle active scenario definition not found", async () => {
-      // This test ensures line 104 false branch is executed
+    it("should fall back to default scenario when active scenario does not exist", async () => {
       const scenarios = new Map<string, ScenaristScenario>([
         [
           "default",
@@ -567,8 +572,7 @@ describe("Dynamic Handler", () => {
       server.close();
     });
 
-    it("should skip active scenario mocks that do not match URL", async () => {
-      // This test ensures the false branch of line 108 is executed
+    it("should not match active scenario mocks with different URL", async () => {
       const scenarios = new Map<string, ScenaristScenario>([
         [
           "default",
@@ -624,6 +628,673 @@ describe("Dynamic Handler", () => {
 
       expect(response.status).toBe(200);
       expect(data).toEqual({ source: "default" });
+
+      server.close();
+    });
+  });
+
+  describe("Error behaviors", () => {
+    it("should return 500 with error details when onNoMockFound is 'throw' and no mock matches", async () => {
+      const getTestId = () => "test-123";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = () => undefined;
+
+      const errorBehaviors: ErrorBehaviors = {
+        onNoMockFound: "throw",
+        onSequenceExhausted: "throw",
+        onMissingTestId: "throw",
+      };
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: true, // strictMode should be ignored when errorBehaviors is 'throw'
+        responseSelector,
+        errorBehaviors,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      // When error behavior is 'throw', the handler throws a ScenaristError
+      // MSW catches this and returns a 500 response
+      // This is different from strictMode=true which returns 501
+      const response = await fetch("https://api.example.com/users");
+
+      // Verify it's a 500 (MSW's error response) not 501 (our strictMode response)
+      expect(response.status).toBe(500);
+
+      server.close();
+    });
+
+    it("should return 501 when errorBehaviors is not set and strictMode is true", async () => {
+      // This verifies that when errorBehaviors is not provided, existing behavior works
+      const getTestId = () => "test-123";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = () => undefined;
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: true,
+        responseSelector,
+        // No errorBehaviors - should use default behavior (501 for strictMode)
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch("https://api.example.com/users");
+
+      expect(response.status).toBe(501);
+
+      server.close();
+    });
+
+    it("should return 501 when onNoMockFound is 'ignore' and strictMode is true", async () => {
+      // 'ignore' behavior should silently continue to strictMode logic
+      const getTestId = () => "test-123";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = () => undefined;
+
+      const errorBehaviors: ErrorBehaviors = {
+        onNoMockFound: "ignore",
+        onSequenceExhausted: "throw",
+        onMissingTestId: "throw",
+      };
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: true,
+        responseSelector,
+        errorBehaviors,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch("https://api.example.com/users");
+
+      // 'ignore' should let strictMode handle it → 501 response
+      expect(response.status).toBe(501);
+
+      server.close();
+    });
+
+    it("should passthrough when onNoMockFound is 'ignore' and strictMode is false", async () => {
+      // 'ignore' behavior with strictMode=false should passthrough
+      const getTestId = () => "test-123";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = () => undefined;
+
+      const errorBehaviors: ErrorBehaviors = {
+        onNoMockFound: "ignore",
+        onSequenceExhausted: "throw",
+        onMissingTestId: "throw",
+      };
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: false,
+        responseSelector,
+        errorBehaviors,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      // 'ignore' + strictMode=false should passthrough (network error for non-existent domain)
+      await expect(fetch("https://api.example.com/users")).rejects.toThrow();
+
+      server.close();
+    });
+
+    it("should catch handler errors and return 500 with error details", async () => {
+      // Simulate an unexpected error inside the handler by providing a responseSelector
+      // that throws an unexpected error
+      const mockLogger: Logger = {
+        error: vi.fn(),
+        warn: vi.fn(),
+        info: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        isEnabled: () => true,
+      };
+
+      const brokenResponseSelector = {
+        selectResponse: () => {
+          throw new Error("Unexpected internal error");
+        },
+      };
+
+      const getTestId = () => "test-123";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = () => undefined;
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: false,
+        responseSelector: brokenResponseSelector as unknown as ReturnType<
+          typeof createResponseSelector
+        >,
+        logger: mockLogger,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch("https://api.example.com/users");
+
+      // Handler should catch the error and return 500
+      expect(response.status).toBe(500);
+
+      // Error should be logged via Logger
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        "request",
+        expect.stringContaining("Handler error"),
+        expect.objectContaining({
+          testId: "test-123",
+          requestMethod: "GET",
+        }),
+        expect.objectContaining({
+          errorName: "Error",
+        }),
+      );
+
+      server.close();
+    });
+
+    it("should return 500 even when no logger is provided", async () => {
+      // Verify graceful degradation works even without a logger
+      const brokenResponseSelector = {
+        selectResponse: () => {
+          throw new Error("Unexpected internal error");
+        },
+      };
+
+      const getTestId = () => "test-123";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = () => undefined;
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: false,
+        responseSelector: brokenResponseSelector as unknown as ReturnType<
+          typeof createResponseSelector
+        >,
+        // No logger provided
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch("https://api.example.com/users");
+
+      // Handler should still catch the error and return 500
+      expect(response.status).toBe(500);
+
+      // Verify the response body contains error details
+      const body = await response.json();
+      expect(body).toEqual({
+        error: "Internal mock server error",
+        message: "Unexpected internal error",
+        code: "HANDLER_ERROR",
+      });
+
+      server.close();
+    });
+
+    it("should continue silently when onNoMockFound is 'warn' but no logger is provided", async () => {
+      const getTestId = () => "test-123";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = () => undefined;
+
+      const errorBehaviors: ErrorBehaviors = {
+        onNoMockFound: "warn",
+        onSequenceExhausted: "throw",
+        onMissingTestId: "throw",
+      };
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: true,
+        responseSelector,
+        errorBehaviors,
+        // No logger provided - warn should silently continue
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch("https://api.example.com/users");
+
+      // Should continue to strictMode logic and return 501 (no crash, no warning logged)
+      expect(response.status).toBe(501);
+
+      server.close();
+    });
+
+    it("should log warning and continue to strictMode when onNoMockFound is 'warn' with logger", async () => {
+      const mockLogger: Logger = {
+        error: vi.fn(),
+        warn: vi.fn(),
+        info: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        isEnabled: () => true,
+      };
+
+      const getTestId = () => "test-123";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = () => undefined;
+
+      const errorBehaviors: ErrorBehaviors = {
+        onNoMockFound: "warn",
+        onSequenceExhausted: "throw",
+        onMissingTestId: "throw",
+      };
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: true,
+        responseSelector,
+        errorBehaviors,
+        logger: mockLogger,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch("https://api.example.com/users");
+
+      expect(response.status).toBe(501);
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        "matching",
+        expect.stringContaining("No mock matched"),
+        expect.objectContaining({
+          testId: "test-123",
+          scenarioId: "default",
+          requestUrl: expect.stringContaining("api.example.com"),
+          requestMethod: "GET",
+        }),
+      );
+
+      server.close();
+    });
+
+    it("should use onSequenceExhausted behavior when sequence is exhausted", async () => {
+      // Use unique test ID to avoid state pollution from other tests
+      const testId = `sequence-exhaust-warn-${Date.now()}`;
+
+      // Create fresh responseSelector with sequenceTracker to track sequence positions
+      const sequenceTracker = createInMemorySequenceTracker();
+      const isolatedResponseSelector = createResponseSelector({
+        sequenceTracker,
+      });
+
+      const mockLogger: Logger = {
+        error: vi.fn(),
+        warn: vi.fn(),
+        info: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        isEnabled: () => true,
+      };
+
+      const scenarios = new Map<string, ScenaristScenario>([
+        [
+          "default",
+          mockScenario({
+            id: "default",
+            mocks: [
+              {
+                method: "GET",
+                url: "https://api.example.com/status",
+                // sequence is top-level, not nested inside response
+                sequence: {
+                  responses: [{ status: 202, body: { state: "processing" } }],
+                  repeat: "none",
+                },
+              },
+            ],
+          }),
+        ],
+      ]);
+
+      const getTestId = () => testId;
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = (scenarioId: string) =>
+        scenarios.get(scenarioId);
+
+      // onNoMockFound is 'throw' but onSequenceExhausted is 'warn'
+      // When sequence exhausts, it should use onSequenceExhausted behavior (warn), not onNoMockFound (throw)
+      const errorBehaviors: ErrorBehaviors = {
+        onNoMockFound: "throw",
+        onSequenceExhausted: "warn",
+        onMissingTestId: "throw",
+      };
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: true,
+        responseSelector: isolatedResponseSelector,
+        errorBehaviors,
+        logger: mockLogger,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      // First request exhausts the sequence
+      const response1 = await fetch("https://api.example.com/status");
+      expect(response1.status).toBe(202);
+
+      // Second request should trigger SEQUENCE_EXHAUSTED
+      // With onSequenceExhausted: 'warn', it should warn and continue to strictMode (501)
+      // NOT throw (which would result in 500)
+      const response2 = await fetch("https://api.example.com/status");
+
+      // Should be 501 (strictMode), not 500 (thrown error)
+      expect(response2.status).toBe(501);
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        "matching",
+        expect.stringContaining("exhausted"),
+        expect.objectContaining({
+          testId,
+          scenarioId: "default",
+        }),
+      );
+
+      server.close();
+    });
+
+    it("should throw when onSequenceExhausted is 'throw' and sequence is exhausted", async () => {
+      // Use unique test ID to avoid state pollution from other tests
+      const testId = `sequence-exhaust-throw-${Date.now()}`;
+
+      // Create fresh responseSelector with sequenceTracker to track sequence positions
+      const sequenceTracker = createInMemorySequenceTracker();
+      const isolatedResponseSelector = createResponseSelector({
+        sequenceTracker,
+      });
+
+      const scenarios = new Map<string, ScenaristScenario>([
+        [
+          "default",
+          mockScenario({
+            id: "default",
+            mocks: [
+              {
+                method: "GET",
+                url: "https://api.example.com/status",
+                // sequence is top-level, not nested inside response
+                sequence: {
+                  responses: [{ status: 202, body: { state: "processing" } }],
+                  repeat: "none",
+                },
+              },
+            ],
+          }),
+        ],
+      ]);
+
+      const getTestId = () => testId;
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = (scenarioId: string) =>
+        scenarios.get(scenarioId);
+
+      const errorBehaviors: ErrorBehaviors = {
+        onNoMockFound: "warn", // Set to warn so we can distinguish from SEQUENCE_EXHAUSTED throw
+        onSequenceExhausted: "throw",
+        onMissingTestId: "throw",
+      };
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: true,
+        responseSelector: isolatedResponseSelector,
+        errorBehaviors,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      // Exhaust the sequence
+      await fetch("https://api.example.com/status");
+
+      // Second request should throw SEQUENCE_EXHAUSTED → 500
+      const response2 = await fetch("https://api.example.com/status");
+
+      expect(response2.status).toBe(500);
+      const body = await response2.json();
+      expect(body.code).toBe("SEQUENCE_EXHAUSTED");
+
+      server.close();
+    });
+  });
+
+  describe("Missing test ID handling", () => {
+    it("should return 500 with helpful error when test ID is missing and onMissingTestId is 'throw'", async () => {
+      const scenarios = new Map<string, ScenaristScenario>([
+        [
+          "default",
+          mockScenario({
+            id: "default",
+            mocks: [
+              mockDefinition({
+                response: { status: 200, body: { source: "default" } },
+              }),
+            ],
+          }),
+        ],
+      ]);
+
+      // getTestId returns empty string (missing test ID)
+      const getTestId = () => "";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = (scenarioId: string) =>
+        scenarios.get(scenarioId);
+
+      const errorBehaviors: ErrorBehaviors = {
+        onNoMockFound: "throw",
+        onSequenceExhausted: "throw",
+        onMissingTestId: "throw",
+      };
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: false,
+        responseSelector,
+        errorBehaviors,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch("https://api.example.com/users");
+      const body = await response.json();
+
+      // Should return 500 with error details about missing test ID
+      expect(response.status).toBe(500);
+      expect(body.code).toBe("MISSING_TEST_ID");
+      expect(body.message).toContain("test ID");
+
+      server.close();
+    });
+
+    it("should log warning and use default scenario when test ID is missing and onMissingTestId is 'warn'", async () => {
+      const mockLogger: Logger = {
+        error: vi.fn(),
+        warn: vi.fn(),
+        info: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        isEnabled: () => true,
+      };
+
+      const scenarios = new Map<string, ScenaristScenario>([
+        [
+          "default",
+          mockScenario({
+            id: "default",
+            mocks: [
+              mockDefinition({
+                response: { status: 200, body: { source: "default" } },
+              }),
+            ],
+          }),
+        ],
+      ]);
+
+      const getTestId = () => "";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = (scenarioId: string) =>
+        scenarios.get(scenarioId);
+
+      const errorBehaviors: ErrorBehaviors = {
+        onNoMockFound: "throw",
+        onSequenceExhausted: "throw",
+        onMissingTestId: "warn",
+      };
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: false,
+        responseSelector,
+        errorBehaviors,
+        logger: mockLogger,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch("https://api.example.com/users");
+      const body = await response.json();
+
+      // Should warn and continue with default scenario
+      expect(response.status).toBe(200);
+      expect(body).toEqual({ source: "default" });
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        "request",
+        expect.stringContaining("Missing test ID"),
+        expect.objectContaining({
+          requestUrl: expect.stringContaining("api.example.com"),
+          requestMethod: "GET",
+        }),
+      );
+
+      server.close();
+    });
+
+    it("should silently use default scenario when test ID is missing and onMissingTestId is 'ignore'", async () => {
+      const scenarios = new Map<string, ScenaristScenario>([
+        [
+          "default",
+          mockScenario({
+            id: "default",
+            mocks: [
+              mockDefinition({
+                response: { status: 200, body: { source: "default" } },
+              }),
+            ],
+          }),
+        ],
+      ]);
+
+      const getTestId = () => "";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = (scenarioId: string) =>
+        scenarios.get(scenarioId);
+
+      const errorBehaviors: ErrorBehaviors = {
+        onNoMockFound: "throw",
+        onSequenceExhausted: "throw",
+        onMissingTestId: "ignore",
+      };
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: false,
+        responseSelector,
+        errorBehaviors,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch("https://api.example.com/users");
+      const body = await response.json();
+
+      // Should silently continue with default scenario
+      expect(response.status).toBe(200);
+      expect(body).toEqual({ source: "default" });
+
+      server.close();
+    });
+
+    it("should continue normally when errorBehaviors is not configured and test ID is missing", async () => {
+      // Default behavior: when errorBehaviors not set, missing test ID is tolerated
+      const scenarios = new Map<string, ScenaristScenario>([
+        [
+          "default",
+          mockScenario({
+            id: "default",
+            mocks: [
+              mockDefinition({
+                response: { status: 200, body: { source: "default" } },
+              }),
+            ],
+          }),
+        ],
+      ]);
+
+      const getTestId = () => "";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = (scenarioId: string) =>
+        scenarios.get(scenarioId);
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: false,
+        responseSelector,
+        // No errorBehaviors - missing test ID should be tolerated
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch("https://api.example.com/users");
+      const body = await response.json();
+
+      // Should continue normally with default scenario
+      expect(response.status).toBe(200);
+      expect(body).toEqual({ source: "default" });
 
       server.close();
     });

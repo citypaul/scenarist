@@ -20,4 +20,17 @@ export type {
   ScenarioIds,
 } from "./scenario.js";
 
-export type { ScenaristConfig, ScenaristConfigInput } from "./config.js";
+export type {
+  ScenaristConfig,
+  ScenaristConfigInput,
+  ErrorBehavior,
+  ErrorBehaviors,
+} from "./config.js";
+
+// Error types
+export { ScenaristError, ErrorCodes } from "./errors.js";
+export type {
+  ErrorContext,
+  ErrorCode,
+  ScenaristErrorOptions,
+} from "./errors.js";

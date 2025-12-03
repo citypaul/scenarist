@@ -11,7 +11,7 @@ import type {
   StateManager,
   Logger,
 } from "../ports/index.js";
-import { ResponseSelectionError } from "../ports/driven/response-selector.js";
+import { ScenaristError, ErrorCodes } from "../types/errors.js";
 import { extractFromPath } from "./path-extraction.js";
 import { applyTemplates } from "./template-replacement.js";
 import { matchesRegex } from "./regex-matching.js";
@@ -19,6 +19,7 @@ import { createStateResponseResolver } from "./state-response-resolver.js";
 import { deepEquals } from "./deep-equals.js";
 import type { MatchValue } from "../schemas/scenario-definition.js";
 import { noOpLogger } from "../adapters/index.js";
+import { LogCategories, LogEvents } from "./log-events.js";
 
 const SPECIFICITY_RANGES = {
   MATCH_CRITERIA_BASE: 100,
@@ -57,19 +58,27 @@ export const createResponseSelector = (
       scenarioId: string,
       context: HttpRequestContext,
       mocks: ReadonlyArray<ScenaristMockWithParams>,
-    ): ScenaristResult<ScenaristResponse, ResponseSelectionError> {
+    ): ScenaristResult<ScenaristResponse, ScenaristError> {
       const logContext = { testId, scenarioId };
 
       // Log the number of candidate mocks
-      logger.debug("matching", "mock_candidates_found", logContext, {
-        count: mocks.length,
-      });
+      logger.debug(
+        LogCategories.MATCHING,
+        LogEvents.MOCK_CANDIDATES_FOUND,
+        logContext,
+        {
+          count: mocks.length,
+        },
+      );
 
       let bestMatch: {
         mockWithParams: ScenaristMockWithParams;
         mockIndex: number;
         specificity: number;
       } | null = null;
+
+      // Track if we skipped any exhausted sequences (for better error messages)
+      let skippedExhaustedSequences = false;
 
       // Find all matching mocks and score them by specificity
       for (let mockIndex = 0; mockIndex < mocks.length; mockIndex++) {
@@ -85,6 +94,7 @@ export const createResponseSelector = (
             mockIndex,
           );
           if (exhausted) {
+            skippedExhaustedSequences = true;
             continue; // Skip to next mock, allowing fallback to be selected
           }
         }
@@ -100,11 +110,16 @@ export const createResponseSelector = (
           );
 
           // Log the evaluation result
-          logger.debug("matching", "mock_match_evaluated", logContext, {
-            mockIndex,
-            matched,
-            hasCriteria: true,
-          });
+          logger.debug(
+            LogCategories.MATCHING,
+            LogEvents.MOCK_MATCH_EVALUATED,
+            logContext,
+            {
+              mockIndex,
+              matched,
+              hasCriteria: true,
+            },
+          );
 
           if (matched) {
             // Match criteria always have higher priority than fallbacks
@@ -125,11 +140,16 @@ export const createResponseSelector = (
 
         // No match criteria = fallback mock (always matches)
         // Log fallback evaluation
-        logger.debug("matching", "mock_match_evaluated", logContext, {
-          mockIndex,
-          matched: true,
-          hasCriteria: false,
-        });
+        logger.debug(
+          LogCategories.MATCHING,
+          LogEvents.MOCK_MATCH_EVALUATED,
+          logContext,
+          {
+            mockIndex,
+            matched: true,
+            hasCriteria: false,
+          },
+        );
 
         // Dynamic response types (sequence, stateResponse) get higher priority than simple responses
         // This ensures they are selected over simple fallback responses
@@ -157,10 +177,15 @@ export const createResponseSelector = (
         const mock = mockWithParams.mock;
 
         // Log successful selection
-        logger.info("matching", "mock_selected", logContext, {
-          mockIndex,
-          specificity,
-        });
+        logger.info(
+          LogCategories.MATCHING,
+          LogEvents.MOCK_SELECTED,
+          logContext,
+          {
+            mockIndex,
+            specificity,
+          },
+        );
 
         // Select response (single, sequence, or stateResponse)
         const response = selectResponseFromMock(
@@ -175,8 +200,19 @@ export const createResponseSelector = (
         if (!response) {
           return {
             success: false,
-            error: new ResponseSelectionError(
+            error: new ScenaristError(
               `Mock has neither response nor sequence field`,
+              {
+                code: ErrorCodes.VALIDATION_ERROR,
+                context: {
+                  testId,
+                  scenarioId,
+                  mockInfo: {
+                    index: mockIndex,
+                  },
+                  hint: "Each mock must have a 'response', 'sequence', or 'stateResponse' field.",
+                },
+              },
             ),
           };
         }
@@ -210,8 +246,40 @@ export const createResponseSelector = (
         return { success: true, data: finalResponse };
       }
 
-      // No mock matched
-      logger.warn("matching", "mock_no_match", logContext, {
+      // No mock matched - determine specific error type
+      if (skippedExhaustedSequences) {
+        // All matching mocks were exhausted sequences
+        logger.warn(
+          LogCategories.SEQUENCE,
+          LogEvents.SEQUENCE_EXHAUSTED,
+          logContext,
+          {
+            url: context.url,
+            method: context.method,
+          },
+        );
+
+        return {
+          success: false,
+          error: new ScenaristError(
+            `Sequence exhausted for ${context.method} ${context.url}. All responses have been consumed and repeat mode is 'none'.`,
+            {
+              code: ErrorCodes.SEQUENCE_EXHAUSTED,
+              context: {
+                testId,
+                scenarioId,
+                requestInfo: {
+                  method: context.method,
+                  url: context.url,
+                },
+                hint: "Add a fallback mock to handle requests after sequence exhaustion, or use repeat: 'last' or 'cycle' instead of 'none'.",
+              },
+            },
+          ),
+        };
+      }
+
+      logger.warn(LogCategories.MATCHING, LogEvents.MOCK_NO_MATCH, logContext, {
         url: context.url,
         method: context.method,
         candidateCount: 0,
@@ -219,8 +287,20 @@ export const createResponseSelector = (
 
       return {
         success: false,
-        error: new ResponseSelectionError(
+        error: new ScenaristError(
           `No mock matched for ${context.method} ${context.url}`,
+          {
+            code: ErrorCodes.NO_MOCK_FOUND,
+            context: {
+              testId,
+              scenarioId,
+              requestInfo: {
+                method: context.method,
+                url: context.url,
+              },
+              hint: "Add a fallback mock (without match criteria) to handle unmatched requests, or add a mock with matching criteria.",
+            },
+          },
         ),
       };
     },

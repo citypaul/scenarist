@@ -1,0 +1,268 @@
+---
+title: Error Handling
+description: Error types, error codes, and configurable error behaviors in Scenarist
+---
+
+import { Aside, Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+
+Scenarist provides comprehensive error handling with rich context, actionable hints, and configurable behaviors. All errors extend `ScenaristError` and include machine-readable codes for programmatic handling.
+
+## Error Codes
+
+| Code | Description | When Thrown |
+|------|-------------|-------------|
+| `SCENARIO_NOT_FOUND` | Attempted to switch to a scenario that hasn't been registered | `switchScenario()` with unknown ID |
+| `DUPLICATE_SCENARIO` | Attempted to register a scenario with an ID that already exists | `registerScenario()` with duplicate ID |
+| `NO_MOCK_FOUND` | No mock matched the incoming request | Request handling with `strictMode: true` or `errorBehaviors.onNoMockFound: 'throw'` |
+| `SEQUENCE_EXHAUSTED` | Sequence with `repeat: 'none'` has no more responses and no fallback mock | Request to exhausted sequence |
+| `MISSING_TEST_ID` | Request arrived without the x-scenarist-test-id header | Request without test context |
+| `VALIDATION_ERROR` | Scenario definition failed schema validation | `registerScenario()` with invalid definition |
+
+## ScenaristError
+
+All Scenarist errors extend `ScenaristError`, which provides:
+
+```typescript
+class ScenaristError extends Error {
+  readonly code: string;           // Machine-readable error code
+  readonly context: ErrorContext;  // Rich context information
+}
+
+type ErrorContext = {
+  readonly testId?: string;        // Test that triggered the error
+  readonly scenarioId?: string;    // Scenario involved
+  readonly requestInfo?: {         // Request details
+    method: string;
+    url: string;
+  };
+  readonly hint?: string;          // Actionable guidance
+};
+```
+
+### Example Error
+
+```typescript
+try {
+  manager.switchScenario('test-123', 'nonexistent-scenario');
+} catch (error) {
+  if (error instanceof ScenaristError) {
+    console.log(error.code);      // 'SCENARIO_NOT_FOUND'
+    console.log(error.message);   // 'Scenario 'nonexistent-scenario' not found...'
+    console.log(error.context);
+    // {
+    //   testId: 'test-123',
+    //   scenarioId: 'nonexistent-scenario',
+    //   hint: 'Make sure to register the scenario before switching...'
+    // }
+  }
+}
+```
+
+## Configurable Error Behaviors
+
+Control how Scenarist handles specific error conditions using `errorBehaviors`:
+
+```typescript
+import { createScenarist } from '@scenarist/express-adapter';
+
+const scenarist = createScenarist({
+  enabled: true,
+  scenarios,
+  errorBehaviors: {
+    onNoMockFound: 'warn',        // Log warning, continue
+    onSequenceExhausted: 'throw', // Throw error (fail test)
+    onMissingTestId: 'warn',      // Log warning, use default scenario
+  },
+});
+```
+
+### Behavior Options
+
+<CardGrid>
+  <Card title="throw" icon="error">
+    **Default.** Throw `ScenaristError`. Test fails immediately with clear error message.
+  </Card>
+  <Card title="warn" icon="warning">
+    Log warning via Logger port, then continue. Good for development debugging.
+  </Card>
+  <Card title="ignore" icon="approve-check">
+    Silently continue without logging. Use sparingly.
+  </Card>
+</CardGrid>
+
+### Behavior Defaults
+
+All behaviors default to `throw` for strict-by-default testing:
+
+```typescript
+const DEFAULT_ERROR_BEHAVIORS = {
+  onNoMockFound: 'throw',
+  onSequenceExhausted: 'throw',
+  onMissingTestId: 'throw',
+};
+```
+
+<Aside type="caution" title="Relationship with strictMode">
+`errorBehaviors` control whether Scenarist throws/warns when errors occur. `strictMode` controls what happens when no mock matches:
+- `strictMode: true` → Return 501 for unmatched requests
+- `strictMode: false` → Pass through to real endpoint
+</Aside>
+
+## Validation Errors
+
+Scenario definitions are validated at registration time using Zod schemas. Validation errors include the path to the invalid field:
+
+```typescript
+try {
+  manager.registerScenario({
+    id: 'test',
+    name: '',  // Empty name - validation error
+    description: 'Test scenario',
+    mocks: [
+      {
+        method: 'GET',
+        url: '',  // Empty URL - validation error
+        response: { status: 600 },  // Invalid status - validation error
+      },
+    ],
+  });
+} catch (error) {
+  console.log(error.code);     // 'VALIDATION_ERROR'
+  console.log(error.message);
+  // 'Invalid scenario definition for 'test': name: String must contain at least 1 character(s), mocks.0.url: String must contain at least 1 character(s), mocks.0.response.status: Number must be at most 599'
+}
+```
+
+### Validation Rules
+
+| Field | Rule |
+|-------|------|
+| `id` | Non-empty string |
+| `name` | Non-empty string |
+| `url` | Non-empty string or valid RegExp |
+| `status` | Integer between 100-599 |
+| `sequence.responses` | At least one response |
+| `stateResponse.conditions[].when` | At least one key |
+| `afterResponse.setState` | At least one key |
+
+## Error Handling Patterns
+
+### Test Setup Validation
+
+Validate your test setup by catching registration errors:
+
+```typescript
+describe('API tests', () => {
+  const scenarios = {
+    default: createDefaultScenario(),
+    error: createErrorScenario(),
+  };
+
+  // Validate all scenarios at test suite startup
+  beforeAll(() => {
+    for (const [id, scenario] of Object.entries(scenarios)) {
+      try {
+        manager.registerScenario(scenario);
+      } catch (error) {
+        if (error instanceof ScenaristError) {
+          throw new Error(
+            `Invalid scenario '${id}': ${error.message}\nHint: ${error.context.hint}`
+          );
+        }
+        throw error;
+      }
+    }
+  });
+});
+```
+
+### Graceful Degradation
+
+For development environments, use `warn` to surface issues without blocking:
+
+```typescript
+const scenarist = createScenarist({
+  enabled: true,
+  scenarios,
+  logger: createConsoleLogger({ level: 'warn' }),
+  errorBehaviors: {
+    onNoMockFound: process.env.CI ? 'throw' : 'warn',
+    onMissingTestId: process.env.CI ? 'throw' : 'warn',
+  },
+});
+```
+
+### Catching Specific Error Types
+
+Use error codes to handle specific error types:
+
+```typescript
+import { ScenaristError, ErrorCodes } from '@scenarist/core';
+
+try {
+  await makeRequest('/api/users');
+} catch (error) {
+  if (error instanceof ScenaristError) {
+    switch (error.code) {
+      case ErrorCodes.NO_MOCK_FOUND:
+        console.log('No mock matched:', error.context.requestInfo?.url);
+        break;
+      case ErrorCodes.SEQUENCE_EXHAUSTED:
+        console.log('Sequence exhausted for mock');
+        break;
+      default:
+        console.log('Scenarist error:', error.message);
+    }
+  }
+}
+```
+
+## API Reference
+
+### ErrorCodes
+
+```typescript
+export const ErrorCodes = {
+  SCENARIO_NOT_FOUND: 'SCENARIO_NOT_FOUND',
+  DUPLICATE_SCENARIO: 'DUPLICATE_SCENARIO',
+  NO_MOCK_FOUND: 'NO_MOCK_FOUND',
+  SEQUENCE_EXHAUSTED: 'SEQUENCE_EXHAUSTED',
+  MISSING_TEST_ID: 'MISSING_TEST_ID',
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+} as const;
+```
+
+### ErrorBehaviors
+
+```typescript
+type ErrorBehavior = 'throw' | 'warn' | 'ignore';
+
+type ErrorBehaviors = {
+  readonly onNoMockFound: ErrorBehavior;
+  readonly onSequenceExhausted: ErrorBehavior;
+  readonly onMissingTestId: ErrorBehavior;
+};
+```
+
+### ScenaristError
+
+```typescript
+class ScenaristError extends Error {
+  constructor(
+    message: string,
+    options: {
+      code: string;
+      context: ErrorContext;
+    }
+  );
+
+  readonly code: string;
+  readonly context: ErrorContext;
+}
+```
+
+## Next Steps
+
+- [Debugging with Logs](/reference/logging) - Configure logging for error debugging
+- [Testing Best Practices](/testing/best-practices) - Patterns for robust tests
+- [API Endpoints](/reference/api-endpoints) - Understand the mock server API

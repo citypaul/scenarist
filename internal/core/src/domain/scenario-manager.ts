@@ -13,32 +13,37 @@ import type {
   ScenaristScenario,
 } from "../types/index.js";
 import { ScenaristScenarioSchema } from "../schemas/index.js";
+import { ScenaristError, ErrorCodes } from "../types/errors.js";
+import { LogCategories, LogEvents } from "./log-events.js";
 
-class ScenarioNotFoundError extends Error {
-  constructor(scenarioId: string) {
-    super(`Scenario '${scenarioId}' not found. Did you forget to register it?`);
-    this.name = "ScenarioNotFoundError";
-  }
-}
+const createDuplicateScenarioError = (scenarioId: string): ScenaristError => {
+  return new ScenaristError(
+    `Scenario '${scenarioId}' is already registered. Each scenario must have a unique ID.`,
+    {
+      code: ErrorCodes.DUPLICATE_SCENARIO,
+      context: {
+        scenarioId,
+        hint: "Use a different scenario ID, or remove the existing scenario before registering a new one.",
+      },
+    },
+  );
+};
 
-class DuplicateScenarioError extends Error {
-  constructor(scenarioId: string) {
-    super(
-      `Scenario '${scenarioId}' is already registered. Each scenario must have a unique ID.`,
-    );
-    this.name = "DuplicateScenarioError";
-  }
-}
-
-class ScenarioValidationError extends Error {
-  constructor(
-    message: string,
-    public readonly validationErrors: string[],
-  ) {
-    super(message);
-    this.name = "ScenarioValidationError";
-  }
-}
+const createScenarioValidationError = (
+  scenarioId: string,
+  validationErrors: string[],
+): ScenaristError => {
+  return new ScenaristError(
+    `Invalid scenario definition for '${scenarioId}': ${validationErrors.join(", ")}`,
+    {
+      code: ErrorCodes.VALIDATION_ERROR,
+      context: {
+        scenarioId,
+        hint: `Check your scenario definition. Validation errors: ${validationErrors.join("; ")}`,
+      },
+    },
+  );
+};
 
 /**
  * Factory function to create a ScenarioManager implementation.
@@ -76,10 +81,7 @@ export const createScenarioManager = ({
           (err) => `${err.path.join(".")}: ${err.message}`,
         );
         const scenarioId = (definition as { id?: string })?.id || "<unknown>";
-        throw new ScenarioValidationError(
-          `Invalid scenario definition for '${scenarioId}': ${errorMessages.join(", ")}`,
-          errorMessages,
-        );
+        throw createScenarioValidationError(scenarioId, errorMessages);
       }
 
       const existing = registry.get(definition.id);
@@ -91,14 +93,14 @@ export const createScenarioManager = ({
 
       // Prevent registering a different scenario with the same ID
       if (existing) {
-        throw new DuplicateScenarioError(definition.id);
+        throw createDuplicateScenarioError(definition.id);
       }
 
       registry.register(definition);
 
       logger.debug(
-        "scenario",
-        "scenario_registered",
+        LogCategories.SCENARIO,
+        LogEvents.SCENARIO_REGISTERED,
         {},
         {
           scenarioId: definition.id,
@@ -115,8 +117,8 @@ export const createScenarioManager = ({
 
       if (!definition) {
         logger.error(
-          "scenario",
-          "scenario_not_found",
+          LogCategories.SCENARIO,
+          LogEvents.SCENARIO_NOT_FOUND,
           { testId },
           {
             requestedScenarioId: scenarioId,
@@ -125,7 +127,17 @@ export const createScenarioManager = ({
 
         return {
           success: false,
-          error: new ScenarioNotFoundError(scenarioId),
+          error: new ScenaristError(
+            `Scenario '${scenarioId}' not found. Did you forget to register it?`,
+            {
+              code: ErrorCodes.SCENARIO_NOT_FOUND,
+              context: {
+                testId,
+                scenarioId,
+                hint: "Make sure to register the scenario before switching to it. Use manager.registerScenario(definition) first.",
+              },
+            },
+          ),
         };
       }
 
@@ -145,7 +157,12 @@ export const createScenarioManager = ({
         stateManager.reset(testId);
       }
 
-      logger.info("scenario", "scenario_switched", { testId, scenarioId }, {});
+      logger.info(
+        LogCategories.SCENARIO,
+        LogEvents.SCENARIO_SWITCHED,
+        { testId, scenarioId },
+        {},
+      );
 
       return { success: true, data: undefined };
     },
@@ -161,7 +178,12 @@ export const createScenarioManager = ({
     clearScenario(testId: string): void {
       store.delete(testId);
 
-      logger.debug("scenario", "scenario_cleared", { testId }, {});
+      logger.debug(
+        LogCategories.SCENARIO,
+        LogEvents.SCENARIO_CLEARED,
+        { testId },
+        {},
+      );
     },
 
     getScenarioById(id: string): ScenaristScenario | undefined {

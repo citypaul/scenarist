@@ -1,6 +1,9 @@
 // Types (data structures)
 export type * from "./types/index.js";
 
+// Error classes and constants (runtime values, not just types)
+export { ScenaristError, ErrorCodes } from "./types/errors.js";
+
 // Schemas (runtime validation)
 export * from "./schemas/index.js";
 
