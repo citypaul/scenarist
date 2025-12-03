@@ -53,6 +53,36 @@ const COLORS = {
 } as const;
 
 /**
+ * Test ID color palette for persistent coloring.
+ */
+const TEST_ID_COLORS = [
+  "\x1b[36m", // Cyan
+  "\x1b[33m", // Yellow
+  "\x1b[35m", // Magenta
+  "\x1b[32m", // Green
+  "\x1b[34m", // Blue
+  "\x1b[91m", // Bright Red
+  "\x1b[92m", // Bright Green
+  "\x1b[93m", // Bright Yellow
+  "\x1b[94m", // Bright Blue
+  "\x1b[95m", // Bright Magenta
+  "\x1b[96m", // Bright Cyan
+] as const;
+
+/**
+ * Simple hash function for consistent color assignment.
+ */
+const hashString = (str: string): number => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash);
+};
+
+/**
  * Level colors for pretty format.
  */
 const LEVEL_COLORS: Record<Exclude<LogLevel, "silent">, string> = {
@@ -84,6 +114,7 @@ export class ConsoleLogger implements Logger {
   private readonly configuredLevel: Exclude<LogLevel, "silent">;
   private readonly configuredCategories: ReadonlySet<LogCategory> | null;
   private readonly format: LogFormat;
+  private readonly testIdColors: Map<string, string> = new Map();
 
   constructor(config: ConsoleLoggerConfig) {
     this.configuredLevel = config.level;
@@ -91,6 +122,18 @@ export class ConsoleLogger implements Logger {
       ? new Set(config.categories)
       : null;
     this.format = config.format ?? "pretty";
+  }
+
+  private getTestIdColor(testId: string): string {
+    const existingColor = this.testIdColors.get(testId);
+    if (existingColor) {
+      return existingColor;
+    }
+    const hash = hashString(testId);
+    const colorIndex = hash % TEST_ID_COLORS.length;
+    const newColor = TEST_ID_COLORS[colorIndex] ?? TEST_ID_COLORS[0];
+    this.testIdColors.set(testId, newColor);
+    return newColor;
   }
 
   private shouldLog(
@@ -132,11 +175,12 @@ export class ConsoleLogger implements Logger {
     const levelLabel = LEVEL_LABELS[level];
     const icon = CATEGORY_ICONS[category];
     const testId = context.testId ?? "unknown";
+    const testIdColor = this.getTestIdColor(testId);
 
     const parts = [
       `${COLORS.dim}${timestamp}${COLORS.reset}`,
       `${levelColor}${levelLabel}${COLORS.reset}`,
-      `[${testId}]`,
+      `${testIdColor}[${testId}]${COLORS.reset}`,
       `${icon}`,
       category.padEnd(10),
       message,

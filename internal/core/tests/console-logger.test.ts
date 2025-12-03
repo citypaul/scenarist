@@ -402,4 +402,87 @@ describe("ConsoleLogger", () => {
       warnSpy.mockRestore();
     });
   });
+
+  describe("persistent test ID colors", () => {
+    it("should apply consistent color to same test ID across multiple logs", async () => {
+      const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+      const { createConsoleLogger } = await import(
+        "../src/adapters/console-logger.js"
+      );
+      const logger = createConsoleLogger({ level: "info", format: "pretty" });
+
+      logger.info(
+        "matching",
+        "first log",
+        createContext({ testId: "test-abc" }),
+      );
+      logger.info(
+        "matching",
+        "second log",
+        createContext({ testId: "test-abc" }),
+      );
+
+      const output1 = infoSpy.mock.calls[0][0] as string;
+      const output2 = infoSpy.mock.calls[1][0] as string;
+
+      const colorPattern = /\x1b\[\d+m\[test-abc\]/;
+      const match1 = output1.match(colorPattern);
+      const match2 = output2.match(colorPattern);
+
+      expect(match1).not.toBeNull();
+      expect(match2).not.toBeNull();
+      expect(match1![0]).toBe(match2![0]);
+
+      infoSpy.mockRestore();
+    });
+
+    it("should apply ANSI color code to test ID in pretty format", async () => {
+      const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+      const { createConsoleLogger } = await import(
+        "../src/adapters/console-logger.js"
+      );
+      const logger = createConsoleLogger({ level: "info", format: "pretty" });
+
+      logger.info(
+        "matching",
+        "test log",
+        createContext({ testId: "my-test-id" }),
+      );
+
+      const output = infoSpy.mock.calls[0][0] as string;
+      expect(output).toMatch(/\x1b\[\d+m\[my-test-id\]\x1b\[0m/);
+
+      infoSpy.mockRestore();
+    });
+
+    it("should assign different colors to different test IDs", async () => {
+      const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+      const { createConsoleLogger } = await import(
+        "../src/adapters/console-logger.js"
+      );
+      const logger = createConsoleLogger({ level: "info", format: "pretty" });
+
+      logger.info(
+        "matching",
+        "log 1",
+        createContext({ testId: "test-user-login" }),
+      );
+      logger.info(
+        "matching",
+        "log 2",
+        createContext({ testId: "test-checkout-flow" }),
+      );
+
+      const output1 = infoSpy.mock.calls[0][0] as string;
+      const output2 = infoSpy.mock.calls[1][0] as string;
+
+      expect(output1).toContain("test-user-login");
+      expect(output2).toContain("test-checkout-flow");
+
+      infoSpy.mockRestore();
+    });
+  });
 });
