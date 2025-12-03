@@ -3,7 +3,6 @@ import { buildConfig } from "../src/domain/config-builder.js";
 import type {
   ScenaristScenario,
   ScenaristScenarios,
-  ScenaristConfig,
 } from "../src/types/index.js";
 
 const mockDefaultScenario: ScenaristScenario = {
