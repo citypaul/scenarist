@@ -8,6 +8,7 @@ import {
   InMemoryScenarioStore,
   createInMemorySequenceTracker,
   createInMemoryStateManager,
+  noOpLogger,
   type BaseAdapterOptions,
   type ScenaristAdapter,
   type ScenaristScenarios,
@@ -73,6 +74,7 @@ export const createScenaristImpl = <T extends ScenaristScenarios>(
   options: ExpressAdapterOptions<T>,
 ): ExpressScenarist<T> => {
   const config = buildConfig(options);
+  const logger = options.logger ?? noOpLogger;
   const registry = options.registry ?? new InMemoryScenarioRegistry();
   const store = options.store ?? new InMemoryScenarioStore();
 
@@ -84,6 +86,7 @@ export const createScenaristImpl = <T extends ScenaristScenarios>(
     store,
     stateManager,
     sequenceTracker,
+    logger,
   });
 
   // Register all scenarios upfront from the scenarios object

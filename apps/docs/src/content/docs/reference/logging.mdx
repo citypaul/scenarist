@@ -24,7 +24,7 @@ const scenarist = createScenarist({
 
 ## Logger Types
 
-Scenarist includes three logger implementations:
+Scenarist includes two logger implementations:
 
 <CardGrid>
   <Card title="NoOpLogger" icon="close">
@@ -32,9 +32,6 @@ Scenarist includes three logger implementations:
   </Card>
   <Card title="ConsoleLogger" icon="terminal">
     Human-readable or JSON output. Great for debugging scenario matching issues.
-  </Card>
-  <Card title="TestLogger" icon="magnifier">
-    Captures logs in memory for programmatic assertions. Verify internal behavior in tests.
   </Card>
 </CardGrid>
 
@@ -116,7 +113,7 @@ const logger = createConsoleLogger({
 ### Output Formats
 
 <Tabs>
-  <TabItem label="Pretty Format">
+<TabItem label="Pretty Format">
 ```
 12:34:56.789 INF 🎬 [test-user-login] scenario | scenario_switched scenarioId=premium-user
 12:34:56.801 INF 🎯 [test-user-login] matching | mock_selected mockIndex=2 specificity=5
@@ -127,13 +124,15 @@ const logger = createConsoleLogger({
 ```
 
 **Features:**
+
 - Timestamps with milliseconds
 - Level indicators: `ERR`, `WRN`, `INF`, `DBG`, `TRC`
 - Category icons for visual scanning
 - Colored test IDs (persistent per test)
 - Key-value data fields
-  </TabItem>
-  <TabItem label="JSON Format">
+
+</TabItem>
+<TabItem label="JSON Format">
 ```json
 {"level":"info","category":"scenario","message":"scenario_switched","testId":"test-user-login","scenarioId":"premium-user","timestamp":1732650896789}
 {"level":"info","category":"matching","message":"mock_selected","testId":"test-user-login","data":{"mockIndex":2,"specificity":5},"timestamp":1732650896801}
@@ -141,7 +140,8 @@ const logger = createConsoleLogger({
 ```
 
 **Use for:** Log aggregation (Datadog, Splunk), structured queries, production debugging
-  </TabItem>
+
+</TabItem>
 </Tabs>
 
 ### Parallel Test Support

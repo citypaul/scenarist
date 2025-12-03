@@ -55,20 +55,19 @@ After each commit, we pause to:
 | Export from adapters/index.ts       | Done   | + types (LogFormat, Config)      |
 | Add logging documentation           | Done   | Reference doc + cross-references |
 
-### Phase 3: Config Integration
+### Phase 3: Config Integration ✅
 
-| Task                             | Status      | Notes                         |
-| -------------------------------- | ----------- | ----------------------------- |
-| Add logger to BaseAdapterOptions | Not Started | Optional Logger property      |
-| Update buildConfig for logger    | Not Started | Default to noOpLogger         |
-| Export logger from adapters      | Not Started | Re-export from express/nextjs |
+| Task                             | Status | Notes                           |
+| -------------------------------- | ------ | ------------------------------- |
+| Add logger to BaseAdapterOptions | Done   | Optional Logger property        |
+| Export logger from adapters      | Done   | Re-exported from express/nextjs |
 
-### Phase 4: Core Integration
+### Phase 4: Core Integration (Partial)
 
 | Task                                  | Status      | Notes                        |
 | ------------------------------------- | ----------- | ---------------------------- |
-| Add logger to createScenarioManager   | Not Started | Inject via options           |
-| Add logging calls to ScenarioManager  | Not Started | scenario_switched, etc.      |
+| Add logger to createScenarioManager   | Done        | Inject via options           |
+| Add logging calls to ScenarioManager  | Done        | scenario_registered/switched |
 | Add logger to createResponseSelector  | Not Started | Inject via options           |
 | Add logging calls to ResponseSelector | Not Started | mock_selected, mock_no_match |
 
@@ -79,22 +78,22 @@ After each commit, we pause to:
 | Add logger to DynamicHandler        | Not Started | Inject via options     |
 | Add logging calls to DynamicHandler | Not Started | request_received, etc. |
 
-### Phase 6: Framework Adapter Wiring
+### Phase 6: Framework Adapter Wiring (Partial)
 
 | Task                                        | Status      | Notes                |
 | ------------------------------------------- | ----------- | -------------------- |
-| Wire logger in Express adapter              | Not Started | Pass through to core |
+| Wire logger in Express adapter              | Done        | Pass through to core |
 | Wire logger in Next.js App Router adapter   | Not Started | Pass through to core |
 | Wire logger in Next.js Pages Router adapter | Not Started | Pass through to core |
 
-### Phase 7: Example App Integration
+### Phase 7: Example App Integration (Partial)
 
-| Task                                       | Status      | Notes                    |
-| ------------------------------------------ | ----------- | ------------------------ |
-| Add logging to express-example app         | Not Started | Demo ConsoleLogger usage |
-| Add logging to nextjs-app-router-example   | Not Started | Demo ConsoleLogger usage |
-| Add logging to nextjs-pages-router-example | Not Started | Demo ConsoleLogger usage |
-| Run tests with logging to verify output    | Not Started | Visual verification      |
+| Task                                       | Status      | Notes                        |
+| ------------------------------------------ | ----------- | ---------------------------- |
+| Add logging to express-example app         | Done        | Env var: SCENARIST_LOG=1     |
+| Add logging to nextjs-app-router-example   | Not Started | Demo ConsoleLogger usage     |
+| Add logging to nextjs-pages-router-example | Not Started | Demo ConsoleLogger usage     |
+| Run tests with logging to verify output    | Done        | 314 tests pass, logs visible |
 
 ---
 
