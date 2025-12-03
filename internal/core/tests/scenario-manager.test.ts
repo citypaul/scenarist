@@ -567,6 +567,171 @@ describe("ScenarioManager", () => {
         const registered = manager.getScenarioById("equals-strategy");
         expect(registered).toBeDefined();
       });
+
+      it("should reject scenario with empty name", () => {
+        const { manager } = createTestSetup();
+        const emptyNameScenario = {
+          id: "empty-name",
+          name: "", // Empty name should be rejected
+          description: "Test",
+          mocks: [],
+        };
+
+        expect(() => {
+          manager.registerScenario(emptyNameScenario as any);
+        }).toThrow();
+      });
+
+      it("should reject scenario with status code below 100", () => {
+        const { manager } = createTestSetup();
+        const invalidStatusScenario = {
+          id: "invalid-status-low",
+          name: "Invalid Status Low",
+          description: "Test",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/test",
+              response: { status: 99, body: {} }, // Below minimum HTTP status
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(invalidStatusScenario as any);
+        }).toThrow();
+      });
+
+      it("should reject scenario with status code above 599", () => {
+        const { manager } = createTestSetup();
+        const invalidStatusScenario = {
+          id: "invalid-status-high",
+          name: "Invalid Status High",
+          description: "Test",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/test",
+              response: { status: 600, body: {} }, // Above maximum HTTP status
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(invalidStatusScenario as any);
+        }).toThrow();
+      });
+
+      it("should reject sequence with no responses", () => {
+        const { manager } = createTestSetup();
+        const emptySequenceScenario = {
+          id: "empty-sequence",
+          name: "Empty Sequence",
+          description: "Test",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/test",
+              sequence: { responses: [] }, // Sequence must have at least one response
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(emptySequenceScenario as any);
+        }).toThrow();
+      });
+
+      it("should reject stateResponse condition with empty when clause", () => {
+        const { manager } = createTestSetup();
+        const emptyWhenScenario = {
+          id: "empty-when",
+          name: "Empty When",
+          description: "Test",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/test",
+              stateResponse: {
+                default: { status: 200, body: {} },
+                conditions: [
+                  {
+                    when: {}, // when clause must have at least one key
+                    then: { status: 200, body: {} },
+                  },
+                ],
+              },
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(emptyWhenScenario as any);
+        }).toThrow();
+      });
+
+      it("should reject afterResponse with empty setState", () => {
+        const { manager } = createTestSetup();
+        const emptySetStateScenario = {
+          id: "empty-setstate",
+          name: "Empty SetState",
+          description: "Test",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/test",
+              response: { status: 200, body: {} },
+              afterResponse: {
+                setState: {}, // setState must have at least one key
+              },
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(emptySetStateScenario as any);
+        }).toThrow();
+      });
+
+      it("should reject scenario with empty URL", () => {
+        const { manager } = createTestSetup();
+        const emptyUrlScenario = {
+          id: "empty-url",
+          name: "Empty URL",
+          description: "Test",
+          mocks: [
+            {
+              method: "GET",
+              url: "", // URL must be non-empty
+              response: { status: 200, body: {} },
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(emptyUrlScenario as any);
+        }).toThrow();
+      });
+
+      it("should reject scenario with non-integer status code", () => {
+        const { manager } = createTestSetup();
+        const floatStatusScenario = {
+          id: "float-status",
+          name: "Float Status",
+          description: "Test",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/test",
+              response: { status: 200.5, body: {} }, // Status must be integer
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(floatStatusScenario as any);
+        }).toThrow();
+      });
     });
   });
 
