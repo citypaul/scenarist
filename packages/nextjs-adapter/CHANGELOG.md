@@ -1,5 +1,61 @@
 # @scenarist/nextjs-adapter
 
+## 0.3.0
+
+### Minor Changes
+
+- [#322](https://github.com/citypaul/scenarist/pull/322) [`948fd31`](https://github.com/citypaul/scenarist/commit/948fd3156ef53f4afe202d99ad60a16f86b5d2ac) Thanks [@citypaul](https://github.com/citypaul)! - ## Logging Infrastructure
+
+  Add comprehensive logging infrastructure for debugging scenario matching, state management, and request handling.
+
+  ### New Features
+  - **ConsoleLogger**: Human-readable or JSON output with colored test IDs, category icons, and level filtering
+  - **NoOpLogger**: Zero-overhead silent logger (default)
+  - **Logger Port**: Interface for custom logger implementations (Winston, Pino, etc.)
+
+  ### Log Events
+
+  | Category | Events                                                                               |
+  | -------- | ------------------------------------------------------------------------------------ |
+  | scenario | `scenario_registered`, `scenario_switched`, `scenario_cleared`, `scenario_not_found` |
+  | matching | `mock_candidates_found`, `mock_match_evaluated`, `mock_selected`, `mock_no_match`    |
+
+  ### Usage
+
+  ```typescript
+  import {
+    createScenarist,
+    createConsoleLogger,
+  } from "@scenarist/express-adapter";
+
+  const scenarist = createScenarist({
+    enabled: true,
+    scenarios,
+    logger: createConsoleLogger({
+      level: "debug",
+      categories: ["scenario", "matching"],
+      format: "pretty", // or 'json'
+    }),
+  });
+  ```
+
+  ### Environment Variable Pattern
+
+  ```bash
+  # Enable logging via environment variable
+  SCENARIST_LOG=1 pnpm test
+  ```
+
+  ### Vitest Configuration
+
+  Add `disableConsoleIntercept: true` to `vitest.config.ts` to see logging output for passing tests.
+
+### Patch Changes
+
+- Updated dependencies [[`948fd31`](https://github.com/citypaul/scenarist/commit/948fd3156ef53f4afe202d99ad60a16f86b5d2ac), [`4aed6dc`](https://github.com/citypaul/scenarist/commit/4aed6dc29c6cf44b6c1d0b0c8824116c50bc265c)]:
+  - @scenarist/core@0.3.0
+  - @scenarist/msw-adapter@0.3.0
+
 ## 0.2.1
 
 ### Patch Changes
