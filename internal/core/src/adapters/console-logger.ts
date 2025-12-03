@@ -17,6 +17,53 @@ const LEVEL_PRIORITY: Record<Exclude<LogLevel, "silent">, number> = {
 };
 
 /**
+ * Category icons for pretty format.
+ */
+const CATEGORY_ICONS: Record<LogCategory, string> = {
+  lifecycle: "🔄",
+  scenario: "🎬",
+  matching: "🎯",
+  sequence: "📊",
+  state: "💾",
+  template: "📝",
+  request: "🌐",
+};
+
+/**
+ * Level labels for pretty format.
+ */
+const LEVEL_LABELS: Record<Exclude<LogLevel, "silent">, string> = {
+  error: "ERR",
+  warn: "WRN",
+  info: "INF",
+  debug: "DBG",
+  trace: "TRC",
+};
+
+/**
+ * ANSI color codes.
+ */
+const COLORS = {
+  reset: "\x1b[0m",
+  dim: "\x1b[2m",
+  red: "\x1b[31m",
+  yellow: "\x1b[33m",
+  cyan: "\x1b[36m",
+  gray: "\x1b[90m",
+} as const;
+
+/**
+ * Level colors for pretty format.
+ */
+const LEVEL_COLORS: Record<Exclude<LogLevel, "silent">, string> = {
+  error: COLORS.red,
+  warn: COLORS.yellow,
+  info: COLORS.cyan,
+  debug: COLORS.gray,
+  trace: COLORS.dim,
+};
+
+/**
  * Output format for ConsoleLogger.
  */
 export type LogFormat = "pretty" | "json";
@@ -58,6 +105,50 @@ export class ConsoleLogger implements Logger {
     return levelAllowed && categoryAllowed;
   }
 
+  private formatTimestamp(): string {
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, "0");
+    const minutes = now.getMinutes().toString().padStart(2, "0");
+    const seconds = now.getSeconds().toString().padStart(2, "0");
+    const ms = now.getMilliseconds().toString().padStart(3, "0");
+    return `${hours}:${minutes}:${seconds}.${ms}`;
+  }
+
+  private formatData(data: Record<string, unknown>): string {
+    return Object.entries(data)
+      .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
+      .join(" ");
+  }
+
+  private formatPretty(
+    level: Exclude<LogLevel, "silent">,
+    category: LogCategory,
+    message: string,
+    context: LogContext,
+    data?: Record<string, unknown>,
+  ): string {
+    const timestamp = this.formatTimestamp();
+    const levelColor = LEVEL_COLORS[level];
+    const levelLabel = LEVEL_LABELS[level];
+    const icon = CATEGORY_ICONS[category];
+    const testId = context.testId ?? "unknown";
+
+    const parts = [
+      `${COLORS.dim}${timestamp}${COLORS.reset}`,
+      `${levelColor}${levelLabel}${COLORS.reset}`,
+      `[${testId}]`,
+      `${icon}`,
+      category.padEnd(10),
+      message,
+    ];
+
+    if (data && Object.keys(data).length > 0) {
+      parts.push(`${COLORS.dim}${this.formatData(data)}${COLORS.reset}`);
+    }
+
+    return parts.join(" ");
+  }
+
   private formatOutput(
     level: Exclude<LogLevel, "silent">,
     category: LogCategory,
@@ -75,7 +166,7 @@ export class ConsoleLogger implements Logger {
         ...(data ? { data } : {}),
       });
     }
-    return "log";
+    return this.formatPretty(level, category, message, context, data);
   }
 
   error(

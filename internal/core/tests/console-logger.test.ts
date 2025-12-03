@@ -303,4 +303,103 @@ describe("ConsoleLogger", () => {
       infoSpy.mockRestore();
     });
   });
+
+  describe("pretty format", () => {
+    it("should output formatted string with timestamp, testId, category, and message", async () => {
+      const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+      const { createConsoleLogger } = await import(
+        "../src/adapters/console-logger.js"
+      );
+      const logger = createConsoleLogger({ level: "info", format: "pretty" });
+
+      logger.info("matching", "mock_selected", createContext());
+
+      const output = infoSpy.mock.calls[0][0] as string;
+
+      expect(output).toContain("matching");
+      expect(output).toContain("mock_selected");
+      expect(output).toContain("test-123");
+
+      infoSpy.mockRestore();
+    });
+
+    it("should include category icon in pretty output", async () => {
+      const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+      const { createConsoleLogger } = await import(
+        "../src/adapters/console-logger.js"
+      );
+      const logger = createConsoleLogger({ level: "info", format: "pretty" });
+
+      logger.info("matching", "mock_selected", createContext());
+
+      const output = infoSpy.mock.calls[0][0] as string;
+      expect(output).toMatch(/🎯/);
+
+      infoSpy.mockRestore();
+    });
+
+    it("should include data fields in pretty output", async () => {
+      const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+      const { createConsoleLogger } = await import(
+        "../src/adapters/console-logger.js"
+      );
+      const logger = createConsoleLogger({ level: "info", format: "pretty" });
+
+      logger.info("matching", "mock_selected", createContext(), {
+        mockIndex: 2,
+        specificity: 5,
+      });
+
+      const output = infoSpy.mock.calls[0][0] as string;
+      expect(output).toContain("mockIndex");
+      expect(output).toContain("2");
+      expect(output).toContain("specificity");
+      expect(output).toContain("5");
+
+      infoSpy.mockRestore();
+    });
+
+    it("should use default pretty format when format is not specified", async () => {
+      const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+      const { createConsoleLogger } = await import(
+        "../src/adapters/console-logger.js"
+      );
+      const logger = createConsoleLogger({ level: "info" });
+
+      logger.info("lifecycle", "started", createContext());
+
+      const output = infoSpy.mock.calls[0][0] as string;
+      expect(output).toContain("lifecycle");
+      expect(output).toContain("started");
+      expect(output).toContain("🔄");
+
+      infoSpy.mockRestore();
+    });
+
+    it("should include level indicator with color", async () => {
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+      const { createConsoleLogger } = await import(
+        "../src/adapters/console-logger.js"
+      );
+      const logger = createConsoleLogger({ level: "warn", format: "pretty" });
+
+      logger.error("lifecycle", "critical failure", createContext());
+      logger.warn("lifecycle", "potential issue", createContext());
+
+      const errorOutput = errorSpy.mock.calls[0][0] as string;
+      const warnOutput = warnSpy.mock.calls[0][0] as string;
+
+      expect(errorOutput).toContain("ERR");
+      expect(warnOutput).toContain("WRN");
+
+      errorSpy.mockRestore();
+      warnSpy.mockRestore();
+    });
+  });
 });
