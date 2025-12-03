@@ -27,7 +27,13 @@
       "Bash(pnpm --filter=@scenarist/docs typecheck:*)",
       "Bash(pnpm --filter=@scenarist/docs test)",
       "Bash(pnpm --filter=@scenarist/core test:*)",
-      "Bash(pnpm --filter=@scenarist/core typecheck:*)"
+      "Bash(pnpm --filter=@scenarist/core typecheck:*)",
+      "Bash(gh api:*)",
+      "Bash(jq:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(git reset:*)",
+      "Bash(pnpm --filter=@scenarist/msw-adapter lint:*)",
+      "Bash(pnpm --filter=@scenarist/msw-adapter test:*)"
     ],
     "deny": [],
     "ask": []
