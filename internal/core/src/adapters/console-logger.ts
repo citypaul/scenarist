@@ -21,6 +21,7 @@ const LEVEL_PRIORITY: Record<Exclude<LogLevel, "silent">, number> = {
  */
 export type ConsoleLoggerConfig = {
   readonly level: Exclude<LogLevel, "silent">;
+  readonly categories?: ReadonlyArray<LogCategory>;
 };
 
 /**
@@ -28,72 +29,84 @@ export type ConsoleLoggerConfig = {
  */
 export class ConsoleLogger implements Logger {
   private readonly configuredLevel: Exclude<LogLevel, "silent">;
+  private readonly configuredCategories: ReadonlySet<LogCategory> | null;
 
   constructor(config: ConsoleLoggerConfig) {
     this.configuredLevel = config.level;
+    this.configuredCategories = config.categories
+      ? new Set(config.categories)
+      : null;
   }
 
-  private shouldLog(level: Exclude<LogLevel, "silent">): boolean {
-    return LEVEL_PRIORITY[level] <= LEVEL_PRIORITY[this.configuredLevel];
+  private shouldLog(
+    level: Exclude<LogLevel, "silent">,
+    category: LogCategory,
+  ): boolean {
+    const levelAllowed =
+      LEVEL_PRIORITY[level] <= LEVEL_PRIORITY[this.configuredLevel];
+    const categoryAllowed =
+      this.configuredCategories === null ||
+      this.configuredCategories.has(category);
+    return levelAllowed && categoryAllowed;
   }
 
   error(
-    _category: LogCategory,
+    category: LogCategory,
     _message: string,
     _context: LogContext,
     _data?: Record<string, unknown>,
   ): void {
-    if (this.shouldLog("error")) {
+    if (this.shouldLog("error", category)) {
       console.error("log");
     }
   }
 
   warn(
-    _category: LogCategory,
+    category: LogCategory,
     _message: string,
     _context: LogContext,
     _data?: Record<string, unknown>,
   ): void {
-    if (this.shouldLog("warn")) {
+    if (this.shouldLog("warn", category)) {
       console.warn("log");
     }
   }
 
   info(
-    _category: LogCategory,
+    category: LogCategory,
     _message: string,
     _context: LogContext,
     _data?: Record<string, unknown>,
   ): void {
-    if (this.shouldLog("info")) {
+    if (this.shouldLog("info", category)) {
       console.info("log");
     }
   }
 
   debug(
-    _category: LogCategory,
+    category: LogCategory,
     _message: string,
     _context: LogContext,
     _data?: Record<string, unknown>,
   ): void {
-    if (this.shouldLog("debug")) {
+    if (this.shouldLog("debug", category)) {
       console.debug("log");
     }
   }
 
   trace(
-    _category: LogCategory,
+    category: LogCategory,
     _message: string,
     _context: LogContext,
     _data?: Record<string, unknown>,
   ): void {
-    if (this.shouldLog("trace")) {
+    if (this.shouldLog("trace", category)) {
       console.debug("log");
     }
   }
 
   isEnabled(level: Exclude<LogLevel, "silent">): boolean {
-    return this.shouldLog(level);
+    return LEVEL_PRIORITY[level] <= LEVEL_PRIORITY[this.configuredLevel];
   }
 }
 

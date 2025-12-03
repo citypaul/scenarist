@@ -166,4 +166,65 @@ describe("ConsoleLogger", () => {
       expect(logger.isEnabled("trace")).toBe(true);
     });
   });
+
+  describe("category filtering", () => {
+    it("should log all categories when no categories are configured", async () => {
+      const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+      const { createConsoleLogger } = await import(
+        "../src/adapters/console-logger.js"
+      );
+      const logger = createConsoleLogger({ level: "info" });
+
+      logger.info("lifecycle", "lifecycle msg", createContext());
+      logger.info("matching", "matching msg", createContext());
+      logger.info("state", "state msg", createContext());
+
+      expect(infoSpy).toHaveBeenCalledTimes(3);
+      infoSpy.mockRestore();
+    });
+
+    it("should only log configured categories", async () => {
+      const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+      const { createConsoleLogger } = await import(
+        "../src/adapters/console-logger.js"
+      );
+      const logger = createConsoleLogger({
+        level: "info",
+        categories: ["matching", "state"],
+      });
+
+      logger.info("lifecycle", "lifecycle msg", createContext());
+      logger.info("matching", "matching msg", createContext());
+      logger.info("state", "state msg", createContext());
+      logger.info("sequence", "sequence msg", createContext());
+
+      expect(infoSpy).toHaveBeenCalledTimes(2);
+      infoSpy.mockRestore();
+    });
+
+    it("should filter by both level and category", async () => {
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+      const { createConsoleLogger } = await import(
+        "../src/adapters/console-logger.js"
+      );
+      const logger = createConsoleLogger({
+        level: "info",
+        categories: ["matching"],
+      });
+
+      logger.error("matching", "error matching msg", createContext());
+      logger.info("matching", "info matching msg", createContext());
+      logger.debug("matching", "debug matching msg", createContext());
+      logger.info("lifecycle", "info lifecycle msg", createContext());
+
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+      expect(infoSpy).toHaveBeenCalledTimes(1);
+      errorSpy.mockRestore();
+      infoSpy.mockRestore();
+    });
+  });
 });
