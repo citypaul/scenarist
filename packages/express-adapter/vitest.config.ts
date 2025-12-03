@@ -11,6 +11,9 @@ export default defineConfig({
         "**/dist/**",
         "**/*.test.ts",
         "**/index.ts",
+        // Pure re-export files (no business logic, just module bindings)
+        // V8 coverage doesn't instrument re-exports; behavior tested via impl.ts
+        "**/setup-scenarist.ts",
       ],
       include: ["src/**/*.ts"],
       thresholds: {
