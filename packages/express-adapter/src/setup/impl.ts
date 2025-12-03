@@ -97,6 +97,7 @@ export const createScenaristImpl = <T extends ScenaristScenarios>(
   const responseSelector = createResponseSelector({
     sequenceTracker,
     stateManager,
+    logger,
   });
 
   const handler = createDynamicHandler({
