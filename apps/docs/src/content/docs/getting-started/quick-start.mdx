@@ -104,6 +104,22 @@ Before diving into your framework guide, here's what makes Scenarist different:
   </Card>
 </CardGrid>
 
+## Debugging with Logs
+
+When scenarios don't match as expected, Scenarist's built-in logging shows you exactly what's happening:
+
+```bash
+# See which mocks are matching your requests
+SCENARIST_LOG=1 pnpm test
+```
+
+```
+09:49:09.715 DBG [test-checkout] 🎯 matching   mock_candidates_found count=5 url="/api/cart"
+09:49:09.716 INF [test-checkout] 🎯 matching   mock_selected mockIndex=2 specificity=5
+```
+
+**[→ Full logging guide](/reference/logging)**
+
 ## Next Steps
 
 1. **[Choose your framework](#choose-your-framework)** — Follow the complete getting-started guide
