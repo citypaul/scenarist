@@ -17,11 +17,17 @@ const LEVEL_PRIORITY: Record<Exclude<LogLevel, "silent">, number> = {
 };
 
 /**
+ * Output format for ConsoleLogger.
+ */
+export type LogFormat = "pretty" | "json";
+
+/**
  * Configuration options for ConsoleLogger.
  */
 export type ConsoleLoggerConfig = {
   readonly level: Exclude<LogLevel, "silent">;
   readonly categories?: ReadonlyArray<LogCategory>;
+  readonly format?: LogFormat;
 };
 
 /**
@@ -30,12 +36,14 @@ export type ConsoleLoggerConfig = {
 export class ConsoleLogger implements Logger {
   private readonly configuredLevel: Exclude<LogLevel, "silent">;
   private readonly configuredCategories: ReadonlySet<LogCategory> | null;
+  private readonly format: LogFormat;
 
   constructor(config: ConsoleLoggerConfig) {
     this.configuredLevel = config.level;
     this.configuredCategories = config.categories
       ? new Set(config.categories)
       : null;
+    this.format = config.format ?? "pretty";
   }
 
   private shouldLog(
@@ -50,58 +58,84 @@ export class ConsoleLogger implements Logger {
     return levelAllowed && categoryAllowed;
   }
 
+  private formatOutput(
+    level: Exclude<LogLevel, "silent">,
+    category: LogCategory,
+    message: string,
+    context: LogContext,
+    data?: Record<string, unknown>,
+  ): string {
+    if (this.format === "json") {
+      return JSON.stringify({
+        timestamp: Date.now(),
+        level,
+        category,
+        message,
+        ...context,
+        ...(data ? { data } : {}),
+      });
+    }
+    return "log";
+  }
+
   error(
     category: LogCategory,
-    _message: string,
-    _context: LogContext,
-    _data?: Record<string, unknown>,
+    message: string,
+    context: LogContext,
+    data?: Record<string, unknown>,
   ): void {
     if (this.shouldLog("error", category)) {
-      console.error("log");
+      console.error(
+        this.formatOutput("error", category, message, context, data),
+      );
     }
   }
 
   warn(
     category: LogCategory,
-    _message: string,
-    _context: LogContext,
-    _data?: Record<string, unknown>,
+    message: string,
+    context: LogContext,
+    data?: Record<string, unknown>,
   ): void {
     if (this.shouldLog("warn", category)) {
-      console.warn("log");
+      console.warn(this.formatOutput("warn", category, message, context, data));
     }
   }
 
   info(
     category: LogCategory,
-    _message: string,
-    _context: LogContext,
-    _data?: Record<string, unknown>,
+    message: string,
+    context: LogContext,
+    data?: Record<string, unknown>,
   ): void {
     if (this.shouldLog("info", category)) {
-      console.info("log");
+      console.info(this.formatOutput("info", category, message, context, data));
     }
   }
 
   debug(
     category: LogCategory,
-    _message: string,
-    _context: LogContext,
-    _data?: Record<string, unknown>,
+    message: string,
+    context: LogContext,
+    data?: Record<string, unknown>,
   ): void {
     if (this.shouldLog("debug", category)) {
-      console.debug("log");
+      console.debug(
+        this.formatOutput("debug", category, message, context, data),
+      );
     }
   }
 
   trace(
     category: LogCategory,
-    _message: string,
-    _context: LogContext,
-    _data?: Record<string, unknown>,
+    message: string,
+    context: LogContext,
+    data?: Record<string, unknown>,
   ): void {
     if (this.shouldLog("trace", category)) {
-      console.debug("log");
+      console.debug(
+        this.formatOutput("trace", category, message, context, data),
+      );
     }
   }
 

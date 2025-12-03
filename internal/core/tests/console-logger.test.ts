@@ -227,4 +227,80 @@ describe("ConsoleLogger", () => {
       infoSpy.mockRestore();
     });
   });
+
+  describe("JSON format", () => {
+    it("should output valid JSON when format is json", async () => {
+      const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+      const { createConsoleLogger } = await import(
+        "../src/adapters/console-logger.js"
+      );
+      const logger = createConsoleLogger({ level: "info", format: "json" });
+
+      logger.info("matching", "test message", createContext());
+
+      expect(infoSpy).toHaveBeenCalledTimes(1);
+      const output = infoSpy.mock.calls[0][0];
+      const parsed = JSON.parse(output);
+
+      expect(parsed.level).toBe("info");
+      expect(parsed.category).toBe("matching");
+      expect(parsed.message).toBe("test message");
+      expect(parsed.testId).toBe("test-123");
+      expect(typeof parsed.timestamp).toBe("number");
+
+      infoSpy.mockRestore();
+    });
+
+    it("should include optional data in JSON output", async () => {
+      const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+      const { createConsoleLogger } = await import(
+        "../src/adapters/console-logger.js"
+      );
+      const logger = createConsoleLogger({ level: "info", format: "json" });
+
+      logger.info("matching", "test message", createContext(), {
+        mockIndex: 2,
+        specificity: 5,
+      });
+
+      const output = infoSpy.mock.calls[0][0];
+      const parsed = JSON.parse(output);
+
+      expect(parsed.data).toEqual({ mockIndex: 2, specificity: 5 });
+
+      infoSpy.mockRestore();
+    });
+
+    it("should include full context in JSON output", async () => {
+      const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+      const { createConsoleLogger } = await import(
+        "../src/adapters/console-logger.js"
+      );
+      const logger = createConsoleLogger({ level: "info", format: "json" });
+
+      logger.info(
+        "request",
+        "request received",
+        createContext({
+          testId: "test-456",
+          scenarioId: "scenario-1",
+          requestUrl: "/api/users",
+          requestMethod: "GET",
+        }),
+      );
+
+      const output = infoSpy.mock.calls[0][0];
+      const parsed = JSON.parse(output);
+
+      expect(parsed.testId).toBe("test-456");
+      expect(parsed.scenarioId).toBe("scenario-1");
+      expect(parsed.requestUrl).toBe("/api/users");
+      expect(parsed.requestMethod).toBe("GET");
+
+      infoSpy.mockRestore();
+    });
+  });
 });
