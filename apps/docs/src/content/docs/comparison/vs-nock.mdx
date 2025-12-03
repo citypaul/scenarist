@@ -333,53 +333,9 @@ test('shows products', async ({ page, switchScenario }) => {
     Built-in assertions on call counts. Verify exactly N requests were made.
   </Card>
   <Card title="Existing investment" icon="approve-check">
-    Team already uses Nock. Migration cost outweighs benefits for integration tests.
+    Team already uses Nock. Benefits may not outweigh switching costs for integration tests.
   </Card>
 </CardGrid>
-
-## Migration Considerations
-
-### From Nock to Scenarist
-
-```typescript
-// Nock - inline definitions
-beforeEach(() => {
-  nock('https://api.stripe.com')
-    .get('/v1/customers/cus_123')
-    .reply(200, { id: 'cus_123', name: 'Test Customer' });
-
-  nock('https://api.sendgrid.com')
-    .post('/v3/mail/send')
-    .reply(202);
-});
-
-// Scenarist - centralized scenarios
-const scenarios = {
-  default: {
-    mocks: [
-      {
-        url: 'https://api.stripe.com/v1/customers/cus_123',
-        response: { status: 200, body: { id: 'cus_123', name: 'Test Customer' } }
-      },
-      {
-        url: 'https://api.sendgrid.com/v3/mail/send',
-        method: 'POST',
-        response: { status: 202 }
-      }
-    ]
-  }
-} as const satisfies ScenaristScenarios;
-```
-
-**Migration benefits:**
-- Scenarios become visible in one place
-- Test isolation improves automatically
-- Runtime switching becomes possible
-
-**Migration costs:**
-- Learn declarative patterns instead of fluent API
-- Convert inline mocks to scenarios
-- Set up framework adapter
 
 ## Summary
 
