@@ -44,14 +44,15 @@ After each commit, we pause to:
 
 ### Phase 2: ConsoleLogger
 
-| Task                                | Status      | Notes                       |
-| ----------------------------------- | ----------- | --------------------------- |
-| Implement level filtering           | Not Started |                             |
-| Implement category filtering        | Not Started |                             |
-| Implement JSON format output        | Not Started |                             |
-| Implement pretty format with colors | Not Started |                             |
-| Implement persistent test ID colors | Not Started | Hash-based color assignment |
-| Write ConsoleLogger tests           | Not Started |                             |
+| Task                                | Status | Notes                            |
+| ----------------------------------- | ------ | -------------------------------- |
+| Implement level filtering           | Done   | Level priority system            |
+| Implement category filtering        | Done   | Optional category filter         |
+| Implement JSON format output        | Done   | Structured JSON with timestamp   |
+| Implement pretty format with colors | Done   | ANSI colors, icons, level labels |
+| Implement persistent test ID colors | Done   | Hash-based, 11-color palette     |
+| Write ConsoleLogger tests           | Done   | 23 tests, behavioral tests       |
+| Export from adapters/index.ts       | Done   | + types (LogFormat, Config)      |
 
 ### Phase 3: TestLogger
 
