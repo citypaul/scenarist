@@ -226,6 +226,25 @@ describe("ConsoleLogger", () => {
       errorSpy.mockRestore();
       infoSpy.mockRestore();
     });
+
+    it("should filter error logs when category is not in the allowed list", async () => {
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      const { createConsoleLogger } = await import(
+        "../src/adapters/console-logger.js"
+      );
+      const logger = createConsoleLogger({
+        level: "error",
+        categories: ["matching"], // Only matching category allowed
+      });
+
+      // Error log with category NOT in the allowed list
+      logger.error("lifecycle", "lifecycle error msg", createContext());
+
+      // Should NOT be logged because category is filtered
+      expect(errorSpy).not.toHaveBeenCalled();
+      errorSpy.mockRestore();
+    });
   });
 
   describe("JSON format", () => {
@@ -299,6 +318,43 @@ describe("ConsoleLogger", () => {
       expect(parsed.scenarioId).toBe("scenario-1");
       expect(parsed.requestUrl).toBe("/api/users");
       expect(parsed.requestMethod).toBe("GET");
+
+      infoSpy.mockRestore();
+    });
+  });
+
+  describe("missing context values", () => {
+    it("should display 'unknown' when testId is not provided in context", async () => {
+      const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+      const { createConsoleLogger } = await import(
+        "../src/adapters/console-logger.js"
+      );
+      const logger = createConsoleLogger({ level: "info", format: "pretty" });
+
+      // Context without testId
+      logger.info("matching", "test message", {});
+
+      const output = infoSpy.mock.calls[0][0] as string;
+      expect(output).toContain("[unknown]");
+
+      infoSpy.mockRestore();
+    });
+
+    it("should include 'unknown' in JSON output when testId is not provided", async () => {
+      const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+      const { createConsoleLogger } = await import(
+        "../src/adapters/console-logger.js"
+      );
+      const logger = createConsoleLogger({ level: "info", format: "json" });
+
+      // Context without testId
+      logger.info("matching", "test message", {});
+
+      const output = infoSpy.mock.calls[0][0];
+      const parsed = JSON.parse(output);
+      expect(parsed.testId).toBeUndefined();
 
       infoSpy.mockRestore();
     });

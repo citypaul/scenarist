@@ -130,8 +130,9 @@ export class ConsoleLogger implements Logger {
       return existingColor;
     }
     const hash = hashString(testId);
+    // colorIndex is always 0 to TEST_ID_COLORS.length-1, so index is always valid
     const colorIndex = hash % TEST_ID_COLORS.length;
-    const newColor = TEST_ID_COLORS[colorIndex] ?? TEST_ID_COLORS[0];
+    const newColor = TEST_ID_COLORS[colorIndex]!;
     this.testIdColors.set(testId, newColor);
     return newColor;
   }

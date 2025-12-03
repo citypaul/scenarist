@@ -102,7 +102,7 @@ export const createScenarioManager = ({
         {},
         {
           scenarioId: definition.id,
-          mockCount: definition.mocks?.length ?? 0,
+          mockCount: definition.mocks.length, // mocks is required by ScenaristScenarioSchema
         },
       );
     },
