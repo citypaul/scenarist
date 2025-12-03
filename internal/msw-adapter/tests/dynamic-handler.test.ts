@@ -942,4 +942,216 @@ describe("Dynamic Handler", () => {
       server.close();
     });
   });
+
+  describe("Missing test ID handling", () => {
+    it("should return 500 with helpful error when test ID is missing and onMissingTestId is 'throw'", async () => {
+      const scenarios = new Map<string, ScenaristScenario>([
+        [
+          "default",
+          mockScenario({
+            id: "default",
+            mocks: [
+              mockDefinition({
+                response: { status: 200, body: { source: "default" } },
+              }),
+            ],
+          }),
+        ],
+      ]);
+
+      // getTestId returns empty string (missing test ID)
+      const getTestId = () => "";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = (scenarioId: string) =>
+        scenarios.get(scenarioId);
+
+      const errorBehaviors: ErrorBehaviors = {
+        onNoMockFound: "throw",
+        onSequenceExhausted: "throw",
+        onNoStateMatch: "throw",
+        onMissingTestId: "throw",
+      };
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: false,
+        responseSelector,
+        errorBehaviors,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch("https://api.example.com/users");
+      const body = await response.json();
+
+      // Should return 500 with error details about missing test ID
+      expect(response.status).toBe(500);
+      expect(body.code).toBe("MISSING_TEST_ID");
+      expect(body.message).toContain("test ID");
+
+      server.close();
+    });
+
+    it("should log warning and use default scenario when test ID is missing and onMissingTestId is 'warn'", async () => {
+      const mockLogger: Logger = {
+        error: vi.fn(),
+        warn: vi.fn(),
+        info: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        isEnabled: () => true,
+      };
+
+      const scenarios = new Map<string, ScenaristScenario>([
+        [
+          "default",
+          mockScenario({
+            id: "default",
+            mocks: [
+              mockDefinition({
+                response: { status: 200, body: { source: "default" } },
+              }),
+            ],
+          }),
+        ],
+      ]);
+
+      const getTestId = () => "";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = (scenarioId: string) =>
+        scenarios.get(scenarioId);
+
+      const errorBehaviors: ErrorBehaviors = {
+        onNoMockFound: "throw",
+        onSequenceExhausted: "throw",
+        onNoStateMatch: "throw",
+        onMissingTestId: "warn",
+      };
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: false,
+        responseSelector,
+        errorBehaviors,
+        logger: mockLogger,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch("https://api.example.com/users");
+      const body = await response.json();
+
+      // Should warn and continue with default scenario
+      expect(response.status).toBe(200);
+      expect(body).toEqual({ source: "default" });
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        "request",
+        expect.stringContaining("Missing test ID"),
+        expect.objectContaining({
+          requestUrl: expect.stringContaining("api.example.com"),
+          requestMethod: "GET",
+        }),
+      );
+
+      server.close();
+    });
+
+    it("should silently use default scenario when test ID is missing and onMissingTestId is 'ignore'", async () => {
+      const scenarios = new Map<string, ScenaristScenario>([
+        [
+          "default",
+          mockScenario({
+            id: "default",
+            mocks: [
+              mockDefinition({
+                response: { status: 200, body: { source: "default" } },
+              }),
+            ],
+          }),
+        ],
+      ]);
+
+      const getTestId = () => "";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = (scenarioId: string) =>
+        scenarios.get(scenarioId);
+
+      const errorBehaviors: ErrorBehaviors = {
+        onNoMockFound: "throw",
+        onSequenceExhausted: "throw",
+        onNoStateMatch: "throw",
+        onMissingTestId: "ignore",
+      };
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: false,
+        responseSelector,
+        errorBehaviors,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch("https://api.example.com/users");
+      const body = await response.json();
+
+      // Should silently continue with default scenario
+      expect(response.status).toBe(200);
+      expect(body).toEqual({ source: "default" });
+
+      server.close();
+    });
+
+    it("should continue normally when errorBehaviors is not configured and test ID is missing", async () => {
+      // Default behavior: when errorBehaviors not set, missing test ID is tolerated
+      const scenarios = new Map<string, ScenaristScenario>([
+        [
+          "default",
+          mockScenario({
+            id: "default",
+            mocks: [
+              mockDefinition({
+                response: { status: 200, body: { source: "default" } },
+              }),
+            ],
+          }),
+        ],
+      ]);
+
+      const getTestId = () => "";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = (scenarioId: string) =>
+        scenarios.get(scenarioId);
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: false,
+        responseSelector,
+        // No errorBehaviors - missing test ID should be tolerated
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch("https://api.example.com/users");
+      const body = await response.json();
+
+      // Should continue normally with default scenario
+      expect(response.status).toBe(200);
+      expect(body).toEqual({ source: "default" });
+
+      server.close();
+    });
+  });
 });

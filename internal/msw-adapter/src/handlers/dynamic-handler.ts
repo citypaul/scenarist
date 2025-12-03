@@ -10,6 +10,7 @@ import type {
   ErrorBehaviors,
   Logger,
 } from "@scenarist/core";
+import { ScenaristError, ErrorCodes } from "@scenarist/core";
 import { buildResponse } from "../conversion/response-builder.js";
 import { matchesUrl } from "../matching/url-matcher.js";
 
@@ -127,6 +128,40 @@ export const createDynamicHandler = (
     const testId = options.getTestId(request);
 
     try {
+      // Check for missing test ID
+      if (!testId) {
+        if (options.errorBehaviors?.onMissingTestId === "throw") {
+          throw new ScenaristError(
+            "Missing test ID header. Ensure your test setup sends the x-scenarist-test-id header with each request.",
+            {
+              code: ErrorCodes.MISSING_TEST_ID,
+              context: {
+                requestInfo: {
+                  method: request.method,
+                  url: request.url,
+                },
+                hint: "This typically means: 1) Test didn't call switchScenario() before making requests, 2) Request originated outside the test context, or 3) Header forwarding is misconfigured.",
+              },
+            },
+          );
+        }
+
+        if (
+          options.errorBehaviors?.onMissingTestId === "warn" &&
+          options.logger
+        ) {
+          options.logger.warn(
+            "request",
+            "Missing test ID header. Using default scenario.",
+            {
+              requestUrl: request.url,
+              requestMethod: request.method,
+            },
+          );
+        }
+        // For 'ignore' or when no errorBehaviors set, silently continue with empty testId
+      }
+
       const activeScenario = options.getActiveScenario(testId);
       const scenarioId = activeScenario?.scenarioId ?? "default";
 
@@ -192,12 +227,16 @@ export const createDynamicHandler = (
         );
       }
 
+      // Use specific error code from ScenaristError, or fallback to HANDLER_ERROR
+      const errorCode =
+        error instanceof ScenaristError ? error.code : "HANDLER_ERROR";
+
       // Return a 500 error response with error details
       return new Response(
         JSON.stringify({
           error: "Internal mock server error",
           message: error instanceof Error ? error.message : String(error),
-          code: "HANDLER_ERROR",
+          code: errorCode,
         }),
         {
           status: 500,
