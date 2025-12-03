@@ -10,8 +10,6 @@ import type {
 import {
   createResponseSelector,
   createInMemorySequenceTracker,
-  ScenaristError,
-  ErrorCodes,
 } from "@scenarist/core";
 import { mockDefinition, mockScenario } from "./factories.js";
 
