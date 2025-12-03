@@ -1,4 +1,19 @@
 /**
+ * Standard error codes for Scenarist errors.
+ * Use these constants when creating ScenaristError instances.
+ */
+export const ErrorCodes = {
+  SCENARIO_NOT_FOUND: "SCENARIO_NOT_FOUND",
+  NO_MOCK_FOUND: "NO_MOCK_FOUND",
+  SEQUENCE_EXHAUSTED: "SEQUENCE_EXHAUSTED",
+  NO_STATE_MATCH: "NO_STATE_MATCH",
+  MISSING_TEST_ID: "MISSING_TEST_ID",
+  VALIDATION_ERROR: "VALIDATION_ERROR",
+} as const;
+
+export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
+
+/**
  * Context information for Scenarist errors.
  * Provides structured data to help diagnose and fix issues.
  */
