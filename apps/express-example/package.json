@@ -34,13 +34,13 @@
     "@usebruno/cli": "^2.15.0",
     "@vitest/coverage-v8": "^4.0.14",
     "concurrently": "^9.2.1",
-    "esbuild": "^0.27.0",
+    "esbuild": "^0.27.1",
     "eslint": "^9.39.1",
     "msw": "^2.12.3",
     "supertest": "^7.0.0",
-    "tsx": "^4.7.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.14",
+    "vitest": "^4.0.15",
     "wait-on": "^9.0.3"
   }
 }
