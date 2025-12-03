@@ -763,6 +763,105 @@ describe("Dynamic Handler", () => {
       server.close();
     });
 
+    it("should catch handler errors and return 500 with error details", async () => {
+      // Simulate an unexpected error inside the handler by providing a responseSelector
+      // that throws an unexpected error
+      const mockLogger: Logger = {
+        error: vi.fn(),
+        warn: vi.fn(),
+        info: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        isEnabled: () => true,
+      };
+
+      const brokenResponseSelector = {
+        selectResponse: () => {
+          throw new Error("Unexpected internal error");
+        },
+      };
+
+      const getTestId = () => "test-123";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = () => undefined;
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: false,
+        responseSelector: brokenResponseSelector as unknown as ReturnType<
+          typeof createResponseSelector
+        >,
+        logger: mockLogger,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch("https://api.example.com/users");
+
+      // Handler should catch the error and return 500
+      expect(response.status).toBe(500);
+
+      // Error should be logged via Logger
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        "request",
+        expect.stringContaining("Handler error"),
+        expect.objectContaining({
+          testId: "test-123",
+          requestMethod: "GET",
+        }),
+        expect.objectContaining({
+          errorName: "Error",
+        }),
+      );
+
+      server.close();
+    });
+
+    it("should return 500 even when no logger is provided", async () => {
+      // Verify graceful degradation works even without a logger
+      const brokenResponseSelector = {
+        selectResponse: () => {
+          throw new Error("Unexpected internal error");
+        },
+      };
+
+      const getTestId = () => "test-123";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = () => undefined;
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: false,
+        responseSelector: brokenResponseSelector as unknown as ReturnType<
+          typeof createResponseSelector
+        >,
+        // No logger provided
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch("https://api.example.com/users");
+
+      // Handler should still catch the error and return 500
+      expect(response.status).toBe(500);
+
+      // Verify the response body contains error details
+      const body = await response.json();
+      expect(body).toEqual({
+        error: "Internal mock server error",
+        message: "Unexpected internal error",
+        code: "HANDLER_ERROR",
+      });
+
+      server.close();
+    });
+
     it("should log warning via Logger and return 501 when onNoMockFound is 'warn' and strictMode is true", async () => {
       // 'warn' behavior should log a warning via the Logger port and continue to strictMode logic
       const mockLogger: Logger = {

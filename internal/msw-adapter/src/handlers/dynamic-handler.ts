@@ -125,50 +125,85 @@ export const createDynamicHandler = (
 ): HttpHandler => {
   return http.all("*", async ({ request }) => {
     const testId = options.getTestId(request);
-    const activeScenario = options.getActiveScenario(testId);
-    const scenarioId = activeScenario?.scenarioId ?? "default";
 
-    // Extract request context for matching
-    const context = await extractHttpRequestContext(request);
+    try {
+      const activeScenario = options.getActiveScenario(testId);
+      const scenarioId = activeScenario?.scenarioId ?? "default";
 
-    // Get candidate mocks from active or default scenario
-    const mocks = getMocksFromScenarios(
-      activeScenario,
-      options.getScenarioDefinition,
-      request.method,
-      request.url,
-    );
+      // Extract request context for matching
+      const context = await extractHttpRequestContext(request);
 
-    // Use injected ResponseSelector to find matching mock
-    const result = options.responseSelector.selectResponse(
-      testId,
-      scenarioId,
-      context,
-      mocks,
-    );
+      // Get candidate mocks from active or default scenario
+      const mocks = getMocksFromScenarios(
+        activeScenario,
+        options.getScenarioDefinition,
+        request.method,
+        request.url,
+      );
 
-    if (result.success) {
-      return buildResponse(result.data);
-    }
-
-    // Handle error based on configured behavior
-    if (options.errorBehaviors?.onNoMockFound === "throw") {
-      throw result.error;
-    }
-
-    if (options.errorBehaviors?.onNoMockFound === "warn" && options.logger) {
-      options.logger.warn("matching", result.error.message, {
+      // Use injected ResponseSelector to find matching mock
+      const result = options.responseSelector.selectResponse(
         testId,
         scenarioId,
-        requestUrl: context.url,
-        requestMethod: context.method,
-      });
-    }
+        context,
+        mocks,
+      );
 
-    if (options.strictMode) {
-      return new Response(null, { status: 501 });
-    }
+      if (result.success) {
+        return buildResponse(result.data);
+      }
 
-    return passthrough();
+      // Handle error based on configured behavior
+      if (options.errorBehaviors?.onNoMockFound === "throw") {
+        throw result.error;
+      }
+
+      if (options.errorBehaviors?.onNoMockFound === "warn" && options.logger) {
+        options.logger.warn("matching", result.error.message, {
+          testId,
+          scenarioId,
+          requestUrl: context.url,
+          requestMethod: context.method,
+        });
+      }
+
+      if (options.strictMode) {
+        return new Response(null, { status: 501 });
+      }
+
+      return passthrough();
+    } catch (error) {
+      // Log the error via Logger if available
+      if (options.logger) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        options.logger.error(
+          "request",
+          `Handler error: ${errorMessage}`,
+          {
+            testId,
+            requestUrl: request.url,
+            requestMethod: request.method,
+          },
+          {
+            errorName: error instanceof Error ? error.name : "Unknown",
+            stack: error instanceof Error ? error.stack : undefined,
+          },
+        );
+      }
+
+      // Return a 500 error response with error details
+      return new Response(
+        JSON.stringify({
+          error: "Internal mock server error",
+          message: error instanceof Error ? error.message : String(error),
+          code: "HANDLER_ERROR",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
   });
 };
