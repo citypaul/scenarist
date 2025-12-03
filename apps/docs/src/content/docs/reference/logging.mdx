@@ -214,6 +214,43 @@ SCENARIST_LOG=1 SCENARIST_LOG_LEVEL=debug pnpm test
 SCENARIST_LOG=1 SCENARIST_LOG_FORMAT=json pnpm test
 ```
 
+## Vitest Configuration
+
+<Aside type="caution" title="Required for Vitest">
+By default, Vitest captures console output and only displays it for **failed** tests. To see Scenarist logging output for all tests, you must configure Vitest to disable console interception.
+</Aside>
+
+Add `disableConsoleIntercept: true` to your `vitest.config.ts`:
+
+```typescript
+// vitest.config.ts
+import { defineConfig } from "vitest/config";
+
+export default defineConfig({
+  test: {
+    // REQUIRED: Show Scenarist logging output for all tests
+    // Without this, console output is only shown for failed tests
+    disableConsoleIntercept: true,
+
+    // ... your other config
+  },
+});
+```
+
+Then run tests with logging enabled:
+
+```bash
+SCENARIST_LOG=1 pnpm test
+```
+
+You'll see output like:
+
+```
+09:00:12.269 DBG [unknown] 🎬 scenario   scenario_registered scenarioId="default" mockCount=4
+09:00:12.270 DBG [unknown] 🎬 scenario   scenario_registered scenarioId="success" mockCount=3
+09:00:12.308 INF [my-test-id] 🎬 scenario   scenario_switched
+```
+
 ## Debugging Common Issues
 
 ### "Why isn't my mock being selected?"
