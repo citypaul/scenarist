@@ -35,12 +35,12 @@ After each commit, we pause to:
 
 ### Phase 1: Logger Port & NoOpLogger
 
-| Task                                       | Status      | Notes |
-| ------------------------------------------ | ----------- | ----- |
-| Create Logger port interface (`logger.ts`) | Not Started |       |
-| Create NoOpLogger implementation           | Not Started |       |
-| Write NoOpLogger tests                     | Not Started |       |
-| Export from ports/index.ts                 | Not Started |       |
+| Task                                       | Status | Notes                    |
+| ------------------------------------------ | ------ | ------------------------ |
+| Create Logger port interface (`logger.ts`) | Done   | Types + interface        |
+| Create NoOpLogger implementation           | Done   | Singleton, zero overhead |
+| Write NoOpLogger tests                     | Done   | 8 tests                  |
+| Export from ports/index.ts                 | Done   | + adapters/index.ts      |
 
 ### Phase 2: ConsoleLogger
 
