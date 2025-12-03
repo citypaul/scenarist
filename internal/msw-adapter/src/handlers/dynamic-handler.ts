@@ -10,7 +10,7 @@ import type {
   ErrorBehaviors,
   Logger,
 } from "@scenarist/core";
-import { ScenaristError, ErrorCodes } from "@scenarist/core";
+import { ScenaristError, ErrorCodes, LogCategories } from "@scenarist/core";
 import { buildResponse } from "../conversion/response-builder.js";
 import { matchesUrl } from "../matching/url-matcher.js";
 
@@ -151,7 +151,7 @@ export const createDynamicHandler = (
           options.logger
         ) {
           options.logger.warn(
-            "request",
+            LogCategories.REQUEST,
             "Missing test ID header. Using default scenario.",
             {
               requestUrl: request.url,
@@ -213,7 +213,7 @@ export const createDynamicHandler = (
         const errorMessage =
           error instanceof Error ? error.message : String(error);
         options.logger.error(
-          "request",
+          LogCategories.REQUEST,
           `Handler error: ${errorMessage}`,
           {
             testId,
