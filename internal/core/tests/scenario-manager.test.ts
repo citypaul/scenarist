@@ -258,7 +258,7 @@ describe("ScenarioManager", () => {
           id: "validation-error-test",
           name: "Invalid",
           // Missing required fields will cause validation error
-        } as any;
+        } as unknown as ScenaristScenario;
 
         try {
           manager.registerScenario(invalidScenario);
@@ -449,7 +449,7 @@ describe("ScenarioManager", () => {
           name: "Test",
           description: "Test",
           mocks: [],
-        } as any;
+        } as unknown as ScenaristScenario;
 
         expect(() => {
           manager.registerScenario(invalidScenario);
@@ -578,7 +578,9 @@ describe("ScenarioManager", () => {
         };
 
         expect(() => {
-          manager.registerScenario(emptyNameScenario as any);
+          manager.registerScenario(
+            emptyNameScenario as unknown as ScenaristScenario,
+          );
         }).toThrow();
       });
 
@@ -598,7 +600,9 @@ describe("ScenarioManager", () => {
         };
 
         expect(() => {
-          manager.registerScenario(invalidStatusScenario as any);
+          manager.registerScenario(
+            invalidStatusScenario as unknown as ScenaristScenario,
+          );
         }).toThrow();
       });
 
@@ -618,7 +622,9 @@ describe("ScenarioManager", () => {
         };
 
         expect(() => {
-          manager.registerScenario(invalidStatusScenario as any);
+          manager.registerScenario(
+            invalidStatusScenario as unknown as ScenaristScenario,
+          );
         }).toThrow();
       });
 
@@ -638,7 +644,9 @@ describe("ScenarioManager", () => {
         };
 
         expect(() => {
-          manager.registerScenario(emptySequenceScenario as any);
+          manager.registerScenario(
+            emptySequenceScenario as unknown as ScenaristScenario,
+          );
         }).toThrow();
       });
 
@@ -666,7 +674,9 @@ describe("ScenarioManager", () => {
         };
 
         expect(() => {
-          manager.registerScenario(emptyWhenScenario as any);
+          manager.registerScenario(
+            emptyWhenScenario as unknown as ScenaristScenario,
+          );
         }).toThrow();
       });
 
@@ -689,7 +699,9 @@ describe("ScenarioManager", () => {
         };
 
         expect(() => {
-          manager.registerScenario(emptySetStateScenario as any);
+          manager.registerScenario(
+            emptySetStateScenario as unknown as ScenaristScenario,
+          );
         }).toThrow();
       });
 
@@ -709,7 +721,9 @@ describe("ScenarioManager", () => {
         };
 
         expect(() => {
-          manager.registerScenario(emptyUrlScenario as any);
+          manager.registerScenario(
+            emptyUrlScenario as unknown as ScenaristScenario,
+          );
         }).toThrow();
       });
 
@@ -729,7 +743,9 @@ describe("ScenarioManager", () => {
         };
 
         expect(() => {
-          manager.registerScenario(floatStatusScenario as any);
+          manager.registerScenario(
+            floatStatusScenario as unknown as ScenaristScenario,
+          );
         }).toThrow();
       });
     });

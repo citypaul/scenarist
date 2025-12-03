@@ -26,6 +26,7 @@ export type UrlMatchResult = {
 const extractPathnameOrReturnAsIs = (url: string): string => {
   // Match protocol://host pattern to manually extract pathname
   // This preserves path-to-regexp syntax that URL constructor would corrupt
+  // eslint-disable-next-line security/detect-unsafe-regex -- This regex is safe: no nested quantifiers or overlapping alternatives
   const urlPattern = /^https?:\/\/[^/]+(\/.*)?$/;
   const match = urlPattern.exec(url);
 

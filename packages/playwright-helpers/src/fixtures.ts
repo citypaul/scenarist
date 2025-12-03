@@ -221,6 +221,7 @@ export function withScenarios<T extends ScenaristScenarios>(scenarios: T) {
     scenaristEndpoint: ["/api/__scenario__", { option: true }],
 
     // Generate a guaranteed unique test ID for each test
+    // eslint-disable-next-line no-empty-pattern -- Playwright requires object destructuring pattern
     scenaristTestId: async ({}, use, testInfo) => {
       // Use test info + UUID for guaranteed uniqueness
       const uniqueId = `${testInfo.testId}-${crypto.randomUUID()}`;

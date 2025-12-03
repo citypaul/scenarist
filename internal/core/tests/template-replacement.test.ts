@@ -238,7 +238,8 @@ describe("Template Replacement", () => {
         userId: "{{state.userId}}", // Pure template
       };
       const templateData = {
-        state: null as any, // Prefix exists but is null
+        // Prefix exists but is null - testing edge case
+        state: null as unknown as Record<string, unknown>,
         params: {},
       };
 
@@ -253,7 +254,8 @@ describe("Template Replacement", () => {
         userId: "{{state.userId}}", // Pure template
       };
       const templateData = {
-        state: "not-an-object" as any, // Prefix exists but is not an object
+        // Prefix exists but is not an object - testing edge case
+        state: "not-an-object" as unknown as Record<string, unknown>,
         params: {},
       };
 

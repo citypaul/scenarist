@@ -209,7 +209,7 @@ scenaristTest.describe("Scenarist Fixtures", () => {
 
     scenaristTest(
       "should throw error when baseURL not configured and not provided",
-      async ({ page, switchScenario }) => {
+      async ({ page: _page, switchScenario: _switchScenario }) => {
         // This test would need to unset baseURL, which is tricky in Playwright
         // Skip for now - the important behavior is tested in other tests
         // In practice, users MUST configure baseURL in playwright.config.ts

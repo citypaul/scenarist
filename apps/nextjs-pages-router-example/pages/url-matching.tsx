@@ -185,7 +185,7 @@ const fetchTestData = async (
           `http://localhost:3001/api/users/${userId}/posts/${postId}`,
           { headers: scenaristHeaders },
         );
-        const data = (await response.json()) as any;
+        const data = (await response.json()) as Post;
         return { success: true, data };
       }
 
@@ -195,7 +195,7 @@ const fetchTestData = async (
           ? `http://localhost:3001/api/optional-files/${filename}`
           : "http://localhost:3001/api/optional-files";
         const response = await fetch(url, { headers: scenaristHeaders });
-        const data = (await response.json()) as any;
+        const data = (await response.json()) as OptionalFile;
         return { success: true, data };
       }
 
@@ -205,7 +205,7 @@ const fetchTestData = async (
           `http://localhost:3001/api/nested-files/${path}`,
           { headers: scenaristHeaders },
         );
-        const data = (await response.json()) as any;
+        const data = (await response.json()) as NestedPath;
         return { success: true, data };
       }
 
@@ -215,7 +215,7 @@ const fetchTestData = async (
           `http://localhost:3001/api/orders/${orderId}`,
           { headers: scenaristHeaders },
         );
-        const data = (await response.json()) as any;
+        const data = (await response.json()) as Order;
         return { success: true, data };
       }
 

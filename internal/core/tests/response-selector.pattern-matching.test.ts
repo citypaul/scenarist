@@ -913,7 +913,8 @@ describe("ResponseSelector - Pattern Matching", () => {
             url: "/api/test",
             match: {
               body: {
-                field1: null as any, // Backward compat: null criteria matches empty string
+                // Backward compat: null criteria matches empty string
+                field1: null as unknown as string,
               },
             },
             response: { status: 200, body: { matched: true } },
@@ -949,7 +950,7 @@ describe("ResponseSelector - Pattern Matching", () => {
             url: "/api/test",
             match: {
               body: {
-                field: { unknownStrategy: "value" } as any,
+                field: { unknownStrategy: "value" } as unknown as string,
               },
             },
             response: { status: 200, body: { matched: true } },

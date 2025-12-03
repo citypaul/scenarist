@@ -284,7 +284,7 @@ describe("Security Property Tests", () => {
             }
 
             // Verify our marker is not on Object.prototype
-            expect(Object.prototype.hasOwnProperty(POLLUTION_MARKER)).toBe(
+            expect(Object.hasOwn(Object.prototype, POLLUTION_MARKER)).toBe(
               false,
             );
 
@@ -317,7 +317,7 @@ describe("Security Property Tests", () => {
             expect(stateManager.get("test", dangerousKey)).toBeUndefined();
 
             // Object.prototype must not have our marker
-            expect(Object.prototype.hasOwnProperty(POLLUTION_MARKER)).toBe(
+            expect(Object.hasOwn(Object.prototype, POLLUTION_MARKER)).toBe(
               false,
             );
             expect(
@@ -352,7 +352,7 @@ describe("Security Property Tests", () => {
             ).toBeUndefined();
 
             // Object.prototype must not have our marker
-            expect(Object.prototype.hasOwnProperty(POLLUTION_MARKER)).toBe(
+            expect(Object.hasOwn(Object.prototype, POLLUTION_MARKER)).toBe(
               false,
             );
             expect(

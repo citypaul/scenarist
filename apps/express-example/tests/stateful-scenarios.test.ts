@@ -143,7 +143,7 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
               );
               const data = await response.json();
               res.status(response.status).json(data);
-            } catch (e: unknown) {
+            } catch (_e: unknown) {
               res.status(500).json({ error: "Failed" });
             }
           },
@@ -156,7 +156,7 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
               const response = await fetch("https://api.example.com/temp-data");
               const data = await response.json();
               res.status(response.status).json(data);
-            } catch (error) {
+            } catch (_error) {
               res.status(500).json({ error: "Failed" });
             }
           },
