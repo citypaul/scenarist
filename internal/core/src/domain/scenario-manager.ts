@@ -13,13 +13,7 @@ import type {
   ScenaristScenario,
 } from "../types/index.js";
 import { ScenaristScenarioSchema } from "../schemas/index.js";
-
-class ScenarioNotFoundError extends Error {
-  constructor(scenarioId: string) {
-    super(`Scenario '${scenarioId}' not found. Did you forget to register it?`);
-    this.name = "ScenarioNotFoundError";
-  }
-}
+import { ScenaristError, ErrorCodes } from "../types/errors.js";
 
 class DuplicateScenarioError extends Error {
   constructor(scenarioId: string) {
@@ -125,7 +119,17 @@ export const createScenarioManager = ({
 
         return {
           success: false,
-          error: new ScenarioNotFoundError(scenarioId),
+          error: new ScenaristError(
+            `Scenario '${scenarioId}' not found. Did you forget to register it?`,
+            {
+              code: ErrorCodes.SCENARIO_NOT_FOUND,
+              context: {
+                testId,
+                scenarioId,
+                hint: "Make sure to register the scenario before switching to it. Use manager.registerScenario(definition) first.",
+              },
+            },
+          ),
         };
       }
 

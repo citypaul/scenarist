@@ -8,6 +8,7 @@ import type {
   SequencePosition,
 } from "../src/ports/index.js";
 import type { ActiveScenario, ScenaristScenario } from "../src/types/index.js";
+import { ScenaristError, ErrorCodes } from "../src/types/errors.js";
 
 // In-memory registry for testing (simple Map-based implementation)
 const createTestRegistry = (): ScenarioRegistry => {
@@ -547,6 +548,21 @@ describe("ScenarioManager", () => {
       if (!result.success) {
         expect(result.error.message).toContain("not found");
         expect(result.error.message).toContain("non-existent");
+      }
+    });
+
+    it("should include testId and scenarioId in error context when scenario not found", () => {
+      const { manager } = createTestSetup();
+
+      const result = manager.switchScenario("test-abc-123", "missing-scenario");
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error).toBeInstanceOf(ScenaristError);
+        const error = result.error as ScenaristError;
+        expect(error.code).toBe(ErrorCodes.SCENARIO_NOT_FOUND);
+        expect(error.context.testId).toBe("test-abc-123");
+        expect(error.context.scenarioId).toBe("missing-scenario");
       }
     });
 
