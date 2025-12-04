@@ -30,8 +30,9 @@ export const setupProductsRepoRoutes = (router: Router): void => {
    */
   router.post("/test/seed", async (req, res) => {
     try {
+      const testIdHeader = req.headers["x-scenarist-test-id"];
       const testId =
-        (req.headers["x-scenarist-test-id"] as string) ?? "default-test";
+        typeof testIdHeader === "string" ? testIdHeader : "default-test";
 
       const parseResult = SeedRequestSchema.safeParse(req.body);
       if (!parseResult.success) {
@@ -95,8 +96,9 @@ export const setupProductsRepoRoutes = (router: Router): void => {
    */
   router.get("/users/:userId", async (req, res) => {
     try {
+      const testIdHeader = req.headers["x-scenarist-test-id"];
       const testId =
-        (req.headers["x-scenarist-test-id"] as string) ?? "default-test";
+        typeof testIdHeader === "string" ? testIdHeader : "default-test";
       const { userId } = req.params;
 
       const user = await runWithTestId(testId, async () => {
@@ -122,9 +124,11 @@ export const setupProductsRepoRoutes = (router: Router): void => {
    */
   router.get("/products-repo", async (req, res) => {
     try {
+      const testIdHeader = req.headers["x-scenarist-test-id"];
       const testId =
-        (req.headers["x-scenarist-test-id"] as string) ?? "default-test";
-      const userId = (req.query.userId as string) ?? "user-1";
+        typeof testIdHeader === "string" ? testIdHeader : "default-test";
+      const userIdQuery = req.query.userId;
+      const userId = typeof userIdQuery === "string" ? userIdQuery : "user-1";
 
       // 1. Get user from repository (in-memory with test ID isolation)
       const user = await runWithTestId(testId, async () => {

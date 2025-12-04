@@ -8,20 +8,27 @@ type FetchConfig = {
 const buildHeaders = (
   headerMap: Record<string, string | undefined>,
 ): HeadersInit => {
-  return Object.entries(headerMap).reduce(
-    (acc, [key, value]) => {
-      if (value) {
-        acc[key] = value;
-      }
-      return acc;
-    },
-    {} as Record<string, string>,
-  );
+  const headers: Record<string, string> = {};
+  for (const [key, value] of Object.entries(headerMap)) {
+    if (value) {
+      headers[key] = value;
+    }
+  }
+  return headers;
 };
 
-const proxyFetch = async (config: FetchConfig): Promise<unknown> => {
+type ProxyResponse = {
+  readonly status: number;
+  readonly data: unknown;
+};
+
+const proxyFetch = async (config: FetchConfig): Promise<ProxyResponse> => {
   const response = await fetch(config.url, { headers: config.headers });
   return { status: response.status, data: await response.json() };
+};
+
+const getQueryString = (value: unknown): string | undefined => {
+  return typeof value === "string" ? value : undefined;
 };
 
 const handleProxyRequest = async (
@@ -31,10 +38,7 @@ const handleProxyRequest = async (
 ): Promise<Response> => {
   try {
     const config = buildConfig(req);
-    const { status, data } = (await proxyFetch(config)) as {
-      status: number;
-      data: unknown;
-    };
+    const { status, data } = await proxyFetch(config);
     return res.status(status).json(data);
   } catch (error) {
     return res.status(500).json({
@@ -110,7 +114,7 @@ export const setupUrlMatchingRoutes = (router: Router): void => {
         (req) => ({
           url: "https://api.stripe.com/v1/charges",
           headers: buildHeaders({
-            "x-api-version": req.query.apiVersion as string,
+            "x-api-version": getQueryString(req.query.apiVersion),
           }),
         }),
         req,

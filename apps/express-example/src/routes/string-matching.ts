@@ -8,18 +8,21 @@ type FetchConfig = {
 const buildHeaders = (
   headerMap: Record<string, string | undefined>,
 ): HeadersInit => {
-  return Object.entries(headerMap).reduce(
-    (acc, [key, value]) => {
-      if (value) {
-        acc[key] = value;
-      }
-      return acc;
-    },
-    {} as Record<string, string>,
-  );
+  const headers: Record<string, string> = {};
+  for (const [key, value] of Object.entries(headerMap)) {
+    if (value) {
+      headers[key] = value;
+    }
+  }
+  return headers;
 };
 
-const proxyFetch = async (config: FetchConfig): Promise<unknown> => {
+type ProxyResponse = {
+  readonly status: number;
+  readonly data: unknown;
+};
+
+const proxyFetch = async (config: FetchConfig): Promise<ProxyResponse> => {
   const response = await fetch(config.url, { headers: config.headers });
   return { status: response.status, data: await response.json() };
 };
@@ -31,10 +34,7 @@ const handleProxyRequest = async (
 ): Promise<Response> => {
   try {
     const config = buildConfig(req);
-    const { status, data } = (await proxyFetch(config)) as {
-      status: number;
-      data: unknown;
-    };
+    const { status, data } = await proxyFetch(config);
     return res.status(status).json(data);
   } catch (error) {
     return res.status(500).json({
@@ -42,6 +42,10 @@ const handleProxyRequest = async (
       message: error instanceof Error ? error.message : "Unknown error",
     });
   }
+};
+
+const getQueryString = (value: unknown): string | undefined => {
+  return typeof value === "string" ? value : undefined;
 };
 
 // Security: Encode path parameters to prevent path traversal
@@ -53,7 +57,9 @@ export const setupStringMatchingRoutes = (router: Router): void => {
       return handleProxyRequest(
         (req) => ({
           url: `https://api.github.com/users/${encodeURIComponent(req.params.username ?? "")}`,
-          headers: buildHeaders({ "x-campaign": req.query.campaign as string }),
+          headers: buildHeaders({
+            "x-campaign": getQueryString(req.query.campaign),
+          }),
         }),
         req,
         res,
@@ -71,7 +77,9 @@ export const setupStringMatchingRoutes = (router: Router): void => {
       return handleProxyRequest(
         () => ({
           url: "https://api.stripe.com/v1/api-keys",
-          headers: buildHeaders({ "x-api-key": req.query.apiKey as string }),
+          headers: buildHeaders({
+            "x-api-key": getQueryString(req.query.apiKey),
+          }),
         }),
         req,
         res,
@@ -82,7 +90,7 @@ export const setupStringMatchingRoutes = (router: Router): void => {
   router.get(
     "/api/test-string-match/ends-with/:username",
     async (req: Request, res: Response) => {
-      const email = req.query.email as string | undefined;
+      const email = getQueryString(req.query.email);
       const queryString = email ? `?email=${encodeURIComponent(email)}` : "";
 
       return handleProxyRequest(
@@ -103,7 +111,7 @@ export const setupStringMatchingRoutes = (router: Router): void => {
       return handleProxyRequest(
         () => ({
           url: "https://api.status.com/status",
-          headers: buildHeaders({ "x-exact": req.query.exact as string }),
+          headers: buildHeaders({ "x-exact": getQueryString(req.query.exact) }),
         }),
         req,
         res,

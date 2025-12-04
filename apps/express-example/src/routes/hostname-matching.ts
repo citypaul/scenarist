@@ -10,6 +10,29 @@ const proxyFetch = async (config: FetchConfig): Promise<unknown> => {
   return { status: response.status, data: await response.json() };
 };
 
+type ProxyResponse = {
+  readonly status: number;
+  readonly data: unknown;
+};
+
+const hasProperty = <K extends string>(
+  obj: object,
+  key: K,
+): obj is object & Record<K, unknown> => {
+  return key in obj;
+};
+
+const isProxyResponse = (value: unknown): value is ProxyResponse => {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  return (
+    hasProperty(value, "status") &&
+    typeof value.status === "number" &&
+    hasProperty(value, "data")
+  );
+};
+
 const handleProxyRequest = async (
   buildConfig: (req: Request) => FetchConfig,
   req: Request,
@@ -17,11 +40,11 @@ const handleProxyRequest = async (
 ): Promise<Response> => {
   try {
     const config = buildConfig(req);
-    const { status, data } = (await proxyFetch(config)) as {
-      status: number;
-      data: unknown;
-    };
-    return res.status(status).json(data);
+    const result = await proxyFetch(config);
+    if (!isProxyResponse(result)) {
+      return res.status(500).json({ error: "Invalid proxy response" });
+    }
+    return res.status(result.status).json(result.data);
   } catch (error) {
     return res.status(500).json({
       error: "Failed to fetch",

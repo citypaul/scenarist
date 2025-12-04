@@ -13,14 +13,15 @@ export const setupGitHubRoutes = (router: Router): void => {
         // Call external GitHub API (will be mocked by Scenarist)
         // Forward custom headers for content matching and regex matching
         const headers: HeadersInit = {};
-        if (req.headers["x-user-tier"]) {
-          headers["x-user-tier"] = req.headers["x-user-tier"] as string;
+        const userTier = req.headers["x-user-tier"];
+        if (typeof userTier === "string") {
+          headers["x-user-tier"] = userTier;
         }
 
         // Extract campaign from query parameter and add as header
         // This enables regex matching on server-side fetch calls
-        const campaign = req.query.campaign as string | undefined;
-        if (campaign) {
+        const campaign = req.query.campaign;
+        if (typeof campaign === "string") {
           headers["x-campaign"] = campaign;
         }
 
