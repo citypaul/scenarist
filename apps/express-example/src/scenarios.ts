@@ -13,6 +13,35 @@ export const defaultScenario: ScenaristScenario = {
   name: "Default Scenario",
   description: "Default successful responses for all external APIs",
   mocks: [
+    // Issue #328 BUG REPRODUCTION: Sequence mock in default scenario
+    // This mock should be OVERRIDDEN by the stateResponse mock in issue328-stateresponse scenario
+    // Bug: The sequence mock wins instead of the stateResponse mock
+    // @see https://github.com/citypaul/scenarist/issues/328
+    {
+      method: "GET",
+      url: "https://api.issue328.com/applications/:id",
+      sequence: {
+        responses: [
+          {
+            status: 200,
+            body: {
+              state: "appStarted",
+              source: "default-sequence",
+              sequenceIndex: 0,
+            },
+          },
+          {
+            status: 200,
+            body: {
+              state: "appStarted",
+              source: "default-sequence",
+              sequenceIndex: 1,
+            },
+          },
+        ],
+        repeat: "last",
+      },
+    },
     // GitHub API - Get user profile
     {
       method: "GET",
@@ -1397,6 +1426,78 @@ export const loanApplicationScenario: ScenaristScenario = {
 };
 
 /**
+ * BUG REPRODUCTION: Issue #328 - Active scenario with stateResponse
+ *
+ * This is the ACTIVE scenario that should override the default sequence.
+ * When this scenario is active:
+ * 1. GET /applications/:id should use THIS mock's stateResponse
+ * 2. POST /eligibility should set state to { phase: 'quoteAccept' }
+ * 3. Subsequent GET should return quoteAccept body, NOT default sequence
+ *
+ * @see https://github.com/citypaul/scenarist/issues/328
+ */
+export const issue328StateResponseScenario: ScenaristScenario = {
+  id: "issue328-stateresponse",
+  name: "Issue #328 - StateResponse Override (Part 2)",
+  description:
+    "Active scenario with stateResponse - should override default sequence",
+  mocks: [
+    // GET /applications/:id - StateResponse based on phase
+    // THIS mock should be selected over default's sequence mock
+    {
+      method: "GET",
+      url: "https://api.issue328.com/applications/:id",
+      stateResponse: {
+        default: {
+          status: 200,
+          body: {
+            state: "appStarted",
+            source: "stateResponse-default",
+          },
+        },
+        conditions: [
+          {
+            when: { phase: "quoteAccept" },
+            then: {
+              status: 200,
+              body: {
+                state: "quoteAccept",
+                source: "stateResponse-condition",
+              },
+            },
+          },
+          {
+            when: { phase: "sign" },
+            then: {
+              status: 200,
+              body: {
+                state: "sign",
+                source: "stateResponse-condition",
+              },
+            },
+          },
+        ],
+      },
+    },
+    // POST /eligibility - Sets state for stateResponse conditions
+    {
+      method: "POST",
+      url: "https://api.issue328.com/applications/:id/eligibility",
+      response: {
+        status: 200,
+        body: {
+          state: "quoteAccept",
+          source: "stateResponse-post",
+        },
+      },
+      afterResponse: {
+        setState: { phase: "quoteAccept" },
+      },
+    },
+  ],
+};
+
+/**
  * Feature Flags Scenario (ADR-0019 - State-Aware Mocking)
  *
  * Demonstrates:
@@ -1533,4 +1634,6 @@ export const scenarios = {
   premiumUser: premiumUserScenario,
   loanApplication: loanApplicationScenario,
   featureFlags: featureFlagsScenario,
+  // Issue #328 Bug Reproduction - stateResponse should override default sequence
+  "issue328-stateresponse": issue328StateResponseScenario,
 } as const satisfies ScenaristScenarios;

@@ -139,7 +139,7 @@ export const createResponseSelector = (
         }
 
         // No match criteria = fallback mock (always matches)
-        // Log fallback evaluation
+        // Log fallback evaluation with response type info for debugging Issue #328
         logger.debug(
           LogCategories.MATCHING,
           LogEvents.MOCK_MATCH_EVALUATED,
@@ -148,6 +148,9 @@ export const createResponseSelector = (
             mockIndex,
             matched: true,
             hasCriteria: false,
+            hasSequence: !!mock.sequence,
+            hasStateResponse: !!mock.stateResponse,
+            hasResponse: !!mock.response,
           },
         );
 
@@ -195,6 +198,7 @@ export const createResponseSelector = (
           mock,
           sequenceTracker,
           stateManager,
+          logger,
         );
 
         if (!response) {
@@ -241,6 +245,9 @@ export const createResponseSelector = (
         // Apply afterResponse.setState to mutate state for subsequent requests
         if (mock.afterResponse?.setState && stateManager) {
           stateManager.merge(testId, mock.afterResponse.setState);
+          logger.debug(LogCategories.STATE, LogEvents.STATE_SET, logContext, {
+            setState: mock.afterResponse.setState,
+          });
         }
 
         return { success: true, data: finalResponse };
@@ -316,6 +323,7 @@ export const createResponseSelector = (
  * @param mock - The mock definition
  * @param sequenceTracker - Optional sequence tracker for Phase 2
  * @param stateManager - Optional state manager for stateResponse
+ * @param logger - Logger for debugging
  * @returns ScenaristResponse or null if mock has no response type
  */
 const selectResponseFromMock = (
@@ -323,9 +331,12 @@ const selectResponseFromMock = (
   scenarioId: string,
   mockIndex: number,
   mock: ScenaristMock,
-  sequenceTracker?: SequenceTracker,
-  stateManager?: StateManager,
+  sequenceTracker: SequenceTracker | undefined,
+  stateManager: StateManager | undefined,
+  logger: Logger,
 ): ScenaristResponse | null => {
+  const logContext = { testId, scenarioId };
+
   // Phase 2: If mock has a sequence, use sequence tracker
   if (mock.sequence) {
     if (!sequenceTracker) {
@@ -361,7 +372,13 @@ const selectResponseFromMock = (
 
   // State-aware response: evaluate conditions against current state
   if (mock.stateResponse) {
-    return resolveStateResponse(testId, mock.stateResponse, stateManager);
+    return resolveStateResponse(
+      testId,
+      mock.stateResponse,
+      stateManager,
+      logger,
+      logContext,
+    );
   }
 
   // Phase 1: Single response
@@ -382,15 +399,28 @@ const selectResponseFromMock = (
  * @param testId - Test ID for state isolation
  * @param stateResponse - The stateResponse configuration
  * @param stateManager - Optional state manager for state lookup
+ * @param logger - Logger for debugging
+ * @param logContext - Context for log messages
  * @returns The resolved response (matching condition or default)
  */
 const resolveStateResponse = (
   testId: string,
   stateResponse: NonNullable<ScenaristMock["stateResponse"]>,
-  stateManager?: StateManager,
+  stateManager: StateManager | undefined,
+  logger: Logger,
+  logContext: { testId: string; scenarioId: string },
 ): ScenaristResponse => {
   // Without stateManager, always return default
   if (!stateManager) {
+    logger.debug(
+      LogCategories.STATE,
+      LogEvents.STATE_RESPONSE_RESOLVED,
+      logContext,
+      {
+        result: "default",
+        reason: "no_state_manager",
+      },
+    );
     return stateResponse.default;
   }
 
@@ -399,7 +429,33 @@ const resolveStateResponse = (
 
   // Create resolver and evaluate conditions
   const resolver = createStateResponseResolver();
-  return resolver.resolveResponse(stateResponse, currentState);
+  const response = resolver.resolveResponse(stateResponse, currentState);
+
+  // Log which response was selected and why
+  const isDefault = response === stateResponse.default;
+  const matchedCondition = isDefault
+    ? null
+    : stateResponse.conditions.find(
+        (c) =>
+          resolver.resolveResponse(
+            { default: stateResponse.default, conditions: [c] },
+            currentState,
+          ) !== stateResponse.default,
+      );
+
+  logger.debug(
+    LogCategories.STATE,
+    LogEvents.STATE_RESPONSE_RESOLVED,
+    logContext,
+    {
+      result: isDefault ? "default" : "condition",
+      currentState,
+      conditionsCount: stateResponse.conditions.length,
+      matchedWhen: matchedCondition?.when ?? null,
+    },
+  );
+
+  return response;
 };
 
 /**
