@@ -1018,6 +1018,116 @@ The script checks that MSW-specific implementation patterns (`setupWorker`, `Htt
 - If you're deploying unbundled code: No action needed ✅
 - If you're bundling: Add the one-line bundler configuration for optimal bundle size
 
+## Logging & Debugging
+
+Scenarist includes a flexible logging system for debugging scenario matching, state management, and request handling. Logging is **disabled by default** and must be explicitly enabled. For comprehensive documentation including log categories, custom loggers, and Vitest configuration, see the [full logging guide](https://scenarist.io/reference/logging).
+
+### Quick Start
+
+```typescript
+import {
+  createScenarist,
+  createConsoleLogger,
+} from "@scenarist/express-adapter";
+
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === "test",
+  scenarios,
+
+  // Enable logging with pretty format
+  logger: createConsoleLogger({ level: "info", format: "pretty" }),
+});
+```
+
+### Environment Variable Pattern
+
+For easy toggling without code changes:
+
+```typescript
+import {
+  createScenarist,
+  createConsoleLogger,
+  noOpLogger,
+  type LogLevel,
+  type LogFormat,
+} from "@scenarist/express-adapter";
+
+// Type-safe environment variable parsing
+const LOG_LEVELS: ReadonlyArray<Exclude<LogLevel, "silent">> = [
+  "error",
+  "warn",
+  "info",
+  "debug",
+  "trace",
+];
+const LOG_FORMATS: ReadonlyArray<LogFormat> = ["pretty", "json"];
+
+const parseLogLevel = (
+  value: string | undefined,
+): Exclude<LogLevel, "silent"> =>
+  LOG_LEVELS.includes(value as Exclude<LogLevel, "silent">)
+    ? (value as Exclude<LogLevel, "silent">)
+    : "info";
+
+const parseLogFormat = (value: string | undefined): LogFormat =>
+  LOG_FORMATS.includes(value as LogFormat) ? (value as LogFormat) : "pretty";
+
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === "test",
+  scenarios,
+
+  // Enable via SCENARIST_LOG=1 environment variable
+  logger: process.env.SCENARIST_LOG
+    ? createConsoleLogger({
+        level: parseLogLevel(process.env.SCENARIST_LOG_LEVEL),
+        format: parseLogFormat(process.env.SCENARIST_LOG_FORMAT),
+      })
+    : noOpLogger,
+});
+```
+
+Then run tests with logging:
+
+```bash
+# Enable info-level logging
+SCENARIST_LOG=1 pnpm test
+
+# Enable debug-level logging for match troubleshooting
+SCENARIST_LOG=1 SCENARIST_LOG_LEVEL=debug pnpm test
+```
+
+> **Note:** `SCENARIST_LOG` is a convention for your code, not something Scenarist reads automatically. You must explicitly pass a `logger` to `createScenarist()` as shown above.
+
+### Log Levels
+
+| Level   | Description       | Use Case                                      |
+| ------- | ----------------- | --------------------------------------------- |
+| `error` | Critical failures | Scenario not found, invalid config            |
+| `warn`  | Potential issues  | No mock matched, sequence exhausted           |
+| `info`  | Key events        | Scenario switched, mock selected              |
+| `debug` | Decision logic    | Match criteria evaluation, specificity scores |
+| `trace` | Verbose details   | Request/response bodies, template replacement |
+
+### Sample Output
+
+**Pretty format** (default) - human-readable with emojis and colors:
+
+```
+12:34:56.789 INF 🎬 [test-user-login] scenario | scenario_switched scenarioId=premium-user
+12:34:56.801 INF 🎯 [test-user-login] matching | mock_selected mockIndex=2 specificity=5
+12:34:56.810 INF 💾 [test-user-login] state    | state_captured key=userId value=user-123
+12:34:56.815 WRN 🎯 [test-user-login] matching | mock_no_match url=/api/unknown
+```
+
+**JSON format** - for log aggregation tools (Datadog, Splunk, etc.):
+
+```json
+{"level":"info","category":"scenario","message":"scenario_switched","testId":"test-user-login","scenarioId":"premium-user","timestamp":1732650896789}
+{"level":"info","category":"matching","message":"mock_selected","testId":"test-user-login","data":{"mockIndex":2,"specificity":5},"timestamp":1732650896801}
+```
+
+For more details including log categories, custom loggers, and Vitest configuration, see the [full logging documentation](https://scenarist.io/reference/logging).
+
 ## Troubleshooting
 
 ### Scenarios switch but requests aren't mocked
