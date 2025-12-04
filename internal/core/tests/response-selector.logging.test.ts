@@ -379,6 +379,59 @@ describe("ResponseSelector - Logging", () => {
       expect(stateResolvedLog?.data?.matchedWhen).toEqual({ step: "reviewed" });
     });
 
+    it("should identify correct matchedWhen among multiple conditions", () => {
+      const { logger, calls } = createTestLogger();
+      const stateManager = createInMemoryStateManager();
+      // Set state to match the SECOND condition, not the first
+      stateManager.set("test-1", "phase", "approved");
+
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/status",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "GET",
+          url: "/api/status",
+          stateResponse: {
+            default: { status: 200, body: { phase: "pending" } },
+            conditions: [
+              {
+                when: { phase: "submitted" },
+                then: { status: 200, body: { phase: "submitted" } },
+              },
+              {
+                when: { phase: "approved" },
+                then: { status: 200, body: { phase: "approved" } },
+              },
+              {
+                when: { phase: "rejected" },
+                then: { status: 200, body: { phase: "rejected" } },
+              },
+            ],
+          },
+        },
+      ];
+
+      const selector = createResponseSelector({ logger, stateManager });
+      selector.selectResponse("test-1", "default", context, wrapMocks(mocks));
+
+      const stateResolvedLog = calls.find(
+        (c) => c.message === "state_response_resolved",
+      );
+      expect(stateResolvedLog).toBeDefined();
+      expect(stateResolvedLog?.data?.result).toBe("condition");
+      expect(stateResolvedLog?.data?.conditionsCount).toBe(3);
+      // Verify the correct condition is identified (second one, not first or third)
+      expect(stateResolvedLog?.data?.matchedWhen).toEqual({
+        phase: "approved",
+      });
+    });
+
     it("should log state_response_resolved with no_state_manager reason when stateManager is not provided", () => {
       const { logger, calls } = createTestLogger();
 
