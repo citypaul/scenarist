@@ -12,6 +12,16 @@ import type { Request, Response, Router } from "express";
 
 const ISSUE328_API_URL = "https://api.issue328.com";
 
+/**
+ * Validates that an application ID matches expected format.
+ * Prevents SSRF attacks by rejecting malicious ID values.
+ */
+const isValidApplicationId = (id: string): boolean => {
+  // Only allow alphanumeric characters, hyphens, and underscores
+  // This prevents path traversal and other injection attacks
+  return /^[a-zA-Z0-9_-]+$/.test(id);
+};
+
 export const setupIssue328Routes = (router: Router): void => {
   /**
    * GET /api/issue328/applications/:id
@@ -26,7 +36,13 @@ export const setupIssue328Routes = (router: Router): void => {
     async (req: Request, res: Response) => {
       const { id } = req.params;
 
+      // Validate ID exists and matches expected format to prevent SSRF attacks
+      if (!id || !isValidApplicationId(id)) {
+        return res.status(400).json({ error: "Invalid application ID format" });
+      }
+
       try {
+        // Safe: id is validated above to contain only alphanumeric, hyphen, underscore
         const response = await fetch(`${ISSUE328_API_URL}/applications/${id}`);
         const data = await response.json();
 
@@ -55,7 +71,13 @@ export const setupIssue328Routes = (router: Router): void => {
     async (req: Request, res: Response) => {
       const { id } = req.params;
 
+      // Validate ID exists and matches expected format to prevent SSRF attacks
+      if (!id || !isValidApplicationId(id)) {
+        return res.status(400).json({ error: "Invalid application ID format" });
+      }
+
       try {
+        // Safe: id is validated above to contain only alphanumeric, hyphen, underscore
         const response = await fetch(
           `${ISSUE328_API_URL}/applications/${id}/eligibility`,
           {
