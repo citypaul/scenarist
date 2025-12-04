@@ -14,6 +14,11 @@ import { TierSelector } from "../components/TierSelector";
 import type { Product } from "../types/product";
 import { getScenaristHeaders } from "@scenarist/nextjs-adapter/pages";
 
+type UserTier = "premium" | "standard";
+
+const isValidTier = (tier: string): tier is UserTier =>
+  tier === "premium" || tier === "standard";
+
 type HomeProps = {
   readonly initialProducts?: ReadonlyArray<Product>;
   readonly initialTier?: string;
@@ -23,8 +28,8 @@ export default function Home({
   initialProducts = [],
   initialTier = "standard",
 }: HomeProps) {
-  const [userTier, setUserTier] = useState<"premium" | "standard">(
-    initialTier as "premium" | "standard",
+  const [userTier, setUserTier] = useState<UserTier>(
+    isValidTier(initialTier) ? initialTier : "standard",
   );
   const [products, setProducts] =
     useState<ReadonlyArray<Product>>(initialProducts);

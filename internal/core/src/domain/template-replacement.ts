@@ -1,6 +1,26 @@
 /**
+ * Type guard to check if a value is a plain object (Record).
+ * Used to properly narrow types after typeof checks.
+ */
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+};
+
+/**
+ * Security: Check if a property key could cause prototype pollution.
+ * @see https://github.com/citypaul/scenarist/security/code-scanning
+ */
+const isDangerousKey = (key: string): boolean => {
+  return key === "__proto__" || key === "constructor" || key === "prototype";
+};
+
+/**
  * Applies templates to a value.
  * Replaces {{state.key}} and {{params.key}} patterns with actual values.
+ *
+ * Note: This function preserves the structure of the input value.
+ * Callers passing typed objects (like ScenaristResponse) can safely
+ * cast the return value back to the input type.
  *
  * @param value - Value to apply templates to (string, object, array, or primitive)
  * @param templateData - Object containing state and params for template replacement.
@@ -113,10 +133,20 @@ const resolveTemplatePath = (
       return current.length;
     }
 
-    // Traverse object
-    const record = current as Record<string, unknown>;
-    // eslint-disable-next-line security/detect-object-injection -- Segment from split() iteration
-    current = record[segment];
+    // Traverse object - use type guard for proper narrowing
+    if (!isRecord(current)) {
+      return undefined;
+    }
+
+    // Security: Prevent prototype pollution attacks
+    // @see https://github.com/citypaul/scenarist/security/code-scanning/165
+    if (isDangerousKey(segment) || !Object.hasOwn(current, segment)) {
+      return undefined;
+    }
+
+    // nosemgrep: javascript.lang.security.audit.prototype-pollution.prototype-pollution-loop
+    // eslint-disable-next-line security/detect-object-injection -- Segment validated by isDangerousKey and Object.hasOwn checks above
+    current = current[segment];
 
     // Guard: Return undefined if property doesn't exist
     if (current === undefined) {

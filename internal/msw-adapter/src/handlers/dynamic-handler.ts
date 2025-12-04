@@ -61,8 +61,12 @@ const extractHttpRequestContext = async (
     query[key] = value;
   });
 
+  // HTTP methods from Request.method are uppercase strings matching HttpMethod type
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Request.method is a string, HttpMethod is a string literal union; values align at runtime
+  const method = request.method as HttpMethod;
+
   return {
-    method: request.method as HttpMethod,
+    method,
     url: request.url,
     body,
     headers,

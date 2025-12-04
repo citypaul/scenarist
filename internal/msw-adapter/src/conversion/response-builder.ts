@@ -13,6 +13,7 @@ export const buildResponse = async (
   // framework-agnostic serialization in core package. The body is guaranteed
   // to be JSON-serializable by ScenaristResponse design contract. We do not
   // perform runtime validation for performance reasons (garbage in, garbage out).
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- MSW API boundary requires cast from unknown to JsonBodyType
   return HttpResponse.json(response.body as never, {
     status: response.status,
     headers: response.headers,

@@ -444,7 +444,7 @@ describe("MSW Parity: Path Parameter Extraction", () => {
 
       const mswParams = await new Promise<MSWParams>((resolve) => {
         server.use(
-          http.post(pattern, ({ params, request }) => {
+          http.post(pattern, ({ params, request: _request }) => {
             resolve(params);
             return HttpResponse.json({ ok: true });
           }),

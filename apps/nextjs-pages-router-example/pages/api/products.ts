@@ -12,6 +12,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import type { ProductsResponse } from "../../types/product";
 import { getScenaristHeaders } from "@scenarist/nextjs-adapter/pages";
+import { getString } from "../../lib/request-utils";
 
 export default async function handler(
   req: NextApiRequest,
@@ -24,7 +25,7 @@ export default async function handler(
 
   try {
     // Get user tier from request header (app-specific, not Scenarist infrastructure)
-    const userTier = (req.headers["x-user-tier"] as string) || "standard";
+    const userTier = getString(req.headers["x-user-tier"], "standard");
 
     // Fetch from json-server (external API)
     // Scenarist MSW will intercept this request and return mocked data based on scenario

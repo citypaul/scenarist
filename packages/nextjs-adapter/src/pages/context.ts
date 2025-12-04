@@ -37,18 +37,6 @@ export class PagesRequestContext implements RequestContext {
 
   getHostname(): string {
     const host = this.req.headers.host;
-
-    if (!host) {
-      return "";
-    }
-
-    // After null check, host is string | string[]
-    if (typeof host === "string") {
-      return host;
-    }
-
-    // host must be string[] at this point (type assertion needed due to TS control flow limitation)
-    const hostArray = host as string[];
-    return hostArray.length > 0 ? (hostArray[0] ?? "") : "";
+    return host ?? "";
   }
 }

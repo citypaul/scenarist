@@ -21,6 +21,14 @@ import type { MatchValue } from "../schemas/scenario-definition.js";
 import { noOpLogger } from "../adapters/index.js";
 import { LogCategories, LogEvents } from "./log-events.js";
 
+/**
+ * Type guard to check if a value is a plain object (Record).
+ * Used to properly narrow types after typeof checks.
+ */
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+};
+
 const SPECIFICITY_RANGES = {
   MATCH_CRITERIA_BASE: 100,
   SEQUENCE_FALLBACK: 1,
@@ -236,6 +244,7 @@ export const createResponseSelector = (
             state: currentState,
             params: mockWithParams.params || {},
           };
+          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- applyTemplates preserves structure; input ScenaristResponse → output ScenaristResponse
           finalResponse = applyTemplates(
             response,
             templateData,
@@ -604,17 +613,15 @@ const matchesBody = (
   requestBody: unknown,
   criteriaBody: Record<string, MatchValue>,
 ): boolean => {
-  // If request has no body, can't match
-  if (!requestBody || typeof requestBody !== "object") {
+  // If request has no body, can't match - use type guard for proper narrowing
+  if (!isRecord(requestBody)) {
     return false;
   }
-
-  const body = requestBody as Record<string, unknown>;
 
   // Check all required fields exist in request body with matching values
   for (const [key, criteriaValue] of Object.entries(criteriaBody)) {
     // eslint-disable-next-line security/detect-object-injection -- Key from Object.entries iteration
-    const requestValue = body[key];
+    const requestValue = requestBody[key];
 
     // Convert to string for matching (type coercion like headers/query)
     const stringValue = requestValue == null ? "" : String(requestValue);
@@ -689,29 +696,35 @@ const matchesValue = (
     return requestValue === "";
   }
 
-  const strategyValue = criteriaValue as Record<string, unknown>;
-
-  if (strategyValue.equals !== undefined) {
-    return requestValue === String(strategyValue.equals);
+  // After ruling out string, RegExp, number, boolean, null - remaining must be object strategy
+  if (!isRecord(criteriaValue)) {
+    return false;
   }
 
-  if (strategyValue.contains !== undefined) {
-    return requestValue.includes(String(strategyValue.contains));
+  if (criteriaValue.equals !== undefined) {
+    return requestValue === String(criteriaValue.equals);
   }
 
-  if (strategyValue.startsWith !== undefined) {
-    return requestValue.startsWith(String(strategyValue.startsWith));
+  if (criteriaValue.contains !== undefined) {
+    return requestValue.includes(String(criteriaValue.contains));
   }
 
-  if (strategyValue.endsWith !== undefined) {
-    return requestValue.endsWith(String(strategyValue.endsWith));
+  if (criteriaValue.startsWith !== undefined) {
+    return requestValue.startsWith(String(criteriaValue.startsWith));
   }
 
-  if (strategyValue.regex !== undefined) {
-    return matchesRegex(
-      requestValue,
-      strategyValue.regex as { source: string; flags?: string },
-    );
+  if (criteriaValue.endsWith !== undefined) {
+    return requestValue.endsWith(String(criteriaValue.endsWith));
+  }
+
+  if (criteriaValue.regex !== undefined && isRecord(criteriaValue.regex)) {
+    const regex = criteriaValue.regex;
+    if (typeof regex.source === "string") {
+      return matchesRegex(requestValue, {
+        source: regex.source,
+        flags: typeof regex.flags === "string" ? regex.flags : undefined,
+      });
+    }
   }
 
   return false;

@@ -80,7 +80,14 @@ export const createScenarioManager = ({
         const errorMessages = validationResult.error.issues.map(
           (err) => `${err.path.join(".")}: ${err.message}`,
         );
-        const scenarioId = (definition as { id?: string })?.id || "<unknown>";
+        // Extract id safely without type assertion - definition failed validation so type is untrusted
+        const scenarioId =
+          typeof definition === "object" &&
+          definition !== null &&
+          "id" in definition &&
+          typeof definition.id === "string"
+            ? definition.id
+            : "<unknown>";
         throw createScenarioValidationError(scenarioId, errorMessages);
       }
 

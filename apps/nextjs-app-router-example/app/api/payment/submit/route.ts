@@ -41,16 +41,16 @@ export async function POST(request: Request) {
       body: JSON.stringify(body),
     });
 
-    const data = await response.json();
-
     // Return error responses with appropriate status codes
     if (!response.ok) {
-      return NextResponse.json(data as PaymentErrorResponse, {
+      const errorData: PaymentErrorResponse = await response.json();
+      return NextResponse.json(errorData, {
         status: response.status,
       });
     }
 
-    return NextResponse.json(data as PaymentResponse);
+    const successData: PaymentResponse = await response.json();
+    return NextResponse.json(successData);
   } catch (error) {
     return NextResponse.json(
       {

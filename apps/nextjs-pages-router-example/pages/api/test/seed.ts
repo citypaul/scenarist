@@ -15,6 +15,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { z } from "zod";
 import { getUserRepository, runWithTestId } from "@/lib/container";
 import { scenarioRepositoryData } from "@/lib/repository-data";
+import { getString } from "@/lib/request-utils";
 
 const SeedRequestSchema = z.object({
   scenarioId: z.string().min(1),
@@ -28,8 +29,7 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const testId =
-    (req.headers["x-scenarist-test-id"] as string) ?? "default-test";
+  const testId = getString(req.headers["x-scenarist-test-id"], "default-test");
 
   const parseResult = SeedRequestSchema.safeParse(req.body);
   if (!parseResult.success) {

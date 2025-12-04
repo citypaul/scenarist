@@ -4,7 +4,6 @@ import noSecrets from "eslint-plugin-no-secrets";
 import security from "eslint-plugin-security";
 import turboPlugin from "eslint-plugin-turbo";
 import tseslint from "typescript-eslint";
-import onlyWarn from "eslint-plugin-only-warn";
 
 /**
  * A shared ESLint configuration for the repository.
@@ -62,12 +61,53 @@ export const config = [
       ],
     },
   },
+  // Critical TypeScript rules that should fail CI
   {
-    plugins: {
-      onlyWarn,
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+      "@typescript-eslint/no-explicit-any": "error",
+      // Disallow type assertions - prefer type guards and proper typing
+      "@typescript-eslint/consistent-type-assertions": [
+        "error",
+        {
+          assertionStyle: "never",
+        },
+      ],
     },
   },
   {
     ignores: ["dist/**"],
+  },
+  // Allow type assertions in test files (needed for testing error conditions)
+  {
+    files: ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx", "**/tests/**/*.ts"],
+    rules: {
+      "@typescript-eslint/consistent-type-assertions": "off",
+    },
+  },
+  // CommonJS files (.cjs) need Node.js globals and CommonJS patterns
+  {
+    files: ["**/*.cjs"],
+    languageOptions: {
+      globals: {
+        module: "readonly",
+        require: "readonly",
+        process: "readonly",
+        console: "readonly",
+        __dirname: "readonly",
+        __filename: "readonly",
+        exports: "readonly",
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
   },
 ];

@@ -121,6 +121,19 @@ describe("Template Replacement", () => {
     expect(result).toBe("Value: {{state.data.field}}");
   });
 
+  it("should return undefined when trying to access non-length property on array", () => {
+    // Arrays support .length but not arbitrary properties
+    const value = "Name: {{state.items.foo}}";
+    const state = {
+      items: ["apple", "banana", "cherry"],
+    };
+
+    const result = applyTemplates(value, state);
+
+    // Accessing 'foo' on an array should fail (arrays are not records)
+    expect(result).toBe("Name: {{state.items.foo}}");
+  });
+
   describe("Pure Template Injection (preserves types)", () => {
     it("should inject raw array when entire value is template", () => {
       const value = "{{state.items}}";
@@ -238,7 +251,8 @@ describe("Template Replacement", () => {
         userId: "{{state.userId}}", // Pure template
       };
       const templateData = {
-        state: null as any, // Prefix exists but is null
+        // Prefix exists but is null - testing edge case
+        state: null as unknown as Record<string, unknown>,
         params: {},
       };
 
@@ -253,7 +267,8 @@ describe("Template Replacement", () => {
         userId: "{{state.userId}}", // Pure template
       };
       const templateData = {
-        state: "not-an-object" as any, // Prefix exists but is not an object
+        // Prefix exists but is not an object - testing edge case
+        state: "not-an-object" as unknown as Record<string, unknown>,
         params: {},
       };
 
@@ -287,6 +302,68 @@ describe("Template Replacement", () => {
         items: null,
         count: null,
       });
+    });
+  });
+
+  /**
+   * Security Tests - Prototype Pollution Prevention
+   *
+   * @see https://github.com/citypaul/scenarist/security/code-scanning
+   *
+   * These tests verify that template path resolution is protected against
+   * prototype pollution attacks where malicious keys like __proto__,
+   * constructor, or prototype could be used to modify Object.prototype.
+   */
+  describe("Security: Prototype Pollution Prevention", () => {
+    it("should not resolve __proto__ path segments (returns null for pure template)", () => {
+      const value = "{{state.__proto__.polluted}}";
+      const state = {
+        __proto__: { polluted: "attack" },
+      };
+
+      const result = applyTemplates(value, state);
+
+      // Dangerous keys are blocked - pure templates return null (JSON-safe)
+      expect(result).toBeNull();
+    });
+
+    it("should not resolve constructor path segments (returns null for pure template)", () => {
+      const value = "{{state.constructor.name}}";
+      const state = {
+        constructor: { name: "Object" },
+      };
+
+      const result = applyTemplates(value, state);
+
+      // Dangerous keys are blocked - pure templates return null (JSON-safe)
+      expect(result).toBeNull();
+    });
+
+    it("should not resolve prototype path segments (returns null for pure template)", () => {
+      const value = "{{state.prototype.method}}";
+      const state = {
+        prototype: { method: "attack" },
+      };
+
+      const result = applyTemplates(value, state);
+
+      // Dangerous keys are blocked - pure templates return null (JSON-safe)
+      expect(result).toBeNull();
+    });
+
+    it("should not resolve dangerous keys in mixed templates (keeps template literal)", () => {
+      // For mixed templates (with surrounding text), unresolved templates stay as-is
+      const value = "Admin: {{state.user.__proto__.admin}}!";
+      const state = {
+        user: {
+          __proto__: { admin: true },
+        },
+      };
+
+      const result = applyTemplates(value, state);
+
+      // Dangerous keys at any depth are blocked - mixed template keeps literal
+      expect(result).toBe("Admin: {{state.user.__proto__.admin}}!");
     });
   });
 

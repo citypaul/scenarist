@@ -28,7 +28,7 @@ import type { CreateUserInput } from "@/lib/repositories";
 export async function POST(request: NextRequest) {
   const testId = request.headers.get("x-scenarist-test-id") ?? "default-test";
 
-  const body = (await request.json()) as CreateUserInput;
+  const body: CreateUserInput = await request.json();
 
   const user = await runWithTestId(testId, async () => {
     const userRepository = getUserRepository();

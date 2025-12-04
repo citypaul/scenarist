@@ -10,9 +10,10 @@ export const setupWeatherRoutes = (router: Router): void => {
     try {
       // Call external Weather API (will be mocked by Scenarist)
       // Forward query parameters for content matching
-      const queryParams = new URLSearchParams(
-        req.query as Record<string, string>,
+      const queryEntries = Object.entries(req.query).filter(
+        (entry): entry is [string, string] => typeof entry[1] === "string",
       );
+      const queryParams = new URLSearchParams(queryEntries);
       const queryString = queryParams.toString();
 
       // Security: Encode path parameter to prevent path traversal

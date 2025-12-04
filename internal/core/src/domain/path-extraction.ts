@@ -5,6 +5,14 @@ const DANGEROUS_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 const isDangerousKey = (key: string): boolean => DANGEROUS_KEYS.has(key);
 
 /**
+ * Type guard to check if a value is a plain object (Record).
+ * Used to properly narrow types after typeof checks.
+ */
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+};
+
+/**
  * Extracts a value from HttpRequestContext based on a path expression.
  *
  * Supported path prefixes:
@@ -77,8 +85,8 @@ const traversePath = (obj: unknown, path: readonly string[]): unknown => {
     return obj;
   }
 
-  // Guard: Can only traverse objects
-  if (typeof obj !== "object" || obj === null || Array.isArray(obj)) {
+  // Guard: Can only traverse objects - use type guard for proper narrowing
+  if (!isRecord(obj)) {
     return undefined;
   }
 
@@ -94,9 +102,8 @@ const traversePath = (obj: unknown, path: readonly string[]): unknown => {
     return undefined;
   }
 
-  const record = obj as Record<string, unknown>;
   // eslint-disable-next-line security/detect-object-injection -- Key validated by Object.hasOwn and isDangerousKey guard
-  const value = record[key];
+  const value = obj[key];
 
   // Recursively traverse remaining path
   return traversePath(value, path.slice(1));

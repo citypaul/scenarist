@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import type { LogCategory, LogContext } from "../src/ports/driven/logger.js";
+import { describe, it, expect, vi } from "vitest";
+import type { LogContext } from "../src/ports/driven/logger.js";
 
 describe("ConsoleLogger", () => {
   const createContext = (overrides: Partial<LogContext> = {}): LogContext => ({
@@ -482,6 +482,7 @@ describe("ConsoleLogger", () => {
       const output1 = infoSpy.mock.calls[0][0] as string;
       const output2 = infoSpy.mock.calls[1][0] as string;
 
+      // eslint-disable-next-line no-control-regex -- Testing ANSI color codes
       const colorPattern = /\x1b\[\d+m\[test-abc\]/;
       const match1 = output1.match(colorPattern);
       const match2 = output2.match(colorPattern);
@@ -508,6 +509,7 @@ describe("ConsoleLogger", () => {
       );
 
       const output = infoSpy.mock.calls[0][0] as string;
+      // eslint-disable-next-line no-control-regex -- Testing ANSI color codes
       expect(output).toMatch(/\x1b\[\d+m\[my-test-id\]\x1b\[0m/);
 
       infoSpy.mockRestore();

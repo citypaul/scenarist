@@ -123,7 +123,7 @@ const fetchTestData = async (
             cache: "no-store",
           },
         );
-        const data = (await response.json()) as User;
+        const data: User = await response.json();
         return { success: true, data };
       }
 
@@ -137,7 +137,7 @@ const fetchTestData = async (
             cache: "no-store",
           },
         );
-        const data = (await response.json()) as Weather;
+        const data: Weather = await response.json();
         return { success: true, data };
       }
 
@@ -152,7 +152,7 @@ const fetchTestData = async (
             cache: "no-store",
           },
         );
-        const data = (await response.json()) as Weather;
+        const data: Weather = await response.json();
         return { success: true, data };
       }
 
@@ -166,7 +166,7 @@ const fetchTestData = async (
             cache: "no-store",
           },
         );
-        const data = (await response.json()) as FileInfo;
+        const data: FileInfo = await response.json();
         return { success: true, data };
       }
 
@@ -183,7 +183,7 @@ const fetchTestData = async (
           body: JSON.stringify({}),
           cache: "no-store",
         });
-        const data = (await response.json()) as Charge;
+        const data: Charge = await response.json();
         return { success: true, data };
       }
 
@@ -197,7 +197,7 @@ const fetchTestData = async (
             cache: "no-store",
           },
         );
-        const data = (await response.json()) as PathParamUser;
+        const data: PathParamUser = await response.json();
         return { success: true, data };
       }
 
@@ -212,7 +212,7 @@ const fetchTestData = async (
             cache: "no-store",
           },
         );
-        const data = (await response.json()) as MultipleParams;
+        const data: MultipleParams = await response.json();
         return { success: true, data };
       }
 
@@ -226,7 +226,7 @@ const fetchTestData = async (
           headers: scenaristHeaders,
           cache: "no-store",
         });
-        const data = (await response.json()) as OptionalFile;
+        const data: OptionalFile = await response.json();
         return { success: true, data };
       }
 
@@ -240,7 +240,7 @@ const fetchTestData = async (
             cache: "no-store",
           },
         );
-        const data = (await response.json()) as RepeatingPath;
+        const data: RepeatingPath = await response.json();
         return { success: true, data };
       }
 
@@ -254,7 +254,7 @@ const fetchTestData = async (
             cache: "no-store",
           },
         );
-        const data = (await response.json()) as CustomRegexOrder;
+        const data: CustomRegexOrder = await response.json();
         return { success: true, data };
       }
 

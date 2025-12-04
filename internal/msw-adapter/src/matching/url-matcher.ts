@@ -26,6 +26,7 @@ export type UrlMatchResult = {
 const extractPathnameOrReturnAsIs = (url: string): string => {
   // Match protocol://host pattern to manually extract pathname
   // This preserves path-to-regexp syntax that URL constructor would corrupt
+  // eslint-disable-next-line security/detect-unsafe-regex -- This regex is safe: no nested quantifiers or overlapping alternatives
   const urlPattern = /^https?:\/\/[^/]+(\/.*)?$/;
   const match = urlPattern.exec(url);
 
@@ -51,16 +52,22 @@ const extractPathnameOrReturnAsIs = (url: string): string => {
 const extractParams = (
   params: object,
 ): Record<string, string | ReadonlyArray<string>> => {
-  return Object.fromEntries(
-    Object.entries(params).filter(([key, value]) => {
-      // Filter out unnamed groups (numeric keys like '0', '1', '2', etc.)
-      if (/^\d+$/.test(key)) {
-        return false;
-      }
-      // Keep strings and arrays (MSW documented: string | string[])
-      return typeof value === "string" || Array.isArray(value);
-    }),
-  ) as Record<string, string | ReadonlyArray<string>>;
+  const result: Record<string, string | ReadonlyArray<string>> = {};
+
+  for (const [key, value] of Object.entries(params)) {
+    // Filter out unnamed groups (numeric keys like '0', '1', '2', etc.)
+    if (/^\d+$/.test(key)) {
+      continue;
+    }
+    // Keep strings and arrays (MSW documented: string | string[])
+    if (typeof value === "string") {
+      result[key] = value;
+    } else if (Array.isArray(value)) {
+      result[key] = value;
+    }
+  }
+
+  return result;
 };
 
 /**

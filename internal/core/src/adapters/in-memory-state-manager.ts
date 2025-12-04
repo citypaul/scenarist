@@ -5,6 +5,14 @@ const DANGEROUS_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 const isDangerousKey = (key: string): boolean => DANGEROUS_KEYS.has(key);
 
 /**
+ * Type guard to check if a value is a plain object (Record).
+ * Used to properly narrow types after typeof checks.
+ */
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+};
+
+/**
  * In-memory implementation of StateManager port.
  * Fast, single-process state storage for stateful mocks.
  *
@@ -104,24 +112,27 @@ export class InMemoryStateManager implements StateManager {
       return;
     }
 
+    // Get or create nested object for this path segment
     // eslint-disable-next-line security/detect-object-injection -- Guarded by isDangerousKey and Object.hasOwn
     const existingValue = Object.hasOwn(obj, key) ? obj[key] : undefined;
-    if (
-      typeof existingValue !== "object" ||
-      existingValue === null ||
-      Array.isArray(existingValue)
-    ) {
+
+    // Determine target: use existing record OR create new empty object
+    const target: Record<string, unknown> = isRecord(existingValue)
+      ? existingValue
+      : {};
+
+    // If we created a new object, assign it to the parent
+    if (!isRecord(existingValue)) {
       Object.defineProperty(obj, key, {
-        value: {},
+        value: target,
         writable: true,
         enumerable: true,
         configurable: true,
       });
     }
 
-    // eslint-disable-next-line security/detect-object-injection -- Guarded by isDangerousKey, Object.hasOwn, and Object.defineProperty
-    const nested = obj[key] as Record<string, unknown>;
-    this.setNestedValue(nested, path.slice(1), value);
+    // Recurse to next path segment
+    this.setNestedValue(target, path.slice(1), value);
   }
 
   private getNestedValue(
@@ -147,11 +158,12 @@ export class InMemoryStateManager implements StateManager {
       return value;
     }
 
-    if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    // Use type guard for proper type narrowing instead of assertion
+    if (!isRecord(value)) {
       return undefined;
     }
 
-    return this.getNestedValue(value as Record<string, unknown>, path.slice(1));
+    return this.getNestedValue(value, path.slice(1));
   }
 }
 

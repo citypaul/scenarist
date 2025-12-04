@@ -20,6 +20,7 @@ import type { GetServerSideProps } from "next";
 import type { ProductsResponse } from "@/types/product";
 import { getUserRepository, runWithTestId } from "@/lib/container";
 import type { User } from "@/lib/repositories";
+import { getString } from "@/lib/request-utils";
 
 type ProductsRepoPageProps = {
   user: User | null;
@@ -30,14 +31,17 @@ type ProductsRepoPageProps = {
 export const getServerSideProps: GetServerSideProps<
   ProductsRepoPageProps
 > = async (context) => {
-  const { userId = "user-1" } = context.query;
-  const testId =
-    (context.req.headers["x-scenarist-test-id"] as string) ?? "default-test";
+  const userIdParam = context.query.userId;
+  const userId = getString(userIdParam, "user-1");
+  const testId = getString(
+    context.req.headers["x-scenarist-test-id"],
+    "default-test",
+  );
 
   // 1. Get user from repository (in-memory with test ID isolation)
   const user = await runWithTestId(testId, async () => {
     const userRepository = getUserRepository();
-    return userRepository.findById(userId as string);
+    return userRepository.findById(userId);
   });
 
   // 2. Get products from external API (mocked by Scenarist)
