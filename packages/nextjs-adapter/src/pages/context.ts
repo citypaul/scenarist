@@ -42,13 +42,15 @@ export class PagesRequestContext implements RequestContext {
       return "";
     }
 
-    // After null check, host is string | string[]
     if (typeof host === "string") {
       return host;
     }
 
-    // host must be string[] at this point (type assertion needed due to TS control flow limitation)
-    const hostArray = host as string[];
-    return hostArray.length > 0 ? (hostArray[0] ?? "") : "";
+    // After string check, host must be string[] - use Array.isArray for type narrowing
+    if (Array.isArray(host) && host.length > 0 && host[0]) {
+      return host[0];
+    }
+
+    return "";
   }
 }
