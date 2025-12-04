@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ScenaristMock, HttpRequestContext } from "../src/types/index.js";
 import type { Logger, LogCategory, LogContext } from "../src/ports/index.js";
 import { createResponseSelector } from "../src/domain/response-selector.js";
+import { createInMemoryStateManager } from "../src/adapters/in-memory-state-manager.js";
 import { wrapMocks } from "./helpers/wrap-mocks.js";
 
 /**
@@ -216,6 +217,205 @@ describe("ResponseSelector - Logging", () => {
       expect(candidatesLog?.level).toBe("debug");
       expect(candidatesLog?.category).toBe("matching");
       expect(candidatesLog?.data?.count).toBe(2);
+    });
+  });
+
+  describe("state_set logging (debug)", () => {
+    it("should log state_set when afterResponse.setState is applied", () => {
+      const { logger, calls } = createTestLogger();
+      const stateManager = createInMemoryStateManager();
+
+      const context: HttpRequestContext = {
+        method: "POST",
+        url: "/api/action",
+        body: {},
+        headers: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "POST",
+          url: "/api/action",
+          response: { status: 200, body: { success: true } },
+          afterResponse: {
+            setState: { step: "completed", count: 1 },
+          },
+        },
+      ];
+
+      const selector = createResponseSelector({ logger, stateManager });
+      selector.selectResponse("test-1", "default", context, wrapMocks(mocks));
+
+      const stateSetLog = calls.find((c) => c.message === "state_set");
+      expect(stateSetLog).toBeDefined();
+      expect(stateSetLog?.level).toBe("debug");
+      expect(stateSetLog?.category).toBe("state");
+      expect(stateSetLog?.data?.setState).toEqual({
+        step: "completed",
+        count: 1,
+      });
+      expect(stateSetLog?.context.testId).toBe("test-1");
+      expect(stateSetLog?.context.scenarioId).toBe("default");
+    });
+
+    it("should not log state_set when stateManager is not provided", () => {
+      const { logger, calls } = createTestLogger();
+
+      const context: HttpRequestContext = {
+        method: "POST",
+        url: "/api/action",
+        body: {},
+        headers: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "POST",
+          url: "/api/action",
+          response: { status: 200, body: { success: true } },
+          afterResponse: {
+            setState: { step: "completed" },
+          },
+        },
+      ];
+
+      // No stateManager provided
+      const selector = createResponseSelector({ logger });
+      selector.selectResponse("test-1", "default", context, wrapMocks(mocks));
+
+      const stateSetLog = calls.find((c) => c.message === "state_set");
+      expect(stateSetLog).toBeUndefined();
+    });
+  });
+
+  describe("state_response_resolved logging (debug)", () => {
+    it("should log state_response_resolved with default when no condition matches", () => {
+      const { logger, calls } = createTestLogger();
+      const stateManager = createInMemoryStateManager();
+
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/status",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "GET",
+          url: "/api/status",
+          stateResponse: {
+            default: { status: 200, body: { state: "initial" } },
+            conditions: [
+              {
+                when: { step: "reviewed" },
+                then: { status: 200, body: { state: "reviewed" } },
+              },
+            ],
+          },
+        },
+      ];
+
+      const selector = createResponseSelector({ logger, stateManager });
+      selector.selectResponse("test-1", "default", context, wrapMocks(mocks));
+
+      const stateResolvedLog = calls.find(
+        (c) => c.message === "state_response_resolved",
+      );
+      expect(stateResolvedLog).toBeDefined();
+      expect(stateResolvedLog?.level).toBe("debug");
+      expect(stateResolvedLog?.category).toBe("state");
+      expect(stateResolvedLog?.data?.result).toBe("default");
+      expect(stateResolvedLog?.data?.currentState).toEqual({});
+      expect(stateResolvedLog?.data?.conditionsCount).toBe(1);
+      expect(stateResolvedLog?.data?.matchedWhen).toBeNull();
+    });
+
+    it("should log state_response_resolved with condition when state matches", () => {
+      const { logger, calls } = createTestLogger();
+      const stateManager = createInMemoryStateManager();
+      stateManager.set("test-1", "step", "reviewed");
+
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/status",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "GET",
+          url: "/api/status",
+          stateResponse: {
+            default: { status: 200, body: { state: "initial" } },
+            conditions: [
+              {
+                when: { step: "reviewed" },
+                then: { status: 200, body: { state: "reviewed" } },
+              },
+            ],
+          },
+        },
+      ];
+
+      const selector = createResponseSelector({ logger, stateManager });
+      selector.selectResponse("test-1", "default", context, wrapMocks(mocks));
+
+      const stateResolvedLog = calls.find(
+        (c) => c.message === "state_response_resolved",
+      );
+      expect(stateResolvedLog).toBeDefined();
+      expect(stateResolvedLog?.level).toBe("debug");
+      expect(stateResolvedLog?.category).toBe("state");
+      expect(stateResolvedLog?.data?.result).toBe("condition");
+      expect(stateResolvedLog?.data?.currentState).toEqual({
+        step: "reviewed",
+      });
+      expect(stateResolvedLog?.data?.matchedWhen).toEqual({ step: "reviewed" });
+    });
+
+    it("should log state_response_resolved with no_state_manager reason when stateManager is not provided", () => {
+      const { logger, calls } = createTestLogger();
+
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/status",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "GET",
+          url: "/api/status",
+          stateResponse: {
+            default: { status: 200, body: { state: "initial" } },
+            conditions: [
+              {
+                when: { step: "reviewed" },
+                then: { status: 200, body: { state: "reviewed" } },
+              },
+            ],
+          },
+        },
+      ];
+
+      // No stateManager provided
+      const selector = createResponseSelector({ logger });
+      selector.selectResponse("test-1", "default", context, wrapMocks(mocks));
+
+      const stateResolvedLog = calls.find(
+        (c) => c.message === "state_response_resolved",
+      );
+      expect(stateResolvedLog).toBeDefined();
+      expect(stateResolvedLog?.data?.result).toBe("default");
+      expect(stateResolvedLog?.data?.reason).toBe("no_state_manager");
     });
   });
 });

@@ -14,6 +14,7 @@ import { setupUrlMatchingRoutes } from "./routes/url-matching.js";
 import { setupHostnameMatchingRoutes } from "./routes/hostname-matching.js";
 import { setupProductsRepoRoutes } from "./routes/products-repo.js";
 import { setupStateAwareRoutes } from "./routes/state-aware.js";
+import { setupIssue328Routes } from "./routes/issue-328.js";
 import { scenarios } from "./scenarios.js";
 
 /**
@@ -56,7 +57,7 @@ export const createApp = (): {
     logger: process.env.SCENARIST_LOG
       ? createConsoleLogger({
           level: "debug",
-          categories: ["scenario", "matching"],
+          categories: ["scenario", "matching", "state"],
         })
       : undefined,
   });
@@ -78,6 +79,7 @@ export const createApp = (): {
   setupHostnameMatchingRoutes(router);
   setupProductsRepoRoutes(router);
   setupStateAwareRoutes(router);
+  setupIssue328Routes(router);
   app.use(router);
 
   // Health check endpoint

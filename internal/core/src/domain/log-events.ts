@@ -59,6 +59,10 @@ export const LogEvents = {
   STATE_CAPTURED: "state_captured",
   /** State injected into response */
   STATE_INJECTED: "state_injected",
+  /** State set via afterResponse.setState */
+  STATE_SET: "state_set",
+  /** State response resolved (condition matched or default) */
+  STATE_RESPONSE_RESOLVED: "state_response_resolved",
 
   // Sequence progression
   /** Sequence advanced to next response */
