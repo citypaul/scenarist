@@ -1,5 +1,23 @@
 # @scenarist/nextjs-adapter
 
+## 0.3.2
+
+### Patch Changes
+
+- [#333](https://github.com/citypaul/scenarist/pull/333) [`ae42e91`](https://github.com/citypaul/scenarist/commit/ae42e9150effa29b061ee811f849ff6e9c3947df) Thanks [@citypaul](https://github.com/citypaul)! - docs: add Logging & Debugging section to READMEs
+
+  Added comprehensive logging documentation to both adapter READMEs including:
+  - Quick start example with `createConsoleLogger`
+  - Environment variable pattern for easy toggling
+  - Log levels reference table
+  - Link to full logging documentation
+
+  This improves discoverability for developers who look at the README first.
+
+- Updated dependencies []:
+  - @scenarist/core@0.3.2
+  - @scenarist/msw-adapter@0.3.2
+
 ## 0.3.1
 
 ### Patch Changes
