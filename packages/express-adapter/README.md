@@ -1048,7 +1048,29 @@ import {
   createScenarist,
   createConsoleLogger,
   noOpLogger,
+  type LogLevel,
+  type LogFormat,
 } from "@scenarist/express-adapter";
+
+// Type-safe environment variable parsing
+const LOG_LEVELS: ReadonlyArray<Exclude<LogLevel, "silent">> = [
+  "error",
+  "warn",
+  "info",
+  "debug",
+  "trace",
+];
+const LOG_FORMATS: ReadonlyArray<LogFormat> = ["pretty", "json"];
+
+const parseLogLevel = (
+  value: string | undefined,
+): Exclude<LogLevel, "silent"> =>
+  LOG_LEVELS.includes(value as Exclude<LogLevel, "silent">)
+    ? (value as Exclude<LogLevel, "silent">)
+    : "info";
+
+const parseLogFormat = (value: string | undefined): LogFormat =>
+  LOG_FORMATS.includes(value as LogFormat) ? (value as LogFormat) : "pretty";
 
 const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === "test",
@@ -1057,8 +1079,8 @@ const scenarist = createScenarist({
   // Enable via SCENARIST_LOG=1 environment variable
   logger: process.env.SCENARIST_LOG
     ? createConsoleLogger({
-        level: (process.env.SCENARIST_LOG_LEVEL as any) || "info",
-        format: (process.env.SCENARIST_LOG_FORMAT as any) || "pretty",
+        level: parseLogLevel(process.env.SCENARIST_LOG_LEVEL),
+        format: parseLogFormat(process.env.SCENARIST_LOG_FORMAT),
       })
     : noOpLogger,
 });
