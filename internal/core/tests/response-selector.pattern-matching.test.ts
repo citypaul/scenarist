@@ -83,6 +83,50 @@ describe("ResponseSelector - Pattern Matching", () => {
       }
     });
 
+    it("should NOT match when regex.source is not a string (malformed regex object)", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/products",
+        headers: { "x-campaign": "premium-sale" },
+        body: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "GET",
+          url: "/api/products",
+          match: {
+            headers: {
+              // Malformed regex object with non-string source
+              "x-campaign": {
+                regex: { source: 123 },
+              } as unknown as { regex: { source: string; flags?: string } },
+            },
+          },
+          response: { status: 200, body: { tier: "premium" } },
+        },
+        {
+          method: "GET",
+          url: "/api/products",
+          response: { status: 200, body: { tier: "standard" } },
+        },
+      ];
+
+      const selector = createResponseSelector();
+      const result = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({ tier: "standard" }); // Fallback due to malformed regex
+      }
+    });
+
     it("should handle case-insensitive regex matching", () => {
       const context: HttpRequestContext = {
         method: "GET",
@@ -951,6 +995,49 @@ describe("ResponseSelector - Pattern Matching", () => {
             match: {
               body: {
                 field: { unknownStrategy: "value" } as unknown as string,
+              },
+            },
+            response: { status: 200, body: { matched: true } },
+          },
+          {
+            method: "POST",
+            url: "/api/test",
+            response: { status: 200, body: { fallback: true } },
+          },
+        ];
+
+        const selector = createResponseSelector();
+        const result = selector.selectResponse(
+          "test-1",
+          "default-scenario",
+          context,
+          wrapMocks(mocks),
+        );
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.body).toEqual({ fallback: true });
+        }
+      });
+
+      it("should NOT match when body criteria value is an array (not a valid match value)", () => {
+        // Arrays are not valid criteria values - only primitives, RegExp, or strategy objects
+        const context: HttpRequestContext = {
+          method: "POST",
+          url: "/api/test",
+          headers: {},
+          body: { tags: "apple,banana,cherry" },
+          query: {},
+        };
+
+        const mocks: ReadonlyArray<ScenaristMock> = [
+          {
+            method: "POST",
+            url: "/api/test",
+            match: {
+              body: {
+                // Arrays are not valid match criteria and should not match
+                tags: ["apple", "banana"] as unknown as string,
               },
             },
             response: { status: 200, body: { matched: true } },

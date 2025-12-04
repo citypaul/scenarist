@@ -112,27 +112,27 @@ export class InMemoryStateManager implements StateManager {
       return;
     }
 
+    // Get or create nested object for this path segment
     // eslint-disable-next-line security/detect-object-injection -- Guarded by isDangerousKey and Object.hasOwn
     const existingValue = Object.hasOwn(obj, key) ? obj[key] : undefined;
-    if (
-      typeof existingValue !== "object" ||
-      existingValue === null ||
-      Array.isArray(existingValue)
-    ) {
+
+    // Determine target: use existing record OR create new empty object
+    const target: Record<string, unknown> = isRecord(existingValue)
+      ? existingValue
+      : {};
+
+    // If we created a new object, assign it to the parent
+    if (!isRecord(existingValue)) {
       Object.defineProperty(obj, key, {
-        value: {},
+        value: target,
         writable: true,
         enumerable: true,
         configurable: true,
       });
     }
 
-    // eslint-disable-next-line security/detect-object-injection -- Guarded by isDangerousKey, Object.hasOwn, and Object.defineProperty
-    const nested = obj[key];
-    // Type guard ensures we have a Record after the isRecord check above
-    if (isRecord(nested)) {
-      this.setNestedValue(nested, path.slice(1), value);
-    }
+    // Recurse to next path segment
+    this.setNestedValue(target, path.slice(1), value);
   }
 
   private getNestedValue(
