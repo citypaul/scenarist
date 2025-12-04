@@ -1020,7 +1020,7 @@ The script checks that MSW-specific implementation patterns (`setupWorker`, `Htt
 
 ## Logging & Debugging
 
-Scenarist includes a flexible logging system for debugging scenario matching, state management, and request handling. Logging is **disabled by default** and must be explicitly enabled.
+Scenarist includes a flexible logging system for debugging scenario matching, state management, and request handling. Logging is **disabled by default** and must be explicitly enabled. For comprehensive documentation including log categories, custom loggers, and Vitest configuration, see the [full logging guide](https://scenarist.io/reference/logging).
 
 ### Quick Start
 
