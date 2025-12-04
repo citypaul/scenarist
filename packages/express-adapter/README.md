@@ -1018,6 +1018,76 @@ The script checks that MSW-specific implementation patterns (`setupWorker`, `Htt
 - If you're deploying unbundled code: No action needed ✅
 - If you're bundling: Add the one-line bundler configuration for optimal bundle size
 
+## Logging & Debugging
+
+Scenarist includes a flexible logging system for debugging scenario matching, state management, and request handling. Logging is **disabled by default** and must be explicitly enabled.
+
+### Quick Start
+
+```typescript
+import {
+  createScenarist,
+  createConsoleLogger,
+} from "@scenarist/express-adapter";
+
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === "test",
+  scenarios,
+
+  // Enable logging with pretty format
+  logger: createConsoleLogger({ level: "info", format: "pretty" }),
+});
+```
+
+### Environment Variable Pattern
+
+For easy toggling without code changes:
+
+```typescript
+import {
+  createScenarist,
+  createConsoleLogger,
+  noOpLogger,
+} from "@scenarist/express-adapter";
+
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === "test",
+  scenarios,
+
+  // Enable via SCENARIST_LOG=1 environment variable
+  logger: process.env.SCENARIST_LOG
+    ? createConsoleLogger({
+        level: (process.env.SCENARIST_LOG_LEVEL as any) || "info",
+        format: (process.env.SCENARIST_LOG_FORMAT as any) || "pretty",
+      })
+    : noOpLogger,
+});
+```
+
+Then run tests with logging:
+
+```bash
+# Enable info-level logging
+SCENARIST_LOG=1 pnpm test
+
+# Enable debug-level logging for match troubleshooting
+SCENARIST_LOG=1 SCENARIST_LOG_LEVEL=debug pnpm test
+```
+
+> **Note:** `SCENARIST_LOG` is a convention for your code, not something Scenarist reads automatically. You must explicitly pass a `logger` to `createScenarist()` as shown above.
+
+### Log Levels
+
+| Level   | Description       | Use Case                                      |
+| ------- | ----------------- | --------------------------------------------- |
+| `error` | Critical failures | Scenario not found, invalid config            |
+| `warn`  | Potential issues  | No mock matched, sequence exhausted           |
+| `info`  | Key events        | Scenario switched, mock selected              |
+| `debug` | Decision logic    | Match criteria evaluation, specificity scores |
+| `trace` | Verbose details   | Request/response bodies, template replacement |
+
+For more details including log categories, output formats, and custom loggers, see the [full logging documentation](https://scenarist.io/reference/logging).
+
 ## Troubleshooting
 
 ### Scenarios switch but requests aren't mocked
