@@ -96,41 +96,5 @@ describe("PagesRequestContext", () => {
 
       expect(context.getHostname()).toBe("");
     });
-
-    it("should handle array host header by taking first element", () => {
-      const req = {
-        headers: {
-          host: ["localhost:3000", "example.com"],
-        },
-      } as unknown as NextApiRequest;
-
-      const context = new PagesRequestContext(req, config);
-
-      expect(context.getHostname()).toBe("localhost:3000");
-    });
-
-    it("should return empty string when host header is empty array", () => {
-      const req = {
-        headers: {
-          host: [],
-        },
-      } as unknown as NextApiRequest;
-
-      const context = new PagesRequestContext(req, config);
-
-      expect(context.getHostname()).toBe("");
-    });
-
-    it("should return empty string when host array has undefined first element", () => {
-      const req = {
-        headers: {
-          host: [undefined, "fallback.com"],
-        },
-      } as unknown as NextApiRequest;
-
-      const context = new PagesRequestContext(req, config);
-
-      expect(context.getHostname()).toBe("");
-    });
   });
 });
