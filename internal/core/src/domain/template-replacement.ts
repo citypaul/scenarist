@@ -139,11 +139,13 @@ const resolveTemplatePath = (
     }
 
     // Security: Prevent prototype pollution attacks
+    // @see https://github.com/citypaul/scenarist/security/code-scanning/165
     if (isDangerousKey(segment) || !Object.hasOwn(current, segment)) {
       return undefined;
     }
 
-    // eslint-disable-next-line security/detect-object-injection -- Segment validated by isDangerousKey and Object.hasOwn checks
+    // nosemgrep: javascript.lang.security.audit.prototype-pollution.prototype-pollution-loop
+    // eslint-disable-next-line security/detect-object-injection -- Segment validated by isDangerousKey and Object.hasOwn checks above
     current = current[segment];
 
     // Guard: Return undefined if property doesn't exist

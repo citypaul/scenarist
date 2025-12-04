@@ -71,6 +71,7 @@ export const setupStringMatchingRoutes = (router: Router): void => {
   // Scenarist's header-based content matching capabilities. In production, use headers
   // for sensitive data. This is a test endpoint, not a security pattern.
   // @see https://github.com/citypaul/scenarist/security/code-scanning/74
+  // @see https://github.com/citypaul/scenarist/security/code-scanning/168
   router.get(
     "/api/test-string-match/starts-with",
     async (req: Request, res: Response) => {
