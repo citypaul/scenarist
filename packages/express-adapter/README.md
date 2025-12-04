@@ -1086,7 +1086,25 @@ SCENARIST_LOG=1 SCENARIST_LOG_LEVEL=debug pnpm test
 | `debug` | Decision logic    | Match criteria evaluation, specificity scores |
 | `trace` | Verbose details   | Request/response bodies, template replacement |
 
-For more details including log categories, output formats, and custom loggers, see the [full logging documentation](https://scenarist.io/reference/logging).
+### Sample Output
+
+**Pretty format** (default) - human-readable with emojis and colors:
+
+```
+12:34:56.789 INF 🎬 [test-user-login] scenario | scenario_switched scenarioId=premium-user
+12:34:56.801 INF 🎯 [test-user-login] matching | mock_selected mockIndex=2 specificity=5
+12:34:56.810 INF 💾 [test-user-login] state    | state_captured key=userId value=user-123
+12:34:56.815 WRN 🎯 [test-user-login] matching | mock_no_match url=/api/unknown
+```
+
+**JSON format** - for log aggregation tools (Datadog, Splunk, etc.):
+
+```json
+{"level":"info","category":"scenario","message":"scenario_switched","testId":"test-user-login","scenarioId":"premium-user","timestamp":1732650896789}
+{"level":"info","category":"matching","message":"mock_selected","testId":"test-user-login","data":{"mockIndex":2,"specificity":5},"timestamp":1732650896801}
+```
+
+For more details including log categories, custom loggers, and Vitest configuration, see the [full logging documentation](https://scenarist.io/reference/logging).
 
 ## Troubleshooting
 
