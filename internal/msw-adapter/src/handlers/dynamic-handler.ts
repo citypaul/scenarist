@@ -74,13 +74,37 @@ const extractHttpRequestContext = async (
   };
 };
 
+type UrlParams = Readonly<Record<string, string | ReadonlyArray<string>>>;
+
+/**
+ * Check if a mock matches the request's method and URL.
+ * Returns match result with extracted URL params if matching.
+ */
+const mockMatchesRequest = (
+  mock: { readonly method: string; readonly url: string | RegExp },
+  method: string,
+  url: string,
+): { readonly matches: boolean; readonly params: UrlParams } => {
+  const methodMatches = mock.method.toUpperCase() === method.toUpperCase();
+  if (!methodMatches) {
+    return { matches: false, params: {} };
+  }
+  const urlMatch = matchesUrl(mock.url, url);
+  return { matches: urlMatch.matches, params: urlMatch.params ?? {} };
+};
+
 /**
  * Get mocks from active scenario, with default scenario mocks as fallback.
  * Returns URL-matching mocks with their extracted params for ResponseSelector to evaluate.
  *
- * Default mocks are ALWAYS included (if they match URL+method).
- * Active scenario mocks are added after defaults, allowing them to override
- * based on specificity (mocks with match criteria have higher specificity).
+ * Mock selection priority (Issue #335):
+ * 1. If no active scenario → use default scenario mocks
+ * 2. If active scenario has a fallback mock (no match criteria) → use ONLY active mocks
+ * 3. If active scenario has only conditional mocks → include default as backup
+ *
+ * A "fallback mock" is one without match criteria - it always matches if URL+method match.
+ * When active scenario explicitly covers an endpoint with a fallback mock, we don't
+ * include default's mock for that endpoint, preventing specificity-based conflicts.
  *
  * Each mock is paired with params extracted from its URL pattern.
  * After ResponseSelector chooses a mock, we use THAT mock's params.
@@ -93,30 +117,37 @@ const getMocksFromScenarios = (
 ): ReadonlyArray<ScenaristMockWithParams> => {
   const mocksWithParams: Array<ScenaristMockWithParams> = [];
 
-  // Step 1: ALWAYS include default scenario mocks first
-  // These act as fallback when active scenario mocks don't match
-  const defaultScenario = getScenarioDefinition("default");
-  if (defaultScenario) {
-    defaultScenario.mocks.forEach((mock) => {
-      const methodMatches = mock.method.toUpperCase() === method.toUpperCase();
-      const urlMatch = matchesUrl(mock.url, url);
-      if (methodMatches && urlMatch.matches) {
-        mocksWithParams.push({ mock, params: urlMatch.params });
-      }
-    });
-  }
+  // Step 1: Check active scenario first
+  // Track if active has a fallback mock (no match criteria) for this URL+method
+  let activeHasFallbackMock = false;
 
-  // Step 2: Add active scenario mocks (if any)
-  // These override defaults based on specificity (via ResponseSelector)
   if (activeScenario) {
     const scenarioDefinition = getScenarioDefinition(activeScenario.scenarioId);
     if (scenarioDefinition) {
       scenarioDefinition.mocks.forEach((mock) => {
-        const methodMatches =
-          mock.method.toUpperCase() === method.toUpperCase();
-        const urlMatch = matchesUrl(mock.url, url);
-        if (methodMatches && urlMatch.matches) {
-          mocksWithParams.push({ mock, params: urlMatch.params });
+        const match = mockMatchesRequest(mock, method, url);
+        if (match.matches) {
+          mocksWithParams.push({ mock, params: match.params });
+          // A mock without match criteria is a "fallback" - it always matches
+          if (!mock.match) {
+            activeHasFallbackMock = true;
+          }
+        }
+      });
+    }
+  }
+
+  // Step 2: Include default scenario mocks only if:
+  // - No active scenario is set, OR
+  // - Active scenario doesn't have a fallback mock for this URL+method
+  //   (i.e., active only has conditional mocks, so default is needed as backup)
+  if (!activeScenario || !activeHasFallbackMock) {
+    const defaultScenario = getScenarioDefinition("default");
+    if (defaultScenario) {
+      defaultScenario.mocks.forEach((mock) => {
+        const match = mockMatchesRequest(mock, method, url);
+        if (match.matches) {
+          mocksWithParams.push({ mock, params: match.params });
         }
       });
     }

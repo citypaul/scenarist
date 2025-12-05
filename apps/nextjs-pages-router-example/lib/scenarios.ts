@@ -21,6 +21,34 @@ export const defaultScenario: ScenaristScenario = {
   name: "Default Scenario",
   description: "Default baseline behavior with standard fallbacks",
   mocks: [
+    // Issue #335 BUG FIX: Sequence mock in default scenario
+    // This mock should be OVERRIDDEN by simple response in issue335-simple-response scenario
+    // @see https://github.com/citypaul/scenarist/issues/335
+    {
+      method: "GET",
+      url: "http://localhost:3001/issue335/applications/:id",
+      sequence: {
+        responses: [
+          {
+            status: 200,
+            body: {
+              state: "appStarted",
+              source: "default-sequence",
+              sequenceIndex: 0,
+            },
+          },
+          {
+            status: 200,
+            body: {
+              state: "appStarted",
+              source: "default-sequence",
+              sequenceIndex: 1,
+            },
+          },
+        ],
+        repeat: "last",
+      },
+    },
     // Products endpoint - fallback with standard pricing
     {
       method: "GET",
@@ -1121,6 +1149,35 @@ export const featureFlagsScenario: ScenaristScenario = {
 };
 
 /**
+ * Issue #335 BUG FIX: Simple response should override default sequence
+ *
+ * This scenario tests that when switching to a scenario with a SIMPLE response
+ * mock for an endpoint that has a SEQUENCE mock in default, the simple response
+ * is used instead of the default sequence.
+ *
+ * @see https://github.com/citypaul/scenarist/issues/335
+ */
+export const issue335SimpleResponseScenario: ScenaristScenario = {
+  id: "issue335SimpleResponse",
+  name: "Issue #335 - Simple Response Override",
+  description:
+    "Simple response mock that should override default sequence mock",
+  mocks: [
+    {
+      method: "GET",
+      url: "http://localhost:3001/issue335/applications/:id",
+      response: {
+        status: 200,
+        body: {
+          state: "ready",
+          source: "issue335-simple-response",
+        },
+      },
+    },
+  ],
+};
+
+/**
  * All scenarios for registration and type-safe access
  */
 export const scenarios = {
@@ -1138,4 +1195,5 @@ export const scenarios = {
   hostnameMatching: hostnameMatchingScenario,
   loanApplication: loanApplicationScenario,
   featureFlags: featureFlagsScenario,
+  issue335SimpleResponse: issue335SimpleResponseScenario,
 } as const satisfies ScenaristScenarios;
