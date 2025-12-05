@@ -1426,6 +1426,49 @@ export const loanApplicationScenario: ScenaristScenario = {
 };
 
 /**
+ * BUG FIX: Issue #335 - Simple response should override default sequence
+ *
+ * This scenario tests that when switching to a scenario with a SIMPLE response
+ * mock for an endpoint that has a SEQUENCE mock in default, the simple response
+ * is used instead of the default sequence.
+ *
+ * Setup:
+ * - Default scenario has SEQUENCE mock for GET /applications/:id
+ *   (returns { state: 'appStarted', source: 'default-sequence' })
+ *
+ * - This scenario has SIMPLE RESPONSE mock for same endpoint
+ *   (returns { state: 'ready', source: 'issue335-simple-response' })
+ *
+ * Expected behavior:
+ * 1. Switch to issue335-simple-response scenario
+ * 2. GET /applications/:id → should return simple response:
+ *    { state: 'ready', source: 'issue335-simple-response' }
+ *
+ * @see https://github.com/citypaul/scenarist/issues/335
+ */
+export const issue335SimpleResponseScenario: ScenaristScenario = {
+  id: "issue335-simple-response",
+  name: "Issue #335 - Simple Response Override",
+  description:
+    "Simple response mock that should override default sequence mock",
+  mocks: [
+    // GET /applications/:id - Simple response
+    // This mock should be selected OVER default's sequence mock
+    {
+      method: "GET",
+      url: "https://api.issue328.com/applications/:id",
+      response: {
+        status: 200,
+        body: {
+          state: "ready",
+          source: "issue335-simple-response",
+        },
+      },
+    },
+  ],
+};
+
+/**
  * BUG REPRODUCTION: Issue #328 - Active scenario with stateResponse
  *
  * This is the ACTIVE scenario that should override the default sequence.
@@ -1636,4 +1679,6 @@ export const scenarios = {
   featureFlags: featureFlagsScenario,
   // Issue #328 Bug Reproduction - stateResponse should override default sequence
   "issue328-stateresponse": issue328StateResponseScenario,
+  // Issue #335 Bug Fix - simple response should override default sequence
+  "issue335-simple-response": issue335SimpleResponseScenario,
 } as const satisfies ScenaristScenarios;

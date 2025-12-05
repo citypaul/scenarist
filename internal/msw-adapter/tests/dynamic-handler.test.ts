@@ -1299,4 +1299,263 @@ describe("Dynamic Handler", () => {
       server.close();
     });
   });
+
+  /**
+   * Scenario Switching Priority Tests (Issue #335)
+   *
+   * These tests document the expected behavior for mock selection
+   * when switching between scenarios. The key principle:
+   *
+   * 1. If no scenario is set → use default
+   * 2. If scenario is set AND has a matching mock → use active (overrides default)
+   * 3. If scenario is set AND no match → fall back to default
+   *
+   * "Match" means: URL+method matches AND (no match criteria OR criteria satisfied)
+   */
+  describe("Scenario switching priority (Issue #335)", () => {
+    type MockType = "none" | "simple" | "sequence" | "conditional";
+
+    type TestScenario = {
+      readonly name: string;
+      readonly activeScenarioId: string | undefined;
+      readonly activeMockType: MockType;
+      readonly defaultMockType: MockType;
+      readonly requestMatchesCriteria: boolean;
+      readonly expectedStatus: number;
+      readonly expectedSource: string;
+    };
+
+    const testCases: readonly TestScenario[] = [
+      {
+        name: "No scenario set, default has fallback → use default",
+        activeScenarioId: undefined,
+        activeMockType: "none",
+        defaultMockType: "simple",
+        requestMatchesCriteria: true,
+        expectedStatus: 200,
+        expectedSource: "default",
+      },
+      {
+        name: "Empty scenario (no mocks), default has fallback → use default",
+        activeScenarioId: "empty",
+        activeMockType: "none",
+        defaultMockType: "simple",
+        requestMatchesCriteria: true,
+        expectedStatus: 200,
+        expectedSource: "default",
+      },
+      {
+        name: "Active has simple, default has simple → use active",
+        activeScenarioId: "active",
+        activeMockType: "simple",
+        defaultMockType: "simple",
+        requestMatchesCriteria: true,
+        expectedStatus: 500,
+        expectedSource: "active",
+      },
+      {
+        name: "Active has simple, default has sequence → use active (BUG FIX #335)",
+        activeScenarioId: "active",
+        activeMockType: "simple",
+        defaultMockType: "sequence",
+        requestMatchesCriteria: true,
+        expectedStatus: 500,
+        expectedSource: "active",
+      },
+      {
+        name: "Active has sequence, default has simple → use active",
+        activeScenarioId: "active",
+        activeMockType: "sequence",
+        defaultMockType: "simple",
+        requestMatchesCriteria: true,
+        expectedStatus: 500,
+        expectedSource: "active",
+      },
+      {
+        name: "Active has conditional (matches), default has fallback → use active",
+        activeScenarioId: "active",
+        activeMockType: "conditional",
+        defaultMockType: "simple",
+        requestMatchesCriteria: true,
+        expectedStatus: 500,
+        expectedSource: "active",
+      },
+      {
+        name: "Active has conditional (no match), default has fallback → use default",
+        activeScenarioId: "active",
+        activeMockType: "conditional",
+        defaultMockType: "simple",
+        requestMatchesCriteria: false,
+        expectedStatus: 200,
+        expectedSource: "default",
+      },
+      {
+        name: "Active has fallback, no default mock → use active",
+        activeScenarioId: "active",
+        activeMockType: "simple",
+        defaultMockType: "none",
+        requestMatchesCriteria: true,
+        expectedStatus: 500,
+        expectedSource: "active",
+      },
+      {
+        name: "Active has mock for different URL, default has fallback → use default",
+        activeScenarioId: "different-url",
+        activeMockType: "simple", // This mock is for /products, not /users
+        defaultMockType: "simple",
+        requestMatchesCriteria: true,
+        expectedStatus: 200,
+        expectedSource: "default",
+      },
+    ];
+
+    const createMock = (
+      type: MockType,
+      source: string,
+      url: string = "https://api.example.com/users",
+    ): ScenaristScenario["mocks"] => {
+      switch (type) {
+        case "none":
+          return [];
+        case "simple":
+          return [
+            {
+              method: "GET",
+              url,
+              response: {
+                status: source === "active" ? 500 : 200,
+                body: { source },
+              },
+            },
+          ];
+        case "sequence":
+          return [
+            {
+              method: "GET",
+              url,
+              sequence: {
+                responses: [
+                  {
+                    status: source === "active" ? 500 : 200,
+                    body: { source, step: 1 },
+                  },
+                  {
+                    status: source === "active" ? 500 : 200,
+                    body: { source, step: 2 },
+                  },
+                ],
+                repeat: "last",
+              },
+            },
+          ];
+        case "conditional":
+          return [
+            {
+              method: "GET",
+              url,
+              match: { headers: { "x-test-match": "yes" } },
+              response: {
+                status: source === "active" ? 500 : 200,
+                body: { source },
+              },
+            },
+          ];
+      }
+    };
+
+    it.each(testCases)(
+      "$name",
+      async ({
+        activeScenarioId,
+        activeMockType,
+        defaultMockType,
+        requestMatchesCriteria,
+        expectedStatus,
+        expectedSource,
+      }) => {
+        // Use unique test ID to avoid state pollution
+        const testId = `priority-test-${Date.now()}-${Math.random()}`;
+
+        // Create scenarios based on test case
+        const scenarios = new Map<string, ScenaristScenario>();
+
+        // Default scenario
+        if (defaultMockType !== "none") {
+          scenarios.set(
+            "default",
+            mockScenario({
+              id: "default",
+              mocks: createMock(defaultMockType, "default"),
+            }),
+          );
+        }
+
+        // Active scenario (if specified)
+        if (activeScenarioId === "empty") {
+          scenarios.set("empty", mockScenario({ id: "empty", mocks: [] }));
+        } else if (activeScenarioId === "different-url") {
+          scenarios.set(
+            "different-url",
+            mockScenario({
+              id: "different-url",
+              mocks: createMock(
+                "simple",
+                "active",
+                "https://api.example.com/products",
+              ),
+            }),
+          );
+        } else if (activeScenarioId === "active") {
+          scenarios.set(
+            "active",
+            mockScenario({
+              id: "active",
+              mocks: createMock(activeMockType, "active"),
+            }),
+          );
+        }
+
+        const getTestId = () => testId;
+        const getActiveScenario = () =>
+          activeScenarioId ? { scenarioId: activeScenarioId } : undefined;
+        const getScenarioDefinition = (scenarioId: string) =>
+          scenarios.get(scenarioId);
+
+        // Create fresh sequence tracker for each test
+        const sequenceTracker = createInMemorySequenceTracker();
+        const testResponseSelector = createResponseSelector({
+          sequenceTracker,
+        });
+
+        const handler = createDynamicHandler({
+          getTestId,
+          getActiveScenario,
+          getScenarioDefinition,
+          strictMode: false,
+          responseSelector: testResponseSelector,
+        });
+
+        const server = setupServer(handler);
+        server.listen();
+
+        try {
+          // Build request headers based on whether criteria should match
+          const headers: Record<string, string> = {};
+          if (requestMatchesCriteria) {
+            headers["x-test-match"] = "yes";
+          }
+
+          const response = await fetch("https://api.example.com/users", {
+            headers,
+          });
+          const data = await response.json();
+
+          expect(response.status).toBe(expectedStatus);
+          expect(data.source).toBe(expectedSource);
+        } finally {
+          server.close();
+        }
+      },
+    );
+  });
 });
