@@ -312,6 +312,8 @@ test("my test", async ({ page, switchScenario, scenaristTestId }) => {
 
 - `switchScenario(page, scenarioId, options?)` - Switch to a scenario (auto-injects test ID)
 - `scenaristTestId` - Unique test ID for this test (usually don't need to access directly)
+- `debugState(page)` - Get current test state from debug endpoint (useful for debugging)
+- `waitForDebugState(page, condition, options?)` - Wait for state to meet a condition
 
 #### `expect`
 
@@ -337,6 +339,7 @@ export default defineConfig({
 **Available options:**
 
 - `scenaristEndpoint?: string` - The endpoint path or absolute URL for scenario switching (default: `'/api/__scenario__'`)
+- `scenaristStateEndpoint?: string` - The endpoint path for debug state inspection (default: `'/__scenarist__/state'`)
 
 ### Cross-Origin API Servers
 
@@ -363,6 +366,112 @@ This is useful when:
 - Your API and frontend are separate services on different ports
 - You're testing against a staging/production API endpoint
 - Your test infrastructure uses a separate mock server
+
+### Debug State Fixtures
+
+When testing multi-stage flows with state-aware mocking, you may need to inspect or wait for internal state changes. The `debugState` and `waitForDebugState` fixtures help debug test failures and verify state mutations.
+
+#### `debugState` (Fixture)
+
+Fetches the current test state from the debug endpoint. Useful for debugging and verifying `afterResponse.setState` worked correctly.
+
+```typescript
+import { test, expect } from "./fixtures";
+
+test("loan application flow", async ({ page, switchScenario, debugState }) => {
+  await switchScenario(page, "loanApplication");
+
+  // Before any actions - state should be empty
+  const initialState = await debugState(page);
+  expect(initialState).toEqual({});
+
+  // Navigate and submit application
+  await page.goto("/apply");
+  await page.getByRole("button", { name: "Submit" }).click();
+
+  // Verify state was set by afterResponse.setState
+  const state = await debugState(page);
+  expect(state.submitted).toBe(true);
+  expect(state.phase).toBe("review");
+});
+```
+
+**When to use `debugState`:**
+
+- Debugging failing tests ("why is the response wrong?")
+- Verifying `afterResponse.setState` worked correctly
+- Understanding state progression through multi-step flows
+- Testing conditional `afterResponse` behavior
+
+#### `waitForDebugState` (Fixture)
+
+Waits for the test state to meet a condition. Useful for async flows where state changes after a delay.
+
+```typescript
+import { test, expect } from "./fixtures";
+
+test("async approval flow", async ({
+  page,
+  switchScenario,
+  waitForDebugState,
+}) => {
+  await switchScenario(page, "asyncApproval");
+  await page.goto("/dashboard");
+
+  // Trigger async approval process
+  await page.getByRole("button", { name: "Request Approval" }).click();
+
+  // Wait for state to indicate approval completed
+  const state = await waitForDebugState(
+    page,
+    (s) => s.approved === true,
+    { timeout: 10000 }, // Wait up to 10 seconds
+  );
+
+  expect(state.approved).toBe(true);
+  expect(state.approvedBy).toBeDefined();
+});
+```
+
+**Parameters:**
+
+- `page: Page` - Playwright Page object
+- `condition: (state: Record<string, unknown>) => boolean` - Function that returns true when state is ready
+- `options?: { timeout?: number; interval?: number }` - Optional configuration
+  - `timeout` - Maximum time to wait in ms (default: 5000)
+  - `interval` - Polling interval in ms (default: 100)
+
+**Throws:** Error if condition is not met within timeout.
+
+#### Setting Up the Debug Endpoint
+
+The debug fixtures require a debug state endpoint in your application. Create it alongside your scenario endpoint:
+
+**Pages Router:**
+
+```typescript
+// pages/api/__scenarist__/state.ts
+import { scenarist } from "@/lib/scenarist";
+
+export default scenarist?.createStateEndpoint();
+```
+
+**App Router:**
+
+```typescript
+// app/api/%5F%5Fscenarist%5F%5F/state/route.ts
+import { scenarist } from "@/lib/scenarist";
+
+const handler = scenarist?.createStateEndpoint();
+export const GET = handler;
+```
+
+**Express:**
+
+```typescript
+// The state endpoint is automatically included in scenarist.middleware
+// No additional setup needed!
+```
 
 #### `switchScenario` (Fixture)
 

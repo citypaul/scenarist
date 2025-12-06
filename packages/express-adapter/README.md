@@ -416,6 +416,38 @@ expect(response2.status).toBe(404);
 expect(response2.body.error).toBe("No active scenario for this test ID");
 ```
 
+#### `GET /__scenarist__/state` - Debug State Endpoint
+
+Inspect the current test state for debugging. Useful when testing multi-stage flows with `afterResponse.setState`.
+
+**Response (200):**
+
+```typescript
+{
+  testId: string;
+  state: Record<string, unknown>; // Current test state
+}
+```
+
+**Example:**
+
+```typescript
+const response = await request(app)
+  .get("/__scenarist__/state")
+  .set("x-scenarist-test-id", "test-123");
+
+expect(response.status).toBe(200);
+console.log(response.body.state); // { submitted: true, phase: "review" }
+```
+
+**When to use:**
+
+- Debugging failing tests with state-aware mocking
+- Verifying `afterResponse.setState` mutations
+- Testing conditional `afterResponse` behavior (see [ADR-0020](../../docs/adrs/0020-conditional-afterresponse.md))
+
+**Note:** This endpoint is automatically included in `scenarist.middleware` - no additional setup required!
+
 ## Core Capabilities
 
 Scenarist provides 20+ powerful features for scenario-based testing. All capabilities work seamlessly with Express via automatic test ID propagation.
