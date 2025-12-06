@@ -44,3 +44,17 @@ export function getScenaristHeaders(
 ): Record<string, string> {
   return {};
 }
+
+/**
+ * Production stub: Returns undefined (no endpoint handler in production)
+ */
+export const createScenarioEndpoint = (): undefined => {
+  return undefined;
+};
+
+/**
+ * Production stub: Returns undefined (no state endpoint handler in production)
+ */
+export const createStateEndpoint = (): undefined => {
+  return undefined;
+};
