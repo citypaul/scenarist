@@ -20,6 +20,7 @@ export default defineConfig<ScenaristOptions>({
   use: {
     baseURL: "http://localhost:3002",
     scenaristEndpoint: "/api/__scenario__",
+    scenaristStateEndpoint: "/api/__scenarist__/state",
     trace: "on-first-retry",
   },
 

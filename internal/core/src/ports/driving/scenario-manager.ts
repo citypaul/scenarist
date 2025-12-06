@@ -108,4 +108,17 @@ export interface ScenarioManager {
    * @returns Scenario definition or undefined if not found
    */
   getScenarioById(id: string): ScenaristScenario | undefined;
+
+  /**
+   * Get the current state for a test ID.
+   *
+   * Delegates to: StateManager.getAll()
+   *
+   * Useful for debugging test state during test development.
+   * Returns empty object if no state has been set or no stateManager is configured.
+   *
+   * @param testId Unique identifier for the test
+   * @returns Current state (read-only), or empty object if no state
+   */
+  getState(testId: string): Readonly<Record<string, unknown>>;
 }

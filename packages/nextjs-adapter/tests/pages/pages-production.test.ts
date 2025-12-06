@@ -55,4 +55,24 @@ describe("Pages Router Production Entry Point", () => {
     // Result is undefined because no dependencies are loaded
     expect(result).toBeUndefined();
   });
+
+  it("should return undefined for createStateEndpoint", async () => {
+    const { createStateEndpoint } =
+      await import("../../src/pages/production.js");
+
+    // Production stub should return undefined
+    const result = createStateEndpoint();
+
+    expect(result).toBeUndefined();
+  });
+
+  it("should return undefined for createScenarioEndpoint", async () => {
+    const { createScenarioEndpoint } =
+      await import("../../src/pages/production.js");
+
+    // Production stub should return undefined
+    const result = createScenarioEndpoint();
+
+    expect(result).toBeUndefined();
+  });
 });

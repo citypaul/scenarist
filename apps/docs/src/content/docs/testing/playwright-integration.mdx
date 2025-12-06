@@ -331,6 +331,76 @@ test('test against separate API server', async ({ page, switchScenario }) => {
 });
 ```
 
+## Debugging State
+
+When tests fail, you often need to inspect the current test state to understand what went wrong. Scenarist provides debug fixtures for this.
+
+### `debugState(page)`
+
+Fetch the current test state from the debug endpoint:
+
+```typescript
+import { test, expect } from './fixtures';
+
+test('checkout flow', async ({ page, switchScenario, debugState }) => {
+  await switchScenario(page, 'checkout');
+  await page.goto('/cart');
+
+  // Add item to cart
+  await page.click('#add-item');
+
+  // Debug: Check what state was set
+  const state = await debugState(page);
+  console.log('After add item:', state);
+  // → { 'cart.items': 1, 'cart.total': 29.99 }
+
+  expect(state['cart.items']).toBe(1);
+});
+```
+
+### `waitForDebugState(page, condition, options?)`
+
+Wait for state to meet a condition (useful for async workflows):
+
+```typescript
+import { test, expect } from './fixtures';
+
+test('async approval flow', async ({ page, switchScenario, waitForDebugState }) => {
+  await switchScenario(page, 'approvalFlow');
+  await page.goto('/dashboard');
+
+  // Trigger async approval
+  await page.click('#submit-for-approval');
+
+  // Wait for backend state to indicate approval completed
+  const state = await waitForDebugState(
+    page,
+    (s) => s['approval.status'] === 'approved',
+    { timeout: 10000, interval: 100 }
+  );
+
+  expect(state['approval.status']).toBe('approved');
+});
+```
+
+**Options:**
+- `timeout?: number` - Maximum wait time in milliseconds (default: 5000)
+- `interval?: number` - Polling interval in milliseconds (default: 100)
+
+### Configuration
+
+Configure the state endpoint in playwright.config.ts:
+
+```typescript
+export default defineConfig<ScenaristOptions>({
+  use: {
+    baseURL: 'http://localhost:3000',
+    scenaristEndpoint: '/api/__scenario__',
+    scenaristStateEndpoint: '/__scenarist__/state',  // Default value
+  },
+});
+```
+
 ## API Reference
 
 ### `withScenarios(scenarios)`

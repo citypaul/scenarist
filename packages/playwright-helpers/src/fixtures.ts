@@ -125,6 +125,39 @@ export type ScenaristOptions = {
    * ```
    */
   scenaristEndpoint: string;
+
+  /**
+   * The endpoint for retrieving test state (for debugging).
+   *
+   * @default '/__scenarist__/state'
+   *
+   * @example
+   * ```typescript
+   * export default defineConfig({
+   *   use: {
+   *     scenaristStateEndpoint: '/__scenarist__/state',
+   *   },
+   * });
+   * ```
+   */
+  scenaristStateEndpoint: string;
+};
+
+/**
+ * Options for waitForDebugState fixture.
+ */
+export type WaitForDebugStateOptions = {
+  /**
+   * Maximum time to wait in milliseconds.
+   * @default 5000
+   */
+  timeout?: number;
+
+  /**
+   * Polling interval in milliseconds.
+   * @default 100
+   */
+  interval?: number;
 };
 
 /**
@@ -176,6 +209,67 @@ export type ScenaristFixtures<S extends string = string> = {
     scenarioId: S,
     options?: Partial<Pick<SwitchScenarioOptions, "endpoint" | "baseURL">>,
   ) => Promise<string>;
+
+  /**
+   * Fetches current test state from the debug endpoint.
+   *
+   * Useful for debugging state flow in tests - inspect what state
+   * was set by afterResponse.setState.
+   *
+   * @param page - Playwright Page object (used for request context)
+   * @returns The current state object for this test ID
+   *
+   * @example
+   * ```typescript
+   * test('loan application flow', async ({ page, switchScenario, debugState }) => {
+   *   await switchScenario(page, 'loanApplication');
+   *   await page.goto('/apply');
+   *   await page.fill('[name="amount"]', '10000');
+   *   await page.click('button[type="submit"]');
+   *
+   *   // Check what state was set after submission
+   *   const state = await debugState(page);
+   *   expect(state.phase).toBe('submitted');
+   * });
+   * ```
+   */
+  debugState: (page: Page) => Promise<Record<string, unknown>>;
+
+  /**
+   * Waits for test state to meet a condition.
+   *
+   * Useful for debugging async state transitions - wait for backend
+   * state to stabilize before asserting.
+   *
+   * @param page - Playwright Page object (used for request context)
+   * @param condition - Predicate function that returns true when condition is met
+   * @param options - Timeout and polling interval options
+   * @returns The state object that satisfied the condition
+   * @throws Error if timeout is reached before condition is met
+   *
+   * @example
+   * ```typescript
+   * test('async approval flow', async ({ page, switchScenario, waitForDebugState }) => {
+   *   await switchScenario(page, 'approvalFlow');
+   *   await page.goto('/dashboard');
+   *   await page.click('#submit-for-approval');
+   *
+   *   // Wait for state to indicate approval completed
+   *   const state = await waitForDebugState(
+   *     page,
+   *     (s) => s.approved === true,
+   *     { timeout: 10000 },
+   *   );
+   *
+   *   expect(state.approved).toBe(true);
+   * });
+   * ```
+   */
+  waitForDebugState: (
+    page: Page,
+    condition: (state: Record<string, unknown>) => boolean,
+    options?: WaitForDebugStateOptions,
+  ) => Promise<Record<string, unknown>>;
 };
 
 /**
@@ -217,8 +311,9 @@ export function withScenarios<T extends ScenaristScenarios>(scenarios: T) {
   type ScenarioId = ScenarioIds<T>;
 
   return base.extend<ScenaristOptions & ScenaristFixtures<ScenarioId>>({
-    // Configuration option with default value
+    // Configuration options with default values
     scenaristEndpoint: ["/api/__scenario__", { option: true }],
+    scenaristStateEndpoint: ["/__scenarist__/state", { option: true }],
 
     // Generate a guaranteed unique test ID for each test
     // eslint-disable-next-line no-empty-pattern -- Playwright requires object destructuring pattern
@@ -252,6 +347,79 @@ export function withScenarios<T extends ScenaristScenarios>(scenarios: T) {
       };
 
       await use(switchFn);
+    },
+
+    // Debug state fixture - fetches current test state
+    debugState: async (
+      { scenaristTestId, scenaristStateEndpoint, baseURL },
+      use,
+    ) => {
+      const debugFn = async (page: Page): Promise<Record<string, unknown>> => {
+        const finalBaseURL = baseURL ?? "http://localhost:3000";
+        const url = `${finalBaseURL}${scenaristStateEndpoint}`;
+
+        const response = await page.request.get(url, {
+          headers: { "x-scenarist-test-id": scenaristTestId },
+        });
+
+        if (!response.ok()) {
+          throw new Error(`Failed to get debug state: ${response.status()}`);
+        }
+
+        const result: unknown = await response.json();
+
+        // Validate response structure at runtime before type narrowing
+        if (
+          typeof result !== "object" ||
+          result === null ||
+          !("state" in result)
+        ) {
+          throw new Error("Invalid debug state response format");
+        }
+
+        // Runtime validation ensures 'state' property exists
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- runtime validated above
+        const typedResult = result as { state: unknown };
+
+        if (
+          typeof typedResult.state !== "object" ||
+          typedResult.state === null
+        ) {
+          return {};
+        }
+
+        // State is validated as object, return with proper type
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- runtime validated above
+        return typedResult.state as Record<string, unknown>;
+      };
+
+      await use(debugFn);
+    },
+
+    // Wait for debug state fixture - polls until condition is met
+    waitForDebugState: async ({ debugState }, use) => {
+      const waitFn = async (
+        page: Page,
+        condition: (state: Record<string, unknown>) => boolean,
+        options?: WaitForDebugStateOptions,
+      ): Promise<Record<string, unknown>> => {
+        const { timeout = 5000, interval = 100 } = options ?? {};
+        const start = Date.now();
+
+        while (Date.now() - start < timeout) {
+          const state = await debugState(page);
+          if (condition(state)) {
+            return state;
+          }
+          await page.waitForTimeout(interval);
+        }
+
+        throw new Error(
+          `Debug state condition not met within ${timeout}ms (timeout)`,
+        );
+      };
+
+      await use(waitFn);
     },
   });
 }

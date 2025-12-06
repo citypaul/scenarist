@@ -1541,6 +1541,120 @@ export const issue328StateResponseScenario: ScenaristScenario = {
 };
 
 /**
+ * Conditional afterResponse Scenario (Issue #332)
+ *
+ * Demonstrates condition-level afterResponse in stateResponse:
+ * - Conditions can have their own afterResponse that overrides mock-level
+ * - afterResponse: null explicitly suppresses state mutation
+ * - Omitting afterResponse in condition inherits mock-level behavior
+ *
+ * Flow:
+ * 1. Initial: GET /order/status → "new" (no state, mock-level afterResponse sets phase: "initial")
+ * 2. POST /order/submit → sets state.submitted = true
+ * 3. GET /order/status → "processing" (condition afterResponse sets phase: "processing")
+ * 4. POST /order/approve → sets state.approved = true
+ * 5. GET /order/status → "complete" (condition afterResponse: null, phase unchanged)
+ */
+export const conditionalAfterResponseScenario: ScenaristScenario = {
+  id: "conditionalAfterResponse",
+  name: "Conditional afterResponse Demo",
+  description:
+    "Demonstrates condition-level afterResponse overriding mock-level",
+  mocks: [
+    // GET /order/status - Returns different responses with different afterResponse behaviors
+    {
+      method: "GET",
+      url: "https://api.orders.com/order/status",
+      stateResponse: {
+        default: {
+          status: 200,
+          body: {
+            status: "new",
+            message: "Order not yet submitted",
+          },
+        },
+        conditions: [
+          {
+            // Submitted but not approved - has its own afterResponse
+            when: { submitted: true, approved: false },
+            then: {
+              status: 200,
+              body: {
+                status: "processing",
+                message: "Order is being processed",
+              },
+            },
+            // Condition-level afterResponse OVERRIDES mock-level
+            afterResponse: {
+              setState: { phase: "processing" },
+            },
+          },
+          {
+            // Approved - afterResponse: null suppresses state mutation
+            when: { approved: true },
+            then: {
+              status: 200,
+              body: {
+                status: "complete",
+                message: "Order complete",
+              },
+            },
+            // Explicitly null = no state mutation (phase stays as-is)
+            afterResponse: null,
+          },
+          {
+            // Only submitted (approved not set) - inherits mock-level afterResponse
+            when: { submitted: true },
+            then: {
+              status: 200,
+              body: {
+                status: "pending",
+                message: "Order pending approval",
+              },
+            },
+            // No afterResponse key = inherits mock-level afterResponse
+          },
+        ],
+      },
+      // Mock-level afterResponse - used by default and conditions without their own
+      afterResponse: {
+        setState: { phase: "initial" },
+      },
+    },
+    // POST /order/submit - Sets submitted state
+    {
+      method: "POST",
+      url: "https://api.orders.com/order/submit",
+      response: {
+        status: 200,
+        body: {
+          success: true,
+          message: "Order submitted",
+        },
+      },
+      afterResponse: {
+        setState: { submitted: true, approved: false },
+      },
+    },
+    // POST /order/approve - Sets approved state
+    {
+      method: "POST",
+      url: "https://api.orders.com/order/approve",
+      response: {
+        status: 200,
+        body: {
+          success: true,
+          message: "Order approved",
+        },
+      },
+      afterResponse: {
+        setState: { approved: true },
+      },
+    },
+  ],
+};
+
+/**
  * Feature Flags Scenario (ADR-0019 - State-Aware Mocking)
  *
  * Demonstrates:
@@ -1676,6 +1790,7 @@ export const scenarios = {
   hostnameMatching: hostnameMatchingScenario,
   premiumUser: premiumUserScenario,
   loanApplication: loanApplicationScenario,
+  conditionalAfterResponse: conditionalAfterResponseScenario,
   featureFlags: featureFlagsScenario,
   // Issue #328 Bug Reproduction - stateResponse should override default sequence
   "issue328-stateresponse": issue328StateResponseScenario,

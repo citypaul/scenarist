@@ -3,6 +3,7 @@ import { AppRequestContext } from "./context.js";
 import {
   handlePostLogic,
   handleGetLogic,
+  handleGetStateLogic,
 } from "../common/endpoint-handlers.js";
 
 /**
@@ -109,5 +110,32 @@ export const createScenarioEndpoint = (
       },
       { status: 405 },
     );
+  };
+};
+
+/**
+ * Create state debug endpoint handler for Next.js App Router.
+ *
+ * Returns a Web standard Request/Response handler for GET requests
+ * that returns the current test state for debugging.
+ *
+ * @example
+ * ```typescript
+ * // app/api/%5F%5Fscenarist%5F%5F/state/route.ts
+ * import { createStateEndpoint } from '@scenarist/nextjs-adapter/app';
+ * import { scenarist } from '@/lib/scenarist';
+ *
+ * export const GET = scenarist.createStateEndpoint();
+ * ```
+ */
+export const createStateEndpoint = (
+  manager: ScenarioManager,
+  config: ScenaristConfig,
+) => {
+  return async (req: Request): Promise<Response> => {
+    const context = new AppRequestContext(req, config);
+    const result = handleGetStateLogic(context, manager);
+
+    return Response.json(result, { status: 200 });
   };
 };

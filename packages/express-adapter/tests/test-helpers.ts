@@ -22,6 +22,7 @@ export const mockConfig = (
   endpoints: {
     setScenario: "/__scenario__",
     getScenario: "/__scenario__",
+    getState: "/__scenarist__/state",
   },
   defaultTestId: "default-test",
   ...overrides,
@@ -68,6 +69,7 @@ export const mockScenarioManager = (
     listScenarios: () => [],
     clearScenario: () => ({ success: true, data: undefined }),
     getScenarioById: () => undefined,
+    getState: () => ({}),
     ...overrides,
   }) as ScenarioManager;
 

@@ -179,3 +179,41 @@ export const handleGetLogic = (
     ...(scenarioDefinition && { scenarioName: scenarioDefinition.name }),
   };
 };
+
+/**
+ * Result type for GET state endpoint business logic.
+ *
+ * Always succeeds - returns testId and state (empty object if no state).
+ */
+export type GetStateResult = {
+  readonly testId: string;
+  readonly state: Readonly<Record<string, unknown>>;
+};
+
+/**
+ * Business logic for GET state endpoint.
+ *
+ * Retrieves the current test state for debugging.
+ * Framework-agnostic - can be used by any adapter.
+ *
+ * Steps:
+ * 1. Extract test ID from request context
+ * 2. Get state from manager
+ * 3. Return testId and state
+ *
+ * @param context - Request context for test ID extraction
+ * @param manager - Scenario manager for retrieving state
+ * @returns Result with testId and state object
+ */
+export const handleGetStateLogic = (
+  context: RequestContext,
+  manager: ScenarioManager,
+): GetStateResult => {
+  const testId = context.getTestId();
+  const state = manager.getState(testId);
+
+  return {
+    testId,
+    state,
+  };
+};

@@ -196,5 +196,9 @@ export const createScenarioManager = ({
     getScenarioById(id: string): ScenaristScenario | undefined {
       return registry.get(id);
     },
+
+    getState(testId: string): Readonly<Record<string, unknown>> {
+      return stateManager?.getAll(testId) ?? {};
+    },
   };
 };

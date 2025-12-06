@@ -28,6 +28,9 @@ const scenaristTest = withScenarios(testScenarios);
 
 const BASE_URL = "http://localhost:9877"; // Different port from switch-scenario tests
 
+// Shared state for debug endpoint tests
+const testState: Record<string, Record<string, unknown>> = {};
+
 // MSW server for fixture tests
 const server = setupServer(
   http.post(`${BASE_URL}/__scenario__`, async ({ request }) => {
@@ -45,6 +48,16 @@ const server = setupServer(
       scenario: body.scenario,
     });
   }),
+
+  // Debug state endpoint
+  http.get(`${BASE_URL}/__scenarist__/state`, ({ request }) => {
+    const testId = request.headers.get("x-scenarist-test-id") ?? "default-test";
+    const state = testState[testId] ?? {};
+    return HttpResponse.json({
+      testId,
+      state,
+    });
+  }),
 );
 
 scenaristTest.beforeAll(() => {
@@ -53,6 +66,8 @@ scenaristTest.beforeAll(() => {
 
 scenaristTest.afterEach(() => {
   server.resetHandlers();
+  // Clear test state between tests
+  Object.keys(testState).forEach((key) => delete testState[key]);
 });
 
 scenaristTest.afterAll(() => {
@@ -214,6 +229,126 @@ scenaristTest.describe("Scenarist Fixtures", () => {
         // Skip for now - the important behavior is tested in other tests
         // In practice, users MUST configure baseURL in playwright.config.ts
         expect(true).toBe(true);
+      },
+    );
+  });
+
+  scenaristTest.describe("debugState fixture", () => {
+    scenaristTest.use({
+      baseURL: BASE_URL,
+      scenaristEndpoint: "/__scenario__",
+      scenaristStateEndpoint: "/__scenarist__/state",
+    });
+
+    scenaristTest(
+      "should return current state for test ID",
+      async ({ page, debugState, scenaristTestId }) => {
+        // Set up state in our mock
+        testState[scenaristTestId] = {
+          phase: "submitted",
+          userId: "user-123",
+        };
+
+        const state = await debugState(page);
+
+        expect(state).toEqual({
+          phase: "submitted",
+          userId: "user-123",
+        });
+      },
+    );
+
+    scenaristTest(
+      "should return empty object when no state exists",
+      async ({ page, debugState }) => {
+        const state = await debugState(page);
+
+        expect(state).toEqual({});
+      },
+    );
+
+    scenaristTest(
+      "should use scenaristTestId automatically",
+      async ({ page, debugState, scenaristTestId }) => {
+        // Set up different state for different test IDs
+        testState[scenaristTestId] = { myKey: "myValue" };
+        testState["other-test-id"] = { otherKey: "otherValue" };
+
+        const state = await debugState(page);
+
+        // Should return state for this test's ID, not other
+        expect(state).toEqual({ myKey: "myValue" });
+      },
+    );
+  });
+
+  scenaristTest.describe("waitForDebugState fixture", () => {
+    scenaristTest.use({
+      baseURL: BASE_URL,
+      scenaristEndpoint: "/__scenario__",
+      scenaristStateEndpoint: "/__scenarist__/state",
+    });
+
+    scenaristTest(
+      "should resolve when condition becomes true",
+      async ({ page, waitForDebugState, scenaristTestId }) => {
+        // State already meets condition
+        testState[scenaristTestId] = { ready: true };
+
+        const state = await waitForDebugState(page, (s) => s.ready === true);
+
+        expect(state.ready).toBe(true);
+      },
+    );
+
+    scenaristTest(
+      "should wait and poll until condition is met",
+      async ({ page, waitForDebugState, scenaristTestId }) => {
+        // Start with state not meeting condition
+        testState[scenaristTestId] = { count: 0 };
+
+        // Simulate async state update (would happen from mock afterResponse)
+        setTimeout(() => {
+          testState[scenaristTestId] = { count: 5 };
+        }, 100);
+
+        const state = await waitForDebugState(
+          page,
+          (s) => (s.count as number) >= 5,
+          { timeout: 5000, interval: 50 },
+        );
+
+        expect(state.count).toBe(5);
+      },
+    );
+
+    scenaristTest(
+      "should throw error when timeout reached",
+      async ({ page, waitForDebugState, scenaristTestId }) => {
+        // State never meets condition
+        testState[scenaristTestId] = { ready: false };
+
+        await expect(
+          waitForDebugState(page, (s) => s.ready === true, {
+            timeout: 100,
+            interval: 20,
+          }),
+        ).rejects.toThrow(/timeout/i);
+      },
+    );
+
+    scenaristTest(
+      "should use default timeout and interval",
+      async ({ page, waitForDebugState, scenaristTestId }) => {
+        // State already meets condition - should use defaults
+        testState[scenaristTestId] = { status: "complete" };
+
+        const state = await waitForDebugState(
+          page,
+          (s) => s.status === "complete",
+        );
+
+        expect(state.status).toBe("complete");
       },
     );
   });

@@ -34,6 +34,7 @@ export const buildConfig = <T extends ScenaristScenarios>(
     endpoints: {
       setScenario: input.endpoints?.setScenario ?? "/__scenario__",
       getScenario: input.endpoints?.getScenario ?? "/__scenario__",
+      getState: input.endpoints?.getState ?? "/__scenarist__/state",
     },
     defaultTestId: input.defaultTestId ?? "default-test",
     errorBehaviors: {

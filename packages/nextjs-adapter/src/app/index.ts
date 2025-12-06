@@ -33,7 +33,7 @@
 
 export { createScenarist } from "./setup.js";
 export { AppRequestContext } from "./context.js";
-export { createScenarioEndpoint } from "./endpoints.js";
+export { createScenarioEndpoint, createStateEndpoint } from "./endpoints.js";
 export {
   getScenaristHeaders,
   getScenaristHeadersFromReadonlyHeaders,

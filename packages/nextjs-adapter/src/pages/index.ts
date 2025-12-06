@@ -30,7 +30,7 @@
 
 export { createScenarist } from "./setup.js";
 export { PagesRequestContext } from "./context.js";
-export { createScenarioEndpoint } from "./endpoints.js";
+export { createScenarioEndpoint, createStateEndpoint } from "./endpoints.js";
 export { getScenaristHeaders } from "./helpers.js";
 export type { PagesAdapterOptions, PagesScenarist } from "./setup.js";
 

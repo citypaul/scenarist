@@ -124,6 +124,40 @@ Mutate test state **after** returning a response. Use to advance workflow state 
 2. **After** response is sent, state is updated (`step: 'submitted'`)
 3. Subsequent requests see the new state
 
+### Conditional afterResponse
+
+When using `stateResponse`, you can define condition-specific `afterResponse` to run different state mutations based on which condition matched:
+
+```typescript
+{
+  method: 'GET',
+  url: '/api/loan/status',
+  stateResponse: {
+    default: { status: 200, body: { status: 'pending' } },
+    conditions: [
+      {
+        when: { submitted: true },
+        then: { status: 200, body: { status: 'reviewing' } },
+        afterResponse: { setState: { phase: 'review' } }  // Condition-specific
+      },
+      {
+        when: { approved: true },
+        then: { status: 200, body: { status: 'complete' } },
+        afterResponse: null  // Explicitly no mutation
+      }
+    ]
+  },
+  afterResponse: { setState: { phase: 'initial' } }  // Fallback for default
+}
+```
+
+**Resolution logic:**
+1. If condition matched AND has `afterResponse` key → use condition's (including `null`)
+2. If condition matched AND has no `afterResponse` key → use mock-level afterResponse
+3. If default matched → use mock-level afterResponse
+
+**Key insight:** `afterResponse: null` means "explicitly no state mutation" - different from omitting it (which inherits from mock-level).
+
 ### Works with Any Response Type
 
 `afterResponse.setState` combines with `response`, `sequence`, or `stateResponse`:
@@ -422,6 +456,136 @@ State-aware mocking combines with all existing features:
     setState: { checkoutComplete: true }
   }
 }
+```
+
+## State Model
+
+:::caution[State is Shared Across ALL Endpoints]
+State is stored in a **single flat object per test ID**, not namespaced by endpoint. This is intentional - it enables coordination between endpoints.
+:::
+
+```
+┌──────────────────────────────────────────────────┐
+│              Test ID: test-checkout-123          │
+│  ┌─────────────────────────────────────────────┐ │
+│  │           Shared State                      │ │
+│  │  { 'cart.items': 3, 'user.tier': 'premium' }│ │
+│  └─────────────────────────────────────────────┘ │
+│        ↑ write              ↑ write     ↓ read   │
+│   POST /cart/add      POST /login   GET /pricing │
+└──────────────────────────────────────────────────┘
+```
+
+### Namespace Your Keys
+
+Since state is shared, use namespaced keys to avoid collisions:
+
+```typescript
+// ✅ DO: Namespace your keys by domain
+afterResponse: { setState: { 'cart.itemCount': 3 } }
+afterResponse: { setState: { 'user.authenticated': true } }
+when: { 'cart.itemCount': 3, 'user.authenticated': true }
+
+// ❌ DON'T: Use generic keys that could collide
+afterResponse: { setState: { count: 3 } }        // What count?
+afterResponse: { setState: { status: 'active' } } // Which status?
+```
+
+### Why Not Per-Endpoint?
+
+The primary use case is **cross-endpoint coordination**:
+
+```typescript
+// POST /api/loan/submit sets state
+{
+  method: 'POST',
+  url: '/api/loan/submit',
+  response: { status: 200 },
+  afterResponse: { setState: { 'loan.submitted': true } },
+}
+
+// GET /api/loan/status reads that state
+{
+  method: 'GET',
+  url: '/api/loan/status',
+  stateResponse: {
+    default: { status: 200, body: { step: 'pending' } },
+    conditions: [
+      { when: { 'loan.submitted': true }, then: { status: 200, body: { step: 'reviewing' } } },
+    ],
+  },
+}
+```
+
+If state were per-endpoint, this coordination pattern wouldn't work.
+
+## Debugging State
+
+When tests fail, you often need to inspect the current state to understand what went wrong. Scenarist provides debug tools for this.
+
+### Debug Endpoint
+
+All adapters expose a debug endpoint at `GET /__scenarist__/state`:
+
+```bash
+curl -H "x-scenarist-test-id: test-123" http://localhost:3000/__scenarist__/state
+```
+
+**Response:**
+```json
+{
+  "testId": "test-123",
+  "state": {
+    "cart.items": 3,
+    "user.tier": "premium",
+    "checkout.started": true
+  }
+}
+```
+
+### Playwright Debug Fixtures
+
+For Playwright tests, use the `debugState` and `waitForDebugState` fixtures:
+
+```typescript
+import { test, expect } from './fixtures';
+
+test('checkout flow', async ({ page, switchScenario, debugState, waitForDebugState }) => {
+  await switchScenario(page, 'checkout');
+  await page.goto('/cart');
+
+  // Add item to cart
+  await page.click('#add-item');
+
+  // Debug: Check what state was set
+  const state = await debugState(page);
+  console.log('After add item:', state);
+  // → { 'cart.items': 1, 'cart.total': 29.99 }
+
+  // Wait for async state to stabilize
+  await page.click('#checkout');
+  const finalState = await waitForDebugState(
+    page,
+    (s) => s['checkout.status'] === 'complete',
+    { timeout: 10000 }
+  );
+
+  expect(finalState['checkout.status']).toBe('complete');
+});
+```
+
+**Available fixtures:**
+- `debugState(page)` - Fetch current state (no testId needed - fixture manages it)
+- `waitForDebugState(page, condition, options)` - Poll until condition is met
+
+**Configure the endpoint in playwright.config.ts:**
+```typescript
+export default defineConfig({
+  use: {
+    baseURL: 'http://localhost:3000',
+    scenaristStateEndpoint: '/__scenarist__/state',  // Default value
+  },
+});
 ```
 
 ## Next Steps

@@ -1,10 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { handlePostLogic } from "../../src/common/endpoint-handlers.js";
+import {
+  handlePostLogic,
+  handleGetStateLogic,
+} from "../../src/common/endpoint-handlers.js";
 import {
   buildConfig,
   createScenarioManager,
   InMemoryScenarioRegistry,
   InMemoryScenarioStore,
+  InMemoryStateManager,
   type RequestContext,
 } from "@scenarist/core";
 
@@ -72,6 +76,81 @@ describe("Common Endpoint Handlers", () => {
         const details = result.details as Array<{ path: string[] }>;
         expect(details.some((d) => d.path.includes("scenario"))).toBe(true);
       }
+    });
+  });
+
+  describe("handleGetStateLogic", () => {
+    const createTestSetupWithState = () => {
+      const defaultScenario = {
+        id: "default",
+        name: "Default Scenario",
+        description: "Default test scenario",
+        mocks: [],
+      };
+
+      const registry = new InMemoryScenarioRegistry();
+      const store = new InMemoryScenarioStore();
+      const stateManager = new InMemoryStateManager();
+      const config = buildConfig({
+        enabled: true,
+        scenarios: { default: defaultScenario },
+      });
+      const manager = createScenarioManager({ registry, store, stateManager });
+
+      manager.registerScenario(defaultScenario);
+
+      return { manager, config, stateManager };
+    };
+
+    it("should return current state for test ID", () => {
+      const { manager, stateManager } = createTestSetupWithState();
+      const context: RequestContext = {
+        getTestId: () => "test-123",
+      };
+
+      // Set some state
+      stateManager.set("test-123", "userId", "user-456");
+      stateManager.set("test-123", "phase", "submitted");
+
+      const result = handleGetStateLogic(context, manager);
+
+      expect(result).toEqual({
+        testId: "test-123",
+        state: {
+          userId: "user-456",
+          phase: "submitted",
+        },
+      });
+    });
+
+    it("should return empty state when no state has been set", () => {
+      const { manager } = createTestSetupWithState();
+      const context: RequestContext = {
+        getTestId: () => "test-new",
+      };
+
+      const result = handleGetStateLogic(context, manager);
+
+      expect(result).toEqual({
+        testId: "test-new",
+        state: {},
+      });
+    });
+
+    it("should isolate state per test ID", () => {
+      const { manager, stateManager } = createTestSetupWithState();
+
+      stateManager.set("test-1", "userId", "user-1");
+      stateManager.set("test-2", "userId", "user-2");
+
+      const context1: RequestContext = { getTestId: () => "test-1" };
+      const context2: RequestContext = { getTestId: () => "test-2" };
+
+      const result1 = handleGetStateLogic(context1, manager);
+      const result2 = handleGetStateLogic(context2, manager);
+
+      expect(result1.state).toEqual({ userId: "user-1" });
+      expect(result2.state).toEqual({ userId: "user-2" });
     });
   });
 });
