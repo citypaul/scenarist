@@ -1,6 +1,6 @@
 {
   "name": "@scenarist/msw-adapter",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "description": "Internal: MSW integration layer for Scenarist framework adapters",
   "author": "Paul Hammond (citypaul) <paul@packsoftware.co.uk>",
   "license": "MIT",
