@@ -14,6 +14,7 @@ import type { Request, Response, Router } from "express";
 const LOAN_API_URL = "https://api.loans.com";
 const FEATURES_API_URL = "https://api.features.com";
 const PRICING_API_URL = "https://api.pricing.com";
+const ORDERS_API_URL = "https://api.orders.com";
 
 export const setupStateAwareRoutes = (router: Router): void => {
   /**
@@ -160,6 +161,82 @@ export const setupStateAwareRoutes = (router: Router): void => {
     } catch (error) {
       return res.status(500).json({
         error: "Failed to get pricing",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  /**
+   * GET /api/order/status
+   *
+   * Returns order status. Uses stateResponse with condition-level
+   * afterResponse to demonstrate override behavior.
+   */
+  router.get("/api/order/status", async (_req: Request, res: Response) => {
+    try {
+      const response = await fetch(`${ORDERS_API_URL}/order/status`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        return res.status(response.status).json(data);
+      }
+
+      return res.json(data);
+    } catch (error) {
+      return res.status(500).json({
+        error: "Failed to get order status",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  /**
+   * POST /api/order/submit
+   *
+   * Submits an order. Sets submitted state via afterResponse.setState.
+   */
+  router.post("/api/order/submit", async (_req: Request, res: Response) => {
+    try {
+      const response = await fetch(`${ORDERS_API_URL}/order/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        return res.status(response.status).json(data);
+      }
+
+      return res.json(data);
+    } catch (error) {
+      return res.status(500).json({
+        error: "Failed to submit order",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  /**
+   * POST /api/order/approve
+   *
+   * Approves an order. Sets approved state via afterResponse.setState.
+   */
+  router.post("/api/order/approve", async (_req: Request, res: Response) => {
+    try {
+      const response = await fetch(`${ORDERS_API_URL}/order/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        return res.status(response.status).json(data);
+      }
+
+      return res.json(data);
+    } catch (error) {
+      return res.status(500).json({
+        error: "Failed to approve order",
         message: error instanceof Error ? error.message : "Unknown error",
       });
     }
