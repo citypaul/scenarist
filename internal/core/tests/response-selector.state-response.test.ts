@@ -1775,6 +1775,283 @@ describe("ResponseSelector - State Response", () => {
     });
   });
 
+  describe("Condition-Level afterResponse (#338)", () => {
+    /**
+     * Issue #338: Conditional afterResponse for stateResponse conditions
+     *
+     * When using stateResponse with afterResponse.setState, the state mutation
+     * should be conditional based on which condition matched, not always run
+     * regardless of the matched condition.
+     */
+    it("should use condition-level afterResponse when condition matches and has its own afterResponse", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/loan/status",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const stateManager = createInMemoryStateManager();
+      stateManager.set("test-1", "submitted", true);
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "GET",
+          url: "/api/loan/status",
+          stateResponse: {
+            default: { status: 200, body: { status: "pending" } },
+            conditions: [
+              {
+                when: { submitted: true },
+                then: { status: 200, body: { status: "reviewing" } },
+                afterResponse: { setState: { phase: "review" } }, // Condition-specific
+              },
+            ],
+          },
+          afterResponse: { setState: { phase: "pending" } }, // Mock-level fallback
+        },
+      ];
+
+      const selector = createResponseSelector({ stateManager });
+      const result = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({ status: "reviewing" });
+      }
+
+      // Should use condition-level afterResponse, NOT mock-level
+      expect(stateManager.get("test-1", "phase")).toBe("review");
+    });
+
+    it("should not mutate state when condition has afterResponse: null", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/loan/status",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const stateManager = createInMemoryStateManager();
+      stateManager.set("test-1", "approved", true);
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "GET",
+          url: "/api/loan/status",
+          stateResponse: {
+            default: { status: 200, body: { status: "pending" } },
+            conditions: [
+              {
+                when: { approved: true },
+                then: { status: 200, body: { status: "complete" } },
+                afterResponse: null, // Explicitly no state mutation
+              },
+            ],
+          },
+          afterResponse: { setState: { phase: "pending" } }, // Would run without null override
+        },
+      ];
+
+      const selector = createResponseSelector({ stateManager });
+      const result = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({ status: "complete" });
+      }
+
+      // afterResponse: null should prevent state mutation
+      expect(stateManager.get("test-1", "phase")).toBeUndefined();
+    });
+
+    it("should use mock-level afterResponse when condition matches but has no afterResponse key", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/loan/status",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const stateManager = createInMemoryStateManager();
+      stateManager.set("test-1", "submitted", true);
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "GET",
+          url: "/api/loan/status",
+          stateResponse: {
+            default: { status: 200, body: { status: "pending" } },
+            conditions: [
+              {
+                when: { submitted: true },
+                then: { status: 200, body: { status: "reviewing" } },
+                // No afterResponse key - should inherit from mock-level
+              },
+            ],
+          },
+          afterResponse: { setState: { phase: "fallback" } },
+        },
+      ];
+
+      const selector = createResponseSelector({ stateManager });
+      const result = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({ status: "reviewing" });
+      }
+
+      // Should use mock-level afterResponse (backward compatible)
+      expect(stateManager.get("test-1", "phase")).toBe("fallback");
+    });
+
+    it("should use mock-level afterResponse when default is used (no condition matches)", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/loan/status",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const stateManager = createInMemoryStateManager();
+      // No state set - will match default
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "GET",
+          url: "/api/loan/status",
+          stateResponse: {
+            default: { status: 200, body: { status: "pending" } },
+            conditions: [
+              {
+                when: { submitted: true },
+                then: { status: 200, body: { status: "reviewing" } },
+                afterResponse: { setState: { phase: "review" } },
+              },
+            ],
+          },
+          afterResponse: { setState: { phase: "initial" } },
+        },
+      ];
+
+      const selector = createResponseSelector({ stateManager });
+      const result = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.body).toEqual({ status: "pending" });
+      }
+
+      // Default matched - should use mock-level afterResponse
+      expect(stateManager.get("test-1", "phase")).toBe("initial");
+    });
+
+    it("should enable multi-stage flows with conditional afterResponse", () => {
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/loan/status",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const stateManager = createInMemoryStateManager();
+
+      // Note: Conditions use specificity-based selection. More specific conditions
+      // (more keys) take precedence over less specific ones.
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "GET",
+          url: "/api/loan/status",
+          stateResponse: {
+            default: { status: 200, body: { step: "pending" } },
+            conditions: [
+              {
+                when: { loanSubmitted: true },
+                then: { status: 200, body: { step: "reviewing" } },
+                afterResponse: { setState: { loanReviewed: true } },
+              },
+              {
+                // More specific (2 keys) - wins when both flags are true
+                when: { loanSubmitted: true, loanReviewed: true },
+                then: { status: 200, body: { step: "approved" } },
+                afterResponse: null, // Final state - no more transitions
+              },
+            ],
+          },
+          afterResponse: { setState: { loanSubmitted: true } },
+        },
+      ];
+
+      const selector = createResponseSelector({ stateManager });
+
+      // Request 1: No state → pending, sets loanSubmitted
+      const result1 = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+      expect(result1.success && result1.data.body).toEqual({ step: "pending" });
+      expect(stateManager.get("test-1", "loanSubmitted")).toBe(true);
+      expect(stateManager.get("test-1", "loanReviewed")).toBeUndefined();
+
+      // Request 2: loanSubmitted → reviewing (1 key), sets loanReviewed
+      const result2 = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+      expect(result2.success && result2.data.body).toEqual({
+        step: "reviewing",
+      });
+      expect(stateManager.get("test-1", "loanReviewed")).toBe(true);
+
+      // Request 3: loanSubmitted + loanReviewed → approved (2 keys, more specific)
+      // afterResponse: null prevents further state changes
+      const result3 = selector.selectResponse(
+        "test-1",
+        "default-scenario",
+        context,
+        wrapMocks(mocks),
+      );
+      expect(result3.success && result3.data.body).toEqual({
+        step: "approved",
+      });
+      // State should NOT have been modified (afterResponse: null)
+      expect(stateManager.getAll("test-1")).toEqual({
+        loanSubmitted: true,
+        loanReviewed: true,
+      });
+    });
+  });
+
   describe("Default Sequence + Active stateResponse Overlap (plum-bff exact reproduction)", () => {
     /**
      * This test reproduces the EXACT plum-bff pattern where:

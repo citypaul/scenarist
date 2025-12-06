@@ -16,11 +16,17 @@ import { ScenaristResponseSchema } from "./response.js";
  * The `when` clause is a partial match object - all keys must match
  * the current state for the condition to apply.
  *
+ * The optional `afterResponse` field overrides the mock-level afterResponse:
+ * - If present with a value: use condition's afterResponse (replaces mock-level)
+ * - If present as null: explicitly skip state mutation
+ * - If absent: inherit mock-level afterResponse (backward compatible)
+ *
  * @example
  * ```typescript
  * {
  *   when: { checked: true, step: 'reviewed' },
- *   then: { status: 200, body: { state: 'approved' } }
+ *   then: { status: 200, body: { state: 'approved' } },
+ *   afterResponse: { setState: { phase: 'approved' } }  // Optional
  * }
  * ```
  */
@@ -31,6 +37,16 @@ export const StateConditionSchema = z.object({
       message: "when clause must have at least one key",
     }),
   then: ScenaristResponseSchema,
+  afterResponse: z
+    .object({
+      setState: z
+        .record(z.string(), z.unknown())
+        .refine((obj) => Object.keys(obj).length > 0, {
+          message: "setState must have at least one key",
+        }),
+    })
+    .nullable()
+    .optional(),
 });
 export type StateCondition = z.infer<typeof StateConditionSchema>;
 

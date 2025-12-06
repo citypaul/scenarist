@@ -18,6 +18,10 @@ import { matchesRegex } from "./regex-matching.js";
 import { createStateResponseResolver } from "./state-response-resolver.js";
 import { deepEquals } from "./deep-equals.js";
 import type { MatchValue } from "../schemas/scenario-definition.js";
+import type {
+  StateCondition,
+  StateAfterResponse,
+} from "../schemas/state-aware-mocking.js";
 import { noOpLogger } from "../adapters/index.js";
 import { LogCategories, LogEvents } from "./log-events.js";
 
@@ -34,6 +38,16 @@ const SPECIFICITY_RANGES = {
   SEQUENCE_FALLBACK: 1,
   SIMPLE_FALLBACK: 0,
 } as const;
+
+/**
+ * Result from selecting a response from a mock.
+ * Includes the matched condition for stateResponse mocks to enable
+ * condition-level afterResponse (#338).
+ */
+type MockResponseResult = {
+  readonly response: ScenaristResponse;
+  readonly matchedCondition: StateCondition | null;
+};
 
 /**
  * Options for creating a response selector.
@@ -199,7 +213,7 @@ export const createResponseSelector = (
         );
 
         // Select response (single, sequence, or stateResponse)
-        const response = selectResponseFromMock(
+        const responseResult = selectResponseFromMock(
           testId,
           scenarioId,
           mockIndex,
@@ -209,7 +223,7 @@ export const createResponseSelector = (
           logger,
         );
 
-        if (!response) {
+        if (!responseResult) {
           return {
             success: false,
             error: new ScenaristError(
@@ -235,7 +249,7 @@ export const createResponseSelector = (
         }
 
         // Apply templates to response (both state AND params)
-        let finalResponse = response;
+        let finalResponse = responseResult.response;
         if (stateManager || mockWithParams.params) {
           const currentState = stateManager ? stateManager.getAll(testId) : {};
           // Merge state and params for template replacement
@@ -246,16 +260,24 @@ export const createResponseSelector = (
           };
           // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- applyTemplates preserves structure; input ScenaristResponse → output ScenaristResponse
           finalResponse = applyTemplates(
-            response,
+            responseResult.response,
             templateData,
           ) as ScenaristResponse;
         }
 
         // Apply afterResponse.setState to mutate state for subsequent requests
-        if (mock.afterResponse?.setState && stateManager) {
-          stateManager.merge(testId, mock.afterResponse.setState);
+        // Uses condition-level afterResponse if available (#338)
+        const effectiveAfterResponse = resolveEffectiveAfterResponse(
+          mock.afterResponse,
+          responseResult.matchedCondition,
+        );
+        if (effectiveAfterResponse?.setState && stateManager) {
+          stateManager.merge(testId, effectiveAfterResponse.setState);
           logger.debug(LogCategories.STATE, LogEvents.STATE_SET, logContext, {
-            setState: mock.afterResponse.setState,
+            setState: effectiveAfterResponse.setState,
+            source: responseResult.matchedCondition
+              ? "condition"
+              : "mock-level",
           });
         }
 
@@ -324,6 +346,29 @@ export const createResponseSelector = (
 };
 
 /**
+ * Determine which afterResponse to apply.
+ *
+ * Resolution order (per #338):
+ * 1. If condition matched AND has 'afterResponse' key → use condition's (including null)
+ * 2. Otherwise → use mock-level afterResponse
+ *
+ * @param mockAfterResponse - Mock-level afterResponse (fallback)
+ * @param matchedCondition - The matched condition from stateResponse (or null)
+ * @returns The effective afterResponse to apply (or null/undefined for no mutation)
+ */
+const resolveEffectiveAfterResponse = (
+  mockAfterResponse: StateAfterResponse | undefined,
+  matchedCondition: StateCondition | null,
+): StateAfterResponse | null | undefined => {
+  // If a condition matched and has its own afterResponse key, use it (including null)
+  if (matchedCondition && "afterResponse" in matchedCondition) {
+    return matchedCondition.afterResponse;
+  }
+  // Otherwise, fall back to mock-level afterResponse
+  return mockAfterResponse;
+};
+
+/**
  * Select a response from a mock (single response, sequence, or stateResponse).
  *
  * @param testId - Test ID for sequence/state tracking
@@ -333,7 +378,7 @@ export const createResponseSelector = (
  * @param sequenceTracker - Optional sequence tracker for Phase 2
  * @param stateManager - Optional state manager for stateResponse
  * @param logger - Logger for debugging
- * @returns ScenaristResponse or null if mock has no response type
+ * @returns MockResponseResult or null if mock has no response type
  */
 const selectResponseFromMock = (
   testId: string,
@@ -343,14 +388,17 @@ const selectResponseFromMock = (
   sequenceTracker: SequenceTracker | undefined,
   stateManager: StateManager | undefined,
   logger: Logger,
-): ScenaristResponse | null => {
+): MockResponseResult | null => {
   const logContext = { testId, scenarioId };
 
   // Phase 2: If mock has a sequence, use sequence tracker
   if (mock.sequence) {
     if (!sequenceTracker) {
       // Sequence defined but no tracker provided - return first response
-      return mock.sequence.responses[0] || null;
+      const firstResponse = mock.sequence.responses[0];
+      return firstResponse
+        ? { response: firstResponse, matchedCondition: null }
+        : null;
     }
 
     // Get current position from tracker
@@ -376,7 +424,7 @@ const selectResponseFromMock = (
       repeatMode,
     );
 
-    return response;
+    return { response, matchedCondition: null };
   }
 
   // State-aware response: evaluate conditions against current state
@@ -392,7 +440,7 @@ const selectResponseFromMock = (
 
   // Phase 1: Single response
   if (mock.response) {
-    return mock.response;
+    return { response: mock.response, matchedCondition: null };
   }
 
   // No response type defined
@@ -400,7 +448,7 @@ const selectResponseFromMock = (
 };
 
 /**
- * Resolve a stateResponse configuration to a single response.
+ * Resolve a stateResponse configuration to a response and matched condition.
  *
  * Uses the StateResponseResolver to evaluate conditions against
  * current test state and return the appropriate response.
@@ -410,7 +458,7 @@ const selectResponseFromMock = (
  * @param stateManager - Optional state manager for state lookup
  * @param logger - Logger for debugging
  * @param logContext - Context for log messages
- * @returns The resolved response (matching condition or default)
+ * @returns MockResponseResult with response and matched condition
  */
 const resolveStateResponse = (
   testId: string,
@@ -418,7 +466,7 @@ const resolveStateResponse = (
   stateManager: StateManager | undefined,
   logger: Logger,
   logContext: { testId: string; scenarioId: string },
-): ScenaristResponse => {
+): MockResponseResult => {
   // Without stateManager, always return default
   if (!stateManager) {
     logger.debug(
@@ -430,41 +478,32 @@ const resolveStateResponse = (
         reason: "no_state_manager",
       },
     );
-    return stateResponse.default;
+    return { response: stateResponse.default, matchedCondition: null };
   }
 
   // Get current state for this test
   const currentState = stateManager.getAll(testId);
 
-  // Create resolver and evaluate conditions
+  // Create resolver and evaluate conditions with matched condition tracking
   const resolver = createStateResponseResolver();
-  const response = resolver.resolveResponse(stateResponse, currentState);
-
-  // Log which response was selected and why
-  const isDefault = response === stateResponse.default;
-  const matchedCondition = isDefault
-    ? null
-    : stateResponse.conditions.find(
-        (c) =>
-          resolver.resolveResponse(
-            { default: stateResponse.default, conditions: [c] },
-            currentState,
-          ) !== stateResponse.default,
-      );
+  const result = resolver.resolveResponseWithCondition(
+    stateResponse,
+    currentState,
+  );
 
   logger.debug(
     LogCategories.STATE,
     LogEvents.STATE_RESPONSE_RESOLVED,
     logContext,
     {
-      result: isDefault ? "default" : "condition",
+      result: result.matchedCondition ? "condition" : "default",
       currentState,
       conditionsCount: stateResponse.conditions.length,
-      matchedWhen: matchedCondition?.when ?? null,
+      matchedWhen: result.matchedCondition?.when ?? null,
     },
   );
 
-  return response;
+  return result;
 };
 
 /**

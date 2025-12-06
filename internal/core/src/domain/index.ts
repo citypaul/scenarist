@@ -9,6 +9,7 @@ export {
 export {
   createStateResponseResolver,
   type StateResponseResolver,
+  type StateResponseResult,
 } from "./state-response-resolver.js";
 export { deepEquals } from "./deep-equals.js";
 export { LogCategories, LogEvents, type LogEvent } from "./log-events.js";
