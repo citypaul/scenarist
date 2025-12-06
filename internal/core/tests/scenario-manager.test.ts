@@ -1042,6 +1042,55 @@ describe("ScenarioManager", () => {
     });
   });
 
+  describe("getState", () => {
+    it("should return current state for a test ID", () => {
+      const stateManager = createTestStateManager();
+      const { manager } = createTestSetup({ stateManager });
+
+      // Set some state
+      stateManager.set("test-1", "userId", "user-123");
+      stateManager.set("test-1", "count", 5);
+
+      const state = manager.getState("test-1");
+
+      expect(state).toEqual({
+        userId: "user-123",
+        count: 5,
+      });
+    });
+
+    it("should return empty object when no state has been set", () => {
+      const stateManager = createTestStateManager();
+      const { manager } = createTestSetup({ stateManager });
+
+      const state = manager.getState("test-1");
+
+      expect(state).toEqual({});
+    });
+
+    it("should return empty object when no stateManager is configured", () => {
+      const { manager } = createTestSetup(); // No stateManager
+
+      const state = manager.getState("test-1");
+
+      expect(state).toEqual({});
+    });
+
+    it("should isolate state per test ID", () => {
+      const stateManager = createTestStateManager();
+      const { manager } = createTestSetup({ stateManager });
+
+      stateManager.set("test-1", "userId", "user-1");
+      stateManager.set("test-2", "userId", "user-2");
+
+      const state1 = manager.getState("test-1");
+      const state2 = manager.getState("test-2");
+
+      expect(state1.userId).toBe("user-1");
+      expect(state2.userId).toBe("user-2");
+    });
+  });
+
   describe("Sequence Reset on Scenario Switch", () => {
     it("should reset sequence positions when switching scenarios", () => {
       const sequenceTracker = createTestSequenceTracker();

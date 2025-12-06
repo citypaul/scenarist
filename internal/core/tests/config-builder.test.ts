@@ -26,6 +26,7 @@ describe("buildConfig", () => {
     expect(config.enabled).toBe(true);
     expect(config.endpoints.setScenario).toBe("/__scenario__");
     expect(config.endpoints.getScenario).toBe("/__scenario__");
+    expect(config.endpoints.getState).toBe("/__scenarist__/state");
     expect(config.defaultTestId).toBe("default-test");
     expect(config.strictMode).toBe(false);
   });
@@ -37,11 +38,13 @@ describe("buildConfig", () => {
       endpoints: {
         setScenario: "/api/scenario/set",
         getScenario: "/api/scenario/get",
+        getState: "/api/debug/state",
       },
     });
 
     expect(config.endpoints.setScenario).toBe("/api/scenario/set");
     expect(config.endpoints.getScenario).toBe("/api/scenario/get");
+    expect(config.endpoints.getState).toBe("/api/debug/state");
   });
 
   it.each<{

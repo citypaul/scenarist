@@ -55,6 +55,8 @@ export type ScenaristConfig = {
     readonly setScenario: string;
     /** Endpoint to get current scenario (default: '/__scenario__') */
     readonly getScenario: string;
+    /** Endpoint to get current test state for debugging (default: '/__scenarist__/state') */
+    readonly getState: string;
   };
 
   /**
