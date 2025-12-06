@@ -9,7 +9,7 @@ import {
   InMemoryScenarioStore,
 } from "@scenarist/core";
 import { createScenaristBase } from "../common/create-scenarist-base.js";
-import { createScenarioEndpoint } from "./endpoints.js";
+import { createScenarioEndpoint, createStateEndpoint } from "./endpoints.js";
 
 /**
  * Global state for Next.js Pages Router adapter.
@@ -65,6 +65,19 @@ export type PagesScenarist = Omit<ScenaristAdapter<never>, "middleware"> & {
    * ```
    */
   createScenarioEndpoint: () => ReturnType<typeof createScenarioEndpoint>;
+
+  /**
+   * Create state debug endpoint handler for use in pages/api/__scenarist__/state.ts
+   *
+   * @example
+   * ```typescript
+   * // pages/api/__scenarist__/state.ts
+   * import { scenarist } from '../../../lib/scenarist';
+   *
+   * export default scenarist?.createStateEndpoint();
+   * ```
+   */
+  createStateEndpoint: () => ReturnType<typeof createStateEndpoint>;
 };
 
 /**
@@ -136,6 +149,7 @@ export const createScenaristImpl = (
     listScenarios: () => manager.listScenarios(),
     clearScenario: (testId) => manager.clearScenario(testId),
     createScenarioEndpoint: () => createScenarioEndpoint(manager, config),
+    createStateEndpoint: () => createStateEndpoint(manager, config),
     start: () => {
       // Singleton guard - prevents duplicate MSW initialization
       // Next.js dev mode with HMR creates multiple module instances, so this ensures

@@ -9,7 +9,7 @@ import {
   InMemoryScenarioStore,
 } from "@scenarist/core";
 import { createScenaristBase } from "../common/create-scenarist-base.js";
-import { createScenarioEndpoint } from "./endpoints.js";
+import { createScenarioEndpoint, createStateEndpoint } from "./endpoints.js";
 
 /**
  * Global state for Next.js App Router adapter.
@@ -67,6 +67,19 @@ export type AppScenarist = Omit<ScenaristAdapter<never>, "middleware"> & {
    * ```
    */
   createScenarioEndpoint: () => ReturnType<typeof createScenarioEndpoint>;
+
+  /**
+   * Create state debug endpoint handler for use in app/api/%5F%5Fscenarist%5F%5F/state/route.ts
+   *
+   * @example
+   * ```typescript
+   * // app/api/%5F%5Fscenarist%5F%5F/state/route.ts
+   * import { scenarist } from '@/lib/scenarist';
+   *
+   * export const GET = scenarist?.createStateEndpoint();
+   * ```
+   */
+  createStateEndpoint: () => ReturnType<typeof createStateEndpoint>;
 };
 
 /**
@@ -140,6 +153,7 @@ export const createScenaristImpl = (
     listScenarios: () => manager.listScenarios(),
     clearScenario: (testId) => manager.clearScenario(testId),
     createScenarioEndpoint: () => createScenarioEndpoint(manager, config),
+    createStateEndpoint: () => createStateEndpoint(manager, config),
     start: () => {
       // Singleton guard - prevents duplicate MSW initialization
       // Next.js (Turbopack) creates multiple module instances, so this ensures

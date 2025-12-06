@@ -125,6 +125,22 @@ describe("App Router createScenarist", () => {
     expect(typeof endpoint).toBe("function");
   });
 
+  it("should provide state endpoint handler", async () => {
+    const { scenarist } = await createTestSetup();
+
+    expect(scenarist.createStateEndpoint).toBeDefined();
+    expect(typeof scenarist.createStateEndpoint).toBe("function");
+  });
+
+  it("should create working state endpoint when called", async () => {
+    const { scenarist } = await createTestSetup();
+
+    const endpoint = scenarist.createStateEndpoint();
+
+    expect(endpoint).toBeDefined();
+    expect(typeof endpoint).toBe("function");
+  });
+
   it("should start MSW server", async () => {
     const { scenarist } = await createTestSetup();
 
