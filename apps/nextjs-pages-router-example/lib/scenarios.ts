@@ -1178,6 +1178,106 @@ export const issue335SimpleResponseScenario: ScenaristScenario = {
 };
 
 /**
+ * Conditional afterResponse Scenario (Issue #332)
+ *
+ * Demonstrates condition-level afterResponse in stateResponse:
+ * 1. Condition can override mock-level afterResponse with its own state mutation
+ * 2. Condition can suppress state mutation with afterResponse: null
+ * 3. Condition inherits mock-level afterResponse when no afterResponse key present
+ *
+ * Flow:
+ * 1. GET /order/status (default) → "new", sets phase: "initial" (mock-level)
+ * 2. POST /order/submit → sets submitted: true, approved: false
+ * 3. GET /order/status → "processing", sets phase: "processing" (condition override)
+ * 4. POST /order/approve → sets approved: true
+ * 5. GET /order/status → "complete", phase stays "processing" (afterResponse: null)
+ */
+export const conditionalAfterResponseScenario: ScenaristScenario = {
+  id: "conditionalAfterResponse",
+  name: "Conditional afterResponse Demo",
+  description:
+    "Demonstrates condition-level afterResponse override and suppression",
+  mocks: [
+    // GET /order/status - stateResponse with condition-level afterResponse
+    {
+      method: "GET",
+      url: "https://api.orders.com/order/status",
+      stateResponse: {
+        default: {
+          status: 200,
+          body: {
+            status: "new",
+            message: "Order not yet submitted",
+          },
+        },
+        conditions: [
+          // Condition with its own afterResponse (overrides mock-level)
+          {
+            when: { submitted: true, approved: false },
+            then: {
+              status: 200,
+              body: {
+                status: "processing",
+                message: "Order is being processed",
+              },
+            },
+            afterResponse: {
+              setState: { phase: "processing" },
+            },
+          },
+          // Condition with afterResponse: null (suppresses state mutation)
+          {
+            when: { approved: true },
+            then: {
+              status: 200,
+              body: {
+                status: "complete",
+                message: "Order complete",
+              },
+            },
+            afterResponse: null,
+          },
+        ],
+      },
+      // Mock-level afterResponse - used for default and conditions without afterResponse
+      afterResponse: {
+        setState: { phase: "initial" },
+      },
+    },
+    // POST /order/submit - Sets submitted state
+    {
+      method: "POST",
+      url: "https://api.orders.com/order/submit",
+      response: {
+        status: 200,
+        body: {
+          success: true,
+          message: "Order submitted",
+        },
+      },
+      afterResponse: {
+        setState: { submitted: true, approved: false },
+      },
+    },
+    // POST /order/approve - Sets approved state
+    {
+      method: "POST",
+      url: "https://api.orders.com/order/approve",
+      response: {
+        status: 200,
+        body: {
+          success: true,
+          message: "Order approved",
+        },
+      },
+      afterResponse: {
+        setState: { approved: true },
+      },
+    },
+  ],
+};
+
+/**
  * All scenarios for registration and type-safe access
  */
 export const scenarios = {
@@ -1196,4 +1296,5 @@ export const scenarios = {
   loanApplication: loanApplicationScenario,
   featureFlags: featureFlagsScenario,
   issue335SimpleResponse: issue335SimpleResponseScenario,
+  conditionalAfterResponse: conditionalAfterResponseScenario,
 } as const satisfies ScenaristScenarios;

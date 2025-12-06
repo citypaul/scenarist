@@ -142,6 +142,10 @@ type ScenarioId = keyof typeof scenarios;
  * 1. Switch Scenarist scenarios (HTTP mocks)
  * 2. Seed the repository with scenario-specific data
  *
+ * NOTE: `debugState` and `waitForDebugState` are already provided by
+ * `withScenarios()` - we inherit them automatically from baseTest.
+ * This demonstrates that Scenarist's Playwright helpers work out of the box!
+ *
  * This maintains test isolation at BOTH the HTTP and database layers.
  */
 type ExtendedFixtures = {
