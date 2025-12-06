@@ -190,4 +190,73 @@ describe("Scenario Endpoints", () => {
       expect(response.body.scenarioName).toBeUndefined();
     });
   });
+
+  describe("GET /__scenarist__/state", () => {
+    it("should return current state for test ID", async () => {
+      const config = mockConfig();
+      const manager = mockScenarioManager({
+        getState: () => ({
+          userId: "user-123",
+          phase: "submitted",
+        }),
+      });
+
+      const router = createScenarioEndpoints(manager, config);
+      const app = express();
+      app.use(router!);
+
+      const response = await request(app)
+        .get("/__scenarist__/state")
+        .set("x-scenarist-test-id", "test-123");
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        testId: "test-123",
+        state: {
+          userId: "user-123",
+          phase: "submitted",
+        },
+      });
+    });
+
+    it("should return empty state when no state has been set", async () => {
+      const config = mockConfig();
+      const manager = mockScenarioManager({
+        getState: () => ({}),
+      });
+
+      const router = createScenarioEndpoints(manager, config);
+      const app = express();
+      app.use(router!);
+
+      const response = await request(app)
+        .get("/__scenarist__/state")
+        .set("x-scenarist-test-id", "test-456");
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        testId: "test-456",
+        state: {},
+      });
+    });
+
+    it("should use default test ID when header is missing", async () => {
+      const config = mockConfig({ defaultTestId: "my-default-test" });
+      const manager = mockScenarioManager({
+        getState: () => ({ count: 5 }),
+      });
+
+      const router = createScenarioEndpoints(manager, config);
+      const app = express();
+      app.use(router!);
+
+      const response = await request(app).get("/__scenarist__/state");
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        testId: "my-default-test",
+        state: { count: 5 },
+      });
+    });
+  });
 });

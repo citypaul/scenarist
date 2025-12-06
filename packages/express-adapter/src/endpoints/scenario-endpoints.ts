@@ -77,6 +77,19 @@ const handleGetScenario = (
   };
 };
 
+const handleGetState = (manager: ScenarioManager, config: ScenaristConfig) => {
+  return (req: Request, res: Response): void => {
+    const context = new ExpressRequestContext(req, config);
+    const testId = context.getTestId();
+    const state = manager.getState(testId);
+
+    res.status(200).json({
+      testId,
+      state,
+    });
+  };
+};
+
 export const createScenarioEndpoints = (
   manager: ScenarioManager,
   config: ScenaristConfig,
@@ -85,6 +98,7 @@ export const createScenarioEndpoints = (
 
   router.post(config.endpoints.setScenario, handleSetScenario(manager, config));
   router.get(config.endpoints.getScenario, handleGetScenario(manager, config));
+  router.get(config.endpoints.getState, handleGetState(manager, config));
 
   return router;
 };
