@@ -655,6 +655,58 @@ describe("ResponseSelector - Sequences", () => {
     });
   });
 
+  describe("Sequence without tracker", () => {
+    it("should return first response when sequence exists but no tracker provided", () => {
+      // No sequenceTracker provided - falls back to returning first response
+      const selector = createResponseSelector();
+      const context: HttpRequestContext = {
+        method: "GET",
+        url: "/api/test",
+        body: undefined,
+        headers: {},
+        query: {},
+      };
+
+      const mocks: ReadonlyArray<ScenaristMock> = [
+        {
+          method: "GET",
+          url: "/api/test",
+          sequence: {
+            responses: [
+              { status: 200, body: { status: "first" } },
+              { status: 200, body: { status: "second" } },
+            ],
+            repeat: "last",
+          },
+        },
+      ];
+
+      // First call - should return first response
+      const result1 = selector.selectResponse(
+        "test-1",
+        "scenario-1",
+        context,
+        wrapMocks(mocks),
+      );
+      expect(result1.success).toBe(true);
+      if (result1.success) {
+        expect(result1.data.body).toEqual({ status: "first" });
+      }
+
+      // Second call - should still return first response (no tracker to advance)
+      const result2 = selector.selectResponse(
+        "test-1",
+        "scenario-1",
+        context,
+        wrapMocks(mocks),
+      );
+      expect(result2.success).toBe(true);
+      if (result2.success) {
+        expect(result2.data.body).toEqual({ status: "first" });
+      }
+    });
+  });
+
   describe("Error handling", () => {
     const selector = createResponseSelector();
     const context = {

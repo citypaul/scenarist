@@ -51,6 +51,38 @@ export const StateConditionSchema = z.object({
 export type StateCondition = z.infer<typeof StateConditionSchema>;
 
 /**
+ * Normalize a when clause to a canonical string for comparison.
+ * Sorts keys alphabetically and stringifies the object.
+ */
+const normalizeWhenClause = (when: Record<string, unknown>): string => {
+  const sortedKeys = Object.keys(when).sort();
+  const sortedObj: Record<string, unknown> = {};
+  for (const key of sortedKeys) {
+    sortedObj[key] = when[key];
+  }
+  return JSON.stringify(sortedObj);
+};
+
+/**
+ * Check for duplicate when clauses in conditions array.
+ * Two when clauses are considered duplicates if they have the same keys
+ * with the same values, regardless of key order.
+ */
+const hasDuplicateWhenClauses = (
+  conditions: Array<{ when: Record<string, unknown> }>,
+): boolean => {
+  const seen = new Set<string>();
+  for (const condition of conditions) {
+    const normalized = normalizeWhenClause(condition.when);
+    if (seen.has(normalized)) {
+      return true;
+    }
+    seen.add(normalized);
+  }
+  return false;
+};
+
+/**
  * Schema for stateful mock response (stateResponse).
  *
  * Returns different responses based on current test state.
@@ -66,10 +98,15 @@ export type StateCondition = z.infer<typeof StateConditionSchema>;
  * }
  * ```
  */
-export const StatefulMockResponseSchema = z.object({
-  default: ScenaristResponseSchema,
-  conditions: z.array(StateConditionSchema),
-});
+export const StatefulMockResponseSchema = z
+  .object({
+    default: ScenaristResponseSchema,
+    conditions: z.array(StateConditionSchema),
+  })
+  .refine((data) => !hasDuplicateWhenClauses(data.conditions), {
+    message:
+      "Duplicate 'when' clauses found in stateResponse conditions. Each condition must have a unique 'when' clause.",
+  });
 export type StatefulMockResponse = z.infer<typeof StatefulMockResponseSchema>;
 
 /**

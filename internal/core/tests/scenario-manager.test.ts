@@ -680,6 +680,106 @@ describe("ScenarioManager", () => {
         }).toThrow();
       });
 
+      it("should reject stateResponse with duplicate when clauses", () => {
+        const { manager } = createTestSetup();
+        const duplicateWhenScenario = {
+          id: "duplicate-when",
+          name: "Duplicate When",
+          description: "Test",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/test",
+              stateResponse: {
+                default: { status: 200, body: { status: "pending" } },
+                conditions: [
+                  {
+                    when: { approved: true },
+                    then: { status: 200, body: { status: "approved" } },
+                  },
+                  {
+                    when: { approved: true }, // Duplicate - same condition!
+                    then: { status: 200, body: { status: "also-approved" } },
+                  },
+                ],
+              },
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(
+            duplicateWhenScenario as unknown as ScenaristScenario,
+          );
+        }).toThrow(/duplicate.*when/i);
+      });
+
+      it("should reject stateResponse with semantically duplicate when clauses (different key order)", () => {
+        const { manager } = createTestSetup();
+        const semanticDuplicateScenario = {
+          id: "semantic-duplicate",
+          name: "Semantic Duplicate",
+          description: "Test",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/test",
+              stateResponse: {
+                default: { status: 200, body: {} },
+                conditions: [
+                  {
+                    when: { a: 1, b: 2 },
+                    then: { status: 200, body: { first: true } },
+                  },
+                  {
+                    when: { b: 2, a: 1 }, // Same keys, different order
+                    then: { status: 200, body: { second: true } },
+                  },
+                ],
+              },
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(
+            semanticDuplicateScenario as unknown as ScenaristScenario,
+          );
+        }).toThrow(/duplicate.*when/i);
+      });
+
+      it("should allow stateResponse with different when clauses", () => {
+        const { manager } = createTestSetup();
+        const validScenario: ScenaristScenario = {
+          id: "valid-conditions",
+          name: "Valid Conditions",
+          description: "Test",
+          mocks: [
+            {
+              method: "GET",
+              url: "/api/test",
+              stateResponse: {
+                default: { status: 200, body: { status: "pending" } },
+                conditions: [
+                  {
+                    when: { approved: true },
+                    then: { status: 200, body: { status: "approved" } },
+                  },
+                  {
+                    when: { rejected: true },
+                    then: { status: 200, body: { status: "rejected" } },
+                  },
+                ],
+              },
+            },
+          ],
+        };
+
+        expect(() => {
+          manager.registerScenario(validScenario);
+        }).not.toThrow();
+      });
+
       it("should reject afterResponse with empty setState", () => {
         const { manager } = createTestSetup();
         const emptySetStateScenario = {

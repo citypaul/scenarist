@@ -395,6 +395,8 @@ const selectResponseFromMock = (
   if (mock.sequence) {
     if (!sequenceTracker) {
       // Sequence defined but no tracker provided - return first response
+      // Note: Schema validation ensures responses array has at least 1 element,
+      // but defensive check handles malformed data that bypasses validation
       const firstResponse = mock.sequence.responses[0];
       return firstResponse
         ? { response: firstResponse, matchedCondition: null }
