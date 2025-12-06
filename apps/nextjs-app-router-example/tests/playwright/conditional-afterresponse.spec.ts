@@ -11,17 +11,14 @@
 
 import { test, expect } from "./fixtures";
 import { SCENARIST_TEST_ID_HEADER } from "@scenarist/nextjs-adapter/app";
+import type { Page } from "@playwright/test";
 
 /**
  * Helper to make API requests with the test ID header.
  * This is needed because page.request doesn't automatically include
  * headers set by page.setExtraHTTPHeaders when using absolute URLs.
  */
-const createApiHelper = (
-  page: { request: { get: Function; post: Function } },
-  testId: string,
-  baseURL: string,
-) => {
+const createApiHelper = (page: Page, testId: string, baseURL: string) => {
   const headers = { [SCENARIST_TEST_ID_HEADER]: testId };
   return {
     get: (path: string) => page.request.get(`${baseURL}${path}`, { headers }),
