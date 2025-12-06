@@ -764,6 +764,57 @@ const data = await response.json();
 console.log(data.scenarioId); // 'user-logged-in'
 ```
 
+#### `GET /__scenarist__/state` - Debug State Endpoint
+
+Inspect the current test state for debugging. Useful when testing multi-stage flows with `afterResponse.setState`.
+
+**Response (200):**
+
+```typescript
+{
+  testId: string;
+  state: Record<string, unknown>; // Current test state
+}
+```
+
+**Example:**
+
+```typescript
+const response = await fetch("http://localhost:3000/__scenarist__/state", {
+  headers: { "x-scenarist-test-id": "test-123" },
+});
+
+const data = await response.json();
+console.log(data.state); // { submitted: true, phase: "review" }
+```
+
+**Creating the debug endpoint:**
+
+**Pages Router:**
+
+```typescript
+// pages/api/__scenarist__/state.ts
+import { scenarist } from "@/lib/scenarist";
+
+export default scenarist?.createStateEndpoint();
+```
+
+**App Router:**
+
+```typescript
+// app/api/%5F%5Fscenarist%5F%5F/state/route.ts
+import { scenarist } from "@/lib/scenarist";
+
+const handler = scenarist?.createStateEndpoint();
+export const GET = handler;
+```
+
+**When to use:**
+
+- Debugging failing tests with state-aware mocking
+- Verifying `afterResponse.setState` mutations
+- Testing conditional `afterResponse` behavior (see [ADR-0020](../../docs/adrs/0020-conditional-afterresponse.md))
+
 ## Core Concepts
 
 Scenarist's core functionality is framework-agnostic. For deep understanding of these concepts (request matching, sequences, stateful mocks), see **[Core Functionality Documentation](../../docs/core-functionality.md)**.

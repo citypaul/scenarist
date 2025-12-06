@@ -69,10 +69,15 @@ ADRs capture the **context**, **decision**, **alternatives considered**, and **c
   - **Why**: Type safety, no leaked implementation details, consistent with JavaScript semantics
   - **Impact**: Partially supersedes ADR-0002, removes need for application workarounds
 
-- **[ADR-0019: State-Aware Mocking](0019-state-aware-mocking.md)** ✨ NEW (2025-12-01) - **Status: Proposed**
+- **[ADR-0019: State-Aware Mocking](0019-state-aware-mocking.md)** (2025-12-01) - **Status: Accepted**
   - **Decision**: Adopt explicit state mutation pattern (`stateResponse`, `afterResponse.setState`, `match.state`)
   - **Why**: Sequence-based mocking is fragile with stateless backends (unpredictable API call counts)
   - **Impact**: Tests express intent ("after POST, GETs return new state") not call counts ("11 GETs then POST")
+
+- **[ADR-0020: Conditional afterResponse](0020-conditional-afterresponse.md)** ✨ NEW (2025-12-06) - **Status: Accepted**
+  - **Decision**: Allow `afterResponse` at condition level in `stateResponse`, with replace semantics
+  - **Why**: Mock-level `afterResponse` always runs regardless of condition, causing state regression in multi-stage flows
+  - **Impact**: Conditions can override/suppress state mutations; `afterResponse: null` explicitly prevents mutation
 
 ### Framework Integration
 
@@ -139,6 +144,7 @@ ADRs capture the **context**, **decision**, **alternatives considered**, and **c
 ### 2025-12 (State-Aware Mocking)
 
 - **Dec 01**: ADR-0019 (State-Aware Mocking) - Explicit state mutation for stateless backend testing
+- **Dec 06**: ADR-0020 (Conditional afterResponse) - Condition-level state mutations for multi-stage flows
 
 ## Key Decisions by Category
 
@@ -171,6 +177,7 @@ ADRs capture the **context**, **decision**, **alternatives considered**, and **c
 - [ADR-0008](0008-type-safe-scenario-ids.md): Autocomplete and compile-time errors
 - [ADR-0015](0015-sequences-over-referer-routing.md): Sequences for multi-page journeys instead of referer routing
 - [ADR-0019](0019-state-aware-mocking.md): State-aware mocking for resilient tests with stateless backends
+- [ADR-0020](0020-conditional-afterresponse.md): Conditional afterResponse for multi-stage flow state control
 
 ## Related Documentation
 

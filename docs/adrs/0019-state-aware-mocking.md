@@ -1,8 +1,9 @@
 # ADR-0019: State-Aware Mocking
 
-**Status**: Proposed
+**Status**: Accepted
 **Date**: 2025-12-01
 **Authors**: Claude Code
+**Extended by**: [ADR-0020](0020-conditional-afterresponse.md) (Conditional afterResponse)
 
 ## Context
 
@@ -165,18 +166,19 @@ This is test infrastructure - performance overhead is negligible in practice:
 
 ## Alternatives Considered
 
-| Alternative                                       | Decision | Reason                                         |
-| ------------------------------------------------- | -------- | ---------------------------------------------- |
-| Option B: `responseFromState: (state) => ...`     | Rejected | Uses functions, violates ADR-0013              |
-| Option C: Event-based (`emitsEvent`/`afterEvent`) | Deferred | More indirection, may build later (Issue #304) |
-| Conditional `afterResponse`                       | Rejected | Duplicates conditions, harder to reason about  |
-| Continue with sequences only                      | Rejected | Too fragile for stateless architectures        |
+| Alternative                                       | Decision     | Reason                                                        |
+| ------------------------------------------------- | ------------ | ------------------------------------------------------------- |
+| Option B: `responseFromState: (state) => ...`     | Rejected     | Uses functions, violates ADR-0013                             |
+| Option C: Event-based (`emitsEvent`/`afterEvent`) | Deferred     | More indirection, may build later (Issue #304)                |
+| Conditional `afterResponse`                       | **Accepted** | See [ADR-0020](0020-conditional-afterresponse.md) for details |
+| Continue with sequences only                      | Rejected     | Too fragile for stateless architectures                       |
 
 ## Related
 
 - **ADR-0002**: Dynamic Response System (architecture this extends)
 - **ADR-0005**: State & Sequence Reset (cleanup behavior)
 - **ADR-0013**: Declarative Scenarios (constraint satisfied)
+- **ADR-0020**: Conditional afterResponse (extends this ADR)
 - **Issue #304**: Event-Based State (future consideration)
 - **Issue #305**: Schema-Based Typing (future DX enhancement)
 - **[Implementation Reference](../plans/state-aware-mocking-implementation.md)**: Technical details for building this feature
