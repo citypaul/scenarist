@@ -1,6 +1,16 @@
-import { describe, it, expect } from "vitest";
-import { createScenarioEndpoint } from "../../src/app/endpoints.js";
+import { describe, it, expect, vi } from "vitest";
+import {
+  createScenarioEndpoint,
+  createStateEndpoint,
+} from "../../src/app/endpoints.js";
 import { createEndpointTestSetup } from "../common/test-setup.js";
+import {
+  buildConfig,
+  createScenarioManager,
+  InMemoryScenarioRegistry,
+  InMemoryScenarioStore,
+  InMemoryStateManager,
+} from "@scenarist/core";
 
 const createTestSetup = () => createEndpointTestSetup(createScenarioEndpoint);
 
@@ -160,6 +170,97 @@ describe("App Router Scenario Endpoints", () => {
 
       expect(response.status).toBe(405);
       expect(data.error).toBe("Method not allowed");
+    });
+  });
+});
+
+describe("App Router State Endpoint", () => {
+  const createStateTestSetup = () => {
+    const defaultScenario = {
+      id: "default",
+      name: "Default Scenario",
+      description: "Default test scenario",
+      mocks: [],
+    };
+
+    const registry = new InMemoryScenarioRegistry();
+    const store = new InMemoryScenarioStore();
+    const stateManager = new InMemoryStateManager();
+    const config = buildConfig({
+      enabled: true,
+      scenarios: { default: defaultScenario },
+    });
+    const manager = createScenarioManager({ registry, store, stateManager });
+
+    manager.registerScenario(defaultScenario);
+
+    const handler = createStateEndpoint(manager, config);
+
+    return { handler, manager, config, stateManager };
+  };
+
+  it("should return current state for test ID", async () => {
+    const { handler, stateManager } = createStateTestSetup();
+
+    stateManager.set("test-123", "userId", "user-456");
+    stateManager.set("test-123", "phase", "submitted");
+
+    const req = new Request("http://localhost:3000/__scenarist__/state", {
+      method: "GET",
+      headers: {
+        "x-scenarist-test-id": "test-123",
+      },
+    });
+
+    const response = await handler(req);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data).toEqual({
+      testId: "test-123",
+      state: {
+        userId: "user-456",
+        phase: "submitted",
+      },
+    });
+  });
+
+  it("should return empty state when no state has been set", async () => {
+    const { handler } = createStateTestSetup();
+
+    const req = new Request("http://localhost:3000/__scenarist__/state", {
+      method: "GET",
+      headers: {
+        "x-scenarist-test-id": "test-new",
+      },
+    });
+
+    const response = await handler(req);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data).toEqual({
+      testId: "test-new",
+      state: {},
+    });
+  });
+
+  it("should use default test ID when header is missing", async () => {
+    const { handler, stateManager } = createStateTestSetup();
+
+    stateManager.set("default-test", "count", 5);
+
+    const req = new Request("http://localhost:3000/__scenarist__/state", {
+      method: "GET",
+    });
+
+    const response = await handler(req);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data).toEqual({
+      testId: "default-test",
+      state: { count: 5 },
     });
   });
 });

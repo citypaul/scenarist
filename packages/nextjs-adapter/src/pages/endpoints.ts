@@ -4,6 +4,7 @@ import { PagesRequestContext } from "./context.js";
 import {
   handlePostLogic,
   handleGetLogic,
+  handleGetStateLogic,
 } from "../common/endpoint-handlers.js";
 
 /**
@@ -98,5 +99,32 @@ export const createScenarioEndpoint = (
     res.status(405).json({
       error: "Method not allowed",
     });
+  };
+};
+
+/**
+ * Create state debug endpoint handler for Next.js Pages Router.
+ *
+ * Returns a Next.js API route handler for GET requests
+ * that returns the current test state for debugging.
+ *
+ * @example
+ * ```typescript
+ * // pages/api/__scenarist__/state.ts
+ * import { createStateEndpoint } from '@scenarist/nextjs-adapter/pages';
+ * import { scenarist } from '../../../lib/scenarist';
+ *
+ * export default createStateEndpoint(scenarist.manager, scenarist.config);
+ * ```
+ */
+export const createStateEndpoint = (
+  manager: ScenarioManager,
+  config: ScenaristConfig,
+) => {
+  return async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
+    const context = new PagesRequestContext(req, config);
+    const result = handleGetStateLogic(context, manager);
+
+    res.status(200).json(result);
   };
 };
