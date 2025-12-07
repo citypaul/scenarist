@@ -4,6 +4,7 @@ import starlight from "@astrojs/starlight";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "astro/config";
 import rehypeMermaid from "rehype-mermaid";
+import icon from "astro-icon";
 
 import cloudflare from "@astrojs/cloudflare";
 
@@ -268,6 +269,7 @@ export default defineConfig({
       customCss: ["./src/styles/custom.css"],
     }),
     sitemap(),
+    icon(),
   ],
 
   adapter: cloudflare(),

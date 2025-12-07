@@ -5,7 +5,13 @@ description: Get up and running with Scenarist in 5 minutes
 
 import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-Scenarist lets you test your real server code with controlled external API responses. Your routes, middleware, Server Components, and business logic all execute normally—only external HTTP calls (Stripe, Auth0, SendGrid, etc.) are mocked.
+Modern frameworks like Next.js blur the lines between frontend and backend. A single Server Component might validate input, query a database, call Stripe, and render HTML—all in one request.
+
+**The testing dilemma:**
+- **Mock everything?** You lose integration confidence—you're not testing how your app actually works
+- **Hit real external APIs?** Slow, flaky, expensive, and impossible to test edge cases like payment failures
+
+**Scenarist's approach:** Run Playwright tests against your real application. Your Server Components render, your middleware executes, your validation runs—for real. Only external services (Stripe, Auth0, SendGrid) are mocked, and you control exactly what they return per test.
 
 ## How It Works
 
@@ -119,6 +125,43 @@ SCENARIST_LOG=1 pnpm test
 ```
 
 **[→ Full logging guide](/reference/logging)**
+
+## Debugging in Playwright Tests
+
+When tests fail, inspect the current mock state directly from your Playwright tests using the debug fixtures:
+
+```typescript
+import { test, expect } from './fixtures';
+
+test('checkout flow', async ({ page, switchScenario, debugState }) => {
+  await switchScenario(page, 'checkout');
+  await page.goto('/cart');
+  await page.click('#add-item');
+
+  // Inspect current state captured by mocks
+  const state = await debugState(page);
+  console.log('Cart state:', state);
+  // → { 'cart.items': 1, 'cart.total': 29.99 }
+});
+```
+
+For async workflows, wait for state to reach a condition:
+
+```typescript
+test('approval flow', async ({ page, switchScenario, waitForDebugState }) => {
+  await switchScenario(page, 'approvalFlow');
+  await page.click('#submit-for-approval');
+
+  // Wait for backend state to update
+  const state = await waitForDebugState(
+    page,
+    (s) => s['approval.status'] === 'approved',
+    { timeout: 10000 }
+  );
+});
+```
+
+**[→ Full Playwright debug helpers guide](/testing/playwright-integration#debugging-state)**
 
 ## Next Steps
 
