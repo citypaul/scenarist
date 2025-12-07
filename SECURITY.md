@@ -68,6 +68,7 @@ Scenarist is designed with security in mind:
 - **OIDC Trusted Publishing**: npm packages are published using OIDC tokens (no stored credentials)
 - **npm Provenance**: npm packages include provenance attestation on npmjs.com
 - **GitHub Attestations**: Build provenance attestations stored on GitHub, verifiable via CLI (see [Verifying Packages](#verifying-packages))
+- **Signed Releases**: All release artifacts are cryptographically signed with Sigstore/Cosign and attached to GitHub Releases
 - **SBOM with Sigstore Signing**: Software Bill of Materials generated for each release, signed with Sigstore for tamper-evidence
 - **Frozen Lockfile**: CI enforces `pnpm install --frozen-lockfile`
 - **Dependency Auditing**: Automated vulnerability scanning in CI
@@ -89,6 +90,20 @@ This verifies:
 - The build process was not tampered with
 
 View all attestations at: https://github.com/citypaul/scenarist/attestations
+
+### Verifying Signed Releases
+
+Each GitHub Release includes signed package tarballs. You can verify signatures using Cosign:
+
+```bash
+# Download the tarball and signature from the GitHub Release
+# Then verify with Cosign
+cosign verify-blob --bundle scenarist-core-0.4.1.tgz.sig scenarist-core-0.4.1.tgz \
+  --certificate-identity-regexp="https://github.com/citypaul/scenarist/" \
+  --certificate-oidc-issuer="https://token.actions.githubusercontent.com"
+```
+
+This verifies the artifact was signed by the official GitHub Actions workflow.
 
 ## Scope
 
