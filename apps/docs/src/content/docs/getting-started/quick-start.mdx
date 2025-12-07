@@ -126,6 +126,43 @@ SCENARIST_LOG=1 pnpm test
 
 **[→ Full logging guide](/reference/logging)**
 
+## Debugging in Playwright Tests
+
+When tests fail, inspect the current mock state directly from your Playwright tests using the debug fixtures:
+
+```typescript
+import { test, expect } from './fixtures';
+
+test('checkout flow', async ({ page, switchScenario, debugState }) => {
+  await switchScenario(page, 'checkout');
+  await page.goto('/cart');
+  await page.click('#add-item');
+
+  // Inspect current state captured by mocks
+  const state = await debugState(page);
+  console.log('Cart state:', state);
+  // → { 'cart.items': 1, 'cart.total': 29.99 }
+});
+```
+
+For async workflows, wait for state to reach a condition:
+
+```typescript
+test('approval flow', async ({ page, switchScenario, waitForDebugState }) => {
+  await switchScenario(page, 'approvalFlow');
+  await page.click('#submit-for-approval');
+
+  // Wait for backend state to update
+  const state = await waitForDebugState(
+    page,
+    (s) => s['approval.status'] === 'approved',
+    { timeout: 10000 }
+  );
+});
+```
+
+**[→ Full Playwright debug helpers guide](/testing/playwright-integration#debugging-state)**
+
 ## Next Steps
 
 1. **[Choose your framework](#choose-your-framework)** — Follow the complete getting-started guide
