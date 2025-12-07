@@ -823,6 +823,28 @@ If your bundler doesn't tree-shake Scenarist:
    - Alert on unexpected size increases
    - Review bundle composition regularly
 
+## Supply Chain Security
+
+Beyond production safety, Scenarist provides cryptographic verification of package authenticity:
+
+- **npm Provenance**: Packages include [npm provenance](https://docs.npmjs.com/generating-provenance-statements) attestations
+- **GitHub Attestations**: Build provenance attestations verifiable via GitHub CLI
+- **SBOM**: Software Bill of Materials signed with Sigstore
+
+### Verifying Packages
+
+Verify any Scenarist package was built from this repository:
+
+```bash
+# Download and verify a package
+npm pack @scenarist/core
+gh attestation verify scenarist-core-*.tgz -R citypaul/scenarist
+```
+
+View all attestations at [github.com/citypaul/scenarist/attestations](https://github.com/citypaul/scenarist/attestations).
+
+For complete security documentation, see [SECURITY.md](https://github.com/citypaul/scenarist/blob/main/SECURITY.md).
+
 ## Summary
 
 Scenarist is designed for production safety:

@@ -23,6 +23,7 @@ jobs:
       contents: write
       pull-requests: write
       id-token: write
+      attestations: write
     # Only run if CI succeeded
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
@@ -93,6 +94,44 @@ jobs:
           else
             echo "⚠️ No Version PR found on branch changeset-release/main"
           fi
+
+      # Build provenance attestations for published packages
+      # Creates cryptographically signed attestations verifying build origin
+      # Visible at: https://github.com/citypaul/scenarist/attestations
+      - name: Pack packages for attestation
+        id: pack
+        if: steps.changesets.outputs.published == 'true'
+        run: |
+          mkdir -p attestation-artifacts
+
+          # Pack each public package
+          for pkg in packages/express-adapter packages/nextjs-adapter packages/playwright-helpers; do
+            if [ -d "$pkg/dist" ]; then
+              cd "$pkg"
+              tarball=$(pnpm pack --pack-destination ../../attestation-artifacts)
+              echo "Packed: $tarball"
+              cd ../..
+            fi
+          done
+
+          # Pack internal packages that are published
+          for pkg in internal/core internal/msw-adapter; do
+            if [ -d "$pkg/dist" ]; then
+              cd "$pkg"
+              tarball=$(pnpm pack --pack-destination ../../attestation-artifacts)
+              echo "Packed: $tarball"
+              cd ../..
+            fi
+          done
+
+          echo "=== Packed tarballs ==="
+          ls -la attestation-artifacts/
+
+      - name: Attest build provenance
+        if: steps.changesets.outputs.published == 'true'
+        uses: actions/attest-build-provenance@ef244123eb79f2f7a7e75d99086184180e6d0018 # v2.4.0
+        with:
+          subject-path: 'attestation-artifacts/*.tgz'
 
       # SBOM generation only runs after successful publish
       - name: Generate SBOM

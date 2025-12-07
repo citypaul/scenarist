@@ -66,10 +66,29 @@ Scenarist is designed with security in mind:
 ### Supply Chain Security
 
 - **OIDC Trusted Publishing**: npm packages are published using OIDC tokens (no stored credentials)
-- **Provenance**: npm packages include provenance attestation
+- **npm Provenance**: npm packages include provenance attestation on npmjs.com
+- **GitHub Attestations**: Build provenance attestations stored on GitHub, verifiable via CLI (see [Verifying Packages](#verifying-packages))
 - **SBOM with Sigstore Signing**: Software Bill of Materials generated for each release, signed with Sigstore for tamper-evidence
 - **Frozen Lockfile**: CI enforces `pnpm install --frozen-lockfile`
 - **Dependency Auditing**: Automated vulnerability scanning in CI
+
+### Verifying Packages
+
+You can cryptographically verify that Scenarist packages were built from this repository using GitHub's attestation verification:
+
+```bash
+# Download a package and verify its attestation
+npm pack @scenarist/core
+gh attestation verify scenarist-core-*.tgz -R citypaul/scenarist
+```
+
+This verifies:
+
+- The package was built in the official GitHub Actions workflow
+- The source code matches the repository at the attested commit
+- The build process was not tampered with
+
+View all attestations at: https://github.com/citypaul/scenarist/attestations
 
 ## Scope
 
