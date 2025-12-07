@@ -1,5 +1,12 @@
 # @scenarist/playwright-helpers
 
+## 0.4.2
+
+### Patch Changes
+
+- Updated dependencies [[`c7ca076`](https://github.com/citypaul/scenarist/commit/c7ca07682f9f44e6a5907eb032866631d461ba83)]:
+  - @scenarist/core@0.4.2
+
 ## 0.4.1
 
 ### Patch Changes
