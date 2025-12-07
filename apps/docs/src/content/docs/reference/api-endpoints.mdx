@@ -1,9 +1,15 @@
 ---
 title: Endpoint APIs
-description: Complete reference for POST /__scenario__ and GET /__scenario__ endpoints
+description: Complete reference for scenario switching, status, and debug state endpoints
 ---
 
-Scenarist provides two HTTP endpoints for scenario management: `POST /__scenario__` to switch scenarios and `GET /__scenario__` to check the active scenario. These endpoints are framework-agnostic and work consistently across Express, Next.js, and all supported frameworks.
+Scenarist provides HTTP endpoints for scenario management and debugging:
+
+- `POST /__scenario__` — Switch the active scenario for a test
+- `GET /__scenario__` — Check which scenario is active
+- `GET /__scenarist__/state` — Retrieve test state for debugging
+
+These endpoints are framework-agnostic and work consistently across Express, Next.js, and all supported frameworks.
 
 ## POST /__scenario__ - Switch Scenario
 
@@ -222,9 +228,109 @@ expect(response.status).toBe(200);
 expect(response.body.scenarioId).toBe('payment-error');
 ```
 
+## GET /__scenarist__/state - Debug State
+
+Retrieve the current test state for debugging. This endpoint exposes state set by `afterResponse.setState()` in your mocks, useful for debugging async workflows and verifying state transitions.
+
+### Request
+
+**Method:** `GET`
+
+**URL:** `/__scenarist__/state` (configurable via `endpoints.getState`)
+
+**Headers:**
+```
+x-scenarist-test-id: <test-id>
+```
+
+**No body required.**
+
+### Response
+
+**Success (200):**
+```typescript
+{
+  testId: string;                    // The test ID
+  state: Record<string, unknown>;    // Current state object (empty {} if no state)
+}
+```
+
+**Example:**
+```json
+{
+  "testId": "test-abc123",
+  "state": {
+    "cart.items": 2,
+    "cart.total": 59.98,
+    "user.tier": "premium"
+  }
+}
+```
+
+### Example Usage
+
+**With [Playwright helpers](/testing/playwright-integration#debugging-state) (recommended):**
+```typescript
+import { test, expect } from './fixtures';
+
+test('checkout flow', async ({ page, switchScenario, debugState }) => {
+  await switchScenario(page, 'checkout');
+  await page.goto('/cart');
+  await page.click('#add-item');
+
+  // Fetch current state
+  const state = await debugState(page);
+  console.log('Cart state:', state);
+  // → { 'cart.items': 1, 'cart.total': 29.99 }
+
+  expect(state['cart.items']).toBe(1);
+});
+```
+
+**Manual (fetch):**
+```typescript
+const response = await fetch('http://localhost:3000/__scenarist__/state', {
+  headers: {
+    'x-scenarist-test-id': 'test-123',
+  },
+});
+
+const { state } = await response.json();
+// { 'cart.items': 1, 'cart.total': 29.99 }
+```
+
+**With curl:**
+```bash
+curl http://localhost:3000/__scenarist__/state \
+  -H "x-scenarist-test-id: test-123"
+```
+
+### When to Use
+
+The debug state endpoint is useful for:
+
+- **Debugging test failures**: See what state was set by mocks during a test run
+- **Async workflows**: Wait for state to reach a condition before asserting (use `waitForDebugState`)
+- **State-aware mocking verification**: Confirm that `afterResponse.setState()` is capturing expected values
+
+:::tip[Playwright Helpers]
+For the best developer experience, use the `debugState` and `waitForDebugState` fixtures from `@scenarist/playwright-helpers`. They handle test ID management automatically.
+
+```typescript
+// Wait for async state
+const state = await waitForDebugState(
+  page,
+  (s) => s['approval.status'] === 'approved',
+  { timeout: 10000 }
+);
+```
+
+**[→ Full Playwright debug helpers guide](/testing/playwright-integration#debugging-state)**
+:::
+
 ## Test ID Extraction
 
-Both endpoints extract the test ID from the request header:
+All endpoints extract the test ID from the request header:
 
 ```typescript
 // The header name is standardized to 'x-scenarist-test-id'
