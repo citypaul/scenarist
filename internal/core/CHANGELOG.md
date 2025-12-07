@@ -1,5 +1,13 @@
 # @scenarist/core
 
+## 0.4.2
+
+### Patch Changes
+
+- [#348](https://github.com/citypaul/scenarist/pull/348) [`c7ca076`](https://github.com/citypaul/scenarist/commit/c7ca07682f9f44e6a5907eb032866631d461ba83) Thanks [@citypaul](https://github.com/citypaul)! - Add signed release artifacts to GitHub Releases for OpenSSF Scorecard compliance
+
+  Package tarballs are now cryptographically signed with Sigstore/Cosign and uploaded to GitHub Releases alongside their signature bundles (.sig files). This satisfies the OpenSSF Scorecard "Signed-Releases" check.
+
 ## 0.4.1
 
 ### Patch Changes
