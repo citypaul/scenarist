@@ -5,7 +5,13 @@ description: Get up and running with Scenarist in 5 minutes
 
 import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-Scenarist lets you test your real server code with controlled external API responses. Your routes, middleware, Server Components, and business logic all execute normally—only external HTTP calls (Stripe, Auth0, SendGrid, etc.) are mocked.
+Modern frameworks like Next.js blur the lines between frontend and backend. A single Server Component might validate input, query a database, call Stripe, and render HTML—all in one request.
+
+**The testing dilemma:**
+- **Mock everything?** You lose integration confidence—you're not testing how your app actually works
+- **Hit real external APIs?** Slow, flaky, expensive, and impossible to test edge cases like payment failures
+
+**Scenarist's approach:** Run Playwright tests against your real application. Your Server Components render, your middleware executes, your validation runs—for real. Only external services (Stripe, Auth0, SendGrid) are mocked, and you control exactly what they return per test.
 
 ## How It Works
 
