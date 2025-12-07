@@ -159,3 +159,54 @@ jobs:
             sbom.json
             sbom.json.bundle
           retention-days: 365
+
+      # Sign package tarballs and upload to GitHub Releases
+      # This satisfies OpenSSF Scorecard "Signed-Releases" check
+      - name: Sign package tarballs
+        if: steps.changesets.outputs.published == 'true'
+        run: |
+          echo "=== Signing package tarballs with Cosign ==="
+          for tarball in attestation-artifacts/*.tgz; do
+            echo "Signing: $tarball"
+            cosign sign-blob --yes --bundle "${tarball}.sig" "$tarball"
+          done
+          echo "=== Signed tarballs ==="
+          ls -la attestation-artifacts/
+
+      - name: Upload signed artifacts to GitHub Releases
+        if: steps.changesets.outputs.published == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
+          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
+        run: |
+          echo "=== Uploading signed artifacts to GitHub Releases ==="
+          echo "Published packages: $PUBLISHED_PACKAGES"
+
+          # Parse each published package and upload to its release
+          echo "$PUBLISHED_PACKAGES" | jq -c '.[]' | while read -r pkg; do
+            name=$(echo "$pkg" | jq -r '.name')
+            version=$(echo "$pkg" | jq -r '.version')
+            tag="${name}@${version}"
+
+            echo "Processing release: $tag"
+
+            # Find the matching tarball (npm scope becomes scenarist- prefix)
+            # @scenarist/core -> scenarist-core-0.4.1.tgz
+            tarball_name=$(echo "$name" | sed 's/@scenarist\//scenarist-/' | sed 's/@//')
+            tarball_pattern="attestation-artifacts/${tarball_name}-${version}.tgz"
+
+            if ls $tarball_pattern 1>/dev/null 2>&1; then
+              tarball=$(ls $tarball_pattern)
+              sig_file="${tarball}.sig"
+
+              echo "  Uploading: $(basename $tarball)"
+              gh release upload "$tag" "$tarball" --clobber || echo "  Warning: Could not upload tarball to $tag"
+
+              echo "  Uploading: $(basename $sig_file)"
+              gh release upload "$tag" "$sig_file" --clobber || echo "  Warning: Could not upload signature to $tag"
+            else
+              echo "  Warning: No tarball found matching pattern: $tarball_pattern"
+            fi
+          done
+
+          echo "=== Upload complete ==="
