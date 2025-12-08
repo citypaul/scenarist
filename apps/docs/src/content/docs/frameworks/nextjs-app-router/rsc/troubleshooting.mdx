@@ -89,67 +89,77 @@ await fetch(`http://localhost:3001/github/jobs/${jobId}`, {  // ✅ Matches patt
 
 ## Debugging Tips
 
-### 1. Check MSW Logs
+Scenarist has built-in logging that shows exactly what's happening with scenario switching, mock matching, and state management. This is far more useful than generic network debugging.
 
-Set the `DEBUG` environment variable to see MSW interception details:
+### 1. Enable Scenarist Logging
+
+Add a console logger to your Scenarist setup:
+
+```typescript
+import { createScenarist, createConsoleLogger } from '@scenarist/nextjs-adapter/app';
+
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  scenarios,
+
+  // Enable logging at info level
+  logger: createConsoleLogger({ level: 'info' }),
+});
+```
+
+This shows key events like scenario switches and mock selections:
+
+```
+12:34:56.789 INF 🎬 [test-abc-123] scenario | scenario_switched scenarioId=premiumUser
+12:34:56.801 INF 🎯 [test-abc-123] matching | mock_selected mockIndex=2 specificity=5
+```
+
+### 2. Debug Mock Matching Issues
+
+When a mock isn't being selected, enable debug logging for the `matching` category:
+
+```typescript
+const logger = createConsoleLogger({
+  level: 'debug',
+  categories: ['matching'],
+});
+```
+
+You'll see:
+- `mock_candidates_found` - How many mocks could potentially match
+- `mock_match_evaluated` - Each mock's evaluation result
+- `mock_selected` - Which mock was chosen and why
+- `mock_no_match` - When no mock matched (with the URL that failed)
+
+### 3. Environment Variable Pattern
+
+For easy toggling without code changes:
+
+```typescript
+import {
+  createScenarist,
+  createConsoleLogger,
+  noOpLogger,
+} from '@scenarist/nextjs-adapter/app';
+
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  scenarios,
+
+  // Enable via SCENARIST_LOG=1
+  logger: process.env.SCENARIST_LOG
+    ? createConsoleLogger({ level: 'debug' })
+    : noOpLogger,
+});
+```
+
+Then run tests with logging:
 
 ```bash
-DEBUG=msw:* npm run test
+SCENARIST_LOG=1 pnpm test
 ```
 
-This shows which requests MSW is intercepting and which mocks are being matched.
-
-### 2. Verify Test ID
-
-Capture and log the test ID from `switchScenario()`:
-
-```typescript
-test('debugging test', async ({ page, switchScenario }) => {
-  const testId = await switchScenario(page, 'myScenario');
-  console.log('Test ID:', testId);  // Verify it's being set
-
-  await page.goto('/my-page');
-});
-```
-
-### 3. Inspect Network Requests
-
-Use Playwright's network recording to see what requests are being made:
-
-```typescript
-test('debugging network', async ({ page, switchScenario }) => {
-  // Enable request logging
-  page.on('request', request => {
-    console.log('>>', request.method(), request.url());
-    console.log('   Headers:', request.headers());
-  });
-
-  page.on('response', response => {
-    console.log('<<', response.status(), response.url());
-  });
-
-  await switchScenario(page, 'myScenario');
-  await page.goto('/my-page');
-});
-```
-
-### 4. Check Scenario Endpoint
-
-Verify the scenario switch endpoint is responding correctly:
-
-```typescript
-test('verify scenario switch', async ({ page, switchScenario }) => {
-  const testId = await switchScenario(page, 'myScenario');
-
-  // Manually check the scenario endpoint
-  const response = await page.request.get(
-    `http://localhost:3002/__scenarist__/scenario?testId=${testId}`
-  );
-  console.log('Current scenario:', await response.json());
-});
-```
-
-### 5. Check for URL Mismatches
+### 4. Check for URL Mismatches
 
 Ensure your mock URLs exactly match what your components are fetching:
 
@@ -168,7 +178,7 @@ await fetch('http://localhost:3001/Products');   // ❌ Case mismatch
 await fetch('/products');                         // ❌ Relative URL
 ```
 
-### 6. Verify Header Forwarding in Server Components
+### 5. Verify Header Forwarding in Server Components
 
 Add temporary logging to verify headers are being forwarded:
 
@@ -189,6 +199,10 @@ export default async function MyPage() {
   // ...
 }
 ```
+
+<Aside type="tip" title="Full Logging Reference">
+For complete details on log levels, categories, output formats, and custom loggers, see [Debugging with Logs](/reference/logging).
+</Aside>
 
 ---
 
