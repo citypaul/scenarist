@@ -34,6 +34,9 @@ export default function RootLayout({
             <a href="/cart" className="hover:text-blue-300">
               Cart (Client)
             </a>
+            <a href="/actions" className="hover:text-blue-300">
+              Server Actions
+            </a>
           </div>
         </nav>
         <main>{children}</main>

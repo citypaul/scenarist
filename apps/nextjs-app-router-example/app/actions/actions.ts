@@ -27,11 +27,25 @@ export async function submitContactForm(
     }),
   });
 
-  const data = (await response.json()) as { success?: boolean; message?: string; error?: string };
+  const data: unknown = await response.json();
 
   if (!response.ok) {
-    return { success: false, message: data.error ?? "Submission failed" };
+    const errorMessage =
+      data !== null &&
+      typeof data === "object" &&
+      "error" in data &&
+      typeof data.error === "string"
+        ? data.error
+        : "Submission failed";
+    return { success: false, message: errorMessage };
   }
 
-  return { success: true, message: data.message ?? "Message sent!" };
+  const successMessage =
+    data !== null &&
+    typeof data === "object" &&
+    "message" in data &&
+    typeof data.message === "string"
+      ? data.message
+      : "Message sent!";
+  return { success: true, message: successMessage };
 }
