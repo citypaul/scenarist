@@ -1492,17 +1492,308 @@ await fetch(`http://localhost:3001/github/jobs/${jobId}`, {  // ✅ Matches patt
 
 ---
 
-## Coming Soon
+## Pattern 7: Error Boundaries
 
-The following advanced RSC patterns will be covered in upcoming documentation:
+Error handling is critical in production applications. When a Server Component throws an error during rendering, Next.js catches it with an error boundary (defined in `error.tsx`). Scenarist makes testing these error flows straightforward by letting you trigger errors via scenarios.
 
-### Error Boundaries
+### How Error Boundaries Work with RSC
 
-Testing error handling in Server Components with error boundaries.
+1. **Server Component throws** - When `fetch` fails or an error is thrown during rendering
+2. **Next.js catches it** - The `error.tsx` file in the same or parent route catches the error
+3. **Recovery available** - Error boundary provides a `reset()` function to retry rendering
 
-<Aside type="note" title="Example Implementations">
-This pattern requires example implementations that are being developed. Once available, this guide will be updated with complete working examples and tests.
+### Example: Error-Prone Data Page
+
+The error demo page fetches data that may fail, triggering the error boundary.
+
+**Server Component:** [`app/errors/page.tsx`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/app/errors/page.tsx)
+
+```typescript
+// app/errors/page.tsx
+import { headers } from 'next/headers';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+
+type ErrorsResponse = {
+  readonly data: string;
+  readonly message: string;
+};
+
+async function fetchErrorData(): Promise<ErrorsResponse> {
+  const headersList = await headers();
+
+  const response = await fetch('http://localhost:3002/api/errors', {
+    headers: {
+      ...getScenaristHeadersFromReadonlyHeaders(headersList),
+    },
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    // This throw triggers the error boundary
+    throw new Error('Something went wrong while fetching data');
+  }
+
+  return response.json();
+}
+
+export default async function ErrorsPage() {
+  const data = await fetchErrorData();
+
+  return (
+    <div>
+      <h1>Error Boundary Demo</h1>
+      <div className="success-content">
+        <h2>Error Demo Data</h2>
+        <p>{data.message}</p>
+      </div>
+    </div>
+  );
+}
+```
+
+<Aside type="tip" title="Error Propagation">
+When the Server Component throws, React's error boundary mechanism catches it. The `error.tsx` file must be a Client Component (with `"use client"`) because it needs interactivity for the retry button.
 </Aside>
+
+**Error Boundary:** [`app/errors/error.tsx`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/app/errors/error.tsx)
+
+```typescript
+// app/errors/error.tsx
+'use client';
+
+type ErrorBoundaryProps = {
+  readonly error: Error & { digest?: string };
+  readonly reset: () => void;
+};
+
+export default function ErrorBoundary({ error, reset }: ErrorBoundaryProps) {
+  return (
+    <div role="alert" aria-live="assertive">
+      <h2>Something went wrong!</h2>
+      <p>{error.message}</p>
+      <button onClick={reset}>
+        Try again
+      </button>
+    </div>
+  );
+}
+```
+
+### Scenario Definitions
+
+Two scenarios enable testing both success and error states:
+
+**Scenarios:** [`lib/scenarios.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/lib/scenarios.ts)
+
+```typescript
+// lib/scenarios.ts
+import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
+
+// Default scenario includes success response for /errors endpoint
+export const defaultScenario: ScenaristScenario = {
+  id: 'default',
+  name: 'Default',
+  description: 'Default scenario with working endpoints',
+  mocks: [
+    // ... other mocks ...
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/errors',
+      response: {
+        status: 200,
+        body: {
+          data: 'Error Demo Data',
+          message: 'This endpoint demonstrates error boundary recovery',
+        },
+      },
+    },
+  ],
+};
+
+// Error scenario returns 500 to trigger error boundary
+export const apiErrorScenario: ScenaristScenario = {
+  id: 'apiError',
+  name: 'API Error',
+  description: 'Simulates API returning 500 Internal Server Error',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/errors',
+      response: {
+        status: 500,
+        body: { error: 'Internal server error' },
+      },
+    },
+  ],
+};
+```
+
+<Aside type="note" title="Error Response Status">
+The 500 status code causes the Server Component's fetch to return a non-ok response. The component then throws an error, which Next.js catches with the error boundary. You can also test other error statuses (401, 403, 404, 503) to verify appropriate error handling.
+</Aside>
+
+### Test Implementation
+
+**Test:** [`tests/playwright/error-boundaries.spec.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/tests/playwright/error-boundaries.spec.ts)
+
+```typescript
+// tests/playwright/error-boundaries.spec.ts
+import { test, expect } from './fixtures';
+
+test.describe('Error Boundaries', () => {
+  test('displays error boundary with retry button when API returns 500', async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, 'apiError');
+    await page.goto('/errors');
+
+    // Error boundary should show "Something went wrong" message with retry option
+    await expect(
+      page.getByRole('heading', { name: /something went wrong/i }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: /try again/i }),
+    ).toBeVisible();
+  });
+
+  test('page recovers after scenario switch and reload', async ({
+    page,
+    switchScenario,
+  }) => {
+    // Start with error scenario
+    await switchScenario(page, 'apiError');
+    await page.goto('/errors');
+
+    // Verify error boundary is showing
+    await expect(
+      page.getByRole('heading', { name: /something went wrong/i }),
+    ).toBeVisible();
+
+    // Switch to default (working) scenario and reload page
+    await switchScenario(page, 'default');
+    await page.reload();
+
+    // Should show success content
+    await expect(page.getByText(/error demo data/i)).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: /something went wrong/i }),
+    ).not.toBeVisible();
+  });
+
+  test('displays content when API returns success', async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, 'default');
+    await page.goto('/errors');
+
+    // Should show data, no error heading
+    await expect(page.getByText(/error demo data/i)).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: /something went wrong/i }),
+    ).not.toBeVisible();
+  });
+});
+```
+
+### Error Recovery Flow
+
+The recovery flow demonstrates how Scenarist enables testing error states and recovery:
+
+```
+1. Switch to 'apiError' scenario
+   ↓
+2. Navigate to /errors
+   ↓
+3. RSC fetches data → API returns 500
+   ↓
+4. Component throws → error.tsx catches it
+   ↓
+5. User sees error message with "Try again" button
+   ↓
+6. Switch to 'default' scenario
+   ↓
+7. User clicks "Try again" (or page reloads)
+   ↓
+8. RSC fetches data → API returns 200
+   ↓
+9. Page renders successfully
+```
+
+### Key Points for Error Boundary Tests
+
+| Aspect | Consideration |
+|--------|---------------|
+| **Error boundary location** | `error.tsx` must be in the same directory or a parent route |
+| **Client Component** | `error.tsx` must use `"use client"` for the reset button interactivity |
+| **ARIA roles** | Use `role="alert"` and `aria-live="assertive"` for accessibility |
+| **Recovery testing** | Switch scenarios and reload/retry to verify recovery |
+| **Error messages** | Display user-friendly messages, not raw error details |
+
+### Advanced Error Patterns
+
+**Testing specific error statuses:**
+
+```typescript
+// lib/scenarios.ts
+export const notFoundScenario: ScenaristScenario = {
+  id: 'notFound',
+  name: 'Not Found',
+  description: 'Resource not found (404)',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/errors',
+      response: {
+        status: 404,
+        body: { error: 'Resource not found' },
+      },
+    },
+  ],
+};
+
+export const serviceUnavailableScenario: ScenaristScenario = {
+  id: 'serviceUnavailable',
+  name: 'Service Unavailable',
+  description: 'External service down (503)',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/errors',
+      response: {
+        status: 503,
+        body: { error: 'Service temporarily unavailable' },
+      },
+    },
+  ],
+};
+```
+
+**Testing error with sequences (intermittent failures):**
+
+```typescript
+export const intermittentErrorScenario: ScenaristScenario = {
+  id: 'intermittentError',
+  name: 'Intermittent Error',
+  description: 'Fails first, succeeds on retry',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/errors',
+      sequence: {
+        responses: [
+          { status: 500, body: { error: 'Temporary failure' } },
+          { status: 200, body: { data: 'Success', message: 'Recovered!' } },
+        ],
+        repeat: 'last',
+      },
+    },
+  ],
+};
+```
+
+This enables testing retry logic without switching scenarios - the first request fails, subsequent requests succeed.
 
 ---
 
