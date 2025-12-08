@@ -84,6 +84,18 @@ export const defaultScenario: ScenaristScenario = {
         },
       },
     },
+    // Errors Demo API - GET errors (success case for error boundary demo)
+    {
+      method: "GET",
+      url: "http://localhost:3001/errors",
+      response: {
+        status: 200,
+        body: {
+          data: "Error Demo Data",
+          message: "This endpoint demonstrates error boundary recovery",
+        },
+      },
+    },
   ],
 };
 
@@ -1242,6 +1254,32 @@ export const featureFlagsScenario: ScenaristScenario = {
 };
 
 /**
+ * API Error Scenario - Issue #211: Error Boundary Example
+ *
+ * Demonstrates error handling with Next.js error boundaries:
+ * - Triggers a 500 Internal Server Error response
+ * - Tests error.tsx recovery flow
+ * - Shows how to test error scenarios with Scenarist
+ *
+ * @see https://github.com/citypaul/scenarist/issues/211
+ */
+export const apiErrorScenario: ScenaristScenario = {
+  id: "apiError",
+  name: "API Error",
+  description: "Simulates API returning 500 Internal Server Error",
+  mocks: [
+    {
+      method: "GET",
+      url: "http://localhost:3001/errors",
+      response: {
+        status: 500,
+        body: { error: "Internal server error" },
+      },
+    },
+  ],
+};
+
+/**
  * Issue #335 BUG FIX: Simple response should override default sequence
  *
  * This scenario tests that when switching to a scenario with a SIMPLE response
@@ -1457,5 +1495,6 @@ export const scenarios = {
   conditionalAfterResponse: conditionalAfterResponseScenario,
   authenticatedUser: authenticatedUserScenario,
   unauthenticatedUser: unauthenticatedUserScenario,
+  apiError: apiErrorScenario,
   ...checkoutScenarios,
 } as const satisfies ScenaristScenarios;
