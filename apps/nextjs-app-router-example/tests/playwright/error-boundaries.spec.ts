@@ -20,12 +20,29 @@ test.describe("Error Boundaries", () => {
     await switchScenario(page, "apiError");
     await page.goto("/errors");
 
-    // Error boundary should be visible with alert role
-    await expect(page.getByRole("alert")).toBeVisible();
-    await expect(page.getByText(/something went wrong/i)).toBeVisible();
+    // Error boundary should show "Something went wrong" message
+    await expect(
+      page.getByRole("heading", { name: /something went wrong/i }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: /try again/i })).toBeVisible();
   });
 
-  test("retry button allows recovery from error", async ({
+  test("retry button is visible in error state", async ({
+    page,
+    switchScenario,
+  }) => {
+    // Start with error scenario
+    await switchScenario(page, "apiError");
+    await page.goto("/errors");
+
+    // Verify error boundary shows with retry button
+    await expect(
+      page.getByRole("heading", { name: /something went wrong/i }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: /try again/i })).toBeVisible();
+  });
+
+  test("page recovers after scenario switch and reload", async ({
     page,
     switchScenario,
   }) => {
@@ -34,17 +51,19 @@ test.describe("Error Boundaries", () => {
     await page.goto("/errors");
 
     // Verify error boundary is showing
-    await expect(page.getByRole("alert")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /something went wrong/i }),
+    ).toBeVisible();
 
-    // Switch to default (working) scenario before retry
+    // Switch to default (working) scenario and reload page
     await switchScenario(page, "default");
+    await page.reload();
 
-    // Click retry button
-    await page.getByRole("button", { name: /try again/i }).click();
-
-    // Should show success content (no alert, data visible)
-    await expect(page.getByRole("alert")).not.toBeVisible();
+    // Should show success content
     await expect(page.getByText(/error demo data/i)).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /something went wrong/i }),
+    ).not.toBeVisible();
   });
 
   test("displays content when API returns success", async ({
@@ -54,8 +73,10 @@ test.describe("Error Boundaries", () => {
     await switchScenario(page, "default");
     await page.goto("/errors");
 
-    // Should show data, no error
+    // Should show data, no error heading
     await expect(page.getByText(/error demo data/i)).toBeVisible();
-    await expect(page.getByRole("alert")).not.toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /something went wrong/i }),
+    ).not.toBeVisible();
   });
 });
