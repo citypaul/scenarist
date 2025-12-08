@@ -211,7 +211,16 @@ export default defineConfig({
                   items: [
                     { label: "Overview", slug: "frameworks/nextjs-app-router" },
                     { label: "Getting Started", slug: "frameworks/nextjs-app-router/getting-started" },
-                    { label: "Testing RSC", slug: "frameworks/nextjs-app-router/rsc-guide" },
+                    {
+                      label: "Testing RSC",
+                      items: [
+                        { label: "Overview", slug: "frameworks/nextjs-app-router/rsc" },
+                        { label: "Data Fetching", slug: "frameworks/nextjs-app-router/rsc/data-fetching" },
+                        { label: "Streaming", slug: "frameworks/nextjs-app-router/rsc/streaming" },
+                        { label: "Interactions", slug: "frameworks/nextjs-app-router/rsc/interactions" },
+                        { label: "Troubleshooting", slug: "frameworks/nextjs-app-router/rsc/troubleshooting" },
+                      ],
+                    },
                     { label: "Example App", slug: "frameworks/nextjs-app-router/example-app" },
                   ],
                 },

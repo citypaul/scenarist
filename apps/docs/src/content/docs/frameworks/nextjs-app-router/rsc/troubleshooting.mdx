@@ -1,0 +1,211 @@
+---
+title: Troubleshooting
+description: Common pitfalls and debugging tips for testing React Server Components with Scenarist
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+This page covers common issues you may encounter when testing React Server Components with Scenarist, along with debugging tips.
+
+## Common Pitfalls
+
+### Pitfall 1: Missing Header Forwarding
+
+**Symptom:** Tests fail with "no mock matched" or default responses instead of scenario-specific ones.
+
+**Cause:** Server Component fetches don't include the test ID header.
+
+**Fix:** Always forward headers:
+
+```typescript
+// ✅ Correct
+const headersList = await headers();
+const response = await fetch(url, {
+  headers: {
+    ...getScenaristHeadersFromReadonlyHeaders(headersList),
+  },
+});
+
+// ❌ Wrong - missing header forwarding
+const response = await fetch(url);
+```
+
+### Pitfall 2: page.request Doesn't Include Test ID
+
+**Symptom:** API calls from `page.request.post()` don't use the correct scenario.
+
+**Cause:** `page.request` uses a separate HTTP context from the browser page.
+
+**Fix:** Explicitly include the test ID header:
+
+```typescript
+test('adds item to cart', async ({ page, switchScenario }) => {
+  const testId = await switchScenario(page, 'cartWithState');  // ✅ Capture testId
+
+  await page.request.post('http://localhost:3002/api/cart/add', {
+    headers: {
+      'Content-Type': 'application/json',
+      'x-scenarist-test-id': testId,  // ✅ Explicitly include
+    },
+    data: { productId: 'prod-1' },
+  });
+});
+```
+
+### Pitfall 3: Next.js Caching
+
+**Symptom:** Same response returned despite scenario changes.
+
+**Cause:** Next.js caches fetch responses by default.
+
+**Fix:** Disable caching for testable fetches:
+
+```typescript
+const response = await fetch(url, {
+  headers: { ... },
+  cache: 'no-store',  // ✅ Disable caching
+});
+```
+
+### Pitfall 4: Sequence Not Advancing
+
+**Symptom:** Same response returned on every request.
+
+**Cause:** Requests going to a different mock or different test ID.
+
+**Fix:** Ensure URL matches exactly and headers are forwarded:
+
+```typescript
+// Scenario mock
+{ method: 'GET', url: 'http://localhost:3001/github/jobs/:id', sequence: {...} }
+
+// Component fetch - must match URL pattern
+await fetch(`http://localhost:3001/github/jobs/${jobId}`, {  // ✅ Matches pattern
+  headers: { ...getScenaristHeadersFromReadonlyHeaders(headersList) },
+});
+```
+
+---
+
+## Debugging Tips
+
+### 1. Check MSW Logs
+
+Set the `DEBUG` environment variable to see MSW interception details:
+
+```bash
+DEBUG=msw:* npm run test
+```
+
+This shows which requests MSW is intercepting and which mocks are being matched.
+
+### 2. Verify Test ID
+
+Capture and log the test ID from `switchScenario()`:
+
+```typescript
+test('debugging test', async ({ page, switchScenario }) => {
+  const testId = await switchScenario(page, 'myScenario');
+  console.log('Test ID:', testId);  // Verify it's being set
+
+  await page.goto('/my-page');
+});
+```
+
+### 3. Inspect Network Requests
+
+Use Playwright's network recording to see what requests are being made:
+
+```typescript
+test('debugging network', async ({ page, switchScenario }) => {
+  // Enable request logging
+  page.on('request', request => {
+    console.log('>>', request.method(), request.url());
+    console.log('   Headers:', request.headers());
+  });
+
+  page.on('response', response => {
+    console.log('<<', response.status(), response.url());
+  });
+
+  await switchScenario(page, 'myScenario');
+  await page.goto('/my-page');
+});
+```
+
+### 4. Check Scenario Endpoint
+
+Verify the scenario switch endpoint is responding correctly:
+
+```typescript
+test('verify scenario switch', async ({ page, switchScenario }) => {
+  const testId = await switchScenario(page, 'myScenario');
+
+  // Manually check the scenario endpoint
+  const response = await page.request.get(
+    `http://localhost:3002/__scenarist__/scenario?testId=${testId}`
+  );
+  console.log('Current scenario:', await response.json());
+});
+```
+
+### 5. Check for URL Mismatches
+
+Ensure your mock URLs exactly match what your components are fetching:
+
+```typescript
+// Mock definition
+{
+  method: 'GET',
+  url: 'http://localhost:3001/products',  // Must match exactly
+  // ...
+}
+
+// Component fetch - common mistakes:
+await fetch('http://localhost:3001/products');   // ✅ Matches
+await fetch('http://localhost:3001/products/');  // ❌ Trailing slash
+await fetch('http://localhost:3001/Products');   // ❌ Case mismatch
+await fetch('/products');                         // ❌ Relative URL
+```
+
+### 6. Verify Header Forwarding in Server Components
+
+Add temporary logging to verify headers are being forwarded:
+
+```typescript
+export default async function MyPage() {
+  const headersList = await headers();
+  const scenaristHeaders = getScenaristHeadersFromReadonlyHeaders(headersList);
+
+  // Temporary debug logging
+  console.log('Scenarist headers:', scenaristHeaders);
+
+  const response = await fetch('http://localhost:3001/api/data', {
+    headers: {
+      ...scenaristHeaders,
+    },
+  });
+
+  // ...
+}
+```
+
+---
+
+## Quick Reference: Common Issues
+
+| Issue | Likely Cause | Solution |
+|-------|--------------|----------|
+| "No mock matched" | Missing header forwarding | Add `getScenaristHeadersFromReadonlyHeaders()` |
+| Wrong scenario response | `page.request` missing test ID | Explicitly pass `x-scenarist-test-id` header |
+| Stale responses | Next.js caching | Add `cache: 'no-store'` to fetch |
+| Sequence stuck | URL mismatch or wrong test ID | Verify URL pattern and header forwarding |
+| Intermittent failures | Parallel test isolation | Ensure each test uses unique test ID |
+
+---
+
+## Next Steps
+
+- **[Testing RSC Overview](/frameworks/nextjs-app-router/rsc)** - Return to the main RSC testing guide
+- **[Data Fetching Patterns](/frameworks/nextjs-app-router/rsc/data-fetching)** - Core patterns for RSC testing
+- **[Debugging with Logs](/reference/logging)** - Detailed logging configuration

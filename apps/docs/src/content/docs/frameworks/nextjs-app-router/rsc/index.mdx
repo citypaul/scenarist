@@ -1,0 +1,167 @@
+---
+title: Testing React Server Components
+description: Complete guide to testing React Server Components with Scenarist - data fetching, stateful mocks, sequences, streaming, authentication, server actions, and error handling
+---
+
+import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+React Server Components (RSC) represent a fundamental shift in how React applications render - but they also create new testing challenges. This guide shows you how to effectively test RSC using Scenarist and Playwright.
+
+## Why Server Components Need Different Testing
+
+### The Testing Gap
+
+Where do Server Components fit in the testing pyramid? They don't fit neatly into traditional categories:
+
+- **Not isolated units** - They fetch data, read cookies, access headers, and depend on server infrastructure
+- **Not traditional integration tests** - They render UI, not just return data
+- **Full E2E is too slow** - Spinning up browsers for every scenario combination doesn't scale
+
+<Aside type="note" title="Broader Context">
+This testing gap applies to all modern server-side code. See [Why Scenarist?](/getting-started/why-scenarist) for how Scenarist addresses middleware, session handling, and other server-side testing challenges, or explore the [Philosophy](/concepts/philosophy) for the core beliefs that guide Scenarist's design.
+</Aside>
+
+### The Jest Problem
+
+```typescript
+// This FAILS in Jest:
+import { render } from '@testing-library/react';
+import ProductsPage from './app/products/page';
+
+test('renders products', async () => {
+  render(<ProductsPage />);  // Error: Objects are not valid as a React child (found: [object Promise])
+});
+```
+
+Jest and React Testing Library cannot render async Server Components because:
+
+1. **Server Components return Promises** - RTL expects synchronous React elements
+2. **Server-only APIs** - `headers()`, `cookies()` from `next/headers` throw outside Next.js
+3. **No browser environment** - Server Components have no DOM to render into
+
+From the [Next.js Testing Documentation](https://nextjs.org/docs/app/building-your-application/testing):
+
+> "Since async Server Components are new to the React ecosystem, some tools do not fully support them. In the meantime, we recommend using End-to-End Testing over Unit Testing for async components."
+
+### The Scenarist Solution
+
+Scenarist + Playwright fills this gap by testing your server-side code **as it actually runs** - in a real Next.js environment with actual server-side rendering, middleware execution, and session handling:
+
+```typescript
+// This WORKS with Scenarist + Playwright:
+import { test, expect } from './fixtures';
+
+test('premium users see discounted pricing', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'premiumUser');
+
+  await page.goto('/products?tier=premium');
+
+  // Everything executes: middleware, session checks, RSC data fetching, rendering
+  await expect(page.getByText('£99.99')).toBeVisible();
+});
+```
+
+### What This Enables for RSC
+
+Testing Server Components with Scenarist gives you capabilities that unit tests cannot provide:
+
+| RSC Challenge | Unit Tests | Scenarist + Playwright |
+|---------------|------------|------------------------|
+| Async component rendering | ❌ RTL can't render Promises | ✅ Full server-side rendering |
+| `headers()` / `cookies()` APIs | ❌ Throw outside Next.js | ✅ Real Next.js execution |
+| Data fetching in components | ❌ Must mock fetch globally | ✅ Real fetch, mocked external APIs |
+| Error boundaries | ❌ Must mock error conditions | ✅ Real error propagation |
+
+**Why this matters for RSC specifically:**
+
+- **No mocking Next.js internals** - `headers()`, `cookies()`, and other server APIs work naturally
+- **Real server-side rendering** - HTML is generated exactly as in production
+- **Actual component composition** - Parent/child RSC relationships execute correctly
+- **Fast scenario switching** - Test many data fetching scenarios without server restarts
+
+<Aside type="tip" title="Speed + Confidence">
+Test dozens of RSC data fetching scenarios in the time it takes to run a few traditional E2E tests. Scenario switching is instant - no server restarts needed.
+</Aside>
+
+## Setup Requirements for App Router
+
+Before testing RSC patterns, ensure your setup includes header forwarding. This is critical because Server Components need to forward the test ID header to external APIs.
+
+### Header Forwarding in Server Components
+
+Server Components use `headers()` from `next/headers`, which returns `ReadonlyHeaders`. Use the dedicated helper:
+
+```typescript
+// app/products/page.tsx
+import { headers } from 'next/headers';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+
+export default async function ProductsPage() {
+  const headersList = await headers();
+
+  const response = await fetch('https://api.stripe.com/v1/products', {
+    headers: {
+      ...getScenaristHeadersFromReadonlyHeaders(headersList), // Forward test ID
+      'Authorization': `Bearer ${process.env.STRIPE_KEY}`,
+    },
+  });
+
+  const products = await response.json();
+  return <ProductList products={products} />;
+}
+```
+
+<Aside type="tip" title="Why Header Forwarding Matters">
+Each Playwright test has a unique test ID (`x-scenarist-test-id`). This header tells MSW which scenario to use for each request. Without forwarding, your Server Component's fetch calls won't be associated with the correct test scenario.
+</Aside>
+
+For complete setup instructions, see [Getting Started with Next.js App Router](/frameworks/nextjs-app-router/getting-started).
+
+---
+
+## RSC Testing Patterns
+
+This guide covers seven patterns for testing React Server Components. Choose based on your testing needs:
+
+<CardGrid>
+  <LinkCard
+    title="Data Fetching Patterns"
+    description="Core patterns: fetching data, stateful mocks, and sequences"
+    href="/frameworks/nextjs-app-router/rsc/data-fetching"
+  />
+  <LinkCard
+    title="Streaming & Suspense"
+    description="Testing Suspense boundaries and streaming content"
+    href="/frameworks/nextjs-app-router/rsc/streaming"
+  />
+  <LinkCard
+    title="User Interactions"
+    description="Authentication, Server Actions, and error boundaries"
+    href="/frameworks/nextjs-app-router/rsc/interactions"
+  />
+  <LinkCard
+    title="Troubleshooting"
+    description="Common pitfalls and debugging tips"
+    href="/frameworks/nextjs-app-router/rsc/troubleshooting"
+  />
+</CardGrid>
+
+### Pattern Overview
+
+| Pattern | Page | Use Case |
+|---------|------|----------|
+| **Data Fetching** | [Data Fetching](/frameworks/nextjs-app-router/rsc/data-fetching) | Basic RSC data fetching with request matching |
+| **Stateful Mocks** | [Data Fetching](/frameworks/nextjs-app-router/rsc/data-fetching) | Shopping carts, state that builds across requests |
+| **Sequences** | [Data Fetching](/frameworks/nextjs-app-router/rsc/data-fetching) | Polling, retry logic, multi-step workflows |
+| **Streaming** | [Streaming](/frameworks/nextjs-app-router/rsc/streaming) | Suspense boundaries, progressive loading |
+| **Authentication** | [Interactions](/frameworks/nextjs-app-router/rsc/interactions) | Protected routes, session handling |
+| **Server Actions** | [Interactions](/frameworks/nextjs-app-router/rsc/interactions) | Form submissions, mutations |
+| **Error Boundaries** | [Interactions](/frameworks/nextjs-app-router/rsc/interactions) | Error handling and recovery |
+
+---
+
+## Next Steps
+
+- **[Data Fetching Patterns](/frameworks/nextjs-app-router/rsc/data-fetching)** - Start here for core RSC testing patterns
+- **[Next.js App Router Getting Started](/frameworks/nextjs-app-router/getting-started)** - Complete setup guide
+- **[Example App](/frameworks/nextjs-app-router/example-app)** - Full working example with all patterns

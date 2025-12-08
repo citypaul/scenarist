@@ -1,0 +1,868 @@
+---
+title: User Interactions
+description: Testing authentication flows, Server Actions, and error boundaries in React Server Components
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+This page covers patterns for testing user interactions in React Server Components: authentication flows, form submissions via Server Actions, and error handling with error boundaries.
+
+## Authentication Flows
+
+Authentication is a critical RSC pattern - protected routes must check auth status server-side before rendering. Scenarist makes this testable by letting you switch between authenticated and unauthenticated states.
+
+### Example: Protected Route with Auth Check
+
+**Auth Helper:** [`lib/auth.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/lib/auth.ts)
+
+```typescript
+// lib/auth.ts
+import { z } from 'zod';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+import type { ReadonlyHeaders } from 'next/dist/server/web/spec-extension/adapters/headers';
+
+const UserSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  name: z.string(),
+});
+
+type User = z.infer<typeof UserSchema>;
+
+type AuthResult =
+  | { readonly authenticated: true; readonly user: User }
+  | { readonly authenticated: false; readonly error: string };
+
+export const checkAuth = async (
+  headersList: ReadonlyHeaders,
+): Promise<AuthResult> => {
+  const response = await fetch('http://localhost:3001/auth/me', {
+    headers: {
+      ...getScenaristHeadersFromReadonlyHeaders(headersList),
+    },
+    cache: 'no-store',  // Don't cache auth checks
+  });
+
+  if (!response.ok) {
+    return { authenticated: false, error: 'Authentication required' };
+  }
+
+  const data: unknown = await response.json();
+  const user = UserSchema.parse(data);
+
+  return { authenticated: true, user };
+};
+```
+
+**Protected Layout:** [`app/protected/layout.tsx`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/app/protected/layout.tsx)
+
+```typescript
+// app/protected/layout.tsx
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { checkAuth } from '@/lib/auth';
+
+type ProtectedLayoutProps = {
+  children: React.ReactNode;
+};
+
+export default async function ProtectedLayout({
+  children,
+}: ProtectedLayoutProps) {
+  const headersList = await headers();
+  const auth = await checkAuth(headersList);
+
+  if (!auth.authenticated) {
+    // Redirect to login with the original URL
+    redirect('/login?from=/protected');
+  }
+
+  // User is authenticated - render with user context
+  return (
+    <div>
+      <header>
+        <span>Welcome, {auth.user.name}</span>
+        <span>{auth.user.email}</span>
+      </header>
+      <main>{children}</main>
+    </div>
+  );
+}
+```
+
+### Authentication Scenarios
+
+**Scenarios:** [`lib/scenarios.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/lib/scenarios.ts)
+
+```typescript
+// lib/scenarios.ts
+import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
+
+export const authenticatedUserScenario: ScenaristScenario = {
+  id: 'authenticatedUser',
+  name: 'Authenticated User',
+  description: 'User is authenticated with valid session',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/auth/me',
+      response: {
+        status: 200,
+        body: {
+          id: 'user-123',
+          email: 'test@example.com',
+          name: 'Test User',
+        },
+      },
+    },
+  ],
+};
+
+export const unauthenticatedUserScenario: ScenaristScenario = {
+  id: 'unauthenticatedUser',
+  name: 'Unauthenticated User',
+  description: 'User is not authenticated',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/auth/me',
+      response: {
+        status: 401,
+        body: {
+          error: 'Unauthorized',
+          message: 'Authentication required',
+        },
+      },
+    },
+  ],
+};
+```
+
+### Test Implementation
+
+**Test:** [`tests/playwright/auth-flows.spec.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/tests/playwright/auth-flows.spec.ts)
+
+```typescript
+// tests/playwright/auth-flows.spec.ts
+import { test, expect } from './fixtures';
+
+test.describe('Authentication Flow - Protected Routes', () => {
+  test('should render protected content when authenticated', async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, 'authenticatedUser');
+
+    await page.goto('/protected');
+
+    // Verify protected content is visible
+    await expect(
+      page.getByRole('heading', { name: 'Protected Dashboard' }),
+    ).toBeVisible();
+
+    // Verify user info is displayed
+    await expect(page.getByText('test@example.com')).toBeVisible();
+    await expect(page.getByText('Welcome, Test User')).toBeVisible();
+  });
+
+  test('should redirect to login when not authenticated', async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, 'unauthenticatedUser');
+
+    await page.goto('/protected');
+
+    // Should be redirected to login page
+    await expect(page).toHaveURL(/\/login\?from=\/protected/);
+
+    // Verify login page content
+    await expect(
+      page.getByRole('heading', { name: 'Sign In' }),
+    ).toBeVisible();
+  });
+
+  test('should switch between auth states at runtime', async ({
+    page,
+    switchScenario,
+  }) => {
+    // Start as authenticated user
+    await switchScenario(page, 'authenticatedUser');
+    await page.goto('/protected');
+    await expect(
+      page.getByRole('heading', { name: 'Protected Dashboard' }),
+    ).toBeVisible();
+
+    // Switch to unauthenticated (simulating session expiry)
+    await switchScenario(page, 'unauthenticatedUser');
+    await page.reload();
+
+    // Now redirected to login
+    await expect(page).toHaveURL(/\/login/);
+  });
+});
+```
+
+<Aside type="tip" title="Testing Auth Without Real Auth">
+Scenarist lets you test authentication flows without setting up real auth providers. Switch scenarios to simulate different auth states - no tokens, cookies, or sessions required.
+</Aside>
+
+---
+
+## Server Actions
+
+Server Actions are server-side functions that can be called directly from Client Components. They're commonly used for form submissions, mutations, and any operation that requires server-side execution. Testing Server Actions with Scenarist requires the same header forwarding pattern used in Server Components.
+
+### The Server Actions Testing Challenge
+
+Server Actions run on the server and make their own fetch requests. This creates a testing challenge:
+
+1. **Isolated server execution** - Server Actions don't inherit browser headers automatically
+2. **Test ID routing** - Without the `x-scenarist-test-id` header, MSW can't route to the correct scenario
+3. **Concurrent test isolation** - Multiple tests running in parallel need separate mock responses
+
+**Solution:** Forward headers from the incoming request to outgoing fetch calls using `getScenaristHeadersFromReadonlyHeaders()`.
+
+### Example: Contact Form with Server Action
+
+**Server Action:** [`app/actions/actions.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/app/actions/actions.ts)
+
+```typescript
+// app/actions/actions.ts
+"use server";
+
+import { headers } from "next/headers";
+import { getScenaristHeadersFromReadonlyHeaders } from "@scenarist/nextjs-adapter/app";
+
+type FormState = {
+  readonly success: boolean;
+  readonly message: string;
+} | null;
+
+export async function submitContactForm(
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const headersList = await headers();
+
+  const response = await fetch("http://localhost:3001/contact", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      // Forward Scenarist headers for test isolation
+      // Each test gets its own scenario based on x-scenarist-test-id
+      ...getScenaristHeadersFromReadonlyHeaders(headersList),
+    },
+    body: JSON.stringify({
+      name: formData.get("name"),
+      email: formData.get("email"),
+      message: formData.get("message"),
+    }),
+  });
+
+  const data: unknown = await response.json();
+
+  if (!response.ok) {
+    const errorMessage =
+      data !== null &&
+      typeof data === "object" &&
+      "error" in data &&
+      typeof data.error === "string"
+        ? data.error
+        : "Submission failed";
+    return { success: false, message: errorMessage };
+  }
+
+  const successMessage =
+    data !== null &&
+    typeof data === "object" &&
+    "message" in data &&
+    typeof data.message === "string"
+      ? data.message
+      : "Message sent!";
+  return { success: true, message: successMessage };
+}
+```
+
+<Aside type="tip" title="Header Forwarding is Critical">
+The `getScenaristHeadersFromReadonlyHeaders(headersList)` call forwards the test ID from the browser request to the external API call. Without this, all concurrent tests would share the same mock responses, causing flaky tests.
+</Aside>
+
+**Page Component:** [`app/actions/page.tsx`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/app/actions/page.tsx)
+
+```typescript
+// app/actions/page.tsx
+"use client";
+
+import { useActionState } from "react";
+import { submitContactForm } from "./actions";
+
+export default function ActionsPage() {
+  const [state, formAction, isPending] = useActionState(submitContactForm, null);
+
+  return (
+    <main className="min-h-screen p-8">
+      <h1 className="text-4xl font-bold mb-8">Server Actions Demo</h1>
+
+      <form action={formAction} className="max-w-md space-y-4">
+        <div>
+          <label htmlFor="name" className="block mb-1">Name</label>
+          <input id="name" name="name" type="text" required className="w-full border p-2" />
+        </div>
+        <div>
+          <label htmlFor="email" className="block mb-1">Email</label>
+          <input id="email" name="email" type="email" required className="w-full border p-2" />
+        </div>
+        <div>
+          <label htmlFor="message" className="block mb-1">Message</label>
+          <textarea id="message" name="message" required className="w-full border p-2" />
+        </div>
+        <button type="submit" disabled={isPending} className="bg-blue-600 text-white px-4 py-2">
+          {isPending ? "Sending..." : "Send Message"}
+        </button>
+      </form>
+
+      {state?.success && (
+        <div role="status" className="mt-4 p-4 bg-green-100 text-green-800">
+          {state.message}
+        </div>
+      )}
+      {state?.success === false && (
+        <div role="alert" className="mt-4 p-4 bg-red-100 text-red-800">
+          {state.message}
+        </div>
+      )}
+    </main>
+  );
+}
+```
+
+### Scenario Definitions
+
+Server Actions scenarios follow the same pattern as Server Component scenarios. Multiple scenarios let you test success, error, and edge cases:
+
+**Scenarios:** [`lib/scenarios.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/lib/scenarios.ts)
+
+```typescript
+// lib/scenarios.ts
+import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
+
+// Success scenario
+export const contactFormSuccessScenario: ScenaristScenario = {
+  id: 'contactFormSuccess',
+  name: 'Contact Form - Success',
+  description: 'Contact form submission succeeds',
+  mocks: [
+    {
+      method: 'POST',
+      url: 'http://localhost:3001/contact',
+      response: {
+        status: 200,
+        body: { success: true, message: 'Message sent successfully!' },
+      },
+    },
+  ],
+};
+
+// Error scenario - server failure
+export const contactFormErrorScenario: ScenaristScenario = {
+  id: 'contactFormError',
+  name: 'Contact Form - Error',
+  description: 'Contact form submission fails with server error',
+  mocks: [
+    {
+      method: 'POST',
+      url: 'http://localhost:3001/contact',
+      response: {
+        status: 500,
+        body: { error: 'Server error. Please try again later.' },
+      },
+    },
+  ],
+};
+
+// Edge case - duplicate email
+export const contactFormDuplicateScenario: ScenaristScenario = {
+  id: 'contactFormDuplicate',
+  name: 'Contact Form - Duplicate Email',
+  description: 'Contact form fails due to existing email',
+  mocks: [
+    {
+      method: 'POST',
+      url: 'http://localhost:3001/contact',
+      response: {
+        status: 409,
+        body: { error: 'Email already registered in our system.' },
+      },
+    },
+  ],
+};
+
+// Request matching - VIP email domains
+export const contactFormVipScenario: ScenaristScenario = {
+  id: 'contactFormVip',
+  name: 'Contact Form - VIP Domain',
+  description: 'VIP email domains get priority response',
+  mocks: [
+    {
+      method: 'POST',
+      url: 'http://localhost:3001/contact',
+      match: {
+        body: { email: { contains: '@vip.' } },  // Match on request body
+      },
+      response: {
+        status: 200,
+        body: { success: true, message: 'Priority response - VIP request received!' },
+      },
+    },
+  ],
+};
+```
+
+<Aside type="note" title="Request Body Matching">
+The VIP scenario demonstrates request body matching with `{ contains: '@vip.' }`. This routes requests based on the email domain in the form data, enabling conditional responses without separate scenarios for each email.
+</Aside>
+
+### Test Implementation
+
+**Test:** [`tests/playwright/server-actions.spec.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/tests/playwright/server-actions.spec.ts)
+
+```typescript
+// tests/playwright/server-actions.spec.ts
+import { test, expect } from './fixtures';
+
+test.describe('Server Actions - Contact Form', () => {
+  test('should submit contact form successfully', async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, 'contactFormSuccess');
+    await page.goto('/actions');
+
+    await page.getByLabel('Name').fill('John Doe');
+    await page.getByLabel('Email').fill('john@example.com');
+    await page.getByLabel('Message').fill('Hello!');
+
+    await page.getByRole('button', { name: 'Send Message' }).click();
+
+    await expect(page.getByRole('status')).toContainText(
+      'Message sent successfully'
+    );
+  });
+
+  test('should show error when server fails', async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, 'contactFormError');
+    await page.goto('/actions');
+
+    await page.getByLabel('Name').fill('John Doe');
+    await page.getByLabel('Email').fill('john@example.com');
+    await page.getByLabel('Message').fill('Hello!');
+
+    await page.getByRole('button', { name: 'Send Message' }).click();
+
+    await expect(page.getByText('Server error')).toBeVisible();
+  });
+
+  test('should show duplicate email message', async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, 'contactFormDuplicate');
+    await page.goto('/actions');
+
+    await page.getByLabel('Name').fill('John Doe');
+    await page.getByLabel('Email').fill('existing@example.com');
+    await page.getByLabel('Message').fill('Hello!');
+
+    await page.getByRole('button', { name: 'Send Message' }).click();
+
+    await expect(page.getByText('Email already registered')).toBeVisible();
+  });
+
+  test('should show VIP acknowledgment for VIP email domains', async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, 'contactFormVip');
+    await page.goto('/actions');
+
+    await page.getByLabel('Name').fill('VIP User');
+    await page.getByLabel('Email').fill('user@vip.example.com');
+    await page.getByLabel('Message').fill('Priority request');
+
+    await page.getByRole('button', { name: 'Send Message' }).click();
+
+    await expect(page.getByRole('status')).toContainText('Priority response');
+  });
+});
+```
+
+### Key Points for Server Actions Tests
+
+| Aspect | Consideration |
+|--------|---------------|
+| **Header forwarding** | Server Actions MUST forward `x-scenarist-test-id` via `getScenaristHeadersFromReadonlyHeaders()` |
+| **`useActionState` hook** | React 19's `useActionState` provides `[state, formAction, isPending]` for form state management |
+| **Request body matching** | Use `match.body` to route requests based on form data (e.g., VIP email domains) |
+| **ARIA roles** | Use `role="status"` for success and `role="alert"` for errors for reliable test selection |
+| **Error handling** | Test both HTTP errors (500) and business logic errors (409 duplicate) |
+
+### Common Server Actions Testing Patterns
+
+**Testing form validation:**
+
+```typescript
+test('should show validation error for invalid email', async ({
+  page,
+  switchScenario,
+}) => {
+  await switchScenario(page, 'contactFormValidation');
+  await page.goto('/actions');
+
+  await page.getByLabel('Email').fill('invalid-email');  // Missing @
+  await page.getByRole('button', { name: 'Send Message' }).click();
+
+  await expect(page.getByText('Invalid email format')).toBeVisible();
+});
+```
+
+**Testing loading states:**
+
+```typescript
+test('should show loading state while submitting', async ({
+  page,
+  switchScenario,
+}) => {
+  await switchScenario(page, 'contactFormSuccess');
+  await page.goto('/actions');
+
+  await page.getByLabel('Name').fill('John Doe');
+  await page.getByLabel('Email').fill('john@example.com');
+  await page.getByLabel('Message').fill('Hello!');
+
+  // Click and immediately check for loading state
+  await page.getByRole('button', { name: 'Send Message' }).click();
+
+  // Button should show loading text
+  await expect(page.getByRole('button')).toContainText('Sending...');
+
+  // Eventually shows success
+  await expect(page.getByRole('status')).toBeVisible();
+});
+```
+
+---
+
+## Error Boundaries
+
+Error handling is critical in production applications. When a Server Component throws an error during rendering, Next.js catches it with an error boundary (defined in `error.tsx`). Scenarist makes testing these error flows straightforward by letting you trigger errors via scenarios.
+
+### How Error Boundaries Work with RSC
+
+1. **Server Component throws** - When `fetch` fails or an error is thrown during rendering
+2. **Next.js catches it** - The `error.tsx` file in the same or parent route catches the error
+3. **Recovery available** - Error boundary provides a `reset()` function to retry rendering
+
+### Example: Error-Prone Data Page
+
+The error demo page fetches data that may fail, triggering the error boundary.
+
+**Server Component:** [`app/errors/page.tsx`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/app/errors/page.tsx)
+
+```typescript
+// app/errors/page.tsx
+import { headers } from 'next/headers';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+
+type ErrorsResponse = {
+  readonly data: string;
+  readonly message: string;
+};
+
+async function fetchErrorData(): Promise<ErrorsResponse> {
+  const headersList = await headers();
+
+  const response = await fetch('http://localhost:3002/api/errors', {
+    headers: {
+      ...getScenaristHeadersFromReadonlyHeaders(headersList),
+    },
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    // This throw triggers the error boundary
+    throw new Error('Something went wrong while fetching data');
+  }
+
+  return response.json();
+}
+
+export default async function ErrorsPage() {
+  const data = await fetchErrorData();
+
+  return (
+    <div>
+      <h1>Error Boundary Demo</h1>
+      <div className="success-content">
+        <h2>Error Demo Data</h2>
+        <p>{data.message}</p>
+      </div>
+    </div>
+  );
+}
+```
+
+<Aside type="tip" title="Error Propagation">
+When the Server Component throws, React's error boundary mechanism catches it. The `error.tsx` file must be a Client Component (with `"use client"`) because it needs interactivity for the retry button.
+</Aside>
+
+**Error Boundary:** [`app/errors/error.tsx`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/app/errors/error.tsx)
+
+```typescript
+// app/errors/error.tsx
+'use client';
+
+type ErrorBoundaryProps = {
+  readonly error: Error & { digest?: string };
+  readonly reset: () => void;
+};
+
+export default function ErrorBoundary({ error, reset }: ErrorBoundaryProps) {
+  return (
+    <div role="alert" aria-live="assertive">
+      <h2>Something went wrong!</h2>
+      <p>{error.message}</p>
+      <button onClick={reset}>
+        Try again
+      </button>
+    </div>
+  );
+}
+```
+
+### Scenario Definitions
+
+Two scenarios enable testing both success and error states:
+
+**Scenarios:** [`lib/scenarios.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/lib/scenarios.ts)
+
+```typescript
+// lib/scenarios.ts
+import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
+
+// Default scenario includes success response for /errors endpoint
+export const defaultScenario: ScenaristScenario = {
+  id: 'default',
+  name: 'Default',
+  description: 'Default scenario with working endpoints',
+  mocks: [
+    // ... other mocks ...
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/errors',
+      response: {
+        status: 200,
+        body: {
+          data: 'Error Demo Data',
+          message: 'This endpoint demonstrates error boundary recovery',
+        },
+      },
+    },
+  ],
+};
+
+// Error scenario returns 500 to trigger error boundary
+export const apiErrorScenario: ScenaristScenario = {
+  id: 'apiError',
+  name: 'API Error',
+  description: 'Simulates API returning 500 Internal Server Error',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/errors',
+      response: {
+        status: 500,
+        body: { error: 'Internal server error' },
+      },
+    },
+  ],
+};
+```
+
+<Aside type="note" title="Error Response Status">
+The 500 status code causes the Server Component's fetch to return a non-ok response. The component then throws an error, which Next.js catches with the error boundary. You can also test other error statuses (401, 403, 404, 503) to verify appropriate error handling.
+</Aside>
+
+### Test Implementation
+
+**Test:** [`tests/playwright/error-boundaries.spec.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/tests/playwright/error-boundaries.spec.ts)
+
+```typescript
+// tests/playwright/error-boundaries.spec.ts
+import { test, expect } from './fixtures';
+
+test.describe('Error Boundaries', () => {
+  test('displays error boundary with retry button when API returns 500', async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, 'apiError');
+    await page.goto('/errors');
+
+    // Error boundary should show "Something went wrong" message with retry option
+    await expect(
+      page.getByRole('heading', { name: /something went wrong/i }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: /try again/i }),
+    ).toBeVisible();
+  });
+
+  test('page recovers after scenario switch and reload', async ({
+    page,
+    switchScenario,
+  }) => {
+    // Start with error scenario
+    await switchScenario(page, 'apiError');
+    await page.goto('/errors');
+
+    // Verify error boundary is showing
+    await expect(
+      page.getByRole('heading', { name: /something went wrong/i }),
+    ).toBeVisible();
+
+    // Switch to default (working) scenario and reload page
+    await switchScenario(page, 'default');
+    await page.reload();
+
+    // Should show success content
+    await expect(page.getByText(/error demo data/i)).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: /something went wrong/i }),
+    ).not.toBeVisible();
+  });
+
+  test('displays content when API returns success', async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, 'default');
+    await page.goto('/errors');
+
+    // Should show data, no error heading
+    await expect(page.getByText(/error demo data/i)).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: /something went wrong/i }),
+    ).not.toBeVisible();
+  });
+});
+```
+
+### Error Recovery Flow
+
+The recovery flow demonstrates how Scenarist enables testing error states and recovery:
+
+```
+1. Switch to 'apiError' scenario
+   ↓
+2. Navigate to /errors
+   ↓
+3. RSC fetches data → API returns 500
+   ↓
+4. Component throws → error.tsx catches it
+   ↓
+5. User sees error message with "Try again" button
+   ↓
+6. Switch to 'default' scenario
+   ↓
+7. User clicks "Try again" (or page reloads)
+   ↓
+8. RSC fetches data → API returns 200
+   ↓
+9. Page renders successfully
+```
+
+### Key Points for Error Boundary Tests
+
+| Aspect | Consideration |
+|--------|---------------|
+| **Error boundary location** | `error.tsx` must be in the same directory or a parent route |
+| **Client Component** | `error.tsx` must use `"use client"` for the reset button interactivity |
+| **ARIA roles** | Use `role="alert"` and `aria-live="assertive"` for accessibility |
+| **Recovery testing** | Switch scenarios and reload/retry to verify recovery |
+| **Error messages** | Display user-friendly messages, not raw error details |
+
+### Advanced Error Patterns
+
+**Testing specific error statuses:**
+
+```typescript
+// lib/scenarios.ts
+export const notFoundScenario: ScenaristScenario = {
+  id: 'notFound',
+  name: 'Not Found',
+  description: 'Resource not found (404)',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/errors',
+      response: {
+        status: 404,
+        body: { error: 'Resource not found' },
+      },
+    },
+  ],
+};
+
+export const serviceUnavailableScenario: ScenaristScenario = {
+  id: 'serviceUnavailable',
+  name: 'Service Unavailable',
+  description: 'External service down (503)',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/errors',
+      response: {
+        status: 503,
+        body: { error: 'Service temporarily unavailable' },
+      },
+    },
+  ],
+};
+```
+
+**Testing error with sequences (intermittent failures):**
+
+```typescript
+export const intermittentErrorScenario: ScenaristScenario = {
+  id: 'intermittentError',
+  name: 'Intermittent Error',
+  description: 'Fails first, succeeds on retry',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/errors',
+      sequence: {
+        responses: [
+          { status: 500, body: { error: 'Temporary failure' } },
+          { status: 200, body: { data: 'Success', message: 'Recovered!' } },
+        ],
+        repeat: 'last',
+      },
+    },
+  ],
+};
+```
+
+This enables testing retry logic without switching scenarios - the first request fails, subsequent requests succeed.
+
+---
+
+## Next Steps
+
+- **[Troubleshooting](/frameworks/nextjs-app-router/rsc/troubleshooting)** - Common pitfalls and debugging tips
+- **[Data Fetching Patterns](/frameworks/nextjs-app-router/rsc/data-fetching)** - Core patterns: fetching, stateful mocks, sequences
+- **[Streaming & Suspense](/frameworks/nextjs-app-router/rsc/streaming)** - Testing Suspense boundaries and streaming content
