@@ -41,7 +41,8 @@ test.describe("Server Actions - Contact Form", () => {
 
     await page.getByRole("button", { name: "Send Message" }).click();
 
-    await expect(page.getByRole("alert")).toContainText("Server error");
+    // Use locator with text to avoid Next.js route announcer
+    await expect(page.getByText("Server error")).toBeVisible();
   });
 
   test("should show duplicate email message", async ({
@@ -57,9 +58,8 @@ test.describe("Server Actions - Contact Form", () => {
 
     await page.getByRole("button", { name: "Send Message" }).click();
 
-    await expect(page.getByRole("alert")).toContainText(
-      "Email already registered",
-    );
+    // Use locator with text to avoid Next.js route announcer
+    await expect(page.getByText("Email already registered")).toBeVisible();
   });
 
   test("should show VIP acknowledgment for VIP email domains", async ({
