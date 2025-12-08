@@ -200,8 +200,52 @@ export default async function MyPage() {
 }
 ```
 
-<Aside type="tip" title="Full Logging Reference">
-For complete details on log levels, categories, output formats, and custom loggers, see [Debugging with Logs](/reference/logging).
+### 6. Debug State in Playwright Tests
+
+The `@scenarist/playwright-helpers` package provides fixtures to inspect test state directly from your Playwright tests:
+
+```typescript
+// Import from your configured fixtures file
+import { test, expect } from './fixtures';
+
+test('checkout flow updates cart state', async ({ page, switchScenario, debugState }) => {
+  await switchScenario(page, 'cartWithState');
+
+  // Check initial state
+  const initialState = await debugState(page);
+  console.log('Initial state:', initialState);
+
+  await page.goto('/cart');
+  await page.getByRole('button', { name: 'Checkout' }).click();
+
+  // Verify state after action
+  const updatedState = await debugState(page);
+  console.log('Updated state:', updatedState);
+  expect(updatedState.checkoutStarted).toBe(true);
+});
+```
+
+For async flows where state changes after a delay, use `waitForDebugState`:
+
+```typescript
+test('polling updates job status', async ({ page, switchScenario, waitForDebugState }) => {
+  await switchScenario(page, 'jobPolling');
+  await page.goto('/jobs/123');
+
+  // Wait for state to indicate job completion
+  const state = await waitForDebugState(
+    page,
+    (s) => s.jobStatus === 'completed',
+    { timeout: 10000 }  // Wait up to 10 seconds
+  );
+
+  expect(state.jobStatus).toBe('completed');
+});
+```
+
+<Aside type="tip" title="More Debugging Resources">
+- **[Debugging with Logs](/reference/logging)** - Complete details on log levels, categories, and custom loggers
+- **[Playwright Integration](/testing/playwright-integration)** - Full API for `debugState`, `waitForDebugState`, and other fixtures
 </Aside>
 
 ---
