@@ -1,0 +1,225 @@
+---
+title: Troubleshooting
+description: Common pitfalls and debugging tips for testing React Server Components with Scenarist
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+This page covers common issues you may encounter when testing React Server Components with Scenarist, along with debugging tips.
+
+## Common Pitfalls
+
+### Pitfall 1: Missing Header Forwarding
+
+**Symptom:** Tests fail with "no mock matched" or default responses instead of scenario-specific ones.
+
+**Cause:** Server Component fetches don't include the test ID header.
+
+**Fix:** Always forward headers:
+
+```typescript
+// ✅ Correct
+const headersList = await headers();
+const response = await fetch(url, {
+  headers: {
+    ...getScenaristHeadersFromReadonlyHeaders(headersList),
+  },
+});
+
+// ❌ Wrong - missing header forwarding
+const response = await fetch(url);
+```
+
+### Pitfall 2: page.request Doesn't Include Test ID
+
+**Symptom:** API calls from `page.request.post()` don't use the correct scenario.
+
+**Cause:** `page.request` uses a separate HTTP context from the browser page.
+
+**Fix:** Explicitly include the test ID header:
+
+```typescript
+test('adds item to cart', async ({ page, switchScenario }) => {
+  const testId = await switchScenario(page, 'cartWithState');  // ✅ Capture testId
+
+  await page.request.post('http://localhost:3002/api/cart/add', {
+    headers: {
+      'Content-Type': 'application/json',
+      'x-scenarist-test-id': testId,  // ✅ Explicitly include
+    },
+    data: { productId: 'prod-1' },
+  });
+});
+```
+
+### Pitfall 3: Next.js Caching
+
+**Symptom:** Same response returned despite scenario changes.
+
+**Cause:** Next.js caches fetch responses by default.
+
+**Fix:** Disable caching for testable fetches:
+
+```typescript
+const response = await fetch(url, {
+  headers: { ... },
+  cache: 'no-store',  // ✅ Disable caching
+});
+```
+
+### Pitfall 4: Sequence Not Advancing
+
+**Symptom:** Same response returned on every request.
+
+**Cause:** Requests going to a different mock or different test ID.
+
+**Fix:** Ensure URL matches exactly and headers are forwarded:
+
+```typescript
+// Scenario mock
+{ method: 'GET', url: 'http://localhost:3001/github/jobs/:id', sequence: {...} }
+
+// Component fetch - must match URL pattern
+await fetch(`http://localhost:3001/github/jobs/${jobId}`, {  // ✅ Matches pattern
+  headers: { ...getScenaristHeadersFromReadonlyHeaders(headersList) },
+});
+```
+
+---
+
+## Debugging Tips
+
+Scenarist has built-in logging that shows exactly what's happening with scenario switching, mock matching, and state management. This is far more useful than generic network debugging.
+
+### 1. Enable Scenarist Logging
+
+Add a console logger to your Scenarist setup:
+
+```typescript
+import { createScenarist, createConsoleLogger } from '@scenarist/nextjs-adapter/app';
+
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  scenarios,
+
+  // Enable logging at info level
+  logger: createConsoleLogger({ level: 'info' }),
+});
+```
+
+This shows key events like scenario switches and mock selections:
+
+```
+12:34:56.789 INF 🎬 [test-abc-123] scenario | scenario_switched scenarioId=premiumUser
+12:34:56.801 INF 🎯 [test-abc-123] matching | mock_selected mockIndex=2 specificity=5
+```
+
+### 2. Debug Mock Matching Issues
+
+When a mock isn't being selected, enable debug logging for the `matching` category:
+
+```typescript
+const logger = createConsoleLogger({
+  level: 'debug',
+  categories: ['matching'],
+});
+```
+
+You'll see:
+- `mock_candidates_found` - How many mocks could potentially match
+- `mock_match_evaluated` - Each mock's evaluation result
+- `mock_selected` - Which mock was chosen and why
+- `mock_no_match` - When no mock matched (with the URL that failed)
+
+### 3. Environment Variable Pattern
+
+For easy toggling without code changes:
+
+```typescript
+import {
+  createScenarist,
+  createConsoleLogger,
+  noOpLogger,
+} from '@scenarist/nextjs-adapter/app';
+
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test',
+  scenarios,
+
+  // Enable via SCENARIST_LOG=1
+  logger: process.env.SCENARIST_LOG
+    ? createConsoleLogger({ level: 'debug' })
+    : noOpLogger,
+});
+```
+
+Then run tests with logging:
+
+```bash
+SCENARIST_LOG=1 pnpm test
+```
+
+### 4. Check for URL Mismatches
+
+Ensure your mock URLs exactly match what your components are fetching:
+
+```typescript
+// Mock definition
+{
+  method: 'GET',
+  url: 'http://localhost:3001/products',  // Must match exactly
+  // ...
+}
+
+// Component fetch - common mistakes:
+await fetch('http://localhost:3001/products');   // ✅ Matches
+await fetch('http://localhost:3001/products/');  // ❌ Trailing slash
+await fetch('http://localhost:3001/Products');   // ❌ Case mismatch
+await fetch('/products');                         // ❌ Relative URL
+```
+
+### 5. Verify Header Forwarding in Server Components
+
+Add temporary logging to verify headers are being forwarded:
+
+```typescript
+export default async function MyPage() {
+  const headersList = await headers();
+  const scenaristHeaders = getScenaristHeadersFromReadonlyHeaders(headersList);
+
+  // Temporary debug logging
+  console.log('Scenarist headers:', scenaristHeaders);
+
+  const response = await fetch('http://localhost:3001/api/data', {
+    headers: {
+      ...scenaristHeaders,
+    },
+  });
+
+  // ...
+}
+```
+
+<Aside type="tip" title="Full Logging Reference">
+For complete details on log levels, categories, output formats, and custom loggers, see [Debugging with Logs](/reference/logging).
+</Aside>
+
+---
+
+## Quick Reference: Common Issues
+
+| Issue | Likely Cause | Solution |
+|-------|--------------|----------|
+| "No mock matched" | Missing header forwarding | Add `getScenaristHeadersFromReadonlyHeaders()` |
+| Wrong scenario response | `page.request` missing test ID | Explicitly pass `x-scenarist-test-id` header |
+| Stale responses | Next.js caching | Add `cache: 'no-store'` to fetch |
+| Sequence stuck | URL mismatch or wrong test ID | Verify URL pattern and header forwarding |
+| Intermittent failures | Parallel test isolation | Ensure each test uses unique test ID |
+
+---
+
+## Next Steps
+
+- **[Testing RSC Overview](/frameworks/nextjs-app-router/rsc)** - Return to the main RSC testing guide
+- **[Data Fetching Patterns](/frameworks/nextjs-app-router/rsc/data-fetching)** - Core patterns for RSC testing
+- **[Debugging with Logs](/reference/logging)** - Detailed logging configuration

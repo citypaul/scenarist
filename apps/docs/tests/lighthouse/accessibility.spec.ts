@@ -35,7 +35,7 @@ const PAGES = [
   { name: "Best Practices Page (Tabs)", url: "/testing/best-practices" },
   {
     name: "RSC Guide Page (Tabs)",
-    url: "/frameworks/nextjs-app-router/rsc-guide",
+    url: "/frameworks/nextjs-app-router/rsc",
   },
 
   // Pages with FileTree component

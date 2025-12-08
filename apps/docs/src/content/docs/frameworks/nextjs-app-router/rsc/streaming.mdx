@@ -1,0 +1,261 @@
+---
+title: Streaming & Suspense
+description: Testing React Server Components with Suspense boundaries and streaming content
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+React Server Components support streaming - sending HTML progressively as data becomes available. When combined with Suspense boundaries, you can show fallback UI immediately while async components load. Scenarist makes testing these patterns straightforward.
+
+## How Streaming Works with RSC
+
+1. **Initial Response**: The shell (layout, navigation) streams immediately with fallback UI
+2. **Suspense Fallback**: A loading skeleton shows while the async component fetches data
+3. **Streaming Update**: When data is ready, React streams the actual content, replacing the skeleton
+
+## Example: Streaming Products Page
+
+The streaming page demonstrates Suspense boundaries with an async Server Component.
+
+**Page with Suspense:** [`app/streaming/page.tsx`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/app/streaming/page.tsx)
+
+```typescript
+// app/streaming/page.tsx
+import { Suspense } from 'react';
+import SlowProducts from './slow-products';
+
+type StreamingPageProps = {
+  searchParams: Promise<{ tier?: string }>;
+};
+
+function ProductsSkeleton() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6" aria-label="Loading products">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="border rounded-lg p-6 animate-pulse">
+          <div className="h-6 bg-gray-200 rounded mb-4 w-3/4" />
+          <div className="h-4 bg-gray-200 rounded mb-2" />
+          <div className="h-8 bg-gray-200 rounded w-24" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default async function StreamingPage({ searchParams }: StreamingPageProps) {
+  const { tier = 'standard' } = await searchParams;
+
+  return (
+    <div>
+      <h1>Streaming Products</h1>
+      <Suspense fallback={<ProductsSkeleton />}>
+        <SlowProducts tier={tier} />
+      </Suspense>
+    </div>
+  );
+}
+```
+
+**Async Component:** [`app/streaming/slow-products.tsx`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/app/streaming/slow-products.tsx)
+
+```typescript
+// app/streaming/slow-products.tsx
+import { headers } from 'next/headers';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+
+type SlowProductsProps = {
+  readonly tier: string;
+};
+
+async function fetchProducts(tier: string): Promise<ProductsResponse> {
+  const headersList = await headers();
+
+  const response = await fetch('http://localhost:3002/api/products', {
+    headers: {
+      ...getScenaristHeadersFromReadonlyHeaders(headersList),
+      'x-user-tier': tier,
+    },
+    cache: 'no-store',
+  });
+
+  return response.json();
+}
+
+export default async function SlowProducts({ tier }: SlowProductsProps) {
+  const data = await fetchProducts(tier);
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {data.products.map((product) => (
+        <article key={product.id}>
+          <h2>{product.name}</h2>
+          <span>£{product.price.toFixed(2)}</span>
+          <span>{product.tier}</span>
+        </article>
+      ))}
+    </div>
+  );
+}
+```
+
+<Aside type="tip" title="Suspense Architecture">
+The page component is synchronous and renders immediately with the skeleton. The async `SlowProducts` component is wrapped in Suspense - React streams it when ready. This separation is key: fast shell, deferred content.
+</Aside>
+
+## Scenario Definition
+
+```typescript
+// lib/scenarios.ts
+import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
+
+export const streamingScenario: ScenaristScenario = {
+  id: 'streaming',
+  name: 'Streaming Demo',
+  description: 'Demonstrates Suspense boundary with streaming RSC',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/products',
+      match: {
+        headers: { 'x-user-tier': 'standard' },
+      },
+      response: {
+        status: 200,
+        body: {
+          products: [
+            { id: 1, name: 'Product A', price: 149.99, tier: 'standard' },
+            { id: 2, name: 'Product B', price: 249.99, tier: 'standard' },
+            { id: 3, name: 'Product C', price: 349.99, tier: 'standard' },
+          ],
+        },
+      },
+    },
+  ],
+};
+
+export const streamingPremiumUserScenario: ScenaristScenario = {
+  id: 'streamingPremiumUser',
+  name: 'Streaming Demo (Premium)',
+  description: 'Streaming with premium tier products',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/products',
+      match: {
+        headers: { 'x-user-tier': 'premium' },
+      },
+      response: {
+        status: 200,
+        body: {
+          products: [
+            { id: 1, name: 'Product A', price: 99.99, tier: 'premium' },
+            { id: 2, name: 'Product B', price: 199.99, tier: 'premium' },
+            { id: 3, name: 'Product C', price: 299.99, tier: 'premium' },
+          ],
+        },
+      },
+    },
+  ],
+};
+```
+
+## Test Implementation
+
+**Test:** [`tests/playwright/streaming.spec.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/tests/playwright/streaming.spec.ts)
+
+```typescript
+// tests/playwright/streaming.spec.ts
+import { test, expect } from './fixtures';
+
+test.describe('Streaming Page - Suspense Boundaries', () => {
+  test('should render products after Suspense boundary resolves', async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, 'streaming');
+    await page.goto('/streaming');
+
+    // Wait for products to render (Suspense resolved)
+    await expect(page.getByRole('article')).toHaveCount(3);
+
+    // Verify product names are visible
+    await expect(page.getByRole('heading', { name: 'Product A' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Product B' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Product C' })).toBeVisible();
+  });
+
+  test('should render standard tier products with standard pricing', async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, 'streaming');
+    await page.goto('/streaming?tier=standard');
+
+    // Standard price for Product A is £149.99
+    await expect(page.getByText('£149.99')).toBeVisible();
+
+    // Verify tier badge shows standard
+    const firstProduct = page.getByRole('article').first();
+    await expect(firstProduct.getByText('standard', { exact: false })).toBeVisible();
+  });
+
+  test('should render premium tier products with premium pricing', async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, 'streamingPremiumUser');
+    await page.goto('/streaming?tier=premium');
+
+    // Premium price for Product A is £99.99 (lower than standard)
+    await expect(page.getByText('£99.99')).toBeVisible();
+
+    // Verify tier badge shows premium
+    const firstProduct = page.getByRole('article').first();
+    await expect(firstProduct.getByText('premium', { exact: false })).toBeVisible();
+  });
+
+  test('should show loading skeleton initially before products load', async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, 'streaming');
+    await page.goto('/streaming', { waitUntil: 'domcontentloaded' });
+
+    const skeleton = page.getByLabel('Loading products');
+
+    // Handle race condition: skeleton may or may not be visible
+    // depending on how fast the response comes back
+    await Promise.race([
+      skeleton.waitFor({ state: 'visible', timeout: 1000 }).catch(() => {}),
+      page.getByRole('article').first().waitFor({ state: 'visible' }),
+    ]);
+
+    // Eventually, products should appear
+    await expect(page.getByRole('article')).toHaveCount(3);
+
+    // Skeleton should no longer be visible
+    await expect(skeleton).not.toBeVisible();
+  });
+});
+```
+
+<Aside type="note" title="Testing Fallback UI">
+Testing the loading skeleton requires handling a race condition - the fallback may only be visible briefly before the Suspense boundary resolves. The test above uses `Promise.race` to handle both cases: skeleton visible momentarily, or products appearing immediately. The key assertion is that products eventually render and the skeleton disappears.
+</Aside>
+
+## Key Points for Streaming Tests
+
+| Aspect | Consideration |
+|--------|---------------|
+| **Fallback visibility** | May be brief; use race conditions or `waitUntil: 'domcontentloaded'` |
+| **Scenario isolation** | Different scenarios (standard/premium) verify correct data flows through |
+| **Header forwarding** | Async component must forward test ID via `getScenaristHeadersFromReadonlyHeaders()` |
+| **Aria labels** | Add `aria-label` to skeleton for reliable test selection |
+
+---
+
+## Next Steps
+
+- **[User Interactions](/frameworks/nextjs-app-router/rsc/interactions)** - Authentication, Server Actions, and error boundaries
+- **[Troubleshooting](/frameworks/nextjs-app-router/rsc/troubleshooting)** - Common pitfalls and debugging tips
+- **[Data Fetching Patterns](/frameworks/nextjs-app-router/rsc/data-fetching)** - Core patterns: fetching, stateful mocks, sequences
