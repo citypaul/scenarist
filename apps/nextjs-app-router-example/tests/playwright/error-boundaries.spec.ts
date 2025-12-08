@@ -13,29 +13,14 @@
 import { test, expect } from "./fixtures";
 
 test.describe("Error Boundaries", () => {
-  test("displays error boundary when API returns 500", async ({
+  test("displays error boundary with retry button when API returns 500", async ({
     page,
     switchScenario,
   }) => {
     await switchScenario(page, "apiError");
     await page.goto("/errors");
 
-    // Error boundary should show "Something went wrong" message
-    await expect(
-      page.getByRole("heading", { name: /something went wrong/i }),
-    ).toBeVisible();
-    await expect(page.getByRole("button", { name: /try again/i })).toBeVisible();
-  });
-
-  test("retry button is visible in error state", async ({
-    page,
-    switchScenario,
-  }) => {
-    // Start with error scenario
-    await switchScenario(page, "apiError");
-    await page.goto("/errors");
-
-    // Verify error boundary shows with retry button
+    // Error boundary should show "Something went wrong" message with retry option
     await expect(
       page.getByRole("heading", { name: /something went wrong/i }),
     ).toBeVisible();
