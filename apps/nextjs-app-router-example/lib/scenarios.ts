@@ -149,6 +149,66 @@ export const standardUserScenario: ScenaristScenario = {
 };
 
 /**
+ * Streaming Scenario - Suspense Boundaries
+ *
+ * Demonstrates React Server Components with Suspense:
+ * - Page uses <Suspense fallback={...}> wrapper
+ * - Async server component fetches products
+ * - Scenarist mocks the products API for predictable testing
+ *
+ * Tests can verify:
+ * 1. Fallback UI shows during loading
+ * 2. Products render after Suspense resolves
+ * 3. Tier-specific products based on header
+ */
+export const streamingScenario: ScenaristScenario = {
+  id: "streaming",
+  name: "Streaming Demo",
+  description: "Demonstrates Suspense boundary with streaming RSC",
+  mocks: [
+    {
+      method: "GET",
+      url: "http://localhost:3001/products",
+      match: {
+        headers: { "x-user-tier": "standard" },
+      },
+      response: {
+        status: 200,
+        body: {
+          products: buildProducts("standard"),
+        },
+      },
+    },
+  ],
+};
+
+/**
+ * Streaming Premium User Scenario - Suspense with Premium Tier
+ *
+ * Same as streaming scenario but for premium tier users.
+ */
+export const streamingPremiumUserScenario: ScenaristScenario = {
+  id: "streamingPremiumUser",
+  name: "Streaming Demo (Premium)",
+  description: "Demonstrates Suspense boundary with premium tier products",
+  mocks: [
+    {
+      method: "GET",
+      url: "http://localhost:3001/products",
+      match: {
+        headers: { "x-user-tier": "premium" },
+      },
+      response: {
+        status: 200,
+        body: {
+          products: buildProducts("premium"),
+        },
+      },
+    },
+  ],
+};
+
+/**
  * Cart with State Scenario - Phase 3: Stateful Mocks
  *
  * Demonstrates Scenarist's stateful mock feature with json-server REST endpoints:
@@ -1317,6 +1377,8 @@ export const scenarios = {
   default: defaultScenario,
   premiumUser: premiumUserScenario,
   standardUser: standardUserScenario,
+  streaming: streamingScenario,
+  streamingPremiumUser: streamingPremiumUserScenario,
   cartWithState: cartWithStateScenario,
   githubPolling: githubPollingScenario,
   weatherCycle: weatherCycleScenario,
