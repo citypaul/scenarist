@@ -1,6 +1,6 @@
 # Issue 210: Add Streaming/Suspense Example to App Router Example App
 
-## Status: IN PROGRESS
+## Status: COMPLETE
 
 ## Overview
 
