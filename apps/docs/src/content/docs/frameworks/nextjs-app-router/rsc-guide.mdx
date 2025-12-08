@@ -856,6 +856,208 @@ Testing the loading skeleton requires handling a race condition - the fallback m
 
 ---
 
+## Pattern 5: Authentication Flows
+
+Authentication is a critical RSC pattern - protected routes must check auth status server-side before rendering. Scenarist makes this testable by letting you switch between authenticated and unauthenticated states.
+
+### Example: Protected Route with Auth Check
+
+**Auth Helper:** [`lib/auth.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/lib/auth.ts)
+
+```typescript
+// lib/auth.ts
+import { z } from 'zod';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+import type { ReadonlyHeaders } from 'next/dist/server/web/spec-extension/adapters/headers';
+
+const UserSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  name: z.string(),
+});
+
+type User = z.infer<typeof UserSchema>;
+
+type AuthResult =
+  | { readonly authenticated: true; readonly user: User }
+  | { readonly authenticated: false; readonly error: string };
+
+export const checkAuth = async (
+  headersList: ReadonlyHeaders,
+): Promise<AuthResult> => {
+  const response = await fetch('http://localhost:3001/auth/me', {
+    headers: {
+      ...getScenaristHeadersFromReadonlyHeaders(headersList),
+    },
+    cache: 'no-store',  // Don't cache auth checks
+  });
+
+  if (!response.ok) {
+    return { authenticated: false, error: 'Authentication required' };
+  }
+
+  const data: unknown = await response.json();
+  const user = UserSchema.parse(data);
+
+  return { authenticated: true, user };
+};
+```
+
+**Protected Layout:** [`app/protected/layout.tsx`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/app/protected/layout.tsx)
+
+```typescript
+// app/protected/layout.tsx
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { checkAuth } from '@/lib/auth';
+
+type ProtectedLayoutProps = {
+  children: React.ReactNode;
+};
+
+export default async function ProtectedLayout({
+  children,
+}: ProtectedLayoutProps) {
+  const headersList = await headers();
+  const auth = await checkAuth(headersList);
+
+  if (!auth.authenticated) {
+    // Redirect to login with the original URL
+    redirect('/login?from=/protected');
+  }
+
+  // User is authenticated - render with user context
+  return (
+    <div>
+      <header>
+        <span>Welcome, {auth.user.name}</span>
+        <span>{auth.user.email}</span>
+      </header>
+      <main>{children}</main>
+    </div>
+  );
+}
+```
+
+### Authentication Scenarios
+
+**Scenarios:** [`lib/scenarios.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/lib/scenarios.ts)
+
+```typescript
+// lib/scenarios.ts
+import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
+
+export const authenticatedUserScenario: ScenaristScenario = {
+  id: 'authenticatedUser',
+  name: 'Authenticated User',
+  description: 'User is authenticated with valid session',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/auth/me',
+      response: {
+        status: 200,
+        body: {
+          id: 'user-123',
+          email: 'test@example.com',
+          name: 'Test User',
+        },
+      },
+    },
+  ],
+};
+
+export const unauthenticatedUserScenario: ScenaristScenario = {
+  id: 'unauthenticatedUser',
+  name: 'Unauthenticated User',
+  description: 'User is not authenticated',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/auth/me',
+      response: {
+        status: 401,
+        body: {
+          error: 'Unauthorized',
+          message: 'Authentication required',
+        },
+      },
+    },
+  ],
+};
+```
+
+### Test Implementation
+
+**Test:** [`tests/playwright/auth-flows.spec.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/tests/playwright/auth-flows.spec.ts)
+
+```typescript
+// tests/playwright/auth-flows.spec.ts
+import { test, expect } from './fixtures';
+
+test.describe('Authentication Flow - Protected Routes', () => {
+  test('should render protected content when authenticated', async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, 'authenticatedUser');
+
+    await page.goto('/protected');
+
+    // Verify protected content is visible
+    await expect(
+      page.getByRole('heading', { name: 'Protected Dashboard' }),
+    ).toBeVisible();
+
+    // Verify user info is displayed
+    await expect(page.getByText('test@example.com')).toBeVisible();
+    await expect(page.getByText('Welcome, Test User')).toBeVisible();
+  });
+
+  test('should redirect to login when not authenticated', async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, 'unauthenticatedUser');
+
+    await page.goto('/protected');
+
+    // Should be redirected to login page
+    await expect(page).toHaveURL(/\/login\?from=\/protected/);
+
+    // Verify login page content
+    await expect(
+      page.getByRole('heading', { name: 'Sign In' }),
+    ).toBeVisible();
+  });
+
+  test('should switch between auth states at runtime', async ({
+    page,
+    switchScenario,
+  }) => {
+    // Start as authenticated user
+    await switchScenario(page, 'authenticatedUser');
+    await page.goto('/protected');
+    await expect(
+      page.getByRole('heading', { name: 'Protected Dashboard' }),
+    ).toBeVisible();
+
+    // Switch to unauthenticated (simulating session expiry)
+    await switchScenario(page, 'unauthenticatedUser');
+    await page.reload();
+
+    // Now redirected to login
+    await expect(page).toHaveURL(/\/login/);
+  });
+});
+```
+
+<Aside type="tip" title="Testing Auth Without Real Auth">
+Scenarist lets you test authentication flows without setting up real auth providers. Switch scenarios to simulate different auth states - no tokens, cookies, or sessions required.
+</Aside>
+
+---
+
 ## Common Pitfalls and Debugging
 
 ### Pitfall 1: Missing Header Forwarding
@@ -961,10 +1163,6 @@ test('submits form via Server Action', async ({ page, switchScenario }) => {
   await expect(page.getByText('Order confirmed')).toBeVisible();
 });
 ```
-
-### Authentication Flows
-
-Testing authenticated RSC with different user states.
 
 ### Error Boundaries
 
