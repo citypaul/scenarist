@@ -48,7 +48,8 @@ test.describe("Authentication Flow - Protected Routes", () => {
     await page.goto("/protected");
 
     // Should be redirected to login page with redirect query param
-    await expect(page).toHaveURL(/\/login\?from=%2Fprotected/);
+    // Note: Next.js redirect doesn't URL-encode the path
+    await expect(page).toHaveURL(/\/login\?from=\/protected/);
 
     // Verify login page content
     await expect(
