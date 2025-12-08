@@ -1,6 +1,6 @@
 # Issue 211: Add Error Boundary Example to App Router Example App
 
-## Status: IN PROGRESS
+## Status: ✅ COMPLETE
 
 ## Overview
 
@@ -132,18 +132,24 @@ From codebase exploration:
 
 | Date | Phase | Task | Status |
 |------|-------|------|--------|
-| TBD | RED | Add apiError scenario | Pending |
-| TBD | RED | Create failing tests | Pending |
-| TBD | GREEN | Implement page.tsx | Pending |
-| TBD | GREEN | Implement error.tsx | Pending |
-| TBD | GREEN | Implement API route | Pending |
-| TBD | REFACTOR | Assess improvements | Pending |
+| 2025-12-08 | RED | Add apiError scenario | ✅ Complete |
+| 2025-12-08 | RED | Create failing tests | ✅ Complete |
+| 2025-12-08 | GREEN | Implement API route | ✅ Complete |
+| 2025-12-08 | GREEN | Implement page.tsx | ✅ Complete |
+| 2025-12-08 | GREEN | Implement error.tsx | ✅ Complete |
+| 2025-12-08 | REFACTOR | Remove duplicate test | ✅ Complete |
+
+## Commits
+
+1. `abe3d71` - test(nextjs-app-router): add error boundary tests (RED)
+2. `e0288c7` - feat(nextjs-app-router): implement error boundary example (GREEN)
+3. `d506d5a` - refactor(nextjs-app-router): consolidate duplicate error boundary tests
 
 ## Verification Checklist
 
-- [ ] All Playwright tests pass
-- [ ] TypeScript strict mode satisfied
-- [ ] No `any` types
-- [ ] Accessible error UI (`role="alert"`, retry button)
-- [ ] Follows declarative scenario pattern (ADR-0013)
-- [ ] Commits show TDD compliance (test before implementation)
+- [x] All Playwright tests pass (100 tests)
+- [x] TypeScript strict mode satisfied
+- [x] No `any` types
+- [x] Accessible error UI (`role="alert"`, `aria-live`, retry button)
+- [x] Follows declarative scenario pattern (ADR-0013)
+- [x] Commits show TDD compliance (test before implementation)
