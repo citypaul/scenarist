@@ -1371,6 +1371,69 @@ export const conditionalAfterResponseScenario: ScenaristScenario = {
 };
 
 /**
+ * Authenticated User Scenario
+ *
+ * Demonstrates authentication flow testing:
+ * - GET /auth/me returns authenticated user data
+ * - Use with protected routes that check auth status
+ *
+ * Flow:
+ * 1. Protected route calls /auth/me via lib/auth.ts
+ * 2. Scenarist returns authenticated user data
+ * 3. Protected content is rendered
+ */
+export const authenticatedUserScenario: ScenaristScenario = {
+  id: "authenticatedUser",
+  name: "Authenticated User",
+  description: "User is authenticated with valid session",
+  mocks: [
+    {
+      method: "GET",
+      url: "http://localhost:3001/auth/me",
+      response: {
+        status: 200,
+        body: {
+          id: "user-123",
+          email: "test@example.com",
+          name: "Test User",
+        },
+      },
+    },
+  ],
+};
+
+/**
+ * Unauthenticated User Scenario
+ *
+ * Demonstrates authentication flow testing:
+ * - GET /auth/me returns 401 Unauthorized
+ * - Use with protected routes that redirect to login
+ *
+ * Flow:
+ * 1. Protected route calls /auth/me via lib/auth.ts
+ * 2. Scenarist returns 401 Unauthorized
+ * 3. User is redirected to /login
+ */
+export const unauthenticatedUserScenario: ScenaristScenario = {
+  id: "unauthenticatedUser",
+  name: "Unauthenticated User",
+  description: "User is not authenticated",
+  mocks: [
+    {
+      method: "GET",
+      url: "http://localhost:3001/auth/me",
+      response: {
+        status: 401,
+        body: {
+          error: "Unauthorized",
+          message: "Authentication required",
+        },
+      },
+    },
+  ],
+};
+
+/**
  * All scenarios for registration and type-safe access
  */
 export const scenarios = {
@@ -1392,5 +1455,7 @@ export const scenarios = {
   featureFlags: featureFlagsScenario,
   issue335SimpleResponse: issue335SimpleResponseScenario,
   conditionalAfterResponse: conditionalAfterResponseScenario,
+  authenticatedUser: authenticatedUserScenario,
+  unauthenticatedUser: unauthenticatedUserScenario,
   ...checkoutScenarios,
 } as const satisfies ScenaristScenarios;
