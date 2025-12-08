@@ -943,6 +943,317 @@ await fetch(`http://localhost:3001/github/jobs/${jobId}`, {  // ✅ Matches patt
 
 ---
 
+## Pattern 5: Authentication Flows
+
+Authentication is a critical pattern in Server Components - protecting routes, checking sessions, and redirecting unauthorized users. Scenarist makes testing these flows straightforward by allowing you to switch between authenticated and unauthenticated states.
+
+### Architecture Overview
+
+A typical authentication flow in Next.js App Router:
+
+1. **Protected Layout** checks authentication via external API
+2. **Auth Helper** forwards headers and validates response
+3. **Redirect Logic** sends unauthenticated users to login
+4. **Login Page** shows redirect message when appropriate
+
+### Example: Auth Helper
+
+**Auth Helper:** [`lib/auth.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/lib/auth.ts)
+
+```typescript
+// lib/auth.ts
+import { z } from 'zod';
+import { headers } from 'next/headers';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+import type { ReadonlyHeaders } from 'next/dist/server/web/spec-extension/adapters/headers';
+
+const UserSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  name: z.string(),
+});
+
+type User = z.infer<typeof UserSchema>;
+
+type AuthResult =
+  | { readonly authenticated: true; readonly user: User }
+  | { readonly authenticated: false; readonly error: string };
+
+export const checkAuth = async (
+  headersList: ReadonlyHeaders
+): Promise<AuthResult> => {
+  const response = await fetch('http://localhost:3001/auth/me', {
+    headers: {
+      ...getScenaristHeadersFromReadonlyHeaders(headersList),  // Forward test ID
+    },
+    cache: 'no-store',  // Don't cache auth checks
+  });
+
+  if (!response.ok) {
+    return {
+      authenticated: false,
+      error: 'Authentication required',
+    };
+  }
+
+  const data: unknown = await response.json();
+  const user = UserSchema.parse(data);
+
+  return {
+    authenticated: true,
+    user,
+  };
+};
+```
+
+<Aside type="tip" title="Header Forwarding in Auth">
+The auth helper forwards the Scenarist test ID header to the external auth API. This ensures each test gets isolated authentication state - one test can be authenticated while another is unauthenticated, running concurrently.
+</Aside>
+
+### Example: Protected Layout
+
+**Protected Layout:** [`app/protected/layout.tsx`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/app/protected/layout.tsx)
+
+```typescript
+// app/protected/layout.tsx
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { checkAuth } from '@/lib/auth';
+
+type ProtectedLayoutProps = {
+  children: React.ReactNode;
+};
+
+export default async function ProtectedLayout({
+  children,
+}: ProtectedLayoutProps) {
+  const headersList = await headers();
+  const auth = await checkAuth(headersList);
+
+  if (!auth.authenticated) {
+    // Redirect to login with the original URL as a query param
+    redirect('/login?from=/protected');
+  }
+
+  // User is authenticated - render children with user context
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex justify-between items-center">
+            <h1 className="text-xl font-semibold">Protected Area</h1>
+            <div className="flex items-center gap-4">
+              <span>Welcome, {auth.user.name}</span>
+              <span>{auth.user.email}</span>
+            </div>
+          </div>
+        </div>
+      </header>
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        {children}
+      </main>
+    </div>
+  );
+}
+```
+
+### Scenario Definitions
+
+**Scenarios:** [`lib/scenarios.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/lib/scenarios.ts)
+
+```typescript
+// lib/scenarios.ts
+import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
+
+export const authenticatedUserScenario: ScenaristScenario = {
+  id: 'authenticatedUser',
+  name: 'Authenticated User',
+  description: 'User is authenticated with valid session',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/auth/me',
+      response: {
+        status: 200,
+        body: {
+          id: 'user-123',
+          email: 'test@example.com',
+          name: 'Test User',
+        },
+      },
+    },
+  ],
+};
+
+export const unauthenticatedUserScenario: ScenaristScenario = {
+  id: 'unauthenticatedUser',
+  name: 'Unauthenticated User',
+  description: 'User is not authenticated',
+  mocks: [
+    {
+      method: 'GET',
+      url: 'http://localhost:3001/auth/me',
+      response: {
+        status: 401,
+        body: {
+          error: 'Unauthorized',
+          message: 'Authentication required',
+        },
+      },
+    },
+  ],
+};
+```
+
+<Aside type="note" title="Scenario Simplicity">
+Authentication scenarios are straightforward - the auth endpoint returns either user data (200) or unauthorized (401). The same external API call works identically in production and test; only the response differs based on the active scenario.
+</Aside>
+
+### Test Implementation
+
+**Test:** [`tests/playwright/auth-flows.spec.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/tests/playwright/auth-flows.spec.ts)
+
+```typescript
+// tests/playwright/auth-flows.spec.ts
+import { test, expect } from './fixtures';
+
+test.describe('Authentication Flow - Protected Routes', () => {
+  test('should render protected content when authenticated', async ({
+    page,
+    switchScenario,
+  }) => {
+    // Switch to authenticated user scenario
+    await switchScenario(page, 'authenticatedUser');
+
+    // Navigate to protected route
+    await page.goto('/protected');
+
+    // Verify protected content is visible
+    await expect(
+      page.getByRole('heading', { name: 'Protected Dashboard' })
+    ).toBeVisible();
+
+    // Verify user info is displayed
+    await expect(page.getByText('test@example.com')).toBeVisible();
+    await expect(page.getByText('Welcome, Test User')).toBeVisible();
+  });
+
+  test('should redirect to login when not authenticated', async ({
+    page,
+    switchScenario,
+  }) => {
+    // Switch to unauthenticated user scenario
+    await switchScenario(page, 'unauthenticatedUser');
+
+    // Navigate to protected route
+    await page.goto('/protected');
+
+    // Should be redirected to login page with redirect query param
+    await expect(page).toHaveURL(/\/login\?from=\/protected/);
+
+    // Verify login page content
+    await expect(
+      page.getByRole('heading', { name: 'Sign In' })
+    ).toBeVisible();
+  });
+
+  test('should show redirect message on login page when redirected', async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, 'unauthenticatedUser');
+
+    // Navigate to protected route (which redirects to login)
+    await page.goto('/protected');
+
+    // Verify redirect message is shown
+    await expect(
+      page.getByText('Please sign in to access the protected page')
+    ).toBeVisible();
+  });
+});
+
+test.describe('Authentication Flow - Scenario Switching', () => {
+  test('should switch between authenticated and unauthenticated states at runtime', async ({
+    page,
+    switchScenario,
+  }) => {
+    // Start as authenticated user
+    await switchScenario(page, 'authenticatedUser');
+    await page.goto('/protected');
+
+    // Verify we see protected content
+    await expect(
+      page.getByRole('heading', { name: 'Protected Dashboard' })
+    ).toBeVisible();
+
+    // Switch to unauthenticated (simulating session expiry)
+    await switchScenario(page, 'unauthenticatedUser');
+
+    // Reload the page
+    await page.reload();
+
+    // Now we should be redirected to login
+    await expect(page).toHaveURL(/\/login/);
+  });
+});
+```
+
+### Key Points for Authentication Tests
+
+| Aspect | Consideration |
+|--------|---------------|
+| **Layout-based auth** | Auth checks in layouts protect all nested routes automatically |
+| **Redirect preservation** | Pass original URL via query param (`?from=/protected`) for post-login redirect |
+| **Scenario isolation** | Each test has independent auth state via test ID isolation |
+| **Runtime switching** | Simulate session expiry by switching scenarios mid-test |
+| **Header forwarding** | Auth helper must forward test ID for scenario routing |
+
+### Common Auth Testing Patterns
+
+**Testing protected vs public routes:**
+
+```typescript
+// Protected route - requires auth scenario
+test('protected route requires auth', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'unauthenticatedUser');
+  await page.goto('/protected');
+  await expect(page).toHaveURL(/\/login/);
+});
+
+// Public route - works without auth scenario
+test('public route accessible without auth', async ({ page }) => {
+  await page.goto('/products');
+  await expect(page.getByRole('heading', { name: 'Products' })).toBeVisible();
+});
+```
+
+**Testing role-based access:**
+
+```typescript
+// lib/scenarios.ts
+export const adminUserScenario: ScenaristScenario = {
+  id: 'adminUser',
+  mocks: [{
+    method: 'GET',
+    url: 'http://localhost:3001/auth/me',
+    response: {
+      status: 200,
+      body: { id: 'admin-1', email: 'admin@example.com', name: 'Admin', role: 'admin' },
+    },
+  }],
+};
+
+// Test
+test('admin users see admin panel', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'adminUser');
+  await page.goto('/admin');
+  await expect(page.getByRole('heading', { name: 'Admin Panel' })).toBeVisible();
+});
+```
+
+---
+
 ## Coming Soon
 
 The following advanced RSC patterns will be covered in upcoming documentation:
@@ -961,10 +1272,6 @@ test('submits form via Server Action', async ({ page, switchScenario }) => {
   await expect(page.getByText('Order confirmed')).toBeVisible();
 });
 ```
-
-### Authentication Flows
-
-Testing authenticated RSC with different user states.
 
 ### Error Boundaries
 
