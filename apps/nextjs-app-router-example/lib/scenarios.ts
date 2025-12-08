@@ -1441,6 +1441,28 @@ export const authenticatedUserScenario: ScenaristScenario = {
 };
 
 /**
+ * Contact Form Success Scenario - Server Actions Demo
+ *
+ * Demonstrates successful form submission via Server Action.
+ * External API returns 200 with success message.
+ */
+export const contactFormSuccessScenario: ScenaristScenario = {
+  id: "contactFormSuccess",
+  name: "Contact Form - Success",
+  description: "Contact form submission succeeds",
+  mocks: [
+    {
+      method: "POST",
+      url: "http://localhost:3001/contact",
+      response: {
+        status: 200,
+        body: { success: true, message: "Message sent successfully!" },
+      },
+    },
+  ],
+};
+
+/**
  * Unauthenticated User Scenario
  *
  * Demonstrates authentication flow testing:
@@ -1472,6 +1494,75 @@ export const unauthenticatedUserScenario: ScenaristScenario = {
 };
 
 /**
+ * Contact Form Error Scenario - Server Actions Demo
+ *
+ * Demonstrates error handling when external API fails.
+ * Returns 500 server error.
+ */
+export const contactFormErrorScenario: ScenaristScenario = {
+  id: "contactFormError",
+  name: "Contact Form - Error",
+  description: "Contact form submission fails with server error",
+  mocks: [
+    {
+      method: "POST",
+      url: "http://localhost:3001/contact",
+      response: {
+        status: 500,
+        body: { error: "Server error. Please try again later." },
+      },
+    },
+  ],
+};
+
+/**
+ * Contact Form Duplicate Email Scenario - Server Actions Demo
+ *
+ * Demonstrates edge case when email already exists.
+ * Returns 409 conflict.
+ */
+export const contactFormDuplicateScenario: ScenaristScenario = {
+  id: "contactFormDuplicate",
+  name: "Contact Form - Duplicate Email",
+  description: "Contact form fails due to existing email",
+  mocks: [
+    {
+      method: "POST",
+      url: "http://localhost:3001/contact",
+      response: {
+        status: 409,
+        body: { error: "Email already registered in our system." },
+      },
+    },
+  ],
+};
+
+/**
+ * Contact Form VIP Scenario - Server Actions Demo
+ *
+ * Demonstrates request matching based on email domain.
+ * VIP domains (containing @vip.) get priority response.
+ */
+export const contactFormVipScenario: ScenaristScenario = {
+  id: "contactFormVip",
+  name: "Contact Form - VIP Domain",
+  description: "VIP email domains get priority response",
+  mocks: [
+    {
+      method: "POST",
+      url: "http://localhost:3001/contact",
+      match: {
+        body: { email: { contains: "@vip." } },
+      },
+      response: {
+        status: 200,
+        body: { success: true, message: "Priority response - VIP request received!" },
+      },
+    },
+  ],
+};
+
+/**
  * All scenarios for registration and type-safe access
  */
 export const scenarios = {
@@ -1496,5 +1587,9 @@ export const scenarios = {
   authenticatedUser: authenticatedUserScenario,
   unauthenticatedUser: unauthenticatedUserScenario,
   apiError: apiErrorScenario,
+  contactFormSuccess: contactFormSuccessScenario,
+  contactFormError: contactFormErrorScenario,
+  contactFormDuplicate: contactFormDuplicateScenario,
+  contactFormVip: contactFormVipScenario,
   ...checkoutScenarios,
 } as const satisfies ScenaristScenarios;
