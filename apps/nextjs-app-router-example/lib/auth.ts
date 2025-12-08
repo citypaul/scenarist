@@ -11,14 +11,17 @@
  * - Test: MSW intercepts and returns scenario-based response
  */
 
+import { z } from "zod";
 import { getScenaristHeadersFromReadonlyHeaders } from "@scenarist/nextjs-adapter/app";
 import type { ReadonlyHeaders } from "next/dist/server/web/spec-extension/adapters/headers";
 
-type User = {
-  readonly id: string;
-  readonly email: string;
-  readonly name: string;
-};
+const UserSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  name: z.string(),
+});
+
+type User = z.infer<typeof UserSchema>;
 
 type AuthResult =
   | { readonly authenticated: true; readonly user: User }
@@ -60,7 +63,8 @@ export const checkAuth = async (
     };
   }
 
-  const user = (await response.json()) as User;
+  const data: unknown = await response.json();
+  const user = UserSchema.parse(data);
 
   return {
     authenticated: true,
