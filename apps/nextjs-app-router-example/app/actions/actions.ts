@@ -1,3 +1,25 @@
+/**
+ * Server Action - Contact Form Submission
+ *
+ * Demonstrates Scenarist integration with Next.js Server Actions.
+ *
+ * Key Pattern: Header Forwarding for Test Isolation
+ * ------------------------------------------------
+ * Server Actions run on the server and make their own fetch requests.
+ * For Scenarist to route these requests to the correct test scenario,
+ * we must forward the x-scenarist-test-id header from the original request.
+ *
+ * Without header forwarding:
+ * - All concurrent tests would share the same mock responses
+ * - Test isolation would break, causing flaky tests
+ *
+ * With header forwarding (getScenaristHeadersFromReadonlyHeaders):
+ * - Each test's requests are routed to its specific scenario
+ * - Concurrent tests can run with different scenarios safely
+ *
+ * Production: Headers are empty, no overhead
+ * Testing: Headers contain test ID for scenario routing
+ */
 "use server";
 
 import { headers } from "next/headers";
@@ -18,6 +40,8 @@ export async function submitContactForm(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      // Forward Scenarist headers for test isolation
+      // Each test gets its own scenario based on x-scenarist-test-id
       ...getScenaristHeadersFromReadonlyHeaders(headersList),
     },
     body: JSON.stringify({
