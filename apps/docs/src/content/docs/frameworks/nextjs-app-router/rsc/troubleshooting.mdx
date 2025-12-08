@@ -205,6 +205,7 @@ export default async function MyPage() {
 The `@scenarist/playwright-helpers` package provides fixtures to inspect test state directly from your Playwright tests:
 
 ```typescript
+// Import from your configured fixtures file
 import { test, expect } from './fixtures';
 
 test('checkout flow updates cart state', async ({ page, switchScenario, debugState }) => {
