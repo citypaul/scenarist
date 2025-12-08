@@ -57,6 +57,32 @@ test.describe("Streaming Page - Suspense Boundaries", () => {
     ).toBeVisible();
   });
 
+  test("should render standard tier products with standard pricing", async ({
+    page,
+    switchScenario,
+  }) => {
+    // Switch to standard streaming scenario
+    await switchScenario(page, "streaming");
+
+    // Navigate with standard tier query param
+    await page.goto("/streaming?tier=standard");
+
+    // Verify tier indicator shows standard
+    await expect(page.getByText("Current tier: standard")).toBeVisible();
+
+    // Verify products rendered with standard pricing
+    await expect(page.getByRole("article")).toHaveCount(3);
+
+    // Standard price for Product A is £149.99 (higher than premium £99.99)
+    await expect(page.getByText("£149.99")).toBeVisible();
+
+    // Verify tier badge shows standard
+    const firstProduct = page.getByRole("article").first();
+    await expect(
+      firstProduct.getByText("standard", { exact: false }),
+    ).toBeVisible();
+  });
+
   test("should render premium tier products with premium pricing", async ({
     page,
     switchScenario,
@@ -73,7 +99,7 @@ test.describe("Streaming Page - Suspense Boundaries", () => {
     // Verify products rendered with premium pricing
     await expect(page.getByRole("article")).toHaveCount(3);
 
-    // Premium price for Product A is £99.99
+    // Premium price for Product A is £99.99 (lower than standard £149.99)
     await expect(page.getByText("£99.99")).toBeVisible();
 
     // Verify tier badge shows premium
