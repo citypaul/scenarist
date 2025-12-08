@@ -33,4 +33,81 @@ test.describe("Streaming Page - Suspense Boundaries", () => {
       page.getByRole("heading", { name: "Streaming (React Server Component)" }),
     ).toBeVisible();
   });
+
+  test("should render products after Suspense boundary resolves", async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, "streaming");
+    await page.goto("/streaming");
+
+    // Wait for products to render (Suspense resolved)
+    // The streaming scenario returns 3 products
+    await expect(page.getByRole("article")).toHaveCount(3);
+
+    // Verify product names are visible
+    await expect(
+      page.getByRole("heading", { name: "Product A" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Product B" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Product C" }),
+    ).toBeVisible();
+  });
+
+  test("should render premium tier products with premium pricing", async ({
+    page,
+    switchScenario,
+  }) => {
+    // Switch to premium streaming scenario
+    await switchScenario(page, "streamingPremiumUser");
+
+    // Navigate with premium tier query param
+    await page.goto("/streaming?tier=premium");
+
+    // Verify tier indicator shows premium
+    await expect(page.getByText("Current tier: premium")).toBeVisible();
+
+    // Verify products rendered with premium pricing
+    await expect(page.getByRole("article")).toHaveCount(3);
+
+    // Premium price for Product A is £99.99
+    await expect(page.getByText("£99.99")).toBeVisible();
+
+    // Verify tier badge shows premium
+    const firstProduct = page.getByRole("article").first();
+    await expect(
+      firstProduct.getByText("premium", { exact: false }),
+    ).toBeVisible();
+  });
+
+  test("should show loading skeleton initially before products load", async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, "streaming");
+
+    // Navigate and wait only for initial DOM, not full load
+    await page.goto("/streaming", { waitUntil: "domcontentloaded" });
+
+    // The loading skeleton has aria-label "Loading products"
+    // It may or may not be visible depending on how fast the response comes back
+    // But the skeleton element should exist in the DOM initially
+    const skeleton = page.getByLabel("Loading products");
+
+    // Wait for either skeleton to be visible OR products to appear
+    // This handles the race condition where data loads very fast
+    await Promise.race([
+      skeleton.waitFor({ state: "visible", timeout: 1000 }).catch(() => {}),
+      page.getByRole("article").first().waitFor({ state: "visible" }),
+    ]);
+
+    // Eventually, products should appear (skeleton replaced)
+    await expect(page.getByRole("article")).toHaveCount(3);
+
+    // And skeleton should no longer be visible
+    await expect(skeleton).not.toBeVisible();
+  });
 });

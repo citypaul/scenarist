@@ -22,6 +22,9 @@ export default function RootLayout({
             <a href="/products" className="hover:text-blue-300">
               Products (RSC)
             </a>
+            <a href="/streaming" className="hover:text-blue-300">
+              Streaming (RSC)
+            </a>
             <a href="/polling" className="hover:text-blue-300">
               Polling (RSC)
             </a>
