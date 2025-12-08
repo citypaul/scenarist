@@ -32,6 +32,29 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Fail fast if RELEASE_PAT is not configured
+      # The PAT must have 'repo' and 'workflows' scopes to push changeset-release branches
+      # that contain workflow files. The default GITHUB_TOKEN cannot modify workflow files.
+      - name: Verify RELEASE_PAT is configured
+        env:
+          RELEASE_PAT: ${{ secrets.RELEASE_PAT }}
+        run: |
+          if [ -z "$RELEASE_PAT" ]; then
+            echo "::error::RELEASE_PAT secret is not configured!"
+            echo ""
+            echo "The release workflow requires a Personal Access Token (PAT) with:"
+            echo "  - 'repo' scope (for pushing branches and creating PRs)"
+            echo "  - 'workflows' scope (for pushing changes to .github/workflows/)"
+            echo ""
+            echo "To fix:"
+            echo "  1. Create a PAT at https://github.com/settings/tokens"
+            echo "  2. Select 'repo' and 'workflows' scopes"
+            echo "  3. Add it as a repository secret named 'RELEASE_PAT'"
+            echo "     at https://github.com/${{ github.repository }}/settings/secrets/actions"
+            exit 1
+          fi
+          echo "✅ RELEASE_PAT is configured"
+
       - name: Setup pnpm
         uses: pnpm/action-setup@9fd676a19091d4595eefd76e4bd31c97133911f1 # v4.2.0
 
