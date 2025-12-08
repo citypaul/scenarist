@@ -1,5 +1,11 @@
 # @scenarist/core
 
+## 0.4.3
+
+### Patch Changes
+
+- [#366](https://github.com/citypaul/scenarist/pull/366) [`9f0ef5b`](https://github.com/citypaul/scenarist/commit/9f0ef5b1cd953bbbba4b90e2532870f4f83608a4) Thanks [@citypaul](https://github.com/citypaul)! - chore: fix attest-build-provenance version comment (v1.4.4 → v3.0.0)
+
 ## 0.4.2
 
 ### Patch Changes
