@@ -1058,350 +1058,210 @@ Scenarist lets you test authentication flows without setting up real auth provid
 
 ---
 
-## Pattern 6: Server Actions
+## Pattern 6: Error Boundaries
 
-Server Actions are server-side functions that can be called directly from Client Components. They're commonly used for form submissions, mutations, and any operation that requires server-side execution. Testing Server Actions with Scenarist requires the same header forwarding pattern used in Server Components.
+Next.js App Router provides built-in error handling through `error.tsx` files. When a Server Component throws an error, the nearest `error.tsx` boundary catches it and renders fallback UI with recovery options. Scenarist makes testing error scenarios straightforward by defining error responses in scenarios.
 
-### The Server Actions Testing Challenge
+### How Error Boundaries Work with RSC
 
-Server Actions run on the server and make their own fetch requests. This creates a testing challenge:
+1. **Server Component throws** - When an API returns an error status, the RSC throws an Error
+2. **Error boundary catches** - The nearest `error.tsx` file catches the error at the route level
+3. **Fallback UI renders** - User sees error message with recovery option
+4. **Recovery via reset()** - Clicking retry triggers re-render; if scenario changes, page recovers
 
-1. **Isolated server execution** - Server Actions don't inherit browser headers automatically
-2. **Test ID routing** - Without the `x-scenarist-test-id` header, MSW can't route to the correct scenario
-3. **Concurrent test isolation** - Multiple tests running in parallel need separate mock responses
+### Example: Error Demo Page
 
-**Solution:** Forward headers from the incoming request to outgoing fetch calls using `getScenaristHeadersFromReadonlyHeaders()`.
-
-### Example: Contact Form with Server Action
-
-**Server Action:** [`app/actions/actions.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/app/actions/actions.ts)
+**Server Component:** [`app/errors/page.tsx`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/app/errors/page.tsx)
 
 ```typescript
-// app/actions/actions.ts
-"use server";
+// app/errors/page.tsx
+import { headers } from 'next/headers';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
 
-import { headers } from "next/headers";
-import { getScenaristHeadersFromReadonlyHeaders } from "@scenarist/nextjs-adapter/app";
-
-type FormState = {
-  readonly success: boolean;
+type ErrorsResponse = {
+  readonly data: string;
   readonly message: string;
-} | null;
+};
 
-export async function submitContactForm(
-  _prevState: FormState,
-  formData: FormData
-): Promise<FormState> {
+async function fetchErrorData(): Promise<ErrorsResponse> {
   const headersList = await headers();
 
-  const response = await fetch("http://localhost:3001/contact", {
-    method: "POST",
+  const response = await fetch('http://localhost:3002/api/errors', {
     headers: {
-      "Content-Type": "application/json",
-      // Forward Scenarist headers for test isolation
-      // Each test gets its own scenario based on x-scenarist-test-id
       ...getScenaristHeadersFromReadonlyHeaders(headersList),
     },
-    body: JSON.stringify({
-      name: formData.get("name"),
-      email: formData.get("email"),
-      message: formData.get("message"),
-    }),
+    cache: 'no-store',
   });
 
-  const data: unknown = await response.json();
-
   if (!response.ok) {
-    const errorMessage =
-      data !== null &&
-      typeof data === "object" &&
-      "error" in data &&
-      typeof data.error === "string"
-        ? data.error
-        : "Submission failed";
-    return { success: false, message: errorMessage };
+    throw new Error('Something went wrong while fetching data');
   }
 
-  const successMessage =
-    data !== null &&
-    typeof data === "object" &&
-    "message" in data &&
-    typeof data.message === "string"
-      ? data.message
-      : "Message sent!";
-  return { success: true, message: successMessage };
+  return response.json();
 }
-```
 
-<Aside type="tip" title="Header Forwarding is Critical">
-The `getScenaristHeadersFromReadonlyHeaders(headersList)` call forwards the test ID from the browser request to the external API call. Without this, all concurrent tests would share the same mock responses, causing flaky tests.
-</Aside>
-
-**Page Component:** [`app/actions/page.tsx`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/app/actions/page.tsx)
-
-```typescript
-// app/actions/page.tsx
-"use client";
-
-import { useActionState } from "react";
-import { submitContactForm } from "./actions";
-
-export default function ActionsPage() {
-  const [state, formAction, isPending] = useActionState(submitContactForm, null);
+export default async function ErrorsPage() {
+  const data = await fetchErrorData();
 
   return (
-    <main className="min-h-screen p-8">
-      <h1 className="text-4xl font-bold mb-8">Server Actions Demo</h1>
-
-      <form action={formAction} className="max-w-md space-y-4">
-        <div>
-          <label htmlFor="name" className="block mb-1">Name</label>
-          <input id="name" name="name" type="text" required className="w-full border p-2" />
-        </div>
-        <div>
-          <label htmlFor="email" className="block mb-1">Email</label>
-          <input id="email" name="email" type="email" required className="w-full border p-2" />
-        </div>
-        <div>
-          <label htmlFor="message" className="block mb-1">Message</label>
-          <textarea id="message" name="message" required className="w-full border p-2" />
-        </div>
-        <button type="submit" disabled={isPending} className="bg-blue-600 text-white px-4 py-2">
-          {isPending ? "Sending..." : "Send Message"}
-        </button>
-      </form>
-
-      {state?.success && (
-        <div role="status" className="mt-4 p-4 bg-green-100 text-green-800">
-          {state.message}
-        </div>
-      )}
-      {state?.success === false && (
-        <div role="alert" className="mt-4 p-4 bg-red-100 text-red-800">
-          {state.message}
-        </div>
-      )}
-    </main>
+    <div>
+      <h1>Error Boundary Demo</h1>
+      <p>{data.message}</p>
+    </div>
   );
 }
 ```
 
-### Scenario Definitions
+### Error Boundary Component
 
-Server Actions scenarios follow the same pattern as Server Component scenarios. Multiple scenarios let you test success, error, and edge cases:
+**Error Boundary:** [`app/errors/error.tsx`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/app/errors/error.tsx)
 
-**Scenarios:** [`lib/scenarios.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/lib/scenarios.ts)
+```typescript
+// app/errors/error.tsx
+'use client';
+
+type ErrorBoundaryProps = {
+  readonly error: Error & { digest?: string };
+  readonly reset: () => void;
+};
+
+export default function ErrorBoundary({ error, reset }: ErrorBoundaryProps) {
+  return (
+    <div role="alert" aria-live="assertive">
+      <h2>Something went wrong!</h2>
+      <p>{error.message}</p>
+      <button onClick={reset}>Try again</button>
+    </div>
+  );
+}
+```
+
+<Aside type="note" title="Client Component Required">
+Error boundaries must be Client Components (`'use client'`) because they use React's error boundary mechanism which requires client-side JavaScript for the `reset()` function.
+</Aside>
+
+### Scenario Definition
+
+**Scenario:** [`lib/scenarios.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/lib/scenarios.ts)
 
 ```typescript
 // lib/scenarios.ts
 import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
 
-// Success scenario
-export const contactFormSuccessScenario: ScenaristScenario = {
-  id: 'contactFormSuccess',
-  name: 'Contact Form - Success',
-  description: 'Contact form submission succeeds',
+// Error scenario - triggers error boundary
+export const apiErrorScenario: ScenaristScenario = {
+  id: 'apiError',
+  name: 'API Error',
+  description: 'Simulates API returning 500 Internal Server Error',
   mocks: [
     {
-      method: 'POST',
-      url: 'http://localhost:3001/contact',
-      response: {
-        status: 200,
-        body: { success: true, message: 'Message sent successfully!' },
-      },
-    },
-  ],
-};
-
-// Error scenario - server failure
-export const contactFormErrorScenario: ScenaristScenario = {
-  id: 'contactFormError',
-  name: 'Contact Form - Error',
-  description: 'Contact form submission fails with server error',
-  mocks: [
-    {
-      method: 'POST',
-      url: 'http://localhost:3001/contact',
+      method: 'GET',
+      url: 'http://localhost:3001/errors',
       response: {
         status: 500,
-        body: { error: 'Server error. Please try again later.' },
+        body: { error: 'Internal server error' },
       },
     },
   ],
 };
 
-// Edge case - duplicate email
-export const contactFormDuplicateScenario: ScenaristScenario = {
-  id: 'contactFormDuplicate',
-  name: 'Contact Form - Duplicate Email',
-  description: 'Contact form fails due to existing email',
+// Default scenario includes success response for error demo endpoint
+export const defaultScenario: ScenaristScenario = {
+  id: 'default',
+  name: 'Default Scenario',
+  description: 'Default baseline behavior',
   mocks: [
+    // ... other mocks ...
     {
-      method: 'POST',
-      url: 'http://localhost:3001/contact',
-      response: {
-        status: 409,
-        body: { error: 'Email already registered in our system.' },
-      },
-    },
-  ],
-};
-
-// Request matching - VIP email domains
-export const contactFormVipScenario: ScenaristScenario = {
-  id: 'contactFormVip',
-  name: 'Contact Form - VIP Domain',
-  description: 'VIP email domains get priority response',
-  mocks: [
-    {
-      method: 'POST',
-      url: 'http://localhost:3001/contact',
-      match: {
-        body: { email: { contains: '@vip.' } },  // Match on request body
-      },
+      method: 'GET',
+      url: 'http://localhost:3001/errors',
       response: {
         status: 200,
-        body: { success: true, message: 'Priority response - VIP request received!' },
+        body: {
+          data: 'Error Demo Data',
+          message: 'This endpoint demonstrates error boundary recovery',
+        },
       },
     },
   ],
 };
 ```
-
-<Aside type="note" title="Request Body Matching">
-The VIP scenario demonstrates request body matching with `{ contains: '@vip.' }`. This routes requests based on the email domain in the form data, enabling conditional responses without separate scenarios for each email.
-</Aside>
 
 ### Test Implementation
 
-**Test:** [`tests/playwright/server-actions.spec.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/tests/playwright/server-actions.spec.ts)
+**Test:** [`tests/playwright/error-boundaries.spec.ts`](https://github.com/citypaul/scenarist/blob/main/apps/nextjs-app-router-example/tests/playwright/error-boundaries.spec.ts)
 
 ```typescript
-// tests/playwright/server-actions.spec.ts
+// tests/playwright/error-boundaries.spec.ts
 import { test, expect } from './fixtures';
 
-test.describe('Server Actions - Contact Form', () => {
-  test('should submit contact form successfully', async ({
+test.describe('Error Boundaries', () => {
+  test('displays error boundary with retry button when API returns 500', async ({
     page,
     switchScenario,
   }) => {
-    await switchScenario(page, 'contactFormSuccess');
-    await page.goto('/actions');
+    await switchScenario(page, 'apiError');
+    await page.goto('/errors');
 
-    await page.getByLabel('Name').fill('John Doe');
-    await page.getByLabel('Email').fill('john@example.com');
-    await page.getByLabel('Message').fill('Hello!');
-
-    await page.getByRole('button', { name: 'Send Message' }).click();
-
-    await expect(page.getByRole('status')).toContainText(
-      'Message sent successfully'
-    );
+    // Error boundary should show error message with retry option
+    await expect(
+      page.getByRole('heading', { name: /something went wrong/i }),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: /try again/i })).toBeVisible();
   });
 
-  test('should show error when server fails', async ({
+  test('page recovers after scenario switch and reload', async ({
     page,
     switchScenario,
   }) => {
-    await switchScenario(page, 'contactFormError');
-    await page.goto('/actions');
+    // Start with error scenario
+    await switchScenario(page, 'apiError');
+    await page.goto('/errors');
 
-    await page.getByLabel('Name').fill('John Doe');
-    await page.getByLabel('Email').fill('john@example.com');
-    await page.getByLabel('Message').fill('Hello!');
+    // Verify error boundary is showing
+    await expect(
+      page.getByRole('heading', { name: /something went wrong/i }),
+    ).toBeVisible();
 
-    await page.getByRole('button', { name: 'Send Message' }).click();
+    // Switch to default (working) scenario and reload page
+    await switchScenario(page, 'default');
+    await page.reload();
 
-    await expect(page.getByText('Server error')).toBeVisible();
+    // Should show success content
+    await expect(page.getByText(/error demo data/i)).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: /something went wrong/i }),
+    ).not.toBeVisible();
   });
 
-  test('should show duplicate email message', async ({
+  test('displays content when API returns success', async ({
     page,
     switchScenario,
   }) => {
-    await switchScenario(page, 'contactFormDuplicate');
-    await page.goto('/actions');
+    await switchScenario(page, 'default');
+    await page.goto('/errors');
 
-    await page.getByLabel('Name').fill('John Doe');
-    await page.getByLabel('Email').fill('existing@example.com');
-    await page.getByLabel('Message').fill('Hello!');
-
-    await page.getByRole('button', { name: 'Send Message' }).click();
-
-    await expect(page.getByText('Email already registered')).toBeVisible();
-  });
-
-  test('should show VIP acknowledgment for VIP email domains', async ({
-    page,
-    switchScenario,
-  }) => {
-    await switchScenario(page, 'contactFormVip');
-    await page.goto('/actions');
-
-    await page.getByLabel('Name').fill('VIP User');
-    await page.getByLabel('Email').fill('user@vip.example.com');
-    await page.getByLabel('Message').fill('Priority request');
-
-    await page.getByRole('button', { name: 'Send Message' }).click();
-
-    await expect(page.getByRole('status')).toContainText('Priority response');
+    // Should show data, no error heading
+    await expect(page.getByText(/error demo data/i)).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: /something went wrong/i }),
+    ).not.toBeVisible();
   });
 });
 ```
 
-### Key Points for Server Actions Tests
+### Key Points for Error Boundary Testing
 
 | Aspect | Consideration |
 |--------|---------------|
-| **Header forwarding** | Server Actions MUST forward `x-scenarist-test-id` via `getScenaristHeadersFromReadonlyHeaders()` |
-| **`useActionState` hook** | React 19's `useActionState` provides `[state, formAction, isPending]` for form state management |
-| **Request body matching** | Use `match.body` to route requests based on form data (e.g., VIP email domains) |
-| **ARIA roles** | Use `role="status"` for success and `role="alert"` for errors for reliable test selection |
-| **Error handling** | Test both HTTP errors (500) and business logic errors (409 duplicate) |
+| **Scenario switching** | Use `apiError` for error state, `default` for success |
+| **Recovery testing** | Switch scenario then reload page to test recovery |
+| **Accessible selectors** | Use heading/button roles for reliable test selection |
+| **Header forwarding** | RSC must forward test ID via `getScenaristHeadersFromReadonlyHeaders()` |
 
-### Common Server Actions Testing Patterns
-
-**Testing form validation:**
-
-```typescript
-test('should show validation error for invalid email', async ({
-  page,
-  switchScenario,
-}) => {
-  await switchScenario(page, 'contactFormValidation');
-  await page.goto('/actions');
-
-  await page.getByLabel('Email').fill('invalid-email');  // Missing @
-  await page.getByRole('button', { name: 'Send Message' }).click();
-
-  await expect(page.getByText('Invalid email format')).toBeVisible();
-});
-```
-
-**Testing loading states:**
-
-```typescript
-test('should show loading state while submitting', async ({
-  page,
-  switchScenario,
-}) => {
-  await switchScenario(page, 'contactFormSuccess');
-  await page.goto('/actions');
-
-  await page.getByLabel('Name').fill('John Doe');
-  await page.getByLabel('Email').fill('john@example.com');
-  await page.getByLabel('Message').fill('Hello!');
-
-  // Click and immediately check for loading state
-  await page.getByRole('button', { name: 'Send Message' }).click();
-
-  // Button should show loading text
-  await expect(page.getByRole('button')).toContainText('Sending...');
-
-  // Eventually shows success
-  await expect(page.getByRole('status')).toBeVisible();
-});
-```
+<Aside type="tip" title="RSC Recovery Behavior">
+When testing error recovery, note that the `reset()` function triggers a server-side re-render but doesn't make new browser requests visible to Playwright. To test recovery, switch the scenario and reload the page - this ensures the new scenario is used for the fresh server render.
+</Aside>
 
 ---
 
@@ -1496,12 +1356,23 @@ await fetch(`http://localhost:3001/github/jobs/${jobId}`, {  // ✅ Matches patt
 
 The following advanced RSC patterns will be covered in upcoming documentation:
 
-### Error Boundaries
+### Server Actions
 
-Testing error handling in Server Components with error boundaries.
+Testing form submissions and mutations with Server Actions:
+
+```typescript
+// Future pattern preview
+test('submits form via Server Action', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'formSubmission');
+  await page.goto('/checkout');
+  await page.fill('[name="email"]', 'test@example.com');
+  await page.click('button[type="submit"]');
+  await expect(page.getByText('Order confirmed')).toBeVisible();
+});
+```
 
 <Aside type="note" title="Example Implementations">
-This pattern requires example implementations that are being developed. Once available, this guide will be updated with complete working examples and tests.
+Server Actions require example implementations that are being developed. Once available, this guide will be updated with complete working examples and tests.
 </Aside>
 
 ---
