@@ -43,6 +43,9 @@ yarn-error.log*
 .DS_Store
 *.pem
 
+# Claude Code local settings (use .claude/settings.json for shared settings)
+.claude/settings.local.json
+
 # SBOM (generated in CI, uploaded as artifacts)
 sbom.json
 sbom.json.bundle
