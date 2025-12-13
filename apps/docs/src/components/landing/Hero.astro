@@ -38,34 +38,81 @@ const releasesUrl = 'https://github.com/citypaul/scenarist/releases';
     </p>
 
     <!-- CTAs -->
-    <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-      <!-- Install Command -->
-      <button
-        id="copy-install"
-        class="group flex items-center gap-3 bg-white dark:bg-[#161618] border border-gray-200 dark:border-[#27272A] px-5 py-3 rounded-lg font-mono text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:border-primary/50 dark:hover:border-gray-500 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
-      >
-        <span class="text-primary font-bold select-none">$</span>
-        <span class="select-all">npm install scenarist</span>
-        <div class="relative w-4 h-4">
-            <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-primary transition-all absolute inset-0 opacity-100 group-[.copied]:opacity-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-            </svg>
-            <svg class="w-4 h-4 text-green-500 transition-all absolute inset-0 opacity-0 group-[.copied]:opacity-100 scale-50 group-[.copied]:scale-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-            </svg>
-        </div>
-      </button>
+    <div class="flex flex-col items-center gap-4">
+      <!-- Install Command Section -->
+      <div class="flex flex-col items-center gap-3">
+        <!-- Framework + Package Manager Tabs -->
+        <div class="flex flex-wrap items-center justify-center gap-2">
+          <!-- Framework Selector -->
+          <div class="flex items-center gap-1 p-1 bg-gray-100 dark:bg-[#1a1a1c] rounded-lg">
+            <button
+              data-framework="nextjs"
+              class="framework-tab px-3 py-1.5 text-xs font-medium rounded-md transition-all bg-white dark:bg-[#27272A] text-gray-900 dark:text-white shadow-sm"
+            >
+              Next.js
+            </button>
+            <button
+              data-framework="express"
+              class="framework-tab px-3 py-1.5 text-xs font-medium rounded-md transition-all text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            >
+              Express
+            </button>
+          </div>
 
-      <!-- Get Started Button -->
-      <a
-        href="/getting-started/quick-start"
-        class="px-8 py-3 bg-violet-600 text-white font-semibold rounded-lg hover:bg-violet-700 hover:scale-105 transition-all duration-300 flex items-center gap-2 shadow-lg shadow-violet-600/20"
-      >
-        Get Started
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-        </svg>
-      </a>
+          <!-- Package Manager Tabs -->
+          <div class="flex items-center gap-1 p-1 bg-gray-100 dark:bg-[#1a1a1c] rounded-lg">
+            <button
+              data-pm="npm"
+              class="pm-tab px-3 py-1.5 text-xs font-medium rounded-md transition-all text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            >
+              npm
+            </button>
+            <button
+              data-pm="pnpm"
+              class="pm-tab px-3 py-1.5 text-xs font-medium rounded-md transition-all bg-white dark:bg-[#27272A] text-gray-900 dark:text-white shadow-sm"
+            >
+              pnpm
+            </button>
+            <button
+              data-pm="yarn"
+              class="pm-tab px-3 py-1.5 text-xs font-medium rounded-md transition-all text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            >
+              yarn
+            </button>
+          </div>
+        </div>
+
+        <!-- Install Command + Get Started -->
+        <div class="flex flex-col sm:flex-row items-center gap-3">
+          <!-- Install Command -->
+          <button
+            id="copy-install"
+            class="group flex items-center gap-3 bg-white dark:bg-[#161618] border border-gray-200 dark:border-[#27272A] px-4 py-2.5 rounded-lg font-mono text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:border-primary/50 dark:hover:border-gray-500 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
+          >
+            <span class="text-primary font-bold select-none">$</span>
+            <span id="install-command" class="select-all">pnpm add @scenarist/nextjs-adapter msw</span>
+            <div class="relative w-4 h-4 flex-shrink-0">
+              <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-primary transition-all absolute inset-0 opacity-100 group-[.copied]:opacity-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+              </svg>
+              <svg class="w-4 h-4 text-green-500 transition-all absolute inset-0 opacity-0 group-[.copied]:opacity-100 scale-50 group-[.copied]:scale-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+          </button>
+
+          <!-- Get Started Button -->
+          <a
+            href="/getting-started/quick-start"
+            class="px-6 py-2.5 bg-violet-600 text-white font-semibold rounded-lg hover:bg-violet-700 hover:scale-105 transition-all duration-300 flex items-center gap-2 shadow-lg shadow-violet-600/20"
+          >
+            Get Started
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+            </svg>
+          </a>
+        </div>
+      </div>
     </div>
 
     <!-- Framework Integrations -->
@@ -90,10 +137,73 @@ const releasesUrl = 'https://github.com/citypaul/scenarist/releases';
 </section>
 
 <script>
+  // Install command configuration
+  const commands: Record<string, Record<string, string>> = {
+    nextjs: {
+      npm: 'npm install @scenarist/nextjs-adapter msw',
+      pnpm: 'pnpm add @scenarist/nextjs-adapter msw',
+      yarn: 'yarn add @scenarist/nextjs-adapter msw',
+    },
+    express: {
+      npm: 'npm install @scenarist/express-adapter msw',
+      pnpm: 'pnpm add @scenarist/express-adapter msw',
+      yarn: 'yarn add @scenarist/express-adapter msw',
+    },
+  };
+
+  const state = { framework: 'nextjs', pm: 'pnpm' };
+  const activeTabClasses = 'bg-white dark:bg-[#27272A] text-gray-900 dark:text-white shadow-sm';
+  const inactiveTabClasses = 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300';
+
+  const updateCommand = () => {
+    const commandEl = document.getElementById('install-command');
+    if (commandEl) {
+      commandEl.textContent = commands[state.framework][state.pm];
+    }
+  };
+
+  const setActiveTab = (tabs: NodeListOf<Element>, activeValue: string, dataAttr: string) => {
+    tabs.forEach((tab) => {
+      const value = tab.getAttribute(dataAttr);
+      if (value === activeValue) {
+        tab.className = tab.className.replace(inactiveTabClasses, '').trim();
+        if (!tab.className.includes(activeTabClasses)) {
+          tab.className += ' ' + activeTabClasses;
+        }
+      } else {
+        tab.className = tab.className.replace(activeTabClasses, '').trim();
+        if (!tab.className.includes(inactiveTabClasses)) {
+          tab.className += ' ' + inactiveTabClasses;
+        }
+      }
+    });
+  };
+
+  // Framework tab handlers
+  const frameworkTabs = document.querySelectorAll('.framework-tab');
+  frameworkTabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      state.framework = tab.getAttribute('data-framework') || 'nextjs';
+      setActiveTab(frameworkTabs, state.framework, 'data-framework');
+      updateCommand();
+    });
+  });
+
+  // Package manager tab handlers
+  const pmTabs = document.querySelectorAll('.pm-tab');
+  pmTabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      state.pm = tab.getAttribute('data-pm') || 'pnpm';
+      setActiveTab(pmTabs, state.pm, 'data-pm');
+      updateCommand();
+    });
+  });
+
   // Copy install command to clipboard
   document.getElementById('copy-install')?.addEventListener('click', async () => {
     try {
-      await navigator.clipboard.writeText('npm install scenarist');
+      const command = commands[state.framework][state.pm];
+      await navigator.clipboard.writeText(command);
       const button = document.getElementById('copy-install');
       if (button) {
         button.classList.add('copied');
