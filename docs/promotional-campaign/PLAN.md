@@ -1038,6 +1038,29 @@ Every video and blog post should consider which diagrams to include:
 - 2-3 second pauses between sections
 - No background music during code explanations
 
+### Video Recording Format
+
+**You will code live on camera.** For each video, Claude produces:
+
+1. **The code** - Complete, working code to be written during the video
+2. **Presentation instructions** - Step-by-step guide on:
+   - What to type and when
+   - What to explain while typing
+   - Key points to emphasize
+   - Where to pause for effect
+   - What to show on screen vs. skip
+3. **Talking points** - Key phrases and explanations for each section
+
+**Workflow per video:**
+
+1. Claude produces code + instructions → **REVIEW CHECKPOINT**
+2. You practice/rehearse the flow
+3. You record, coding live
+4. Review recording → **REVIEW CHECKPOINT**
+5. Tag the demo app at that state
+
+This approach keeps videos authentic and engaging - viewers see real coding, not pre-recorded demos.
+
 ### Blog Post Structure
 
 1. **The Problem** (lead with pain)
