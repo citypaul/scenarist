@@ -1,17 +1,16 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { setupServer } from "msw/node";
 import { createDynamicHandler } from "../src/handlers/dynamic-handler.js";
 import type {
   ActiveScenario,
   ScenaristScenario,
   ErrorBehaviors,
-  Logger,
 } from "@scenarist/core";
 import {
   createResponseSelector,
   createInMemorySequenceTracker,
 } from "@scenarist/core";
-import { mockDefinition, mockScenario } from "./factories.js";
+import { createMockLogger, mockDefinition, mockScenario } from "./factories.js";
 
 describe("Dynamic Handler", () => {
   // Create ResponseSelector once for all tests
@@ -758,14 +757,7 @@ describe("Dynamic Handler", () => {
     it("should catch handler errors and return 500 with error details", async () => {
       // Simulate an unexpected error inside the handler by providing a responseSelector
       // that throws an unexpected error
-      const mockLogger: Logger = {
-        error: vi.fn(),
-        warn: vi.fn(),
-        info: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        isEnabled: () => true,
-      };
+      const mockLogger = createMockLogger();
 
       const brokenResponseSelector = {
         selectResponse: () => {
@@ -843,13 +835,66 @@ describe("Dynamic Handler", () => {
       // Handler should still catch the error and return 500
       expect(response.status).toBe(500);
 
-      // Verify the response body contains error details
+      // Verify the response body contains generic error (not internal details)
       const body = await response.json();
       expect(body).toEqual({
         error: "Internal mock server error",
-        message: "Unexpected internal error",
         code: "HANDLER_ERROR",
       });
+
+      server.close();
+    });
+
+    it("should NOT expose internal error messages in responses (security)", async () => {
+      // Security test: Error messages can contain sensitive information like
+      // file paths, SQL queries, or internal implementation details.
+      // These should be logged server-side but NOT returned to clients.
+      const sensitiveErrorMessage =
+        "Database connection failed at /internal/db/postgres.ts:42 with credentials user=admin";
+      const brokenResponseSelector = {
+        selectResponse: () => {
+          throw new Error(sensitiveErrorMessage);
+        },
+      };
+
+      const mockLogger = createMockLogger();
+
+      const getTestId = () => "test-123";
+      const getActiveScenario = () => undefined;
+      const getScenarioDefinition = () => undefined;
+
+      const handler = createDynamicHandler({
+        getTestId,
+        getActiveScenario,
+        getScenarioDefinition,
+        strictMode: false,
+        responseSelector: brokenResponseSelector as unknown as ReturnType<
+          typeof createResponseSelector
+        >,
+        logger: mockLogger,
+      });
+
+      const server = setupServer(handler);
+      server.listen();
+
+      const response = await fetch("https://api.example.com/users");
+      const body = await response.json();
+
+      // Should NOT contain sensitive error message
+      expect(body.message).toBeUndefined();
+      expect(JSON.stringify(body)).not.toContain(sensitiveErrorMessage);
+      expect(JSON.stringify(body)).not.toContain("/internal/db");
+      expect(JSON.stringify(body)).not.toContain("credentials");
+
+      // Error should be logged server-side (with full details)
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        "request",
+        expect.stringContaining("Handler error"),
+        expect.any(Object),
+        expect.objectContaining({
+          stack: expect.stringContaining(sensitiveErrorMessage),
+        }),
+      );
 
       server.close();
     });
@@ -887,14 +932,7 @@ describe("Dynamic Handler", () => {
     });
 
     it("should log warning and continue to strictMode when onNoMockFound is 'warn' with logger", async () => {
-      const mockLogger: Logger = {
-        error: vi.fn(),
-        warn: vi.fn(),
-        info: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        isEnabled: () => true,
-      };
+      const mockLogger = createMockLogger();
 
       const getTestId = () => "test-123";
       const getActiveScenario = () => undefined;
@@ -946,14 +984,7 @@ describe("Dynamic Handler", () => {
         sequenceTracker,
       });
 
-      const mockLogger: Logger = {
-        error: vi.fn(),
-        warn: vi.fn(),
-        info: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        isEnabled: () => true,
-      };
+      const mockLogger = createMockLogger();
 
       const scenarios = new Map<string, ScenaristScenario>([
         [
@@ -1143,14 +1174,7 @@ describe("Dynamic Handler", () => {
     });
 
     it("should log warning and use default scenario when test ID is missing and onMissingTestId is 'warn'", async () => {
-      const mockLogger: Logger = {
-        error: vi.fn(),
-        warn: vi.fn(),
-        info: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        isEnabled: () => true,
-      };
+      const mockLogger = createMockLogger();
 
       const scenarios = new Map<string, ScenaristScenario>([
         [

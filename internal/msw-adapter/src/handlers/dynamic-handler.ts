@@ -273,18 +273,26 @@ export const createDynamicHandler = (
       const errorCode =
         error instanceof ScenaristError ? error.code : "HANDLER_ERROR";
 
-      // Return a 500 error response with error details
-      return new Response(
-        JSON.stringify({
-          error: "Internal mock server error",
-          message: error instanceof Error ? error.message : String(error),
-          code: errorCode,
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      // Return a 500 error response
+      // Security: Only include message for ScenaristErrors (intentional, safe messages)
+      // For unexpected errors (HANDLER_ERROR), do not expose internal error messages
+      // which may contain sensitive information like file paths, credentials, etc.
+      const responseBody =
+        error instanceof ScenaristError
+          ? {
+              error: "Internal mock server error",
+              message: error.message,
+              code: errorCode,
+            }
+          : {
+              error: "Internal mock server error",
+              code: errorCode,
+            };
+
+      return new Response(JSON.stringify(responseBody), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
   });
 };
