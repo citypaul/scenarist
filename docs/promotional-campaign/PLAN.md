@@ -354,6 +354,138 @@ A simple payment dashboard that integrates with:
 - TypeScript (demonstrates type safety)
 - shadcn/ui (free, official components only)
 
+### Real External Service Integration
+
+**Critical Design Decision:** PayFlow uses REAL integrations with external services, not mock implementations. This is essential because:
+
+1. **Authenticity** - Shows real patterns developers actually use
+2. **Scenarist's Value** - Demonstrates intercepting real SDK HTTP calls
+3. **Proof of Concept** - Proves "your code runs, only external responses are controlled"
+4. **Relatable** - Developers see their exact patterns being tested
+
+**The Integration Architecture:**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  PayFlow App (Real Code)                                        │
+│  ─────────────────────────                                      │
+│                                                                 │
+│  @auth0/nextjs-auth0 SDK ──────► HTTP calls to Auth0 API       │
+│  @stripe/stripe-js SDK ────────► HTTP calls to Stripe API      │
+│  @sendgrid/mail SDK ───────────► HTTP calls to SendGrid API    │
+│                                                                 │
+│  ═══════════════════════════════════════════════════════════   │
+│                                                                 │
+│  In Production:     Calls go to real services                   │
+│  In Development:    Calls go to real services (test mode)       │
+│  In Tests:          MSW intercepts, Scenarist controls responses│
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Services Integrated:**
+
+| Service  | SDK                   | Purpose                    | Free Tier |
+| -------- | --------------------- | -------------------------- | --------- |
+| Auth0    | `@auth0/nextjs-auth0` | User authentication, tiers | 7,500 MAU |
+| Stripe   | `stripe`, `stripe-js` | Payment processing         | Test mode |
+| SendGrid | `@sendgrid/mail`      | Email notifications        | 100/day   |
+
+### Environment Variables
+
+All integrations are configured via environment variables. The app works in three modes:
+
+**1. Real Mode (Development with real accounts):**
+
+```bash
+# .env.local - Real credentials (gitignored)
+AUTH0_SECRET=<random-32-chars>
+AUTH0_BASE_URL=http://localhost:3000
+AUTH0_ISSUER_BASE_URL=https://your-tenant.auth0.com
+AUTH0_CLIENT_ID=<from-auth0-dashboard>
+AUTH0_CLIENT_SECRET=<from-auth0-dashboard>
+
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+SENDGRID_API_KEY=SG....
+SENDGRID_FROM_EMAIL=verified@yourdomain.com
+
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+**2. Test Mode (Scenarist controls responses):**
+
+```bash
+# Environment doesn't matter - MSW intercepts all external calls
+# Scenarist scenarios define what Auth0/Stripe/SendGrid "return"
+```
+
+**3. Demo Mode (No accounts, limited functionality):**
+
+```bash
+# .env.local - Minimal config for exploring UI
+NEXT_PUBLIC_DEMO_MODE=true
+# Auth shows mock login, Stripe disabled, no emails
+```
+
+### Free Account Setup Links
+
+| Service  | Signup URL                            | Notes                          |
+| -------- | ------------------------------------- | ------------------------------ |
+| Auth0    | https://auth0.com/signup              | Select "I'm a developer"       |
+| Stripe   | https://dashboard.stripe.com/register | Use test mode (no card needed) |
+| SendGrid | https://signup.sendgrid.com/          | Verify sender email            |
+
+### Auth0 Configuration
+
+**Application Setup:**
+
+1. Create a new "Regular Web Application"
+2. Set Allowed Callback URLs: `http://localhost:3000/api/auth/callback`
+3. Set Allowed Logout URLs: `http://localhost:3000`
+4. Enable "Email/Password" connection
+
+**User Metadata for Tiers:**
+Users can have `app_metadata.tier` set to: `free`, `basic`, `pro`, `enterprise`
+
+Auth0 Rules/Actions can set tier based on email domain for testing:
+
+- `*@free.test` → tier: free
+- `*@basic.test` → tier: basic
+- `*@pro.test` → tier: pro
+- `*@enterprise.test` → tier: enterprise
+
+### Stripe Configuration
+
+**Test Mode Products:**
+Create products in Stripe Dashboard (test mode):
+
+- Basic Plan: $9.99/month
+- Pro Plan: $29.99/month
+- Enterprise Plan: $99.99/month
+
+**Test Card Numbers:**
+
+- Success: `4242 4242 4242 4242`
+- Decline: `4000 0000 0000 0002`
+- 3DS Required: `4000 0027 6000 3184`
+- Insufficient Funds: `4000 0000 0000 9995`
+
+### SendGrid Configuration
+
+**Sender Verification:**
+
+1. Verify a sender email in SendGrid dashboard
+2. Use that email as `SENDGRID_FROM_EMAIL`
+
+**Email Templates (optional):**
+
+- Order confirmation
+- Payment receipt
+- Payment failed notification
+
 ### Design System
 
 **Visual Style:** Maia (soft, rounded, generous spacing - trustworthy feel for payments)
@@ -413,11 +545,22 @@ The demo app is built incrementally in stages, with git tags marking key points.
 
 **Development Stages:**
 
-| Stage | Tag                  | Videos Supported | Features Added                                  |
-| ----- | -------------------- | ---------------- | ----------------------------------------------- |
-| 1     | `stage-1-foundation` | 1-5              | Basic app, auth, pricing, basic Scenarist setup |
-| 2     | `stage-2-features`   | 6-9              | Cart, checkout, payment flows, sequences        |
-| 3     | `stage-3-complete`   | 10-14            | Full integration, production build, Playwright  |
+| Stage | Tag                  | Videos Supported | Features Added                                           |
+| ----- | -------------------- | ---------------- | -------------------------------------------------------- |
+| 1     | `stage-1-foundation` | 1-5              | Basic app, real Auth0/Stripe/SendGrid SDKs, tier pricing |
+| 2     | `stage-2-features`   | 6-9              | Cart, checkout, payment flows, sequences                 |
+| 3     | `stage-3-complete`   | 10-14            | Full integration, production build, Playwright           |
+
+**Stage 1 Includes:**
+
+- Next.js App Router with shadcn/ui
+- Real `@auth0/nextjs-auth0` integration (OAuth flow, session, user metadata)
+- Real `stripe` + `@stripe/stripe-js` integration (checkout sessions, webhooks)
+- Real `@sendgrid/mail` integration (transactional emails)
+- Environment variable configuration (`.env.example`, `.env.local`)
+- README with setup instructions for all three services
+- Tier-based pricing display (discounts based on user tier from Auth0)
+- Demo mode fallback for users without accounts
 
 **Video-Specific Tags:**
 
@@ -1016,11 +1159,39 @@ Collection of scenario patterns for common use cases.
 - `slowNetwork` - Delayed responses
 - `rateLimited` - Too many requests
 
-### External APIs Mocked
+### External APIs (Real Integration, Intercepted in Tests)
 
-- `https://api.stripe.com/*` - Payment processing
-- `https://api.auth0.com/*` - User authentication
-- `https://api.sendgrid.com/*` - Email notifications
+PayFlow makes real HTTP calls to these services. In tests, MSW/Scenarist intercepts them:
+
+| API Pattern                  | Service  | SDK Making Calls      |
+| ---------------------------- | -------- | --------------------- |
+| `https://*.auth0.com/*`      | Auth0    | `@auth0/nextjs-auth0` |
+| `https://api.stripe.com/*`   | Stripe   | `stripe`, `stripe-js` |
+| `https://api.sendgrid.com/*` | SendGrid | `@sendgrid/mail`      |
+
+**Why Real Integrations Matter:**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  WITHOUT REAL INTEGRATIONS (Fake Demo)                          │
+│  ─────────────────────────────────────                          │
+│                                                                 │
+│  • "Here's how it works with pretend code"                      │
+│  • Developers can't relate to patterns                          │
+│  • No proof that Scenarist actually intercepts real SDK calls   │
+│                                                                 │
+│  ═══════════════════════════════════════════════════════════   │
+│                                                                 │
+│  WITH REAL INTEGRATIONS (PayFlow)                               │
+│  ─────────────────────────────────                              │
+│                                                                 │
+│  • "Here's your actual Auth0/Stripe code"                       │
+│  • "Here's Scenarist controlling what they return"              │
+│  • Developers see their exact patterns being tested             │
+│  • Proof that real SDK HTTP calls get intercepted               │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -1147,11 +1318,37 @@ This approach keeps videos authentic and engaging - viewers see real coding, not
 
 - Located in Scenarist monorepo at `demo/payflow/`
 - Excluded from pnpm workspace (installs from npm, not workspace)
-- Complete Next.js App Router application
+- Complete Next.js App Router application with real external service integrations
 - All scenarios defined for video demonstrations
-- README with setup instructions
 - Validates published Scenarist packages work correctly
 - **Git tags** mark each stage and video state (see "Staged Development with Git Tags" section)
+
+**README Requirements (`demo/payflow/README.md`):**
+
+The README must include:
+
+1. **Overview** - What PayFlow demonstrates
+2. **Prerequisites** - Node.js, pnpm
+3. **Quick Start (Demo Mode)** - Run without external accounts
+4. **Full Setup** - Complete setup with real accounts:
+   - **Auth0 Setup**
+     - Link: https://auth0.com/signup
+     - Step-by-step: Create app, configure callbacks, get credentials
+     - User metadata configuration for tiers
+   - **Stripe Setup**
+     - Link: https://dashboard.stripe.com/register
+     - Step-by-step: Get test keys, create products, configure webhooks
+     - Test card numbers reference
+   - **SendGrid Setup**
+     - Link: https://signup.sendgrid.com/
+     - Step-by-step: Verify sender, get API key
+5. **Environment Variables Reference** - Complete `.env.example` documentation
+6. **Running the App**
+   - Development mode
+   - Production build
+   - Test mode with Scenarist
+7. **Architecture Overview** - How the integrations work
+8. **Scenarist Scenarios** - Available scenarios and what they test
 
 ### Blog Posts (Markdown Files)
 
