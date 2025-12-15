@@ -535,32 +535,60 @@ Font: Inter
 
 All components are from official shadcn/ui - completely free and open source.
 
-### Staged Development with Git Tags
+### Staged Development with Git Tags and PRs
 
-The demo app is built incrementally in stages, with git tags marking key points. This allows:
+The demo app is built incrementally in stages, with PRs for review and git tags marking key points. This allows:
 
-- **Incremental review** - Each stage reviewed before proceeding
+- **Incremental review** - Each stage reviewed via PR before proceeding
 - **Video-specific code states** - Blog posts link to exact code shown in videos
 - **Progressive complexity** - Features added as videos need them
+- **Clean git history** - Multiple smaller PRs instead of one massive PR
 
 **Development Stages:**
 
-| Stage | Tag                  | Videos Supported | Features Added                                           |
-| ----- | -------------------- | ---------------- | -------------------------------------------------------- |
-| 1     | `stage-1-foundation` | 1-5              | Basic app, real Auth0/Stripe/SendGrid SDKs, tier pricing |
-| 2     | `stage-2-features`   | 6-9              | Cart, checkout, payment flows, sequences                 |
-| 3     | `stage-3-complete`   | 10-14            | Full integration, production build, Playwright           |
+| Stage | Tag                  | PR   | Videos | Features Added                                    |
+| ----- | -------------------- | ---- | ------ | ------------------------------------------------- |
+| 1     | `stage-1-foundation` | PR 1 | 1-5    | App structure, Auth0/Stripe SDKs, documentation   |
+| 2     | `stage-2-features`   | PR 2 | 6-9    | Working flows, cart, checkout, SendGrid, webhooks |
+| 3     | `stage-3-complete`   | PR 3 | 10-14  | Scenarist integration, tests, production build    |
 
-**Stage 1 Includes:**
+**PR Strategy:**
 
-- Next.js App Router with shadcn/ui
-- Real `@auth0/nextjs-auth0` integration (OAuth flow, session, user metadata)
-- Real `stripe` + `@stripe/stripe-js` integration (checkout sessions, webhooks)
-- Real `@sendgrid/mail` integration (transactional emails)
-- Environment variable configuration (`.env.example`, `.env.local`)
-- README with setup instructions for all three services
-- Tier-based pricing display (discounts based on user tier from Auth0)
-- Demo mode fallback for users without accounts
+- **PR 1 (Stage 1)**: Foundation - SDK setup, app structure, documentation
+  - Merged to main creates stable base for demo
+  - Tagged as `stage-1-foundation`
+- **PR 2 (Stage 2)**: Working flows - Login/logout functional, checkout works, emails sent
+  - Demo app is actually usable end-to-end
+  - Tagged as `stage-2-features`
+- **PR 3 (Stage 3)**: Scenarist integration - Scenarios, Playwright tests, the actual library demo
+  - The complete promotional demo
+  - Tagged as `stage-3-complete`
+
+**Stage 1 Includes (Current Status: COMPLETE):**
+
+- ✅ Next.js 16 App Router with shadcn/ui (Maia style)
+- ✅ Real `@auth0/nextjs-auth0` v4 integration (proxy.ts middleware pattern)
+- ✅ Real `stripe` + `@stripe/stripe-js` integration (lazy initialization)
+- ✅ Environment variable configuration (`.env.example`)
+- ✅ README with setup instructions for Auth0 and Stripe
+- ✅ Checkout API route (`/api/checkout`)
+- ⏳ Tier-based pricing display (UI ready, needs Auth0 user metadata)
+
+**Stage 2 Includes:**
+
+- Working Auth0 login/logout flow
+- User tier displayed in sidebar
+- Functional cart and checkout
+- Stripe webhook handling
+- SendGrid email integration (order confirmations)
+- Tier-based pricing discounts applied
+
+**Stage 3 Includes:**
+
+- Scenarist scenario definitions
+- Playwright test suite
+- Production build verification
+- Video-ready polish
 
 **Video-Specific Tags:**
 
