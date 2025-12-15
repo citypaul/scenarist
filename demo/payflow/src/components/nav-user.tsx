@@ -1,10 +1,12 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   BadgeCheck,
   Bell,
   ChevronsUpDown,
   CreditCard,
+  LogIn,
   LogOut,
   Sparkles,
 } from "lucide-react";
@@ -25,17 +27,71 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useAuth, type User, type UserTier } from "@/contexts/auth-context";
+import { Badge } from "@/components/ui/badge";
 
-export function NavUser({
-  user,
-}: {
-  user: {
-    name: string;
-    email: string;
-    avatar: string;
-  };
-}) {
+function getTierBadgeVariant(
+  tier: UserTier,
+): "default" | "secondary" | "destructive" | "outline" {
+  switch (tier) {
+    case "enterprise":
+      return "default";
+    case "pro":
+      return "secondary";
+    case "basic":
+      return "outline";
+    case "free":
+    default:
+      return "outline";
+  }
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+export function NavUser() {
+  const router = useRouter();
   const { isMobile } = useSidebar();
+  const { user, isAuthenticated, logout, isLoading } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    router.push("/login");
+  };
+
+  const handleLogin = () => {
+    router.push("/login");
+  };
+
+  if (!isAuthenticated || !user) {
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            size="lg"
+            onClick={handleLogin}
+            disabled={isLoading}
+          >
+            <div className="flex aspect-square size-8 items-center justify-center rounded-lg border bg-background">
+              <LogIn className="size-4" />
+            </div>
+            <div className="grid flex-1 text-left text-sm leading-tight">
+              <span className="truncate font-medium">Sign In</span>
+              <span className="truncate text-xs text-muted-foreground">
+                Access your account
+              </span>
+            </div>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    );
+  }
 
   return (
     <SidebarMenu>
@@ -48,7 +104,9 @@ export function NavUser({
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                <AvatarFallback className="rounded-lg">
+                  {getInitials(user.name)}
+                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
@@ -67,22 +125,36 @@ export function NavUser({
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">
+                    {getInitials(user.name)}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.name}</span>
-                  <span className="truncate text-xs">{user.email}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="truncate text-xs">{user.email}</span>
+                    <Badge
+                      variant={getTierBadgeVariant(user.tier)}
+                      className="text-[10px] px-1.5 py-0"
+                    >
+                      {user.tier}
+                    </Badge>
+                  </div>
                 </div>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <Sparkles />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
+            {user.tier !== "enterprise" && (
+              <>
+                <DropdownMenuGroup>
+                  <DropdownMenuItem>
+                    <Sparkles />
+                    Upgrade to {user.tier === "free" ? "Pro" : "Enterprise"}
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+              </>
+            )}
             <DropdownMenuGroup>
               <DropdownMenuItem>
                 <BadgeCheck />
@@ -98,7 +170,7 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>
               <LogOut />
               Log out
             </DropdownMenuItem>

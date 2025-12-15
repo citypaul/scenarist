@@ -1,14 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  CreditCard,
-  Home,
-  Package,
-  Settings,
-  ShoppingCart,
-  User,
-} from "lucide-react";
+import { CreditCard, Home, Package, ShoppingCart, User } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
@@ -24,51 +17,44 @@ import {
 } from "@/components/ui/sidebar";
 
 // PayFlow navigation data
-const data = {
-  user: {
-    name: "Demo User",
-    email: "demo@payflow.example",
-    avatar: "",
+const navItems = [
+  {
+    title: "Products",
+    url: "/",
+    icon: Home,
+    isActive: true,
   },
-  navMain: [
-    {
-      title: "Products",
-      url: "/",
-      icon: Home,
-      isActive: true,
-    },
-    {
-      title: "Cart",
-      url: "/cart",
-      icon: ShoppingCart,
-    },
-    {
-      title: "Orders",
-      url: "/orders",
-      icon: Package,
-    },
-    {
-      title: "Checkout",
-      url: "/checkout",
-      icon: CreditCard,
-    },
-    {
-      title: "Account",
-      url: "/account",
-      icon: User,
-      items: [
-        {
-          title: "Profile",
-          url: "/account/profile",
-        },
-        {
-          title: "Settings",
-          url: "/account/settings",
-        },
-      ],
-    },
-  ],
-};
+  {
+    title: "Cart",
+    url: "/cart",
+    icon: ShoppingCart,
+  },
+  {
+    title: "Orders",
+    url: "/orders",
+    icon: Package,
+  },
+  {
+    title: "Checkout",
+    url: "/checkout",
+    icon: CreditCard,
+  },
+  {
+    title: "Account",
+    url: "/account",
+    icon: User,
+    items: [
+      {
+        title: "Profile",
+        url: "/account/profile",
+      },
+      {
+        title: "Settings",
+        url: "/account/settings",
+      },
+    ],
+  },
+];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
@@ -93,10 +79,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navItems} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
