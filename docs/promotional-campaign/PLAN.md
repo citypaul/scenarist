@@ -352,6 +352,56 @@ A simple payment dashboard that integrates with:
 - Next.js App Router (modern, Server Components)
 - Tailwind CSS (clean visuals for video)
 - TypeScript (demonstrates type safety)
+- shadcn/ui (free, official components only)
+
+### Design System
+
+**Visual Style:** Maia (soft, rounded, generous spacing - trustworthy feel for payments)
+
+**Color Theme:** Blue (classic for financial apps, conveys trust)
+
+**Base Color:** Slate (professional blue-gray neutrals)
+
+**Official Blocks to Install:**
+
+```bash
+npx shadcn add dashboard-01   # Dashboard with sidebar, charts, data table
+npx shadcn add sidebar-07     # Collapsible sidebar with icons
+npx shadcn add login-04       # Login page with form and image
+```
+
+**Core Components:**
+
+| Page          | Components                              |
+| ------------- | --------------------------------------- |
+| Home/Products | Card, Badge (tier pricing), Button      |
+| Cart          | Table, Card, Input (quantity), Button   |
+| Checkout      | Form, Input, Select, Card, Button, Tabs |
+| Order Status  | Card, Badge, Spinner, Chart             |
+| Login         | login-04 block                          |
+
+**Page Structure:**
+
+```
+/                    Dashboard home - product listing with tier pricing
+/cart                Shopping cart with quantity controls
+/checkout            Payment form (shipping → payment → confirm)
+/orders              Order history table
+/orders/[id]         Order status with polling indicator
+/login               Auth0 mock login
+```
+
+**Design Tokens:**
+
+```
+Style: Maia
+Base: Slate
+Accent: Blue
+Radius: 0.75rem
+Font: Inter
+```
+
+All components are from official shadcn/ui - completely free and open source.
 
 ### Staged Development with Git Tags
 
