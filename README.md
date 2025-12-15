@@ -994,10 +994,16 @@ async function switchScenario(page: Page, scenario: string) {
 
 ### Examples
 
+**Internal Examples (`apps/`)** - Used for testing and verifying Scenarist features:
+
 - **[Express Example App](./apps/express-example/)** - Complete working Express application with Scenarist
   - Scenario definitions: `src/scenarios.ts`
   - Integration tests: `tests/dynamic-matching.test.ts`, `tests/dynamic-sequences.test.ts`, `tests/stateful-scenarios.test.ts`
   - Bruno API tests: `bruno/Dynamic Responses/`
+
+**Demo Apps (`demo/`)** - Consumer-facing examples that install Scenarist from npm:
+
+- **[PayFlow Demo](./demo/payflow/)** - Payment integration demo showcasing all Scenarist features (used in promotional videos and blog posts)
 
 ### Planning & Architecture
 
