@@ -48,6 +48,14 @@ const getQueryString = (value: unknown): string | undefined => {
   return typeof value === "string" ? value : undefined;
 };
 
+const getBodyString = (
+  body: Record<string, unknown>,
+  key: string,
+): string | undefined => {
+  const value = body[key];
+  return typeof value === "string" ? value : undefined;
+};
+
 // Security: Encode path parameters to prevent path traversal
 // @see https://github.com/citypaul/scenarist/security/code-scanning/77
 export const setupStringMatchingRoutes = (router: Router): void => {
@@ -67,19 +75,16 @@ export const setupStringMatchingRoutes = (router: Router): void => {
     },
   );
 
-  // NOTE: This endpoint intentionally uses a query parameter for API key to demonstrate
-  // Scenarist's header-based content matching capabilities. In production, use headers
-  // for sensitive data. This is a test endpoint, not a security pattern.
-  // @see https://github.com/citypaul/scenarist/security/code-scanning/74
-  // @see https://github.com/citypaul/scenarist/security/code-scanning/168
-  router.get(
+  // Security fix: Use POST with request body for sensitive data (API key)
+  // @see https://github.com/citypaul/scenarist/issues/386
+  router.post(
     "/api/test-string-match/starts-with",
     async (req: Request, res: Response) => {
       return handleProxyRequest(
         () => ({
           url: "https://api.stripe.com/v1/api-keys",
           headers: buildHeaders({
-            "x-api-key": getQueryString(req.query.apiKey),
+            "x-api-key": getBodyString(req.body, "apiKey"),
           }),
         }),
         req,
