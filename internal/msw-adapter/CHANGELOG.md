@@ -1,5 +1,18 @@
 # @scenarist/msw-adapter
 
+## 0.4.4
+
+### Patch Changes
+
+- [#389](https://github.com/citypaul/scenarist/pull/389) [`3cb909c`](https://github.com/citypaul/scenarist/commit/3cb909c9bbc7ddaf08ec4238be30a6f5a7579652) Thanks [@citypaul](https://github.com/citypaul)! - fix(security): prevent internal error message exposure in responses
+
+  Internal error messages are no longer exposed in HTTP error responses as they may contain sensitive information like file paths, database credentials, or implementation details (CWE-209, CWE-497).
+  - ScenaristError messages (intentional, safe) are still included in responses
+  - Unexpected error details are logged server-side only
+
+- Updated dependencies []:
+  - @scenarist/core@0.4.4
+
 ## 0.4.3
 
 ### Patch Changes
