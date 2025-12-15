@@ -1,5 +1,13 @@
 # @scenarist/nextjs-adapter
 
+## 0.4.4
+
+### Patch Changes
+
+- Updated dependencies [[`3cb909c`](https://github.com/citypaul/scenarist/commit/3cb909c9bbc7ddaf08ec4238be30a6f5a7579652)]:
+  - @scenarist/msw-adapter@0.4.4
+  - @scenarist/core@0.4.4
+
 ## 0.4.3
 
 ### Patch Changes
