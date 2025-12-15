@@ -22,7 +22,7 @@
   "dependencies": {
     "@scenarist/nextjs-adapter": "workspace:*",
     "msw": "^2.12.3",
-    "next": "^15.5.7",
+    "next": "^15.5.8",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "zod": "^4.1.13"
