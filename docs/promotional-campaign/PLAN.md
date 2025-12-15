@@ -313,14 +313,21 @@ But testing them **together** - proving that when your server returns X, your fr
 
 ## Demo App: "PayFlow" - Payment Integration Dashboard
 
-**Repository:** Separate standalone repository (not in monorepo)
+**Location:** `demo/payflow/` in the Scenarist monorepo
 
-- Users can clone and run independently
-- Easier for viewers to follow along
-- Can evolve independently of main Scenarist repo
+**Why in the monorepo (but excluded from workspace):**
 
-**Why a new example app:**
+- Keeps promotional content and demo app in sync (one commit = one state)
+- Installs Scenarist from npm (not workspace) - validates published packages work
+- Catches packaging/bundling issues before external users do
+- Blog posts and demo code stay together in git history
 
+**Note:** The `demo/` folder is excluded from `pnpm-workspace.yaml`. This means the demo app installs `@scenarist/*` packages from npm, exactly like external users would. See `demo/README.md` for details.
+
+**Why a new example app (vs apps/):**
+
+- `apps/` contains internal testing/verification apps (use workspace dependencies)
+- `demo/` contains consumer-facing promotional apps (use npm packages)
 - Current examples are good but complex for quick demos
 - Need something that naturally showcases all features in 5-minute videos
 - Universal pain point: everyone has dealt with payment integration testing
@@ -846,7 +853,7 @@ Collection of scenario patterns for common use cases.
 
 ### Phase 1: Foundation
 
-1. Build PayFlow demo app (separate repository)
+1. Build PayFlow demo app (in `demo/payflow/`, installs from npm)
 2. Record Video 1 (The Testing Gap)
 3. Write companion blog post (markdown)
 4. Record Video 2 (One Server, Unlimited Scenarios)
@@ -1006,17 +1013,18 @@ Every video and blog post should consider which diagrams to include:
 
 ## Deliverables
 
-### PayFlow Demo App (Separate Repository)
+### PayFlow Demo App (`demo/payflow/`)
 
-- New GitHub repo: `citypaul/payflow-demo` (or similar)
+- Located in Scenarist monorepo at `demo/payflow/`
+- Excluded from pnpm workspace (installs from npm, not workspace)
 - Complete Next.js App Router application
 - All scenarios defined for video demonstrations
 - README with setup instructions
-- Can be used as a template for viewers
+- Validates published Scenarist packages work correctly
 
 ### Blog Posts (Markdown Files)
 
-- 13 companion blog posts (one per video)
+- 14 companion blog posts (one per video)
 - 6 standalone blog posts (including foundational "Introduction" post)
 - Format: Markdown, hosting decision TBD
 - Follow TONE_OF_VOICE.md guidelines
@@ -1027,6 +1035,10 @@ Every video and blog post should consider which diagrams to include:
 - Timestamps and key points
 - Code snippets to show on screen
 
-### No Scenarist repo modifications required
+### Scenarist Repo Changes
 
-This is a content creation plan, not a code change plan.
+- `demo/` folder created for consumer-facing demo apps
+- `demo/README.md` explains the folder's purpose and workflow
+- `pnpm-workspace.yaml` excludes `demo/` (documented in comments)
+- `CLAUDE.md` updated with demo folder guidance and TDD exception
+- `README.md` updated to distinguish apps/ vs demo/

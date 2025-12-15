@@ -31,7 +31,7 @@ For standalone blog posts:
 
 ### Phase 1: Foundation
 
-- [ ] Build PayFlow demo app (separate repository)
+- [ ] Build PayFlow demo app (`demo/payflow/`, installs from npm)
 - [ ] Record Video 1: The Testing Gap
 - [ ] Write Video 1 companion blog post
 - [ ] Record Video 2: One Server, Unlimited Scenarios
@@ -99,4 +99,7 @@ For standalone blog posts:
 
 - Recording strategy: Record all (or most) videos before releasing any
 - Blog posts: Markdown format, hosting TBD (may go on docs site)
-- Demo app: Separate repository for easy cloning/following along
+- Demo app: Located at `demo/payflow/` in the Scenarist monorepo
+  - Excluded from pnpm workspace (installs from npm, not workspace)
+  - Validates published packages work correctly
+  - Keeps demo code and blog posts in sync (one commit = one state)

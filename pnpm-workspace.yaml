@@ -2,3 +2,5 @@ packages:
   - "apps/*"
   - "packages/*"
   - "internal/*"
+  # demo/ is intentionally excluded - those apps install from npm, not workspace
+  # See demo/README.md for details

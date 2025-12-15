@@ -35,6 +35,9 @@ promotional-campaign/
 - 14 video companion posts
 - 5 standalone posts (Introduction, Getting Started, MSW Migration, Next.js Guide, Common Pitfalls, Real-World Patterns)
 
-## External Resources
+## Related Resources
 
-- **PayFlow Demo App**: To be created in separate repository (`citypaul/payflow-demo`)
+- **PayFlow Demo App**: Located at `demo/payflow/` in the Scenarist monorepo
+  - Excluded from pnpm workspace (installs from npm, not workspace)
+  - Validates published packages work correctly for external users
+  - See `demo/README.md` for details on the demo folder structure

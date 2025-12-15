@@ -78,6 +78,16 @@ Every line of production code must be written in response to a failing test.
 - Batching multiple tests before making first pass
 - Skipping refactoring assessment
 
+### Exception: demo/ Folder
+
+The `demo/` folder contains promotional/educational apps that demonstrate adding Scenarist to existing applications. These apps:
+
+- **May start without tests** - this is intentional, as the demo shows the value of adding Scenarist
+- **Will have tests added incrementally** - as part of the demonstration process
+- **Are NOT subject to strict TDD requirements** - they serve a different purpose than the library code
+
+This exception applies ONLY to `demo/`. All code in `packages/`, `internal/`, and `apps/` must follow TDD strictly.
+
 ## Critical Patterns
 
 ### 1. Declarative Over Imperative (ADR-0013, ADR-0016)
@@ -275,12 +285,24 @@ internal/                    (PRIVATE - workspace dependencies only)
 ├── eslint-config/           # Shared linting
 └── typescript-config/       # Shared TypeScript config
 
-apps/
+apps/                        (INTERNAL - testing/verification apps)
 ├── express-example/         # Express app with scenario-based tests
 ├── nextjs-app-router-example/  # Next.js App Router example
 ├── nextjs-pages-router-example/ # Next.js Pages Router example
 └── docs/                    # Documentation site (Astro/Starlight)
+
+demo/                        (EXTERNAL - promotional/educational apps)
+└── payflow/                 # Payment demo (installs from npm, not workspace)
 ```
+
+### apps/ vs demo/ Distinction
+
+| Folder  | Purpose                         | Dependencies    | Tests                   |
+| ------- | ------------------------------- | --------------- | ----------------------- |
+| `apps/` | Internal testing & verification | Workspace links | Required, comprehensive |
+| `demo/` | External promotion & education  | npm packages    | Added incrementally     |
+
+**Important:** The `demo/` folder is excluded from `pnpm-workspace.yaml`. Apps there install Scenarist from npm, validating the published packages work correctly.
 
 ## Production Tree-Shaking
 
@@ -435,6 +457,8 @@ For deeper dives into specific topics, see:
 - **CLAUDE.md** (this file) - Quick reference for Claude Code
 - **README.md** - User-facing project README
 - **turbo.json** - Turborepo task pipeline
-- **pnpm-workspace.yaml** - Workspace packages
+- **pnpm-workspace.yaml** - Workspace packages (note: demo/ excluded)
 - **docs/adrs/** - Architectural Decision Records
 - **docs/production-readiness-assessment.md** - v1.0 readiness checklist
+- **docs/promotional-campaign/** - Promotional campaign plan and materials
+- **demo/** - Consumer-facing demo apps (installs from npm, tests added incrementally)
