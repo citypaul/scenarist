@@ -139,13 +139,16 @@ const resolveTemplatePath = (
     }
 
     // Security: Prevent prototype pollution attacks
+    // This is a READ-only traversal, not a write operation, so prototype pollution is not possible.
+    // Additionally, we explicitly block dangerous keys (__proto__, constructor, prototype) via isDangerousKey()
+    // and verify the property exists on the object itself (not prototype) via Object.hasOwn().
     // @see https://github.com/citypaul/scenarist/security/code-scanning/165
     if (isDangerousKey(segment) || !Object.hasOwn(current, segment)) {
       return undefined;
     }
 
-    // nosemgrep: javascript.lang.security.audit.prototype-pollution.prototype-pollution-loop
-    // eslint-disable-next-line security/detect-object-injection -- Segment validated by isDangerousKey and Object.hasOwn checks above
+    // nosemgrep: javascript.lang.security.audit.prototype-pollution.prototype-pollution-loop.prototype-pollution-loop
+    // eslint-disable-next-line security/detect-object-injection -- Read-only traversal with isDangerousKey and Object.hasOwn guards
     current = current[segment];
 
     // Guard: Return undefined if property doesn't exist
