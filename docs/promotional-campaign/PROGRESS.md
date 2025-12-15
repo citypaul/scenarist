@@ -6,6 +6,27 @@ Last updated: 2025-12-15
 
 The master plan is complete and approved. Ready to begin implementation.
 
+## Workflow: Small Increments with Review
+
+**Every deliverable requires user review before proceeding.**
+
+For each video:
+
+1. Draft video script → **REVIEW CHECKPOINT**
+2. Record video → **REVIEW CHECKPOINT**
+3. Draft companion blog post → **REVIEW CHECKPOINT**
+4. Finalize and commit → Move to next video
+
+For standalone blog posts:
+
+1. Draft blog post → **REVIEW CHECKPOINT**
+2. Revise based on feedback → **REVIEW CHECKPOINT**
+3. Finalize and commit → Move to next post
+
+**No batch work.** Complete one item, get approval, then proceed.
+
+---
+
 ## Implementation Order
 
 ### Phase 1: Foundation
