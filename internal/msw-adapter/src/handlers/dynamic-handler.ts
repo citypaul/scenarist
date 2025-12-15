@@ -254,6 +254,11 @@ export const createDynamicHandler = (
       if (options.logger) {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
+        // Security: Only include stack traces in non-production environments
+        // to prevent information exposure through log aggregation systems.
+        // Stack traces can reveal internal file paths, dependency versions,
+        // and implementation details that could aid attackers.
+        const includeStack = process.env.NODE_ENV !== "production";
         options.logger.error(
           LogCategories.REQUEST,
           `Handler error: ${errorMessage}`,
@@ -264,7 +269,8 @@ export const createDynamicHandler = (
           },
           {
             errorName: error instanceof Error ? error.name : "Unknown",
-            stack: error instanceof Error ? error.stack : undefined,
+            stack:
+              includeStack && error instanceof Error ? error.stack : undefined,
           },
         );
       }
