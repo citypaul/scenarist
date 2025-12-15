@@ -83,11 +83,19 @@ jobs:
           git diff --staged --quiet || git commit -m "chore: version packages for ${{ steps.tag.outputs.tag }}"
           git push
 
-      # Pin npm version for supply chain security
+      # Pin npm version with integrity verification for supply chain security
       # @see https://github.com/citypaul/scenarist/security/code-scanning/56
+      # @see https://github.com/citypaul/scenarist/issues/392
       - name: Upgrade npm for OIDC trusted publishing
+        env:
+          NPM_VERSION: '11.6.4'
+          NPM_SHA512: '1118cab46a05a50aee6bff5b1b4fa1df18afff89d57465620a3518035026955db87c5bdf9d207b07b7487d99f2490d450cb774655ad63ec2cba7bf1d0ad25d45'
         run: |
-          npm install -g npm@11.6.4
+          # Download npm tarball and verify integrity before installing
+          curl -fsSL "https://registry.npmjs.org/npm/-/npm-${NPM_VERSION}.tgz" -o npm.tgz
+          echo "${NPM_SHA512}  npm.tgz" | sha512sum -c -
+          npm install -g ./npm.tgz
+          rm npm.tgz
           echo "npm version: $(npm --version)"
 
       - name: Publish to npm
