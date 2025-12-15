@@ -100,10 +100,10 @@ describe("String Matching Strategies - Express", () => {
       .set(SCENARIST_TEST_ID_HEADER, "string-test-3")
       .send({ scenario: scenarios.stringMatching.id });
 
-    // Make request with API key starting with 'sk_'
+    // Make request with API key starting with 'sk_' (POST body for sensitive data)
     const response = await request(fixtures.app)
-      .get("/api/test-string-match/starts-with")
-      .query({ apiKey: "sk_test_12345" })
+      .post("/api/test-string-match/starts-with")
+      .send({ apiKey: "sk_test_12345" })
       .set(SCENARIST_TEST_ID_HEADER, "string-test-3");
 
     // Verify valid API key response
@@ -119,10 +119,10 @@ describe("String Matching Strategies - Express", () => {
       .set(SCENARIST_TEST_ID_HEADER, "string-test-4")
       .send({ scenario: scenarios.stringMatching.id });
 
-    // Make request with API key NOT starting with 'sk_'
+    // Make request with API key NOT starting with 'sk_' (POST body for sensitive data)
     const response = await request(fixtures.app)
-      .get("/api/test-string-match/starts-with")
-      .query({ apiKey: "pk_test_12345" })
+      .post("/api/test-string-match/starts-with")
+      .send({ apiKey: "pk_test_12345" })
       .set(SCENARIST_TEST_ID_HEADER, "string-test-4");
 
     // Should not match the startsWith pattern, falls back to catch-all handler
