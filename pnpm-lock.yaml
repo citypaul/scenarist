@@ -6,6 +6,7 @@ settings:
 
 overrides:
   body-parser: '>=2.2.1'
+  jws: '>=3.2.3'
 
 importers:
 
@@ -131,8 +132,8 @@ importers:
         specifier: ^5.3.4
         version: 5.3.4
       '@usebruno/cli':
-        specifier: ^2.15.0
-        version: 2.15.0(yup@1.7.1)
+        specifier: ^2.15.1
+        version: 2.15.1(yup@1.7.1)
       '@vitest/coverage-v8':
         specifier: ^4.0.14
         version: 4.0.14(vitest@4.0.15(@opentelemetry/api@1.9.0)(@types/node@24.10.1)(@vitest/ui@4.0.15)(jiti@2.6.1)(jsdom@27.2.0)(lightningcss@1.30.2)(msw@2.12.3(@types/node@24.10.1)(typescript@5.9.3))(tsx@4.21.0)(yaml@2.8.2))
@@ -3485,8 +3486,8 @@ packages:
   '@ungap/structured-clone@1.3.0':
     resolution: {integrity: sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g==}
 
-  '@usebruno/cli@2.15.0':
-    resolution: {integrity: sha512-XrBDSroDnsZOD6tsR3RLnhpoJX29oJQiIbKwc6q00+i7/+RjmhogdKIub5m/K8gtYzyvyL/60iY7Uv+2m0Hu6A==}
+  '@usebruno/cli@2.15.1':
+    resolution: {integrity: sha512-ZpNSnWYPFWlUuY9lzbvEHWpwoA1XEdp0sea25J1JzF4TJtDeMw+Z44RXXDTq/wJST1pehz7gVtJLrHpncJAhvQ==}
     hasBin: true
 
   '@usebruno/common@0.16.0':
@@ -5915,11 +5916,11 @@ packages:
     resolution: {integrity: sha512-ZZow9HBI5O6EPgSJLUb8n2NKgmVWTwCvHGwFuJlMjvLFqlGG6pjirPhtdsseaLZjSibD8eegzmYpUZwoIlj2cQ==}
     engines: {node: '>=4.0'}
 
-  jwa@1.4.2:
-    resolution: {integrity: sha512-eeH5JO+21J78qMvTIDdBXidBd6nG2kZjg5Ohz/1fpa28Z4CcsWUzJ1ZZyFq/3z3N17aZy+ZuBoHljASbL1WfOw==}
+  jwa@2.0.1:
+    resolution: {integrity: sha512-hRF04fqJIP8Abbkq5NKGN0Bbr3JxlQ+qhZufXVr0DvujKy93ZCbXZMHDL4EOtodSbCWxOqR8MS1tXA5hwqCXDg==}
 
-  jws@3.2.2:
-    resolution: {integrity: sha512-YHlZCB6lMTllWDtSPHz/ZXTsi8S00usEV6v1tjq8tOUZzw7DpSDWVXjXDre6ed1w/pd495ODpHZYSdkRTsa0HA==}
+  jws@4.0.1:
+    resolution: {integrity: sha512-EKI/M/yqPncGUUh44xz0PxSidXFr/+r0pA70+gIYhjv+et7yxM+s29Y+VGDkovRofQem0fs7Uvf4+YmAdyRduA==}
 
   katex@0.16.25:
     resolution: {integrity: sha512-woHRUZ/iF23GBP1dkDQMh1QBad9dmr8/PAwNA54VrSOVYgI12MAcE14TqnDdQOdzyEonGzMepYnqBMYdsoAr8Q==}
@@ -12430,7 +12431,7 @@ snapshots:
 
   '@ungap/structured-clone@1.3.0': {}
 
-  '@usebruno/cli@2.15.0(yup@1.7.1)':
+  '@usebruno/cli@2.15.1(yup@1.7.1)':
     dependencies:
       '@aws-sdk/credential-providers': 3.750.0
       '@usebruno/common': 0.16.0
@@ -15516,7 +15517,7 @@ snapshots:
 
   jsonwebtoken@9.0.2:
     dependencies:
-      jws: 3.2.2
+      jws: 4.0.1
       lodash.includes: 4.3.0
       lodash.isboolean: 3.0.3
       lodash.isinteger: 4.0.4
@@ -15541,15 +15542,15 @@ snapshots:
       object.assign: 4.1.7
       object.values: 1.2.1
 
-  jwa@1.4.2:
+  jwa@2.0.1:
     dependencies:
       buffer-equal-constant-time: 1.0.1
       ecdsa-sig-formatter: 1.0.11
       safe-buffer: 5.2.1
 
-  jws@3.2.2:
+  jws@4.0.1:
     dependencies:
-      jwa: 1.4.2
+      jwa: 2.0.1
       safe-buffer: 5.2.1
 
   katex@0.16.25:
