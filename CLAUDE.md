@@ -192,7 +192,7 @@ const scenarioRequestSchema = z.object({...});  // Duplication!
 
 ## Critical Anti-Patterns
 
-### Top 10 to Avoid
+### Top 11 to Avoid
 
 1. **No `any` types** - Use `unknown` if type truly unknown
 2. **No type assertions** without justification - `as Type` indicates type system failure
@@ -204,6 +204,7 @@ const scenarioRequestSchema = z.object({...});  // Duplication!
 8. **No nested if/else** - Use early returns or guard clauses
 9. **No comments** - Code should be self-documenting through naming
 10. **No production code without failing test** - TDD is non-negotiable
+11. **No sensitive data in logs** - Never log stack traces, credentials, file paths, or internal details in production. Use `process.env.NODE_ENV !== 'production'` guards for debug information
 
 ## Architectural Decision Records (ADRs)
 

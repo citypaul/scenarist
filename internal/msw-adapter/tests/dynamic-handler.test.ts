@@ -886,7 +886,7 @@ describe("Dynamic Handler", () => {
       expect(JSON.stringify(body)).not.toContain("/internal/db");
       expect(JSON.stringify(body)).not.toContain("credentials");
 
-      // Error should be logged server-side (with full details)
+      // Error should be logged server-side (with full details in non-production)
       expect(mockLogger.error).toHaveBeenCalledWith(
         "request",
         expect.stringContaining("Handler error"),
@@ -897,6 +897,59 @@ describe("Dynamic Handler", () => {
       );
 
       server.close();
+    });
+
+    it("should NOT log stack traces in production environment (security)", async () => {
+      // Security: Stack traces can expose internal file paths, dependency versions,
+      // and implementation details. In production, these should be redacted.
+      const originalNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = "production";
+
+      try {
+        const sensitiveErrorMessage = "Error at /internal/secret/path.ts:42";
+        const brokenResponseSelector = {
+          selectResponse: () => {
+            throw new Error(sensitiveErrorMessage);
+          },
+        };
+
+        const mockLogger = createMockLogger();
+
+        const getTestId = () => "test-123";
+        const getActiveScenario = () => undefined;
+        const getScenarioDefinition = () => undefined;
+
+        const handler = createDynamicHandler({
+          getTestId,
+          getActiveScenario,
+          getScenarioDefinition,
+          strictMode: false,
+          responseSelector: brokenResponseSelector as unknown as ReturnType<
+            typeof createResponseSelector
+          >,
+          logger: mockLogger,
+        });
+
+        const server = setupServer(handler);
+        server.listen();
+
+        await fetch("https://api.example.com/users");
+
+        // In production, stack trace should NOT be logged
+        expect(mockLogger.error).toHaveBeenCalledWith(
+          "request",
+          expect.stringContaining("Handler error"),
+          expect.any(Object),
+          expect.objectContaining({
+            errorName: "Error",
+            stack: undefined, // Stack should be redacted in production
+          }),
+        );
+
+        server.close();
+      } finally {
+        process.env.NODE_ENV = originalNodeEnv;
+      }
     });
 
     it("should continue silently when onNoMockFound is 'warn' but no logger is provided", async () => {
