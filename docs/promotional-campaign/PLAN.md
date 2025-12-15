@@ -353,6 +353,61 @@ A simple payment dashboard that integrates with:
 - Tailwind CSS (clean visuals for video)
 - TypeScript (demonstrates type safety)
 
+### Staged Development with Git Tags
+
+The demo app is built incrementally in stages, with git tags marking key points. This allows:
+
+- **Incremental review** - Each stage reviewed before proceeding
+- **Video-specific code states** - Blog posts link to exact code shown in videos
+- **Progressive complexity** - Features added as videos need them
+
+**Development Stages:**
+
+| Stage | Tag                  | Videos Supported | Features Added                                  |
+| ----- | -------------------- | ---------------- | ----------------------------------------------- |
+| 1     | `stage-1-foundation` | 1-5              | Basic app, auth, pricing, basic Scenarist setup |
+| 2     | `stage-2-features`   | 6-9              | Cart, checkout, payment flows, sequences        |
+| 3     | `stage-3-complete`   | 10-14            | Full integration, production build, Playwright  |
+
+**Video-Specific Tags:**
+
+Each video gets a tag marking the exact code state shown:
+
+| Video | Tag                           | Description                                      |
+| ----- | ----------------------------- | ------------------------------------------------ |
+| 1     | `video-01-testing-gap`        | Basic app showing the problem (before Scenarist) |
+| 2     | `video-02-scenario-switching` | First Scenarist integration, scenario switching  |
+| 3     | `video-03-case-study`         | Auth flow with intentional bug, then fix         |
+| 4     | `video-04-server-state`       | Session and order-dependent flows                |
+| 5     | `video-05-behavior-testing`   | Refactoring demo (tests don't break)             |
+| 6     | `video-06-request-matching`   | User tier matching implementation                |
+| 7     | `video-07-sequences`          | Payment polling with sequences                   |
+| 8     | `video-08-stateful-mocks`     | Cart state capture and injection                 |
+| 9     | `video-09-parallel-testing`   | Multiple tests running in parallel               |
+| 10    | `video-10-composition`        | All features working together                    |
+| 11    | `video-11-production-safety`  | Production build verification                    |
+| 12    | `video-12-playwright`         | Full Playwright test suite                       |
+| 13    | `video-13-tech-leads`         | (uses video-12 code)                             |
+| 14    | `video-14-comparison`         | (uses video-12 code)                             |
+
+**Tagging Workflow:**
+
+1. Complete features for a stage
+2. Review checkpoint with user
+3. Create stage tag (e.g., `git tag stage-1-foundation`)
+4. Record videos for that stage
+5. After each video, create video-specific tag
+6. Push tags to remote (`git push --tags`)
+
+**Blog Post References:**
+
+Blog posts should reference tags, not branches:
+
+```markdown
+You can see the complete code at this point:
+[View on GitHub](https://github.com/citypaul/scenarist/tree/video-03-case-study/demo/payflow)
+```
+
 ---
 
 ## Video Series Structure
@@ -1021,6 +1076,7 @@ Every video and blog post should consider which diagrams to include:
 - All scenarios defined for video demonstrations
 - README with setup instructions
 - Validates published Scenarist packages work correctly
+- **Git tags** mark each stage and video state (see "Staged Development with Git Tags" section)
 
 ### Blog Posts (Markdown Files)
 
