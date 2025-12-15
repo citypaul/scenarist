@@ -1,4 +1,5 @@
-import type { ScenaristMock, ScenaristScenario } from "@scenarist/core";
+import { vi } from "vitest";
+import type { Logger, ScenaristMock, ScenaristScenario } from "@scenarist/core";
 
 /**
  * Test data factory for ScenaristMock with sensible defaults.
@@ -36,3 +37,18 @@ export const mockScenario = (
     ...overrides,
   };
 };
+
+/**
+ * Test data factory for Logger with vi.fn() mocks.
+ * Returns fresh mock functions for each call to ensure test isolation.
+ *
+ * @returns Complete Logger with mock functions for testing
+ */
+export const createMockLogger = (): Logger => ({
+  error: vi.fn(),
+  warn: vi.fn(),
+  info: vi.fn(),
+  debug: vi.fn(),
+  trace: vi.fn(),
+  isEnabled: () => true,
+});

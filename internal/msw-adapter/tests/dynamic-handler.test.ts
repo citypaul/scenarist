@@ -1,17 +1,16 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { setupServer } from "msw/node";
 import { createDynamicHandler } from "../src/handlers/dynamic-handler.js";
 import type {
   ActiveScenario,
   ScenaristScenario,
   ErrorBehaviors,
-  Logger,
 } from "@scenarist/core";
 import {
   createResponseSelector,
   createInMemorySequenceTracker,
 } from "@scenarist/core";
-import { mockDefinition, mockScenario } from "./factories.js";
+import { createMockLogger, mockDefinition, mockScenario } from "./factories.js";
 
 describe("Dynamic Handler", () => {
   // Create ResponseSelector once for all tests
@@ -758,14 +757,7 @@ describe("Dynamic Handler", () => {
     it("should catch handler errors and return 500 with error details", async () => {
       // Simulate an unexpected error inside the handler by providing a responseSelector
       // that throws an unexpected error
-      const mockLogger: Logger = {
-        error: vi.fn(),
-        warn: vi.fn(),
-        info: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        isEnabled: () => true,
-      };
+      const mockLogger = createMockLogger();
 
       const brokenResponseSelector = {
         selectResponse: () => {
@@ -865,14 +857,7 @@ describe("Dynamic Handler", () => {
         },
       };
 
-      const mockLogger: Logger = {
-        error: vi.fn(),
-        warn: vi.fn(),
-        info: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        isEnabled: () => true,
-      };
+      const mockLogger = createMockLogger();
 
       const getTestId = () => "test-123";
       const getActiveScenario = () => undefined;
@@ -947,14 +932,7 @@ describe("Dynamic Handler", () => {
     });
 
     it("should log warning and continue to strictMode when onNoMockFound is 'warn' with logger", async () => {
-      const mockLogger: Logger = {
-        error: vi.fn(),
-        warn: vi.fn(),
-        info: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        isEnabled: () => true,
-      };
+      const mockLogger = createMockLogger();
 
       const getTestId = () => "test-123";
       const getActiveScenario = () => undefined;
@@ -1006,14 +984,7 @@ describe("Dynamic Handler", () => {
         sequenceTracker,
       });
 
-      const mockLogger: Logger = {
-        error: vi.fn(),
-        warn: vi.fn(),
-        info: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        isEnabled: () => true,
-      };
+      const mockLogger = createMockLogger();
 
       const scenarios = new Map<string, ScenaristScenario>([
         [
@@ -1203,14 +1174,7 @@ describe("Dynamic Handler", () => {
     });
 
     it("should log warning and use default scenario when test ID is missing and onMissingTestId is 'warn'", async () => {
-      const mockLogger: Logger = {
-        error: vi.fn(),
-        warn: vi.fn(),
-        info: vi.fn(),
-        debug: vi.fn(),
-        trace: vi.fn(),
-        isEnabled: () => true,
-      };
+      const mockLogger = createMockLogger();
 
       const scenarios = new Map<string, ScenaristScenario>([
         [
