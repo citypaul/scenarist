@@ -1,5 +1,21 @@
 # @scenarist/msw-adapter
 
+## 0.4.5
+
+### Patch Changes
+
+- [#396](https://github.com/citypaul/scenarist/pull/396) [`bee40ca`](https://github.com/citypaul/scenarist/commit/bee40caffca28478706a11f554ff255139a46b33) Thanks [@citypaul](https://github.com/citypaul)! - fix(security): redact stack traces from error logs in production
+
+  Stack traces are now only included in error logs when `NODE_ENV !== 'production'`.
+  This prevents potential information exposure through log aggregation systems,
+  as stack traces can reveal internal file paths, dependency versions, and
+  implementation details that could aid attackers.
+
+  Closes #391
+
+- Updated dependencies []:
+  - @scenarist/core@0.4.5
+
 ## 0.4.4
 
 ### Patch Changes
