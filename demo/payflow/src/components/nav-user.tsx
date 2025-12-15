@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import {
   BadgeCheck,
   Bell,
@@ -27,7 +26,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { useAuth, type User, type UserTier } from "@/contexts/auth-context";
+import { useAuth, type UserTier } from "@/contexts/auth-context";
 import { Badge } from "@/components/ui/badge";
 
 function getTierBadgeVariant(
@@ -56,17 +55,15 @@ function getInitials(name: string): string {
 }
 
 export function NavUser() {
-  const router = useRouter();
   const { isMobile } = useSidebar();
-  const { user, isAuthenticated, logout, isLoading } = useAuth();
+  const { user, isAuthenticated, login, logout, isLoading } = useAuth();
 
-  const handleLogout = async () => {
-    await logout();
-    router.push("/login");
+  const handleLogout = () => {
+    logout(); // Redirects to Auth0 logout
   };
 
   const handleLogin = () => {
-    router.push("/login");
+    login(); // Redirects to Auth0 login
   };
 
   if (!isAuthenticated || !user) {
@@ -103,7 +100,7 @@ export function NavUser() {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.avatar} alt={user.name} />
+                <AvatarImage src={user.picture} alt={user.name} />
                 <AvatarFallback className="rounded-lg">
                   {getInitials(user.name)}
                 </AvatarFallback>
@@ -124,7 +121,7 @@ export function NavUser() {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
+                  <AvatarImage src={user.picture} alt={user.name} />
                   <AvatarFallback className="rounded-lg">
                     {getInitials(user.name)}
                   </AvatarFallback>

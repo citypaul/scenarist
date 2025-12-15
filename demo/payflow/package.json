@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@auth0/nextjs-auth0": "4.14.0",
     "@hookform/resolvers": "5.2.2",
     "@radix-ui/react-avatar": "1.1.11",
     "@radix-ui/react-collapsible": "1.1.12",
@@ -20,6 +21,7 @@
     "@radix-ui/react-slot": "1.2.4",
     "@radix-ui/react-tabs": "1.1.13",
     "@radix-ui/react-tooltip": "1.2.8",
+    "@stripe/stripe-js": "8.6.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "lucide-react": "0.561.0",
@@ -30,6 +32,7 @@
     "react-hook-form": "7.68.0",
     "recharts": "2.15.4",
     "sonner": "2.0.7",
+    "stripe": "20.0.0",
     "tailwind-merge": "3.4.0",
     "zod": "^4.1.13"
   },
