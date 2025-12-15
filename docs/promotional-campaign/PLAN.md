@@ -399,6 +399,8 @@ Each video gets a tag marking the exact code state shown:
 5. After each video, create video-specific tag
 6. Push tags to remote (`git push --tags`)
 
+**Note:** Tag names and mappings above are initial proposals. They will evolve as we build the demo app and may be renamed, consolidated, or split based on what makes sense during implementation. The principle (tags marking reviewable states) is fixed; the specific names are flexible.
+
 **Blog Post References:**
 
 Blog posts should reference tags, not branches:

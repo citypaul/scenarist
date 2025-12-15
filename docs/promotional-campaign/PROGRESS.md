@@ -134,3 +134,5 @@ For standalone blog posts:
 - Blog posts link to video tags so readers can see the exact code
 - Tags are pushed to remote: `git push --tags`
 - To view code at any point: `git checkout video-03-case-study`
+
+**Tag names are flexible.** The specific names listed in this document are proposals that will evolve during implementation. What matters is the principle: each reviewable state gets a tag.
