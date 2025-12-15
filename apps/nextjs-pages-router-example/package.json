@@ -25,11 +25,15 @@
   "dependencies": {
     "@scenarist/nextjs-adapter": "workspace:*",
     "@types/express": "^5.0.5",
+    "clsx": "2.1.1",
     "express": "^5.1.0",
+    "framer-motion": "12.23.26",
+    "lucide-react": "0.561.0",
     "msw": "^2.12.3",
     "next": "^15.5.8",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
+    "tailwind-merge": "3.4.0",
     "zod": "^4.1.13"
   },
   "devDependencies": {
