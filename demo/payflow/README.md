@@ -100,14 +100,14 @@ All credentials are configured via environment variables. Copy `.env.example` to
 
 2. **Get your API keys**
    - In the Stripe Dashboard, go to **Developers > API keys**
-   - Copy the **Publishable key** (starts with `pk_test_`)
-   - Copy the **Secret key** (starts with `sk_test_`)
+   - Copy the **Publishable key** (the one safe to expose client-side)
+   - Copy the **Secret key** (keep this server-side only)
 
 3. **Add to `.env.local`**
 
    ```
-   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
-   STRIPE_SECRET_KEY=sk_test_...
+   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_publishable_key
+   STRIPE_SECRET_KEY=your_secret_key
    ```
 
 4. **(Optional) Set up webhooks for payment events**
