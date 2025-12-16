@@ -2,12 +2,13 @@
 
 Last updated: 2025-12-16
 
-## Current Status: Stage 2 Complete, Preparing Stage 2.5
+## Current Status: Stage 2.5 Complete, Ready for Review
 
 **Stage 1 (Foundation) is COMPLETE and merged to main (PR #398).**
 **Stage 2 (Working Flows) is COMPLETE and merged to main (PR #399).**
+**Stage 2.5 (Inventory Service) is COMPLETE and ready for review.**
 
-Now preparing Stage 2.5: Adding Inventory Service (json-server) to enable the killer demo scenarios.
+Stage 2.5 adds the Inventory Service - the key differentiator showing Scenarist works with ANY HTTP service.
 
 ---
 
@@ -100,8 +101,10 @@ This is critical for demonstrating Scenarist's value - "works with ANY HTTP serv
 
 - Auth0 client: `src/lib/auth0.ts`
 - Stripe client: `src/lib/stripe.ts`
+- Inventory client: `src/lib/inventory.ts`
 - Cart context: `src/contexts/cart-context.tsx`
 - Checkout API: `src/app/api/checkout/route.ts`
+- Inventory API: `src/app/api/inventory/route.ts`
 - Webhook handler: `src/app/api/webhooks/stripe/route.ts`
 - Orders API: `src/app/api/orders/route.ts`
 
@@ -137,17 +140,17 @@ This is critical for demonstrating Scenarist's value - "works with ANY HTTP serv
 - [x] Orders page with history
 - [x] **REVIEW CHECKPOINT** → PR #399 merged
 
-### Demo App Stage 2.5: Inventory Service 🔄 IN PROGRESS
+### Demo App Stage 2.5: Inventory Service ✅ COMPLETE
 
-- [ ] Add json-server as dev dependency
-- [ ] Create `db.json` with inventory data
-- [ ] Add npm script for inventory server
-- [ ] Products page fetches stock levels
-- [ ] Stock badges on products ("In Stock", "Low Stock: 3 left", "Out of Stock")
-- [ ] Checkout verifies stock before Stripe
-- [ ] Handle out-of-stock gracefully
-- [ ] Update README with json-server instructions
-- [ ] **REVIEW CHECKPOINT** → PR for Stage 2.5
+- [x] Add json-server as dev dependency
+- [x] Create `db.json` with inventory data
+- [x] Add npm script for inventory server
+- [x] Products page fetches stock levels
+- [x] Stock badges on products ("In Stock", "Low Stock: 3 left", "Out of Stock")
+- [x] Checkout verifies stock before Stripe
+- [x] Handle out-of-stock gracefully
+- [x] Update README with json-server instructions
+- [x] **REVIEW CHECKPOINT** → PR for Stage 2.5
 
 ### Demo App Stage 3: Scenarist Integration ⏳ PENDING
 
