@@ -21,11 +21,25 @@ cp .env.example .env.local
 
 # Fill in your credentials (see setup guides below)
 
-# Run the development server
+# Terminal 1: Start the Inventory Service
+npm run inventory
+
+# Terminal 2: Start the Next.js app
 pnpm dev
+
+# Terminal 3 (optional): Forward Stripe webhooks
+stripe listen --forward-to localhost:3000/api/webhooks/stripe
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to see the app.
+
+### Three Services Architecture
+
+PayFlow demonstrates a realistic app with three external services:
+
+1. **Next.js App** (localhost:3000) - The main application
+2. **Inventory Service** (localhost:3001) - Internal microservice for stock levels
+3. **Stripe** - Payment processing (webhooks via Stripe CLI)
 
 ## Environment Variables
 
@@ -42,6 +56,7 @@ All credentials are configured via environment variables. Copy `.env.example` to
 | `STRIPE_WEBHOOK_SECRET`              | Stripe webhook signing secret       | For webhooks |
 | `NEXT_PUBLIC_APP_URL`                | Application URL                     | Yes          |
 | `APP_BASE_URL`                       | Application URL for Auth0           | Yes          |
+| `INVENTORY_SERVICE_URL`              | Inventory API URL (default: 3001)   | No           |
 
 ## Service Setup Guides
 
@@ -141,31 +156,79 @@ All credentials are configured via environment variables. Copy `.env.example` to
 - Use live API keys
 - Real payments are processed
 
+### Inventory Service
+
+The Inventory Service represents an internal microservice that your team consumes but doesn't own—the kind of service that has no "test mode" or special tooling for testing.
+
+For this demo, we simulate the Inventory Service using [json-server](https://github.com/typicode/json-server).
+
+**Starting the service:**
+
+```bash
+npm run inventory
+```
+
+This starts json-server on port 3001, serving data from `db.json`.
+
+**Endpoints:**
+
+| Endpoint             | Description              |
+| -------------------- | ------------------------ |
+| `GET /inventory`     | List all inventory items |
+| `GET /inventory/:id` | Get specific item by ID  |
+
+**Sample response:**
+
+```json
+{
+  "id": "1",
+  "productId": "1",
+  "quantity": 50,
+  "reserved": 0
+}
+```
+
+**Why this matters for testing:**
+
+Unlike Stripe (which has test cards) or Auth0 (which you can configure), internal microservices often have:
+
+- No test mode
+- Shared state across tests
+- No way to simulate edge cases (out of stock, errors, etc.)
+
+This is exactly what [Scenarist](https://github.com/citypaul/scenarist) solves.
+
 ## Project Structure
 
 ```
-src/
-├── app/
-│   ├── (dashboard)/       # Dashboard routes (sidebar layout)
-│   │   ├── page.tsx       # Products page
-│   │   ├── cart/          # Shopping cart
-│   │   ├── checkout/      # Checkout page
-│   │   └── orders/        # Order history
-│   ├── login/             # Login page
-│   └── api/
-│       └── checkout/      # Checkout API
-├── components/
-│   ├── ui/                # shadcn/ui components
-│   ├── app-sidebar.tsx    # Main navigation sidebar
-│   └── nav-user.tsx       # User menu component
-├── contexts/
-│   └── auth-context.tsx   # Auth0 integration context
-├── hooks/
-│   └── use-mobile.ts      # Mobile detection hook
-└── lib/
-    ├── auth0.ts           # Auth0 client configuration
-    ├── stripe.ts          # Stripe client configuration
-    └── utils.ts           # Utility functions
+├── db.json                 # Inventory data (json-server)
+└── src/
+    ├── app/
+    │   ├── (dashboard)/       # Dashboard routes (sidebar layout)
+    │   │   ├── page.tsx       # Products page (with stock badges)
+    │   │   ├── cart/          # Shopping cart
+    │   │   ├── checkout/      # Checkout page (with stock verification)
+    │   │   └── orders/        # Order history
+    │   ├── login/             # Login page
+    │   └── api/
+    │       ├── checkout/      # Checkout API (verifies stock)
+    │       ├── inventory/     # Inventory proxy API
+    │       ├── orders/        # Orders API
+    │       └── webhooks/      # Stripe webhooks
+    ├── components/
+    │   ├── ui/                # shadcn/ui components
+    │   ├── app-sidebar.tsx    # Main navigation sidebar
+    │   └── nav-user.tsx       # User menu component
+    ├── contexts/
+    │   ├── auth-context.tsx   # Auth0 integration context
+    │   └── cart-context.tsx   # Shopping cart state
+    ├── hooks/
+    │   └── use-mobile.ts      # Mobile detection hook
+    └── lib/
+        ├── auth0.ts           # Auth0 client configuration
+        ├── inventory.ts       # Inventory service client
+        ├── stripe.ts          # Stripe client configuration
+        └── utils.ts           # Utility functions
 ```
 
 ## Tech Stack

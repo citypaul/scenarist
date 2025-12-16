@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStripeServer } from "@/lib/stripe";
 import { auth0 } from "@/lib/auth0";
+import { checkStockAvailable, getProductStock } from "@/lib/inventory";
 
 // Cart item from the request
 interface CartItem {
@@ -27,6 +28,37 @@ export async function POST(request: Request) {
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: "No items in cart" }, { status: 400 });
+    }
+
+    // Verify stock availability for all items
+    const stockChecks = await Promise.all(
+      items.map(async (item) => {
+        const hasStock = await checkStockAvailable(item.id, item.quantity);
+        if (!hasStock) {
+          const stock = await getProductStock(item.id);
+          return {
+            id: item.id,
+            name: item.name,
+            available: stock?.available ?? 0,
+            requested: item.quantity,
+          };
+        }
+        return null;
+      }),
+    );
+
+    const outOfStockItems = stockChecks.filter(
+      (check): check is NonNullable<typeof check> => check !== null,
+    );
+
+    if (outOfStockItems.length > 0) {
+      return NextResponse.json(
+        {
+          error: "Some items are out of stock",
+          outOfStockItems,
+        },
+        { status: 409 },
+      );
     }
 
     // Get the user's session (optional - allow guest checkout)

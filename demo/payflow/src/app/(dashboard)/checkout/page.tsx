@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -29,22 +30,33 @@ import {
   Loader2,
   AlertCircle,
   ShoppingCart,
+  XCircle,
 } from "lucide-react";
 import { useCart } from "@/contexts/cart-context";
 
+type OutOfStockItem = {
+  id: string;
+  name: string;
+  available: number;
+  requested: number;
+};
+
 export default function CheckoutPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const canceled = searchParams.get("canceled");
   const { items, subtotal, discount, discountAmount, tax, total, clearCart } =
     useCart();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [outOfStockItems, setOutOfStockItems] = useState<OutOfStockItem[]>([]);
 
   const handleCheckout = async () => {
     if (items.length === 0) return;
 
     setIsLoading(true);
     setError(null);
+    setOutOfStockItems([]);
 
     try {
       const response = await fetch("/api/checkout", {
@@ -65,6 +77,11 @@ export default function CheckoutPage() {
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 409 && data.outOfStockItems) {
+          setOutOfStockItems(data.outOfStockItems);
+          setError("Some items are no longer available");
+          return;
+        }
         throw new Error(data.error || "Failed to create checkout session");
       }
 
@@ -81,6 +98,10 @@ export default function CheckoutPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleBackToProducts = () => {
+    router.push("/");
   };
 
   if (items.length === 0 && !canceled) {
@@ -165,11 +186,41 @@ export default function CheckoutPage() {
           </Alert>
         )}
 
-        {error && (
+        {error && outOfStockItems.length === 0 && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {outOfStockItems.length > 0 && (
+          <Alert variant="destructive">
+            <XCircle className="h-4 w-4" />
+            <AlertTitle>Items No Longer Available</AlertTitle>
+            <AlertDescription>
+              <p className="mb-2">
+                Sorry, the following items are no longer in stock:
+              </p>
+              <ul className="list-disc list-inside space-y-1">
+                {outOfStockItems.map((item) => (
+                  <li key={item.id}>
+                    <strong>{item.name}</strong>
+                    {item.available > 0
+                      ? ` - Only ${item.available} available (you requested ${item.requested})`
+                      : " - Out of stock"}
+                  </li>
+                ))}
+              </ul>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3"
+                onClick={handleBackToProducts}
+              >
+                Update Your Cart
+              </Button>
+            </AlertDescription>
           </Alert>
         )}
 
