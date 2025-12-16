@@ -1,49 +1,98 @@
 import { NextResponse } from "next/server";
-import { getStripeServer, PRICE_IDS } from "@/lib/stripe";
+import { getStripeServer } from "@/lib/stripe";
 import { auth0 } from "@/lib/auth0";
+
+// Cart item from the request
+interface CartItem {
+  id: string;
+  name: string;
+  basePrice: number;
+  quantity: number;
+}
+
+// Tier discount percentages
+const TIER_DISCOUNTS: Record<string, number> = {
+  free: 0,
+  basic: 10,
+  pro: 20,
+  enterprise: 30,
+};
 
 export async function POST(request: Request) {
   try {
-    // Get the user's session
-    const session = await auth0.getSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
-    const { priceId, productId } = body;
+    const { items, discount = 0 } = body as {
+      items: CartItem[];
+      discount: number;
+    };
 
-    // Validate the price ID
-    const validPriceIds = Object.values(PRICE_IDS);
-    if (!validPriceIds.includes(priceId)) {
-      return NextResponse.json({ error: "Invalid price ID" }, { status: 400 });
+    if (!items || items.length === 0) {
+      return NextResponse.json({ error: "No items in cart" }, { status: 400 });
     }
 
-    // Get user tier from session for potential discounts
-    const userTier = session.user.app_metadata?.tier || "free";
+    // Get the user's session (optional - allow guest checkout)
+    const session = await auth0.getSession();
+    const userEmail = session?.user?.email;
+    const userTier = (session?.user?.app_metadata?.tier as string) || "free";
+    const tierDiscount = TIER_DISCOUNTS[userTier] || 0;
+
+    // Calculate totals
+    const subtotal = items.reduce(
+      (sum, item) => sum + item.basePrice * item.quantity,
+      0,
+    );
+    const discountAmount = subtotal * (tierDiscount / 100);
+    const afterDiscount = subtotal - discountAmount;
+    const tax = afterDiscount * 0.1; // 10% tax
+
+    // Calculate line items with discount applied
+    const lineItems = items.map((item) => {
+      const discountedPrice = item.basePrice * (1 - tierDiscount / 100);
+      const unitAmount = Math.round(discountedPrice * 100); // Stripe uses cents
+
+      return {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: item.name,
+            description: `PayFlow subscription plan`,
+          },
+          unit_amount: unitAmount,
+        },
+        quantity: item.quantity,
+      };
+    });
+
+    // Prepare order items for metadata (simplified for storage)
+    const orderItems = items.map((item) => ({
+      name: item.name,
+      quantity: item.quantity,
+      price: item.basePrice,
+    }));
 
     // Create Stripe checkout session
     const stripe = getStripeServer();
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      mode: "subscription",
+      line_items: lineItems,
+      mode: "payment",
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/orders?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout?canceled=true`,
-      customer_email: session.user.email,
+      ...(userEmail && { customer_email: userEmail }),
       metadata: {
-        userId: session.user.sub,
+        userId: session?.user?.sub || "guest",
         userTier,
-        productId,
+        items: JSON.stringify(orderItems),
+        subtotal: subtotal.toFixed(2),
+        discount: discountAmount.toFixed(2),
+        tax: tax.toFixed(2),
       },
     });
 
-    return NextResponse.json({ sessionId: checkoutSession.id });
+    return NextResponse.json({
+      sessionId: checkoutSession.id,
+      url: checkoutSession.url,
+    });
   } catch (error) {
     console.error("Checkout error:", error);
     return NextResponse.json(

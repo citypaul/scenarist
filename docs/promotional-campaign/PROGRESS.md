@@ -2,11 +2,11 @@
 
 Last updated: 2025-12-16
 
-## Current Status: Stage 2 In Progress
+## Current Status: Stage 2 Nearly Complete
 
 **Stage 1 (Foundation) is COMPLETE and merged to main (PR #398).**
 
-Now working on Stage 2: Making the demo app functional end-to-end.
+Stage 2 is nearly complete - all core functionality working, just SendGrid email integration remaining.
 
 ---
 
@@ -22,22 +22,23 @@ Now working on Stage 2: Making the demo app functional end-to-end.
 - ✅ Environment variables documented (`.env.example`, README)
 - ✅ CI updated to allow sharp/lucide-react licenses
 
-### What's In Progress (Stage 2)
+### What's Done (Stage 2)
 
 **Branch:** `feature/payflow-stage-2`
 
-**User has configured:** Auth0 and Stripe environment variables in `.env.local` (no webhooks yet)
+**Completed tasks:**
 
-**Next tasks:**
+1. ✅ **Auth0 Login/Logout Flow** - Working via proxy.ts middleware (routes: `/auth/login`, `/auth/logout`, `/auth/callback`)
+2. ✅ **User Tier Display** - Shows tier badge in sidebar from Auth0 user metadata
+3. ✅ **Tier-Based Pricing** - Discounts applied (free: 0%, basic: 10%, pro: 20%, enterprise: 30%)
+4. ✅ **Functional Cart** - Cart context with add/remove/quantity controls, state persists across navigation
+5. ✅ **Stripe Checkout** - Ad-hoc pricing (price_data), redirects to Stripe, handles success/cancel
+6. ✅ **Stripe Webhooks** - Handler at `/api/webhooks/stripe/route.ts`, creates orders on `checkout.session.completed`
+7. ✅ **Orders Page** - Fetches orders from API, displays order history with status badges
 
-1. **Auth0 Login/Logout Flow** - Connect login button to Auth0, display user in sidebar
-2. **User Tier Display** - Show tier badge from Auth0 user metadata
-3. **Tier-Based Pricing** - Apply discounts (free: 0%, basic: 10%, pro: 20%, enterprise: 30%)
-4. **Functional Cart** - Add to cart, persist state, calculate totals
-5. **Stripe Checkout** - Redirect to Stripe hosted checkout, handle success/cancel
-6. **Stripe Webhooks** - Handle `checkout.session.completed` (needs Stripe CLI for local dev)
-7. **SendGrid Emails** - Order confirmation emails (add package back, lazy init)
-8. **Orders Page** - Display order history
+**Remaining task:**
+
+8. ⏳ **SendGrid Emails** - Order confirmation emails (optional for demo)
 
 ### Key Technical Details
 
@@ -47,17 +48,29 @@ Now working on Stage 2: Making the demo app functional end-to-end.
 - Auth endpoints: `/auth/login`, `/auth/logout`, `/auth/callback`, `/auth/profile`
 - Session access: `await auth0.getSession()`
 
-**Stripe Lazy Initialization:**
+**Stripe Integration:**
 
 - Server client uses `getStripeServer()` function to avoid build-time errors
 - Client uses `getStripe()` for Stripe.js
+- Uses ad-hoc pricing (`price_data`) instead of predefined Stripe price IDs
+- Webhook handler verifies signatures and stores orders
+
+**Cart State:**
+
+- Uses React Context (`CartProvider`) for cart state management
+- Navigation uses Next.js `<Link>` components to preserve client-side state
+- Calculates tier-based discounts automatically
 
 **File Locations:**
 
 - Auth0 client: `src/lib/auth0.ts`
 - Stripe client: `src/lib/stripe.ts`
 - Auth context: `src/contexts/auth-context.tsx`
+- Cart context: `src/contexts/cart-context.tsx`
 - Checkout API: `src/app/api/checkout/route.ts`
+- Webhook handler: `src/app/api/webhooks/stripe/route.ts`
+- Orders API: `src/app/api/orders/route.ts`
+- Orders store: `src/lib/orders.ts`
 - Middleware: `src/proxy.ts`
 
 ### PR Strategy
@@ -102,16 +115,16 @@ For standalone blog posts:
 - [x] README with setup instructions
 - [x] **REVIEW CHECKPOINT** → PR #398 merged
 
-### Demo App Stage 2: Working Flows 🔄 IN PROGRESS
+### Demo App Stage 2: Working Flows 🔄 NEARLY COMPLETE
 
-- [ ] Auth0 login/logout working
-- [ ] User tier displayed in sidebar
-- [ ] Tier-based pricing discounts applied
-- [ ] Functional cart (add items, persist state)
-- [ ] Stripe checkout flow (redirect to Stripe, handle callbacks)
-- [ ] Stripe webhook handling (`checkout.session.completed`)
-- [ ] SendGrid email integration (order confirmations)
-- [ ] Orders page with history
+- [x] Auth0 login/logout working
+- [x] User tier displayed in sidebar
+- [x] Tier-based pricing discounts applied
+- [x] Functional cart (add items, persist state)
+- [x] Stripe checkout flow (redirect to Stripe, handle callbacks)
+- [x] Stripe webhook handling (`checkout.session.completed`)
+- [ ] SendGrid email integration (order confirmations) ← Optional
+- [x] Orders page with history
 - [ ] **REVIEW CHECKPOINT** → Tag: `stage-2-features`
 
 ### Phase 1: Foundation Videos
