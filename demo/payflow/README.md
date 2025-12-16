@@ -111,15 +111,21 @@ All credentials are configured via environment variables. Copy `.env.example` to
    ```
 
 4. **(Optional) Set up webhooks for payment events**
-   - Go to **Developers > Webhooks**
-   - Click **Add endpoint**
+   - Go to [https://dashboard.stripe.com/webhooks](https://dashboard.stripe.com/webhooks)
+   - Click **Add endpoint** (or **Add destination** in newer UI)
    - Enter your webhook URL: `https://your-domain.com/api/webhooks/stripe`
    - Select events to listen for (e.g., `checkout.session.completed`)
-   - Copy the **Signing secret** (starts with `whsec_`)
+   - After creating, click on the endpoint and reveal the **Signing secret**
    - Add to `.env.local`:
      ```
-     STRIPE_WEBHOOK_SECRET=whsec_...
+     STRIPE_WEBHOOK_SECRET=your_signing_secret
      ```
+
+   **For local development**, use Stripe CLI instead:
+
+   ```bash
+   stripe listen --forward-to localhost:3000/api/webhooks/stripe
+   ```
 
 ### Test Mode vs Live Mode
 
