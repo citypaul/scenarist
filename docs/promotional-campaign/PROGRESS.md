@@ -40,6 +40,21 @@ Stage 2 is nearly complete - all core functionality working, just SendGrid email
 
 8. ⏳ **SendGrid Emails** - Order confirmation emails (optional for demo)
 
+### How Stage 2 Enables the Videos
+
+Stage 2 builds the realistic app that Stage 3 will add Scenarist to. Each feature directly enables specific promotional content:
+
+| Feature            | Enables Video                                               | Blog Post                                    |
+| ------------------ | ----------------------------------------------------------- | -------------------------------------------- |
+| Auth0 + User Tiers | **Video 3**: Case Study (premium user bug)                  | "How Integrated Testing Catches Bugs"        |
+| Tier-Based Pricing | **Video 6**: Request Matching                               | "Content-Based Routing for Test Scenarios"   |
+| Functional Cart    | **Video 4**: Server-Side State, **Video 8**: Stateful Mocks | "Capture, Store, and Inject State"           |
+| Stripe Checkout    | **Video 7**: Response Sequences (payment polling)           | "Testing Polling, Retries, State Machines"   |
+| Webhooks + Orders  | **Video 10**: Feature Composition                           | "Building Complex Scenarios from Primitives" |
+| Full App           | **Video 1**: The Problem, **Video 2**: Demo Switching       | Foundation videos                            |
+
+**The Key Insight:** Without a working app (login, cart, checkout, orders), there's nothing meaningful to test. Stage 2 creates the "real app" that demonstrates why Scenarist matters.
+
 ### Key Technical Details
 
 **Auth0 SDK v4 Pattern (Next.js 16):**
@@ -125,7 +140,22 @@ For standalone blog posts:
 - [x] Stripe webhook handling (`checkout.session.completed`)
 - [ ] SendGrid email integration (order confirmations) ← Optional
 - [x] Orders page with history
-- [ ] **REVIEW CHECKPOINT** → Tag: `stage-2-features`
+- [ ] **REVIEW CHECKPOINT** → PR #399 ready for review
+
+### Demo App Stage 3: Scenarist Integration ⏳ PENDING
+
+This is where Scenarist actually gets added to demonstrate the promotional value:
+
+- [ ] Install `@scenarist/nextjs-adapter` and `@scenarist/playwright-helpers`
+- [ ] Define scenarios for all test cases:
+  - `default` - Happy path
+  - `premiumUser` / `enterpriseUser` - Tier-based pricing
+  - `paymentDeclined` / `payment3DSRequired` - Payment errors
+  - `paymentPolling` - Status progression sequence
+  - `authError` - Authentication failure
+- [ ] Create Playwright test suite using Scenarist fixtures
+- [ ] Verify production build (tree-shaking - no test code in bundle)
+- [ ] **REVIEW CHECKPOINT** → Tag: `stage-3-complete`
 
 ### Phase 1: Foundation Videos
 
