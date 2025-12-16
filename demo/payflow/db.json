@@ -1,0 +1,22 @@
+{
+  "inventory": [
+    {
+      "id": "1",
+      "productId": "1",
+      "quantity": 50,
+      "reserved": 0
+    },
+    {
+      "id": "2",
+      "productId": "2",
+      "quantity": 15,
+      "reserved": 0
+    },
+    {
+      "id": "3",
+      "productId": "3",
+      "quantity": 3,
+      "reserved": 0
+    }
+  ]
+}
