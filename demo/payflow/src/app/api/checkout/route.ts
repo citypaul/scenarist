@@ -21,9 +21,8 @@ const TIER_DISCOUNTS: Record<string, number> = {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { items, discount = 0 } = body as {
+    const { items } = body as {
       items: CartItem[];
-      discount: number;
     };
 
     if (!items || items.length === 0) {

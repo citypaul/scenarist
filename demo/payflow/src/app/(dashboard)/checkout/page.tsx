@@ -59,7 +59,6 @@ export default function CheckoutPage() {
             basePrice: item.basePrice,
             quantity: item.quantity,
           })),
-          discount,
         }),
       });
 
