@@ -594,22 +594,23 @@ The demo app is built incrementally in stages, with PRs for review and git tags 
 
 Each video gets a tag marking the exact code state shown:
 
-| Video | Tag                           | Description                                      |
-| ----- | ----------------------------- | ------------------------------------------------ |
-| 1     | `video-01-testing-gap`        | Basic app showing the problem (before Scenarist) |
-| 2     | `video-02-scenario-switching` | First Scenarist integration, scenario switching  |
-| 3     | `video-03-case-study`         | Auth flow with intentional bug, then fix         |
-| 4     | `video-04-server-state`       | Session and order-dependent flows                |
-| 5     | `video-05-behavior-testing`   | Refactoring demo (tests don't break)             |
-| 6     | `video-06-request-matching`   | User tier matching implementation                |
-| 7     | `video-07-sequences`          | Payment polling with sequences                   |
-| 8     | `video-08-stateful-mocks`     | Cart state capture and injection                 |
-| 9     | `video-09-parallel-testing`   | Multiple tests running in parallel               |
-| 10    | `video-10-composition`        | All features working together                    |
-| 11    | `video-11-production-safety`  | Production build verification                    |
-| 12    | `video-12-playwright`         | Full Playwright test suite                       |
-| 13    | `video-13-tech-leads`         | (uses video-12 code)                             |
-| 14    | `video-14-comparison`         | (uses video-12 code)                             |
+| Video | Tag                           | Description                                     |
+| ----- | ----------------------------- | ----------------------------------------------- |
+| 1     | `video-01-testing-gap`        | Conceptual - the problem (no code changes)      |
+| 2     | `video-02-meet-payflow`       | Full app demo with real Auth0/Stripe (no mocks) |
+| 3     | `video-03-scenario-switching` | First Scenarist integration, scenario switching |
+| 4     | `video-04-case-study`         | Auth flow with intentional bug, then fix        |
+| 5     | `video-05-server-state`       | Session and order-dependent flows               |
+| 6     | `video-06-behavior-testing`   | Refactoring demo (tests don't break)            |
+| 7     | `video-07-request-matching`   | User tier matching implementation               |
+| 8     | `video-08-sequences`          | Payment polling with sequences                  |
+| 9     | `video-09-stateful-mocks`     | Cart state capture and injection                |
+| 10    | `video-10-parallel-testing`   | Multiple tests running in parallel              |
+| 11    | `video-11-composition`        | All features working together                   |
+| 12    | `video-12-production-safety`  | Production build verification                   |
+| 13    | `video-13-playwright`         | Full Playwright test suite                      |
+| 14    | `video-14-tech-leads`         | (uses video-13 code)                            |
+| 15    | `video-15-comparison`         | (uses video-13 code)                            |
 
 **Tagging Workflow:**
 
@@ -635,29 +636,50 @@ You can see the complete code at this point:
 
 ## Video Series Structure
 
-### Phase 1: The Problem & Proof (Videos 1-3)
+### Phase 1: The Problem & The App (Videos 1-2)
 
-Establish the problem and PROVE Scenarist catches real bugs.
+Establish the problem and show the real app we'll be testing.
 
 1. **The Testing Gap** (5 min) - The problem everyone has
-2. **One Server, Unlimited Scenarios** (5 min) - How Scenarist works + architecture
-3. **Case Study: The Bug Your Tests Didn't Catch** (8-10 min) - KEY VIDEO: Real example of isolated tests passing but Scenarist catching the bug
+2. **Meet PayFlow** (5-7 min) - NEW: Full demo of the app working with real Auth0/Stripe (no mocks, no Scenarist yet)
 
-### Phase 2: Deep Dives (Videos 4-5)
+### Phase 2: Introducing Scenarist (Videos 3-4)
 
-Understand the complexity and philosophy. 4. **Server-Side State** (5 min) - The complexity nobody mentions 5. **Test Behavior, Not Implementation** (5 min) - Philosophy
+Show how Scenarist works and PROVE it catches real bugs.
 
-### Phase 3: Core Features (Videos 6-9)
+3. **One Server, Unlimited Scenarios** (5 min) - How Scenarist works + architecture
+4. **Case Study: The Bug Your Tests Didn't Catch** (8-10 min) - KEY VIDEO: Real example of isolated tests passing but Scenarist catching the bug
 
-Deep dive into each key feature with practical demos. 6. **Request Matching** (5 min) - Content-based responses 7. **Response Sequences** (5 min) - Polling and state machines 8. **Stateful Mocks** (5 min) - Capture and inject state 9. **Parallel Testing** (5 min) - Test isolation
+### Phase 3: Deep Dives (Videos 5-6)
 
-### Phase 4: Advanced Patterns (Videos 10-12)
+Understand the complexity and philosophy.
 
-Show powerful combinations and real-world patterns. 10. **Feature Composition** (5 min) - All features together 11. **Production Safety** (5 min) - Zero bundle size 12. **Playwright Integration** (5 min) - Type-safe fixtures
+5. **Server-Side State** (5 min) - The complexity nobody mentions
+6. **Test Behavior, Not Implementation** (5 min) - Philosophy
 
-### Phase 5: Decision Maker Content (Videos 13-14)
+### Phase 4: Core Features (Videos 7-10)
 
-Dedicated content for tech leads and architects. 13. **For Tech Leads** (5 min) - Team benefits and ROI 14. **Tool Comparison** (5 min) - Scenarist vs alternatives
+Deep dive into each key feature with practical demos.
+
+7. **Request Matching** (5 min) - Content-based responses
+8. **Response Sequences** (5 min) - Polling and state machines
+9. **Stateful Mocks** (5 min) - Capture and inject state
+10. **Parallel Testing** (5 min) - Test isolation
+
+### Phase 5: Advanced Patterns (Videos 11-13)
+
+Show powerful combinations and real-world patterns.
+
+11. **Feature Composition** (5 min) - All features together
+12. **Production Safety** (5 min) - Zero bundle size
+13. **Playwright Integration** (5 min) - Type-safe fixtures
+
+### Phase 6: Decision Maker Content (Videos 14-15)
+
+Dedicated content for tech leads and architects.
+
+14. **For Tech Leads** (5 min) - Team benefits and ROI
+15. **Tool Comparison** (5 min) - Scenarist vs alternatives
 
 ---
 
@@ -703,7 +725,71 @@ Dedicated content for tech leads and architects. 13. **For Tech Leads** (5 min) 
 
 ---
 
-### Video 2: "One Server, Unlimited Scenarios" (5 min)
+### Video 2: "Meet PayFlow: A Real Payment App" (5-7 min)
+
+**Pain First:** Before we solve the problem, let's see what we're working with.
+
+**Purpose:** Show the complete, working app with real integrations. No mocks, no Scenarist yet. Establish the baseline that makes the testing problem concrete.
+
+**Structure:**
+
+- 0:00-0:30: Hook - "Let me show you a real app with real integrations"
+- 0:30-1:30: App Overview
+  - Walk through the UI: Products page, Cart, Checkout, Orders
+  - "This is PayFlow - a payment dashboard built with Next.js"
+  - Show the tech stack: Next.js App Router, shadcn/ui, TypeScript
+- 1:30-3:00: The Real Integrations (This is Key!)
+  - "This isn't a toy demo. These are real SDKs making real HTTP calls"
+  - Show `@auth0/nextjs-auth0` - real Auth0 integration
+  - Show `stripe` SDK - real Stripe integration
+  - "In production, these hit Auth0 and Stripe servers"
+- 3:00-5:00: Live Demo - The Happy Path
+  - Log in with Auth0 (show the real Auth0 Universal Login)
+  - Show user tier in sidebar ("I'm a premium user")
+  - Browse products, see tier-based pricing (20% discount visible)
+  - Add items to cart
+  - Proceed to checkout
+  - Complete Stripe payment (test card: 4242 4242 4242 4242)
+  - Show order confirmation
+  - Navigate to orders page, see the completed order
+- 5:00-6:00: The Testing Challenge
+  - "This works great. But how do I test it?"
+  - "What if I need to test a declined payment?"
+  - "What if I need to test what happens when Auth0 returns a free user?"
+  - "What if I need to test 50 different scenarios?"
+  - "I can't just tell Stripe to decline the card for my test"
+- 6:00-6:30: Tease - "This is where Scenarist comes in"
+
+**What You Actually Do On Camera:**
+
+1. Open browser to localhost:3000
+2. Walk through the pages (don't rush - let viewers see the UI)
+3. Click "Sign In" - Auth0 Universal Login appears
+4. Log in with your test account (premium tier)
+5. Point out the tier badge in sidebar
+6. Add a product to cart
+7. Go to cart, show the discount applied
+8. Click checkout, fill in Stripe test card
+9. Complete payment, show success
+10. Navigate to Orders, show the order
+
+**Key Visual Moments:**
+
+- Auth0 login popup (proves it's real)
+- Stripe checkout form (proves it's real)
+- Order appearing in the database
+
+**Blog Post Companion:** "Building PayFlow: A Real-World Payment App for Testing Demonstrations"
+
+**Key Phrases to Include:**
+
+- "These aren't mock implementations - this is the real Auth0 SDK, the real Stripe SDK"
+- "In production, these calls go to Auth0 and Stripe servers"
+- "The question isn't whether the app works - it's how do we test it?"
+
+---
+
+### Video 3: "One Server, Unlimited Scenarios" (5 min)
 
 **Pain First:** Restarting your server for each test scenario is killing your CI.
 
@@ -740,7 +826,7 @@ Dedicated content for tech leads and architects. 13. **For Tech Leads** (5 min) 
 
 ---
 
-### Video 3: "Case Study: The Bug Your Tests Didn't Catch" (8-10 min)
+### Video 4: "Case Study: The Bug Your Tests Didn't Catch" (8-10 min)
 
 **Pain First:** All your tests pass. You ship to production. Users report a bug. Sound familiar?
 
@@ -821,7 +907,7 @@ Dedicated content for tech leads and architects. 13. **For Tech Leads** (5 min) 
 
 ---
 
-### Video 4: "Server-Side State: The Complexity Nobody Mentions" (5 min)
+### Video 5: "Server-Side State: The Complexity Nobody Mentions" (5 min)
 
 **Pain First:** Your server-side code has state that spans multiple requests - and it's almost impossible to test.
 
@@ -856,7 +942,7 @@ Dedicated content for tech leads and architects. 13. **For Tech Leads** (5 min) 
 
 ---
 
-### Video 5: "Test Behavior, Not Implementation" (5 min)
+### Video 6: "Test Behavior, Not Implementation" (5 min)
 
 **Pain First:** Your tests break every time you refactor.
 
@@ -877,7 +963,7 @@ Dedicated content for tech leads and architects. 13. **For Tech Leads** (5 min) 
 
 ---
 
-### Video 6: "Request Matching: One Endpoint, Infinite Responses" (5 min)
+### Video 7: "Request Matching: One Endpoint, Infinite Responses" (5 min)
 
 **Pain First:** You have 6 user tiers. You don't want 6 scenarios.
 
@@ -898,7 +984,7 @@ Dedicated content for tech leads and architects. 13. **For Tech Leads** (5 min) 
 
 ---
 
-### Video 7: "Response Sequences: Test Polling Without Pain" (5 min)
+### Video 8: "Response Sequences: Test Polling Without Pain" (5 min)
 
 **Pain First:** Testing async workflows is a nightmare of setTimeout and flaky tests.
 
@@ -919,7 +1005,7 @@ Dedicated content for tech leads and architects. 13. **For Tech Leads** (5 min) 
 
 ---
 
-### Video 8: "Stateful Mocks: State That Flows Through Your Tests" (5 min)
+### Video 9: "Stateful Mocks: State That Flows Through Your Tests" (5 min)
 
 **Pain First:** Your shopping cart test needs state to persist across requests.
 
@@ -940,7 +1026,7 @@ Dedicated content for tech leads and architects. 13. **For Tech Leads** (5 min) 
 
 ---
 
-### Video 9: "Parallel Testing: 100 Tests, Zero Conflicts" (5 min)
+### Video 10: "Parallel Testing: 100 Tests, Zero Conflicts" (5 min)
 
 **Pain First:** Your CI runs tests sequentially because parallel execution breaks everything.
 
@@ -961,7 +1047,7 @@ Dedicated content for tech leads and architects. 13. **For Tech Leads** (5 min) 
 
 ---
 
-### Video 10: "Feature Composition: All Features Together" (5 min)
+### Video 11: "Feature Composition: All Features Together" (5 min)
 
 **Pain First:** Real workflows use matching + sequences + state together.
 
@@ -983,7 +1069,7 @@ Dedicated content for tech leads and architects. 13. **For Tech Leads** (5 min) 
 
 ---
 
-### Video 11: "Production Safety: Zero Bundle Size Guaranteed" (5 min)
+### Video 12: "Production Safety: Zero Bundle Size Guaranteed" (5 min)
 
 **Pain First:** "Will this ship to production?" is a legitimate concern.
 
@@ -1004,7 +1090,7 @@ Dedicated content for tech leads and architects. 13. **For Tech Leads** (5 min) 
 
 ---
 
-### Video 12: "Playwright Integration: Type-Safe Scenario Switching" (5 min)
+### Video 13: "Playwright Integration: Type-Safe Scenario Switching" (5 min)
 
 **Pain First:** Managing test IDs and scenario switching manually is tedious.
 
@@ -1025,7 +1111,7 @@ Dedicated content for tech leads and architects. 13. **For Tech Leads** (5 min) 
 
 ---
 
-### Video 13: "For Tech Leads: Why Scenarist for Your Team" (5 min)
+### Video 14: "For Tech Leads: Why Scenarist for Your Team" (5 min)
 
 **Decision Maker Focus**
 
@@ -1050,7 +1136,7 @@ Dedicated content for tech leads and architects. 13. **For Tech Leads** (5 min) 
 
 ---
 
-### Video 14: "Scenarist vs. The Alternatives" (5 min)
+### Video 15: "Scenarist vs. The Alternatives" (5 min)
 
 **Decision Maker Focus**
 

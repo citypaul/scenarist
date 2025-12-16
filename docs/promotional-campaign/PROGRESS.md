@@ -46,14 +46,20 @@ Stage 2 builds the realistic app that Stage 3 will add Scenarist to. Each featur
 
 | Feature            | Enables Video                                               | Blog Post                                    |
 | ------------------ | ----------------------------------------------------------- | -------------------------------------------- |
-| Auth0 + User Tiers | **Video 3**: Case Study (premium user bug)                  | "How Integrated Testing Catches Bugs"        |
-| Tier-Based Pricing | **Video 6**: Request Matching                               | "Content-Based Routing for Test Scenarios"   |
-| Functional Cart    | **Video 4**: Server-Side State, **Video 8**: Stateful Mocks | "Capture, Store, and Inject State"           |
-| Stripe Checkout    | **Video 7**: Response Sequences (payment polling)           | "Testing Polling, Retries, State Machines"   |
-| Webhooks + Orders  | **Video 10**: Feature Composition                           | "Building Complex Scenarios from Primitives" |
-| Full App           | **Video 1**: The Problem, **Video 2**: Demo Switching       | Foundation videos                            |
+| Full App           | **Video 2**: Meet PayFlow (full demo, no mocks)             | "Building PayFlow: A Real-World Payment App" |
+| Auth0 + User Tiers | **Video 4**: Case Study (premium user bug)                  | "How Integrated Testing Catches Bugs"        |
+| Tier-Based Pricing | **Video 7**: Request Matching                               | "Content-Based Routing for Test Scenarios"   |
+| Functional Cart    | **Video 5**: Server-Side State, **Video 9**: Stateful Mocks | "Capture, Store, and Inject State"           |
+| Stripe Checkout    | **Video 8**: Response Sequences (payment polling)           | "Testing Polling, Retries, State Machines"   |
+| Webhooks + Orders  | **Video 11**: Feature Composition                           | "Building Complex Scenarios from Primitives" |
 
 **The Key Insight:** Without a working app (login, cart, checkout, orders), there's nothing meaningful to test. Stage 2 creates the "real app" that demonstrates why Scenarist matters.
+
+**Video Flow:**
+
+1. Video 1: "Here's the problem everyone has" (conceptual)
+2. Video 2: "Here's a real app that has this problem" (PayFlow demo)
+3. Video 3+: "Here's how Scenarist solves it" (you code on camera)
 
 ### Key Technical Details
 
@@ -157,56 +163,53 @@ This is where Scenarist actually gets added to demonstrate the promotional value
 - [ ] Verify production build (tree-shaking - no test code in bundle)
 - [ ] **REVIEW CHECKPOINT** → Tag: `stage-3-complete`
 
-### Phase 1: Foundation Videos
+### Phase 1: The Problem & The App (Videos 1-2)
 
 - [ ] Record Video 1: The Testing Gap → Tag: `video-01-testing-gap`
 - [ ] Write Video 1 companion blog post
-- [ ] Record Video 2: One Server, Unlimited Scenarios → Tag: `video-02-scenario-switching`
+- [ ] Record Video 2: Meet PayFlow (full app demo, no Scenarist) → Tag: `video-02-meet-payflow`
 - [ ] Write Video 2 companion blog post
 
-### Phase 2: Proof & Deep Dives
+### Phase 2: Introducing Scenarist (Videos 3-4)
 
-- [ ] Record Video 3: Case Study (8-10 min) → Tag: `video-03-case-study`
+- [ ] Record Video 3: One Server, Unlimited Scenarios → Tag: `video-03-scenario-switching`
 - [ ] Write Video 3 companion blog post
-- [ ] Record Video 4: Server-Side State → Tag: `video-04-server-state`
+- [ ] Record Video 4: Case Study (The Bug Your Tests Didn't Catch) → Tag: `video-04-case-study`
 - [ ] Write Video 4 companion blog post
-- [ ] Record Video 5: Test Behavior, Not Implementation → Tag: `video-05-behavior-testing`
+
+### Phase 3: Deep Dives (Videos 5-6)
+
+- [ ] Record Video 5: Server-Side State → Tag: `video-05-server-state`
 - [ ] Write Video 5 companion blog post
-
-### Demo App Stage 3: Scenarist Integration
-
-- [ ] Add Scenarist scenario definitions
-- [ ] Add Playwright test suite
-- [ ] Verify production build (tree-shaking)
-- [ ] Polish all scenarios
-- [ ] **REVIEW CHECKPOINT** → Tag: `stage-3-complete`
-
-### Phase 3: Core Features
-
-- [ ] Record Video 6: Request Matching → Tag: `video-06-request-matching`
+- [ ] Record Video 6: Test Behavior, Not Implementation → Tag: `video-06-behavior-testing`
 - [ ] Write Video 6 companion blog post
-- [ ] Record Video 7: Response Sequences → Tag: `video-07-sequences`
+
+### Phase 4: Core Features (Videos 7-10)
+
+- [ ] Record Video 7: Request Matching → Tag: `video-07-request-matching`
 - [ ] Write Video 7 companion blog post
-- [ ] Record Video 8: Stateful Mocks → Tag: `video-08-stateful-mocks`
+- [ ] Record Video 8: Response Sequences → Tag: `video-08-sequences`
 - [ ] Write Video 8 companion blog post
-- [ ] Record Video 9: Parallel Testing → Tag: `video-09-parallel-testing`
+- [ ] Record Video 9: Stateful Mocks → Tag: `video-09-stateful-mocks`
 - [ ] Write Video 9 companion blog post
-
-### Phase 4: Advanced Patterns
-
-- [ ] Record Video 10: Feature Composition → Tag: `video-10-composition`
+- [ ] Record Video 10: Parallel Testing → Tag: `video-10-parallel-testing`
 - [ ] Write Video 10 companion blog post
-- [ ] Record Video 11: Production Safety → Tag: `video-11-production-safety`
+
+### Phase 5: Advanced Patterns (Videos 11-13)
+
+- [ ] Record Video 11: Feature Composition → Tag: `video-11-composition`
 - [ ] Write Video 11 companion blog post
-- [ ] Record Video 12: Playwright Integration → Tag: `video-12-playwright`
+- [ ] Record Video 12: Production Safety → Tag: `video-12-production-safety`
 - [ ] Write Video 12 companion blog post
-
-### Phase 5: Decision Maker Content
-
-- [ ] Record Video 13: For Tech Leads → Tag: `video-13-tech-leads`
+- [ ] Record Video 13: Playwright Integration → Tag: `video-13-playwright`
 - [ ] Write Video 13 companion blog post
-- [ ] Record Video 14: Tool Comparison → Tag: `video-14-comparison`
+
+### Phase 6: Decision Maker Content (Videos 14-15)
+
+- [ ] Record Video 14: For Tech Leads → Tag: `video-14-tech-leads`
 - [ ] Write Video 14 companion blog post
+- [ ] Record Video 15: Tool Comparison → Tag: `video-15-comparison`
+- [ ] Write Video 15 companion blog post
 
 ### Standalone Blog Posts
 
