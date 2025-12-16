@@ -2,13 +2,13 @@
 
 Last updated: 2025-12-16
 
-## Current Status: Stage 2.5 Complete, Ready for Review
+## Current Status: Stage 2.5 Complete, PR #400 Created
 
 **Stage 1 (Foundation) is COMPLETE and merged to main (PR #398).**
 **Stage 2 (Working Flows) is COMPLETE and merged to main (PR #399).**
-**Stage 2.5 (Inventory Service) is COMPLETE and ready for review.**
+**Stage 2.5 (Promotional Offers Service) is COMPLETE (PR #400).**
 
-Stage 2.5 adds the Inventory Service - the key differentiator showing Scenarist works with ANY HTTP service.
+Stage 2.5 adds the Inventory Service with **promotional offer framing** - showing Scenarist works with ANY HTTP service. The terminology has been updated from "stock" to "promotional offers" to better fit SaaS products (launch pricing, founding member spots).
 
 ---
 
@@ -26,16 +26,24 @@ Stage 2.5 adds the Inventory Service - the key differentiator showing Scenarist 
 - ✅ Stripe checkout with webhooks
 - ✅ Orders page with history
 
-### What's Next (Stage 2.5: Inventory Service)
+### What's Complete (Stage 2.5: Promotional Offers Service)
 
-**Branch:** `feature/payflow-stage-3`
+**Branch:** `feature/payflow-stage-2`
+**PR:** #400
 
-Adding an Inventory Service - an internal microservice that our team consumes but doesn't own (simulated with json-server for the demo):
+Added the Inventory Service as a **Promotional Offers** system - an internal microservice that our team consumes but doesn't own (simulated with json-server for the demo):
 
 1. Represents internal microservices with NO test mode
-2. Enables the killer demo: "sold out during checkout" sequence
-3. Shows stock badges on products
-4. Verifies stock before checkout
+2. Enables the killer demo: "offer ends during checkout" sequence
+3. Shows **offer badges** on products (launch pricing, founding member spots)
+4. Verifies offer availability before checkout
+
+**Key terminology update:** Changed from "stock" to "promotional offers" to better fit SaaS products:
+
+- `OfferStatus`: `"available" | "limited_offer" | "offer_ended"`
+- "15 left at this price" (launch pricing)
+- "3 founding spots" (founding member)
+- "Offer Ended" (promotional slots exhausted)
 
 This is critical for demonstrating Scenarist's value - "works with ANY HTTP service, not just services with test tooling."
 
@@ -67,13 +75,13 @@ This is critical for demonstrating Scenarist's value - "works with ANY HTTP serv
 
 **The Testing Problem Table (shown in Video 2):**
 
-| Scenario                  | Auth0   | Inventory      | Stripe  | Without Scenarist     |
-| ------------------------- | ------- | -------------- | ------- | --------------------- |
-| Happy path                | Pro     | In stock       | Success | ✅ Easy               |
-| Premium discount          | Pro     | In stock       | Success | 🟡 Need Auth0 account |
-| Out of stock              | Any     | 0 left         | N/A     | 🔴 Edit db.json?      |
-| **Sold out mid-checkout** | Any     | In stock → Out | N/A     | 🔴 **Impossible**     |
-| 50 parallel tests         | Various | Various        | Various | 🔴 **Impossible**     |
+| Scenario                    | Auth0   | Inventory        | Stripe  | Without Scenarist     |
+| --------------------------- | ------- | ---------------- | ------- | --------------------- |
+| Happy path                  | Pro     | Offer available  | Success | ✅ Easy               |
+| Premium discount            | Pro     | Offer available  | Success | 🟡 Need Auth0 account |
+| Offer ended                 | Any     | 0 spots left     | N/A     | 🔴 Edit db.json?      |
+| **Offer ends mid-checkout** | Any     | Available → Gone | N/A     | 🔴 **Impossible**     |
+| 50 parallel tests           | Various | Various          | Various | 🔴 **Impossible**     |
 
 ### Key Technical Details
 
@@ -89,12 +97,15 @@ This is critical for demonstrating Scenarist's value - "works with ANY HTTP serv
 - Uses ad-hoc pricing (`price_data`)
 - Webhook handler at `/api/webhooks/stripe/route.ts`
 
-**Inventory Service (NEW):**
+**Inventory Service (Promotional Offers):**
 
 - Internal microservice we consume but don't own
 - Simulated with json-server on port 3001 for demo
-- Products page fetches stock, shows badges
-- Checkout verifies stock before payment
+- Products page fetches offer availability, shows badges:
+  - Launch pricing: "15 left at this price"
+  - Founding spots: "3 founding spots"
+  - Offer ended: "Offer Ended"
+- Checkout verifies offer availability before payment
 - Has NO test mode - proves "any HTTP service" value
 
 **File Locations:**
@@ -110,12 +121,12 @@ This is critical for demonstrating Scenarist's value - "works with ANY HTTP serv
 
 ### PR Strategy
 
-| Stage | PR   | Status      | Description                              |
-| ----- | ---- | ----------- | ---------------------------------------- |
-| 1     | #398 | ✅ Merged   | Foundation - SDK setup, app structure    |
-| 2     | #399 | ✅ Merged   | Working flows - Login, checkout, orders  |
-| 2.5   | TBD  | 🔄 Planning | Inventory Service - json-server, stock   |
-| 3     | TBD  | ⏳ Pending  | Scenarist integration - Scenarios, tests |
+| Stage | PR   | Status     | Description                                    |
+| ----- | ---- | ---------- | ---------------------------------------------- |
+| 1     | #398 | ✅ Merged  | Foundation - SDK setup, app structure          |
+| 2     | #399 | ✅ Merged  | Working flows - Login, checkout, orders        |
+| 2.5   | #400 | 🔄 Review  | Promotional Offers - json-server, offer badges |
+| 3     | TBD  | ⏳ Pending | Scenarist integration - Scenarios, tests       |
 
 ---
 
@@ -140,26 +151,28 @@ This is critical for demonstrating Scenarist's value - "works with ANY HTTP serv
 - [x] Orders page with history
 - [x] **REVIEW CHECKPOINT** → PR #399 merged
 
-### Demo App Stage 2.5: Inventory Service ✅ COMPLETE
+### Demo App Stage 2.5: Promotional Offers Service ✅ COMPLETE
 
 - [x] Add json-server as dev dependency
-- [x] Create `db.json` with inventory data
+- [x] Create `db.json` with offer availability data
 - [x] Add npm script for inventory server
-- [x] Products page fetches stock levels
-- [x] Stock badges on products ("In Stock", "Low Stock: 3 left", "Out of Stock")
-- [x] Checkout verifies stock before Stripe
-- [x] Handle out-of-stock gracefully
+- [x] Products page fetches offer availability
+- [x] Offer badges on products (launch pricing, founding spots, offer ended)
+- [x] Checkout verifies offer availability before Stripe
+- [x] Handle offer-ended gracefully
 - [x] Update README with json-server instructions
-- [x] **REVIEW CHECKPOINT** → PR for Stage 2.5
+- [x] Update terminology from "stock" to "promotional offers"
+- [x] Update video scripts and visual aids with offer framing
+- [x] **REVIEW CHECKPOINT** → PR #400
 
 ### Demo App Stage 3: Scenarist Integration ⏳ PENDING
 
 - [ ] Install `@scenarist/nextjs-adapter` and `@scenarist/playwright-helpers`
 - [ ] Define scenarios:
-  - `default` - Happy path, in stock
+  - `default` - Happy path, offer available
   - `premiumUser` / `freeUser` - Tier-based pricing
-  - `outOfStock` / `lowStock` - Stock scenarios
-  - `soldOutDuringCheckout` - **Key demo**: sequence scenario
+  - `offerEnded` / `limitedOffer` - Promotional offer scenarios
+  - `offerEndsDuringCheckout` - **Key demo**: sequence scenario
   - `paymentDeclined` - Payment errors
   - `inventoryServiceDown` - Error handling
 - [ ] Create Playwright test suite
@@ -203,6 +216,7 @@ See PLAN.md for full video list (Videos 5-15).
 - **Demo app:** Located at `demo/payflow/` (excluded from pnpm workspace)
 - **Visual aids:** Mermaid diagrams in `visual-aids/` - render for slides
 - **json-server:** Represents "your internal microservices" - the key differentiator
+- **Offer terminology:** SaaS products use "promotional offers" (launch pricing, founding spots) not "stock"
 
 ### Git Tag Strategy
 

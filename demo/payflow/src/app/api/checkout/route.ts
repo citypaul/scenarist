@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStripeServer } from "@/lib/stripe";
 import { auth0 } from "@/lib/auth0";
-import { checkStockAvailable, getProductStock } from "@/lib/inventory";
+import { checkOfferAvailable, getProductOffer } from "@/lib/inventory";
 
 // Cart item from the request
 interface CartItem {
@@ -30,16 +30,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No items in cart" }, { status: 400 });
     }
 
-    // Verify stock availability for all items
-    const stockChecks = await Promise.all(
+    // Verify promotional offer availability for all items
+    const offerChecks = await Promise.all(
       items.map(async (item) => {
-        const hasStock = await checkStockAvailable(item.id, item.quantity);
-        if (!hasStock) {
-          const stock = await getProductStock(item.id);
+        const hasOffer = await checkOfferAvailable(item.id, item.quantity);
+        if (!hasOffer) {
+          const offer = await getProductOffer(item.id);
           return {
             id: item.id,
             name: item.name,
-            available: stock?.available ?? 0,
+            available: offer?.available ?? 0,
             requested: item.quantity,
           };
         }
@@ -47,15 +47,15 @@ export async function POST(request: Request) {
       }),
     );
 
-    const outOfStockItems = stockChecks.filter(
+    const unavailableOffers = offerChecks.filter(
       (check): check is NonNullable<typeof check> => check !== null,
     );
 
-    if (outOfStockItems.length > 0) {
+    if (unavailableOffers.length > 0) {
       return NextResponse.json(
         {
-          error: "Some items are out of stock",
-          outOfStockItems,
+          error: "Some promotional offers are no longer available",
+          unavailableOffers,
         },
         { status: 409 },
       );

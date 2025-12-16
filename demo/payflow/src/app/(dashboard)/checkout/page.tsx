@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import { useCart } from "@/contexts/cart-context";
 
-type OutOfStockItem = {
+type UnavailableOffer = {
   id: string;
   name: string;
   available: number;
@@ -49,14 +49,16 @@ export default function CheckoutPage() {
     useCart();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [outOfStockItems, setOutOfStockItems] = useState<OutOfStockItem[]>([]);
+  const [unavailableOffers, setUnavailableOffers] = useState<
+    UnavailableOffer[]
+  >([]);
 
   const handleCheckout = async () => {
     if (items.length === 0) return;
 
     setIsLoading(true);
     setError(null);
-    setOutOfStockItems([]);
+    setUnavailableOffers([]);
 
     try {
       const response = await fetch("/api/checkout", {
@@ -77,9 +79,9 @@ export default function CheckoutPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        if (response.status === 409 && data.outOfStockItems) {
-          setOutOfStockItems(data.outOfStockItems);
-          setError("Some items are no longer available");
+        if (response.status === 409 && data.unavailableOffers) {
+          setUnavailableOffers(data.unavailableOffers);
+          setError("Some promotional offers are no longer available");
           return;
         }
         throw new Error(data.error || "Failed to create checkout session");
@@ -186,7 +188,7 @@ export default function CheckoutPage() {
           </Alert>
         )}
 
-        {error && outOfStockItems.length === 0 && (
+        {error && unavailableOffers.length === 0 && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
@@ -194,21 +196,21 @@ export default function CheckoutPage() {
           </Alert>
         )}
 
-        {outOfStockItems.length > 0 && (
+        {unavailableOffers.length > 0 && (
           <Alert variant="destructive">
             <XCircle className="h-4 w-4" />
-            <AlertTitle>Items No Longer Available</AlertTitle>
+            <AlertTitle>Promotional Offers Ended</AlertTitle>
             <AlertDescription>
               <p className="mb-2">
-                Sorry, the following items are no longer in stock:
+                Sorry, the following promotional offers are no longer available:
               </p>
               <ul className="list-disc list-inside space-y-1">
-                {outOfStockItems.map((item) => (
+                {unavailableOffers.map((item) => (
                   <li key={item.id}>
                     <strong>{item.name}</strong>
                     {item.available > 0
-                      ? ` - Only ${item.available} available (you requested ${item.requested})`
-                      : " - Out of stock"}
+                      ? ` - Only ${item.available} spots remaining at this price (you requested ${item.requested})`
+                      : " - Offer ended"}
                   </li>
                 ))}
               </ul>

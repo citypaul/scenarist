@@ -38,7 +38,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 PayFlow demonstrates a realistic app with three external services:
 
 1. **Next.js App** (localhost:3000) - The main application
-2. **Inventory Service** (localhost:3001) - Internal microservice for stock levels
+2. **Inventory Service** (localhost:3001) - Internal microservice for promotional offer availability
 3. **Stripe** - Payment processing (webhooks via Stripe CLI)
 
 ## Environment Variables
@@ -156,11 +156,18 @@ All credentials are configured via environment variables. Copy `.env.example` to
 - Use live API keys
 - Real payments are processed
 
-### Inventory Service
+### Inventory Service (Promotional Offers)
 
 The Inventory Service represents an internal microservice that your team consumes but doesn't own—the kind of service that has no "test mode" or special tooling for testing.
 
-For this demo, we simulate the Inventory Service using [json-server](https://github.com/typicode/json-server).
+For this demo, it tracks **promotional offer availability**:
+
+- **Launch pricing** (Pro Plan) - Limited slots at a special introductory price
+- **Founding member spots** (Enterprise Plan) - Exclusive early adopter pricing
+
+When slots run out, the offer ends and the product shows "Offer Ended" instead of being purchasable at the promotional price.
+
+We simulate this service using [json-server](https://github.com/typicode/json-server).
 
 **Starting the service:**
 
@@ -172,21 +179,27 @@ This starts json-server on port 3001, serving data from `db.json`.
 
 **Endpoints:**
 
-| Endpoint             | Description              |
-| -------------------- | ------------------------ |
-| `GET /inventory`     | List all inventory items |
-| `GET /inventory/:id` | Get specific item by ID  |
+| Endpoint             | Description                 |
+| -------------------- | --------------------------- |
+| `GET /inventory`     | List all offer availability |
+| `GET /inventory/:id` | Get specific offer by ID    |
 
 **Sample response:**
 
 ```json
 {
-  "id": "1",
-  "productId": "1",
-  "quantity": 50,
+  "id": "2",
+  "productId": "2",
+  "quantity": 15,
   "reserved": 0
 }
 ```
+
+The app calculates `available = quantity - reserved` to determine offer status:
+
+- `available > 20`: "available" (no urgency badge)
+- `available <= 20`: "limited_offer" (shows "X left at this price")
+- `available <= 0`: "offer_ended" (cannot purchase at promotional price)
 
 **Why this matters for testing:**
 
@@ -194,25 +207,27 @@ Unlike Stripe (which has test cards) or Auth0 (which you can configure), interna
 
 - No test mode
 - Shared state across tests
-- No way to simulate edge cases (out of stock, errors, etc.)
+- No way to simulate edge cases (offer ended, service errors, etc.)
+
+**The killer scenario:** How do you test "offer ends during checkout"—where the user adds a product to cart, but the promotional slots sell out before they complete payment? Without Scenarist, this is essentially impossible to test reliably.
 
 This is exactly what [Scenarist](https://github.com/citypaul/scenarist) solves.
 
 ## Project Structure
 
 ```
-├── db.json                 # Inventory data (json-server)
+├── db.json                 # Promotional offer data (json-server)
 └── src/
     ├── app/
     │   ├── (dashboard)/       # Dashboard routes (sidebar layout)
-    │   │   ├── page.tsx       # Products page (with stock badges)
+    │   │   ├── page.tsx       # Products page (with offer badges)
     │   │   ├── cart/          # Shopping cart
-    │   │   ├── checkout/      # Checkout page (with stock verification)
+    │   │   ├── checkout/      # Checkout page (with offer verification)
     │   │   └── orders/        # Order history
     │   ├── login/             # Login page
     │   └── api/
-    │       ├── checkout/      # Checkout API (verifies stock)
-    │       ├── inventory/     # Inventory proxy API
+    │       ├── checkout/      # Checkout API (verifies offer availability)
+    │       ├── inventory/     # Inventory/offer proxy API
     │       ├── orders/        # Orders API
     │       └── webhooks/      # Stripe webhooks
     ├── components/
@@ -226,7 +241,7 @@ This is exactly what [Scenarist](https://github.com/citypaul/scenarist) solves.
     │   └── use-mobile.ts      # Mobile detection hook
     └── lib/
         ├── auth0.ts           # Auth0 client configuration
-        ├── inventory.ts       # Inventory service client
+        ├── inventory.ts       # Promotional offer service client
         ├── stripe.ts          # Stripe client configuration
         └── utils.ts           # Utility functions
 ```

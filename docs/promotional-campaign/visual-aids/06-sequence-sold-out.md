@@ -1,4 +1,4 @@
-# Sequence: Sold Out During Checkout
+# Sequence: Offer Ends During Checkout
 
 The killer demo - showing how the same endpoint returns different responses based on call order.
 
@@ -6,9 +6,9 @@ The killer demo - showing how the same endpoint returns different responses base
 
 **What to say:**
 
-> "This is the scenario that's impossible to test with real services. User loads the page, stock shows 5 available. User adds to cart. User fills out payment. Meanwhile, someone else buys the last items. User clicks Pay. What happens?"
+> "This is the scenario that's impossible to test with real services. User loads the page, sees 5 promotional spots available. User adds to cart. User fills out payment. Meanwhile, someone else takes the last spots. User clicks Pay. What happens?"
 >
-> "With Scenarist, we define a sequence. First call: in stock. Second call: out of stock. Same endpoint. Different response. Based on call order."
+> "With Scenarist, we define a sequence. First call: offer available. Second call: offer ended. Same endpoint. Different response. Based on call order."
 
 ## The Sequence
 
@@ -19,25 +19,25 @@ sequenceDiagram
     participant Scen as Scenarist
     participant Inv as json-server<br/>(Inventory)
 
-    Note over Scen: Scenario: soldOutDuringCheckout
+    Note over Scen: Scenario: offerEndsDuringCheckout
 
     User->>App: View product page
     App->>Scen: GET /inventory/pro
     Note over Scen: Sequence call #1
-    Scen-->>App: { inStock: true, qty: 5 }
-    App-->>User: "In Stock" ✅
+    Scen-->>App: { available: 5, status: "limited_offer" }
+    App-->>User: "5 left at this price" ✅
 
     User->>App: Add to cart
     User->>App: Go to checkout
     User->>App: Enter payment details
 
-    Note over User,App: Meanwhile, someone else<br/>buys the last items...
+    Note over User,App: Meanwhile, someone else<br/>takes the last spots...
 
     User->>App: Click "Pay"
     App->>Scen: GET /inventory/pro
     Note over Scen: Sequence call #2
-    Scen-->>App: { inStock: false, qty: 0 }
-    App-->>User: "Sorry, sold out" ❌
+    Scen-->>App: { available: 0, status: "offer_ended" }
+    App-->>User: "Sorry, offer ended" ❌
 
     Note over Inv: Never called!
 ```
@@ -47,10 +47,10 @@ sequenceDiagram
 ```typescript
 // scenarios.ts
 export const scenarios = {
-  soldOutDuringCheckout: {
+  offerEndsDuringCheckout: {
     "GET /api/inventory/:id": sequence([
-      { status: 200, body: { inStock: true, quantity: 5 } }, // First call
-      { status: 200, body: { inStock: false, quantity: 0 } }, // Second call
+      { status: 200, body: { available: 5, status: "limited_offer" } }, // First call
+      { status: 200, body: { available: 0, status: "offer_ended" } }, // Second call
     ]),
   },
 };
@@ -58,20 +58,23 @@ export const scenarios = {
 
 ```typescript
 // test
-test("handles sold out during checkout", async ({ page, switchScenario }) => {
-  await switchScenario("soldOutDuringCheckout");
+test("handles offer ending during checkout", async ({
+  page,
+  switchScenario,
+}) => {
+  await switchScenario("offerEndsDuringCheckout");
 
-  // First inventory call - shows in stock
+  // First inventory call - shows offer available
   await page.goto("/products/pro");
-  await expect(page.getByText("In Stock")).toBeVisible();
+  await expect(page.getByText("5 left at this price")).toBeVisible();
 
   // Add to cart, go to checkout
   await page.click("text=Add to Cart");
   await page.goto("/checkout");
 
-  // Second inventory call - now out of stock
+  // Second inventory call - offer ended
   await page.click("text=Pay");
-  await expect(page.getByText("Sorry, sold out")).toBeVisible();
+  await expect(page.getByText("Promotional Offers Ended")).toBeVisible();
 });
 ```
 
@@ -93,7 +96,7 @@ test("handles sold out during checkout", async ({ page, switchScenario }) => {
 │  Option 2: Actual race condition                                            │
 │  ────────────────────────────────                                           │
 │  • Run two browser sessions                                                │
-│  • Have one buy everything                                                 │
+│  • Have one take all promotional spots                                     │
 │  • Hope the other hits checkout at the right moment                        │
 │  • Result: Impossible to reliably reproduce                                │
 │                                                                             │

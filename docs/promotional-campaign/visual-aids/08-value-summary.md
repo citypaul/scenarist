@@ -18,7 +18,7 @@ A single slide summarizing all the value Scenarist provides.
 │  🚀 SPEED                           🎯 CONTROL                              │
 │  ────────────                       ───────────                             │
 │  No network latency                 Any scenario you can imagine            │
-│  <1ms responses                     Sequences (sold out mid-checkout)       │
+│  <1ms responses                     Sequences (offer ends mid-checkout)     │
 │  100x faster test suites            Error states (500s, timeouts)           │
 │  Parallel execution                 Coordinated multi-service scenarios     │
 │                                                                             │

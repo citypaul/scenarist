@@ -8,20 +8,20 @@ export type InventoryItem = {
   readonly reserved: number;
 };
 
-export type StockStatus = "in_stock" | "low_stock" | "out_of_stock";
+export type OfferStatus = "available" | "limited_offer" | "offer_ended";
 
-export type ProductStock = {
+export type ProductOffer = {
   readonly productId: string;
   readonly available: number;
-  readonly status: StockStatus;
+  readonly status: OfferStatus;
 };
 
-const LOW_STOCK_THRESHOLD = 5;
+const LIMITED_OFFER_THRESHOLD = 20;
 
-function getStockStatus(available: number): StockStatus {
-  if (available <= 0) return "out_of_stock";
-  if (available <= LOW_STOCK_THRESHOLD) return "low_stock";
-  return "in_stock";
+function getOfferStatus(available: number): OfferStatus {
+  if (available <= 0) return "offer_ended";
+  if (available <= LIMITED_OFFER_THRESHOLD) return "limited_offer";
+  return "available";
 }
 
 export async function getInventory(): Promise<readonly InventoryItem[]> {
@@ -36,9 +36,9 @@ export async function getInventory(): Promise<readonly InventoryItem[]> {
   return response.json();
 }
 
-export async function getProductStock(
+export async function getProductOffer(
   productId: string,
-): Promise<ProductStock | null> {
+): Promise<ProductOffer | null> {
   const inventory = await getInventory();
   const item = inventory.find((i) => i.productId === productId);
 
@@ -48,11 +48,11 @@ export async function getProductStock(
   return {
     productId: item.productId,
     available,
-    status: getStockStatus(available),
+    status: getOfferStatus(available),
   };
 }
 
-export async function getAllProductStock(): Promise<readonly ProductStock[]> {
+export async function getAllProductOffers(): Promise<readonly ProductOffer[]> {
   const inventory = await getInventory();
 
   return inventory.map((item) => {
@@ -60,16 +60,16 @@ export async function getAllProductStock(): Promise<readonly ProductStock[]> {
     return {
       productId: item.productId,
       available,
-      status: getStockStatus(available),
+      status: getOfferStatus(available),
     };
   });
 }
 
-export async function checkStockAvailable(
+export async function checkOfferAvailable(
   productId: string,
   quantity: number = 1,
 ): Promise<boolean> {
-  const stock = await getProductStock(productId);
-  if (!stock) return false;
-  return stock.available >= quantity;
+  const offer = await getProductOffer(productId);
+  if (!offer) return false;
+  return offer.available >= quantity;
 }

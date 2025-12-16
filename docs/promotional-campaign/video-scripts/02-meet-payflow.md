@@ -32,7 +32,7 @@ Show the complete, working app with real integrations: Auth0, Inventory Service 
 
 _Point to terminals:_
 
-> "That's my Next.js server. That's our Inventory Service - an internal API we call to check stock levels. And that's Stripe CLI forwarding webhooks. Three services. Real HTTP calls."
+> "That's my Next.js server. That's our Inventory Service - an internal API we call to check promotional offer availability. And that's Stripe CLI forwarding webhooks. Three services. Real HTTP calls."
 
 ---
 
@@ -42,14 +42,14 @@ _Point to terminals:_
 
 **Walk through:**
 
-1. **Products page** - "Product catalog with stock levels and pricing."
-2. **Point to stock badges** - "Stock comes from our inventory service."
+1. **Products page** - "Product catalog with promotional offer badges and pricing."
+2. **Point to offer badges** - "Offer availability comes from our inventory service - launch pricing, founding member spots."
 3. **Hover over sidebar** - "Cart, checkout, order history."
 4. **Point to Sign In** - "Authentication via Auth0."
 
 **Say:**
 
-> "Standard tech stack - Next.js App Router, TypeScript, Tailwind, shadcn/ui. Nothing exotic. The kind of app you'd actually build. And three external services: Auth0 for authentication, our inventory service for stock levels, and Stripe for payments."
+> "Standard tech stack - Next.js App Router, TypeScript, Tailwind, shadcn/ui. Nothing exotic. The kind of app you'd actually build. And three external services: Auth0 for authentication, our inventory service for promotional offer availability, and Stripe for payments."
 
 ---
 
@@ -67,7 +67,7 @@ _Point to terminals:_
 
 **Show inventory fetch in products page:**
 
-> "And we call our Inventory Service to get stock levels. This is an internal API - we don't own it, another team does."
+> "And we call our Inventory Service to check promotional offer availability. This is an internal API - we don't own it, another team does."
 
 **Say:**
 
@@ -93,9 +93,9 @@ _Point to terminals:_
 
    > "I'm logged in as a Pro user - see the tier badge? That comes from Auth0 user metadata."
 
-3. **Point out stock and pricing**
+3. **Point out offer badges and pricing**
 
-   > "Products show stock levels from our inventory service. And because I'm Pro tier, I see a 20% discount."
+   > "Products show promotional offer availability from our inventory service - see the 'limited spots' badge? And because I'm Pro tier, I see a 20% discount."
 
 4. **Add a product to cart**
 
@@ -147,25 +147,25 @@ _Point to terminals:_
 
 **Show the table:**
 
-| Scenario                  | Auth0   | Inventory      | Stripe   | Without Scenarist     |
-| ------------------------- | ------- | -------------- | -------- | --------------------- |
-| Happy path                | Pro     | In stock       | Success  | ✅ Easy               |
-| Premium discount          | Pro     | In stock       | Success  | 🟡 Need Auth0 account |
-| Free user pricing         | Free    | In stock       | Success  | 🟡 Another account    |
-| Payment declined          | Any     | In stock       | Declined | 🟡 Test card works    |
-| Out of stock              | Any     | 0 left         | N/A      | 🔴 Edit db.json?      |
-| Low stock urgency         | Any     | 3 left         | N/A      | 🔴 Edit manually      |
-| **Sold out mid-checkout** | Any     | In stock → Out | N/A      | 🔴 **Impossible**     |
-| Service down              | Any     | 500 error      | N/A      | 🔴 Kill server?       |
-| 50 parallel tests         | Various | Various        | Various  | 🔴 **Impossible**     |
+| Scenario                    | Auth0   | Inventory        | Stripe   | Without Scenarist     |
+| --------------------------- | ------- | ---------------- | -------- | --------------------- |
+| Happy path                  | Pro     | Offer available  | Success  | ✅ Easy               |
+| Premium discount            | Pro     | Offer available  | Success  | 🟡 Need Auth0 account |
+| Free user pricing           | Free    | Offer available  | Success  | 🟡 Another account    |
+| Payment declined            | Any     | Offer available  | Declined | 🟡 Test card works    |
+| Offer ended                 | Any     | 0 spots left     | N/A      | 🔴 Edit db.json?      |
+| Limited offer urgency       | Any     | 3 spots left     | N/A      | 🔴 Edit manually      |
+| **Offer ends mid-checkout** | Any     | Available → Gone | N/A      | 🔴 **Impossible**     |
+| Service down                | Any     | 500 error        | N/A      | 🔴 Kill server?       |
+| 50 parallel tests           | Various | Various          | Various  | 🔴 **Impossible**     |
 
 **Say:**
 
 > "Here's what I need to test. Green is easy - just run the app. Yellow is annoying - I need different Auth0 accounts, or specific test cards. But look at all the red."
 
-> "Out of stock? I'd have to edit my database file and restart the server. Low stock? Same problem."
+> "Offer ended? I'd have to edit my database file and restart the server. Limited offer urgency? Same problem."
 
-> "But here's the killer: 'sold out during checkout'. User loads the page, shows in stock. User goes to checkout. Meanwhile someone else buys the last one. User clicks pay. What happens?"
+> "But here's the killer: 'offer ends during checkout'. User loads the page, promotional spots available. User goes to checkout. Meanwhile someone else takes the last spot. User clicks pay. What happens?"
 
 > "How do I test that? Edit the database file _while_ the test is running? Time it perfectly? That's not testing, that's praying."
 
@@ -191,7 +191,7 @@ _Point to terminals:_
 - [ ] Auth0 Universal Login popup
 - [ ] Inventory Service terminal showing requests
 - [ ] User tier badge in sidebar
-- [ ] Stock badges on products
+- [ ] Offer badges on products (launch pricing, founding spots)
 - [ ] Stripe Checkout page
 - [ ] Stripe CLI showing webhook
 - [ ] The Testing Problem Table
