@@ -18,8 +18,9 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Percent } from "lucide-react";
+import { ShoppingCart, Percent, Check } from "lucide-react";
 import { useAuth, type UserTier } from "@/contexts/auth-context";
+import { useCart } from "@/contexts/cart-context";
 
 // Base products data
 const products = [
@@ -74,8 +75,20 @@ function calculatePrice(basePrice: number, tier: UserTier): number {
 
 export default function ProductsPage() {
   const { user, isAuthenticated } = useAuth();
+  const { addItem, items } = useCart();
   const userTier = user?.tier ?? "free";
   const discount = TIER_DISCOUNTS[userTier];
+
+  const handleAddToCart = (product: (typeof products)[0]) => {
+    addItem({
+      id: product.id,
+      name: product.name,
+      basePrice: product.basePrice,
+    });
+  };
+
+  const isInCart = (productId: string) =>
+    items.some((item) => item.id === productId);
 
   return (
     <>
@@ -184,10 +197,26 @@ export default function ProductsPage() {
                 <CardFooter>
                   <Button
                     className="w-full"
-                    variant={product.popular ? "default" : "outline"}
+                    variant={
+                      isInCart(product.id)
+                        ? "secondary"
+                        : product.popular
+                          ? "default"
+                          : "outline"
+                    }
+                    onClick={() => handleAddToCart(product)}
                   >
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                    Add to Cart
+                    {isInCart(product.id) ? (
+                      <>
+                        <Check className="mr-2 h-4 w-4" />
+                        In Cart
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingCart className="mr-2 h-4 w-4" />
+                        Add to Cart
+                      </>
+                    )}
                   </Button>
                 </CardFooter>
               </Card>

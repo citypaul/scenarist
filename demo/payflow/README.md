@@ -100,26 +100,32 @@ All credentials are configured via environment variables. Copy `.env.example` to
 
 2. **Get your API keys**
    - In the Stripe Dashboard, go to **Developers > API keys**
-   - Copy the **Publishable key** (starts with `pk_test_`)
-   - Copy the **Secret key** (starts with `sk_test_`)
+   - Copy the **Publishable key** (the one safe to expose client-side)
+   - Copy the **Secret key** (keep this server-side only)
 
 3. **Add to `.env.local`**
 
    ```
-   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
-   STRIPE_SECRET_KEY=sk_test_...
+   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_publishable_key
+   STRIPE_SECRET_KEY=your_secret_key
    ```
 
 4. **(Optional) Set up webhooks for payment events**
-   - Go to **Developers > Webhooks**
-   - Click **Add endpoint**
+   - Go to [https://dashboard.stripe.com/webhooks](https://dashboard.stripe.com/webhooks)
+   - Click **Add endpoint** (or **Add destination** in newer UI)
    - Enter your webhook URL: `https://your-domain.com/api/webhooks/stripe`
    - Select events to listen for (e.g., `checkout.session.completed`)
-   - Copy the **Signing secret** (starts with `whsec_`)
+   - After creating, click on the endpoint and reveal the **Signing secret**
    - Add to `.env.local`:
      ```
-     STRIPE_WEBHOOK_SECRET=whsec_...
+     STRIPE_WEBHOOK_SECRET=your_signing_secret
      ```
+
+   **For local development**, use Stripe CLI instead:
+
+   ```bash
+   stripe listen --forward-to localhost:3000/api/webhooks/stripe
+   ```
 
 ### Test Mode vs Live Mode
 
