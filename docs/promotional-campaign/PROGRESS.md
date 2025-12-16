@@ -1,10 +1,74 @@
 # Campaign Progress
 
-Last updated: 2025-12-15
+Last updated: 2025-12-16
 
-## Current Status: Planning Complete
+## Current Status: Stage 2 In Progress
 
-The master plan is complete and approved. Ready to begin implementation.
+**Stage 1 (Foundation) is COMPLETE and merged to main (PR #398).**
+
+Now working on Stage 2: Making the demo app functional end-to-end.
+
+---
+
+## Quick Context for New Sessions
+
+### What's Done (Stage 1)
+
+- ✅ PayFlow demo app created at `demo/payflow/`
+- ✅ Next.js 16 App Router with shadcn/ui (Maia style)
+- ✅ Real `@auth0/nextjs-auth0` v4 SDK integrated (proxy.ts middleware pattern)
+- ✅ Real `stripe` + `@stripe/stripe-js` SDK integrated (lazy initialization)
+- ✅ Checkout API route (`/api/checkout/route.ts`)
+- ✅ Environment variables documented (`.env.example`, README)
+- ✅ CI updated to allow sharp/lucide-react licenses
+
+### What's In Progress (Stage 2)
+
+**Branch:** `feature/payflow-stage-2`
+
+**User has configured:** Auth0 and Stripe environment variables in `.env.local` (no webhooks yet)
+
+**Next tasks:**
+
+1. **Auth0 Login/Logout Flow** - Connect login button to Auth0, display user in sidebar
+2. **User Tier Display** - Show tier badge from Auth0 user metadata
+3. **Tier-Based Pricing** - Apply discounts (free: 0%, basic: 10%, pro: 20%, enterprise: 30%)
+4. **Functional Cart** - Add to cart, persist state, calculate totals
+5. **Stripe Checkout** - Redirect to Stripe hosted checkout, handle success/cancel
+6. **Stripe Webhooks** - Handle `checkout.session.completed` (needs Stripe CLI for local dev)
+7. **SendGrid Emails** - Order confirmation emails (add package back, lazy init)
+8. **Orders Page** - Display order history
+
+### Key Technical Details
+
+**Auth0 SDK v4 Pattern (Next.js 16):**
+
+- Uses `proxy.ts` middleware pattern, NOT route handlers
+- Auth endpoints: `/auth/login`, `/auth/logout`, `/auth/callback`, `/auth/profile`
+- Session access: `await auth0.getSession()`
+
+**Stripe Lazy Initialization:**
+
+- Server client uses `getStripeServer()` function to avoid build-time errors
+- Client uses `getStripe()` for Stripe.js
+
+**File Locations:**
+
+- Auth0 client: `src/lib/auth0.ts`
+- Stripe client: `src/lib/stripe.ts`
+- Auth context: `src/contexts/auth-context.tsx`
+- Checkout API: `src/app/api/checkout/route.ts`
+- Middleware: `src/proxy.ts`
+
+### PR Strategy
+
+| Stage | PR   | Status         | Description                                 |
+| ----- | ---- | -------------- | ------------------------------------------- |
+| 1     | #398 | ✅ Merged      | Foundation - SDK setup, app structure, docs |
+| 2     | TBD  | 🔄 In Progress | Working flows - Login, checkout, emails     |
+| 3     | TBD  | ⏳ Pending     | Scenarist integration - Scenarios, tests    |
+
+---
 
 ## Workflow: Small Increments with Review
 
@@ -29,13 +93,26 @@ For standalone blog posts:
 
 ## Implementation Order
 
-### Demo App Stage 1: Foundation (supports Videos 1-5)
+### Demo App Stage 1: Foundation ✅ COMPLETE
 
-- [ ] Build PayFlow basic structure (Next.js, Tailwind, TypeScript)
-- [ ] Add Auth0 integration and user tiers
-- [ ] Add pricing page with tier-based display
-- [ ] Add basic Scenarist setup
-- [ ] **REVIEW CHECKPOINT** → Tag: `stage-1-foundation`
+- [x] Build PayFlow basic structure (Next.js, Tailwind, TypeScript)
+- [x] Add Auth0 SDK integration
+- [x] Add Stripe SDK integration
+- [x] Environment variable configuration
+- [x] README with setup instructions
+- [x] **REVIEW CHECKPOINT** → PR #398 merged
+
+### Demo App Stage 2: Working Flows 🔄 IN PROGRESS
+
+- [ ] Auth0 login/logout working
+- [ ] User tier displayed in sidebar
+- [ ] Tier-based pricing discounts applied
+- [ ] Functional cart (add items, persist state)
+- [ ] Stripe checkout flow (redirect to Stripe, handle callbacks)
+- [ ] Stripe webhook handling (`checkout.session.completed`)
+- [ ] SendGrid email integration (order confirmations)
+- [ ] Orders page with history
+- [ ] **REVIEW CHECKPOINT** → Tag: `stage-2-features`
 
 ### Phase 1: Foundation Videos
 
@@ -53,13 +130,13 @@ For standalone blog posts:
 - [ ] Record Video 5: Test Behavior, Not Implementation → Tag: `video-05-behavior-testing`
 - [ ] Write Video 5 companion blog post
 
-### Demo App Stage 2: Features (supports Videos 6-9)
+### Demo App Stage 3: Scenarist Integration
 
-- [ ] Add cart functionality
-- [ ] Add checkout flow
-- [ ] Add payment processing (Stripe mock)
-- [ ] Add response sequences for polling
-- [ ] **REVIEW CHECKPOINT** → Tag: `stage-2-features`
+- [ ] Add Scenarist scenario definitions
+- [ ] Add Playwright test suite
+- [ ] Verify production build (tree-shaking)
+- [ ] Polish all scenarios
+- [ ] **REVIEW CHECKPOINT** → Tag: `stage-3-complete`
 
 ### Phase 3: Core Features
 
@@ -71,14 +148,6 @@ For standalone blog posts:
 - [ ] Write Video 8 companion blog post
 - [ ] Record Video 9: Parallel Testing → Tag: `video-09-parallel-testing`
 - [ ] Write Video 9 companion blog post
-
-### Demo App Stage 3: Complete (supports Videos 10-14)
-
-- [ ] Add full Playwright test suite
-- [ ] Verify production build (tree-shaking)
-- [ ] Add email notifications (SendGrid mock)
-- [ ] Polish all scenarios
-- [ ] **REVIEW CHECKPOINT** → Tag: `stage-3-complete`
 
 ### Phase 4: Advanced Patterns
 
