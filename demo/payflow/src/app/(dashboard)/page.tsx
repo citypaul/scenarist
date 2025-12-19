@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -18,11 +19,26 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Percent, Check } from "lucide-react";
+import {
+  ShoppingCart,
+  Percent,
+  Check,
+  Flame,
+  Zap,
+  XCircle,
+  AlertTriangle,
+} from "lucide-react";
 import { useAuth, type UserTier } from "@/contexts/auth-context";
 import { useCart } from "@/contexts/cart-context";
+import type { OfferStatus } from "@/lib/inventory";
 
-// Base products data
+type ProductOffer = {
+  readonly productId: string;
+  readonly available: number;
+  readonly status: OfferStatus;
+};
+
+// Base products data with offer types
 const products = [
   {
     id: "1",
@@ -31,6 +47,7 @@ const products = [
     basePrice: 9.99,
     features: ["5 projects", "Basic analytics", "Email support"],
     popular: false,
+    offerType: null, // Always available, no limited offer
   },
   {
     id: "2",
@@ -44,6 +61,7 @@ const products = [
       "API access",
     ],
     popular: true,
+    offerType: "launch", // Launch pricing - limited slots
   },
   {
     id: "3",
@@ -57,6 +75,7 @@ const products = [
       "SLA guarantee",
     ],
     popular: false,
+    offerType: "founding", // Founding member spots
   },
 ];
 
@@ -73,13 +92,97 @@ function calculatePrice(basePrice: number, tier: UserTier): number {
   return basePrice * (1 - discount / 100);
 }
 
+function OfferBadge({
+  offer,
+  offerType,
+}: {
+  offer: ProductOffer | undefined;
+  offerType: string | null;
+}) {
+  if (!offer) {
+    return (
+      <Badge variant="outline" className="text-muted-foreground">
+        Loading...
+      </Badge>
+    );
+  }
+
+  // No badge for always-available products
+  if (offerType === null && offer.status === "available") {
+    return null;
+  }
+
+  switch (offer.status) {
+    case "available":
+      return null; // No urgency badge needed
+    case "limited_offer":
+      if (offerType === "founding") {
+        return (
+          <Badge
+            variant="outline"
+            className="border-purple-500/50 bg-purple-500/10 text-purple-600 dark:text-purple-400"
+          >
+            <Zap className="mr-1 h-3 w-3" />
+            {offer.available} founding spots
+          </Badge>
+        );
+      }
+      return (
+        <Badge
+          variant="outline"
+          className="border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+        >
+          <Flame className="mr-1 h-3 w-3" />
+          {offer.available} left at this price
+        </Badge>
+      );
+    case "offer_ended":
+      return (
+        <Badge
+          variant="outline"
+          className="border-red-500/50 bg-red-500/10 text-red-600 dark:text-red-400"
+        >
+          <XCircle className="mr-1 h-3 w-3" />
+          Offer Ended
+        </Badge>
+      );
+  }
+}
+
 export default function ProductsPage() {
   const { user, isAuthenticated } = useAuth();
   const { addItem, items } = useCart();
   const userTier = user?.tier ?? "free";
   const discount = TIER_DISCOUNTS[userTier];
 
+  const [offerData, setOfferData] = useState<readonly ProductOffer[]>([]);
+  const [offerError, setOfferError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchOffers() {
+      try {
+        const response = await fetch("/api/inventory");
+        if (!response.ok) {
+          throw new Error("Failed to fetch offers");
+        }
+        const data = await response.json();
+        setOfferData(data);
+        setOfferError(null);
+      } catch {
+        setOfferError("Unable to check promotional offers");
+      }
+    }
+
+    fetchOffers();
+  }, []);
+
+  const getOffer = (productId: string): ProductOffer | undefined =>
+    offerData.find((o) => o.productId === productId);
+
   const handleAddToCart = (product: (typeof products)[0]) => {
+    const offer = getOffer(product.id);
+    if (offer?.status === "offer_ended") return;
+
     addItem({
       id: product.id,
       name: product.name,
@@ -126,23 +229,34 @@ export default function ProductsPage() {
               </span>
             </div>
           )}
+          {offerError && (
+            <div className="mt-2 inline-flex items-center gap-2 rounded-md bg-amber-500/10 px-3 py-1.5 text-sm text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="h-4 w-4" />
+              <span>{offerError}</span>
+            </div>
+          )}
         </div>
         <div className="grid gap-4 md:grid-cols-3">
           {products.map((product) => {
             const discountedPrice = calculatePrice(product.basePrice, userTier);
             const hasDiscount = discount > 0;
+            const offer = getOffer(product.id);
+            const isOfferEnded = offer?.status === "offer_ended";
 
             return (
               <Card
                 key={product.id}
-                className={product.popular ? "border-primary" : ""}
+                className={`${product.popular ? "border-primary" : ""} ${isOfferEnded ? "opacity-60" : ""}`}
               >
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle>{product.name}</CardTitle>
-                    {product.popular && (
-                      <Badge variant="default">Popular</Badge>
-                    )}
+                    <div className="flex gap-2">
+                      <OfferBadge offer={offer} offerType={product.offerType} />
+                      {product.popular && (
+                        <Badge variant="default">Popular</Badge>
+                      )}
+                    </div>
                   </div>
                   <CardDescription>{product.description}</CardDescription>
                 </CardHeader>
@@ -205,8 +319,14 @@ export default function ProductsPage() {
                           : "outline"
                     }
                     onClick={() => handleAddToCart(product)}
+                    disabled={isOfferEnded}
                   >
-                    {isInCart(product.id) ? (
+                    {isOfferEnded ? (
+                      <>
+                        <XCircle className="mr-2 h-4 w-4" />
+                        Offer Ended
+                      </>
+                    ) : isInCart(product.id) ? (
                       <>
                         <Check className="mr-2 h-4 w-4" />
                         In Cart

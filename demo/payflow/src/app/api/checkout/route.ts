@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStripeServer } from "@/lib/stripe";
 import { auth0 } from "@/lib/auth0";
+import { checkOfferAvailable, getProductOffer } from "@/lib/inventory";
 
 // Cart item from the request
 interface CartItem {
@@ -27,6 +28,37 @@ export async function POST(request: Request) {
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: "No items in cart" }, { status: 400 });
+    }
+
+    // Verify promotional offer availability for all items
+    const offerChecks = await Promise.all(
+      items.map(async (item) => {
+        const hasOffer = await checkOfferAvailable(item.id, item.quantity);
+        if (!hasOffer) {
+          const offer = await getProductOffer(item.id);
+          return {
+            id: item.id,
+            name: item.name,
+            available: offer?.available ?? 0,
+            requested: item.quantity,
+          };
+        }
+        return null;
+      }),
+    );
+
+    const unavailableOffers = offerChecks.filter(
+      (check): check is NonNullable<typeof check> => check !== null,
+    );
+
+    if (unavailableOffers.length > 0) {
+      return NextResponse.json(
+        {
+          error: "Some promotional offers are no longer available",
+          unavailableOffers,
+        },
+        { status: 409 },
+      );
     }
 
     // Get the user's session (optional - allow guest checkout)
@@ -93,7 +125,10 @@ export async function POST(request: Request) {
       url: checkoutSession.url,
     });
   } catch (error) {
-    console.error("Checkout error:", error);
+    // Only log full error details in development
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Checkout error:", error);
+    }
     return NextResponse.json(
       { error: "Failed to create checkout session" },
       { status: 500 },

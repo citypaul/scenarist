@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -29,22 +30,35 @@ import {
   Loader2,
   AlertCircle,
   ShoppingCart,
+  XCircle,
 } from "lucide-react";
 import { useCart } from "@/contexts/cart-context";
 
+type UnavailableOffer = {
+  id: string;
+  name: string;
+  available: number;
+  requested: number;
+};
+
 export default function CheckoutPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const canceled = searchParams.get("canceled");
   const { items, subtotal, discount, discountAmount, tax, total, clearCart } =
     useCart();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [unavailableOffers, setUnavailableOffers] = useState<
+    UnavailableOffer[]
+  >([]);
 
   const handleCheckout = async () => {
     if (items.length === 0) return;
 
     setIsLoading(true);
     setError(null);
+    setUnavailableOffers([]);
 
     try {
       const response = await fetch("/api/checkout", {
@@ -65,6 +79,11 @@ export default function CheckoutPage() {
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 409 && data.unavailableOffers) {
+          setUnavailableOffers(data.unavailableOffers);
+          setError("Some promotional offers are no longer available");
+          return;
+        }
         throw new Error(data.error || "Failed to create checkout session");
       }
 
@@ -81,6 +100,10 @@ export default function CheckoutPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleBackToProducts = () => {
+    router.push("/");
   };
 
   if (items.length === 0 && !canceled) {
@@ -165,11 +188,41 @@ export default function CheckoutPage() {
           </Alert>
         )}
 
-        {error && (
+        {error && unavailableOffers.length === 0 && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {unavailableOffers.length > 0 && (
+          <Alert variant="destructive">
+            <XCircle className="h-4 w-4" />
+            <AlertTitle>Promotional Offers Ended</AlertTitle>
+            <AlertDescription>
+              <p className="mb-2">
+                Sorry, the following promotional offers are no longer available:
+              </p>
+              <ul className="list-disc list-inside space-y-1">
+                {unavailableOffers.map((item) => (
+                  <li key={item.id}>
+                    <strong>{item.name}</strong>
+                    {item.available > 0
+                      ? ` - Only ${item.available} spots remaining at this price (you requested ${item.requested})`
+                      : " - Offer ended"}
+                  </li>
+                ))}
+              </ul>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3"
+                onClick={handleBackToProducts}
+              >
+                Update Your Cart
+              </Button>
+            </AlertDescription>
           </Alert>
         )}
 

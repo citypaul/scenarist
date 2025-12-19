@@ -335,17 +335,19 @@ But testing them **together** - proving that when your server returns X, your fr
 **The App:**
 A simple payment dashboard that integrates with:
 
+- **Auth0** - User authentication and tier management
+- **Inventory Service** - Stock levels (internal microservice we consume but don't own)
 - **Stripe** - Payment processing
-- **Auth0** - User authentication
-- **SendGrid** - Email notifications
+- **SendGrid** - Email notifications (optional)
 
 **Why this is perfect:**
 
 - Universally relatable (everyone has payment integration)
-- Naturally demonstrates request matching (user tiers)
-- Naturally demonstrates sequences (payment status polling)
+- Naturally demonstrates request matching (user tiers, stock levels)
+- Naturally demonstrates sequences (sold out during checkout)
 - Naturally demonstrates stateful mocks (cart accumulation)
-- Can show both success and error scenarios
+- Shows coordination across multiple services
+- Internal service (Inventory) has NO test mode - proves "any HTTP service" value
 
 **Tech Stack:**
 
@@ -353,6 +355,7 @@ A simple payment dashboard that integrates with:
 - Tailwind CSS (clean visuals for video)
 - TypeScript (demonstrates type safety)
 - shadcn/ui (free, official components only)
+- json-server (simulates the Inventory Service for demo purposes)
 
 ### Real External Service Integration
 
@@ -362,6 +365,7 @@ A simple payment dashboard that integrates with:
 2. **Scenarist's Value** - Demonstrates intercepting real SDK HTTP calls
 3. **Proof of Concept** - Proves "your code runs, only external responses are controlled"
 4. **Relatable** - Developers see their exact patterns being tested
+5. **The "Any Service" Proof** - Internal Inventory service has no test mode, proving Scenarist works with any HTTP service
 
 **The Integration Architecture:**
 
@@ -371,25 +375,63 @@ A simple payment dashboard that integrates with:
 │  ─────────────────────────                                      │
 │                                                                 │
 │  @auth0/nextjs-auth0 SDK ──────► HTTP calls to Auth0 API       │
+│  fetch() to Inventory ─────────► HTTP calls to json-server:3001│
 │  @stripe/stripe-js SDK ────────► HTTP calls to Stripe API      │
-│  @sendgrid/mail SDK ───────────► HTTP calls to SendGrid API    │
 │                                                                 │
 │  ═══════════════════════════════════════════════════════════   │
 │                                                                 │
-│  In Production:     Calls go to real services                   │
-│  In Development:    Calls go to real services (test mode)       │
+│  In Development:    All calls go to real services               │
 │  In Tests:          MSW intercepts, Scenarist controls responses│
+│  In Production:     Scenarist code tree-shaken out              │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 **Services Integrated:**
 
-| Service  | SDK                   | Purpose                    | Free Tier |
-| -------- | --------------------- | -------------------------- | --------- |
-| Auth0    | `@auth0/nextjs-auth0` | User authentication, tiers | 7,500 MAU |
-| Stripe   | `stripe`, `stripe-js` | Payment processing         | Test mode |
-| SendGrid | `@sendgrid/mail`      | Email notifications        | 100/day   |
+| Service   | Implementation        | Purpose                    | Test Mode? |
+| --------- | --------------------- | -------------------------- | ---------- |
+| Auth0     | `@auth0/nextjs-auth0` | User authentication, tiers | Limited    |
+| Inventory | json-server :3001     | Stock levels, availability | **None**   |
+| Stripe    | `stripe`, `stripe-js` | Payment processing         | Test cards |
+
+**The Inventory Service:**
+
+In the demo, the Inventory Service represents an internal microservice that our team consumes but doesn't own - like a service managed by another team in your organization. We simulate it with json-server for the demo, but the key point is:
+
+- It has **NO test mode** (unlike Stripe's test cards)
+- It's a real HTTP service making real calls
+- It creates the killer demo: "sold out during checkout" sequence
+- It proves Scenarist works with ANY HTTP service, not just services with test tooling
+
+**For the demo:**
+
+```bash
+# Simulate the Inventory Service
+npx json-server db.json --port 3001
+```
+
+**In the video, frame it as:**
+
+> "This is our Inventory Service - an internal API we call to check stock levels. We don't own this service, another team does. And unlike Stripe, there's no test mode. No magic card numbers for 'out of stock'."
+
+**The Testing Problem Table (Key Visual):**
+
+This table is shown in Video 2 to illustrate what's hard without Scenarist:
+
+| Scenario                  | Auth0   | Inventory      | Stripe   | Without Scenarist     |
+| ------------------------- | ------- | -------------- | -------- | --------------------- |
+| Happy path                | Pro     | In stock       | Success  | ✅ Easy               |
+| Premium discount          | Pro     | In stock       | Success  | 🟡 Need Auth0 account |
+| Free user pricing         | Free    | In stock       | Success  | 🟡 Another account    |
+| Payment declined          | Any     | In stock       | Declined | 🟡 Test card works    |
+| Out of stock              | Any     | 0 left         | N/A      | 🔴 Edit db.json?      |
+| Low stock                 | Any     | 3 left         | N/A      | 🔴 Edit manually      |
+| **Sold out mid-checkout** | Any     | In stock → Out | N/A      | 🔴 **Impossible**     |
+| Service down              | Any     | 500 error      | N/A      | 🔴 Kill server?       |
+| 50 parallel tests         | Various | Various        | Various  | 🔴 **Impossible**     |
+
+Legend: ✅ Easy | 🟡 Annoying | 🔴 Hard/Impossible
 
 ### Environment Variables
 
@@ -1254,34 +1296,42 @@ Collection of scenario patterns for common use cases.
 
 ### Pages
 
-1. **Home** - Product listing with tier-based pricing
+1. **Home** - Product listing with stock badges and tier-based pricing
 2. **Cart** - Cart with accumulated items (stateful mocks)
-3. **Checkout** - Payment flow (sequences)
-4. **Order Status** - Polling for payment completion
+3. **Checkout** - Payment flow with stock verification (sequences)
+4. **Orders** - Order history
 
 ### Scenarios to Demonstrate
 
-- `default` - Happy path, all APIs succeed
-- `premiumUser` - 20% discount on all items
-- `enterpriseUser` - Custom pricing, no limits
+**Core Scenarios:**
+
+- `default` - Happy path, all APIs succeed, in stock
+- `premiumUser` - Pro tier, 20% discount on all items
+- `freeUser` - Free tier, full pricing
+- `outOfStock` - Product unavailable
+- `lowStock` - Only 3 left (urgency messaging)
+- `soldOutDuringCheckout` - **Key demo**: in stock on page load, out of stock at checkout (sequence)
+
+**Payment Scenarios:**
+
 - `paymentDeclined` - Card declined error
 - `payment3DSRequired` - 3D Secure flow
-- `paymentPolling` - Status progression (pending -> processing -> complete)
-- `cartState` - Cart persistence across requests
+
+**Error Scenarios:**
+
+- `inventoryServiceDown` - Inventory API returns 500
 - `authError` - Authentication failure
-- `emailFailure` - Email notification failure
-- `slowNetwork` - Delayed responses
-- `rateLimited` - Too many requests
+- `slowNetwork` - Delayed responses (tests loading states)
 
 ### External APIs (Real Integration, Intercepted in Tests)
 
 PayFlow makes real HTTP calls to these services. In tests, MSW/Scenarist intercepts them:
 
-| API Pattern                  | Service  | SDK Making Calls      |
-| ---------------------------- | -------- | --------------------- |
-| `https://*.auth0.com/*`      | Auth0    | `@auth0/nextjs-auth0` |
-| `https://api.stripe.com/*`   | Stripe   | `stripe`, `stripe-js` |
-| `https://api.sendgrid.com/*` | SendGrid | `@sendgrid/mail`      |
+| API Pattern                | Service   | Implementation        |
+| -------------------------- | --------- | --------------------- |
+| `https://*.auth0.com/*`    | Auth0     | `@auth0/nextjs-auth0` |
+| `http://localhost:3001/*`  | Inventory | json-server           |
+| `https://api.stripe.com/*` | Stripe    | `stripe`, `stripe-js` |
 
 **Why Real Integrations Matter:**
 
