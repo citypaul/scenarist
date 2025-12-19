@@ -6,7 +6,10 @@ export async function GET() {
     const offers = await getAllProductOffers();
     return NextResponse.json(offers);
   } catch (error) {
-    console.error("Inventory service error:", error);
+    // Only log full error details in development
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Inventory service error:", error);
+    }
     return NextResponse.json(
       { error: "Failed to fetch promotional offers" },
       { status: 503 },

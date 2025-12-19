@@ -16,6 +16,7 @@ export type ProductOffer = {
   readonly status: OfferStatus;
 };
 
+// Show urgency badge ("X left at this price") when 20 or fewer promotional slots remain
 const LIMITED_OFFER_THRESHOLD = 20;
 
 function getOfferStatus(available: number): OfferStatus {

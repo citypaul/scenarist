@@ -125,7 +125,10 @@ export async function POST(request: Request) {
       url: checkoutSession.url,
     });
   } catch (error) {
-    console.error("Checkout error:", error);
+    // Only log full error details in development
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Checkout error:", error);
+    }
     return NextResponse.json(
       { error: "Failed to create checkout session" },
       { status: 500 },
