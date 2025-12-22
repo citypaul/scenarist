@@ -62,6 +62,8 @@ Scenarist intercepts HTTP requests before they reach the actual services and ret
 └─────────────────────────────────────────────────────┘
 ```
 
+**Important:** This interception happens **server-side**. When your Next.js server makes an HTTP request to an external service (like Auth0 or your Inventory API), MSW intercepts that request before it leaves the server. The browser still makes real requests to your Next.js server - those aren't mocked. Only the server-to-external-service calls are intercepted.
+
 At its core, Scenarist is framework-agnostic. It doesn't care if you're using Express, Next.js, Fastify, or Hono. Adapters connect your framework to the core.
 
 Whether you're using Express today or migrating to Next.js tomorrow, the patterns are the same. Only the adapter changes.

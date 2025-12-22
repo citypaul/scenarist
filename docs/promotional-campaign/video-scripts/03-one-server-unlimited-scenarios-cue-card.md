@@ -11,6 +11,8 @@ Condensed recording guide. See `03-one-server-unlimited-scenarios.md` for full s
 - Testing Problem Table slide from Video 2 ready
 - Diagrams ready: Framework Architecture, Test ID Isolation
 
+**Interception note:** Scenarist intercepts server-side (Next.js → external services). Browser DevTools still shows browser → Next.js requests. Proof of interception = json-server terminal showing zero requests.
+
 ---
 
 ## Flow (5 min)

@@ -14,7 +14,7 @@ Introduce Scenarist and show how it makes the "hard" and "impossible" scenarios 
 2. **Inventory Service** - `npm run inventory` (localhost:3001) - KEEP VISIBLE to show it's NOT being called
 3. **Playwright tests ready** - Have a few tests prepared to run
 
-**Browser:** DevTools Network tab visible (optional - to show no real requests)
+**Note on interception:** Scenarist intercepts server-side (Next.js → external services). Browser DevTools will still show requests from browser → Next.js. The proof of interception is the **json-server terminal** showing zero incoming requests.
 
 **Key scenarios defined:**
 
