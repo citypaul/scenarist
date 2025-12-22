@@ -2,7 +2,7 @@
 
 Last updated: 2025-12-22
 
-## Current Status: Videos 1 & 2 Materials Complete, Ready for Recording
+## Current Status: Videos 1-3 Materials Complete, Ready for Recording
 
 **Stage 1 (Foundation) is COMPLETE and merged to main (PR #398).**
 **Stage 2 (Working Flows) is COMPLETE and merged to main (PR #399).**
@@ -10,8 +10,9 @@ Last updated: 2025-12-22
 
 **Video 1 materials are complete** - script, cue card, visual aids, PowerPoint presentation, and blog post.
 **Video 2 materials are complete** - script, cue card, visual aids, PowerPoint presentation, and blog post.
+**Video 3 materials are complete** - script, cue card, blog post, PowerPoint presentation, and scenario mapping.
 
-**Next milestone:** Record Videos 1 & 2, then Stage 3 - Scenarist Integration.
+**Next milestone:** Record Videos 1-3, then Stage 3 - Scenarist Integration (user implements code).
 
 ---
 
@@ -58,6 +59,8 @@ This is critical for demonstrating Scenarist's value - "works with ANY HTTP serv
 - ✅ `01-the-testing-gap-cue-card.md` - Condensed recording guide for Video 1
 - ✅ `02-meet-payflow.md` - Full script with json-server, 3 terminals, testing problem table
 - ✅ `02-meet-payflow-cue-card.md` - Condensed recording guide
+- ✅ `03-one-server-unlimited-scenarios.md` - Full script for Video 3 (Scenarist introduction)
+- ✅ `03-one-server-unlimited-scenarios-cue-card.md` - Condensed recording guide for Video 3
 
 **Visual Aids** (`docs/promotional-campaign/visual-aids/`):
 
@@ -76,10 +79,16 @@ This is critical for demonstrating Scenarist's value - "works with ANY HTTP serv
 
 - ✅ `video-01-the-testing-gap.pptx` - PowerPoint/Keynote slides for Video 1
 - ✅ `video-02-meet-payflow.pptx` - PowerPoint/Keynote slides for Video 2
+- ✅ `video-03-one-server-unlimited-scenarios.pptx` - PowerPoint/Keynote slides for Video 3
 
 **Blog Posts** (`docs/promotional-campaign/blog-posts/`):
 
 - ✅ `02-meet-payflow.md` - Companion blog post for Video 2
+- ✅ `03-one-server-unlimited-scenarios.md` - Companion blog post for Video 3
+
+**Planning** (`docs/promotional-campaign/planning/`):
+
+- ✅ `scenario-mapping.md` - How Testing Problem Table maps to Scenarist scenarios
 
 ### The Demo Flow
 
@@ -181,7 +190,19 @@ This is critical for demonstrating Scenarist's value - "works with ANY HTTP serv
 - [x] Update video scripts and visual aids with offer framing
 - [x] **REVIEW CHECKPOINT** → PR #400
 
-### Demo App Stage 3: Scenarist Integration ⏳ PENDING
+### Demo App Stage 3: Scenarist Integration ⏳ PENDING (User Implements)
+
+**Note:** Stage 3 planning materials are complete. The actual implementation (installing packages, writing scenarios, creating tests) will be done by the user following the scenario mapping document.
+
+**Planning materials ready:**
+
+- [x] Video 3 script (`video-scripts/03-one-server-unlimited-scenarios.md`)
+- [x] Video 3 cue card (`video-scripts/03-one-server-unlimited-scenarios-cue-card.md`)
+- [x] Video 3 blog post (`blog-posts/03-one-server-unlimited-scenarios.md`)
+- [x] Video 3 slides (`presentations/video-03-one-server-unlimited-scenarios.pptx`)
+- [x] Scenario mapping (`planning/scenario-mapping.md`)
+
+**Implementation tasks (user to complete):**
 
 - [ ] Install `@scenarist/nextjs-adapter` and `@scenarist/playwright-helpers`
 - [ ] Define scenarios:
@@ -212,8 +233,12 @@ This is critical for demonstrating Scenarist's value - "works with ANY HTTP serv
 
 ### Phase 2: Introducing Scenarist (Videos 3-4)
 
+- [x] **Video 3 script created** (`video-scripts/03-one-server-unlimited-scenarios.md`)
+- [x] **Video 3 cue card created** (`video-scripts/03-one-server-unlimited-scenarios-cue-card.md`)
+- [x] **Video 3 slides created** (`presentations/video-03-one-server-unlimited-scenarios.pptx`)
+- [x] **Video 3 blog post created** (`blog-posts/03-one-server-unlimited-scenarios.md`)
+- [x] **Scenario mapping created** (`planning/scenario-mapping.md`)
 - [ ] Record Video 3: One Server, Unlimited Scenarios → Tag: `video-03-scenario-switching`
-- [ ] Write Video 3 companion blog post
 - [ ] Record Video 4: Case Study → Tag: `video-04-case-study`
 - [ ] Write Video 4 companion blog post
 
