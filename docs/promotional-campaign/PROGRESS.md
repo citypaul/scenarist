@@ -1,14 +1,16 @@
 # Campaign Progress
 
-Last updated: 2025-12-16
+Last updated: 2025-12-22
 
-## Current Status: Stage 2.5 Complete, PR #400 Created
+## Current Status: All Demo Stages Complete, Video 1 Materials Ready
 
 **Stage 1 (Foundation) is COMPLETE and merged to main (PR #398).**
 **Stage 2 (Working Flows) is COMPLETE and merged to main (PR #399).**
-**Stage 2.5 (Promotional Offers Service) is COMPLETE (PR #400).**
+**Stage 2.5 (Promotional Offers Service) is COMPLETE and merged to main (PR #400).**
 
-Stage 2.5 adds the Inventory Service with **promotional offer framing** - showing Scenarist works with ANY HTTP service. The terminology has been updated from "stock" to "promotional offers" to better fit SaaS products (launch pricing, founding member spots).
+**Video 1 materials are now complete** - script, cue card, visual aids, and PowerPoint presentation.
+
+**Next milestone:** Stage 3 - Scenarist Integration (the actual demo of Scenarist solving the problems).
 
 ---
 
@@ -51,11 +53,15 @@ This is critical for demonstrating Scenarist's value - "works with ANY HTTP serv
 
 **Video Scripts** (`docs/promotional-campaign/video-scripts/`):
 
+- ✅ `01-the-testing-gap.md` - Full script for Video 1 (conceptual, no live coding)
+- ✅ `01-the-testing-gap-cue-card.md` - Condensed recording guide for Video 1
 - ✅ `02-meet-payflow.md` - Full script with json-server, 3 terminals, testing problem table
 - ✅ `02-meet-payflow-cue-card.md` - Condensed recording guide
 
 **Visual Aids** (`docs/promotional-campaign/visual-aids/`):
 
+- ✅ `00-the-real-testing-gap.md` - **Key visual for Video 1**: Isolated tests vs the gap
+- ✅ `00-testing-pyramid-gap.md` - Testing pyramid showing where Scenarist fits
 - ✅ `01-payflow-architecture.md` - App architecture diagram
 - ✅ `02-user-flow.md` - Happy path user journey
 - ✅ `03-testing-problem-table.md` - **Key visual**: What's hard without Scenarist
@@ -64,6 +70,10 @@ This is critical for demonstrating Scenarist's value - "works with ANY HTTP serv
 - ✅ `06-sequence-sold-out.md` - "Sold out during checkout" sequence
 - ✅ `07-speed-comparison.md` - Performance comparison
 - ✅ `08-value-summary.md` - Key value propositions
+
+**Presentations** (`docs/promotional-campaign/presentations/`):
+
+- ✅ `video-01-the-testing-gap.pptx` - PowerPoint/Keynote slides for Video 1
 
 ### The Demo Flow
 
@@ -182,9 +192,14 @@ This is critical for demonstrating Scenarist's value - "works with ANY HTTP serv
 
 ### Phase 1: The Problem & The App (Videos 1-2)
 
+- [x] **Video 1 script created** (`video-scripts/01-the-testing-gap.md`)
+- [x] **Video 1 cue card created** (`video-scripts/01-the-testing-gap-cue-card.md`)
+- [x] **Video 1 visual aids created** (`visual-aids/00-*.md`)
+- [x] **Video 1 slides created** (`presentations/video-01-the-testing-gap.pptx`)
 - [ ] Record Video 1: The Testing Gap → Tag: `video-01-testing-gap`
 - [ ] Write Video 1 companion blog post
 - [x] **Video 2 script created** (`video-scripts/02-meet-payflow.md`)
+- [x] **Video 2 cue card created** (`video-scripts/02-meet-payflow-cue-card.md`)
 - [ ] Record Video 2: Meet PayFlow → Tag: `video-02-meet-payflow`
 - [ ] Write Video 2 companion blog post
 
