@@ -2,15 +2,16 @@
 
 Last updated: 2025-12-22
 
-## Current Status: All Demo Stages Complete, Video 1 Materials Ready
+## Current Status: Videos 1 & 2 Materials Complete, Ready for Recording
 
 **Stage 1 (Foundation) is COMPLETE and merged to main (PR #398).**
 **Stage 2 (Working Flows) is COMPLETE and merged to main (PR #399).**
 **Stage 2.5 (Promotional Offers Service) is COMPLETE and merged to main (PR #400).**
 
-**Video 1 materials are now complete** - script, cue card, visual aids, and PowerPoint presentation.
+**Video 1 materials are complete** - script, cue card, visual aids, PowerPoint presentation, and blog post.
+**Video 2 materials are complete** - script, cue card, visual aids, PowerPoint presentation, and blog post.
 
-**Next milestone:** Stage 3 - Scenarist Integration (the actual demo of Scenarist solving the problems).
+**Next milestone:** Record Videos 1 & 2, then Stage 3 - Scenarist Integration.
 
 ---
 
@@ -74,6 +75,11 @@ This is critical for demonstrating Scenarist's value - "works with ANY HTTP serv
 **Presentations** (`docs/promotional-campaign/presentations/`):
 
 - ✅ `video-01-the-testing-gap.pptx` - PowerPoint/Keynote slides for Video 1
+- ✅ `video-02-meet-payflow.pptx` - PowerPoint/Keynote slides for Video 2
+
+**Blog Posts** (`docs/promotional-campaign/blog-posts/`):
+
+- ✅ `02-meet-payflow.md` - Companion blog post for Video 2
 
 ### The Demo Flow
 
@@ -200,8 +206,9 @@ This is critical for demonstrating Scenarist's value - "works with ANY HTTP serv
 - [ ] Write Video 1 companion blog post
 - [x] **Video 2 script created** (`video-scripts/02-meet-payflow.md`)
 - [x] **Video 2 cue card created** (`video-scripts/02-meet-payflow-cue-card.md`)
+- [x] **Video 2 slides created** (`presentations/video-02-meet-payflow.pptx`)
+- [x] **Video 2 blog post created** (`blog-posts/02-meet-payflow.md`)
 - [ ] Record Video 2: Meet PayFlow → Tag: `video-02-meet-payflow`
-- [ ] Write Video 2 companion blog post
 
 ### Phase 2: Introducing Scenarist (Videos 3-4)
 

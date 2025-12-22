@@ -7,6 +7,7 @@ PowerPoint presentations for the Scenarist promotional video series. Compatible 
 | File                            | Video   | Description                        |
 | ------------------------------- | ------- | ---------------------------------- |
 | `video-01-the-testing-gap.pptx` | Video 1 | The Testing Gap Nobody Talks About |
+| `video-02-meet-payflow.pptx`    | Video 2 | Meet PayFlow - A Real Payment App  |
 
 ## Design
 
@@ -26,7 +27,8 @@ Each presentation has a corresponding Python script. To regenerate:
 
 ```bash
 cd docs/promotional-campaign/presentations
-python3 create-video-1-slides.py
+python3 create-video-1-slides.py  # Video 1
+python3 create-video-2-slides.py  # Video 2
 ```
 
 Requires `python-pptx`:
