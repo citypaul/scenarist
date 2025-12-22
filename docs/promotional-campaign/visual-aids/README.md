@@ -20,6 +20,8 @@ Diagrams are written in Mermaid markdown format. To use them:
 
 | File                           | Visual                         | Used In     |
 | ------------------------------ | ------------------------------ | ----------- |
+| `00-the-real-testing-gap.md`   | Isolated tests vs the gap      | Video 1     |
+| `00-testing-pyramid-gap.md`    | Testing pyramid with gap       | Video 1     |
 | `01-payflow-architecture.md`   | App architecture diagram       | Video 2     |
 | `02-user-flow.md`              | Happy path user journey        | Video 2     |
 | `03-testing-problem-table.md`  | Scenario difficulty comparison | Video 2     |
