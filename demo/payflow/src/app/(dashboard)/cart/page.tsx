@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -80,9 +81,9 @@ export default function CartPage() {
                 {items.length === 0 ? (
                   <p className="text-muted-foreground text-center py-8">
                     Your cart is empty.{" "}
-                    <a href="/" className="text-primary hover:underline">
+                    <Link href="/" className="text-primary hover:underline">
                       Browse products
-                    </a>
+                    </Link>
                   </p>
                 ) : (
                   <Table>
@@ -183,7 +184,7 @@ export default function CartPage() {
                   disabled={items.length === 0}
                   asChild
                 >
-                  <a href="/checkout">Proceed to Checkout</a>
+                  <Link href="/checkout">Proceed to Checkout</Link>
                 </Button>
               </CardFooter>
             </Card>
