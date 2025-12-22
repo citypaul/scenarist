@@ -136,11 +136,25 @@ All credentials are configured via environment variables. Copy `.env.example` to
      STRIPE_WEBHOOK_SECRET=your_signing_secret
      ```
 
-   **For local development**, use Stripe CLI instead:
+   **For local development**, use the Stripe CLI instead:
+   1. **Install the Stripe CLI**
 
-   ```bash
-   stripe listen --forward-to localhost:3000/api/webhooks/stripe
-   ```
+      ```bash
+      brew install stripe/stripe-cli/stripe
+      ```
+
+   2. **Login to your Stripe account**
+
+      ```bash
+      stripe login
+      ```
+
+   3. **Forward webhooks to your local server**
+      ```bash
+      stripe listen --forward-to localhost:3000/api/webhooks/stripe
+      ```
+
+   The CLI will output a webhook signing secret (starts with `whsec_`) - add this to your `.env.local`.
 
 ### Test Mode vs Live Mode
 
