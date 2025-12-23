@@ -1,4 +1,12 @@
 {
+  "users": [
+    {
+      "id": "current",
+      "email": "demo@payflow.com",
+      "name": "Demo User",
+      "tier": "pro"
+    }
+  ],
   "inventory": [
     {
       "id": "1",
@@ -17,6 +25,26 @@
       "productId": "3",
       "quantity": 3,
       "reserved": 0
+    }
+  ],
+  "shipping": [
+    {
+      "id": "standard",
+      "name": "Standard Shipping",
+      "price": 5.99,
+      "estimatedDays": "5-7 business days"
+    },
+    {
+      "id": "express",
+      "name": "Express Shipping",
+      "price": 14.99,
+      "estimatedDays": "2-3 business days"
+    },
+    {
+      "id": "overnight",
+      "name": "Overnight Shipping",
+      "price": 29.99,
+      "estimatedDays": "Next business day"
     }
   ]
 }

@@ -25,9 +25,9 @@ YELLOW = RGBColor(245, 158, 11)  # amber-500
 GREEN = RGBColor(34, 197, 94)  # green-500
 BLUE = RGBColor(59, 130, 246)  # blue-500
 GRAY = RGBColor(161, 161, 170)  # zinc-400
-AUTH0_ORANGE = RGBColor(235, 84, 36)  # Auth0 brand
-STRIPE_PURPLE = RGBColor(99, 91, 255)  # Stripe brand
+USER_SERVICE = RGBColor(99, 102, 241)  # indigo-500
 INVENTORY_GREEN = RGBColor(16, 185, 129)  # emerald-500
+SHIPPING_BLUE = RGBColor(14, 165, 233)  # sky-500
 
 
 def add_dark_slide(prs):
@@ -146,14 +146,14 @@ add_title(slide, "The Tech Stack", top=Inches(0.8), font_size=44)
 add_bullet_point(slide, "Next.js 16 (App Router)", Inches(3), Inches(2), WHITE)
 add_bullet_point(slide, "TypeScript", Inches(3), Inches(2.7), WHITE)
 add_bullet_point(slide, "Tailwind CSS + shadcn/ui", Inches(3), Inches(3.4), WHITE)
-add_bullet_point(slide, "Three external services", Inches(3), Inches(4.1), YELLOW)
+add_bullet_point(slide, "Three backend services", Inches(3), Inches(4.1), YELLOW)
 add_subtitle(slide, "Nothing exotic. The kind of app you'd actually build.", top=Inches(5.5), font_size=28, color=GRAY)
 
 # ============================================================================
 # SLIDE 4: The Three Services
 # ============================================================================
 slide = add_dark_slide(prs)
-add_title(slide, "Three External Services", top=Inches(0.5), font_size=44)
+add_title(slide, "Three Backend Services", top=Inches(0.5), font_size=44)
 
 # Service boxes
 box_width = Inches(3.8)
@@ -161,96 +161,108 @@ box_height = Inches(3)
 gap = Inches(0.4)
 start_left = Inches(0.8)
 
-# Auth0
-add_service_box(slide, "Auth0", "Authentication\nUser Tiers\nReal SDK", AUTH0_ORANGE,
+# User Service
+add_service_box(slide, "User Service", "User Tier\nPro/Free\n/users/current", USER_SERVICE,
                 start_left, Inches(1.8), box_width, box_height)
 
 # Inventory Service
-add_service_box(slide, "Inventory Service", "Promotional Offers\njson-server :3001\nNO test mode", INVENTORY_GREEN,
+add_service_box(slide, "Inventory Service", "Offer Availability\nQuantity/Reserved\n/inventory/:id", INVENTORY_GREEN,
                 start_left + box_width + gap, Inches(1.8), box_width, box_height)
 
-# Stripe
-add_service_box(slide, "Stripe", "Payments\nWebhooks\nReal SDK", STRIPE_PURPLE,
+# Shipping Service
+add_service_box(slide, "Shipping Service", "Delivery Options\nRates & Times\n/shipping", SHIPPING_BLUE,
                 start_left + 2 * (box_width + gap), Inches(1.8), box_width, box_height)
 
-add_subtitle(slide, "Real HTTP calls. Real latency. Real dependencies.", top=Inches(5.5), font_size=28, color=YELLOW)
+add_subtitle(slide, "All server-side HTTP calls. Browser → Next.js → Services.", top=Inches(5.5), font_size=28, color=YELLOW)
 
 # ============================================================================
-# SLIDE 5: The Inventory Service - Key Point
-# ============================================================================
-slide = add_dark_slide(prs)
-add_title(slide, "The Inventory Service", top=Inches(1), font_size=48)
-add_subtitle(slide, "An internal API we consume but don't own.", top=Inches(2.2), font_size=32, color=GRAY)
-add_title(slide, "Unlike Stripe:", top=Inches(3.5), font_size=36, color=WHITE)
-add_bullet_point(slide, "No test mode", Inches(2.5), Inches(4.3), RED, "")
-add_bullet_point(slide, "No magic card numbers", Inches(2.5), Inches(4.9), RED, "")
-add_bullet_point(slide, "No way to simulate errors", Inches(2.5), Inches(5.5), RED, "")
-add_subtitle(slide, "This is your reality with internal microservices.", top=Inches(6.3), font_size=24, color=GRAY)
-
-# ============================================================================
-# SLIDE 6: Code - Auth0
+# SLIDE 5: The Key Point - Server-Side
 # ============================================================================
 slide = add_dark_slide(prs)
-add_title(slide, "Real Auth0 SDK", top=Inches(0.5), font_size=36, color=AUTH0_ORANGE)
+add_title(slide, "The Key Point", top=Inches(1), font_size=48)
+add_subtitle(slide, "Your browser never talks to these services directly.", top=Inches(2.2), font_size=32, color=GRAY)
+add_title(slide, "Next.js makes server-side HTTP calls.", top=Inches(3.5), font_size=36, color=WHITE)
 
-code = """// src/lib/auth0.ts
-import { Auth0Client } from '@auth0/nextjs-auth0/server';
+# Architecture diagram
+arch_box = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(1.5), Inches(4.5), Inches(10.333), Inches(1.5))
+arch_box.fill.solid()
+arch_box.fill.fore_color.rgb = RGBColor(39, 39, 42)
+arch_box.line.fill.background()
 
-export const auth0 = new Auth0Client();
+txBox = slide.shapes.add_textbox(Inches(1.7), Inches(4.7), Inches(9.933), Inches(1.1))
+tf = txBox.text_frame
+p = tf.paragraphs[0]
+p.text = "Browser → Next.js Server → User / Inventory / Shipping Services"
+p.font.size = Pt(24)
+p.font.color.rgb = WHITE
+p.alignment = PP_ALIGN.CENTER
 
-// Usage: await auth0.getSession()
-// Returns: { user: { email, tier, ... } }"""
+add_subtitle(slide, "This is 100% mockable.", top=Inches(6.3), font_size=24, color=GREEN)
+
+# ============================================================================
+# SLIDE 6: Code - User Service
+# ============================================================================
+slide = add_dark_slide(prs)
+add_title(slide, "User Service", top=Inches(0.5), font_size=36, color=USER_SERVICE)
+
+code = """// Server-side call to User Service
+const response = await fetch("http://localhost:3001/users/current");
+const user = await response.json();
+// Returns: { id, email, name, tier }
+
+// tier: "free" | "basic" | "pro" | "enterprise"
+// Pro users get 20% discount"""
 
 add_code_block(slide, code, Inches(1.5), Inches(1.8), Inches(10), Inches(3))
-add_subtitle(slide, "When you log in, it hits Auth0's servers.", top=Inches(5.5), font_size=28, color=WHITE)
+add_subtitle(slide, "Server fetches user tier for pricing decisions.", top=Inches(5.5), font_size=28, color=WHITE)
 
 # ============================================================================
-# SLIDE 7: Code - Stripe
-# ============================================================================
-slide = add_dark_slide(prs)
-add_title(slide, "Real Stripe SDK", top=Inches(0.5), font_size=36, color=STRIPE_PURPLE)
-
-code = """// src/lib/stripe.ts
-import Stripe from 'stripe';
-
-export const getStripeServer = () => {
-  return new Stripe(process.env.STRIPE_SECRET_KEY!);
-};
-
-// Checkout sessions, webhooks - all real"""
-
-add_code_block(slide, code, Inches(1.5), Inches(1.8), Inches(10), Inches(3))
-add_subtitle(slide, "Payments go through Stripe's servers.", top=Inches(5.5), font_size=28, color=WHITE)
-
-# ============================================================================
-# SLIDE 8: Code - Inventory
+# SLIDE 7: Code - Inventory Service
 # ============================================================================
 slide = add_dark_slide(prs)
-add_title(slide, "Inventory Service (json-server)", top=Inches(0.5), font_size=36, color=INVENTORY_GREEN)
+add_title(slide, "Inventory Service", top=Inches(0.5), font_size=36, color=INVENTORY_GREEN)
 
-code = """// Fetching offer availability
+code = """// Server-side call to Inventory Service
 const response = await fetch(
-  `${INVENTORY_SERVICE_URL}/inventory/${productId}`
+  `http://localhost:3001/inventory/${productId}`
 );
 const data = await response.json();
-// { id, productId, quantity, reserved }
+// Returns: { id, productId, quantity, reserved }
 
-// Simulated with: npx json-server db.json --port 3001"""
+// quantity: 0 = offer ended, 3 = limited spots"""
 
 add_code_block(slide, code, Inches(1.5), Inches(1.8), Inches(10), Inches(3.2))
-add_subtitle(slide, "Real HTTP calls to a real service.", top=Inches(5.5), font_size=28, color=WHITE)
+add_subtitle(slide, "Server fetches offer availability. No test mode.", top=Inches(5.5), font_size=28, color=WHITE)
+
+# ============================================================================
+# SLIDE 8: Code - Shipping Service
+# ============================================================================
+slide = add_dark_slide(prs)
+add_title(slide, "Shipping Service", top=Inches(0.5), font_size=36, color=SHIPPING_BLUE)
+
+code = """// Server-side call to Shipping Service
+const response = await fetch("http://localhost:3001/shipping");
+const options = await response.json();
+// Returns: [
+//   { id: "standard", price: 5.99, estimatedDays: "5-7" },
+//   { id: "express", price: 14.99, estimatedDays: "2-3" },
+//   { id: "overnight", price: 29.99, estimatedDays: "1" }
+// ]"""
+
+add_code_block(slide, code, Inches(1.5), Inches(1.8), Inches(10), Inches(3.5))
+add_subtitle(slide, "Server fetches delivery options and rates.", top=Inches(5.8), font_size=28, color=WHITE)
 
 # ============================================================================
 # SLIDE 9: Live Demo - Setup
 # ============================================================================
 slide = add_dark_slide(prs)
-add_title(slide, "Three Terminals", top=Inches(0.8), font_size=44)
+add_title(slide, "Two Terminals", top=Inches(0.8), font_size=44)
 
 # Terminal boxes
-term_width = Inches(3.8)
-term_height = Inches(2.2)
-term_gap = Inches(0.4)
-term_start = Inches(0.8)
+term_width = Inches(5.5)
+term_height = Inches(2.8)
+term_gap = Inches(0.5)
+term_start = Inches(1.2)
 
 # Terminal 1: Next.js
 box1 = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, term_start, Inches(2), term_width, term_height)
@@ -258,85 +270,69 @@ box1.fill.solid()
 box1.fill.fore_color.rgb = RGBColor(39, 39, 42)
 box1.line.fill.background()
 
-txBox = slide.shapes.add_textbox(term_start + Inches(0.2), Inches(2.2), term_width - Inches(0.4), Inches(1.8))
+txBox = slide.shapes.add_textbox(term_start + Inches(0.2), Inches(2.2), term_width - Inches(0.4), Inches(2.4))
 tf = txBox.text_frame
 p = tf.paragraphs[0]
 p.text = "Next.js"
-p.font.size = Pt(20)
+p.font.size = Pt(24)
 p.font.bold = True
 p.font.color.rgb = WHITE
 p = tf.add_paragraph()
 p.text = "pnpm dev"
-p.font.size = Pt(16)
+p.font.size = Pt(18)
 p.font.name = "Menlo"
 p.font.color.rgb = GREEN
 p = tf.add_paragraph()
 p.text = "localhost:3000"
-p.font.size = Pt(14)
+p.font.size = Pt(16)
+p.font.color.rgb = GRAY
+p = tf.add_paragraph()
+p.text = "\nYour app"
+p.font.size = Pt(16)
 p.font.color.rgb = GRAY
 
-# Terminal 2: Inventory
+# Terminal 2: Backend Services
 box2 = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, term_start + term_width + term_gap, Inches(2), term_width, term_height)
 box2.fill.solid()
 box2.fill.fore_color.rgb = RGBColor(39, 39, 42)
 box2.line.fill.background()
 
-txBox = slide.shapes.add_textbox(term_start + term_width + term_gap + Inches(0.2), Inches(2.2), term_width - Inches(0.4), Inches(1.8))
+txBox = slide.shapes.add_textbox(term_start + term_width + term_gap + Inches(0.2), Inches(2.2), term_width - Inches(0.4), Inches(2.4))
 tf = txBox.text_frame
 p = tf.paragraphs[0]
-p.text = "Inventory Service"
-p.font.size = Pt(20)
+p.text = "Backend Services"
+p.font.size = Pt(24)
 p.font.bold = True
 p.font.color.rgb = WHITE
 p = tf.add_paragraph()
-p.text = "npm run inventory"
-p.font.size = Pt(16)
+p.text = "pnpm inventory"
+p.font.size = Pt(18)
 p.font.name = "Menlo"
 p.font.color.rgb = GREEN
 p = tf.add_paragraph()
 p.text = "localhost:3001"
-p.font.size = Pt(14)
-p.font.color.rgb = GRAY
-
-# Terminal 3: Stripe
-box3 = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, term_start + 2 * (term_width + term_gap), Inches(2), term_width, term_height)
-box3.fill.solid()
-box3.fill.fore_color.rgb = RGBColor(39, 39, 42)
-box3.line.fill.background()
-
-txBox = slide.shapes.add_textbox(term_start + 2 * (term_width + term_gap) + Inches(0.2), Inches(2.2), term_width - Inches(0.4), Inches(1.8))
-tf = txBox.text_frame
-p = tf.paragraphs[0]
-p.text = "Stripe CLI"
-p.font.size = Pt(20)
-p.font.bold = True
-p.font.color.rgb = WHITE
-p = tf.add_paragraph()
-p.text = "stripe listen ..."
 p.font.size = Pt(16)
-p.font.name = "Menlo"
-p.font.color.rgb = GREEN
+p.font.color.rgb = GRAY
 p = tf.add_paragraph()
-p.text = "webhooks"
-p.font.size = Pt(14)
+p.text = "\nUser + Inventory + Shipping"
+p.font.size = Pt(16)
 p.font.color.rgb = GRAY
 
-add_subtitle(slide, "Real services. Real HTTP calls.", top=Inches(5), font_size=28, color=YELLOW)
+add_subtitle(slide, "json-server with logging shows every request.", top=Inches(5.5), font_size=28, color=YELLOW)
 
 # ============================================================================
 # SLIDE 10: The Happy Path
 # ============================================================================
 slide = add_dark_slide(prs)
 add_title(slide, "The Happy Path", top=Inches(0.6), font_size=44)
-add_bullet_point(slide, "Sign In  Auth0 Universal Login", Inches(1.5), Inches(1.6), WHITE, "1.")
-add_bullet_point(slide, "Tier badge appears (Pro = 20% discount)", Inches(1.5), Inches(2.3), WHITE, "2.")
-add_bullet_point(slide, "Offer badges from Inventory Service", Inches(1.5), Inches(3), WHITE, "3.")
-add_bullet_point(slide, "Add to cart (see json-server logs)", Inches(1.5), Inches(3.7), WHITE, "4.")
-add_bullet_point(slide, "Checkout  Stripe (test card: 4242...)", Inches(1.5), Inches(4.4), WHITE, "5.")
-add_bullet_point(slide, "Webhook arrives (see Stripe CLI)", Inches(1.5), Inches(5.1), WHITE, "6.")
-add_bullet_point(slide, "Order appears in history", Inches(1.5), Inches(5.8), WHITE, "7.")
+add_bullet_point(slide, "Products show offer badges (Inventory Service)", Inches(1.5), Inches(1.6), WHITE, "1.")
+add_bullet_point(slide, "User tier badge shows Pro (User Service)", Inches(1.5), Inches(2.3), WHITE, "2.")
+add_bullet_point(slide, "20% discount applied for Pro users", Inches(1.5), Inches(3), WHITE, "3.")
+add_bullet_point(slide, "Add to cart (see json-server logs!)", Inches(1.5), Inches(3.7), WHITE, "4.")
+add_bullet_point(slide, "Checkout shows shipping options (Shipping Service)", Inches(1.5), Inches(4.4), WHITE, "5.")
+add_bullet_point(slide, "Complete purchase", Inches(1.5), Inches(5.1), WHITE, "6.")
 
-add_title(slide, "This works great.", top=Inches(6.5), font_size=32, color=GREEN)
+add_title(slide, "This works great.", top=Inches(6), font_size=32, color=GREEN)
 
 # ============================================================================
 # SLIDE 11: The Testing Problem - Header
@@ -349,10 +345,6 @@ add_title(slide, "How Hard Is This To Test?", top=Inches(3), font_size=56)
 # ============================================================================
 slide = add_dark_slide(prs)
 add_title(slide, "The Easy Stuff", top=Inches(0.5), font_size=40, color=GREEN)
-
-# Table header
-header_top = Inches(1.5)
-row_height = Inches(0.6)
 
 # Easy scenarios
 add_bullet_point(slide, "Happy path", Inches(1), Inches(2), WHITE, "")
@@ -367,15 +359,12 @@ slide = add_dark_slide(prs)
 add_title(slide, "The Annoying Stuff", top=Inches(0.5), font_size=40, color=YELLOW)
 
 add_bullet_point(slide, "Premium user discount", Inches(1), Inches(1.8), WHITE)
-add_subtitle(slide, "Need a Pro account in Auth0", top=Inches(2.3), font_size=18, color=YELLOW)
+add_subtitle(slide, "Edit db.json to change user tier", top=Inches(2.3), font_size=18, color=YELLOW)
 
 add_bullet_point(slide, "Free user pricing", Inches(1), Inches(3), WHITE)
-add_subtitle(slide, "Need ANOTHER Auth0 account", top=Inches(3.5), font_size=18, color=YELLOW)
+add_subtitle(slide, "Edit db.json again, remember to change back", top=Inches(3.5), font_size=18, color=YELLOW)
 
-add_bullet_point(slide, "Payment declined", Inches(1), Inches(4.2), WHITE)
-add_subtitle(slide, "Stripe test card works (4000 0000 0000 0002)", top=Inches(4.7), font_size=18, color=YELLOW)
-
-add_subtitle(slide, "Possible, but requires manual setup.", top=Inches(6), font_size=28, color=GRAY)
+add_subtitle(slide, "Possible, but requires manual setup each time.", top=Inches(5.5), font_size=28, color=GRAY)
 
 # ============================================================================
 # SLIDE 14: Testing Problem Table - Hard
@@ -386,14 +375,14 @@ add_title(slide, "The Hard Stuff", top=Inches(0.5), font_size=40, color=RED)
 add_bullet_point(slide, "Offer ended (0 spots left)", Inches(1), Inches(1.6), WHITE)
 add_subtitle(slide, "Edit db.json? Restart server?", top=Inches(2.1), font_size=18, color=RED)
 
-add_bullet_point(slide, "Limited offer (3 spots)", Inches(1), Inches(2.8), WHITE)
-add_subtitle(slide, "Edit db.json manually", top=Inches(3.3), font_size=18, color=RED)
+add_bullet_point(slide, "Express shipping unavailable", Inches(1), Inches(2.8), WHITE)
+add_subtitle(slide, "Edit db.json to remove express option", top=Inches(3.3), font_size=18, color=RED)
 
-add_bullet_point(slide, "Inventory service down", Inches(1), Inches(4), WHITE)
+add_bullet_point(slide, "Shipping service error", Inches(1), Inches(4), WHITE)
 add_subtitle(slide, "Kill the server mid-test?", top=Inches(4.5), font_size=18, color=RED)
 
-add_bullet_point(slide, "Auth0 error", Inches(1), Inches(5.2), WHITE)
-add_subtitle(slide, "How do you make Auth0 fail on demand?", top=Inches(5.7), font_size=18, color=RED)
+add_bullet_point(slide, "Limited spots (3 left)", Inches(1), Inches(5.2), WHITE)
+add_subtitle(slide, "Edit db.json manually every time", top=Inches(5.7), font_size=18, color=RED)
 
 # ============================================================================
 # SLIDE 15: Testing Problem - Impossible
@@ -417,7 +406,7 @@ p.font.bold = True
 p.font.color.rgb = WHITE
 p.alignment = PP_ALIGN.CENTER
 p = tf.add_paragraph()
-p.text = "\nUser loads page  offer available\nUser clicks checkout  someone takes last spot\nUser clicks pay  ???"
+p.text = "\nUser loads page → offer available\nUser clicks checkout → someone takes last spot\nUser clicks pay → ???"
 p.font.size = Pt(24)
 p.font.color.rgb = RGBColor(252, 165, 165)  # red-300
 p.alignment = PP_ALIGN.CENTER
@@ -431,9 +420,9 @@ add_title(slide, "That's not testing. That's praying.", top=Inches(5.8), font_si
 slide = add_dark_slide(prs)
 add_title(slide, "50 Tests in Parallel?", top=Inches(1), font_size=48)
 
-add_bullet_point(slide, "All tests hit the same Auth0", Inches(2), Inches(2.5), WHITE, "")
-add_bullet_point(slide, "All tests hit the same json-server", Inches(2), Inches(3.3), WHITE, "")
-add_bullet_point(slide, "All tests hit the same Stripe", Inches(2), Inches(4.1), WHITE, "")
+add_bullet_point(slide, "All tests hit the same User Service", Inches(2), Inches(2.5), WHITE, "")
+add_bullet_point(slide, "All tests hit the same Inventory Service", Inches(2), Inches(3.3), WHITE, "")
+add_bullet_point(slide, "All tests hit the same Shipping Service", Inches(2), Inches(4.1), WHITE, "")
 
 add_title(slide, "Shared state = Test conflicts", top=Inches(5.3), font_size=40, color=RED)
 
@@ -445,8 +434,8 @@ add_title(slide, "Summary", top=Inches(0.4), font_size=40)
 
 # Create visual summary
 add_bullet_point(slide, "Easy:  Happy path only", Inches(1), Inches(1.4), GREEN, "")
-add_bullet_point(slide, "Annoying:  Different tiers, declined payments", Inches(1), Inches(2.1), YELLOW, "")
-add_bullet_point(slide, "Hard:  Service errors, offer states", Inches(1), Inches(2.8), RED, "")
+add_bullet_point(slide, "Annoying:  Different user tiers", Inches(1), Inches(2.1), YELLOW, "")
+add_bullet_point(slide, "Hard:  Service errors, offer states, shipping options", Inches(1), Inches(2.8), RED, "")
 add_bullet_point(slide, "Impossible:  Sequences, parallel tests", Inches(1), Inches(3.5), RED, "")
 
 # The more realistic box
@@ -495,7 +484,7 @@ arrow_box.line.fill.background()
 txBox = slide.shapes.add_textbox(Inches(2.2), Inches(4.2), Inches(8.933), Inches(1.4))
 tf = txBox.text_frame
 p = tf.paragraphs[0]
-p.text = "Your App  Scenarist  (intercepted)  json-server"
+p.text = "Next.js → Scenarist → (intercepted) → json-server"
 p.font.size = Pt(24)
 p.font.color.rgb = WHITE
 p.alignment = PP_ALIGN.CENTER
