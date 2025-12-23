@@ -1,242 +1,222 @@
 # Scenario Mapping: Testing Problem Table → Scenarist Scenarios
 
-This document maps the Testing Problem Table from Video 2 to the Scenarist scenario definitions that will be implemented in Stage 3.
+This document maps the Testing Problem Table scenarios from Video 2 to concrete Scenarist scenario definitions for Video 3 and beyond.
 
-## The Testing Problem Table (from Video 2)
+## PayFlow Architecture
 
-| Scenario                       | Auth0     | Inventory        | Stripe     | Without Scenarist |
-| ------------------------------ | --------- | ---------------- | ---------- | ----------------- |
-| Happy path                     | Pro user  | Offer available  | Success    | Easy              |
-| Premium user discount          | Pro user  | Offer available  | Success    | Annoying          |
-| Free user sees full price      | Free user | Offer available  | Success    | Annoying          |
-| Payment declined               | Any       | Offer available  | Declined   | Annoying          |
-| Offer ended                    | Any       | 0 spots left     | N/A        | Hard              |
-| Limited offer urgency          | Any       | 3 spots left     | N/A        | Hard              |
-| **Offer ends during checkout** | Any       | Available → Gone | N/A        | **Impossible**    |
-| Inventory service down         | Any       | 500 error        | N/A        | Hard              |
-| Auth0 returns error            | Error     | Any              | N/A        | Hard              |
-| Webhook never arrives          | Any       | Offer available  | No webhook | **Impossible**    |
-| 50 tests in parallel           | Various   | Various          | Various    | **Impossible**    |
+PayFlow's Next.js server calls three backend services:
+
+| Service           | Endpoint         | Purpose                          | Port |
+| ----------------- | ---------------- | -------------------------------- | ---- |
+| User Service      | `/users/current` | Returns user tier (pro/free)     | 3001 |
+| Inventory Service | `/inventory/:id` | Returns offer availability       | 3001 |
+| Shipping Service  | `/shipping`      | Returns shipping options & rates | 3001 |
+
+All three are served by json-server on port 3001 for the demo.
+
+**Key architectural point:** All three are server-side HTTP calls. The browser never talks to these services directly - only the Next.js server does. This makes them 100% mockable with Scenarist.
+
+---
+
+## Testing Problem Table
+
+| Scenario                       | User Service | Inventory     | Shipping    | Difficulty     |
+| ------------------------------ | ------------ | ------------- | ----------- | -------------- |
+| Happy path                     | Pro user     | Available     | All options | Easy           |
+| Premium user discount          | Pro user     | Available     | Any         | Annoying       |
+| Free user full price           | Free user    | Available     | Any         | Annoying       |
+| Offer ended                    | Any          | 0 spots       | N/A         | Hard           |
+| Limited spots (urgency)        | Any          | 3 spots left  | N/A         | Hard           |
+| Express shipping unavailable   | Any          | Available     | No express  | Hard           |
+| Shipping service down          | Any          | Available     | 500 error   | Hard           |
+| **Offer ends during checkout** | Any          | Available → 0 | Any         | **Impossible** |
+| **50 parallel tests**          | Various      | Various       | Various     | **Impossible** |
 
 ---
 
 ## Scenarist Scenario Definitions
 
-### Core Scenarios (Video 3 Demo)
-
-These are the primary scenarios demonstrated in Video 3 to show runtime scenario switching.
-
-#### `default` - Happy Path
+### 1. `default` - Happy Path (Pro User)
 
 ```typescript
-default: {
-  auth0: {
-    user: {
-      sub: 'auth0|test-user',
-      email: 'test@example.com',
-      name: 'Test User',
-      'https://payflow.demo/tier': 'pro',
+{
+  id: "default",
+  name: "Happy Path - Pro User",
+  mocks: [
+    {
+      url: "http://localhost:3001/users/current",
+      response: {
+        status: 200,
+        body: { id: "1", email: "pro@payflow.com", name: "Pro User", tier: "pro" }
+      }
     },
-  },
-  inventory: {
-    // All products have offer available
-    products: {
-      'prod-1': { quantity: 100, reserved: 0 },
-      'prod-2': { quantity: 50, reserved: 0 },
-      'prod-3': { quantity: 25, reserved: 0 },
+    {
+      url: "http://localhost:3001/inventory/1",
+      response: {
+        status: 200,
+        body: { id: "1", productId: "1", quantity: 50, reserved: 0 }
+      }
     },
-  },
-  stripe: {
-    checkout: { status: 'complete' },
-    webhook: { delivered: true },
-  },
+    {
+      url: "http://localhost:3001/shipping",
+      response: {
+        status: 200,
+        body: [
+          { id: "standard", name: "Standard Shipping", price: 5.99, estimatedDays: "5-7 business days" },
+          { id: "express", name: "Express Shipping", price: 14.99, estimatedDays: "2-3 business days" },
+          { id: "overnight", name: "Overnight Shipping", price: 29.99, estimatedDays: "Next business day" }
+        ]
+      }
+    }
+  ]
 }
 ```
 
-#### `premiumUser` - Pro Tier (20% Discount)
+### 2. `freeUser` - Free Tier (No Discount)
 
 ```typescript
-premiumUser: {
-  auth0: {
-    user: {
-      sub: 'auth0|premium-user',
-      email: 'premium@example.com',
-      name: 'Premium User',
-      'https://payflow.demo/tier': 'pro',
-    },
-  },
-  // Inventory and Stripe inherit from default or specify explicitly
+{
+  id: "freeUser",
+  name: "Free User - No Discount",
+  mocks: [
+    {
+      url: "http://localhost:3001/users/current",
+      response: {
+        status: 200,
+        body: { id: "2", email: "free@payflow.com", name: "Free User", tier: "free" }
+      }
+    }
+    // Inventory and shipping inherit from default or use fallback
+  ]
 }
 ```
 
-#### `freeUser` - Free Tier (Full Price)
+### 3. `offerEnded` - Promotional Offer Expired
 
 ```typescript
-freeUser: {
-  auth0: {
-    user: {
-      sub: 'auth0|free-user',
-      email: 'free@example.com',
-      name: 'Free User',
-      'https://payflow.demo/tier': 'free',
-    },
-  },
+{
+  id: "offerEnded",
+  name: "Offer Ended - Sold Out",
+  mocks: [
+    {
+      url: "http://localhost:3001/inventory/1",
+      response: {
+        status: 200,
+        body: { id: "1", productId: "1", quantity: 0, reserved: 0 }
+      }
+    }
+  ]
 }
 ```
 
-#### `offerEnded` - Promotional Offer Expired
+### 4. `limitedSpots` - Urgency Messaging
 
 ```typescript
-offerEnded: {
-  inventory: {
-    products: {
-      'prod-1': { quantity: 0, reserved: 0 },  // No spots left
-      'prod-2': { quantity: 0, reserved: 0 },
-      'prod-3': { quantity: 0, reserved: 0 },
-    },
-  },
+{
+  id: "limitedSpots",
+  name: "Limited Spots - Urgency",
+  mocks: [
+    {
+      url: "http://localhost:3001/inventory/1",
+      response: {
+        status: 200,
+        body: { id: "1", productId: "1", quantity: 3, reserved: 0 }
+      }
+    }
+  ]
 }
 ```
 
-#### `paymentDeclined` - Stripe Returns Decline
+### 5. `expressUnavailable` - No Express Shipping
 
 ```typescript
-paymentDeclined: {
-  stripe: {
-    checkout: {
-      status: 'failed',
-      error: { code: 'card_declined', message: 'Your card was declined' },
-    },
-  },
+{
+  id: "expressUnavailable",
+  name: "Express Shipping Unavailable",
+  mocks: [
+    {
+      url: "http://localhost:3001/shipping",
+      response: {
+        status: 200,
+        body: [
+          { id: "standard", name: "Standard Shipping", price: 5.99, estimatedDays: "5-7 business days" }
+          // No express or overnight options
+        ]
+      }
+    }
+  ]
 }
 ```
 
----
-
-### Advanced Scenarios (Video 4+)
-
-These scenarios demonstrate more advanced features like request matching and sequences.
-
-#### `limitedOffer` - 3 Spots Left (Urgency)
+### 6. `shippingServiceDown` - Shipping API Error
 
 ```typescript
-limitedOffer: {
-  inventory: {
-    products: {
-      'prod-1': { quantity: 3, reserved: 0 },  // Limited!
-    },
-  },
+{
+  id: "shippingServiceDown",
+  name: "Shipping Service Down",
+  mocks: [
+    {
+      url: "http://localhost:3001/shipping",
+      response: {
+        status: 500,
+        body: { error: "Service unavailable", message: "Unable to load shipping options" }
+      }
+    }
+  ]
 }
 ```
 
-#### `inventoryServiceDown` - 500 Error
+### 7. `offerEndsDuringCheckout` - Sequence Scenario (Video 4)
 
 ```typescript
-inventoryServiceDown: {
-  inventory: {
-    error: { status: 500, message: 'Internal Server Error' },
-  },
+{
+  id: "offerEndsDuringCheckout",
+  name: "Offer Ends During Checkout",
+  mocks: [
+    {
+      url: "http://localhost:3001/inventory/1",
+      sequence: [
+        { status: 200, body: { id: "1", productId: "1", quantity: 15, reserved: 0 } },  // First call: available
+        { status: 200, body: { id: "1", productId: "1", quantity: 0, reserved: 0 } }    // Second call: sold out
+      ]
+    }
+  ]
 }
 ```
-
-#### `auth0Error` - Auth0 Returns Error
-
-```typescript
-auth0Error: {
-  auth0: {
-    error: { status: 401, message: 'Unauthorized' },
-  },
-}
-```
-
-#### `webhookNeverArrives` - Payment Success, No Webhook
-
-```typescript
-webhookNeverArrives: {
-  stripe: {
-    checkout: { status: 'complete' },
-    webhook: { delivered: false },  // Webhook intentionally not delivered
-  },
-}
-```
-
----
-
-### Sequence Scenarios (The Killer Demo)
-
-#### `offerEndsDuringCheckout` - State Changes Mid-Test
-
-This is the "impossible" scenario that demonstrates Scenarist's sequence feature.
-
-```typescript
-offerEndsDuringCheckout: {
-  inventory: {
-    // Sequence: first call returns available, subsequent calls return ended
-    sequence: [
-      { quantity: 15, reserved: 0 },   // First call: available
-      { quantity: 0, reserved: 0 },    // Second call: offer ended
-    ],
-  },
-}
-```
-
-**Test implementation:**
-
-```typescript
-test("offer ends during checkout", async ({ page, switchScenario }) => {
-  await switchScenario("offerEndsDuringCheckout");
-
-  // First inventory call - offer available
-  await page.goto("/products");
-  await expect(page.getByText("15 left at this price")).toBeVisible();
-
-  await page.click('[data-testid="add-to-cart"]');
-  await page.click('[data-testid="checkout"]');
-
-  // Second inventory call - offer ended
-  await page.click('[data-testid="pay"]');
-
-  // App should handle this gracefully
-  await expect(page.getByText("Offer no longer available")).toBeVisible();
-});
-```
-
----
-
-## How Scenarios Enable Parallel Testing
-
-With test ID isolation, all these scenarios can run simultaneously:
-
-```
-Test 1 (x-scenarist-test-id: test-1) → default scenario
-Test 2 (x-scenarist-test-id: test-2) → premiumUser scenario
-Test 3 (x-scenarist-test-id: test-3) → freeUser scenario
-Test 4 (x-scenarist-test-id: test-4) → offerEnded scenario
-Test 5 (x-scenarist-test-id: test-5) → paymentDeclined scenario
-...
-Test 50 (x-scenarist-test-id: test-50) → offerEndsDuringCheckout scenario
-```
-
-All 50 tests hit the same server, same endpoints. Scenarist uses the test ID to determine which scenario's responses to return.
 
 ---
 
 ## Video Progression
 
-| Video | Scenarios Demonstrated                   | Features Shown             |
-| ----- | ---------------------------------------- | -------------------------- |
-| 3     | default, paymentDeclined, offerEnded     | Runtime scenario switching |
-| 4     | premiumUser, freeUser + request matching | Request content matching   |
-| 5     | offerEndsDuringCheckout                  | Sequences & state machines |
-| 6     | All scenarios in parallel                | Test ID isolation          |
+| Video   | Scenarios Demonstrated                                           |
+| ------- | ---------------------------------------------------------------- |
+| Video 2 | None (shows the problem - manual testing, Testing Problem Table) |
+| Video 3 | `default`, `freeUser`, `offerEnded`, `shippingServiceDown`       |
+| Video 4 | `offerEndsDuringCheckout` (sequences)                            |
+| Video 5 | Parallel isolation (multiple scenarios running simultaneously)   |
 
 ---
 
-## Implementation Notes for Stage 3
+## Implementation Notes
 
-1. **Start simple:** Implement `default`, `offerEnded`, `paymentDeclined` first
-2. **Add user tiers:** `premiumUser`, `freeUser` with request matching
-3. **Add sequences:** `offerEndsDuringCheckout` for the killer demo
-4. **Add error scenarios:** `inventoryServiceDown`, `auth0Error`, `webhookNeverArrives`
+### Server-Side vs Browser-Side
 
-The scenarios should be defined in a central `scenarios.ts` file that both the app and tests import.
+Scenarist intercepts **server-side HTTP calls**. This means:
+
+- ✅ **Mockable**: Next.js → User Service (server calls backend)
+- ✅ **Mockable**: Next.js → Inventory Service (server calls backend)
+- ✅ **Mockable**: Next.js → Shipping Service (server calls backend)
+- ❌ **Not Mockable**: Browser → External login page (browser redirect)
+- ❌ **Not Mockable**: Browser → External checkout page (browser redirect)
+
+The PayFlow architecture is designed so all critical business logic flows through server-side API calls, making them testable with Scenarist.
+
+### Proving Interception
+
+To prove Scenarist is intercepting requests:
+
+1. Run json-server with logging enabled (`pnpm inventory`)
+2. Run tests with Scenarist
+3. Observe: json-server terminal shows **zero requests**
+
+The backend services are running but never receive requests - Scenarist intercepts at the server level.

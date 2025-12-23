@@ -2,67 +2,62 @@
 
 _Video 3 Companion Post_
 
-In the [previous post](/blog/02-meet-payflow), we looked at PayFlow - a real payment app with Auth0, Stripe, and an Inventory Service. We saw the Testing Problem Table: some scenarios are easy, some are annoying, and some are outright impossible.
+In the [previous post](/blog/02-meet-payflow), we looked at PayFlow - a real payment app with backend services for users, inventory, and shipping. We saw the Testing Problem Table: some scenarios are easy, some are annoying, and some are outright impossible.
 
 Today, I'll show you how Scenarist makes all of those scenarios trivially testable.
 
 ## The Testing Problem Table (Recap)
 
-| Scenario                       | Auth0     | Inventory        | Stripe   | Without Scenarist |
-| ------------------------------ | --------- | ---------------- | -------- | ----------------- |
-| Happy path                     | Pro user  | Offer available  | Success  | Easy              |
-| Premium user discount          | Pro user  | Offer available  | Success  | Annoying          |
-| Free user sees full price      | Free user | Offer available  | Success  | Annoying          |
-| Payment declined               | Any       | Offer available  | Declined | Annoying          |
-| Offer ended                    | Any       | 0 spots left     | N/A      | Hard              |
-| Limited offer urgency          | Any       | 3 spots left     | N/A      | Hard              |
-| **Offer ends during checkout** | Any       | Available → Gone | N/A      | **Impossible**    |
-| Inventory service down         | Any       | 500 error        | N/A      | Hard              |
-| 50 tests in parallel           | Various   | Various          | Various  | **Impossible**    |
+| Scenario                       | User Service | Inventory        | Shipping    | Without Scenarist |
+| ------------------------------ | ------------ | ---------------- | ----------- | ----------------- |
+| Happy path                     | Pro user     | Available        | All options | Easy              |
+| Premium user discount          | Pro user     | Available        | Any         | Annoying          |
+| Free user full price           | Free user    | Available        | Any         | Annoying          |
+| Offer ended                    | Any          | 0 spots left     | N/A         | Hard              |
+| Limited offer urgency          | Any          | 3 spots left     | N/A         | Hard              |
+| Express shipping unavailable   | Any          | Available        | No express  | Hard              |
+| Shipping service down          | Any          | Available        | 500 error   | Hard              |
+| **Offer ends during checkout** | Any          | Available → Gone | Any         | **Impossible**    |
+| 50 tests in parallel           | Various      | Various          | Various     | **Impossible**    |
 
-The "annoying" scenarios require setting up multiple Auth0 accounts or remembering specific test card numbers. The "hard" scenarios require manually editing database files. And the "impossible" scenarios? Those require changing state mid-test or running tests in parallel without conflicts.
+The "annoying" scenarios require setting up multiple user accounts or configuring specific test data. The "hard" scenarios require manually editing database files. And the "impossible" scenarios? Those require changing state mid-test or running tests in parallel without conflicts.
 
 ## The Core Insight
 
 Here's the key realization: **when we're testing, we don't need these services to actually do anything**. We just need them to return the responses we want for each test.
 
-Right now, if I want to test "offer ended", I'd have to edit db.json manually. If I want to test a premium user, I need a real Auth0 account. And testing "offer ends during checkout"? I'd have to somehow change the database while the test is running.
+PayFlow's Next.js server talks to three backend services:
 
-What if we could control what these services return - without touching them at all?
+1. **User Service** - Returns user tier (pro/free) for pricing decisions
+2. **Inventory Service** - Returns offer availability
+3. **Shipping Service** - Returns available delivery options and rates
+
+These are all **server-side HTTP calls**. Your browser never talks to these services directly - the Next.js server does.
+
+What if we could intercept those server-side calls and return whatever we want?
 
 ## How Scenarist Works
 
-Scenarist intercepts HTTP requests before they reach the actual services and returns whatever you specify.
+Scenarist intercepts HTTP requests at the server level and returns whatever you specify.
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                Your Test                            │
-│                   │                                 │
-│                   ▼                                 │
-│     ┌───────────────────────────┐                   │
-│     │   switchScenario("...")   │                   │
-│     └───────────────────────────┘                   │
-│                   │                                 │
-│                   ▼                                 │
-│     ┌───────────────────────────┐                   │
-│     │   Scenarist Core          │ ◄─ Framework-    │
-│     │   (Scenario Management)   │    agnostic      │
-│     └───────────────────────────┘                   │
-│                   │                                 │
-│                   ▼                                 │
-│     ┌───────────────────────────┐                   │
-│     │   Framework Adapter       │ ◄─ Express,      │
-│     │   (Express/Next.js/etc)   │    Next.js, etc  │
-│     └───────────────────────────┘                   │
-│                   │                                 │
-│                   ▼                                 │
-│     ┌───────────────────────────┐                   │
-│     │   MSW (Interception)      │                   │
-│     └───────────────────────────┘                   │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    PayFlow Architecture                      │
+│                                                              │
+│  Browser ──► Next.js Server ──► User Service (/users)       │
+│                              ├──► Inventory Service (/inventory)
+│                              └──► Shipping Service (/shipping)
+│                                                              │
+│  With Scenarist:                                             │
+│                                                              │
+│  Browser ──► Next.js Server ──► [Scenarist Intercepts]      │
+│                              └──► Returns controlled response│
+│                                                              │
+│              The real services are never called.             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-**Important:** This interception happens **server-side**. When your Next.js server makes an HTTP request to an external service (like Auth0 or your Inventory API), MSW intercepts that request before it leaves the server. The browser still makes real requests to your Next.js server - those aren't mocked. Only the server-to-external-service calls are intercepted.
+**Important:** This interception happens **server-side**. When your Next.js server makes an HTTP request to a backend service, Scenarist intercepts that request before it leaves the server. The browser still makes real requests to your Next.js server - those aren't mocked. Only the server-to-service calls are intercepted.
 
 At its core, Scenarist is framework-agnostic. It doesn't care if you're using Express, Next.js, Fastify, or Hono. Adapters connect your framework to the core.
 
@@ -72,51 +67,65 @@ Whether you're using Express today or migrating to Next.js tomorrow, the pattern
 
 Let me show you PayFlow with Scenarist integrated. Same app. Same code. But now I can test any scenario from that table.
 
-**Test 1: Happy Path**
+**Test 1: Pro User Gets Discount**
 
 ```typescript
-test("happy path checkout", async ({ page, switchScenario }) => {
-  await switchScenario("default");
-  await page.goto("/products");
-  await page.click('[data-testid="add-to-cart"]');
-  await page.click('[data-testid="checkout"]');
-  await page.click('[data-testid="pay"]');
-  await expect(page.getByText("Order confirmed")).toBeVisible();
+test("pro user sees 20% discount", async ({ page, switchScenario }) => {
+  await switchScenario("default"); // Pro user scenario
+  await page.goto("/products/1");
+  await expect(page.getByText("20% off")).toBeVisible();
+  await expect(page.getByText("$79.99")).toBeVisible(); // Discounted price
 });
 ```
 
-Passes. Premium user, offer available, payment succeeds.
+Passes. User Service returns `{ tier: "pro" }`, discount is applied.
 
-**Test 2: Payment Declined**
+**Test 2: Free User Pays Full Price**
 
 ```typescript
-test("payment declined shows error", async ({ page, switchScenario }) => {
-  await switchScenario("paymentDeclined");
-  await page.goto("/checkout");
-  await page.click('[data-testid="pay"]');
-  await expect(page.getByText("Card declined")).toBeVisible();
+test("free user sees full price", async ({ page, switchScenario }) => {
+  await switchScenario("freeUser");
+  await page.goto("/products/1");
+  await expect(page.getByText("$99.99")).toBeVisible(); // Full price
+  await expect(page.getByText("20% off")).not.toBeVisible();
 });
 ```
 
-Passes. I didn't change anything in Stripe. Scenarist just returns a "card declined" response.
+Passes. I didn't create a different user account. Scenarist just returns `{ tier: "free" }`.
 
 **Test 3: Offer Ended**
 
 ```typescript
-test("offer ended prevents purchase", async ({ page, switchScenario }) => {
+test("offer ended shows sold out", async ({ page, switchScenario }) => {
   await switchScenario("offerEnded");
-  await page.goto("/products");
-  await expect(page.getByText("Offer Ended")).toBeVisible();
+  await page.goto("/products/1");
+  await expect(page.getByText("Sold Out")).toBeVisible();
 });
 ```
 
-Passes. I didn't edit db.json. Scenarist returns "zero spots left".
+Passes. I didn't edit db.json. Scenarist returns `{ quantity: 0 }`.
 
-**Now look at the Inventory Service terminal.**
+**Test 4: Shipping Service Down**
 
-Zero requests. Scenarist intercepted everything. The real service is running, but we never hit it.
+```typescript
+test("handles shipping service errors gracefully", async ({
+  page,
+  switchScenario,
+}) => {
+  await switchScenario("shippingServiceDown");
+  await page.goto("/checkout");
+  await expect(page.getByText("Unable to load shipping options")).toBeVisible();
+  await expect(page.getByText("Please try again")).toBeVisible();
+});
+```
 
-Three scenarios that were "hard" or "impossible" on our table. Now they're just... tests.
+Passes. Scenarist returns a 500 error. The app handles it gracefully.
+
+**Now look at the backend services terminal.**
+
+Zero requests. Scenarist intercepted everything. The real services are running, but we never hit them.
+
+Four scenarios that were "annoying", "hard", or "impossible" on our table. Now they're just... tests.
 
 ## Parallel Test Isolation
 
@@ -125,12 +134,13 @@ But what about parallel tests? The table said that was impossible too.
 Every test gets a unique test ID. Every request includes an `x-scenarist-test-id` header. Scenarist uses this to look up which scenario that specific test is using.
 
 ```
-Test A (test-id: abc123) → premiumUser scenario → 20% discount
-Test B (test-id: def456) → freeUser scenario   → Full price
-Test C (test-id: ghi789) → offerEnded scenario → "Offer ended"
+Test A (test-id: abc123) → proUser scenario   → 20% discount
+Test B (test-id: def456) → freeUser scenario  → Full price
+Test C (test-id: ghi789) → offerEnded scenario → "Sold Out"
+Test D (test-id: jkl012) → shippingDown scenario → Error handling
 ```
 
-Same server. Same endpoint. Different responses based on the test ID.
+Same server. Same endpoints. Different responses based on the test ID.
 
 This is how you run 50 tests in parallel without a single conflict.
 
@@ -142,19 +152,51 @@ Scenarios are defined declaratively:
 // scenarios.ts
 export const scenarios = {
   default: {
-    // Happy path - Pro user, offer available, payment succeeds
-  },
-  premiumUser: {
-    // Pro tier with 20% discount
+    // Pro user, offer available, all shipping options
+    mocks: [
+      {
+        url: "http://localhost:3001/users/current",
+        response: { status: 200, body: { id: "1", tier: "pro" } },
+      },
+      {
+        url: "http://localhost:3001/inventory/1",
+        response: { status: 200, body: { quantity: 15 } },
+      },
+      {
+        url: "http://localhost:3001/shipping",
+        response: {
+          status: 200,
+          body: [
+            { id: "standard", price: 5.99 },
+            { id: "express", price: 14.99 },
+          ],
+        },
+      },
+    ],
   },
   freeUser: {
-    // Free tier, full price
+    mocks: [
+      {
+        url: "http://localhost:3001/users/current",
+        response: { status: 200, body: { id: "2", tier: "free" } },
+      },
+    ],
   },
   offerEnded: {
-    // Promotional offer expired
+    mocks: [
+      {
+        url: "http://localhost:3001/inventory/1",
+        response: { status: 200, body: { quantity: 0 } },
+      },
+    ],
   },
-  paymentDeclined: {
-    // Stripe returns decline
+  shippingServiceDown: {
+    mocks: [
+      {
+        url: "http://localhost:3001/shipping",
+        response: { status: 500, body: { error: "Service unavailable" } },
+      },
+    ],
   },
 };
 ```
@@ -170,10 +212,11 @@ That requires a feature called **sequences** - where the same endpoint returns d
 ```typescript
 // Coming next: Response Sequences
 {
+  url: "http://localhost:3001/inventory/1",
   sequence: [
-    { quantity: 15, reserved: 0 }, // First call: available
-    { quantity: 0, reserved: 0 }, // Second call: offer ended
-  ];
+    { quantity: 15, reserved: 0 },   // First call: available
+    { quantity: 0, reserved: 0 },    // Second call: sold out
+  ]
 }
 ```
 

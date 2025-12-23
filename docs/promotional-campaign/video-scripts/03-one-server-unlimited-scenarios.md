@@ -2,27 +2,41 @@
 
 ## Purpose
 
-Introduce Scenarist and show how it makes the "hard" and "impossible" scenarios from Video 2 trivially testable. This is the "solution reveal" video - we've established the problem (the testing gap, the Testing Problem Table), now we show how Scenarist solves it.
+Introduce Scenarist and show how it makes the "hard" and "impossible" scenarios from Video 2 trivially testable. This is the "solution reveal" video - we've established the problem, now we show how Scenarist solves it.
+
+---
+
+## Key Architectural Point
+
+**Scenarist mocks server-side HTTP calls.** When your Next.js server calls an external API, Scenarist intercepts that request and returns a controlled response.
+
+PayFlow's server calls three services:
+
+1. **User Service** (`/users/current`) - Returns user tier (pro/free) for pricing
+2. **Inventory Service** (`/inventory`) - Returns offer availability
+3. **Shipping Service** (`/shipping`) - Returns available shipping options and rates
+
+All three are server-to-service calls. All three are 100% mockable.
 
 ---
 
 ## Pre-Recording Setup
 
-**PayFlow with Scenarist installed:**
+**PayFlow running:**
 
 1. **Next.js** - `pnpm dev` (localhost:3000)
-2. **Inventory Service** - `npm run inventory` (localhost:3001) - KEEP VISIBLE to show it's NOT being called
-3. **Playwright tests ready** - Have a few tests prepared to run
+2. **Backend Services** - `pnpm inventory` (localhost:3001) - json-server with users, inventory, and shipping endpoints
+3. **Playwright tests ready** - Have tests prepared to run
 
-**Note on interception:** Scenarist intercepts server-side (Next.js → external services). Browser DevTools will still show requests from browser → Next.js. The proof of interception is the **json-server terminal** showing zero incoming requests.
+**Interception note:** Scenarist intercepts server-side (Next.js → backend services). Browser DevTools still shows browser → Next.js requests. Proof of interception = json-server terminal showing zero requests.
 
 **Key scenarios defined:**
 
-- `default` - Happy path
-- `premiumUser` - Pro tier with 20% discount
-- `freeUser` - Free tier, full price
-- `offerEnded` - Promotional offer expired
-- `paymentDeclined` - Stripe returns decline
+- `default` - Happy path (pro user, offer available, all shipping options)
+- `freeUser` - Free tier, no discount
+- `offerEnded` - Promotional offer expired (0 spots)
+- `expressUnavailable` - Express shipping not available
+- `shippingServiceDown` - Shipping API returns 500 error
 
 ---
 
@@ -34,23 +48,27 @@ Introduce Scenarist and show how it makes the "hard" and "impossible" scenarios 
 
 **Say:**
 
-> "In the last video, we saw the Testing Problem Table. Happy path - easy. Different user tiers - annoying. Offer states - hard. 'Offer ends during checkout' - impossible. Parallel tests - impossible. Let's fix that."
+> "In the last video, we saw the Testing Problem Table. Happy path - easy. Different user tiers - annoying. Offer states - hard. Service errors - hard. 'Offer ends during checkout' - impossible. Let's fix that."
 
 ---
 
 ### 0:30-1:30 - The Core Insight
 
-**Show:** PayFlow app with terminals
+**Show:** PayFlow architecture diagram - three backend services
 
 **Say:**
 
-> "Here's the key insight. When we're testing, we don't need Auth0 or our Inventory Service to actually do anything. We just need them to return the responses we want for each test."
+> "Here's PayFlow's architecture. Your Next.js server talks to three backend services."
 
-> "Right now, if I want to test 'offer ended', I'd have to edit db.json manually. If I want to test a premium user, I need a real Auth0 account. And testing 'offer ends during checkout'? I'd have to somehow change the database while the test is running."
+_Point to each service:_
+
+> "The User Service returns user tier - pro users get 20% off. The Inventory Service returns offer availability - how many spots are left. The Shipping Service returns delivery options and rates."
+
+> "These are all server-side HTTP calls. Your browser never talks to these services directly - the Next.js server does."
 
 **Key phrase:**
 
-> "What if we could control what these services return - without touching them at all?"
+> "And here's the key insight: if we can intercept those server-side calls, we can return whatever we want. Pro user? Done. Offer ended? Done. Shipping service down? Done."
 
 ---
 
@@ -60,7 +78,7 @@ Introduce Scenarist and show how it makes the "hard" and "impossible" scenarios 
 
 **Say:**
 
-> "This is where Scenarist comes in. Scenarist intercepts HTTP requests before they reach the actual services and returns whatever you specify."
+> "This is where Scenarist comes in. Scenarist intercepts HTTP requests at the server level - before they reach the actual services."
 
 _Point to diagram:_
 
@@ -74,15 +92,13 @@ _Point to diagram:_
 
 ---
 
-### 2:30-4:00 - Live Demo: Scenario Switching
-
-**Actions:** Show PayFlow with Scenarist integrated
+### 2:30-4:00 - Live Demo: Three Services, Three Scenarios
 
 **Terminal layout:**
 
 - Terminal 1: Next.js running
-- Terminal 2: json-server running (Inventory Service)
-- Browser: PayFlow app
+- Terminal 2: json-server running (backend services)
+- Terminal 3: Playwright tests
 
 **Say:**
 
@@ -90,31 +106,37 @@ _Point to diagram:_
 
 **Demo sequence:**
 
-1. **Run first test - default scenario**
+1. **Run first test - default scenario (pro user)**
 
-   > "Default scenario - happy path. Premium user, offer available, payment succeeds."
+   > "Default scenario - pro user. 20% discount applied, all shipping options available."
 
-   _Show test passing_
+   _Show test passing, discount visible_
 
-2. **Run second test - paymentDeclined scenario**
+2. **Run second test - freeUser scenario**
 
-   > "Now payment declined. I didn't change anything in Stripe. Scenarist just returns a 'card declined' response."
+   > "Free user scenario. I didn't change any database. I didn't create a different user account. Scenarist just returns 'tier: free' from the User Service."
 
-   _Show test passing, error message visible_
+   _Show test passing, full price visible_
 
 3. **Run third test - offerEnded scenario**
 
-   > "Offer ended. I didn't edit db.json. Scenarist returns 'zero spots left'."
+   > "Offer ended. Zero spots left. I didn't edit db.json. Scenarist returns 'quantity: 0' from the Inventory Service."
 
-   _Show test passing_
+   _Show test passing, "Sold Out" message visible_
 
-4. **Point to json-server terminal**
+4. **Run fourth test - shippingServiceDown scenario**
 
-   > "Look at the Inventory Service terminal. Zero requests. Scenarist intercepted everything. The real service is running, but we never hit it."
+   > "Shipping service is down. 500 error. Watch how the app handles it gracefully."
+
+   _Show test passing, error handling visible_
+
+5. **Point to json-server terminal**
+
+   > "Now look at the backend services terminal. Zero requests. Scenarist intercepted everything. The real services are running, but we never hit them."
 
 **Say:**
 
-> "Three scenarios that were 'hard' or 'impossible' on our table. Now they're just... tests."
+> "Four scenarios that were 'annoying', 'hard', or 'impossible' on our table. Now they're just... tests."
 
 ---
 
@@ -128,7 +150,7 @@ _Point to diagram:_
 
 _Point to diagram:_
 
-> "Every request includes a header - x-scenarist-test-id. Scenarist uses this to look up which scenario that specific test is using. Test A gets premium user responses. Test B gets free tier responses. Test C gets offer-ended responses. Same server. Same endpoint. Different responses. Completely isolated."
+> "Every request includes a header - x-scenarist-test-id. Scenarist uses this to look up which scenario that specific test is using. Test A gets pro user responses. Test B gets free tier responses. Test C gets shipping errors. Same server. Same endpoints. Different responses. Completely isolated."
 
 > "This is how you run 50 tests in parallel without a single conflict."
 
@@ -146,11 +168,15 @@ _Show code teaser:_
 
 ```typescript
 // Coming next: Response Sequences
-sequence: [
-  { quantity: 15, reserved: 0 }, // First call: available
-  { quantity: 0, reserved: 0 }, // Second call: offer ended
-];
+{
+  sequence: [
+    { quantity: 15, reserved: 0 }, // First call: available
+    { quantity: 0, reserved: 0 }, // Second call: sold out
+  ];
+}
 ```
+
+> "The test calls the inventory endpoint twice. First call returns '15 spots left'. Second call returns '0 spots left'. We can finally test what happens when an offer ends during checkout."
 
 > "That's the next video."
 
@@ -159,8 +185,9 @@ sequence: [
 ## Key Visual Moments
 
 - [ ] Testing Problem Table (from Video 2)
+- [ ] PayFlow architecture diagram (three backend services)
 - [ ] Framework adapter architecture diagram
-- [ ] Live scenario switching demo (3 scenarios)
+- [ ] Live scenario switching demo (4 scenarios)
 - [ ] json-server terminal showing ZERO requests
 - [ ] Test ID isolation diagram
 - [ ] Sequence code teaser
@@ -168,10 +195,10 @@ sequence: [
 ## Before Recording Checklist
 
 - [ ] PayFlow with Scenarist installed and configured
-- [ ] Multiple scenarios defined (default, premiumUser, freeUser, offerEnded, paymentDeclined)
+- [ ] Multiple scenarios defined (default, freeUser, offerEnded, expressUnavailable, shippingServiceDown)
 - [ ] Playwright tests ready to run
-- [ ] json-server running (to show it's NOT being called)
-- [ ] Architecture diagram ready
+- [ ] json-server running with logging enabled (to show zero requests)
+- [ ] Architecture diagrams ready
 - [ ] Test ID isolation diagram ready
 
 ## Code Samples to Show
@@ -182,19 +209,29 @@ sequence: [
 // scenarios.ts
 export const scenarios = {
   default: {
-    // Happy path
-  },
-  premiumUser: {
-    // Pro tier, 20% discount
+    // Pro user, offer available, all shipping options
+    mocks: [
+      { url: "/users/current", response: { tier: "pro" } },
+      { url: "/inventory/1", response: { quantity: 15 } },
+      { url: "/shipping", response: [...allOptions] },
+    ],
   },
   freeUser: {
-    // Free tier, full price
+    mocks: [
+      { url: "/users/current", response: { tier: "free" } },
+      // ... inventory and shipping unchanged
+    ],
   },
   offerEnded: {
-    // Promotional offer expired
+    mocks: [{ url: "/inventory/1", response: { quantity: 0 } }],
   },
-  paymentDeclined: {
-    // Stripe returns decline
+  shippingServiceDown: {
+    mocks: [
+      {
+        url: "/shipping",
+        response: { status: 500, body: { error: "Service unavailable" } },
+      },
+    ],
   },
 };
 ```
@@ -202,19 +239,29 @@ export const scenarios = {
 **Test with switchScenario:**
 
 ```typescript
-test("payment declined shows error", async ({ page, switchScenario }) => {
-  await switchScenario("paymentDeclined");
+test("free user sees full price", async ({ page, switchScenario }) => {
+  await switchScenario("freeUser");
+  await page.goto("/products/1");
+  await expect(page.getByText("$99.99")).toBeVisible(); // No discount
+  await expect(page.getByText("20% off")).not.toBeVisible();
+});
+
+test("handles shipping service errors gracefully", async ({
+  page,
+  switchScenario,
+}) => {
+  await switchScenario("shippingServiceDown");
   await page.goto("/checkout");
-  await page.click("text=Pay");
-  await expect(page.getByText("Card declined")).toBeVisible();
+  await expect(page.getByText("Unable to load shipping options")).toBeVisible();
 });
 ```
 
 ## Key Phrases
 
-- "What if we could control what these services return - without touching them at all?"
+- "These are all server-side HTTP calls. Your browser never talks to these services directly."
+- "If we can intercept those server-side calls, we can return whatever we want."
 - "Whether you're using Express today or migrating to Next.js tomorrow"
 - "The patterns are the same - only the adapter changes"
 - "Zero requests. Scenarist intercepted everything."
-- "Same server. Same endpoint. Different responses. Completely isolated."
-- "Three scenarios that were 'hard' or 'impossible'. Now they're just... tests."
+- "Same server. Same endpoints. Different responses. Completely isolated."
+- "Four scenarios that were 'hard' or 'impossible'. Now they're just... tests."
