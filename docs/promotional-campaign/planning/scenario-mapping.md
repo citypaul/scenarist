@@ -9,12 +9,21 @@ PayFlow's Next.js server calls three backend services:
 | Service           | Endpoint         | Purpose                          | Port |
 | ----------------- | ---------------- | -------------------------------- | ---- |
 | User Service      | `/users/current` | Returns user tier (pro/free)     | 3001 |
-| Inventory Service | `/inventory/:id` | Returns offer availability       | 3001 |
+| Inventory Service | `/inventory`     | Returns all product availability | 3001 |
 | Shipping Service  | `/shipping`      | Returns shipping options & rates | 3001 |
 
 All three are served by json-server on port 3001 for the demo.
 
 **Key architectural point:** All three are server-side HTTP calls. The browser never talks to these services directly - only the Next.js server does. This makes them 100% mockable with Scenarist.
+
+**Request flow:**
+
+```
+Browser → Next.js API Routes → Backend Services (json-server:3001)
+                             ├→ GET /users/current
+                             ├→ GET /inventory
+                             └→ GET /shipping
+```
 
 ---
 
@@ -47,14 +56,18 @@ All three are served by json-server on port 3001 for the demo.
       url: "http://localhost:3001/users/current",
       response: {
         status: 200,
-        body: { id: "1", email: "pro@payflow.com", name: "Pro User", tier: "pro" }
+        body: { id: "current", email: "demo@payflow.com", name: "Demo User", tier: "pro" }
       }
     },
     {
-      url: "http://localhost:3001/inventory/1",
+      url: "http://localhost:3001/inventory",
       response: {
         status: 200,
-        body: { id: "1", productId: "1", quantity: 50, reserved: 0 }
+        body: [
+          { id: "1", productId: "1", quantity: 50, reserved: 0 },
+          { id: "2", productId: "2", quantity: 15, reserved: 0 },
+          { id: "3", productId: "3", quantity: 3, reserved: 0 }
+        ]
       }
     },
     {
@@ -83,10 +96,31 @@ All three are served by json-server on port 3001 for the demo.
       url: "http://localhost:3001/users/current",
       response: {
         status: 200,
-        body: { id: "2", email: "free@payflow.com", name: "Free User", tier: "free" }
+        body: { id: "current", email: "demo@payflow.com", name: "Demo User", tier: "free" }
+      }
+    },
+    {
+      url: "http://localhost:3001/inventory",
+      response: {
+        status: 200,
+        body: [
+          { id: "1", productId: "1", quantity: 50, reserved: 0 },
+          { id: "2", productId: "2", quantity: 15, reserved: 0 },
+          { id: "3", productId: "3", quantity: 3, reserved: 0 }
+        ]
+      }
+    },
+    {
+      url: "http://localhost:3001/shipping",
+      response: {
+        status: 200,
+        body: [
+          { id: "standard", name: "Standard Shipping", price: 5.99, estimatedDays: "5-7 business days" },
+          { id: "express", name: "Express Shipping", price: 14.99, estimatedDays: "2-3 business days" },
+          { id: "overnight", name: "Overnight Shipping", price: 29.99, estimatedDays: "Next business day" }
+        ]
       }
     }
-    // Inventory and shipping inherit from default or use fallback
   ]
 }
 ```
@@ -99,10 +133,32 @@ All three are served by json-server on port 3001 for the demo.
   name: "Offer Ended - Sold Out",
   mocks: [
     {
-      url: "http://localhost:3001/inventory/1",
+      url: "http://localhost:3001/users/current",
       response: {
         status: 200,
-        body: { id: "1", productId: "1", quantity: 0, reserved: 0 }
+        body: { id: "current", email: "demo@payflow.com", name: "Demo User", tier: "pro" }
+      }
+    },
+    {
+      url: "http://localhost:3001/inventory",
+      response: {
+        status: 200,
+        body: [
+          { id: "1", productId: "1", quantity: 0, reserved: 0 },  // Product 1: SOLD OUT
+          { id: "2", productId: "2", quantity: 0, reserved: 0 },  // Product 2: SOLD OUT
+          { id: "3", productId: "3", quantity: 0, reserved: 0 }   // Product 3: SOLD OUT
+        ]
+      }
+    },
+    {
+      url: "http://localhost:3001/shipping",
+      response: {
+        status: 200,
+        body: [
+          { id: "standard", name: "Standard Shipping", price: 5.99, estimatedDays: "5-7 business days" },
+          { id: "express", name: "Express Shipping", price: 14.99, estimatedDays: "2-3 business days" },
+          { id: "overnight", name: "Overnight Shipping", price: 29.99, estimatedDays: "Next business day" }
+        ]
       }
     }
   ]
@@ -117,10 +173,32 @@ All three are served by json-server on port 3001 for the demo.
   name: "Limited Spots - Urgency",
   mocks: [
     {
-      url: "http://localhost:3001/inventory/1",
+      url: "http://localhost:3001/users/current",
       response: {
         status: 200,
-        body: { id: "1", productId: "1", quantity: 3, reserved: 0 }
+        body: { id: "current", email: "demo@payflow.com", name: "Demo User", tier: "pro" }
+      }
+    },
+    {
+      url: "http://localhost:3001/inventory",
+      response: {
+        status: 200,
+        body: [
+          { id: "1", productId: "1", quantity: 3, reserved: 0 },  // Only 3 left!
+          { id: "2", productId: "2", quantity: 3, reserved: 0 },  // Only 3 left!
+          { id: "3", productId: "3", quantity: 3, reserved: 0 }   // Only 3 left!
+        ]
+      }
+    },
+    {
+      url: "http://localhost:3001/shipping",
+      response: {
+        status: 200,
+        body: [
+          { id: "standard", name: "Standard Shipping", price: 5.99, estimatedDays: "5-7 business days" },
+          { id: "express", name: "Express Shipping", price: 14.99, estimatedDays: "2-3 business days" },
+          { id: "overnight", name: "Overnight Shipping", price: 29.99, estimatedDays: "Next business day" }
+        ]
       }
     }
   ]
@@ -135,12 +213,30 @@ All three are served by json-server on port 3001 for the demo.
   name: "Express Shipping Unavailable",
   mocks: [
     {
+      url: "http://localhost:3001/users/current",
+      response: {
+        status: 200,
+        body: { id: "current", email: "demo@payflow.com", name: "Demo User", tier: "pro" }
+      }
+    },
+    {
+      url: "http://localhost:3001/inventory",
+      response: {
+        status: 200,
+        body: [
+          { id: "1", productId: "1", quantity: 50, reserved: 0 },
+          { id: "2", productId: "2", quantity: 15, reserved: 0 },
+          { id: "3", productId: "3", quantity: 3, reserved: 0 }
+        ]
+      }
+    },
+    {
       url: "http://localhost:3001/shipping",
       response: {
         status: 200,
         body: [
           { id: "standard", name: "Standard Shipping", price: 5.99, estimatedDays: "5-7 business days" }
-          // No express or overnight options
+          // No express or overnight options available
         ]
       }
     }
@@ -155,6 +251,24 @@ All three are served by json-server on port 3001 for the demo.
   id: "shippingServiceDown",
   name: "Shipping Service Down",
   mocks: [
+    {
+      url: "http://localhost:3001/users/current",
+      response: {
+        status: 200,
+        body: { id: "current", email: "demo@payflow.com", name: "Demo User", tier: "pro" }
+      }
+    },
+    {
+      url: "http://localhost:3001/inventory",
+      response: {
+        status: 200,
+        body: [
+          { id: "1", productId: "1", quantity: 50, reserved: 0 },
+          { id: "2", productId: "2", quantity: 15, reserved: 0 },
+          { id: "3", productId: "3", quantity: 3, reserved: 0 }
+        ]
+      }
+    },
     {
       url: "http://localhost:3001/shipping",
       response: {
@@ -174,11 +288,42 @@ All three are served by json-server on port 3001 for the demo.
   name: "Offer Ends During Checkout",
   mocks: [
     {
-      url: "http://localhost:3001/inventory/1",
-      sequence: [
-        { status: 200, body: { id: "1", productId: "1", quantity: 15, reserved: 0 } },  // First call: available
-        { status: 200, body: { id: "1", productId: "1", quantity: 0, reserved: 0 } }    // Second call: sold out
-      ]
+      url: "http://localhost:3001/users/current",
+      response: {
+        status: 200,
+        body: { id: "current", email: "demo@payflow.com", name: "Demo User", tier: "pro" }
+      }
+    },
+    {
+      url: "http://localhost:3001/inventory",
+      sequence: {
+        responses: [
+          // First call (products page): available
+          { status: 200, body: [
+            { id: "1", productId: "1", quantity: 15, reserved: 0 },
+            { id: "2", productId: "2", quantity: 15, reserved: 0 },
+            { id: "3", productId: "3", quantity: 15, reserved: 0 }
+          ]},
+          // Second call (checkout verification): SOLD OUT
+          { status: 200, body: [
+            { id: "1", productId: "1", quantity: 0, reserved: 0 },
+            { id: "2", productId: "2", quantity: 0, reserved: 0 },
+            { id: "3", productId: "3", quantity: 0, reserved: 0 }
+          ]}
+        ],
+        repeat: "last"
+      }
+    },
+    {
+      url: "http://localhost:3001/shipping",
+      response: {
+        status: 200,
+        body: [
+          { id: "standard", name: "Standard Shipping", price: 5.99, estimatedDays: "5-7 business days" },
+          { id: "express", name: "Express Shipping", price: 14.99, estimatedDays: "2-3 business days" },
+          { id: "overnight", name: "Overnight Shipping", price: 29.99, estimatedDays: "Next business day" }
+        ]
+      }
     }
   ]
 }
@@ -203,13 +348,22 @@ All three are served by json-server on port 3001 for the demo.
 
 Scenarist intercepts **server-side HTTP calls**. This means:
 
-- ✅ **Mockable**: Next.js → User Service (server calls backend)
-- ✅ **Mockable**: Next.js → Inventory Service (server calls backend)
-- ✅ **Mockable**: Next.js → Shipping Service (server calls backend)
+- ✅ **Mockable**: Next.js API routes → User Service (server calls backend)
+- ✅ **Mockable**: Next.js API routes → Inventory Service (server calls backend)
+- ✅ **Mockable**: Next.js API routes → Shipping Service (server calls backend)
 - ❌ **Not Mockable**: Browser → External login page (browser redirect)
 - ❌ **Not Mockable**: Browser → External checkout page (browser redirect)
 
 The PayFlow architecture is designed so all critical business logic flows through server-side API calls, making them testable with Scenarist.
+
+### API Route to Backend Service Mapping
+
+| Next.js API Route    | Backend Service Call     |
+| -------------------- | ------------------------ |
+| `GET /api/user`      | `GET /users/current`     |
+| `GET /api/inventory` | `GET /inventory`         |
+| `GET /api/shipping`  | `GET /shipping`          |
+| `POST /api/checkout` | Calls all three services |
 
 ### Proving Interception
 

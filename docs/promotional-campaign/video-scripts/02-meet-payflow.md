@@ -67,10 +67,10 @@ const user = await fetch("http://localhost:3001/users/current");
 
 ```typescript
 // Server-side - Next.js calls Inventory Service
-const inventory = await fetch("http://localhost:3001/inventory/1");
+const inventory = await fetch("http://localhost:3001/inventory");
 ```
 
-> "Server-side call to the Inventory Service. Returns how many spots are left in each promotional offer."
+> "Server-side call to the Inventory Service. Returns availability for all promotional offers."
 
 **Show API route calling Shipping Service:**
 

@@ -31,7 +31,7 @@ Backend Services = json-server with users, inventory, and shipping on port 3001
 ## 1:30 - SHOW CODE
 
 1. `fetch("/users/current")` → "Server calls User Service for tier"
-2. `fetch("/inventory/1")` → "Server calls Inventory Service for offer availability"
+2. `fetch("/inventory")` → "Server calls Inventory Service for offer availability"
 3. `fetch("/shipping")` → "Server calls Shipping Service for delivery rates"
 
 **Key point:** "All server-side HTTP calls. Browser talks to Next.js. Next.js talks to these services."

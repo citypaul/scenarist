@@ -212,7 +212,10 @@ export const scenarios = {
     // Pro user, offer available, all shipping options
     mocks: [
       { url: "/users/current", response: { tier: "pro" } },
-      { url: "/inventory/1", response: { quantity: 15 } },
+      {
+        url: "/inventory",
+        response: [{ quantity: 50 }, { quantity: 15 }, { quantity: 3 }],
+      },
       { url: "/shipping", response: [...allOptions] },
     ],
   },
@@ -223,7 +226,12 @@ export const scenarios = {
     ],
   },
   offerEnded: {
-    mocks: [{ url: "/inventory/1", response: { quantity: 0 } }],
+    mocks: [
+      {
+        url: "/inventory",
+        response: [{ quantity: 0 }, { quantity: 0 }, { quantity: 0 }],
+      },
+    ],
   },
   shippingServiceDown: {
     mocks: [

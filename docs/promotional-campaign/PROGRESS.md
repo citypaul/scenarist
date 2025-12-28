@@ -1,6 +1,6 @@
 # Campaign Progress
 
-Last updated: 2025-12-23
+Last updated: 2025-12-28
 
 ## Current Status: Videos 1-3 Materials Complete, Ready for Recording
 
@@ -24,7 +24,7 @@ Last updated: 2025-12-23
 - ✅ Next.js 16 App Router with shadcn/ui (Maia style)
 - ✅ Three backend services (all server-side HTTP calls):
   - **User Service** (`/users/current`) - User tier (pro/free) for pricing decisions
-  - **Inventory Service** (`/inventory/:id`) - Promotional offer availability
+  - **Inventory Service** (`/inventory`) - Promotional offer availability
   - **Shipping Service** (`/shipping`) - Delivery options and rates
 - ✅ All services simulated with json-server on port 3001
 - ✅ Request logging middleware to show terminal activity
@@ -98,7 +98,7 @@ Last updated: 2025-12-23
 
 ```
 Browser → Next.js Server → User Service (/users/current)
-                        ├→ Inventory Service (/inventory/:id)
+                        ├→ Inventory Service (/inventory)
                         └→ Shipping Service (/shipping)
 ```
 
@@ -113,7 +113,7 @@ The browser never talks to these services directly. Next.js makes the HTTP calls
 | Service           | Endpoint         | Purpose                          |
 | ----------------- | ---------------- | -------------------------------- |
 | User Service      | `/users/current` | Returns user tier (pro/free)     |
-| Inventory Service | `/inventory/:id` | Returns offer availability       |
+| Inventory Service | `/inventory`     | Returns offer availability       |
 | Shipping Service  | `/shipping`      | Returns shipping options & rates |
 
 **db.json structure:**

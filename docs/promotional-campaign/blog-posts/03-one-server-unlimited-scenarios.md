@@ -156,11 +156,18 @@ export const scenarios = {
     mocks: [
       {
         url: "http://localhost:3001/users/current",
-        response: { status: 200, body: { id: "1", tier: "pro" } },
+        response: { status: 200, body: { id: "current", tier: "pro" } },
       },
       {
-        url: "http://localhost:3001/inventory/1",
-        response: { status: 200, body: { quantity: 15 } },
+        url: "http://localhost:3001/inventory",
+        response: {
+          status: 200,
+          body: [
+            { id: "1", productId: "1", quantity: 50, reserved: 0 },
+            { id: "2", productId: "2", quantity: 15, reserved: 0 },
+            { id: "3", productId: "3", quantity: 3, reserved: 0 },
+          ],
+        },
       },
       {
         url: "http://localhost:3001/shipping",
@@ -178,15 +185,22 @@ export const scenarios = {
     mocks: [
       {
         url: "http://localhost:3001/users/current",
-        response: { status: 200, body: { id: "2", tier: "free" } },
+        response: { status: 200, body: { id: "current", tier: "free" } },
       },
     ],
   },
   offerEnded: {
     mocks: [
       {
-        url: "http://localhost:3001/inventory/1",
-        response: { status: 200, body: { quantity: 0 } },
+        url: "http://localhost:3001/inventory",
+        response: {
+          status: 200,
+          body: [
+            { id: "1", productId: "1", quantity: 0, reserved: 0 },
+            { id: "2", productId: "2", quantity: 0, reserved: 0 },
+            { id: "3", productId: "3", quantity: 0, reserved: 0 },
+          ],
+        },
       },
     ],
   },
@@ -212,15 +226,28 @@ That requires a feature called **sequences** - where the same endpoint returns d
 ```typescript
 // Coming next: Response Sequences
 {
-  url: "http://localhost:3001/inventory/1",
-  sequence: [
-    { quantity: 15, reserved: 0 },   // First call: available
-    { quantity: 0, reserved: 0 },    // Second call: sold out
-  ]
+  url: "http://localhost:3001/inventory",
+  sequence: {
+    responses: [
+      // First call: available
+      { status: 200, body: [
+        { id: "1", productId: "1", quantity: 15, reserved: 0 },
+        { id: "2", productId: "2", quantity: 15, reserved: 0 },
+        { id: "3", productId: "3", quantity: 15, reserved: 0 },
+      ]},
+      // Second call: sold out
+      { status: 200, body: [
+        { id: "1", productId: "1", quantity: 0, reserved: 0 },
+        { id: "2", productId: "2", quantity: 0, reserved: 0 },
+        { id: "3", productId: "3", quantity: 0, reserved: 0 },
+      ]},
+    ],
+    repeat: "last",
+  }
 }
 ```
 
-The test calls the inventory endpoint twice. First call returns "15 spots left". Second call returns "0 spots left". We can finally test what happens when an offer ends during checkout.
+The test calls the inventory endpoint twice. First call returns products with spots available. Second call returns all sold out. We can finally test what happens when an offer ends during checkout.
 
 That's the next video.
 
