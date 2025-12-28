@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import {
   CreditCard,
   Lock,
@@ -31,17 +33,25 @@ import {
   AlertCircle,
   ShoppingCart,
   XCircle,
+  Truck,
 } from "lucide-react";
 import { useCart } from "@/contexts/cart-context";
 
 type UnavailableOffer = {
-  id: string;
-  name: string;
-  available: number;
-  requested: number;
+  readonly id: string;
+  readonly name: string;
+  readonly available: number;
+  readonly requested: number;
 };
 
-export default function CheckoutPage() {
+type ShippingOption = {
+  readonly id: string;
+  readonly name: string;
+  readonly price: number;
+  readonly estimatedDays: string;
+};
+
+function CheckoutPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const canceled = searchParams.get("canceled");
@@ -50,11 +60,49 @@ export default function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [unavailableOffers, setUnavailableOffers] = useState<
-    UnavailableOffer[]
+    readonly UnavailableOffer[]
   >([]);
+  const [shippingOptions, setShippingOptions] = useState<
+    readonly ShippingOption[]
+  >([]);
+  const [selectedShippingId, setSelectedShippingId] = useState<string | null>(
+    null,
+  );
+  const [isLoadingShipping, setIsLoadingShipping] = useState(true);
+  const [shippingError, setShippingError] = useState<string | null>(null);
 
-  const handleCheckout = async () => {
-    if (items.length === 0) return;
+  // Fetch shipping options from Shipping Service
+  useEffect(() => {
+    async function loadShippingOptions() {
+      try {
+        const response = await fetch("/api/shipping");
+        if (response.ok) {
+          const options: readonly ShippingOption[] = await response.json();
+          setShippingOptions(options);
+          // Auto-select first option if available
+          if (options.length > 0) {
+            setSelectedShippingId(options[0].id);
+          }
+        } else {
+          setShippingError("Unable to load shipping options");
+        }
+      } catch {
+        setShippingError("Unable to load shipping options");
+      }
+      setIsLoadingShipping(false);
+    }
+
+    loadShippingOptions();
+  }, []);
+
+  const selectedShipping = shippingOptions.find(
+    (option) => option.id === selectedShippingId,
+  );
+  const shippingCost = selectedShipping?.price ?? 0;
+  const totalWithShipping = total + shippingCost;
+
+  const handleCheckout = useCallback(async () => {
+    if (items.length === 0 || !selectedShippingId) return;
 
     setIsLoading(true);
     setError(null);
@@ -73,6 +121,7 @@ export default function CheckoutPage() {
             basePrice: item.basePrice,
             quantity: item.quantity,
           })),
+          shippingOptionId: selectedShippingId,
         }),
       });
 
@@ -100,11 +149,11 @@ export default function CheckoutPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [items, selectedShippingId, clearCart]);
 
-  const handleBackToProducts = () => {
+  const handleBackToProducts = useCallback(() => {
     router.push("/");
-  };
+  }, [router]);
 
   if (items.length === 0 && !canceled) {
     return (
@@ -227,40 +276,99 @@ export default function CheckoutPage() {
         )}
 
         <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Payment
-              </CardTitle>
-              <CardDescription>
-                You&apos;ll be redirected to Stripe&apos;s secure checkout
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="rounded-lg border bg-muted/50 p-4">
-                <div className="flex items-center gap-3">
-                  <Lock className="h-5 w-5 text-green-600" />
-                  <div>
-                    <p className="font-medium">Secure Payment</p>
-                    <p className="text-sm text-muted-foreground">
-                      Your payment information is encrypted and secure
-                    </p>
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Truck className="h-5 w-5" />
+                  Shipping
+                </CardTitle>
+                <CardDescription>
+                  Choose your preferred shipping method
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoadingShipping ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : shippingError ? (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Shipping Unavailable</AlertTitle>
+                    <AlertDescription>{shippingError}</AlertDescription>
+                  </Alert>
+                ) : (
+                  <RadioGroup
+                    value={selectedShippingId ?? undefined}
+                    onValueChange={setSelectedShippingId}
+                    className="space-y-3"
+                  >
+                    {shippingOptions.map((option) => (
+                      <div
+                        key={option.id}
+                        className="flex items-center space-x-3 rounded-lg border p-4 hover:bg-muted/50 cursor-pointer"
+                        onClick={() => setSelectedShippingId(option.id)}
+                      >
+                        <RadioGroupItem value={option.id} id={option.id} />
+                        <Label
+                          htmlFor={option.id}
+                          className="flex-1 cursor-pointer"
+                        >
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <p className="font-medium">{option.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {option.estimatedDays}
+                              </p>
+                            </div>
+                            <span className="font-medium">
+                              ${option.price.toFixed(2)}
+                            </span>
+                          </div>
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  Payment
+                </CardTitle>
+                <CardDescription>
+                  You&apos;ll be redirected to Stripe&apos;s secure checkout
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="rounded-lg border bg-muted/50 p-4">
+                  <div className="flex items-center gap-3">
+                    <Lock className="h-5 w-5 text-green-600" />
+                    <div>
+                      <p className="font-medium">Secure Payment</p>
+                      <p className="text-sm text-muted-foreground">
+                        Your payment information is encrypted and secure
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="text-sm text-muted-foreground">
-                <p>Accepted payment methods:</p>
-                <div className="mt-2 flex gap-2">
-                  <div className="rounded border px-2 py-1 text-xs">Visa</div>
-                  <div className="rounded border px-2 py-1 text-xs">
-                    Mastercard
+                <div className="text-sm text-muted-foreground">
+                  <p>Accepted payment methods:</p>
+                  <div className="mt-2 flex gap-2">
+                    <div className="rounded border px-2 py-1 text-xs">Visa</div>
+                    <div className="rounded border px-2 py-1 text-xs">
+                      Mastercard
+                    </div>
+                    <div className="rounded border px-2 py-1 text-xs">Amex</div>
                   </div>
-                  <div className="rounded border px-2 py-1 text-xs">Amex</div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
 
           <Card>
             <CardHeader>
@@ -287,13 +395,21 @@ export default function CheckoutPage() {
                 </div>
               )}
               <div className="flex justify-between">
+                <span className="text-muted-foreground">Shipping</span>
+                <span>
+                  {selectedShipping
+                    ? `$${shippingCost.toFixed(2)}`
+                    : "Select option"}
+                </span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-muted-foreground">Tax (10%)</span>
                 <span>${tax.toFixed(2)}</span>
               </div>
               <Separator />
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
-                <span>${total.toFixed(2)}</span>
+                <span>${totalWithShipping.toFixed(2)}</span>
               </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
@@ -301,7 +417,13 @@ export default function CheckoutPage() {
                 className="w-full"
                 size="lg"
                 onClick={handleCheckout}
-                disabled={isLoading || items.length === 0}
+                disabled={
+                  isLoading ||
+                  items.length === 0 ||
+                  !selectedShippingId ||
+                  isLoadingShipping ||
+                  !!shippingError
+                }
               >
                 {isLoading ? (
                   <>
@@ -311,7 +433,7 @@ export default function CheckoutPage() {
                 ) : (
                   <>
                     <Lock className="mr-2 h-4 w-4" />
-                    Pay ${total.toFixed(2)}
+                    Pay ${totalWithShipping.toFixed(2)}
                   </>
                 )}
               </Button>
@@ -323,5 +445,19 @@ export default function CheckoutPage() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-1 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <CheckoutPageContent />
+    </Suspense>
   );
 }

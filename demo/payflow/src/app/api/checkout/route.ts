@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getStripeServer } from "@/lib/stripe";
 import { auth0 } from "@/lib/auth0";
 import { checkOfferAvailable, getProductOffer } from "@/lib/inventory";
+import { getCurrentUser } from "@/lib/user-service";
+import { getShippingOption } from "@/lib/shipping";
 
 // Cart item from the request
 interface CartItem {
@@ -22,12 +24,34 @@ const TIER_DISCOUNTS: Record<string, number> = {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { items } = body as {
+    const { items, shippingOptionId } = body as {
       items: CartItem[];
+      shippingOptionId: string;
     };
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: "No items in cart" }, { status: 400 });
+    }
+
+    if (!shippingOptionId) {
+      return NextResponse.json(
+        { error: "Shipping option is required" },
+        { status: 400 },
+      );
+    }
+
+    // Fetch user tier from User Service (server-side call to backend)
+    const userTier = await getCurrentUser()
+      .then((userData) => userData.tier)
+      .catch(() => "free" as const);
+
+    // Fetch shipping option from Shipping Service (server-side call to backend)
+    const shippingOption = await getShippingOption(shippingOptionId);
+    if (!shippingOption) {
+      return NextResponse.json(
+        { error: "Selected shipping option is not available" },
+        { status: 400 },
+      );
     }
 
     // Verify promotional offer availability for all items
@@ -61,10 +85,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get the user's session (optional - allow guest checkout)
+    // Get the user's session for email (optional - allow guest checkout)
     const session = await auth0.getSession();
     const userEmail = session?.user?.email;
-    const userTier = (session?.user?.app_metadata?.tier as string) || "free";
     const tierDiscount = TIER_DISCOUNTS[userTier] || 0;
 
     // Calculate totals
@@ -74,10 +97,11 @@ export async function POST(request: Request) {
     );
     const discountAmount = subtotal * (tierDiscount / 100);
     const afterDiscount = subtotal - discountAmount;
+    const shippingCost = shippingOption.price;
     const tax = afterDiscount * 0.1; // 10% tax
 
     // Calculate line items with discount applied
-    const lineItems = items.map((item) => {
+    const productLineItems = items.map((item) => {
       const discountedPrice = item.basePrice * (1 - tierDiscount / 100);
       const unitAmount = Math.round(discountedPrice * 100); // Stripe uses cents
 
@@ -93,6 +117,21 @@ export async function POST(request: Request) {
         quantity: item.quantity,
       };
     });
+
+    // Add shipping as a line item
+    const shippingLineItem = {
+      price_data: {
+        currency: "usd",
+        product_data: {
+          name: shippingOption.name,
+          description: shippingOption.estimatedDays,
+        },
+        unit_amount: Math.round(shippingCost * 100), // Stripe uses cents
+      },
+      quantity: 1,
+    };
+
+    const lineItems = [...productLineItems, shippingLineItem];
 
     // Prepare order items for metadata (simplified for storage)
     const orderItems = items.map((item) => ({
@@ -116,6 +155,8 @@ export async function POST(request: Request) {
         items: JSON.stringify(orderItems),
         subtotal: subtotal.toFixed(2),
         discount: discountAmount.toFixed(2),
+        shipping: shippingCost.toFixed(2),
+        shippingOption: shippingOption.name,
         tax: tax.toFixed(2),
       },
     });

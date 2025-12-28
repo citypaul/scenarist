@@ -28,23 +28,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<User | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
 
-  // Fetch user from Auth0 session
+  // Fetch user from Auth0 session and tier from User Service
   React.useEffect(() => {
+    async function fetchTierFromUserService(): Promise<UserTier> {
+      try {
+        const userResponse = await fetch("/api/user");
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          return userData.tier || "free";
+        }
+      } catch {
+        // User service unavailable
+      }
+      return "free";
+    }
+
     async function loadUser() {
       try {
-        const response = await fetch("/auth/profile");
-        if (response.ok) {
-          const data = await response.json();
-          if (data) {
-            // Extract tier from user metadata
-            const tier =
-              data.app_metadata?.tier || data.user_metadata?.tier || "free";
+        // Check Auth0 for authentication
+        const authResponse = await fetch("/auth/profile");
+        if (authResponse.ok) {
+          const authData = await authResponse.json();
+          if (authData) {
+            // Fetch tier from User Service (server-side call to backend)
+            const tier = await fetchTierFromUserService();
+
             setUser({
-              id: data.sub,
-              email: data.email,
-              name: data.name || data.email,
-              tier: tier as UserTier,
-              picture: data.picture,
+              id: authData.sub,
+              email: authData.email,
+              name: authData.name || authData.email,
+              tier,
+              picture: authData.picture,
             });
           }
         }

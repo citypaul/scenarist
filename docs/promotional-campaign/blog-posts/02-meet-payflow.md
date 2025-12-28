@@ -11,77 +11,77 @@ PayFlow is a payment integration dashboard built with:
 - **Next.js 16** (App Router)
 - **TypeScript**
 - **Tailwind CSS** with shadcn/ui components
-- **Three external services** that make real HTTP calls
+- **Three backend services** that make real HTTP calls
 
 Nothing exotic. The kind of tech stack you'd actually use in production.
 
-## The Three External Services
+## The Three Backend Services
 
-Here's what makes PayFlow realistic - and challenging to test:
+Here's what makes PayFlow realistic - and challenging to test. All three services are server-side HTTP calls - the browser never talks to them directly, only the Next.js server does.
 
-### 1. Auth0 - Authentication & User Tiers
+### 1. User Service - Authentication & Tiers
 
 ```typescript
-// src/lib/auth0.ts
-import { Auth0Client } from "@auth0/nextjs-auth0/server";
-
-export const auth0 = new Auth0Client();
+// Server-side call to User Service
+const response = await fetch("http://localhost:3001/users/current");
+const user = await response.json();
+// Returns: { id, email, name, tier }
 ```
 
-When users log in, Auth0 handles authentication and returns user metadata including their subscription tier (free, basic, pro, enterprise). Premium users see different pricing.
+The User Service returns user information including their subscription tier (free, basic, pro, enterprise). Premium users get different pricing.
 
 ### 2. Inventory Service - Promotional Offer Availability
 
 ```typescript
-// Fetching offer availability
-const response = await fetch(`${INVENTORY_SERVICE_URL}/inventory/${productId}`);
+// Server-side call to Inventory Service
+const response = await fetch(`http://localhost:3001/inventory/${productId}`);
 const data = await response.json();
 // Returns: { id, productId, quantity, reserved }
 ```
 
-This is an internal microservice we call to check promotional offer availability - "launch pricing" slots, "founding member" spots. Unlike Auth0 or Stripe, **this service has no test mode**. There's no magic API key that makes it behave differently in tests.
+This service tracks promotional offer availability - "launch pricing" slots, "founding member" spots. It has **no test mode**. There's no magic API key that makes it behave differently in tests.
 
-We simulate it locally with json-server:
-
-```bash
-npx json-server db.json --port 3001
-```
-
-### 3. Stripe - Payment Processing
+### 3. Shipping Service - Delivery Options & Rates
 
 ```typescript
-// src/lib/stripe.ts
-import Stripe from "stripe";
-
-export const getStripeServer = () => {
-  return new Stripe(process.env.STRIPE_SECRET_KEY!);
-};
+// Server-side call to Shipping Service
+const response = await fetch("http://localhost:3001/shipping");
+const options = await response.json();
+// Returns: [{ id, name, price, estimatedDays }, ...]
 ```
 
-Real Stripe SDK. Real checkout sessions. Real webhooks.
+The Shipping Service returns available delivery options and rates - standard, express, overnight.
+
+We simulate all three services locally with json-server:
+
+```bash
+pnpm inventory  # Runs json-server on port 3001 with logging
+```
 
 ## The Architecture
 
+The key point: **all three are server-side HTTP calls**. Your browser talks to Next.js. Next.js talks to these backend services.
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  PayFlow App (Real Code)                                        │
-│                                                                 │
-│  @auth0/nextjs-auth0 SDK ──────► HTTP calls to Auth0 API       │
-│  fetch() to Inventory ─────────► HTTP calls to json-server:3001│
-│  stripe SDK ─────────────────► HTTP calls to Stripe API        │
-│                                                                 │
-│  ═══════════════════════════════════════════════════════════   │
-│                                                                 │
-│  In Development:    All calls go to real services               │
-│  In Tests:          ??? (This is the problem)                   │
-│  In Production:     All calls go to real services               │
-│                                                                 │
+│  PayFlow Architecture                                            │
+│                                                                  │
+│  Browser ──► Next.js Server ──► User Service (/users/current)   │
+│                              ├──► Inventory Service (/inventory) │
+│                              └──► Shipping Service (/shipping)   │
+│                                                                  │
+│  ═══════════════════════════════════════════════════════════════ │
+│                                                                  │
+│  In Development:    All calls go to json-server:3001             │
+│  In Tests:          ??? (This is the problem)                    │
+│  In Production:     All calls go to real backend services        │
+│                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ## The Happy Path Works Great
 
-Running PayFlow locally with all three services is straightforward:
+Running PayFlow locally with all services is straightforward:
 
 **Terminal 1: Next.js**
 
@@ -89,28 +89,21 @@ Running PayFlow locally with all three services is straightforward:
 pnpm dev  # localhost:3000
 ```
 
-**Terminal 2: Inventory Service**
+**Terminal 2: Backend Services**
 
 ```bash
-npm run inventory  # localhost:3001
-```
-
-**Terminal 3: Stripe CLI (for webhooks)**
-
-```bash
-stripe listen --forward-to localhost:3000/api/webhooks/stripe
+pnpm inventory  # localhost:3001 (json-server with logging)
 ```
 
 The happy path flow:
 
-1. User clicks "Sign In" - Auth0 Universal Login appears
-2. User logs in with Pro tier account - tier badge appears in sidebar
-3. Products show promotional offer availability from inventory service
-4. Pro users see 20% discount applied
-5. User adds product to cart, proceeds to checkout
-6. Stripe Checkout handles payment (test card: 4242 4242 4242 4242)
-7. Webhook arrives, order is created
-8. User sees order in their history
+1. Products page shows promotional offer availability from Inventory Service
+2. User tier badge shows "Pro" (from User Service)
+3. Pro users see 20% discount applied
+4. User adds product to cart
+5. Checkout page shows shipping options from Shipping Service
+6. User selects shipping and completes purchase
+7. Order appears in history
 
 **This all works.** The question is: how do we test it?
 
@@ -118,27 +111,27 @@ The happy path flow:
 
 Here's what I need to test:
 
-| Scenario                       | Auth0     | Inventory         | Stripe                 | Without Scenarist             |
-| ------------------------------ | --------- | ----------------- | ---------------------- | ----------------------------- |
-| Happy path                     | Pro user  | Offer available   | Success                | Just run the app              |
-| Premium user discount          | Pro user  | Offer available   | Success                | Need Pro account in Auth0     |
-| Free user sees full price      | Free user | Offer available   | Success                | Need separate Auth0 account   |
-| Payment declined               | Any       | Offer available   | Declined               | Stripe test card works        |
-| Offer ended                    | Any       | 0 spots left      | N/A                    | Edit db.json, restart server  |
-| Limited offer urgency          | Any       | 3 spots left      | N/A                    | Edit db.json manually         |
-| **Offer ends during checkout** | Any       | Available -> Gone | N/A                    | **Impossible**                |
-| Inventory service down         | Any       | 500 error         | N/A                    | Kill server mid-test?         |
-| Auth0 returns error            | Error     | Any               | N/A                    | How?                          |
-| Webhook never arrives          | Any       | Offer available   | Success but no webhook | **Impossible**                |
-| 50 tests in parallel           | Various   | Various           | Various                | **Impossible** - shared state |
+| Scenario                       | User Service | Inventory        | Shipping    | Without Scenarist |
+| ------------------------------ | ------------ | ---------------- | ----------- | ----------------- |
+| Happy path                     | Pro user     | Offer available  | All options | Easy              |
+| Premium user discount          | Pro user     | Offer available  | Any         | Annoying          |
+| Free user sees full price      | Free user    | Offer available  | Any         | Annoying          |
+| Offer ended                    | Any          | 0 spots left     | N/A         | Hard              |
+| Limited offer urgency          | Any          | 3 spots left     | N/A         | Hard              |
+| Express shipping unavailable   | Any          | Offer available  | No express  | Hard              |
+| Shipping service down          | Any          | Offer available  | 500 error   | Hard              |
+| **Offer ends during checkout** | Any          | Available → Gone | Any         | **Impossible**    |
+| 50 tests in parallel           | Various      | Various          | Various     | **Impossible**    |
 
-### What Each Color Means
+### What Each Difficulty Level Means
 
 **Easy (Happy path):** Just run the app. Everything works.
 
-**Annoying (Different tiers, declined payments):** Possible, but requires manual setup. Need multiple Auth0 accounts. Need to remember specific test card numbers.
+**Annoying (Different tiers):** Possible, but requires manual setup. You'd have to edit db.json to change the user's tier, then remember to change it back.
 
-**Hard/Impossible (Everything else):** This is where it gets interesting.
+**Hard (Service states):** This is where it gets interesting. Want to test what happens when an offer ends? Edit db.json, restart json-server. Want to test a shipping service error? Kill the server mid-test?
+
+**Impossible (Everything else):** This is where manual testing breaks down completely.
 
 ## The Killer Scenario: Offer Ends During Checkout
 
@@ -168,11 +161,11 @@ Even if you could solve the edge cases, there's another problem: parallel testin
 
 With real services:
 
-- All tests hit the same Auth0 tenant
-- All tests hit the same json-server instance
-- All tests hit the same Stripe account
+- All tests hit the same User Service (same db.json)
+- All tests hit the same Inventory Service (same db.json)
+- All tests hit the same Shipping Service (same db.json)
 
-If Test A expects the user to be logged in as Pro tier, and Test B expects the user to be logged in as Free tier, and they run at the same time... they conflict.
+If Test A expects a Pro user and Test B expects a Free user, and they run at the same time... they conflict.
 
 The typical "solution" is to run tests sequentially. But that means:
 
@@ -186,9 +179,9 @@ To test all these scenarios reliably, we need:
 
 1. **Real browser** - Playwright, not jsdom
 2. **Real server** - Our actual Next.js app executing real code
-3. **Controlled external APIs** - We decide what Auth0, Inventory, and Stripe return
+3. **Controlled backend services** - We decide what User Service, Inventory Service, and Shipping Service return
 
-That third point is the key. We don't want to skip Auth0 or Stripe - our code needs to call them. But we need to control their responses.
+That third point is the key. We don't want to skip these services - our code needs to call them. But we need to control their responses.
 
 ## The Solution Preview
 
@@ -213,7 +206,7 @@ test("offer ends during checkout", async ({ page, switchScenario }) => {
 
 Same app. Same code. Same json-server running in the background. But Scenarist intercepts the requests before they reach it and returns exactly what we need for the test.
 
-No restarts. No editing files. No timing tricks. No conflicts between parallel tests.
+No editing files. No timing tricks. No conflicts between parallel tests.
 
 ## Running PayFlow Yourself
 
@@ -222,18 +215,19 @@ Want to try PayFlow? Check out the [demo app](https://github.com/citypaul/scenar
 You'll need:
 
 - Node.js 18+
-- A free Auth0 account (sign up at [auth0.com](https://auth0.com/signup))
-- A free Stripe account (sign up at [stripe.com](https://dashboard.stripe.com/register))
+- pnpm
 
-The README has complete setup instructions for all three services.
+The README has complete setup instructions.
 
 ## Summary
 
 PayFlow is a realistic payment app with realistic integrations:
 
-- Auth0 for authentication and user tiers
-- An internal Inventory Service for promotional offer availability
-- Stripe for payments
+- User Service for authentication and user tiers
+- Inventory Service for promotional offer availability
+- Shipping Service for delivery options and rates
+
+All three are **server-side HTTP calls** - your browser talks to Next.js, and Next.js talks to these backend services. This architecture is 100% mockable with Scenarist.
 
 The happy path works great. But testing edge cases - different user tiers, service errors, the "offer ends during checkout" scenario - ranges from annoying to impossible with real services.
 
@@ -241,6 +235,6 @@ In the next video and post, I'll show you how Scenarist makes all of these scena
 
 ---
 
-_This is the companion blog post for [Video 2: Meet PayFlow](https://github.com/citypaul/scenarist). The video walks through the live demo of PayFlow with all three services running._
+_This is the companion blog post for [Video 2: Meet PayFlow](https://github.com/citypaul/scenarist). The video walks through the live demo of PayFlow with all services running._
 
 **Next:** [Video 3: One Server, Unlimited Scenarios](/blog/03-one-server-unlimited-scenarios) - How Scenarist works

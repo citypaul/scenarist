@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Breadcrumb,
@@ -54,7 +54,7 @@ const statusConfig = {
   },
 };
 
-export default function OrdersPage() {
+function OrdersPageContent() {
   const searchParams = useSearchParams();
   const success = searchParams.get("success");
   const sessionId = searchParams.get("session_id");
@@ -238,5 +238,19 @@ export default function OrdersPage() {
         )}
       </div>
     </>
+  );
+}
+
+export default function OrdersPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-1 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <OrdersPageContent />
+    </Suspense>
   );
 }
