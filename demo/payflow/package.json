@@ -10,7 +10,6 @@
     "inventory": "json-server db.json --port 3001 --middlewares json-server-logger.js"
   },
   "dependencies": {
-    "@auth0/nextjs-auth0": "4.14.0",
     "@hookform/resolvers": "5.2.2",
     "@radix-ui/react-avatar": "1.1.11",
     "@radix-ui/react-collapsible": "1.1.12",

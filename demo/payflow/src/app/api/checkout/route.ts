@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getStripeServer } from "@/lib/stripe";
-import { auth0 } from "@/lib/auth0";
 import { checkOfferAvailable, getProductOffer } from "@/lib/inventory";
 import { getCurrentUser } from "@/lib/user-service";
 import { getShippingOption } from "@/lib/shipping";
@@ -85,9 +84,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get the user's session for email (optional - allow guest checkout)
-    const session = await auth0.getSession();
-    const userEmail = session?.user?.email;
+    // Get user email from User Service
+    const user = await getCurrentUser().catch(() => null);
+    const userEmail = user?.email;
     const tierDiscount = TIER_DISCOUNTS[userTier] || 0;
 
     // Calculate totals
@@ -150,7 +149,7 @@ export async function POST(request: Request) {
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout?canceled=true`,
       ...(userEmail && { customer_email: userEmail }),
       metadata: {
-        userId: session?.user?.sub || "guest",
+        userId: user?.id || "guest",
         userTier,
         items: JSON.stringify(orderItems),
         subtotal: subtotal.toFixed(2),

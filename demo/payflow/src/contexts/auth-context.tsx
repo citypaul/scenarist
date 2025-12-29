@@ -5,19 +5,15 @@ import * as React from "react";
 export type UserTier = "free" | "basic" | "pro" | "enterprise";
 
 export interface User {
-  id: string;
-  email: string;
-  name: string;
-  tier: UserTier;
-  picture?: string;
+  readonly id: string;
+  readonly email: string;
+  readonly name: string;
+  readonly tier: UserTier;
 }
 
 interface AuthContextValue {
-  user: User | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  login: () => void;
-  logout: () => void;
+  readonly user: User | null;
+  readonly isLoading: boolean;
 }
 
 const AuthContext = React.createContext<AuthContextValue | undefined>(
@@ -28,42 +24,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<User | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
 
-  // Fetch user from Auth0 session and tier from User Service
+  // Fetch user from User Service (server-side call to backend)
   React.useEffect(() => {
-    async function fetchTierFromUserService(): Promise<UserTier> {
-      try {
-        const userResponse = await fetch("/api/user");
-        if (userResponse.ok) {
-          const userData = await userResponse.json();
-          return userData.tier || "free";
-        }
-      } catch {
-        // User service unavailable
-      }
-      return "free";
-    }
-
     async function loadUser() {
       try {
-        // Check Auth0 for authentication
-        const authResponse = await fetch("/auth/profile");
-        if (authResponse.ok) {
-          const authData = await authResponse.json();
-          if (authData) {
-            // Fetch tier from User Service (server-side call to backend)
-            const tier = await fetchTierFromUserService();
-
-            setUser({
-              id: authData.sub,
-              email: authData.email,
-              name: authData.name || authData.email,
-              tier,
-              picture: authData.picture,
-            });
-          }
+        const response = await fetch("/api/user");
+        if (response.ok) {
+          const userData = await response.json();
+          setUser({
+            id: userData.id,
+            email: userData.email,
+            name: userData.name,
+            tier: userData.tier || "free",
+          });
         }
       } catch {
-        // Not authenticated or error
+        // User service unavailable - use default user
+        setUser({
+          id: "demo",
+          email: "demo@payflow.com",
+          name: "Demo User",
+          tier: "free",
+        });
       }
       setIsLoading(false);
     }
@@ -71,23 +53,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadUser();
   }, []);
 
-  const login = React.useCallback(() => {
-    window.location.href = "/auth/login";
-  }, []);
-
-  const logout = React.useCallback(() => {
-    window.location.href = "/auth/logout";
-  }, []);
-
   const value = React.useMemo(
     () => ({
       user,
       isLoading,
-      isAuthenticated: !!user,
-      login,
-      logout,
     }),
-    [user, isLoading, login, logout],
+    [user, isLoading],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

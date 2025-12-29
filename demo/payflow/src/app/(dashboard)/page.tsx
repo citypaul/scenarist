@@ -150,7 +150,7 @@ function OfferBadge({
 }
 
 export default function ProductsPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const { addItem, items } = useCart();
   const userTier = user?.tier ?? "free";
   const discount = TIER_DISCOUNTS[userTier];
@@ -220,7 +220,7 @@ export default function ProductsPage() {
             Select the plan that best fits your needs. All plans include a
             14-day free trial.
           </p>
-          {isAuthenticated && discount > 0 && (
+          {user && discount > 0 && (
             <div className="mt-2 inline-flex items-center gap-2 rounded-md bg-green-500/10 px-3 py-1.5 text-sm text-green-600 dark:text-green-400">
               <Percent className="h-4 w-4" />
               <span>
