@@ -80,40 +80,40 @@ Browser → Next.js → Payment Service  ✅ Mockable (NEW)
 
 ## Implementation Stages
 
-### Stage 1: Remove Auth0 Dependencies
+### Stage 1: Remove Auth0 Dependencies ✅
 
-- [ ] Delete `src/lib/auth0.ts`
-- [ ] Delete `src/proxy.ts`
-- [ ] Delete auth routes if they exist
-- [ ] Rewrite `auth-context.tsx` to use User Service only
-- [ ] Simplify `nav-user.tsx` (remove login/logout buttons)
-- [ ] Delete or simplify login page
-- [ ] Remove Auth0 from `checkout/route.ts`
-- [ ] Remove Auth0 from `orders/route.ts`
-- [ ] Remove `@auth0/nextjs-auth0` from package.json
-- [ ] Verify build passes
+- [x] Delete `src/lib/auth0.ts`
+- [x] Delete `src/proxy.ts`
+- [x] Delete auth routes if they exist
+- [x] Rewrite `auth-context.tsx` to use User Service only
+- [x] Simplify `nav-user.tsx` (remove login/logout buttons)
+- [x] Delete or simplify login page
+- [x] Remove Auth0 from `checkout/route.ts`
+- [x] Remove Auth0 from `orders/route.ts`
+- [x] Remove `@auth0/nextjs-auth0` from package.json
+- [x] Verify build passes
 
-### Stage 2: Add Payment Service
+### Stage 2: Add Payment Service ✅
 
-- [ ] Create `src/lib/payment.ts` (Payment Service client)
-- [ ] Create `src/app/api/payment/route.ts` (API route)
-- [ ] Add payments data to `db.json`
-- [ ] Update json-server script if needed
+- [x] Create `src/lib/payment.ts` (Payment Service client)
+- [x] Add payments data to `db.json`
+- [x] Create json-server payment middleware
+- [x] Verify build passes
 
-### Stage 3: Remove Stripe, Use Payment Service
+### Stage 3: Remove Stripe, Use Payment Service ✅
 
-- [ ] Delete `src/lib/stripe.ts`
-- [ ] Delete `src/app/api/webhooks/stripe/route.ts`
-- [ ] Rewrite `checkout/route.ts` to call Payment Service
-- [ ] Update `checkout/page.tsx` - show success inline, no redirect
-- [ ] Remove Stripe packages from package.json
-- [ ] Verify build passes
+- [x] Delete `src/lib/stripe.ts`
+- [x] Delete `src/app/api/webhooks/stripe/route.ts`
+- [x] Rewrite `checkout/route.ts` to call Payment Service
+- [x] Update `checkout/page.tsx` - show success inline, no redirect
+- [x] Remove Stripe packages from package.json
+- [x] Verify build passes
 
-### Stage 4: Update Documentation
+### Stage 4: Update Documentation 🔄
 
 - [ ] Update video scripts (remove Auth0/Stripe mentions)
 - [ ] Update blog posts
-- [ ] Update scenario-mapping.md with Payment Service scenarios
+- [x] Update scenario-mapping.md with Payment Service scenarios
 - [ ] Update PROGRESS.md
 
 ### Stage 5: Final Verification
