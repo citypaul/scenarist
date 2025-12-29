@@ -31,6 +31,41 @@ export function createOrder(order: Order): Order {
   return order;
 }
 
+export interface AddOrderInput {
+  readonly userId: string;
+  readonly items: readonly OrderItem[];
+  readonly subtotal: number;
+  readonly discount: number;
+  readonly shipping: number;
+  readonly tax: number;
+  readonly total: number;
+  readonly currency: string;
+  readonly status: Order["status"];
+  readonly paymentId: string;
+  readonly customerEmail: string;
+}
+
+export function addOrder(input: AddOrderInput): Order {
+  const id = `order_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const order: Order = {
+    id,
+    sessionId: input.paymentId,
+    customerEmail: input.customerEmail,
+    userId: input.userId,
+    userTier: "pro", // Will be set from user service in real implementation
+    items: [...input.items],
+    subtotal: input.subtotal,
+    discount: input.discount,
+    tax: input.tax,
+    total: input.total,
+    currency: input.currency,
+    status: input.status,
+    createdAt: new Date().toISOString(),
+  };
+  orders.set(id, order);
+  return order;
+}
+
 export function getOrder(id: string): Order | undefined {
   return orders.get(id);
 }
