@@ -1,5 +1,11 @@
 # @scenarist/core
 
+## 0.4.6
+
+### Patch Changes
+
+- [#412](https://github.com/citypaul/scenarist/pull/412) [`f8210aa`](https://github.com/citypaul/scenarist/commit/f8210aa2d26d2bc2f9fa7ab252de47a835efd7bb) Thanks [@citypaul](https://github.com/citypaul)! - Update project dependencies
+
 ## 0.4.5
 
 ## 0.4.4
