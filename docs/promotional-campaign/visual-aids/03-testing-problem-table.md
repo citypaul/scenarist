@@ -2,27 +2,27 @@
 
 This table shows scenarios we need to test and how difficult they are without Scenarist.
 
-**When to show:** Video 2, "The Testing Challenge" section (5:00-6:00)
+**When to show:** Video 2, "The Testing Challenge" section (4:00-5:30)
 
 **What to say:**
 
-> "Here's what I need to test. Green means easy. Yellow means annoying. Red means hard or impossible. Look at how much red there is. And that 'offer ends during checkout' scenario? Where the promotional slots sell out between page load and payment? Try doing that with real services."
+> "Here's what I need to test. Green means easy. Yellow means annoying. Red means hard or impossible. Look at how much red there is. And that 'sells out during checkout' scenario? Where stock runs out between page load and payment? Try doing that with real services."
 
 ## The Table
 
-| Scenario                       | Auth0     | Inventory        | Stripe                 | Without Scenarist                |
-| ------------------------------ | --------- | ---------------- | ---------------------- | -------------------------------- |
-| Happy path                     | Pro user  | Offer available  | Success                | ✅ Just run the app              |
-| Premium user discount          | Pro user  | Offer available  | Success                | 🟡 Need Pro account in Auth0     |
-| Free user sees full price      | Free user | Offer available  | Success                | 🟡 Need separate Auth0 account   |
-| Payment declined               | Any       | Offer available  | Declined               | 🟡 Stripe test card works        |
-| Offer ended                    | Any       | 0 spots left     | N/A                    | 🔴 Edit db.json, restart server  |
-| Limited offer urgency          | Any       | 3 spots left     | N/A                    | 🔴 Edit db.json manually         |
-| **Offer ends during checkout** | Any       | Available → Gone | N/A                    | 🔴 **Impossible**                |
-| Inventory service down         | Any       | 500 error        | N/A                    | 🔴 Kill server mid-test?         |
-| Auth0 returns error            | Error     | Any              | N/A                    | 🔴 How?                          |
-| Webhook never arrives          | Any       | Offer available  | Success but no webhook | 🔴 **Impossible**                |
-| 50 tests in parallel           | Various   | Various          | Various                | 🔴 **Impossible** - shared state |
+| Scenario                      | User Service | Inventory       | Shipping    | Payment   | Without Scenarist                |
+| ----------------------------- | ------------ | --------------- | ----------- | --------- | -------------------------------- |
+| Happy path                    | Pro member   | In stock        | All options | Success   | ✅ Just run the app              |
+| Pro member discount           | Pro member   | In stock        | Any         | Success   | 🟡 Edit db.json for tier         |
+| Free user sees full price     | Free user    | In stock        | Any         | Success   | 🟡 Edit db.json for tier         |
+| Sold out                      | Any          | 0 units left    | N/A         | N/A       | 🔴 Edit db.json, restart server  |
+| Low stock urgency             | Any          | 3 units left    | N/A         | N/A       | 🔴 Edit db.json manually         |
+| Express shipping unavailable  | Any          | In stock        | No express  | N/A       | 🔴 Edit db.json manually         |
+| Shipping service down         | Any          | In stock        | 500 error   | N/A       | 🔴 Kill server mid-test?         |
+| Payment declined              | Any          | In stock        | Any         | Declined  | 🔴 How do you make it decline?   |
+| Payment service down          | Any          | In stock        | Any         | 500 error | 🔴 Kill server mid-test?         |
+| **Sells out during checkout** | Any          | In stock → Gone | Any         | N/A       | 🔴 **Impossible**                |
+| 50 tests in parallel          | Various      | Various         | Various     | Various   | 🔴 **Impossible** - shared state |
 
 ## Legend
 
@@ -39,14 +39,14 @@ This table shows scenarios we need to test and how difficult they are without Sc
 │                                                                             │
 │  ✅ Happy path                          Just run the app                    │
 │                                                                             │
-│  🟡 Different user tier                 Need multiple Auth0 accounts        │
-│  🟡 Payment declined                    Stripe test card (4000...0002)      │
+│  🟡 Different membership tier           Edit db.json, restart               │
+│  🟡 Payment declined                    Edit db.json for payment mock       │
 │                                                                             │
-│  🔴 Offer ended                         Edit db.json? Restart?              │
-│  🔴 Limited offer (3 spots)             Edit db.json manually               │
-│  🔴 OFFER ENDS DURING CHECKOUT          Impossible with real services       │
+│  🔴 Sold out                            Edit db.json? Restart?              │
+│  🔴 Low stock (3 units)                 Edit db.json manually               │
+│  🔴 SELLS OUT DURING CHECKOUT           Impossible with real services       │
 │  🔴 Service returns 500                 Kill the server mid-test?           │
-│  🔴 Webhook never arrives               Can't control Stripe                │
+│  🔴 Payment service down                Can't control json-server           │
 │  🔴 50 parallel tests                   They all share state                │
 │                                                                             │
 │  ─────────────────────────────────────────────────────────────────────────  │
@@ -59,8 +59,8 @@ This table shows scenarios we need to test and how difficult they are without Sc
 
 ## Key Points
 
-- Stripe's test cards only solve ONE column
-- Internal services (Inventory) have NO test mode
+- All four services are server-side HTTP calls (json-server on port 3001)
+- No test mode for any of them - what you see is what you get
 - Coordinating multiple services is the real challenge
-- Sequences ("offer ends during checkout") are impossible with real services
+- Sequences ("sells out during checkout") are impossible with real services
 - Parallel testing requires isolated state - shared services can't provide this

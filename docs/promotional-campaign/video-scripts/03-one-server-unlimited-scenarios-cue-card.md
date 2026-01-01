@@ -11,11 +11,12 @@ Condensed recording guide. See `03-one-server-unlimited-scenarios.md` for full s
 - Testing Problem Table slide from Video 2 ready
 - Diagrams ready: PayFlow Architecture, Framework Adapter, Test ID Isolation
 
-**Key architecture point:** PayFlow's server calls three services:
+**Key architecture point:** PayFlow's server calls four services:
 
-1. **User Service** → user tier (pro/free)
-2. **Inventory Service** → offer availability
+1. **User Service** → membership tier (pro/free)
+2. **Inventory Service** → stock levels
 3. **Shipping Service** → delivery rates
+4. **Payment Service** → process transactions
 
 All server-side. All mockable.
 
@@ -29,15 +30,15 @@ All server-side. All mockable.
 
 _Show Testing Problem Table from Video 2_
 
-> "In the last video, we saw the Testing Problem Table. Happy path - easy. User tiers - annoying. Offer states - hard. Service errors - hard. 'Offer ends during checkout' - impossible. Let's fix that."
+> "In the last video, we saw the Testing Problem Table. Happy path - easy. Membership tiers - annoying. Stock states - hard. Service errors - hard. Payment failures - hard. 'Sells out during checkout' - impossible. Let's fix that."
 
 ---
 
 ### 0:30 - THE CORE INSIGHT
 
-_Show PayFlow architecture - three backend services_
+_Show PayFlow architecture - four backend services_
 
-> "PayFlow's server talks to three backend services. User Service for tier. Inventory Service for availability. Shipping Service for rates."
+> "PayFlow's server talks to four backend services. User Service for membership tier. Inventory Service for stock levels. Shipping Service for rates. Payment Service for transactions."
 
 > "These are all server-side HTTP calls. Your browser never talks to these services directly."
 
@@ -63,15 +64,16 @@ _Show Framework Adapter Architecture diagram_
 
 _Two terminals visible: Next.js | json-server_
 
-| Step | Scenario            | Say                                                           |
-| ---- | ------------------- | ------------------------------------------------------------- |
-| 1    | default (pro user)  | "Pro user - 20% discount applied"                             |
-| 2    | freeUser            | "Free user - no discount. Didn't create a different account." |
-| 3    | offerEnded          | "Offer ended. Didn't edit db.json."                           |
-| 4    | shippingServiceDown | "Shipping service down. 500 error. Graceful handling."        |
-| 5    | json-server logs    | "Zero requests. Scenarist intercepted everything."            |
+| Step | Scenario             | Say                                                           |
+| ---- | -------------------- | ------------------------------------------------------------- |
+| 1    | default (Pro member) | "Pro member - 20% discount applied"                           |
+| 2    | freeUser             | "Free user - no discount. Didn't create a different account." |
+| 3    | soldOut              | "Sold out. Didn't edit db.json."                              |
+| 4    | shippingServiceDown  | "Shipping service down. 500 error. Graceful handling."        |
+| 5    | paymentDeclined      | "Payment declined. Card rejected. Error message shown."       |
+| 6    | json-server logs     | "Zero requests. Scenarist intercepted everything."            |
 
-**Key line:** "Four scenarios that were 'hard' or 'impossible'. Now they're just... tests."
+**Key line:** "Five scenarios that were 'hard' or 'impossible'. Now they're just... tests."
 
 ---
 
@@ -81,7 +83,7 @@ _Show Test ID Isolation diagram_
 
 > "What about parallel tests? The table said that was impossible too."
 
-> "Every request includes x-scenarist-test-id header. Test A gets pro responses. Test B gets free tier. Test C gets shipping errors. Same server. Different responses. Isolated."
+> "Every request includes x-scenarist-test-id header. Test A gets Pro member responses. Test B gets free tier. Test C gets shipping errors. Test D gets payment declines. Same server. Different responses. Isolated."
 
 **Key line:** "This is how you run 50 tests in parallel without a single conflict."
 
@@ -91,11 +93,11 @@ _Show Test ID Isolation diagram_
 
 _Show sequence code teaser_
 
-> "We've turned 'hard' into 'easy'. But what about 'offer ends during checkout'? That requires sequences - the same endpoint returning different responses over time."
+> "We've turned 'hard' into 'easy'. But what about 'sells out during checkout'? That requires sequences - the same endpoint returning different responses over time."
 
 ```typescript
 sequence: [
-  { quantity: 15, reserved: 0 }, // First call: available
+  { quantity: 15, reserved: 0 }, // First call: in stock
   { quantity: 0, reserved: 0 }, // Second call: sold out
 ];
 ```
@@ -111,7 +113,7 @@ sequence: [
 3. "Only the adapter changes"
 4. "Zero requests. Scenarist intercepted everything."
 5. "Same server. Same endpoints. Different responses. Completely isolated."
-6. "Four scenarios that were 'hard' or 'impossible'. Now they're just... tests."
+6. "Five scenarios that were 'hard' or 'impossible'. Now they're just... tests."
 
 ---
 
@@ -122,7 +124,7 @@ sequence: [
 | 0:00 | Hook               | Testing Problem Table     |
 | 0:30 | Core insight       | PayFlow architecture      |
 | 1:30 | Scenarist intro    | Framework adapter diagram |
-| 2:30 | Live demo          | 2 terminals + 4 tests     |
+| 2:30 | Live demo          | 2 terminals + 5 tests     |
 | 4:00 | Parallel isolation | Test ID isolation diagram |
 | 4:30 | Tease              | Sequence code snippet     |
 
@@ -131,10 +133,10 @@ sequence: [
 ## Pre-Recording Checklist
 
 - [ ] PayFlow with Scenarist installed
-- [ ] Scenarios defined: default, freeUser, offerEnded, expressUnavailable, shippingServiceDown
+- [ ] Scenarios defined: default, freeUser, soldOut, expressUnavailable, shippingServiceDown, paymentDeclined
 - [ ] Playwright tests ready to run
 - [ ] json-server running with logging middleware (shows zero requests)
 - [ ] Testing Problem Table slide ready
-- [ ] PayFlow architecture diagram ready (3 services)
+- [ ] PayFlow architecture diagram ready (4 services)
 - [ ] Framework adapter architecture diagram ready
 - [ ] Test ID isolation diagram ready

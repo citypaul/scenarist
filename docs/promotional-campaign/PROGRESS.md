@@ -1,34 +1,37 @@
 # Campaign Progress
 
-Last updated: 2025-12-28
+Last updated: 2026-01-01
 
 ## Current Status: Videos 1-3 Materials Complete, Ready for Recording
 
 **Stage 1 (Foundation) is COMPLETE and merged to main (PR #398).**
 **Stage 2 (Working Flows) is COMPLETE and merged to main (PR #399).**
 **Stage 2.5 (Backend Services) is COMPLETE and merged to main (PR #400).**
+**Stage 3 (Narrative Simplification) is COMPLETE - PR #421 merged.**
 
 **Video 1 materials are complete** - script, cue card, visual aids, PowerPoint presentation, and blog post.
 **Video 2 materials are complete** - script, cue card, visual aids, PowerPoint presentation, and blog post.
 **Video 3 materials are complete** - script, cue card, blog post, PowerPoint presentation, and scenario mapping.
 
-**Next milestone:** Record Videos 1-3, then Stage 3 - Scenarist Integration (user implements code).
+**Next milestone:** Record Videos 1-3, then Stage 4 - Scenarist Integration (user implements code).
 
 ---
 
 ## Quick Context for New Sessions
 
-### What's Done (Stage 1 + Stage 2 + Stage 2.5)
+### What's Done (Stage 1 + Stage 2 + Stage 2.5 + Stage 3)
 
 - ✅ PayFlow demo app at `demo/payflow/`
 - ✅ Next.js 16 App Router with shadcn/ui (Maia style)
-- ✅ Three backend services (all server-side HTTP calls):
-  - **User Service** (`/users/current`) - User tier (pro/free) for pricing decisions
-  - **Inventory Service** (`/inventory`) - Promotional offer availability
+- ✅ **Developer Merchandise Store** narrative (not subscriptions)
+- ✅ Four backend services (all server-side HTTP calls):
+  - **User Service** (`/users/current`) - Membership tier (pro/free) for pricing
+  - **Inventory Service** (`/inventory`) - Stock levels for products
   - **Shipping Service** (`/shipping`) - Delivery options and rates
+  - **Payment Service** (`/payments`) - Transaction processing
 - ✅ All services simulated with json-server on port 3001
 - ✅ Request logging middleware to show terminal activity
-- ✅ User tier display and tier-based pricing (20% for Pro)
+- ✅ User tier display and tier-based pricing (20% for Pro members)
 - ✅ Functional cart with state persistence
 - ✅ Checkout flow with shipping options
 - ✅ Orders page with history
@@ -48,12 +51,12 @@ Last updated: 2025-12-28
 
 - ✅ `00-the-real-testing-gap.md` - **Key visual for Video 1**: Isolated tests vs the gap
 - ✅ `00-testing-pyramid-gap.md` - Testing pyramid showing where Scenarist fits
-- ✅ `01-payflow-architecture.md` - App architecture diagram
+- ✅ `01-payflow-architecture.md` - App architecture diagram (4 services)
 - ✅ `02-user-flow.md` - Happy path user journey
 - ✅ `03-testing-problem-table.md` - **Key visual**: What's hard without Scenarist
 - ✅ `04-scenarist-interception.md` - How interception works
 - ✅ `05-parallel-isolation.md` - Test ID isolation
-- ✅ `06-sequence-sold-out.md` - "Sold out during checkout" sequence
+- ✅ `06-sequence-sold-out.md` - "Sells out during checkout" sequence
 - ✅ `07-speed-comparison.md` - Performance comparison
 - ✅ `08-value-summary.md` - Key value propositions
 
@@ -81,25 +84,27 @@ Last updated: 2025-12-28
 
 **The Testing Problem Table (shown in Video 2):**
 
-| Scenario                    | User Service | Inventory        | Shipping    | Without Scenarist |
-| --------------------------- | ------------ | ---------------- | ----------- | ----------------- |
-| Happy path                  | Pro user     | Offer available  | All options | ✅ Easy           |
-| Premium discount            | Pro user     | Offer available  | Any         | 🟡 Edit db.json   |
-| Free user pricing           | Free user    | Offer available  | Any         | 🟡 Edit db.json   |
-| Offer ended                 | Any          | 0 spots left     | N/A         | 🔴 Edit + restart |
-| Express unavailable         | Any          | Offer available  | No express  | 🔴 Edit db.json   |
-| Shipping service down       | Any          | Offer available  | 500 error   | 🔴 Kill server?   |
-| **Offer ends mid-checkout** | Any          | Available → Gone | Any         | 🔴 **Impossible** |
-| 50 parallel tests           | Various      | Various          | Various     | 🔴 **Impossible** |
+| Scenario                      | User Service | Inventory       | Shipping    | Payment  | Without Scenarist |
+| ----------------------------- | ------------ | --------------- | ----------- | -------- | ----------------- |
+| Happy path                    | Pro member   | In stock        | All options | Success  | ✅ Easy           |
+| Pro member discount           | Pro member   | In stock        | Any         | Success  | 🟡 Edit db.json   |
+| Free user pricing             | Free user    | In stock        | Any         | Success  | 🟡 Edit db.json   |
+| Sold out                      | Any          | 0 units left    | N/A         | N/A      | 🔴 Edit + restart |
+| Express unavailable           | Any          | In stock        | No express  | N/A      | 🔴 Edit db.json   |
+| Shipping service down         | Any          | In stock        | 500 error   | N/A      | 🔴 Kill server?   |
+| Payment declined              | Any          | In stock        | Any         | Declined | 🔴 How?           |
+| **Sells out during checkout** | Any          | In stock → Gone | Any         | N/A      | 🔴 **Impossible** |
+| 50 parallel tests             | Various      | Various         | Various     | Various  | 🔴 **Impossible** |
 
 ### Key Architectural Point
 
-**All three services are server-side HTTP calls:**
+**All four services are server-side HTTP calls:**
 
 ```
 Browser → Next.js Server → User Service (/users/current)
                         ├→ Inventory Service (/inventory)
-                        └→ Shipping Service (/shipping)
+                        ├→ Shipping Service (/shipping)
+                        └→ Payment Service (/payments)
 ```
 
 The browser never talks to these services directly. Next.js makes the HTTP calls. This architecture is **100% mockable with Scenarist**.
@@ -108,27 +113,53 @@ The browser never talks to these services directly. Next.js makes the HTTP calls
 
 ### Key Technical Details
 
-**Three Backend Services (all on json-server port 3001):**
+**Four Backend Services (all on json-server port 3001):**
 
-| Service           | Endpoint         | Purpose                          |
-| ----------------- | ---------------- | -------------------------------- |
-| User Service      | `/users/current` | Returns user tier (pro/free)     |
-| Inventory Service | `/inventory`     | Returns offer availability       |
-| Shipping Service  | `/shipping`      | Returns shipping options & rates |
+| Service           | Endpoint         | Purpose                            |
+| ----------------- | ---------------- | ---------------------------------- |
+| User Service      | `/users/current` | Returns membership tier (pro/free) |
+| Inventory Service | `/inventory`     | Returns stock levels               |
+| Shipping Service  | `/shipping`      | Returns shipping options & rates   |
+| Payment Service   | `/payments`      | Processes transactions             |
 
 **db.json structure:**
 
 ```json
 {
   "users": [
-    { "id": "current", "email": "demo@payflow.com", "name": "Demo User", "tier": "pro" }
+    {
+      "id": "current",
+      "email": "demo@payflow.com",
+      "name": "Demo User",
+      "tier": "pro"
+    }
   ],
-  "inventory": [...],
+  "inventory": [
+    { "id": "1", "productId": "1", "quantity": 50, "reserved": 0 },
+    { "id": "2", "productId": "2", "quantity": 15, "reserved": 0 },
+    { "id": "3", "productId": "3", "quantity": 3, "reserved": 0 }
+  ],
   "shipping": [
-    { "id": "standard", "name": "Standard Shipping", "price": 5.99, "estimatedDays": "5-7 business days" },
-    { "id": "express", "name": "Express Shipping", "price": 14.99, "estimatedDays": "2-3 business days" },
-    { "id": "overnight", "name": "Overnight Shipping", "price": 29.99, "estimatedDays": "Next business day" }
-  ]
+    {
+      "id": "standard",
+      "name": "Standard Shipping",
+      "price": 5.99,
+      "estimatedDays": "5-7 business days"
+    },
+    {
+      "id": "express",
+      "name": "Express Shipping",
+      "price": 14.99,
+      "estimatedDays": "2-3 business days"
+    },
+    {
+      "id": "overnight",
+      "name": "Overnight Shipping",
+      "price": 29.99,
+      "estimatedDays": "Next business day"
+    }
+  ],
+  "payments": []
 }
 ```
 
@@ -149,12 +180,13 @@ The browser never talks to these services directly. Next.js makes the HTTP calls
 
 ### PR Strategy
 
-| Stage | PR   | Status     | Description                                  |
-| ----- | ---- | ---------- | -------------------------------------------- |
-| 1     | #398 | ✅ Merged  | Foundation - App structure                   |
-| 2     | #399 | ✅ Merged  | Working flows - Cart, checkout, orders       |
-| 2.5   | #400 | ✅ Merged  | Backend Services - User, Inventory, Shipping |
-| 3     | TBD  | ⏳ Pending | Scenarist integration - Scenarios, tests     |
+| Stage | PR   | Status     | Description                                      |
+| ----- | ---- | ---------- | ------------------------------------------------ |
+| 1     | #398 | ✅ Merged  | Foundation - App structure                       |
+| 2     | #399 | ✅ Merged  | Working flows - Cart, checkout, orders           |
+| 2.5   | #400 | ✅ Merged  | Backend Services - User, Inventory, Shipping     |
+| 3     | #421 | ✅ Merged  | Narrative Simplification - Merchandise + Payment |
+| 4     | TBD  | ⏳ Pending | Scenarist integration - Scenarios, tests         |
 
 ---
 
@@ -182,15 +214,25 @@ The browser never talks to these services directly. Next.js makes the HTTP calls
 - [x] Create `db.json` with users, inventory, and shipping data
 - [x] Add npm script for backend services server
 - [x] Add request logging middleware
-- [x] Products page fetches offer availability
-- [x] Offer badges on products (launch pricing, founding spots, offer ended)
+- [x] Products page fetches stock availability
+- [x] Stock badges on products (in stock, limited, sold out)
 - [x] Checkout shows shipping options from Shipping Service
 - [x] Update video scripts and visual aids with three-service architecture
 - [x] **REVIEW CHECKPOINT** → PR #400
 
-### Demo App Stage 3: Scenarist Integration ⏳ PENDING (User Implements)
+### Demo App Stage 3: Narrative Simplification ✅ COMPLETE
 
-**Note:** Stage 3 planning materials are complete. The actual implementation (installing packages, writing scenarios, creating tests) will be done by the user following the scenario mapping document.
+- [x] Change from subscription plans to merchandise store
+- [x] Add Payment Service (fourth backend service)
+- [x] Update terminology: "spots" → "units", "offer ended" → "sold out"
+- [x] Update all video scripts for four-service architecture
+- [x] Update all visual aids for merchandise narrative
+- [x] Update scenario-mapping.md with new scenario names
+- [x] **REVIEW CHECKPOINT** → PR #421
+
+### Demo App Stage 4: Scenarist Integration ⏳ PENDING (User Implements)
+
+**Note:** Stage 4 planning materials are complete. The actual implementation (installing packages, writing scenarios, creating tests) will be done by the user following the scenario mapping document.
 
 **Planning materials ready:**
 
@@ -204,17 +246,19 @@ The browser never talks to these services directly. Next.js makes the HTTP calls
 
 - [ ] Install `@scenarist/nextjs-adapter` and `@scenarist/playwright-helpers`
 - [ ] Define scenarios:
-  - `default` - Happy path: Pro user, offer available, all shipping options
+  - `default` - Happy path: Pro member, in stock, all shipping options, payment success
   - `freeUser` - Free tier: No discount
-  - `offerEnded` - Promotional offer expired (quantity: 0)
-  - `limitedSpots` - Urgency messaging (quantity: 3)
+  - `soldOut` - Out of stock (quantity: 0)
+  - `lowStock` - Urgency messaging (quantity: 3)
   - `expressUnavailable` - No express shipping option
   - `shippingServiceDown` - Shipping API error (500)
-  - `offerEndsDuringCheckout` - **Key demo**: sequence scenario
+  - `paymentDeclined` - Payment declined
+  - `paymentServiceDown` - Payment API error (500)
+  - `sellsOutDuringCheckout` - **Key demo**: sequence scenario
 - [ ] Create Playwright test suite
 - [ ] Show json-server NOT being hit (interception proof)
 - [ ] Verify production build (tree-shaking)
-- [ ] **REVIEW CHECKPOINT** → Tag: `stage-3-complete`
+- [ ] **REVIEW CHECKPOINT** → Tag: `stage-4-complete`
 
 ### Phase 1: The Problem & The App (Videos 1-2)
 
@@ -261,9 +305,10 @@ See PLAN.md for full video list (Videos 5-15).
 - **Recording strategy:** Record all videos before releasing any
 - **Demo app:** Located at `demo/payflow/` (excluded from pnpm workspace)
 - **Visual aids:** Mermaid diagrams in `visual-aids/` - render for slides
-- **Three-service architecture:** User Service + Inventory Service + Shipping Service
+- **Four-service architecture:** User + Inventory + Shipping + Payment Services
 - **All server-side:** Browser → Next.js → Services (100% mockable)
 - **Request logging:** json-server terminal shows requests (zero when Scenarist intercepts)
+- **Merchandise narrative:** Developer gear, not subscriptions (Pro member buys merchandise, gets 20% discount)
 
 ### Git Tag Strategy
 

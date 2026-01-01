@@ -31,25 +31,25 @@ Browser → Next.js API Routes → Backend Services (json-server:3001)
 
 ## Testing Problem Table
 
-| Scenario                       | User Service | Inventory     | Shipping    | Payment   | Difficulty     |
-| ------------------------------ | ------------ | ------------- | ----------- | --------- | -------------- |
-| Happy path                     | Pro user     | Available     | All options | Success   | Easy           |
-| Premium user discount          | Pro user     | Available     | Any         | Success   | Annoying       |
-| Free user full price           | Free user    | Available     | Any         | Success   | Annoying       |
-| Offer ended                    | Any          | 0 spots       | N/A         | N/A       | Hard           |
-| Limited spots (urgency)        | Any          | 3 spots left  | N/A         | Success   | Hard           |
-| Express shipping unavailable   | Any          | Available     | No express  | Success   | Hard           |
-| Shipping service down          | Any          | Available     | 500 error   | N/A       | Hard           |
-| **Payment declined**           | Any          | Available     | Any         | Declined  | **Impossible** |
-| **Payment service down**       | Any          | Available     | Any         | 500 error | **Impossible** |
-| **Offer ends during checkout** | Any          | Available → 0 | Any         | N/A       | **Impossible** |
-| **50 parallel tests**          | Various      | Various       | Various     | Various   | **Impossible** |
+| Scenario                      | User Service | Inventory       | Shipping    | Payment   | Difficulty     |
+| ----------------------------- | ------------ | --------------- | ----------- | --------- | -------------- |
+| Happy path                    | Pro member   | In stock        | All options | Success   | Easy           |
+| Pro member discount           | Pro member   | In stock        | Any         | Success   | Annoying       |
+| Free user full price          | Free user    | In stock        | Any         | Success   | Annoying       |
+| Sold out                      | Any          | 0 units left    | N/A         | N/A       | Hard           |
+| Low stock (urgency)           | Any          | 3 units left    | N/A         | Success   | Hard           |
+| Express shipping unavailable  | Any          | In stock        | No express  | Success   | Hard           |
+| Shipping service down         | Any          | In stock        | 500 error   | N/A       | Hard           |
+| **Payment declined**          | Any          | In stock        | Any         | Declined  | **Hard**       |
+| **Payment service down**      | Any          | In stock        | Any         | 500 error | **Hard**       |
+| **Sells out during checkout** | Any          | In stock → Gone | Any         | N/A       | **Impossible** |
+| **50 parallel tests**         | Various      | Various         | Various     | Various   | **Impossible** |
 
 ---
 
 ## Scenarist Scenario Definitions
 
-### 1. `default` - Happy Path (Pro User)
+### 1. `default` - Happy Path (Pro Member)
 
 ```typescript
 {
@@ -129,12 +129,12 @@ Browser → Next.js API Routes → Backend Services (json-server:3001)
 }
 ```
 
-### 3. `offerEnded` - Promotional Offer Expired
+### 3. `soldOut` - Out of Stock
 
 ```typescript
 {
-  id: "offerEnded",
-  name: "Offer Ended - Sold Out",
+  id: "soldOut",
+  name: "Sold Out - No Stock",
   mocks: [
     {
       url: "http://localhost:3001/users/current",
@@ -169,12 +169,12 @@ Browser → Next.js API Routes → Backend Services (json-server:3001)
 }
 ```
 
-### 4. `limitedSpots` - Urgency Messaging
+### 4. `lowStock` - Urgency Messaging
 
 ```typescript
 {
-  id: "limitedSpots",
-  name: "Limited Spots - Urgency",
+  id: "lowStock",
+  name: "Low Stock - Urgency",
   mocks: [
     {
       url: "http://localhost:3001/users/current",
@@ -284,12 +284,12 @@ Browser → Next.js API Routes → Backend Services (json-server:3001)
 }
 ```
 
-### 7. `offerEndsDuringCheckout` - Sequence Scenario (Video 4)
+### 7. `sellsOutDuringCheckout` - Sequence Scenario (Video 4)
 
 ```typescript
 {
-  id: "offerEndsDuringCheckout",
-  name: "Offer Ends During Checkout",
+  id: "sellsOutDuringCheckout",
+  name: "Sells Out During Checkout",
   mocks: [
     {
       url: "http://localhost:3001/users/current",
@@ -302,13 +302,13 @@ Browser → Next.js API Routes → Backend Services (json-server:3001)
       url: "http://localhost:3001/inventory",
       sequence: {
         responses: [
-          // First call (products page): available
+          // First call (products page): in stock
           { status: 200, body: [
             { id: "1", productId: "1", quantity: 15, reserved: 0 },
             { id: "2", productId: "2", quantity: 15, reserved: 0 },
             { id: "3", productId: "3", quantity: 15, reserved: 0 }
           ]},
-          // Second call (checkout verification): SOLD OUT
+          // Second call (checkout verification): sold out
           { status: 200, body: [
             { id: "1", productId: "1", quantity: 0, reserved: 0 },
             { id: "2", productId: "2", quantity: 0, reserved: 0 },
@@ -438,12 +438,12 @@ Browser → Next.js API Routes → Backend Services (json-server:3001)
 
 ## Video Progression
 
-| Video   | Scenarios Demonstrated                                                        |
-| ------- | ----------------------------------------------------------------------------- |
-| Video 2 | None (shows the problem - manual testing, Testing Problem Table)              |
-| Video 3 | `default`, `freeUser`, `offerEnded`, `shippingServiceDown`, `paymentDeclined` |
-| Video 4 | `offerEndsDuringCheckout` (sequences)                                         |
-| Video 5 | Parallel isolation (multiple scenarios running simultaneously)                |
+| Video   | Scenarios Demonstrated                                                     |
+| ------- | -------------------------------------------------------------------------- |
+| Video 2 | None (shows the problem - manual testing, Testing Problem Table)           |
+| Video 3 | `default`, `freeUser`, `soldOut`, `shippingServiceDown`, `paymentDeclined` |
+| Video 4 | `sellsOutDuringCheckout` (sequences)                                       |
+| Video 5 | Parallel isolation (multiple scenarios running simultaneously)             |
 
 ---
 
