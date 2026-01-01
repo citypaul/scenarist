@@ -267,8 +267,6 @@ The original `demo/payflow/` remains unchanged for Video 2 demonstrations (app w
 - [x] Verify app still runs (`pnpm dev` + `pnpm build`)
 - [x] **REVIEW CHECKPOINT** → PR #422
 
-**Note:** Peer dependency warning - @scenarist/nextjs-adapter expects Next.js 14 or 15, but PayFlow uses Next.js 16. This needs to be addressed before Stage 4.3.
-
 ---
 
 #### Stage 4.2: Scenario Definitions ⏳ PENDING
