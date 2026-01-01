@@ -187,7 +187,7 @@ The browser never talks to these services directly. Next.js makes the HTTP calls
 | 2     | #399 | ✅ Merged      | Working flows - Cart, checkout, orders            |
 | 2.5   | #400 | ✅ Merged      | Backend Services - User, Inventory, Shipping      |
 | 3     | #421 | ✅ Merged      | Narrative Simplification - Merchandise + Payment  |
-| 4.1   | TBD  | 🔄 In Progress | Scenarist foundation - Copy app, install packages |
+| 4.1   | #422 | 🔄 In Progress | Scenarist foundation - Copy app, install packages |
 | 4.2   | TBD  | ⏳ Pending     | Scenario definitions - All 9 scenarios            |
 | 4.3   | TBD  | ⏳ Pending     | Next.js adapter integration                       |
 | 4.4   | TBD  | ⏳ Pending     | Video 3 test suite - 5 demo scenarios             |
@@ -265,7 +265,7 @@ The original `demo/payflow/` remains unchanged for Video 2 demonstrations (app w
   - `@scenarist/playwright-helpers` (v0.4.6)
   - `@playwright/test`
 - [x] Verify app still runs (`pnpm dev` + `pnpm build`)
-- [x] **REVIEW CHECKPOINT** → PR #TBD
+- [x] **REVIEW CHECKPOINT** → PR #422
 
 **Note:** Peer dependency warning - @scenarist/nextjs-adapter expects Next.js 14 or 15, but PayFlow uses Next.js 16. This needs to be addressed before Stage 4.3.
 
