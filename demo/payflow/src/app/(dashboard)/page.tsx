@@ -42,40 +42,44 @@ type ProductOffer = {
 const products = [
   {
     id: "1",
-    name: "Basic Plan",
-    description: "Perfect for individuals and small projects",
-    basePrice: 9.99,
-    features: ["5 projects", "Basic analytics", "Email support"],
+    name: "Developer Essentials Kit",
+    description: "Premium sticker pack, notebook, and pen set",
+    basePrice: 29.99,
+    features: [
+      "50+ premium vinyl stickers",
+      "Dot-grid developer notebook",
+      "Multi-color pen set",
+    ],
     popular: false,
     offerType: null, // Always available, no limited offer
   },
   {
     id: "2",
-    name: "Pro Plan",
-    description: "Best for growing teams and businesses",
-    basePrice: 29.99,
+    name: "Premium Dev Hoodie",
+    description: "Ultra-soft hoodie with subtle developer branding",
+    basePrice: 79.99,
     features: [
-      "Unlimited projects",
-      "Advanced analytics",
-      "Priority support",
-      "API access",
+      "100% organic cotton blend",
+      "Embroidered logo",
+      "Hidden phone pocket",
+      "Available in S-XXL",
     ],
     popular: true,
-    offerType: "launch", // Launch pricing - limited slots
+    offerType: "launch", // Launch pricing - limited stock
   },
   {
     id: "3",
-    name: "Enterprise Plan",
-    description: "For large organizations with custom needs",
-    basePrice: 99.99,
+    name: "Mechanical Keyboard",
+    description: "Programmable keyboard with Cherry MX switches",
+    basePrice: 149.99,
     features: [
-      "Everything in Pro",
-      "Custom integrations",
-      "Dedicated support",
-      "SLA guarantee",
+      "Cherry MX Brown switches",
+      "Full RGB backlighting",
+      "Programmable macros",
+      "USB-C connection",
     ],
     popular: false,
-    offerType: "founding", // Founding member spots
+    offerType: "founding", // Limited edition
   },
 ];
 
@@ -123,7 +127,7 @@ function OfferBadge({
             className="border-purple-500/50 bg-purple-500/10 text-purple-600 dark:text-purple-400"
           >
             <Zap className="mr-1 h-3 w-3" />
-            {offer.available} founding spots
+            {offer.available} limited edition
           </Badge>
         );
       }
@@ -133,7 +137,7 @@ function OfferBadge({
           className="border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-400"
         >
           <Flame className="mr-1 h-3 w-3" />
-          {offer.available} left at this price
+          {offer.available} left in stock
         </Badge>
       );
     case "offer_ended":
@@ -143,7 +147,7 @@ function OfferBadge({
           className="border-red-500/50 bg-red-500/10 text-red-600 dark:text-red-400"
         >
           <XCircle className="mr-1 h-3 w-3" />
-          Offer Ended
+          Sold Out
         </Badge>
       );
   }
@@ -213,19 +217,16 @@ export default function ProductsPage() {
       </header>
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
         <div className="mb-4">
-          <h1 className="text-2xl font-bold tracking-tight">
-            Choose Your Plan
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight">Developer Gear</h1>
           <p className="text-muted-foreground">
-            Select the plan that best fits your needs. All plans include a
-            14-day free trial.
+            Premium merchandise for developers. Members get exclusive discounts.
           </p>
           {user && discount > 0 && (
             <div className="mt-2 inline-flex items-center gap-2 rounded-md bg-green-500/10 px-3 py-1.5 text-sm text-green-600 dark:text-green-400">
               <Percent className="h-4 w-4" />
               <span>
                 Your <strong>{userTier}</strong> membership saves you{" "}
-                <strong>{discount}%</strong> on all plans!
+                <strong>{discount}%</strong> on all products!
               </span>
             </div>
           )}
@@ -270,20 +271,17 @@ export default function ProductsPage() {
                         <span className="text-lg text-muted-foreground line-through">
                           ${product.basePrice.toFixed(2)}
                         </span>
-                        <span className="text-muted-foreground">/month</span>
                       </div>
                     ) : (
                       <div>
                         <span className="text-3xl font-bold">
                           ${product.basePrice.toFixed(2)}
                         </span>
-                        <span className="text-muted-foreground">/month</span>
                       </div>
                     )}
                     {hasDiscount && (
                       <Badge variant="secondary" className="mt-2">
                         Save ${(product.basePrice - discountedPrice).toFixed(2)}
-                        /mo
                       </Badge>
                     )}
                   </div>
@@ -324,7 +322,7 @@ export default function ProductsPage() {
                     {isOfferEnded ? (
                       <>
                         <XCircle className="mr-2 h-4 w-4" />
-                        Offer Ended
+                        Sold Out
                       </>
                     ) : isInCart(product.id) ? (
                       <>
