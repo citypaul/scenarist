@@ -1,14 +1,14 @@
-# Sequence: Offer Ends During Checkout
+# Sequence: Sells Out During Checkout
 
 The killer demo - showing how the same endpoint returns different responses based on call order.
 
-**When to show:** Video 8 (Response Sequences) - this is the "aha" moment
+**When to show:** Video 4 (Response Sequences) - this is the "aha" moment
 
 **What to say:**
 
-> "This is the scenario that's impossible to test with real services. User loads the page, sees 5 promotional spots available. User adds to cart. User fills out payment. Meanwhile, someone else takes the last spots. User clicks Pay. What happens?"
+> "This is the scenario that's impossible to test with real services. User loads the page, sees 15 units in stock. User adds to cart. User fills out payment. Meanwhile, someone else buys the last one. User clicks Pay. What happens?"
 >
-> "With Scenarist, we define a sequence. First call: offer available. Second call: offer ended. Same endpoint. Different response. Based on call order."
+> "With Scenarist, we define a sequence. First call: in stock. Second call: sold out. Same endpoint. Different response. Based on call order."
 
 ## The Sequence
 
@@ -19,25 +19,25 @@ sequenceDiagram
     participant Scen as Scenarist
     participant Inv as json-server<br/>(Inventory)
 
-    Note over Scen: Scenario: offerEndsDuringCheckout
+    Note over Scen: Scenario: sellsOutDuringCheckout
 
     User->>App: View product page
-    App->>Scen: GET /inventory/pro
+    App->>Scen: GET /inventory
     Note over Scen: Sequence call #1
-    Scen-->>App: { available: 5, status: "limited_offer" }
-    App-->>User: "5 left at this price" ✅
+    Scen-->>App: { quantity: 15, reserved: 0 }
+    App-->>User: "15 left in stock" ✅
 
     User->>App: Add to cart
     User->>App: Go to checkout
     User->>App: Enter payment details
 
-    Note over User,App: Meanwhile, someone else<br/>takes the last spots...
+    Note over User,App: Meanwhile, someone else<br/>buys the last one...
 
     User->>App: Click "Pay"
-    App->>Scen: GET /inventory/pro
+    App->>Scen: GET /inventory
     Note over Scen: Sequence call #2
-    Scen-->>App: { available: 0, status: "offer_ended" }
-    App-->>User: "Sorry, offer ended" ❌
+    Scen-->>App: { quantity: 0, reserved: 0 }
+    App-->>User: "Sorry, item no longer available" ❌
 
     Note over Inv: Never called!
 ```
@@ -47,34 +47,58 @@ sequenceDiagram
 ```typescript
 // scenarios.ts
 export const scenarios = {
-  offerEndsDuringCheckout: {
-    "GET /api/inventory/:id": sequence([
-      { status: 200, body: { available: 5, status: "limited_offer" } }, // First call
-      { status: 200, body: { available: 0, status: "offer_ended" } }, // Second call
-    ]),
+  sellsOutDuringCheckout: {
+    mocks: [
+      {
+        url: "http://localhost:3001/inventory",
+        sequence: {
+          responses: [
+            // First call: in stock
+            {
+              status: 200,
+              body: [
+                { id: "1", productId: "1", quantity: 15, reserved: 0 },
+                { id: "2", productId: "2", quantity: 15, reserved: 0 },
+                { id: "3", productId: "3", quantity: 15, reserved: 0 },
+              ],
+            },
+            // Second call: sold out
+            {
+              status: 200,
+              body: [
+                { id: "1", productId: "1", quantity: 0, reserved: 0 },
+                { id: "2", productId: "2", quantity: 0, reserved: 0 },
+                { id: "3", productId: "3", quantity: 0, reserved: 0 },
+              ],
+            },
+          ],
+          repeat: "last",
+        },
+      },
+    ],
   },
 };
 ```
 
 ```typescript
 // test
-test("handles offer ending during checkout", async ({
+test("handles item selling out during checkout", async ({
   page,
   switchScenario,
 }) => {
-  await switchScenario("offerEndsDuringCheckout");
+  await switchScenario("sellsOutDuringCheckout");
 
-  // First inventory call - shows offer available
-  await page.goto("/products/pro");
-  await expect(page.getByText("5 left at this price")).toBeVisible();
+  // First inventory call - shows items in stock
+  await page.goto("/products");
+  await expect(page.getByText("15 left in stock")).toBeVisible();
 
   // Add to cart, go to checkout
   await page.click("text=Add to Cart");
   await page.goto("/checkout");
 
-  // Second inventory call - offer ended
+  // Second inventory call - sold out
   await page.click("text=Pay");
-  await expect(page.getByText("Promotional Offers Ended")).toBeVisible();
+  await expect(page.getByText("Item no longer available")).toBeVisible();
 });
 ```
 
@@ -96,7 +120,7 @@ test("handles offer ending during checkout", async ({
 │  Option 2: Actual race condition                                            │
 │  ────────────────────────────────                                           │
 │  • Run two browser sessions                                                │
-│  • Have one take all promotional spots                                     │
+│  • Have one buy all the stock                                              │
 │  • Hope the other hits checkout at the right moment                        │
 │  • Result: Impossible to reliably reproduce                                │
 │                                                                             │

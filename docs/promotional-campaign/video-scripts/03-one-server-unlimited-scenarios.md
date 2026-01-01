@@ -10,13 +10,14 @@ Introduce Scenarist and show how it makes the "hard" and "impossible" scenarios 
 
 **Scenarist mocks server-side HTTP calls.** When your Next.js server calls an external API, Scenarist intercepts that request and returns a controlled response.
 
-PayFlow's server calls three services:
+PayFlow's server calls four services:
 
-1. **User Service** (`/users/current`) - Returns user tier (pro/free) for pricing
-2. **Inventory Service** (`/inventory`) - Returns offer availability
+1. **User Service** (`/users/current`) - Returns membership tier (pro/free) for pricing
+2. **Inventory Service** (`/inventory`) - Returns stock levels
 3. **Shipping Service** (`/shipping`) - Returns available shipping options and rates
+4. **Payment Service** (`/payments`) - Processes payment transactions
 
-All three are server-to-service calls. All three are 100% mockable.
+All four are server-to-service calls. All four are 100% mockable.
 
 ---
 
@@ -32,11 +33,12 @@ All three are server-to-service calls. All three are 100% mockable.
 
 **Key scenarios defined:**
 
-- `default` - Happy path (pro user, offer available, all shipping options)
+- `default` - Happy path (Pro member, in stock, all shipping options, payment success)
 - `freeUser` - Free tier, no discount
-- `offerEnded` - Promotional offer expired (0 spots)
+- `soldOut` - Out of stock (0 units)
 - `expressUnavailable` - Express shipping not available
 - `shippingServiceDown` - Shipping API returns 500 error
+- `paymentDeclined` - Payment Service declines the card
 
 ---
 
@@ -48,27 +50,27 @@ All three are server-to-service calls. All three are 100% mockable.
 
 **Say:**
 
-> "In the last video, we saw the Testing Problem Table. Happy path - easy. Different user tiers - annoying. Offer states - hard. Service errors - hard. 'Offer ends during checkout' - impossible. Let's fix that."
+> "In the last video, we saw the Testing Problem Table. Happy path - easy. Different membership tiers - annoying. Stock states - hard. Service errors - hard. Payment failures - hard. 'Sells out during checkout' - impossible. Let's fix that."
 
 ---
 
 ### 0:30-1:30 - The Core Insight
 
-**Show:** PayFlow architecture diagram - three backend services
+**Show:** PayFlow architecture diagram - four backend services
 
 **Say:**
 
-> "Here's PayFlow's architecture. Your Next.js server talks to three backend services."
+> "Here's PayFlow's architecture. Your Next.js server talks to four backend services."
 
 _Point to each service:_
 
-> "The User Service returns user tier - pro users get 20% off. The Inventory Service returns offer availability - how many spots are left. The Shipping Service returns delivery options and rates."
+> "The User Service returns membership tier - Pro members get 20% off. The Inventory Service returns stock levels - how many units are left. The Shipping Service returns delivery options and rates. And the Payment Service processes transactions."
 
 > "These are all server-side HTTP calls. Your browser never talks to these services directly - the Next.js server does."
 
 **Key phrase:**
 
-> "And here's the key insight: if we can intercept those server-side calls, we can return whatever we want. Pro user? Done. Offer ended? Done. Shipping service down? Done."
+> "And here's the key insight: if we can intercept those server-side calls, we can return whatever we want. Pro member? Done. Sold out? Done. Shipping service down? Done. Payment declined? Done."
 
 ---
 
@@ -106,9 +108,9 @@ _Point to diagram:_
 
 **Demo sequence:**
 
-1. **Run first test - default scenario (pro user)**
+1. **Run first test - default scenario (Pro member)**
 
-   > "Default scenario - pro user. 20% discount applied, all shipping options available."
+   > "Default scenario - Pro member. 20% discount applied, all shipping options available."
 
    _Show test passing, discount visible_
 
@@ -118,9 +120,9 @@ _Point to diagram:_
 
    _Show test passing, full price visible_
 
-3. **Run third test - offerEnded scenario**
+3. **Run third test - soldOut scenario**
 
-   > "Offer ended. Zero spots left. I didn't edit db.json. Scenarist returns 'quantity: 0' from the Inventory Service."
+   > "Sold out. Zero units left. I didn't edit db.json. Scenarist returns 'quantity: 0' from the Inventory Service."
 
    _Show test passing, "Sold Out" message visible_
 
@@ -130,13 +132,19 @@ _Point to diagram:_
 
    _Show test passing, error handling visible_
 
-5. **Point to json-server terminal**
+5. **Run fifth test - paymentDeclined scenario**
+
+   > "Payment declined. The Payment Service returns an error. Watch the app show the decline message."
+
+   _Show test passing, payment declined message visible_
+
+6. **Point to json-server terminal**
 
    > "Now look at the backend services terminal. Zero requests. Scenarist intercepted everything. The real services are running, but we never hit them."
 
 **Say:**
 
-> "Four scenarios that were 'annoying', 'hard', or 'impossible' on our table. Now they're just... tests."
+> "Five scenarios that were 'annoying', 'hard', or 'impossible' on our table. Now they're just... tests."
 
 ---
 
@@ -150,7 +158,7 @@ _Point to diagram:_
 
 _Point to diagram:_
 
-> "Every request includes a header - x-scenarist-test-id. Scenarist uses this to look up which scenario that specific test is using. Test A gets pro user responses. Test B gets free tier responses. Test C gets shipping errors. Same server. Same endpoints. Different responses. Completely isolated."
+> "Every request includes a header - x-scenarist-test-id. Scenarist uses this to look up which scenario that specific test is using. Test A gets Pro member responses. Test B gets free tier responses. Test C gets shipping errors. Test D gets payment declines. Same server. Same endpoints. Different responses. Completely isolated."
 
 > "This is how you run 50 tests in parallel without a single conflict."
 
@@ -160,7 +168,7 @@ _Point to diagram:_
 
 **Say:**
 
-> "We've turned 'hard' into 'easy' and made parallel testing possible. But what about that killer scenario - 'offer ends during checkout'? The one that was truly impossible?"
+> "We've turned 'hard' into 'easy' and made parallel testing possible. But what about that killer scenario - 'sells out during checkout'? The one that was truly impossible?"
 
 > "That requires a feature called sequences - where the same endpoint returns different responses over time."
 
@@ -170,13 +178,13 @@ _Show code teaser:_
 // Coming next: Response Sequences
 {
   sequence: [
-    { quantity: 15, reserved: 0 }, // First call: available
+    { quantity: 15, reserved: 0 }, // First call: in stock
     { quantity: 0, reserved: 0 }, // Second call: sold out
   ];
 }
 ```
 
-> "The test calls the inventory endpoint twice. First call returns '15 spots left'. Second call returns '0 spots left'. We can finally test what happens when an offer ends during checkout."
+> "The test calls the inventory endpoint twice. First call returns '15 units left'. Second call returns '0 units left'. We can finally test what happens when an item sells out during checkout."
 
 > "That's the next video."
 
@@ -185,9 +193,9 @@ _Show code teaser:_
 ## Key Visual Moments
 
 - [ ] Testing Problem Table (from Video 2)
-- [ ] PayFlow architecture diagram (three backend services)
+- [ ] PayFlow architecture diagram (four backend services)
 - [ ] Framework adapter architecture diagram
-- [ ] Live scenario switching demo (4 scenarios)
+- [ ] Live scenario switching demo (5 scenarios)
 - [ ] json-server terminal showing ZERO requests
 - [ ] Test ID isolation diagram
 - [ ] Sequence code teaser
@@ -195,7 +203,7 @@ _Show code teaser:_
 ## Before Recording Checklist
 
 - [ ] PayFlow with Scenarist installed and configured
-- [ ] Multiple scenarios defined (default, freeUser, offerEnded, expressUnavailable, shippingServiceDown)
+- [ ] Multiple scenarios defined (default, freeUser, soldOut, expressUnavailable, shippingServiceDown, paymentDeclined)
 - [ ] Playwright tests ready to run
 - [ ] json-server running with logging enabled (to show zero requests)
 - [ ] Architecture diagrams ready
@@ -209,7 +217,7 @@ _Show code teaser:_
 // scenarios.ts
 export const scenarios = {
   default: {
-    // Pro user, offer available, all shipping options
+    // Pro member, in stock, all shipping options, payment success
     mocks: [
       { url: "/users/current", response: { tier: "pro" } },
       {
@@ -217,15 +225,16 @@ export const scenarios = {
         response: [{ quantity: 50 }, { quantity: 15 }, { quantity: 3 }],
       },
       { url: "/shipping", response: [...allOptions] },
+      { url: "/payments", response: { status: "succeeded" } },
     ],
   },
   freeUser: {
     mocks: [
       { url: "/users/current", response: { tier: "free" } },
-      // ... inventory and shipping unchanged
+      // ... other services unchanged
     ],
   },
-  offerEnded: {
+  soldOut: {
     mocks: [
       {
         url: "/inventory",
@@ -241,6 +250,14 @@ export const scenarios = {
       },
     ],
   },
+  paymentDeclined: {
+    mocks: [
+      {
+        url: "/payments",
+        response: { status: "failed", error: "card_declined" },
+      },
+    ],
+  },
 };
 ```
 
@@ -249,8 +266,8 @@ export const scenarios = {
 ```typescript
 test("free user sees full price", async ({ page, switchScenario }) => {
   await switchScenario("freeUser");
-  await page.goto("/products/1");
-  await expect(page.getByText("$99.99")).toBeVisible(); // No discount
+  await page.goto("/");
+  await expect(page.getByText("$79.99")).toBeVisible(); // No discount
   await expect(page.getByText("20% off")).not.toBeVisible();
 });
 
@@ -262,6 +279,13 @@ test("handles shipping service errors gracefully", async ({
   await page.goto("/checkout");
   await expect(page.getByText("Unable to load shipping options")).toBeVisible();
 });
+
+test("handles payment decline gracefully", async ({ page, switchScenario }) => {
+  await switchScenario("paymentDeclined");
+  // ... add items and go to checkout
+  await page.click('[data-testid="pay"]');
+  await expect(page.getByText("Your card was declined")).toBeVisible();
+});
 ```
 
 ## Key Phrases
@@ -272,4 +296,4 @@ test("handles shipping service errors gracefully", async ({
 - "The patterns are the same - only the adapter changes"
 - "Zero requests. Scenarist intercepted everything."
 - "Same server. Same endpoints. Different responses. Completely isolated."
-- "Four scenarios that were 'hard' or 'impossible'. Now they're just... tests."
+- "Five scenarios that were 'hard' or 'impossible'. Now they're just... tests."
