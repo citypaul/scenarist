@@ -1,0 +1,3 @@
+# This file makes demo/payflow a standalone pnpm workspace root.
+# Without this, pnpm finds the parent workspace and skips local install.
+packages: []
