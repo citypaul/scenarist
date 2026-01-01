@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import {
   Breadcrumb,
@@ -34,6 +33,7 @@ import {
   ShoppingCart,
   XCircle,
   Truck,
+  CheckCircle,
 } from "lucide-react";
 import { useCart } from "@/contexts/cart-context";
 
@@ -51,14 +51,18 @@ type ShippingOption = {
   readonly estimatedDays: string;
 };
 
-function CheckoutPageContent() {
+type CheckoutSuccess = {
+  readonly orderId: string;
+  readonly paymentId: string;
+};
+
+export default function CheckoutPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const canceled = searchParams.get("canceled");
   const { items, subtotal, discount, discountAmount, tax, total, clearCart } =
     useCart();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [unavailableOffers, setUnavailableOffers] = useState<
     readonly UnavailableOffer[]
   >([]);
@@ -70,6 +74,8 @@ function CheckoutPageContent() {
   );
   const [isLoadingShipping, setIsLoadingShipping] = useState(true);
   const [shippingError, setShippingError] = useState<string | null>(null);
+  const [checkoutSuccess, setCheckoutSuccess] =
+    useState<CheckoutSuccess | null>(null);
 
   // Fetch shipping options from Shipping Service
   useEffect(() => {
@@ -106,6 +112,7 @@ function CheckoutPageContent() {
 
     setIsLoading(true);
     setError(null);
+    setPaymentError(null);
     setUnavailableOffers([]);
 
     try {
@@ -133,17 +140,20 @@ function CheckoutPageContent() {
           setError("Some promotional offers are no longer available");
           return;
         }
-        throw new Error(data.error || "Failed to create checkout session");
+        if (response.status === 402) {
+          // Payment failed
+          setPaymentError(data.message || "Your payment was declined");
+          return;
+        }
+        throw new Error(data.error || "Failed to process checkout");
       }
 
-      // Redirect to Stripe Checkout
-      if (data.url) {
-        // Clear cart before redirecting
-        clearCart();
-        window.location.href = data.url;
-      } else {
-        throw new Error("No checkout URL returned");
-      }
+      // Success! Clear cart and show success message
+      clearCart();
+      setCheckoutSuccess({
+        orderId: data.orderId,
+        paymentId: data.paymentId,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -155,7 +165,63 @@ function CheckoutPageContent() {
     router.push("/");
   }, [router]);
 
-  if (items.length === 0 && !canceled) {
+  // Show success state
+  if (checkoutSuccess) {
+    return (
+      <>
+        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+          <div className="flex items-center gap-2 px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator
+              orientation="vertical"
+              className="mr-2 data-[orientation=vertical]:h-4"
+            />
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem className="hidden md:block">
+                  <BreadcrumbLink href="/">Products</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="hidden md:block" />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Order Confirmed</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+        </header>
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 p-4">
+          <div className="rounded-full bg-green-100 p-4 dark:bg-green-900/30">
+            <CheckCircle className="h-16 w-16 text-green-600 dark:text-green-400" />
+          </div>
+          <h2 className="text-2xl font-bold">Payment Successful!</h2>
+          <p className="text-muted-foreground text-center max-w-md">
+            Thank you for your purchase. Your order has been confirmed and will
+            be processed shortly.
+          </p>
+          <div className="mt-2 text-sm text-muted-foreground space-y-1 text-center">
+            <p>
+              Order ID:{" "}
+              <code className="font-mono">{checkoutSuccess.orderId}</code>
+            </p>
+            <p>
+              Payment ID:{" "}
+              <code className="font-mono">{checkoutSuccess.paymentId}</code>
+            </p>
+          </div>
+          <div className="flex gap-4 mt-4">
+            <Button asChild variant="outline">
+              <Link href="/orders">View Orders</Link>
+            </Button>
+            <Button asChild>
+              <Link href="/">Continue Shopping</Link>
+            </Button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (items.length === 0) {
     return (
       <>
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
@@ -222,26 +288,26 @@ function CheckoutPageContent() {
         <div className="mb-4">
           <h1 className="text-2xl font-bold tracking-tight">Checkout</h1>
           <p className="text-muted-foreground">
-            Complete your purchase securely with Stripe.
+            Complete your purchase securely.
           </p>
         </div>
-
-        {canceled && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Checkout Canceled</AlertTitle>
-            <AlertDescription>
-              Your checkout was canceled. You can try again when you&apos;re
-              ready.
-            </AlertDescription>
-          </Alert>
-        )}
 
         {error && unavailableOffers.length === 0 && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {paymentError && (
+          <Alert variant="destructive">
+            <XCircle className="h-4 w-4" />
+            <AlertTitle>Payment Failed</AlertTitle>
+            <AlertDescription>
+              {paymentError}. Please try again or use a different payment
+              method.
+            </AlertDescription>
           </Alert>
         )}
 
@@ -341,7 +407,7 @@ function CheckoutPageContent() {
                   Payment
                 </CardTitle>
                 <CardDescription>
-                  You&apos;ll be redirected to Stripe&apos;s secure checkout
+                  Your payment will be processed securely
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -445,19 +511,5 @@ function CheckoutPageContent() {
         </div>
       </div>
     </>
-  );
-}
-
-export default function CheckoutPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex flex-1 items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      }
-    >
-      <CheckoutPageContent />
-    </Suspense>
   );
 }

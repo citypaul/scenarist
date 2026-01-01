@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
-import { getStripeServer } from "@/lib/stripe";
-import { auth0 } from "@/lib/auth0";
-import { checkOfferAvailable, getProductOffer } from "@/lib/inventory";
+import { processPayment, type PaymentRequest } from "@/lib/payment";
 import { getCurrentUser } from "@/lib/user-service";
+import { checkOfferAvailable, getProductOffer } from "@/lib/inventory";
 import { getShippingOption } from "@/lib/shipping";
+import { addOrder } from "@/lib/orders";
 
 // Cart item from the request
 interface CartItem {
-  id: string;
-  name: string;
-  basePrice: number;
-  quantity: number;
+  readonly id: string;
+  readonly name: string;
+  readonly basePrice: number;
+  readonly quantity: number;
 }
 
 // Tier discount percentages
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { items, shippingOptionId } = body as {
-      items: CartItem[];
+      items: readonly CartItem[];
       shippingOptionId: string;
     };
 
@@ -40,10 +40,13 @@ export async function POST(request: Request) {
       );
     }
 
-    // Fetch user tier from User Service (server-side call to backend)
-    const userTier = await getCurrentUser()
-      .then((userData) => userData.tier)
-      .catch(() => "free" as const);
+    // Fetch user from User Service (server-side call to backend)
+    const user = await getCurrentUser().catch(() => ({
+      id: "guest",
+      email: "guest@payflow.com",
+      name: "Guest",
+      tier: "free" as const,
+    }));
 
     // Fetch shipping option from Shipping Service (server-side call to backend)
     const shippingOption = await getShippingOption(shippingOptionId);
@@ -85,10 +88,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get the user's session for email (optional - allow guest checkout)
-    const session = await auth0.getSession();
-    const userEmail = session?.user?.email;
-    const tierDiscount = TIER_DISCOUNTS[userTier] || 0;
+    const tierDiscount = TIER_DISCOUNTS[user.tier] || 0;
 
     // Calculate totals
     const subtotal = items.reduce(
@@ -99,79 +99,64 @@ export async function POST(request: Request) {
     const afterDiscount = subtotal - discountAmount;
     const shippingCost = shippingOption.price;
     const tax = afterDiscount * 0.1; // 10% tax
+    const total = afterDiscount + shippingCost + tax;
 
-    // Calculate line items with discount applied
-    const productLineItems = items.map((item) => {
-      const discountedPrice = item.basePrice * (1 - tierDiscount / 100);
-      const unitAmount = Math.round(discountedPrice * 100); // Stripe uses cents
-
-      return {
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: item.name,
-            description: `PayFlow subscription plan`,
-          },
-          unit_amount: unitAmount,
-        },
-        quantity: item.quantity,
-      };
-    });
-
-    // Add shipping as a line item
-    const shippingLineItem = {
-      price_data: {
-        currency: "usd",
-        product_data: {
-          name: shippingOption.name,
-          description: shippingOption.estimatedDays,
-        },
-        unit_amount: Math.round(shippingCost * 100), // Stripe uses cents
-      },
-      quantity: 1,
-    };
-
-    const lineItems = [...productLineItems, shippingLineItem];
-
-    // Prepare order items for metadata (simplified for storage)
+    // Prepare order items
     const orderItems = items.map((item) => ({
       name: item.name,
       quantity: item.quantity,
-      price: item.basePrice,
+      price: item.basePrice * (1 - tierDiscount / 100),
     }));
 
-    // Create Stripe checkout session
-    const stripe = getStripeServer();
-    const checkoutSession = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: lineItems,
-      mode: "payment",
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/orders?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout?canceled=true`,
-      ...(userEmail && { customer_email: userEmail }),
-      metadata: {
-        userId: session?.user?.sub || "guest",
-        userTier,
-        items: JSON.stringify(orderItems),
-        subtotal: subtotal.toFixed(2),
-        discount: discountAmount.toFixed(2),
-        shipping: shippingCost.toFixed(2),
-        shippingOption: shippingOption.name,
-        tax: tax.toFixed(2),
-      },
+    // Process payment via Payment Service (server-side call to backend)
+    const paymentRequest: PaymentRequest = {
+      userId: user.id,
+      amount: total,
+      currency: "usd",
+      items: orderItems,
+      shippingOption: shippingOption.name,
+    };
+
+    const paymentResult = await processPayment(paymentRequest);
+
+    if (paymentResult.status === "failed") {
+      return NextResponse.json(
+        {
+          error: "Payment failed",
+          paymentError: paymentResult.error,
+          message: paymentResult.message,
+        },
+        { status: 402 },
+      );
+    }
+
+    // Create order record
+    const order = addOrder({
+      userId: user.id,
+      userTier: user.tier,
+      items: orderItems,
+      subtotal,
+      discount: discountAmount,
+      shipping: shippingCost,
+      tax,
+      total,
+      currency: "usd",
+      status: "completed",
+      paymentId: paymentResult.id,
+      customerEmail: user.email,
     });
 
     return NextResponse.json({
-      sessionId: checkoutSession.id,
-      url: checkoutSession.url,
+      success: true,
+      orderId: order.id,
+      paymentId: paymentResult.id,
     });
   } catch (error) {
-    // Only log full error details in development
     if (process.env.NODE_ENV !== "production") {
       console.error("Checkout error:", error);
     }
     return NextResponse.json(
-      { error: "Failed to create checkout session" },
+      { error: "Failed to process checkout" },
       { status: 500 },
     );
   }
