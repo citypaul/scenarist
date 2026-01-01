@@ -2,25 +2,25 @@
 // In a real app, this would be a database
 
 export interface Order {
-  id: string;
-  sessionId: string;
-  customerEmail: string | null;
-  userId: string;
-  userTier: string;
-  items: OrderItem[];
-  subtotal: number;
-  discount: number;
-  tax: number;
-  total: number;
-  currency: string;
-  status: "pending" | "completed" | "failed" | "refunded";
-  createdAt: string;
+  readonly id: string;
+  readonly sessionId: string;
+  readonly customerEmail: string | null;
+  readonly userId: string;
+  readonly userTier: string;
+  readonly items: readonly OrderItem[];
+  readonly subtotal: number;
+  readonly discount: number;
+  readonly tax: number;
+  readonly total: number;
+  readonly currency: string;
+  readonly status: "pending" | "completed" | "failed" | "refunded";
+  readonly createdAt: string;
 }
 
 export interface OrderItem {
-  name: string;
-  quantity: number;
-  price: number;
+  readonly name: string;
+  readonly quantity: number;
+  readonly price: number;
 }
 
 // In-memory store (resets on server restart)
@@ -33,6 +33,7 @@ export function createOrder(order: Order): Order {
 
 export interface AddOrderInput {
   readonly userId: string;
+  readonly userTier: string;
   readonly items: readonly OrderItem[];
   readonly subtotal: number;
   readonly discount: number;
@@ -52,7 +53,7 @@ export function addOrder(input: AddOrderInput): Order {
     sessionId: input.paymentId,
     customerEmail: input.customerEmail,
     userId: input.userId,
-    userTier: "pro", // Will be set from user service in real implementation
+    userTier: input.userTier,
     items: [...input.items],
     subtotal: input.subtotal,
     discount: input.discount,
@@ -102,9 +103,10 @@ export function updateOrderStatus(
   status: Order["status"],
 ): Order | undefined {
   const order = orders.get(id);
-  if (order) {
-    order.status = status;
-    orders.set(id, order);
+  if (!order) {
+    return undefined;
   }
-  return order;
+  const updatedOrder: Order = { ...order, status };
+  orders.set(id, updatedOrder);
+  return updatedOrder;
 }

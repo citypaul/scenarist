@@ -133,6 +133,7 @@ export async function POST(request: Request) {
     // Create order record
     const order = addOrder({
       userId: user.id,
+      userTier: user.tier,
       items: orderItems,
       subtotal,
       discount: discountAmount,

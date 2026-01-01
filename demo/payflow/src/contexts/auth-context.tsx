@@ -38,8 +38,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             tier: userData.tier || "free",
           });
         }
-      } catch {
+      } catch (error) {
         // User service unavailable - use default user
+        if (process.env.NODE_ENV !== "production") {
+          console.error("Failed to fetch user from service:", error);
+        }
         setUser({
           id: "demo",
           email: "demo@payflow.com",
