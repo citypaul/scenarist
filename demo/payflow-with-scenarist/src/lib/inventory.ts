@@ -16,6 +16,12 @@ export type ProductOffer = {
   readonly status: OfferStatus;
 };
 
+/**
+ * Headers to propagate to backend service calls.
+ * Used for Scenarist test ID propagation.
+ */
+export type ServiceHeaders = Record<string, string>;
+
 // Show urgency badge ("X left at this price") when 20 or fewer promotional slots remain
 const LIMITED_OFFER_THRESHOLD = 20;
 
@@ -25,8 +31,11 @@ function getOfferStatus(available: number): OfferStatus {
   return "available";
 }
 
-export async function getInventory(): Promise<readonly InventoryItem[]> {
+export async function getInventory(
+  headers: ServiceHeaders = {},
+): Promise<readonly InventoryItem[]> {
   const response = await fetch(`${INVENTORY_SERVICE_URL}/inventory`, {
+    headers,
     cache: "no-store",
   });
 
@@ -39,8 +48,9 @@ export async function getInventory(): Promise<readonly InventoryItem[]> {
 
 export async function getProductOffer(
   productId: string,
+  headers: ServiceHeaders = {},
 ): Promise<ProductOffer | null> {
-  const inventory = await getInventory();
+  const inventory = await getInventory(headers);
   const item = inventory.find((i) => i.productId === productId);
 
   if (!item) return null;
@@ -53,8 +63,10 @@ export async function getProductOffer(
   };
 }
 
-export async function getAllProductOffers(): Promise<readonly ProductOffer[]> {
-  const inventory = await getInventory();
+export async function getAllProductOffers(
+  headers: ServiceHeaders = {},
+): Promise<readonly ProductOffer[]> {
+  const inventory = await getInventory(headers);
 
   return inventory.map((item) => {
     const available = item.quantity - item.reserved;
@@ -69,8 +81,9 @@ export async function getAllProductOffers(): Promise<readonly ProductOffer[]> {
 export async function checkOfferAvailable(
   productId: string,
   quantity: number = 1,
+  headers: ServiceHeaders = {},
 ): Promise<boolean> {
-  const offer = await getProductOffer(productId);
+  const offer = await getProductOffer(productId, headers);
   if (!offer) return false;
   return offer.available >= quantity;
 }

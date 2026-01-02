@@ -10,8 +10,17 @@ export type UserData = {
   readonly tier: UserTier;
 };
 
-export async function getCurrentUser(): Promise<UserData> {
+/**
+ * Headers to propagate to backend service calls.
+ * Used for Scenarist test ID propagation.
+ */
+export type ServiceHeaders = Record<string, string>;
+
+export async function getCurrentUser(
+  headers: ServiceHeaders = {},
+): Promise<UserData> {
   const response = await fetch(`${USER_SERVICE_URL}/users/current`, {
+    headers,
     cache: "no-store",
   });
 

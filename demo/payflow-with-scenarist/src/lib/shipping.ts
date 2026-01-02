@@ -8,8 +8,17 @@ export type ShippingOption = {
   readonly estimatedDays: string;
 };
 
-export async function getShippingOptions(): Promise<readonly ShippingOption[]> {
+/**
+ * Headers to propagate to backend service calls.
+ * Used for Scenarist test ID propagation.
+ */
+export type ServiceHeaders = Record<string, string>;
+
+export async function getShippingOptions(
+  headers: ServiceHeaders = {},
+): Promise<readonly ShippingOption[]> {
   const response = await fetch(`${SHIPPING_SERVICE_URL}/shipping`, {
+    headers,
     cache: "no-store",
   });
 
@@ -22,7 +31,8 @@ export async function getShippingOptions(): Promise<readonly ShippingOption[]> {
 
 export async function getShippingOption(
   id: string,
+  headers: ServiceHeaders = {},
 ): Promise<ShippingOption | null> {
-  const options = await getShippingOptions();
+  const options = await getShippingOptions(headers);
   return options.find((option) => option.id === id) ?? null;
 }

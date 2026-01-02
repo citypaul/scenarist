@@ -25,13 +25,21 @@ export type PaymentResponse = {
   readonly message?: string;
 };
 
+/**
+ * Headers to propagate to backend service calls.
+ * Used for Scenarist test ID propagation.
+ */
+export type ServiceHeaders = Record<string, string>;
+
 export async function processPayment(
   request: PaymentRequest,
+  headers: ServiceHeaders = {},
 ): Promise<PaymentResponse> {
   const response = await fetch(`${PAYMENT_SERVICE_URL}/payments`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...headers,
     },
     body: JSON.stringify(request),
     cache: "no-store",

@@ -38,11 +38,46 @@ const TIER_DISCOUNTS: Record<UserTier, number> = {
 
 const TAX_RATE = 0.1; // 10% tax
 
+const CART_STORAGE_KEY = "payflow-cart";
+
+function loadCartFromStorage(): readonly CartItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = sessionStorage.getItem(CART_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveCartToStorage(items: readonly CartItem[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = React.useState<readonly CartItem[]>([]);
+  const [isHydrated, setIsHydrated] = React.useState(false);
   const { user } = useAuth();
   const userTier = user?.tier ?? "free";
   const discount = TIER_DISCOUNTS[userTier];
+
+  // Load cart from storage on mount (client-side only)
+  React.useEffect(() => {
+    setItems(loadCartFromStorage());
+    setIsHydrated(true);
+  }, []);
+
+  // Persist cart to storage whenever it changes (after hydration)
+  React.useEffect(() => {
+    if (isHydrated) {
+      saveCartToStorage(items);
+    }
+  }, [items, isHydrated]);
 
   const addItem = React.useCallback((item: Omit<CartItem, "quantity">) => {
     setItems((currentItems) => {

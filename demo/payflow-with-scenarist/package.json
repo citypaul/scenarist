@@ -2,12 +2,18 @@
   "name": "payflow-with-scenarist",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
+  "pnpm": {
+    "overrides": {
+      "msw": "2.7.3"
+    }
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "inventory": "json-server db.json --port 3001 --middlewares json-server-logger.js json-server-payment.js",
+    "inventory": "json-server db.json --port 3001 --middlewares json-server-logger.cjs json-server-payment.cjs",
     "test": "playwright test",
     "test:ui": "playwright test --ui"
   },
@@ -26,6 +32,7 @@
     "@radix-ui/react-tooltip": "1.2.8",
     "@scenarist/nextjs-adapter": "^0.4.6",
     "@scenarist/playwright-helpers": "^0.4.6",
+    "msw": "^2.7.3",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "lucide-react": "0.561.0",

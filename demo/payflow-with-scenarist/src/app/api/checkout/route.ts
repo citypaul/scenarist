@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { processPayment, type PaymentRequest } from "@/lib/payment";
 import { getCurrentUser } from "@/lib/user-service";
 import { checkOfferAvailable, getProductOffer } from "@/lib/inventory";
 import { getShippingOption } from "@/lib/shipping";
 import { addOrder } from "@/lib/orders";
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
 
 // Cart item from the request
 interface CartItem {
@@ -21,8 +22,11 @@ const TIER_DISCOUNTS: Record<string, number> = {
   enterprise: 30,
 };
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    // Propagate Scenarist headers to backend calls for test isolation
+    const scenaristHeaders = getScenaristHeaders(request);
+
     const body = await request.json();
     const { items, shippingOptionId } = body as {
       items: readonly CartItem[];
@@ -41,7 +45,7 @@ export async function POST(request: Request) {
     }
 
     // Fetch user from User Service (server-side call to backend)
-    const user = await getCurrentUser().catch(() => ({
+    const user = await getCurrentUser(scenaristHeaders).catch(() => ({
       id: "guest",
       email: "guest@payflow.com",
       name: "Guest",
@@ -49,7 +53,10 @@ export async function POST(request: Request) {
     }));
 
     // Fetch shipping option from Shipping Service (server-side call to backend)
-    const shippingOption = await getShippingOption(shippingOptionId);
+    const shippingOption = await getShippingOption(
+      shippingOptionId,
+      scenaristHeaders,
+    );
     if (!shippingOption) {
       return NextResponse.json(
         { error: "Selected shipping option is not available" },
@@ -60,9 +67,13 @@ export async function POST(request: Request) {
     // Verify promotional offer availability for all items
     const offerChecks = await Promise.all(
       items.map(async (item) => {
-        const hasOffer = await checkOfferAvailable(item.id, item.quantity);
+        const hasOffer = await checkOfferAvailable(
+          item.id,
+          item.quantity,
+          scenaristHeaders,
+        );
         if (!hasOffer) {
-          const offer = await getProductOffer(item.id);
+          const offer = await getProductOffer(item.id, scenaristHeaders);
           return {
             id: item.id,
             name: item.name,
@@ -117,7 +128,10 @@ export async function POST(request: Request) {
       shippingOption: shippingOption.name,
     };
 
-    const paymentResult = await processPayment(paymentRequest);
+    const paymentResult = await processPayment(
+      paymentRequest,
+      scenaristHeaders,
+    );
 
     if (paymentResult.status === "failed") {
       return NextResponse.json(

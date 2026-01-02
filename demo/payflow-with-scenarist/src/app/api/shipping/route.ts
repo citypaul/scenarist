@@ -1,9 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getShippingOptions } from "@/lib/shipping";
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const options = await getShippingOptions();
+    // Propagate Scenarist headers to backend calls for test isolation
+    const scenaristHeaders = getScenaristHeaders(request);
+    const options = await getShippingOptions(scenaristHeaders);
     return NextResponse.json(options);
   } catch (error) {
     // Only log full error details in development
