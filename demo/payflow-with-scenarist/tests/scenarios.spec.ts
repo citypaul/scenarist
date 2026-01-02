@@ -11,6 +11,9 @@
  * 4. shippingServiceDown - Checkout shows shipping error
  * 5. paymentDeclined - Payment fails with decline message
  *
+ * Video 4 showcases 1 sequence scenario:
+ * 6. sellsOutDuringCheckout - Item sells out between browsing and checkout
+ *
  * CRITICAL: When these tests run, json-server terminal shows ZERO requests.
  * This proves Scenarist is intercepting the server-side HTTP calls.
  */
@@ -119,5 +122,51 @@ test.describe("Video 3: Scenario Switching Demo", () => {
     // Should show payment declined error
     await expect(page.getByText("Payment Failed")).toBeVisible();
     await expect(page.getByText("Your card was declined")).toBeVisible();
+  });
+});
+
+test.describe("Video 4: Response Sequences Demo", () => {
+  /**
+   * The "killer demo" - the impossible test case.
+   *
+   * This scenario uses a response SEQUENCE:
+   * - First inventory call (products page): 15 units in stock
+   * - Second inventory call (checkout): 0 units (sold out)
+   *
+   * This simulates the real-world scenario where an item sells out
+   * between when a user adds it to cart and when they try to checkout.
+   * Without Scenarist, this is impossible to test reliably.
+   */
+  test("sellsOutDuringCheckout: Item sells out between browsing and checkout", async ({
+    page,
+    switchScenario,
+  }) => {
+    await switchScenario(page, "sellsOutDuringCheckout");
+
+    // First inventory call - items are in stock (15 units)
+    await page.goto("/");
+
+    // Products should be available (not sold out)
+    await expect(page.getByRole("button", { name: "Add to Cart" })).toHaveCount(
+      3,
+    );
+    await expect(page.getByRole("button", { name: "Sold Out" })).toHaveCount(0);
+
+    // Add item to cart
+    await page.getByRole("button", { name: "Add to Cart" }).first().click();
+
+    // Go to checkout - this triggers second inventory call (0 units)
+    await page.goto("/checkout");
+
+    // Wait for shipping options to load (checkout page is ready)
+    await expect(page.getByText("Standard Shipping")).toBeVisible();
+
+    // Try to complete the purchase
+    await page.getByRole("button", { name: /Pay/ }).click();
+
+    // Should show "no longer available" error
+    await expect(
+      page.getByText("promotional offers are no longer available"),
+    ).toBeVisible();
   });
 });
