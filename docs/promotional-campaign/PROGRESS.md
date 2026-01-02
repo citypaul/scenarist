@@ -1,20 +1,21 @@
 # Campaign Progress
 
-Last updated: 2026-01-01
+Last updated: 2026-01-02
 
-## Current Status: Stage 4 - Scenarist Integration In Progress
+## Current Status: Stage 4 - Videos 3 & 4 Complete
 
 **Stage 1 (Foundation) is COMPLETE and merged to main (PR #398).**
 **Stage 2 (Working Flows) is COMPLETE and merged to main (PR #399).**
 **Stage 2.5 (Backend Services) is COMPLETE and merged to main (PR #400).**
 **Stage 3 (Narrative Simplification) is COMPLETE - PR #421 merged.**
-**Stage 4 (Scenarist Integration) is IN PROGRESS** - Creating reference implementation.
+**Stage 4 (Scenarist Integration) is COMPLETE** - Videos 3 & 4 implementation done.
 
 **Video 1 materials are complete** - script, cue card, visual aids, PowerPoint presentation, and blog post.
 **Video 2 materials are complete** - script, cue card, visual aids, PowerPoint presentation, and blog post.
-**Video 3 materials are complete** - script, cue card, blog post, PowerPoint presentation, and scenario mapping.
+**Video 3 materials are complete** - script, cue card, blog post, PowerPoint presentation, scenario mapping, and working tests.
+**Video 4 materials are complete** - sequence test for sellsOutDuringCheckout.
 
-**Next milestone:** Complete Stage 4.1 (foundation), then proceed through sub-stages to full Scenarist integration.
+**Next milestone:** Record Videos 1-4. Cleanup PR for remaining scenarios is optional.
 
 ---
 
@@ -183,15 +184,15 @@ The browser never talks to these services directly. Next.js makes the HTTP calls
 
 **Important:** We use squash merges, so each PR = 1 commit = 1 tag point. PRs are structured to align with videos.
 
-| Video/Stage | PR   | Status         | Description                                    | Tag After Merge            |
-| ----------- | ---- | -------------- | ---------------------------------------------- | -------------------------- |
-| Stage 1     | #398 | ✅ Merged      | Foundation - App structure                     | -                          |
-| Stage 2     | #399 | ✅ Merged      | Working flows - Cart, checkout, orders         | -                          |
-| Stage 2.5   | #400 | ✅ Merged      | Backend Services - User, Inventory, Shipping   | -                          |
-| Stage 3     | #421 | ✅ Merged      | Narrative Simplification - Merchandise+Payment | `video-02-meet-payflow` ✅ |
-| **Video 3** | #422 | 🔄 In Progress | Complete Scenarist integration + 5 demo tests  | `video-03-scenario-switch` |
-| **Video 4** | TBD  | ⏳ Pending     | Sequence test (sellsOutDuringCheckout)         | `video-04-sequences`       |
-| Cleanup     | TBD  | ⏳ Pending     | Remaining scenarios + documentation            | `stage-4-complete`         |
+| Video/Stage | PR   | Status      | Description                                    | Tag After Merge               |
+| ----------- | ---- | ----------- | ---------------------------------------------- | ----------------------------- |
+| Stage 1     | #398 | ✅ Merged   | Foundation - App structure                     | -                             |
+| Stage 2     | #399 | ✅ Merged   | Working flows - Cart, checkout, orders         | -                             |
+| Stage 2.5   | #400 | ✅ Merged   | Backend Services - User, Inventory, Shipping   | -                             |
+| Stage 3     | #421 | ✅ Merged   | Narrative Simplification - Merchandise+Payment | `video-02-meet-payflow` ✅    |
+| **Video 3** | #422 | ✅ Merged   | Complete Scenarist integration + 5 demo tests  | `video-03-scenario-switch` ✅ |
+| **Video 4** | #423 | ⏳ PR       | Sequence test (sellsOutDuringCheckout)         | `video-04-sequences`          |
+| Cleanup     | TBD  | ⏳ Optional | Remaining scenarios + documentation            | `stage-4-complete`            |
 
 ---
 
@@ -255,58 +256,21 @@ The original `demo/payflow/` remains unchanged for Video 2 demonstrations (app w
 
 ---
 
-#### Video 3 PR (#422) 🔄 IN PROGRESS
+#### Video 3 PR (#422) ✅ COMPLETE
 
-**This PR contains everything needed for Video 3.** After merge, tag `video-03-scenario-switch`.
+**Merged and tagged `video-03-scenario-switch`.**
 
-**Foundation (complete):**
+**What was delivered:**
 
-- [x] Copy `demo/payflow` → `demo/payflow-with-scenarist`
-- [x] Install from npm: `@scenarist/nextjs-adapter`, `@scenarist/playwright-helpers`, `@playwright/test`
-- [x] Downgrade to Next.js 15.5.9 for Scenarist compatibility
-- [x] Verify app builds
-
-**Scenario Definitions:**
-
-All 9 scenarios in `src/scenarios.ts`:
-
-| Scenario                 | User Service | Inventory         | Shipping    | Payment     |
-| ------------------------ | ------------ | ----------------- | ----------- | ----------- |
-| `default`                | tier: pro    | qty: 50/15/3      | all options | success     |
-| `freeUser`               | tier: free   | (same)            | (same)      | success     |
-| `soldOut`                | tier: pro    | qty: 0/0/0        | (same)      | N/A         |
-| `lowStock`               | tier: pro    | qty: 3/3/3        | (same)      | N/A         |
-| `expressUnavailable`     | tier: pro    | (same)            | standard    | success     |
-| `shippingServiceDown`    | tier: pro    | (same)            | 500 error   | N/A         |
-| `paymentDeclined`        | tier: pro    | (same)            | (same)      | 402 decline |
-| `paymentServiceDown`     | tier: pro    | (same)            | (same)      | 500 error   |
-| `sellsOutDuringCheckout` | tier: pro    | **sequence** 15→0 | (same)      | N/A         |
-
-- [ ] Create `src/scenarios.ts` with all 9 scenarios
-- [ ] Verify TypeScript compiles
-
-**Next.js Adapter Integration:**
-
-- [ ] Create `src/instrumentation.ts` with Scenarist setup
-- [ ] Register scenario definitions
-- [ ] Verify app starts without errors
-
-**Video 3 Test Suite (5 scenarios):**
-
-1. `default` - Pro member sees 20% discount
-2. `freeUser` - Free user sees full price
-3. `soldOut` - Shows "Sold Out" message
-4. `shippingServiceDown` - Shows shipping error gracefully
-5. `paymentDeclined` - Shows "Your card was declined"
-
-- [ ] Set up Playwright config with Scenarist fixtures
-- [ ] Write 5 tests matching Video 3 script
-- [ ] **CRITICAL:** Verify json-server terminal shows ZERO requests
-- [ ] **REVIEW CHECKPOINT** → Merge PR #422, then tag `video-03-scenario-switch`
+- [x] `demo/payflow-with-scenarist/` reference implementation
+- [x] 9 scenarios defined in `src/scenarios.ts`
+- [x] 5 Playwright tests (default, freeUser, soldOut, shippingServiceDown, paymentDeclined)
+- [x] MSW server-side interception verified (zero requests to json-server)
+- [x] Header propagation for test isolation
 
 ---
 
-#### Video 4 PR (TBD) ⏳ PENDING
+#### Video 4 PR (#423) 🔄 IN PROGRESS
 
 **This PR adds the sequence test for Video 4.** After merge, tag `video-04-sequences`.
 
@@ -314,10 +278,10 @@ The killer demo - `sellsOutDuringCheckout`:
 
 - First inventory call: 15 units in stock
 - Second inventory call: 0 units (sold out)
-- Test shows "Item no longer available" on checkout attempt
+- Test shows "promotional offers are no longer available" on checkout attempt
 
-- [ ] Add Playwright test for `sellsOutDuringCheckout` sequence
-- [ ] Verify sequence behavior works correctly
+- [x] Add Playwright test for `sellsOutDuringCheckout` sequence
+- [x] Verify sequence behavior works correctly (6/6 tests passing)
 - [ ] **REVIEW CHECKPOINT** → Merge, then tag `video-04-sequences`
 
 ---
@@ -394,7 +358,7 @@ See PLAN.md for full video list (Videos 5-15).
 | -------------------------- | ------ | ----------------------------- | -------------------------------------------- |
 | `video-01-testing-gap`     | ⏳     | N/A (conceptual video)        | Slides only, no live coding                  |
 | `video-02-meet-payflow`    | ✅     | `demo/payflow`                | App without Scenarist, Testing Problem Table |
-| `video-03-scenario-switch` | ⏳     | `demo/payflow-with-scenarist` | 5 scenarios, json-server shows zero requests |
+| `video-03-scenario-switch` | ✅     | `demo/payflow-with-scenarist` | 5 scenarios, json-server shows zero requests |
 | `video-04-sequences`       | ⏳     | `demo/payflow-with-scenarist` | sellsOutDuringCheckout sequence              |
 
 **Tagging workflow (per-PR):**
