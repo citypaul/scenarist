@@ -2,18 +2,19 @@
 
 Last updated: 2026-01-01
 
-## Current Status: Videos 1-3 Materials Complete, Ready for Recording
+## Current Status: Stage 4 - Scenarist Integration In Progress
 
 **Stage 1 (Foundation) is COMPLETE and merged to main (PR #398).**
 **Stage 2 (Working Flows) is COMPLETE and merged to main (PR #399).**
 **Stage 2.5 (Backend Services) is COMPLETE and merged to main (PR #400).**
 **Stage 3 (Narrative Simplification) is COMPLETE - PR #421 merged.**
+**Stage 4 (Scenarist Integration) is IN PROGRESS** - Creating reference implementation.
 
 **Video 1 materials are complete** - script, cue card, visual aids, PowerPoint presentation, and blog post.
 **Video 2 materials are complete** - script, cue card, visual aids, PowerPoint presentation, and blog post.
 **Video 3 materials are complete** - script, cue card, blog post, PowerPoint presentation, and scenario mapping.
 
-**Next milestone:** Record Videos 1-3, then Stage 4 - Scenarist Integration (user implements code).
+**Next milestone:** Complete Stage 4.1 (foundation), then proceed through sub-stages to full Scenarist integration.
 
 ---
 
@@ -178,15 +179,19 @@ The browser never talks to these services directly. Next.js makes the HTTP calls
 - Inventory API: `src/app/api/inventory/route.ts`
 - Orders API: `src/app/api/orders/route.ts`
 
-### PR Strategy
+### PR Strategy (Video-Aligned)
 
-| Stage | PR   | Status     | Description                                      |
-| ----- | ---- | ---------- | ------------------------------------------------ |
-| 1     | #398 | ✅ Merged  | Foundation - App structure                       |
-| 2     | #399 | ✅ Merged  | Working flows - Cart, checkout, orders           |
-| 2.5   | #400 | ✅ Merged  | Backend Services - User, Inventory, Shipping     |
-| 3     | #421 | ✅ Merged  | Narrative Simplification - Merchandise + Payment |
-| 4     | TBD  | ⏳ Pending | Scenarist integration - Scenarios, tests         |
+**Important:** We use squash merges, so each PR = 1 commit = 1 tag point. PRs are structured to align with videos.
+
+| Video/Stage | PR   | Status         | Description                                    | Tag After Merge            |
+| ----------- | ---- | -------------- | ---------------------------------------------- | -------------------------- |
+| Stage 1     | #398 | ✅ Merged      | Foundation - App structure                     | -                          |
+| Stage 2     | #399 | ✅ Merged      | Working flows - Cart, checkout, orders         | -                          |
+| Stage 2.5   | #400 | ✅ Merged      | Backend Services - User, Inventory, Shipping   | -                          |
+| Stage 3     | #421 | ✅ Merged      | Narrative Simplification - Merchandise+Payment | `video-02-meet-payflow` ✅ |
+| **Video 3** | #422 | 🔄 In Progress | Complete Scenarist integration + 5 demo tests  | `video-03-scenario-switch` |
+| **Video 4** | TBD  | ⏳ Pending     | Sequence test (sellsOutDuringCheckout)         | `video-04-sequences`       |
+| Cleanup     | TBD  | ⏳ Pending     | Remaining scenarios + documentation            | `stage-4-complete`         |
 
 ---
 
@@ -230,9 +235,15 @@ The browser never talks to these services directly. Next.js makes the HTTP calls
 - [x] Update scenario-mapping.md with new scenario names
 - [x] **REVIEW CHECKPOINT** → PR #421
 
-### Demo App Stage 4: Scenarist Integration ⏳ PENDING (User Implements)
+### Demo App Stage 4: Scenarist Integration 🔄 IN PROGRESS
 
-**Note:** Stage 4 planning materials are complete. The actual implementation (installing packages, writing scenarios, creating tests) will be done by the user following the scenario mapping document.
+**Approach:** Create a complete reference implementation (`demo/payflow-with-scenarist/`) that:
+
+1. Validates everything works before the presentation
+2. Serves as a fallback if live coding fails during recording
+3. Proves the published npm packages work correctly (installs from npm, not workspace)
+
+The original `demo/payflow/` remains unchanged for Video 2 demonstrations (app without Scenarist).
 
 **Planning materials ready:**
 
@@ -242,23 +253,86 @@ The browser never talks to these services directly. Next.js makes the HTTP calls
 - [x] Video 3 slides (`presentations/video-03-one-server-unlimited-scenarios.pptx`)
 - [x] Scenario mapping (`planning/scenario-mapping.md`)
 
-**Implementation tasks (user to complete):**
+---
 
-- [ ] Install `@scenarist/nextjs-adapter` and `@scenarist/playwright-helpers`
-- [ ] Define scenarios:
-  - `default` - Happy path: Pro member, in stock, all shipping options, payment success
-  - `freeUser` - Free tier: No discount
-  - `soldOut` - Out of stock (quantity: 0)
-  - `lowStock` - Urgency messaging (quantity: 3)
-  - `expressUnavailable` - No express shipping option
-  - `shippingServiceDown` - Shipping API error (500)
-  - `paymentDeclined` - Payment declined
-  - `paymentServiceDown` - Payment API error (500)
-  - `sellsOutDuringCheckout` - **Key demo**: sequence scenario
-- [ ] Create Playwright test suite
-- [ ] Show json-server NOT being hit (interception proof)
+#### Video 3 PR (#422) 🔄 IN PROGRESS
+
+**This PR contains everything needed for Video 3.** After merge, tag `video-03-scenario-switch`.
+
+**Foundation (complete):**
+
+- [x] Copy `demo/payflow` → `demo/payflow-with-scenarist`
+- [x] Install from npm: `@scenarist/nextjs-adapter`, `@scenarist/playwright-helpers`, `@playwright/test`
+- [x] Downgrade to Next.js 15.5.9 for Scenarist compatibility
+- [x] Verify app builds
+
+**Scenario Definitions:**
+
+All 9 scenarios in `src/scenarios.ts`:
+
+| Scenario                 | User Service | Inventory         | Shipping    | Payment     |
+| ------------------------ | ------------ | ----------------- | ----------- | ----------- |
+| `default`                | tier: pro    | qty: 50/15/3      | all options | success     |
+| `freeUser`               | tier: free   | (same)            | (same)      | success     |
+| `soldOut`                | tier: pro    | qty: 0/0/0        | (same)      | N/A         |
+| `lowStock`               | tier: pro    | qty: 3/3/3        | (same)      | N/A         |
+| `expressUnavailable`     | tier: pro    | (same)            | standard    | success     |
+| `shippingServiceDown`    | tier: pro    | (same)            | 500 error   | N/A         |
+| `paymentDeclined`        | tier: pro    | (same)            | (same)      | 402 decline |
+| `paymentServiceDown`     | tier: pro    | (same)            | (same)      | 500 error   |
+| `sellsOutDuringCheckout` | tier: pro    | **sequence** 15→0 | (same)      | N/A         |
+
+- [ ] Create `src/scenarios.ts` with all 9 scenarios
+- [ ] Verify TypeScript compiles
+
+**Next.js Adapter Integration:**
+
+- [ ] Create `src/instrumentation.ts` with Scenarist setup
+- [ ] Register scenario definitions
+- [ ] Verify app starts without errors
+
+**Video 3 Test Suite (5 scenarios):**
+
+1. `default` - Pro member sees 20% discount
+2. `freeUser` - Free user sees full price
+3. `soldOut` - Shows "Sold Out" message
+4. `shippingServiceDown` - Shows shipping error gracefully
+5. `paymentDeclined` - Shows "Your card was declined"
+
+- [ ] Set up Playwright config with Scenarist fixtures
+- [ ] Write 5 tests matching Video 3 script
+- [ ] **CRITICAL:** Verify json-server terminal shows ZERO requests
+- [ ] **REVIEW CHECKPOINT** → Merge PR #422, then tag `video-03-scenario-switch`
+
+---
+
+#### Video 4 PR (TBD) ⏳ PENDING
+
+**This PR adds the sequence test for Video 4.** After merge, tag `video-04-sequences`.
+
+The killer demo - `sellsOutDuringCheckout`:
+
+- First inventory call: 15 units in stock
+- Second inventory call: 0 units (sold out)
+- Test shows "Item no longer available" on checkout attempt
+
+- [ ] Add Playwright test for `sellsOutDuringCheckout` sequence
+- [ ] Verify sequence behavior works correctly
+- [ ] **REVIEW CHECKPOINT** → Merge, then tag `video-04-sequences`
+
+---
+
+#### Cleanup PR (TBD) ⏳ PENDING
+
+**Remaining scenarios and documentation.** After merge, tag `stage-4-complete`.
+
+- [ ] Add tests for remaining scenarios:
+  - `lowStock` - Shows "Only 3 left!" urgency
+  - `expressUnavailable` - Only standard shipping visible
+  - `paymentServiceDown` - Payment error handling
 - [ ] Verify production build (tree-shaking)
-- [ ] **REVIEW CHECKPOINT** → Tag: `stage-4-complete`
+- [ ] Update this PROGRESS.md with Stage 4 complete
+- [ ] **REVIEW CHECKPOINT** → Merge, then tag `stage-4-complete`
 
 ### Phase 1: The Problem & The App (Videos 1-2)
 
@@ -303,7 +377,9 @@ See PLAN.md for full video list (Videos 5-15).
 ## Notes
 
 - **Recording strategy:** Record all videos before releasing any
-- **Demo app:** Located at `demo/payflow/` (excluded from pnpm workspace)
+- **Demo apps:** Both excluded from pnpm workspace (install from npm, not workspace links)
+  - `demo/payflow/` - App without Scenarist (Video 2)
+  - `demo/payflow-with-scenarist/` - Reference implementation with full Scenarist (Videos 3-4)
 - **Visual aids:** Mermaid diagrams in `visual-aids/` - render for slides
 - **Four-service architecture:** User + Inventory + Shipping + Payment Services
 - **All server-side:** Browser → Next.js → Services (100% mockable)
@@ -312,6 +388,33 @@ See PLAN.md for full video list (Videos 5-15).
 
 ### Git Tag Strategy
 
-- **Stage tags** (`stage-1-foundation`, etc.): Major milestones
-- **Video tags** (`video-01-testing-gap`, etc.): Exact code state for each video
-- Tags are pushed to remote: `git push --tags`
+**Video tags** mark exact code state for each video recording. Tags are created on main after each PR is merged.
+
+| Tag                        | Status | Demo App                      | What to Show                                 |
+| -------------------------- | ------ | ----------------------------- | -------------------------------------------- |
+| `video-01-testing-gap`     | ⏳     | N/A (conceptual video)        | Slides only, no live coding                  |
+| `video-02-meet-payflow`    | ✅     | `demo/payflow`                | App without Scenarist, Testing Problem Table |
+| `video-03-scenario-switch` | ⏳     | `demo/payflow-with-scenarist` | 5 scenarios, json-server shows zero requests |
+| `video-04-sequences`       | ⏳     | `demo/payflow-with-scenarist` | sellsOutDuringCheckout sequence              |
+
+**Tagging workflow (per-PR):**
+
+```bash
+# After merging Video 3 PR (#422):
+git checkout main && git pull
+git tag -a video-03-scenario-switch -m "Video 3: Scenario switching demo"
+git push --tags
+
+# After merging Video 4 PR:
+git checkout main && git pull
+git tag -a video-04-sequences -m "Video 4: Response sequences demo"
+git push --tags
+```
+
+**Before recording each video:**
+
+```bash
+# Reset to the exact code state for that video
+git checkout video-02-meet-payflow  # For Video 2
+git checkout video-03-scenario-switch  # For Video 3
+```
