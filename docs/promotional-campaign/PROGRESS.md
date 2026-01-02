@@ -13,7 +13,7 @@ Last updated: 2026-01-02
 **Video 1 materials are complete** - script, cue card, visual aids, PowerPoint presentation, and blog post.
 **Video 2 materials are complete** - script, cue card, visual aids, PowerPoint presentation, and blog post.
 **Video 3 materials are complete** - script, cue card, blog post, PowerPoint presentation, scenario mapping, and working tests.
-**Video 4 materials are complete** - sequence test for sellsOutDuringCheckout.
+**Video 4 materials are complete** - script, cue card, blog post, PowerPoint presentation, and sequence test.
 
 **Next milestone:** Record Videos 1-4. Cleanup PR for remaining scenarios is optional.
 
