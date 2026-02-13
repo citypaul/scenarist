@@ -1,5 +1,15 @@
 # @scenarist/nextjs-adapter
 
+## 0.4.7
+
+### Patch Changes
+
+- [#446](https://github.com/citypaul/scenarist/pull/446) [`e311588`](https://github.com/citypaul/scenarist/commit/e311588d31f38340b8130c8fbb072713cf89884e) Thanks [@citypaul](https://github.com/citypaul)! - Bump Next.js minimum version in example apps to >= 15.5.10 to address CVE-2026-23864 (RSC deserialization DoS) and CVE-2025-59471 (Image Optimizer DoS)
+
+- Updated dependencies [[`ec873c5`](https://github.com/citypaul/scenarist/commit/ec873c5d7cf845881bf039e452093f2982591a9c)]:
+  - @scenarist/core@0.4.7
+  - @scenarist/msw-adapter@0.4.7
+
 ## 0.4.6
 
 ### Patch Changes
