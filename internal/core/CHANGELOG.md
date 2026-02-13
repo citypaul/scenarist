@@ -1,5 +1,13 @@
 # @scenarist/core
 
+## 0.4.8
+
+### Patch Changes
+
+- [#457](https://github.com/citypaul/scenarist/pull/457) [`c32cad9`](https://github.com/citypaul/scenarist/commit/c32cad9a47ac2809d315af637d1ec987432cceed) Thanks [@citypaul](https://github.com/citypaul)! - Fix 4 transitive dependency vulnerabilities (devalue, h3, diff) by bumping astro to 5.17.2 in apps/docs
+
+- [#458](https://github.com/citypaul/scenarist/pull/458) [`dc12e3e`](https://github.com/citypaul/scenarist/commit/dc12e3edb8695a6c3babfaaa0cbe40f6b7ed3dcc) Thanks [@citypaul](https://github.com/citypaul)! - Update dependencies across all packages including eslint 10, vitest 4.0.18, zod 4.3.6, turbo 2.8.7, prettier 3.8.1, and msw 2.12.10
+
 ## 0.4.7
 
 ### Patch Changes
