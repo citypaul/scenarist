@@ -1,5 +1,11 @@
 # @scenarist/core
 
+## 0.4.7
+
+### Patch Changes
+
+- [#449](https://github.com/citypaul/scenarist/pull/449) [`ec873c5`](https://github.com/citypaul/scenarist/commit/ec873c5d7cf845881bf039e452093f2982591a9c) Thanks [@citypaul](https://github.com/citypaul)! - Fix 5 transitive dependency vulnerabilities (axios, fast-xml-parser, tar, lodash/lodash-es, qs) via pnpm overrides and wait-on update
+
 ## 0.4.6
 
 ### Patch Changes
