@@ -30,6 +30,12 @@ export const setupCartRoutes = (router: Router): void => {
 
       // GET current cart
       const getResponse = await fetch(CART_BACKEND_URL);
+
+      if (!getResponse.ok) {
+        const errorData = await getResponse.json();
+        return res.status(getResponse.status).json(errorData);
+      }
+
       const currentCart = await getResponse.json();
 
       // Route handles accumulation logic
@@ -41,6 +47,11 @@ export const setupCartRoutes = (router: Router): void => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items: updatedItems }),
       });
+
+      if (!patchResponse.ok) {
+        const errorData = await patchResponse.json();
+        return res.status(patchResponse.status).json(errorData);
+      }
 
       const data = await patchResponse.json();
       return res.json({
