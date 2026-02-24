@@ -246,6 +246,41 @@ export const createResponseSelector = (
     return { bestMatch, skippedExhaustedSequences };
   };
 
+  const applyResponseTemplates = (
+    testId: string,
+    response: ScenaristResponse,
+    params: Readonly<Record<string, string>> | undefined,
+  ): ScenaristResponse => {
+    if (!stateManager && !params) {
+      return response;
+    }
+    const templateData = {
+      state: stateManager ? stateManager.getAll(testId) : {},
+      params: params || {},
+    };
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- applyTemplates preserves structure; input ScenaristResponse → output ScenaristResponse
+    return applyTemplates(response, templateData) as ScenaristResponse;
+  };
+
+  const applyAfterResponseState = (
+    testId: string,
+    mock: ScenaristMock,
+    responseResult: MockResponseResult,
+    logContext: { testId: string; scenarioId: string },
+  ): void => {
+    const effectiveAfterResponse = resolveEffectiveAfterResponse(
+      mock.afterResponse,
+      responseResult.matchedCondition,
+    );
+    if (effectiveAfterResponse?.setState && stateManager) {
+      stateManager.merge(testId, effectiveAfterResponse.setState);
+      logger.debug(LogCategories.STATE, LogEvents.STATE_SET, logContext, {
+        setState: effectiveAfterResponse.setState,
+        source: responseResult.matchedCondition ? "condition" : "mock-level",
+      });
+    }
+  };
+
   const processMatchedMock = (
     testId: string,
     scenarioId: string,
@@ -282,31 +317,13 @@ export const createResponseSelector = (
       captureState(testId, context, mock.captureState, stateManager);
     }
 
-    let finalResponse = responseResult.response;
-    if (stateManager || mockWithParams.params) {
-      const currentState = stateManager ? stateManager.getAll(testId) : {};
-      const templateData = {
-        state: currentState,
-        params: mockWithParams.params || {},
-      };
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- applyTemplates preserves structure; input ScenaristResponse → output ScenaristResponse
-      finalResponse = applyTemplates(
-        responseResult.response,
-        templateData,
-      ) as ScenaristResponse;
-    }
-
-    const effectiveAfterResponse = resolveEffectiveAfterResponse(
-      mock.afterResponse,
-      responseResult.matchedCondition,
+    const finalResponse = applyResponseTemplates(
+      testId,
+      responseResult.response,
+      mockWithParams.params,
     );
-    if (effectiveAfterResponse?.setState && stateManager) {
-      stateManager.merge(testId, effectiveAfterResponse.setState);
-      logger.debug(LogCategories.STATE, LogEvents.STATE_SET, logContext, {
-        setState: effectiveAfterResponse.setState,
-        source: responseResult.matchedCondition ? "condition" : "mock-level",
-      });
-    }
+
+    applyAfterResponseState(testId, mock, responseResult, logContext);
 
     return { success: true, data: finalResponse };
   };
