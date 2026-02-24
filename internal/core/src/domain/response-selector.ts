@@ -249,7 +249,9 @@ export const createResponseSelector = (
   const applyResponseTemplates = (
     testId: string,
     response: ScenaristResponse,
-    params: Readonly<Record<string, string>> | undefined,
+    params:
+      | Readonly<Record<string, string | ReadonlyArray<string>>>
+      | undefined,
   ): ScenaristResponse => {
     if (!stateManager && !params) {
       return response;
