@@ -1,5 +1,16 @@
 # @scenarist/core
 
+## 0.4.9
+
+### Patch Changes
+
+- [#469](https://github.com/citypaul/scenarist/pull/469) [`ccb2b84`](https://github.com/citypaul/scenarist/commit/ccb2b84175b73fbe8f287896c468ff992ece89ba) Thanks [@citypaul](https://github.com/citypaul)! - refactor: decompose large functions and extract shared utilities in core
+  - Extract duplicated `isRecord` and `isDangerousKey` into shared `type-guards` module
+  - Decompose `selectResponse` (~266 lines) into focused helpers (~25-35 lines each)
+  - Extract error factory functions matching existing codebase patterns
+  - Extract `applyTemplatesToString` from `applyTemplates`
+  - Remove `console.error` that bypassed the Logger port in `matchesRegex`
+
 ## 0.4.8
 
 ### Patch Changes
