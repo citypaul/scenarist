@@ -42,6 +42,17 @@ type MockResponseResult = {
   readonly matchedCondition: StateCondition | null;
 };
 
+type MockMatch = {
+  readonly mockWithParams: ScenaristMockWithParams;
+  readonly mockIndex: number;
+  readonly specificity: number;
+};
+
+type FindBestMatchResult = {
+  readonly bestMatch: MockMatch | null;
+  readonly skippedExhaustedSequences: boolean;
+};
+
 /**
  * Options for creating a response selector.
  */
@@ -67,6 +78,181 @@ export const createResponseSelector = (
 ): ResponseSelector => {
   const { sequenceTracker, stateManager, logger = noOpLogger } = options;
 
+  const findBestMatch = (
+    testId: string,
+    scenarioId: string,
+    context: HttpRequestContext,
+    mocks: ReadonlyArray<ScenaristMockWithParams>,
+  ): FindBestMatchResult => {
+    const logContext = { testId, scenarioId };
+    let bestMatch: MockMatch | null = null;
+    let skippedExhaustedSequences = false;
+
+    for (let mockIndex = 0; mockIndex < mocks.length; mockIndex++) {
+      // eslint-disable-next-line security/detect-object-injection -- Index bounded by loop (0 <= i < length)
+      const mockWithParams = mocks[mockIndex]!;
+      const mock = mockWithParams.mock;
+
+      // Skip exhausted sequences (repeat: 'none' that have been exhausted)
+      if (mock.sequence && sequenceTracker) {
+        const { exhausted } = sequenceTracker.getPosition(
+          testId,
+          scenarioId,
+          mockIndex,
+        );
+        if (exhausted) {
+          skippedExhaustedSequences = true;
+          continue;
+        }
+      }
+
+      if (mock.match) {
+        const matched = matchesCriteria(
+          context,
+          mock.match,
+          testId,
+          stateManager,
+        );
+
+        logger.debug(
+          LogCategories.MATCHING,
+          LogEvents.MOCK_MATCH_EVALUATED,
+          logContext,
+          {
+            mockIndex,
+            matched,
+            hasCriteria: true,
+          },
+        );
+
+        if (matched) {
+          // Match criteria always have higher priority than fallbacks
+          // Base specificity ensures even 1 field beats any fallback
+          const specificity =
+            SPECIFICITY_RANGES.MATCH_CRITERIA_BASE +
+            calculateSpecificity(mock.match);
+
+          if (!bestMatch || specificity > bestMatch.specificity) {
+            bestMatch = { mockWithParams, mockIndex, specificity };
+          }
+        }
+        continue;
+      }
+
+      // No match criteria = fallback mock (always matches)
+      logger.debug(
+        LogCategories.MATCHING,
+        LogEvents.MOCK_MATCH_EVALUATED,
+        logContext,
+        {
+          mockIndex,
+          matched: true,
+          hasCriteria: false,
+          hasSequence: !!mock.sequence,
+          hasStateResponse: !!mock.stateResponse,
+          hasResponse: !!mock.response,
+        },
+      );
+
+      // Dynamic response types (sequence, stateResponse) get higher priority than simple responses
+      // Both sequence and stateResponse get the same specificity (Issue #316 fix)
+      const fallbackSpecificity =
+        mock.sequence || mock.stateResponse
+          ? SPECIFICITY_RANGES.SEQUENCE_FALLBACK
+          : SPECIFICITY_RANGES.SIMPLE_FALLBACK;
+
+      if (!bestMatch || fallbackSpecificity >= bestMatch.specificity) {
+        // For equal specificity fallbacks, last wins
+        // This allows active scenario mocks to override default mocks
+        bestMatch = {
+          mockWithParams,
+          mockIndex,
+          specificity: fallbackSpecificity,
+        };
+      }
+    }
+
+    return { bestMatch, skippedExhaustedSequences };
+  };
+
+  const processMatchedMock = (
+    testId: string,
+    scenarioId: string,
+    context: HttpRequestContext,
+    match: MockMatch,
+  ): ScenaristResult<ScenaristResponse, ScenaristError> => {
+    const logContext = { testId, scenarioId };
+    const { mockWithParams, mockIndex, specificity } = match;
+    const mock = mockWithParams.mock;
+
+    logger.info(LogCategories.MATCHING, LogEvents.MOCK_SELECTED, logContext, {
+      mockIndex,
+      specificity,
+    });
+
+    const responseResult = selectResponseFromMock(
+      testId,
+      scenarioId,
+      mockIndex,
+      mock,
+      sequenceTracker,
+      stateManager,
+      logger,
+    );
+
+    if (!responseResult) {
+      return {
+        success: false,
+        error: new ScenaristError(
+          `Mock has neither response nor sequence field`,
+          {
+            code: ErrorCodes.VALIDATION_ERROR,
+            context: {
+              testId,
+              scenarioId,
+              mockInfo: {
+                index: mockIndex,
+              },
+              hint: "Each mock must have a 'response', 'sequence', or 'stateResponse' field.",
+            },
+          },
+        ),
+      };
+    }
+
+    if (mock.captureState && stateManager) {
+      captureState(testId, context, mock.captureState, stateManager);
+    }
+
+    let finalResponse = responseResult.response;
+    if (stateManager || mockWithParams.params) {
+      const currentState = stateManager ? stateManager.getAll(testId) : {};
+      const templateData = {
+        state: currentState,
+        params: mockWithParams.params || {},
+      };
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- applyTemplates preserves structure; input ScenaristResponse → output ScenaristResponse
+      finalResponse = applyTemplates(
+        responseResult.response,
+        templateData,
+      ) as ScenaristResponse;
+    }
+
+    const effectiveAfterResponse = resolveEffectiveAfterResponse(
+      mock.afterResponse,
+      responseResult.matchedCondition,
+    );
+    if (effectiveAfterResponse?.setState && stateManager) {
+      stateManager.merge(testId, effectiveAfterResponse.setState);
+      logger.debug(LogCategories.STATE, LogEvents.STATE_SET, logContext, {
+        setState: effectiveAfterResponse.setState,
+        source: responseResult.matchedCondition ? "condition" : "mock-level",
+      });
+    }
+
+    return { success: true, data: finalResponse };
+  };
+
   return {
     selectResponse(
       testId: string,
@@ -76,218 +262,30 @@ export const createResponseSelector = (
     ): ScenaristResult<ScenaristResponse, ScenaristError> {
       const logContext = { testId, scenarioId };
 
-      // Log the number of candidate mocks
       logger.debug(
         LogCategories.MATCHING,
         LogEvents.MOCK_CANDIDATES_FOUND,
         logContext,
-        {
-          count: mocks.length,
-        },
+        { count: mocks.length },
       );
 
-      let bestMatch: {
-        mockWithParams: ScenaristMockWithParams;
-        mockIndex: number;
-        specificity: number;
-      } | null = null;
+      const { bestMatch, skippedExhaustedSequences } = findBestMatch(
+        testId,
+        scenarioId,
+        context,
+        mocks,
+      );
 
-      // Track if we skipped any exhausted sequences (for better error messages)
-      let skippedExhaustedSequences = false;
-
-      // Find all matching mocks and score them by specificity
-      for (let mockIndex = 0; mockIndex < mocks.length; mockIndex++) {
-        // eslint-disable-next-line security/detect-object-injection -- Index bounded by loop (0 <= i < length)
-        const mockWithParams = mocks[mockIndex]!;
-        const mock = mockWithParams.mock;
-
-        // Skip exhausted sequences (repeat: 'none' that have been exhausted)
-        if (mock.sequence && sequenceTracker) {
-          const { exhausted } = sequenceTracker.getPosition(
-            testId,
-            scenarioId,
-            mockIndex,
-          );
-          if (exhausted) {
-            skippedExhaustedSequences = true;
-            continue; // Skip to next mock, allowing fallback to be selected
-          }
-        }
-
-        // Check if this mock has match criteria
-        if (mock.match) {
-          // If match criteria exists, check if it matches the request
-          const matched = matchesCriteria(
-            context,
-            mock.match,
-            testId,
-            stateManager,
-          );
-
-          // Log the evaluation result
-          logger.debug(
-            LogCategories.MATCHING,
-            LogEvents.MOCK_MATCH_EVALUATED,
-            logContext,
-            {
-              mockIndex,
-              matched,
-              hasCriteria: true,
-            },
-          );
-
-          if (matched) {
-            // Match criteria always have higher priority than fallbacks
-            // Base specificity ensures even 1 field beats any fallback
-            const specificity =
-              SPECIFICITY_RANGES.MATCH_CRITERIA_BASE +
-              calculateSpecificity(mock.match);
-
-            // Keep this mock if it's more specific than current best
-            // (or if no best match yet)
-            if (!bestMatch || specificity > bestMatch.specificity) {
-              bestMatch = { mockWithParams, mockIndex, specificity };
-            }
-          }
-          // If match criteria exists but doesn't match, skip to next mock
-          continue;
-        }
-
-        // No match criteria = fallback mock (always matches)
-        // Log fallback evaluation with response type info for debugging Issue #328
-        logger.debug(
-          LogCategories.MATCHING,
-          LogEvents.MOCK_MATCH_EVALUATED,
-          logContext,
-          {
-            mockIndex,
-            matched: true,
-            hasCriteria: false,
-            hasSequence: !!mock.sequence,
-            hasStateResponse: !!mock.stateResponse,
-            hasResponse: !!mock.response,
-          },
-        );
-
-        // Dynamic response types (sequence, stateResponse) get higher priority than simple responses
-        // This ensures they are selected over simple fallback responses
-        // Both sequence and stateResponse get the same specificity (Issue #316 fix)
-        const fallbackSpecificity =
-          mock.sequence || mock.stateResponse
-            ? SPECIFICITY_RANGES.SEQUENCE_FALLBACK
-            : SPECIFICITY_RANGES.SIMPLE_FALLBACK;
-
-        if (!bestMatch || fallbackSpecificity >= bestMatch.specificity) {
-          // For equal specificity fallbacks, last wins
-          // This allows active scenario mocks to override default mocks
-          // Applies to both simple fallbacks (0) and sequence fallbacks (1)
-          bestMatch = {
-            mockWithParams,
-            mockIndex,
-            specificity: fallbackSpecificity,
-          };
-        }
-      }
-
-      // Return the best matching mock
       if (bestMatch) {
-        const { mockWithParams, mockIndex, specificity } = bestMatch;
-        const mock = mockWithParams.mock;
-
-        // Log successful selection
-        logger.info(
-          LogCategories.MATCHING,
-          LogEvents.MOCK_SELECTED,
-          logContext,
-          {
-            mockIndex,
-            specificity,
-          },
-        );
-
-        // Select response (single, sequence, or stateResponse)
-        const responseResult = selectResponseFromMock(
-          testId,
-          scenarioId,
-          mockIndex,
-          mock,
-          sequenceTracker,
-          stateManager,
-          logger,
-        );
-
-        if (!responseResult) {
-          return {
-            success: false,
-            error: new ScenaristError(
-              `Mock has neither response nor sequence field`,
-              {
-                code: ErrorCodes.VALIDATION_ERROR,
-                context: {
-                  testId,
-                  scenarioId,
-                  mockInfo: {
-                    index: mockIndex,
-                  },
-                  hint: "Each mock must have a 'response', 'sequence', or 'stateResponse' field.",
-                },
-              },
-            ),
-          };
-        }
-
-        // Phase 3: Capture state from request if configured
-        if (mock.captureState && stateManager) {
-          captureState(testId, context, mock.captureState, stateManager);
-        }
-
-        // Apply templates to response (both state AND params)
-        let finalResponse = responseResult.response;
-        if (stateManager || mockWithParams.params) {
-          const currentState = stateManager ? stateManager.getAll(testId) : {};
-          // Merge state and params for template replacement
-          // params take precedence over state for the same key
-          const templateData = {
-            state: currentState,
-            params: mockWithParams.params || {},
-          };
-          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- applyTemplates preserves structure; input ScenaristResponse → output ScenaristResponse
-          finalResponse = applyTemplates(
-            responseResult.response,
-            templateData,
-          ) as ScenaristResponse;
-        }
-
-        // Apply afterResponse.setState to mutate state for subsequent requests
-        // Uses condition-level afterResponse if available (#338)
-        const effectiveAfterResponse = resolveEffectiveAfterResponse(
-          mock.afterResponse,
-          responseResult.matchedCondition,
-        );
-        if (effectiveAfterResponse?.setState && stateManager) {
-          stateManager.merge(testId, effectiveAfterResponse.setState);
-          logger.debug(LogCategories.STATE, LogEvents.STATE_SET, logContext, {
-            setState: effectiveAfterResponse.setState,
-            source: responseResult.matchedCondition
-              ? "condition"
-              : "mock-level",
-          });
-        }
-
-        return { success: true, data: finalResponse };
+        return processMatchedMock(testId, scenarioId, context, bestMatch);
       }
 
-      // No mock matched - determine specific error type
       if (skippedExhaustedSequences) {
-        // All matching mocks were exhausted sequences
         logger.warn(
           LogCategories.SEQUENCE,
           LogEvents.SEQUENCE_EXHAUSTED,
           logContext,
-          {
-            url: context.url,
-            method: context.method,
-          },
+          { url: context.url, method: context.method },
         );
 
         return {
