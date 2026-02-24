@@ -65,7 +65,7 @@ jobs:
 
       - name: Initialize CodeQL
         if: steps.check-version-pr.outputs.skip != 'true'
-        uses: github/codeql-action/init@19b2f06db2b6f5108140aeb04014ef02b648f789 # v4
+        uses: github/codeql-action/init@9e907b5e64f6b83e7804b09294d44122997950d6 # v4
         with:
           languages: ${{ matrix.language }}
           # Use security-extended for more comprehensive security checks
@@ -73,10 +73,10 @@ jobs:
 
       - name: Autobuild
         if: steps.check-version-pr.outputs.skip != 'true'
-        uses: github/codeql-action/autobuild@19b2f06db2b6f5108140aeb04014ef02b648f789 # v4
+        uses: github/codeql-action/autobuild@9e907b5e64f6b83e7804b09294d44122997950d6 # v4
 
       - name: Perform CodeQL Analysis
         if: steps.check-version-pr.outputs.skip != 'true'
-        uses: github/codeql-action/analyze@19b2f06db2b6f5108140aeb04014ef02b648f789 # v4
+        uses: github/codeql-action/analyze@9e907b5e64f6b83e7804b09294d44122997950d6 # v4
         with:
           category: "/language:${{matrix.language}}"
