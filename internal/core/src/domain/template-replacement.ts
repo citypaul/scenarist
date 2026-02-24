@@ -13,7 +13,6 @@ import { isRecord, isDangerousKey } from "./type-guards.js";
  *                       Can be flat object (backward compatible) or { state: {...}, params: {...} }
  * @returns Value with templates replaced
  */
-// Using {1,256} limit on regex to prevent ReDoS attacks with malicious input
 const PURE_TEMPLATE_PATTERN = /^\{\{(state|params)\.([^}]{1,256})\}\}$/;
 const MIXED_TEMPLATE_PATTERN = /\{\{(state|params)\.([^}]{1,256})\}\}/g;
 
@@ -24,16 +23,13 @@ const applyTemplatesToString = (
   const pureTemplateMatch = PURE_TEMPLATE_PATTERN.exec(value);
 
   if (pureTemplateMatch) {
-    // Pure template: return raw value (preserves type - arrays, numbers, objects)
     const prefix = pureTemplateMatch[1]!;
     const path = pureTemplateMatch[2]!;
     const resolvedValue = resolveTemplatePath(templateData, prefix, path);
 
-    // null instead of undefined to ensure JSON serialization preserves the field
     return resolvedValue !== undefined ? resolvedValue : null;
   }
 
-  // Mixed template (has surrounding text): use string replacement
   return value.replace(
     MIXED_TEMPLATE_PATTERN,
     (match, prefix: string, path: string) => {

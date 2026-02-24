@@ -53,20 +53,21 @@ type FindBestMatchResult = {
   readonly skippedExhaustedSequences: boolean;
 };
 
-/**
- * Options for creating a response selector.
- */
 type CreateResponseSelectorOptions = {
-  sequenceTracker?: SequenceTracker; // Optional for Phase 2
-  stateManager?: StateManager; // Optional for Phase 3
-  logger?: Logger; // Optional for logging
+  sequenceTracker?: SequenceTracker;
+  stateManager?: StateManager;
+  logger?: Logger;
 };
 
-const createSequenceExhaustedError = (
-  testId: string,
-  scenarioId: string,
-  context: HttpRequestContext,
-): ScenaristError =>
+const createSequenceExhaustedError = ({
+  testId,
+  scenarioId,
+  context,
+}: {
+  testId: string;
+  scenarioId: string;
+  context: HttpRequestContext;
+}): ScenaristError =>
   new ScenaristError(
     `Sequence exhausted for ${context.method} ${context.url}. All responses have been consumed and repeat mode is 'none'.`,
     {
@@ -83,11 +84,15 @@ const createSequenceExhaustedError = (
     },
   );
 
-const createNoMockFoundError = (
-  testId: string,
-  scenarioId: string,
-  context: HttpRequestContext,
-): ScenaristError =>
+const createNoMockFoundError = ({
+  testId,
+  scenarioId,
+  context,
+}: {
+  testId: string;
+  scenarioId: string;
+  context: HttpRequestContext;
+}): ScenaristError =>
   new ScenaristError(`No mock matched for ${context.method} ${context.url}`, {
     code: ErrorCodes.NO_MOCK_FOUND,
     context: {
@@ -101,11 +106,15 @@ const createNoMockFoundError = (
     },
   });
 
-const createNoResponseTypeError = (
-  testId: string,
-  scenarioId: string,
-  mockIndex: number,
-): ScenaristError =>
+const createNoResponseTypeError = ({
+  testId,
+  scenarioId,
+  mockIndex,
+}: {
+  testId: string;
+  scenarioId: string;
+  mockIndex: number;
+}): ScenaristError =>
   new ScenaristError(`Mock has neither response nor sequence field`, {
     code: ErrorCodes.VALIDATION_ERROR,
     context: {
@@ -134,26 +143,40 @@ export const createResponseSelector = (
 ): ResponseSelector => {
   const { sequenceTracker, stateManager, logger = noOpLogger } = options;
 
-  const isExhaustedSequence = (
-    testId: string,
-    scenarioId: string,
-    mockIndex: number,
-    mock: ScenaristMock,
-  ): boolean => {
+  const isExhaustedSequence = ({
+    testId,
+    scenarioId,
+    mockIndex,
+    mock,
+  }: {
+    testId: string;
+    scenarioId: string;
+    mockIndex: number;
+    mock: ScenaristMock;
+  }): boolean => {
     if (!mock.sequence || !sequenceTracker) {
       return false;
     }
     return sequenceTracker.getPosition(testId, scenarioId, mockIndex).exhausted;
   };
 
-  const scoreCriteriaMatch = (
-    context: HttpRequestContext,
-    criteria: NonNullable<ScenaristMock["match"]>,
-    testId: string,
-    mockIndex: number,
-    logContext: { testId: string; scenarioId: string },
-  ): number | null => {
-    const matched = matchesCriteria(context, criteria, testId, stateManager);
+  const scoreCriteriaMatch = ({
+    context,
+    criteria,
+    mockIndex,
+    logContext,
+  }: {
+    context: HttpRequestContext;
+    criteria: NonNullable<ScenaristMock["match"]>;
+    mockIndex: number;
+    logContext: { testId: string; scenarioId: string };
+  }): number | null => {
+    const matched = matchesCriteria(
+      context,
+      criteria,
+      logContext.testId,
+      stateManager,
+    );
 
     logger.debug(
       LogCategories.MATCHING,
@@ -171,11 +194,15 @@ export const createResponseSelector = (
     );
   };
 
-  const scoreFallback = (
-    mock: ScenaristMock,
-    mockIndex: number,
-    logContext: { testId: string; scenarioId: string },
-  ): number => {
+  const scoreFallback = ({
+    mock,
+    mockIndex,
+    logContext,
+  }: {
+    mock: ScenaristMock;
+    mockIndex: number;
+    logContext: { testId: string; scenarioId: string };
+  }): number => {
     logger.debug(
       LogCategories.MATCHING,
       LogEvents.MOCK_MATCH_EVALUATED,
@@ -190,19 +217,22 @@ export const createResponseSelector = (
       },
     );
 
-    // Dynamic response types get higher priority than simple responses
-    // Both sequence and stateResponse get the same specificity (Issue #316 fix)
     return mock.sequence || mock.stateResponse
       ? SPECIFICITY_RANGES.SEQUENCE_FALLBACK
       : SPECIFICITY_RANGES.SIMPLE_FALLBACK;
   };
 
-  const findBestMatch = (
-    testId: string,
-    scenarioId: string,
-    context: HttpRequestContext,
-    mocks: ReadonlyArray<ScenaristMockWithParams>,
-  ): FindBestMatchResult => {
+  const findBestMatch = ({
+    testId,
+    scenarioId,
+    context,
+    mocks,
+  }: {
+    testId: string;
+    scenarioId: string;
+    context: HttpRequestContext;
+    mocks: ReadonlyArray<ScenaristMockWithParams>;
+  }): FindBestMatchResult => {
     const logContext = { testId, scenarioId };
     let bestMatch: MockMatch | null = null;
     let skippedExhaustedSequences = false;
@@ -212,19 +242,18 @@ export const createResponseSelector = (
       const mockWithParams = mocks[mockIndex]!;
       const mock = mockWithParams.mock;
 
-      if (isExhaustedSequence(testId, scenarioId, mockIndex, mock)) {
+      if (isExhaustedSequence({ testId, scenarioId, mockIndex, mock })) {
         skippedExhaustedSequences = true;
         continue;
       }
 
       if (mock.match) {
-        const specificity = scoreCriteriaMatch(
+        const specificity = scoreCriteriaMatch({
           context,
-          mock.match,
-          testId,
+          criteria: mock.match,
           mockIndex,
           logContext,
-        );
+        });
         if (
           specificity !== null &&
           (!bestMatch || specificity > bestMatch.specificity)
@@ -234,11 +263,8 @@ export const createResponseSelector = (
         continue;
       }
 
-      // No match criteria = fallback mock (always matches)
-      const specificity = scoreFallback(mock, mockIndex, logContext);
+      const specificity = scoreFallback({ mock, mockIndex, logContext });
       if (!bestMatch || specificity >= bestMatch.specificity) {
-        // For equal specificity fallbacks, last wins
-        // This allows active scenario mocks to override default mocks
         bestMatch = { mockWithParams, mockIndex, specificity };
       }
     }
@@ -246,13 +272,17 @@ export const createResponseSelector = (
     return { bestMatch, skippedExhaustedSequences };
   };
 
-  const applyResponseTemplates = (
-    testId: string,
-    response: ScenaristResponse,
+  const applyResponseTemplates = ({
+    testId,
+    response,
+    params,
+  }: {
+    testId: string;
+    response: ScenaristResponse;
     params:
       | Readonly<Record<string, string | ReadonlyArray<string>>>
-      | undefined,
-  ): ScenaristResponse => {
+      | undefined;
+  }): ScenaristResponse => {
     if (!stateManager && !params) {
       return response;
     }
@@ -264,12 +294,17 @@ export const createResponseSelector = (
     return applyTemplates(response, templateData) as ScenaristResponse;
   };
 
-  const applyAfterResponseState = (
-    testId: string,
-    mock: ScenaristMock,
-    responseResult: MockResponseResult,
-    logContext: { testId: string; scenarioId: string },
-  ): void => {
+  const applyAfterResponseState = ({
+    testId,
+    mock,
+    responseResult,
+    logContext,
+  }: {
+    testId: string;
+    mock: ScenaristMock;
+    responseResult: MockResponseResult;
+    logContext: { testId: string; scenarioId: string };
+  }): void => {
     const effectiveAfterResponse = resolveEffectiveAfterResponse(
       mock.afterResponse,
       responseResult.matchedCondition,
@@ -283,12 +318,17 @@ export const createResponseSelector = (
     }
   };
 
-  const processMatchedMock = (
-    testId: string,
-    scenarioId: string,
-    context: HttpRequestContext,
-    match: MockMatch,
-  ): ScenaristResult<ScenaristResponse, ScenaristError> => {
+  const processMatchedMock = ({
+    testId,
+    scenarioId,
+    context,
+    match,
+  }: {
+    testId: string;
+    scenarioId: string;
+    context: HttpRequestContext;
+    match: MockMatch;
+  }): ScenaristResult<ScenaristResponse, ScenaristError> => {
     const logContext = { testId, scenarioId };
     const { mockWithParams, mockIndex, specificity } = match;
     const mock = mockWithParams.mock;
@@ -311,7 +351,7 @@ export const createResponseSelector = (
     if (!responseResult) {
       return {
         success: false,
-        error: createNoResponseTypeError(testId, scenarioId, mockIndex),
+        error: createNoResponseTypeError({ testId, scenarioId, mockIndex }),
       };
     }
 
@@ -319,13 +359,13 @@ export const createResponseSelector = (
       captureState(testId, context, mock.captureState, stateManager);
     }
 
-    const finalResponse = applyResponseTemplates(
+    const finalResponse = applyResponseTemplates({
       testId,
-      responseResult.response,
-      mockWithParams.params,
-    );
+      response: responseResult.response,
+      params: mockWithParams.params,
+    });
 
-    applyAfterResponseState(testId, mock, responseResult, logContext);
+    applyAfterResponseState({ testId, mock, responseResult, logContext });
 
     return { success: true, data: finalResponse };
   };
@@ -346,15 +386,20 @@ export const createResponseSelector = (
         { count: mocks.length },
       );
 
-      const { bestMatch, skippedExhaustedSequences } = findBestMatch(
+      const { bestMatch, skippedExhaustedSequences } = findBestMatch({
         testId,
         scenarioId,
         context,
         mocks,
-      );
+      });
 
       if (bestMatch) {
-        return processMatchedMock(testId, scenarioId, context, bestMatch);
+        return processMatchedMock({
+          testId,
+          scenarioId,
+          context,
+          match: bestMatch,
+        });
       }
 
       if (skippedExhaustedSequences) {
@@ -367,7 +412,7 @@ export const createResponseSelector = (
 
         return {
           success: false,
-          error: createSequenceExhaustedError(testId, scenarioId, context),
+          error: createSequenceExhaustedError({ testId, scenarioId, context }),
         };
       }
 
@@ -379,7 +424,7 @@ export const createResponseSelector = (
 
       return {
         success: false,
-        error: createNoMockFoundError(testId, scenarioId, context),
+        error: createNoMockFoundError({ testId, scenarioId, context }),
       };
     },
   };
