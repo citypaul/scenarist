@@ -234,42 +234,45 @@ export const createResponseSelector = (
     mocks: ReadonlyArray<ScenaristMockWithParams>;
   }): FindBestMatchResult => {
     const logContext = { testId, scenarioId };
-    let bestMatch: MockMatch | null = null;
-    let skippedExhaustedSequences = false;
 
-    for (let mockIndex = 0; mockIndex < mocks.length; mockIndex++) {
-      // eslint-disable-next-line security/detect-object-injection -- Index bounded by loop (0 <= i < length)
-      const mockWithParams = mocks[mockIndex]!;
-      const mock = mockWithParams.mock;
+    return mocks.reduce<FindBestMatchResult>(
+      (acc, mockWithParams, mockIndex) => {
+        const mock = mockWithParams.mock;
 
-      if (isExhaustedSequence({ testId, scenarioId, mockIndex, mock })) {
-        skippedExhaustedSequences = true;
-        continue;
-      }
-
-      if (mock.match) {
-        const specificity = scoreCriteriaMatch({
-          context,
-          criteria: mock.match,
-          mockIndex,
-          logContext,
-        });
-        if (
-          specificity !== null &&
-          (!bestMatch || specificity > bestMatch.specificity)
-        ) {
-          bestMatch = { mockWithParams, mockIndex, specificity };
+        if (isExhaustedSequence({ testId, scenarioId, mockIndex, mock })) {
+          return { ...acc, skippedExhaustedSequences: true };
         }
-        continue;
-      }
 
-      const specificity = scoreFallback({ mock, mockIndex, logContext });
-      if (!bestMatch || specificity >= bestMatch.specificity) {
-        bestMatch = { mockWithParams, mockIndex, specificity };
-      }
-    }
+        if (mock.match) {
+          const specificity = scoreCriteriaMatch({
+            context,
+            criteria: mock.match,
+            mockIndex,
+            logContext,
+          });
+          if (
+            specificity !== null &&
+            (!acc.bestMatch || specificity > acc.bestMatch.specificity)
+          ) {
+            return {
+              ...acc,
+              bestMatch: { mockWithParams, mockIndex, specificity },
+            };
+          }
+          return acc;
+        }
 
-    return { bestMatch, skippedExhaustedSequences };
+        const specificity = scoreFallback({ mock, mockIndex, logContext });
+        if (!acc.bestMatch || specificity >= acc.bestMatch.specificity) {
+          return {
+            ...acc,
+            bestMatch: { mockWithParams, mockIndex, specificity },
+          };
+        }
+        return acc;
+      },
+      { bestMatch: null, skippedExhaustedSequences: false },
+    );
   };
 
   const applyResponseTemplates = ({
