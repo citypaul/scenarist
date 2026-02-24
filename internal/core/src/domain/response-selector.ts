@@ -134,6 +134,69 @@ export const createResponseSelector = (
 ): ResponseSelector => {
   const { sequenceTracker, stateManager, logger = noOpLogger } = options;
 
+  const isExhaustedSequence = (
+    testId: string,
+    scenarioId: string,
+    mockIndex: number,
+    mock: ScenaristMock,
+  ): boolean => {
+    if (!mock.sequence || !sequenceTracker) {
+      return false;
+    }
+    return sequenceTracker.getPosition(testId, scenarioId, mockIndex).exhausted;
+  };
+
+  const scoreCriteriaMatch = (
+    context: HttpRequestContext,
+    criteria: NonNullable<ScenaristMock["match"]>,
+    testId: string,
+    mockIndex: number,
+    logContext: { testId: string; scenarioId: string },
+  ): number | null => {
+    const matched = matchesCriteria(context, criteria, testId, stateManager);
+
+    logger.debug(
+      LogCategories.MATCHING,
+      LogEvents.MOCK_MATCH_EVALUATED,
+      logContext,
+      { mockIndex, matched, hasCriteria: true },
+    );
+
+    if (!matched) {
+      return null;
+    }
+
+    return (
+      SPECIFICITY_RANGES.MATCH_CRITERIA_BASE + calculateSpecificity(criteria)
+    );
+  };
+
+  const scoreFallback = (
+    mock: ScenaristMock,
+    mockIndex: number,
+    logContext: { testId: string; scenarioId: string },
+  ): number => {
+    logger.debug(
+      LogCategories.MATCHING,
+      LogEvents.MOCK_MATCH_EVALUATED,
+      logContext,
+      {
+        mockIndex,
+        matched: true,
+        hasCriteria: false,
+        hasSequence: !!mock.sequence,
+        hasStateResponse: !!mock.stateResponse,
+        hasResponse: !!mock.response,
+      },
+    );
+
+    // Dynamic response types get higher priority than simple responses
+    // Both sequence and stateResponse get the same specificity (Issue #316 fix)
+    return mock.sequence || mock.stateResponse
+      ? SPECIFICITY_RANGES.SEQUENCE_FALLBACK
+      : SPECIFICITY_RANGES.SIMPLE_FALLBACK;
+  };
+
   const findBestMatch = (
     testId: string,
     scenarioId: string,
@@ -149,82 +212,34 @@ export const createResponseSelector = (
       const mockWithParams = mocks[mockIndex]!;
       const mock = mockWithParams.mock;
 
-      // Skip exhausted sequences (repeat: 'none' that have been exhausted)
-      if (mock.sequence && sequenceTracker) {
-        const { exhausted } = sequenceTracker.getPosition(
-          testId,
-          scenarioId,
-          mockIndex,
-        );
-        if (exhausted) {
-          skippedExhaustedSequences = true;
-          continue;
-        }
+      if (isExhaustedSequence(testId, scenarioId, mockIndex, mock)) {
+        skippedExhaustedSequences = true;
+        continue;
       }
 
       if (mock.match) {
-        const matched = matchesCriteria(
+        const specificity = scoreCriteriaMatch(
           context,
           mock.match,
           testId,
-          stateManager,
-        );
-
-        logger.debug(
-          LogCategories.MATCHING,
-          LogEvents.MOCK_MATCH_EVALUATED,
+          mockIndex,
           logContext,
-          {
-            mockIndex,
-            matched,
-            hasCriteria: true,
-          },
         );
-
-        if (matched) {
-          // Match criteria always have higher priority than fallbacks
-          // Base specificity ensures even 1 field beats any fallback
-          const specificity =
-            SPECIFICITY_RANGES.MATCH_CRITERIA_BASE +
-            calculateSpecificity(mock.match);
-
-          if (!bestMatch || specificity > bestMatch.specificity) {
-            bestMatch = { mockWithParams, mockIndex, specificity };
-          }
+        if (
+          specificity !== null &&
+          (!bestMatch || specificity > bestMatch.specificity)
+        ) {
+          bestMatch = { mockWithParams, mockIndex, specificity };
         }
         continue;
       }
 
       // No match criteria = fallback mock (always matches)
-      logger.debug(
-        LogCategories.MATCHING,
-        LogEvents.MOCK_MATCH_EVALUATED,
-        logContext,
-        {
-          mockIndex,
-          matched: true,
-          hasCriteria: false,
-          hasSequence: !!mock.sequence,
-          hasStateResponse: !!mock.stateResponse,
-          hasResponse: !!mock.response,
-        },
-      );
-
-      // Dynamic response types (sequence, stateResponse) get higher priority than simple responses
-      // Both sequence and stateResponse get the same specificity (Issue #316 fix)
-      const fallbackSpecificity =
-        mock.sequence || mock.stateResponse
-          ? SPECIFICITY_RANGES.SEQUENCE_FALLBACK
-          : SPECIFICITY_RANGES.SIMPLE_FALLBACK;
-
-      if (!bestMatch || fallbackSpecificity >= bestMatch.specificity) {
+      const specificity = scoreFallback(mock, mockIndex, logContext);
+      if (!bestMatch || specificity >= bestMatch.specificity) {
         // For equal specificity fallbacks, last wins
         // This allows active scenario mocks to override default mocks
-        bestMatch = {
-          mockWithParams,
-          mockIndex,
-          specificity: fallbackSpecificity,
-        };
+        bestMatch = { mockWithParams, mockIndex, specificity };
       }
     }
 
