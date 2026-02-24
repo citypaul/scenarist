@@ -1,16 +1,5 @@
 import type { StateManager } from "../ports/driven/state-manager.js";
-
-const DANGEROUS_KEYS = new Set(["__proto__", "constructor", "prototype"]);
-
-const isDangerousKey = (key: string): boolean => DANGEROUS_KEYS.has(key);
-
-/**
- * Type guard to check if a value is a plain object (Record).
- * Used to properly narrow types after typeof checks.
- */
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-};
+import { isRecord, isDangerousKey } from "../domain/type-guards.js";
 
 /**
  * In-memory implementation of StateManager port.

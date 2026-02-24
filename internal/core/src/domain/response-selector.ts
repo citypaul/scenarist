@@ -17,6 +17,7 @@ import { applyTemplates } from "./template-replacement.js";
 import { matchesRegex } from "./regex-matching.js";
 import { createStateResponseResolver } from "./state-response-resolver.js";
 import { deepEquals } from "./deep-equals.js";
+import { isRecord } from "./type-guards.js";
 import type { MatchValue } from "../schemas/scenario-definition.js";
 import type {
   StateCondition,
@@ -24,14 +25,6 @@ import type {
 } from "../schemas/state-aware-mocking.js";
 import { noOpLogger } from "../adapters/index.js";
 import { LogCategories, LogEvents } from "./log-events.js";
-
-/**
- * Type guard to check if a value is a plain object (Record).
- * Used to properly narrow types after typeof checks.
- */
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-};
 
 const SPECIFICITY_RANGES = {
   MATCH_CRITERIA_BASE: 100,
