@@ -62,6 +62,62 @@ type CreateResponseSelectorOptions = {
   logger?: Logger; // Optional for logging
 };
 
+const createSequenceExhaustedError = (
+  testId: string,
+  scenarioId: string,
+  context: HttpRequestContext,
+): ScenaristError =>
+  new ScenaristError(
+    `Sequence exhausted for ${context.method} ${context.url}. All responses have been consumed and repeat mode is 'none'.`,
+    {
+      code: ErrorCodes.SEQUENCE_EXHAUSTED,
+      context: {
+        testId,
+        scenarioId,
+        requestInfo: {
+          method: context.method,
+          url: context.url,
+        },
+        hint: "Add a fallback mock to handle requests after sequence exhaustion, or use repeat: 'last' or 'cycle' instead of 'none'.",
+      },
+    },
+  );
+
+const createNoMockFoundError = (
+  testId: string,
+  scenarioId: string,
+  context: HttpRequestContext,
+): ScenaristError =>
+  new ScenaristError(`No mock matched for ${context.method} ${context.url}`, {
+    code: ErrorCodes.NO_MOCK_FOUND,
+    context: {
+      testId,
+      scenarioId,
+      requestInfo: {
+        method: context.method,
+        url: context.url,
+      },
+      hint: "Add a fallback mock (without match criteria) to handle unmatched requests, or add a mock with matching criteria.",
+    },
+  });
+
+const createNoResponseTypeError = (
+  testId: string,
+  scenarioId: string,
+  mockIndex: number,
+): ScenaristError =>
+  new ScenaristError(`Mock has neither response nor sequence field`, {
+    code: ErrorCodes.VALIDATION_ERROR,
+    context: {
+      testId,
+      scenarioId,
+      mockInfo: {
+        index: mockIndex,
+      },
+      hint: "Each mock must have a 'response', 'sequence', or 'stateResponse' field.",
+    },
+  });
+
 /**
  * Creates a response selector domain service.
  *
@@ -203,20 +259,7 @@ export const createResponseSelector = (
     if (!responseResult) {
       return {
         success: false,
-        error: new ScenaristError(
-          `Mock has neither response nor sequence field`,
-          {
-            code: ErrorCodes.VALIDATION_ERROR,
-            context: {
-              testId,
-              scenarioId,
-              mockInfo: {
-                index: mockIndex,
-              },
-              hint: "Each mock must have a 'response', 'sequence', or 'stateResponse' field.",
-            },
-          },
-        ),
+        error: createNoResponseTypeError(testId, scenarioId, mockIndex),
       };
     }
 
@@ -290,21 +333,7 @@ export const createResponseSelector = (
 
         return {
           success: false,
-          error: new ScenaristError(
-            `Sequence exhausted for ${context.method} ${context.url}. All responses have been consumed and repeat mode is 'none'.`,
-            {
-              code: ErrorCodes.SEQUENCE_EXHAUSTED,
-              context: {
-                testId,
-                scenarioId,
-                requestInfo: {
-                  method: context.method,
-                  url: context.url,
-                },
-                hint: "Add a fallback mock to handle requests after sequence exhaustion, or use repeat: 'last' or 'cycle' instead of 'none'.",
-              },
-            },
-          ),
+          error: createSequenceExhaustedError(testId, scenarioId, context),
         };
       }
 
@@ -316,21 +345,7 @@ export const createResponseSelector = (
 
       return {
         success: false,
-        error: new ScenaristError(
-          `No mock matched for ${context.method} ${context.url}`,
-          {
-            code: ErrorCodes.NO_MOCK_FOUND,
-            context: {
-              testId,
-              scenarioId,
-              requestInfo: {
-                method: context.method,
-                url: context.url,
-              },
-              hint: "Add a fallback mock (without match criteria) to handle unmatched requests, or add a mock with matching criteria.",
-            },
-          },
-        ),
+        error: createNoMockFoundError(testId, scenarioId, context),
       };
     },
   };

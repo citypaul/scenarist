@@ -13,61 +13,62 @@ import { isRecord, isDangerousKey } from "./type-guards.js";
  *                       Can be flat object (backward compatible) or { state: {...}, params: {...} }
  * @returns Value with templates replaced
  */
+// Using {1,256} limit on regex to prevent ReDoS attacks with malicious input
+const PURE_TEMPLATE_PATTERN = /^\{\{(state|params)\.([^}]{1,256})\}\}$/;
+const MIXED_TEMPLATE_PATTERN = /\{\{(state|params)\.([^}]{1,256})\}\}/g;
+
+const applyTemplatesToString = (
+  value: string,
+  templateData: Record<string, unknown>,
+): unknown => {
+  const pureTemplateMatch = PURE_TEMPLATE_PATTERN.exec(value);
+
+  if (pureTemplateMatch) {
+    // Pure template: return raw value (preserves type - arrays, numbers, objects)
+    const prefix = pureTemplateMatch[1]!;
+    const path = pureTemplateMatch[2]!;
+    const resolvedValue = resolveTemplatePath(templateData, prefix, path);
+
+    // null instead of undefined to ensure JSON serialization preserves the field
+    return resolvedValue !== undefined ? resolvedValue : null;
+  }
+
+  // Mixed template (has surrounding text): use string replacement
+  return value.replace(
+    MIXED_TEMPLATE_PATTERN,
+    (match, prefix: string, path: string) => {
+      const resolvedValue = resolveTemplatePath(templateData, prefix, path);
+
+      if (resolvedValue === undefined) {
+        return match;
+      }
+
+      return String(resolvedValue);
+    },
+  );
+};
+
+const normalizeTemplateData = (
+  templateData: Record<string, unknown>,
+): Record<string, unknown> =>
+  templateData.state !== undefined || templateData.params !== undefined
+    ? templateData
+    : { state: templateData, params: {} };
+
 export const applyTemplates = (
   value: unknown,
   templateData: Record<string, unknown>,
 ): unknown => {
-  // Backward compatibility: If templateData doesn't have 'state' or 'params' keys,
-  // treat it as a flat state object and wrap it
-  const normalizedData =
-    templateData.state !== undefined || templateData.params !== undefined
-      ? templateData
-      : { state: templateData, params: {} };
-  // Guard: Handle strings (base case)
+  const normalizedData = normalizeTemplateData(templateData);
+
   if (typeof value === "string") {
-    // Check if entire string is a single pure template (no surrounding text)
-    // Supports both {{state.key}} and {{params.key}}
-    // Using {1,256} limit to prevent ReDoS attacks with malicious input
-    const pureTemplateMatch = /^\{\{(state|params)\.([^}]{1,256})\}\}$/.exec(
-      value,
-    );
-
-    if (pureTemplateMatch) {
-      // Pure template: return raw value (preserves type - arrays, numbers, objects)
-      const prefix = pureTemplateMatch[1]!; // 'state' or 'params'
-      const path = pureTemplateMatch[2]!; // Guaranteed to exist by regex capture group
-      const resolvedValue = resolveTemplatePath(normalizedData, prefix, path);
-
-      // Return raw value if found, otherwise return null (JSON-safe)
-      // null is used instead of undefined to ensure JSON serialization preserves the field
-      return resolvedValue !== undefined ? resolvedValue : null;
-    }
-
-    // Mixed template (has surrounding text): use string replacement
-    // Supports both {{state.key}} and {{params.key}}
-    // Using {1,256} limit to prevent ReDoS attacks with malicious input
-    return value.replace(
-      /\{\{(state|params)\.([^}]{1,256})\}\}/g,
-      (match, prefix: string, path: string) => {
-        const resolvedValue = resolveTemplatePath(normalizedData, prefix, path);
-
-        // Guard: Missing keys remain as template
-        if (resolvedValue === undefined) {
-          return match;
-        }
-
-        // Convert to string for concatenation with surrounding text
-        return String(resolvedValue);
-      },
-    );
+    return applyTemplatesToString(value, normalizedData);
   }
 
-  // Guard: Handle arrays recursively
   if (Array.isArray(value)) {
     return value.map((item) => applyTemplates(item, normalizedData));
   }
 
-  // Guard: Handle objects recursively
   if (typeof value === "object" && value !== null) {
     const result: Record<string, unknown> = {};
     for (const [key, val] of Object.entries(value)) {
@@ -77,7 +78,6 @@ export const applyTemplates = (
     return result;
   }
 
-  // Primitives (number, boolean, null) returned unchanged
   return value;
 };
 
