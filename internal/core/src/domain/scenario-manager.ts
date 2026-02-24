@@ -45,6 +45,22 @@ const createScenarioValidationError = (
   );
 };
 
+const createScenarioNotFoundError = (
+  scenarioId: string,
+  testId: string,
+): ScenaristError =>
+  new ScenaristError(
+    `Scenario '${scenarioId}' not found. Did you forget to register it?`,
+    {
+      code: ErrorCodes.SCENARIO_NOT_FOUND,
+      context: {
+        testId,
+        scenarioId,
+        hint: "Make sure to register the scenario before switching to it. Use manager.registerScenario(definition) first.",
+      },
+    },
+  );
+
 /**
  * Factory function to create a ScenarioManager implementation.
  *
@@ -134,17 +150,7 @@ export const createScenarioManager = ({
 
         return {
           success: false,
-          error: new ScenaristError(
-            `Scenario '${scenarioId}' not found. Did you forget to register it?`,
-            {
-              code: ErrorCodes.SCENARIO_NOT_FOUND,
-              context: {
-                testId,
-                scenarioId,
-                hint: "Make sure to register the scenario before switching to it. Use manager.registerScenario(definition) first.",
-              },
-            },
-          ),
+          error: createScenarioNotFoundError(scenarioId, testId),
         };
       }
 

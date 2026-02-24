@@ -7,6 +7,7 @@ import {
 import { createInMemoryStateManager } from "../src/adapters/in-memory-state-manager.js";
 import { applyTemplates } from "../src/domain/template-replacement.js";
 import { extractFromPath } from "../src/domain/path-extraction.js";
+import { isDangerousKey, isRecord } from "../src/domain/type-guards.js";
 import type { HttpRequestContext } from "../src/types/scenario.js";
 
 /**
@@ -642,6 +643,96 @@ describe("Security Property Tests", () => {
    * These tests verify that security properties hold under adversarial conditions
    * where multiple attack vectors might be combined.
    */
+  describe("Type Guards: isDangerousKey", () => {
+    const KNOWN_DANGEROUS_KEYS = ["__proto__", "constructor", "prototype"];
+
+    it("PROPERTY: all known dangerous keys are always blocked", () => {
+      fc.assert(
+        fc.property(fc.constantFrom(...KNOWN_DANGEROUS_KEYS), (key) => {
+          expect(isDangerousKey(key)).toBe(true);
+          return true;
+        }),
+        { numRuns: 500 },
+      );
+    });
+
+    it("PROPERTY: arbitrary safe keys are never blocked", () => {
+      const safeKeyArb = fc
+        .string({ minLength: 1, maxLength: 100 })
+        .filter((k) => !KNOWN_DANGEROUS_KEYS.includes(k));
+
+      fc.assert(
+        fc.property(safeKeyArb, (key) => {
+          expect(isDangerousKey(key)).toBe(false);
+          return true;
+        }),
+        { numRuns: 1000 },
+      );
+    });
+
+    it("PROPERTY: case variations of dangerous keys are not blocked", () => {
+      const caseVariations = fc.constantFrom(
+        "__Proto__",
+        "__PROTO__",
+        "Constructor",
+        "CONSTRUCTOR",
+        "Prototype",
+        "PROTOTYPE",
+        "__proto_ ",
+        " __proto__",
+      );
+
+      fc.assert(
+        fc.property(caseVariations, (key) => {
+          expect(isDangerousKey(key)).toBe(false);
+          return true;
+        }),
+        { numRuns: 100 },
+      );
+    });
+  });
+
+  describe("Type Guards: isRecord", () => {
+    it("PROPERTY: plain objects are always identified as records", () => {
+      fc.assert(
+        fc.property(fc.object({ maxDepth: 3, maxKeys: 10 }), (obj) => {
+          expect(isRecord(obj)).toBe(true);
+          return true;
+        }),
+        { numRuns: 500 },
+      );
+    });
+
+    it("PROPERTY: arrays are never identified as records", () => {
+      fc.assert(
+        fc.property(fc.array(fc.anything()), (arr) => {
+          expect(isRecord(arr)).toBe(false);
+          return true;
+        }),
+        { numRuns: 500 },
+      );
+    });
+
+    it("PROPERTY: primitives and null are never identified as records", () => {
+      const primitiveArb = fc.oneof(
+        fc.string(),
+        fc.integer(),
+        fc.double(),
+        fc.boolean(),
+        fc.constant(null),
+        fc.constant(undefined),
+      );
+
+      fc.assert(
+        fc.property(primitiveArb, (value) => {
+          expect(isRecord(value)).toBe(false);
+          return true;
+        }),
+        { numRuns: 500 },
+      );
+    });
+  });
+
   describe("Combined Attack Vectors", () => {
     it("PROPERTY: State manager + templates cannot be combined for attacks", () => {
       fc.assert(
