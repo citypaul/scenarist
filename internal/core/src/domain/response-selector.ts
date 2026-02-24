@@ -171,12 +171,12 @@ export const createResponseSelector = (
     mockIndex: number;
     logContext: { testId: string; scenarioId: string };
   }): number | null => {
-    const matched = matchesCriteria(
+    const matched = matchesCriteria({
       context,
       criteria,
-      logContext.testId,
+      testId: logContext.testId,
       stateManager,
-    );
+    });
 
     logger.debug(
       LogCategories.MATCHING,
@@ -341,7 +341,7 @@ export const createResponseSelector = (
       specificity,
     });
 
-    const responseResult = selectResponseFromMock(
+    const responseResult = selectResponseFromMock({
       testId,
       scenarioId,
       mockIndex,
@@ -349,7 +349,7 @@ export const createResponseSelector = (
       sequenceTracker,
       stateManager,
       logger,
-    );
+    });
 
     if (!responseResult) {
       return {
@@ -359,7 +359,12 @@ export const createResponseSelector = (
     }
 
     if (mock.captureState && stateManager) {
-      captureState(testId, context, mock.captureState, stateManager);
+      captureState({
+        testId,
+        context,
+        captureConfig: mock.captureState,
+        stateManager,
+      });
     }
 
     const finalResponse = applyResponseTemplates({
@@ -468,43 +473,42 @@ const resolveEffectiveAfterResponse = (
  * @param logger - Logger for debugging
  * @returns MockResponseResult or null if mock has no response type
  */
-const selectResponseFromMock = (
-  testId: string,
-  scenarioId: string,
-  mockIndex: number,
-  mock: ScenaristMock,
-  sequenceTracker: SequenceTracker | undefined,
-  stateManager: StateManager | undefined,
-  logger: Logger,
-): MockResponseResult | null => {
+const selectResponseFromMock = ({
+  testId,
+  scenarioId,
+  mockIndex,
+  mock,
+  sequenceTracker,
+  stateManager,
+  logger,
+}: {
+  testId: string;
+  scenarioId: string;
+  mockIndex: number;
+  mock: ScenaristMock;
+  sequenceTracker: SequenceTracker | undefined;
+  stateManager: StateManager | undefined;
+  logger: Logger;
+}): MockResponseResult | null => {
   const logContext = { testId, scenarioId };
 
-  // Phase 2: If mock has a sequence, use sequence tracker
   if (mock.sequence) {
     if (!sequenceTracker) {
-      // Sequence defined but no tracker provided - return first response
-      // Note: Schema validation ensures responses array has at least 1 element,
-      // but defensive check handles malformed data that bypasses validation
       const firstResponse = mock.sequence.responses[0];
       return firstResponse
         ? { response: firstResponse, matchedCondition: null }
         : null;
     }
 
-    // Get current position from tracker
     const { position } = sequenceTracker.getPosition(
       testId,
       scenarioId,
       mockIndex,
     );
 
-    // Get response at current position
-    // Note: Exhausted sequences are skipped during matching phase,
-    // so position should always be valid here
     // eslint-disable-next-line security/detect-object-injection -- Position bounded by sequence tracker
     const response = mock.sequence.responses[position]!;
 
-    // Advance position for next call
     const repeatMode = mock.sequence.repeat || "last";
     sequenceTracker.advance(
       testId,
@@ -517,23 +521,20 @@ const selectResponseFromMock = (
     return { response, matchedCondition: null };
   }
 
-  // State-aware response: evaluate conditions against current state
   if (mock.stateResponse) {
-    return resolveStateResponse(
+    return resolveStateResponse({
       testId,
-      mock.stateResponse,
+      stateResponse: mock.stateResponse,
       stateManager,
       logger,
       logContext,
-    );
+    });
   }
 
-  // Phase 1: Single response
   if (mock.response) {
     return { response: mock.response, matchedCondition: null };
   }
 
-  // No response type defined
   return null;
 };
 
@@ -550,14 +551,19 @@ const selectResponseFromMock = (
  * @param logContext - Context for log messages
  * @returns MockResponseResult with response and matched condition
  */
-const resolveStateResponse = (
-  testId: string,
-  stateResponse: NonNullable<ScenaristMock["stateResponse"]>,
-  stateManager: StateManager | undefined,
-  logger: Logger,
-  logContext: { testId: string; scenarioId: string },
-): MockResponseResult => {
-  // Without stateManager, always return default
+const resolveStateResponse = ({
+  testId,
+  stateResponse,
+  stateManager,
+  logger,
+  logContext,
+}: {
+  testId: string;
+  stateResponse: NonNullable<ScenaristMock["stateResponse"]>;
+  stateManager: StateManager | undefined;
+  logger: Logger;
+  logContext: { testId: string; scenarioId: string };
+}): MockResponseResult => {
   if (!stateManager) {
     logger.debug(
       LogCategories.STATE,
@@ -650,12 +656,17 @@ const calculateSpecificity = (
  * @param testId - Test ID for state isolation
  * @param stateManager - Optional state manager for state-based matching
  */
-const matchesCriteria = (
-  context: HttpRequestContext,
-  criteria: NonNullable<ScenaristMock["match"]>,
-  testId: string,
-  stateManager?: StateManager,
-): boolean => {
+const matchesCriteria = ({
+  context,
+  criteria,
+  testId,
+  stateManager,
+}: {
+  context: HttpRequestContext;
+  criteria: NonNullable<ScenaristMock["match"]>;
+  testId: string;
+  stateManager?: StateManager;
+}): boolean => {
   if (criteria.url && !matchesValue(context.url, criteria.url)) {
     return false;
   }
@@ -672,7 +683,10 @@ const matchesCriteria = (
     return false;
   }
 
-  if (criteria.state && !matchesState(criteria.state, testId, stateManager)) {
+  if (
+    criteria.state &&
+    !matchesState({ stateCriteria: criteria.state, testId, stateManager })
+  ) {
     return false;
   }
 
@@ -688,25 +702,26 @@ const matchesCriteria = (
  * @param stateManager - State manager to retrieve current state
  * @returns true if all criteria keys match, false otherwise
  */
-const matchesState = (
-  stateCriteria: Readonly<Record<string, unknown>>,
-  testId: string,
-  stateManager?: StateManager,
-): boolean => {
-  // Without stateManager, state matching always fails
+const matchesState = ({
+  stateCriteria,
+  testId,
+  stateManager,
+}: {
+  stateCriteria: Readonly<Record<string, unknown>>;
+  testId: string;
+  stateManager?: StateManager;
+}): boolean => {
   if (!stateManager) {
     return false;
   }
 
   const currentState = stateManager.getAll(testId);
 
-  // All keys in criteria must exist in state with equal values
   for (const [key, expectedValue] of Object.entries(stateCriteria)) {
     if (!(key in currentState)) {
       return false;
     }
 
-    // Deep equality check for values (handles primitives, null, objects)
     // eslint-disable-next-line security/detect-object-injection -- Key from Object.entries iteration
     if (!deepEquals(currentState[key], expectedValue)) {
       return false;
@@ -891,16 +906,20 @@ const matchesQuery = (
  * @param captureConfig - Capture configuration (state key -> path expression)
  * @param stateManager - State manager to store captured values
  */
-const captureState = (
-  testId: string,
-  context: HttpRequestContext,
-  captureConfig: Readonly<Record<string, string>>,
-  stateManager: StateManager,
-): void => {
+const captureState = ({
+  testId,
+  context,
+  captureConfig,
+  stateManager,
+}: {
+  testId: string;
+  context: HttpRequestContext;
+  captureConfig: Readonly<Record<string, string>>;
+  stateManager: StateManager;
+}): void => {
   for (const [stateKey, pathExpression] of Object.entries(captureConfig)) {
     const value = extractFromPath(context, pathExpression);
 
-    // Guard: Only capture if value exists
     if (value === undefined) {
       continue;
     }
