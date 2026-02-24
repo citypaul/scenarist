@@ -656,42 +656,26 @@ const matchesCriteria = (
   testId: string,
   stateManager?: StateManager,
 ): boolean => {
-  // Check URL match (exact match or pattern)
-  if (criteria.url) {
-    if (!matchesValue(context.url, criteria.url)) {
-      return false;
-    }
+  if (criteria.url && !matchesValue(context.url, criteria.url)) {
+    return false;
   }
 
-  // Check body match (partial match)
-  if (criteria.body) {
-    if (!matchesBody(context.body, criteria.body)) {
-      return false;
-    }
+  if (criteria.body && !matchesBody(context.body, criteria.body)) {
+    return false;
   }
 
-  // Check headers match (exact match on specified headers)
-  if (criteria.headers) {
-    if (!matchesHeaders(context.headers, criteria.headers)) {
-      return false;
-    }
+  if (criteria.headers && !matchesHeaders(context.headers, criteria.headers)) {
+    return false;
   }
 
-  // Check query match (exact match on specified query params)
-  if (criteria.query) {
-    if (!matchesQuery(context.query, criteria.query)) {
-      return false;
-    }
+  if (criteria.query && !matchesQuery(context.query, criteria.query)) {
+    return false;
   }
 
-  // Check state match (partial match on current test state)
-  if (criteria.state) {
-    if (!matchesState(criteria.state, testId, stateManager)) {
-      return false;
-    }
+  if (criteria.state && !matchesState(criteria.state, testId, stateManager)) {
+    return false;
   }
 
-  // All criteria matched
   return true;
 };
 
