@@ -1,5 +1,11 @@
 # @scenarist/core
 
+## 0.4.10
+
+### Patch Changes
+
+- [#471](https://github.com/citypaul/scenarist/pull/471) [`686945f`](https://github.com/citypaul/scenarist/commit/686945f4b1184f657500b832f92f981b73e07556) Thanks [@citypaul](https://github.com/citypaul)! - Fix security vulnerabilities in transitive dependencies
+
 ## 0.4.9
 
 ### Patch Changes
