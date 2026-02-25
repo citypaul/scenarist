@@ -1,4 +1,5 @@
 import type { Request, Response, Router } from "express";
+import { getRouteParam } from "./route-param.js";
 
 /**
  * GitHub routes - demonstrates calling external GitHub API
@@ -27,7 +28,7 @@ export const setupGitHubRoutes = (router: Router): void => {
 
         // Security: Encode path parameter to prevent path traversal
         // @see https://github.com/citypaul/scenarist/security/code-scanning/75
-        const encodedUsername = encodeURIComponent(username ?? "");
+        const encodedUsername = encodeURIComponent(getRouteParam(username));
         const response = await fetch(
           `https://api.github.com/users/${encodedUsername}`,
           {

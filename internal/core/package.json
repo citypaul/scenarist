@@ -54,7 +54,7 @@
     "typecheck": "tsc --project tsconfig.typecheck.json --noEmit"
   },
   "dependencies": {
-    "redos-detector": "^6.1.2",
+    "redos-detector": "^6.1.4",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -62,7 +62,7 @@
     "@scenarist/typescript-config": "workspace:*",
     "@vitest/coverage-v8": "^4.0.18",
     "@vitest/ui": "^4.0.18",
-    "eslint": "^9.39.2",
+    "eslint": "^9.39.3",
     "fast-check": "^4.5.3",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"

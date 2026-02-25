@@ -1,4 +1,5 @@
 import type { Request, Response, Router } from "express";
+import { getRouteParam } from "./route-param.js";
 
 type FetchConfig = {
   readonly url: string;
@@ -64,7 +65,7 @@ export const setupStringMatchingRoutes = (router: Router): void => {
     async (req: Request, res: Response) => {
       return handleProxyRequest(
         (req) => ({
-          url: `https://api.github.com/users/${encodeURIComponent(req.params.username ?? "")}`,
+          url: `https://api.github.com/users/${encodeURIComponent(getRouteParam(req.params.username))}`,
           headers: buildHeaders({
             "x-campaign": getQueryString(req.query.campaign),
           }),
@@ -101,7 +102,7 @@ export const setupStringMatchingRoutes = (router: Router): void => {
 
       return handleProxyRequest(
         (req) => ({
-          url: `https://api.github.com/users/${encodeURIComponent(req.params.username ?? "")}/repos${queryString}`,
+          url: `https://api.github.com/users/${encodeURIComponent(getRouteParam(req.params.username))}/repos${queryString}`,
         }),
         req,
         res,

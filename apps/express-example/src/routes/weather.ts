@@ -1,11 +1,12 @@
 import type { Request, Response, Router } from "express";
+import { getRouteParam } from "./route-param.js";
 
 /**
  * Weather routes - demonstrates calling external Weather API
  */
 export const setupWeatherRoutes = (router: Router): void => {
   router.get("/api/weather/:city", async (req: Request, res: Response) => {
-    const { city } = req.params;
+    const city = getRouteParam(req.params.city);
 
     try {
       // Call external Weather API (will be mocked by Scenarist)
@@ -18,7 +19,7 @@ export const setupWeatherRoutes = (router: Router): void => {
 
       // Security: Encode path parameter to prevent path traversal
       // @see https://github.com/citypaul/scenarist/security/code-scanning/78
-      const encodedCity = encodeURIComponent(city ?? "");
+      const encodedCity = encodeURIComponent(city);
       const url = queryString
         ? `https://api.weather.com/v1/weather/${encodedCity}?${queryString}`
         : `https://api.weather.com/v1/weather/${encodedCity}`;

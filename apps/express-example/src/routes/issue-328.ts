@@ -1,4 +1,5 @@
 import type { Request, Response, Router } from "express";
+import { getRouteParam } from "./route-param.js";
 
 /**
  * Issue #328 Bug Reproduction Routes
@@ -34,7 +35,7 @@ export const setupIssue328Routes = (router: Router): void => {
   router.get(
     "/api/issue328/applications/:id",
     async (req: Request, res: Response) => {
-      const { id } = req.params;
+      const id = getRouteParam(req.params.id);
 
       // Validate ID exists and matches expected format to prevent SSRF attacks
       if (!id || !isValidApplicationId(id)) {
@@ -69,7 +70,7 @@ export const setupIssue328Routes = (router: Router): void => {
   router.post(
     "/api/issue328/applications/:id/eligibility",
     async (req: Request, res: Response) => {
-      const { id } = req.params;
+      const id = getRouteParam(req.params.id);
 
       // Validate ID exists and matches expected format to prevent SSRF attacks
       if (!id || !isValidApplicationId(id)) {
