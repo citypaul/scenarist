@@ -1,4 +1,5 @@
 import type { Request, Response, Router } from "express";
+import { getRouteParam } from "./route-param.js";
 
 type FetchConfig = {
   readonly url: string;
@@ -128,7 +129,7 @@ export const setupHostnameMatchingRoutes = (router: Router): void => {
     async (req: Request, res: Response) => {
       return handleProxyRequest(
         (req) => ({
-          url: `http://localhost:3000/api/users/${encodeURIComponent(req.params.userId ?? "")}/posts/${encodeURIComponent(req.params.postId ?? "")}`,
+          url: `http://localhost:3000/api/users/${encodeURIComponent(getRouteParam(req.params.userId))}/posts/${encodeURIComponent(getRouteParam(req.params.postId))}`,
         }),
         req,
         res,
@@ -145,7 +146,7 @@ export const setupHostnameMatchingRoutes = (router: Router): void => {
     async (req: Request, res: Response) => {
       return handleProxyRequest(
         (req) => ({
-          url: `https://api.github.com/api/github-users/${encodeURIComponent(req.params.userId ?? "")}`,
+          url: `https://api.github.com/api/github-users/${encodeURIComponent(getRouteParam(req.params.userId))}`,
         }),
         req,
         res,
