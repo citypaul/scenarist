@@ -61,7 +61,9 @@ jobs:
           # @img/sharp-*: Next.js image optimization (LGPL components are optional native bindings)
           # uri-js: BSD-2-Clause AND BSD-2-Clause-Views (URI parsing library)
           # lucide-react: ISC license (icon library, license detection issue)
+          # dompurify: compound SPDX expression including Apache-2.0 and MPL-2.0 (both allowed)
           allow-dependencies-licenses: >-
+            pkg:npm/dompurify,
             pkg:npm/bowser,
             pkg:npm/jpeg-js,
             pkg:npm/@img/sharp-libvips-darwin-arm64,

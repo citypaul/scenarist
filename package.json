@@ -17,7 +17,7 @@
     "@changesets/cli": "^2.29.8",
     "husky": "^9.1.7",
     "license-checker": "^25.0.1",
-    "lint-staged": "^16.2.7",
+    "lint-staged": "^16.4.0",
     "prettier": "^3.8.1",
     "turbo": "^2.8.10",
     "typescript": "5.9.3"
@@ -27,12 +27,19 @@
       "body-parser": ">=2.2.1",
       "jws": ">=3.2.3",
       "axios": ">=1.13.5",
-      "fast-xml-parser": ">=5.3.6",
+      "fast-xml-parser": ">=5.5.6",
       "tar": ">=7.5.8",
-      "lodash": ">=4.17.23",
-      "lodash-es": ">=4.17.23",
+      "lodash": ">=4.18.0",
+      "lodash-es": ">=4.18.0",
       "qs": ">=6.14.2",
-      "wrangler": ">=4.59.1"
+      "wrangler": ">=4.59.1",
+      "picomatch": ">=4.0.4",
+      "router>path-to-regexp": ">=8.4.0",
+      "express@4>path-to-regexp": "0.1.13",
+      "dompurify": ">=3.3.2",
+      "brace-expansion@^5": ">=5.0.5",
+      "yaml": ">=2.8.3",
+      "smol-toml": ">=1.6.1"
     }
   },
   "lint-staged": {
