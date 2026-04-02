@@ -43,6 +43,7 @@
     "postcss": "^8.5.6",
     "tailwindcss": "^4.2.1",
     "typescript": "^5.9.3",
+    "json-server": "^0.17.4",
     "wait-on": "^9.0.4"
   }
 }
