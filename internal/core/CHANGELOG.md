@@ -1,5 +1,17 @@
 # @scenarist/core
 
+## 0.4.11
+
+### Patch Changes
+
+- [#494](https://github.com/citypaul/scenarist/pull/494) [`9f375c9`](https://github.com/citypaul/scenarist/commit/9f375c9c2fb7cc135a794a8346e6c49f29a36646) Thanks [@citypaul](https://github.com/citypaul)! - fix(deps): resolve Dependabot security vulnerabilities in demo apps
+
+- [#495](https://github.com/citypaul/scenarist/pull/495) [`10719c8`](https://github.com/citypaul/scenarist/commit/10719c8441b55202d7efd9cba167c2d6f585cea6) Thanks [@citypaul](https://github.com/citypaul)! - Fix 15 Dependabot security vulnerabilities in transitive dependencies
+
+- [#501](https://github.com/citypaul/scenarist/pull/501) [`d50b986`](https://github.com/citypaul/scenarist/commit/d50b9860de5f3abeae4710ac953d3a1f13c883a1) Thanks [@citypaul](https://github.com/citypaul)! - Fix flatted and minimatch security vulnerabilities in transitive dependencies
+
+- [#498](https://github.com/citypaul/scenarist/pull/498) [`2815307`](https://github.com/citypaul/scenarist/commit/2815307eefcfba060da3b91c600a505faa619a6b) Thanks [@citypaul](https://github.com/citypaul)! - Fix undici, tar, and svgo security vulnerabilities in transitive dependencies
+
 ## 0.4.10
 
 ### Patch Changes
