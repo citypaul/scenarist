@@ -32,16 +32,16 @@
     "@types/supertest": "^6.0.3",
     "@types/wait-on": "^5.3.4",
     "@usebruno/cli": "^3.2.1",
-    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/coverage-v8": "^4.1.2",
     "concurrently": "^9.2.1",
     "esbuild": "^0.27.3",
-    "eslint": "^9.39.3",
+    "eslint": "^9.39.4",
     "json-server": "^0.17.4",
     "msw": "^2.12.10",
     "supertest": "^7.2.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.18",
+    "vitest": "^4.1.2",
     "wait-on": "^9.0.4"
   }
 }
