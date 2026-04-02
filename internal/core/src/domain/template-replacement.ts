@@ -130,7 +130,6 @@ const resolveTemplatePath = (
     }
     current = descriptor.value;
 
-    // Guard: Return undefined if property doesn't exist
     if (current === undefined) {
       return undefined;
     }

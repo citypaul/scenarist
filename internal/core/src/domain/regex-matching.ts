@@ -22,9 +22,8 @@ export const matchesRegex = (
   pattern: SerializedRegex,
 ): boolean => {
   try {
-    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
     // eslint-disable-next-line security/detect-non-literal-regexp -- Pattern validated at trust boundary (schema uses redos-detector)
-    const regex = new RegExp(pattern.source, pattern.flags);
+    const regex = new RegExp(pattern.source, pattern.flags); // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
     return regex.test(value);
   } catch {
     return false;
