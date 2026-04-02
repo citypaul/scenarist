@@ -129,9 +129,8 @@ const resolveTemplatePath = (
       return undefined;
     }
 
-    // nosemgrep: javascript.lang.security.audit.prototype-pollution.prototype-pollution-loop.prototype-pollution-loop
     // eslint-disable-next-line security/detect-object-injection -- Read-only traversal with isDangerousKey and Object.hasOwn guards
-    current = current[segment];
+    current = current[segment]; // nosemgrep: javascript.lang.security.audit.prototype-pollution.prototype-pollution-loop.prototype-pollution-loop
 
     // Guard: Return undefined if property doesn't exist
     if (current === undefined) {
