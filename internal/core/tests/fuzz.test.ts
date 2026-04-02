@@ -457,9 +457,8 @@ describe("Security Property Tests", () => {
             const path = ["body", ...pathSegments].join(".");
             const context = createContext(bodyValue);
 
-            // Should never throw, always return undefined or the value
-            const result = extractFromPath(context, path);
-            expect(result === undefined || result !== undefined).toBe(true);
+            // Should never throw — if extractFromPath throws, fc.property fails
+            extractFromPath(context, path);
 
             return true;
           },
