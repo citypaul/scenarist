@@ -53,7 +53,6 @@ export default async function globalSetup() {
     "npx",
     [
       "json-server",
-      "--watch",
       "fake-api/db.json",
       "--port",
       "3001",
