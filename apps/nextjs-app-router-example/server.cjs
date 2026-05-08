@@ -1,9 +1,17 @@
+const Tokens = require('csrf');
 const express = require('express');
 const next = require('next');
+const {
+  createCsrfProtection,
+  createCsrfTokenHandler,
+} = require('./csrf-protection.cjs');
 
 const dev = process.env.NODE_ENV !== 'production';
-const app = next({ dev, port: 3002 });
+const port = Number(process.env.NEXTJS_APP_ROUTER_PORT ?? process.env.PORT ?? 3002);
+process.env.NEXT_PUBLIC_APP_BASE_URL ??= `http://localhost:${port}`;
+const app = next({ dev, port, webpack: true });
 const handle = app.getRequestHandler();
+const csrfTokens = new Tokens();
 
 app.prepare().then(() => {
   const server = express();
@@ -13,9 +21,16 @@ app.prepare().then(() => {
     res.json({ serverType: 'custom', framework: 'express' });
   });
 
+  server.get(
+    '/__csrf',
+    createCsrfTokenHandler({ tokens: csrfTokens, secureCookies: !dev }),
+  );
+
+  server.use(createCsrfProtection({ tokens: csrfTokens }));
+
   // Express 5 wildcard syntax - matches all routes
   server.all('/{*path}', (req, res) => handle(req, res));
-  server.listen(3002, () => {
-    console.log('> Custom server ready on http://localhost:3002');
+  server.listen(port, () => {
+    console.log(`> Custom server ready on http://localhost:${port}`);
   });
 });

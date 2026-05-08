@@ -1,11 +1,16 @@
 {
-  "main": "dist/_worker.js/index.js",
+  "main": "@astrojs/cloudflare/entrypoints/server",
   "name": "scenarist",
   "compatibility_date": "2025-11-10",
-  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "compatibility_flags": [
+    "nodejs_compat",
+    "disable_nodejs_process_v2",
+    "global_fetch_strictly_public",
+  ],
   "assets": {
     "binding": "ASSETS",
-    "directory": "./dist",
+    "directory": "./dist/client",
+    "run_worker_first": true,
   },
   "observability": {
     "enabled": true,

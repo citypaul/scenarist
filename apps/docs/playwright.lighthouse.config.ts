@@ -1,5 +1,8 @@
 import { defineConfig } from "@playwright/test";
 
+const docsPort = process.env.DOCS_PORT ?? "4321";
+const docsBaseURL = `http://localhost:${docsPort}`;
+
 /**
  * Playwright configuration specifically for Lighthouse audits.
  *
@@ -17,13 +20,13 @@ export default defineConfig({
   reporter: [["list"], ["html", { outputFolder: "lighthouse-report" }]],
   timeout: 120000,
   use: {
-    baseURL: "http://localhost:4321",
+    baseURL: docsBaseURL,
     trace: "on-first-retry",
   },
 
   webServer: {
-    command: "pnpm preview",
-    url: "http://localhost:4321",
+    command: `pnpm exec wrangler dev --port ${docsPort}`,
+    url: docsBaseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 60000,
   },

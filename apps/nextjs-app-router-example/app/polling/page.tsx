@@ -16,6 +16,7 @@
 import { headers } from "next/headers";
 
 import { getScenaristHeadersFromReadonlyHeaders } from "@scenarist/nextjs-adapter/app";
+import { getAppBaseURL } from "@/lib/app-base-url";
 
 type JobStatus = {
   readonly jobId: string;
@@ -28,7 +29,7 @@ async function fetchJobStatus(jobId: string): Promise<JobStatus> {
   const headersList = await headers();
 
   const response = await fetch(
-    `http://localhost:3002/api/github/jobs/${jobId}`,
+    new URL(`/api/github/jobs/${jobId}`, getAppBaseURL()),
     {
       headers: {
         ...getScenaristHeadersFromReadonlyHeaders(headersList),
