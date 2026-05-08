@@ -21,7 +21,7 @@ const siteName = 'Scenarist';
 ---
 
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -58,6 +58,42 @@ const siteName = 'Scenarist';
 
   <!-- Theme Color -->
   <meta name="theme-color" content="#8B5CF6" />
+
+  <script is:inline data-theme-bootstrap>
+    (() => {
+      const getPreferredColorScheme = () =>
+        window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+
+      try {
+        const stored = localStorage.getItem('starlight-theme');
+        const theme =
+          stored === 'dark' || stored === 'light' ? stored : getPreferredColorScheme();
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+        document.documentElement.dataset.theme = theme;
+      } catch {
+        const theme = getPreferredColorScheme();
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+        document.documentElement.dataset.theme = theme;
+      }
+    })();
+  </script>
+  <style is:inline data-theme-critical>
+    html {
+      background: #ffffff;
+      color-scheme: light;
+    }
+
+    html.dark,
+    html[data-theme='dark'] {
+      background: #030304;
+      color-scheme: dark;
+    }
+
+    html[data-theme='light'] {
+      background: #ffffff;
+      color-scheme: light;
+    }
+  </style>
 
   <!-- Plausible Analytics (proxied through Cloudflare) -->
   <script defer data-domain="scenarist.io" data-api="/api/event" src="/js/script.js"></script>

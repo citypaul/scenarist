@@ -8,6 +8,38 @@ import icon from "astro-icon";
 
 import cloudflare from "@astrojs/cloudflare";
 
+const starlightThemeBootstrapScript = `(() => {
+  const getPreferredColorScheme = () =>
+    window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+
+  try {
+    const stored = localStorage.getItem('starlight-theme');
+    const theme =
+      stored === 'dark' || stored === 'light' ? stored : getPreferredColorScheme();
+    document.documentElement.dataset.theme = theme;
+  } catch {
+    document.documentElement.dataset.theme = getPreferredColorScheme();
+  }
+})();`;
+
+const themeCriticalStyle = `
+html {
+  background: #ffffff;
+  color-scheme: light;
+}
+
+html.dark,
+html[data-theme='dark'] {
+  background: #030304;
+  color-scheme: dark;
+}
+
+html[data-theme='light'] {
+  background: #ffffff;
+  color-scheme: light;
+}
+`;
+
 // https://astro.build/config
 export default defineConfig({
   site: "https://scenarist.io",
@@ -30,6 +62,16 @@ export default defineConfig({
       title: "Scenarist",
       description: "Playwright tests that hit your real server. Server Components, routes, and middleware execute for real. Mock only external APIs—switchable per test.",
       head: [
+        {
+          tag: "script",
+          attrs: { "data-starlight-theme-bootstrap": "" },
+          content: starlightThemeBootstrapScript,
+        },
+        {
+          tag: "style",
+          attrs: { "data-theme-critical": "" },
+          content: themeCriticalStyle,
+        },
         // Open Graph
         {
           tag: "meta",
