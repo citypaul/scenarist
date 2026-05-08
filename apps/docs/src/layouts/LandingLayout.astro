@@ -21,7 +21,7 @@ const siteName = 'Scenarist';
 ---
 
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -59,6 +59,25 @@ const siteName = 'Scenarist';
   <!-- Theme Color -->
   <meta name="theme-color" content="#8B5CF6" />
 
+  <script is:inline data-theme-bootstrap>
+    (() => {
+      const getPreferredColorScheme = () =>
+        window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      const applyTheme = (theme) => {
+        const normalizedTheme = theme === 'light' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = normalizedTheme;
+        document.documentElement.classList.toggle('dark', normalizedTheme === 'dark');
+      };
+
+      try {
+        const stored = localStorage.getItem('starlight-theme');
+        applyTheme(stored || getPreferredColorScheme());
+      } catch {
+        applyTheme(getPreferredColorScheme());
+      }
+    })();
+  </script>
+
   <!-- Plausible Analytics (proxied through Cloudflare) -->
   <script defer data-domain="scenarist.io" data-api="/api/event" src="/js/script.js"></script>
 </head>
@@ -83,12 +102,12 @@ const siteName = 'Scenarist';
         if (isValidTheme(stored)) {
           return stored;
         }
-        // Empty string or null means 'auto' in Starlight - use system preference
         if (stored === '' || stored === null) {
           return getPreferredColorScheme();
         }
+        return 'dark';
       }
-      return 'dark';
+      return getPreferredColorScheme();
     };
 
     const updateAriaPressed = (isDark: boolean): void => {
@@ -100,12 +119,8 @@ const siteName = 'Scenarist';
 
     const setTheme = (theme: Theme): void => {
       const isDark = theme === 'dark';
-      if (isDark) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-      // Store in Starlight's format for cross-page sync
+      document.documentElement.dataset.theme = theme;
+      document.documentElement.classList.toggle('dark', isDark);
       localStorage.setItem(STORAGE_KEY, theme);
       updateAriaPressed(isDark);
     };

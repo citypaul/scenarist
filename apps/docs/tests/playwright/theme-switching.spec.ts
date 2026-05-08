@@ -1,4 +1,85 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+
+type Theme = "dark" | "light";
+type StoredThemePreference = Theme | "" | null;
+
+type ThemeBootstrapEvent = {
+  readonly token: string;
+  readonly force: boolean | undefined;
+  readonly bodyExists: boolean;
+  readonly readyState: DocumentReadyState;
+};
+
+declare global {
+  interface Window {
+    __themeBootstrapEvents?: ThemeBootstrapEvent[];
+  }
+}
+
+type ThemeBootstrapProbeOptions = {
+  readonly page: Page;
+  readonly storedTheme: StoredThemePreference;
+  readonly systemTheme: Theme;
+};
+
+type ThemeBootstrapProbeInit = {
+  readonly storedTheme: StoredThemePreference;
+  readonly systemTheme: Theme;
+};
+
+const findFirstStylesheetIndex = (html: string): number =>
+  html.search(/<link[^>]+rel="stylesheet"/);
+
+const installThemeBootstrapProbe = async ({
+  page,
+  storedTheme,
+  systemTheme,
+}: ThemeBootstrapProbeOptions): Promise<void> => {
+  await page.addInitScript((options: ThemeBootstrapProbeInit) => {
+    const { storedTheme: initialStoredTheme, systemTheme: initialSystemTheme } =
+      options;
+
+    if (initialStoredTheme === null) {
+      localStorage.removeItem("starlight-theme");
+    } else {
+      localStorage.setItem("starlight-theme", initialStoredTheme);
+    }
+
+    const originalMatchMedia = window.matchMedia.bind(window);
+    window.matchMedia = (query: string): MediaQueryList => {
+      if (query === "(prefers-color-scheme: light)") {
+        return {
+          matches: initialSystemTheme === "light",
+          media: query,
+          onchange: null,
+          addListener: () => undefined,
+          removeListener: () => undefined,
+          addEventListener: () => undefined,
+          removeEventListener: () => undefined,
+          dispatchEvent: () => true,
+        };
+      }
+
+      return originalMatchMedia(query);
+    };
+
+    const originalToggle = DOMTokenList.prototype.toggle;
+    DOMTokenList.prototype.toggle = function toggleDarkClass(token, force) {
+      if (this === document.documentElement?.classList && token === "dark") {
+        const events = window.__themeBootstrapEvents ?? [];
+        events.push({
+          token,
+          force,
+          bodyExists: Boolean(document.body),
+          readyState: document.readyState,
+        });
+        window.__themeBootstrapEvents = events;
+      }
+
+      return originalToggle.call(this, token, force);
+    };
+  }, { storedTheme, systemTheme });
+};
 
 /**
  * Theme Switching Tests
@@ -11,6 +92,154 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("Theme Switching", () => {
+  test("landing page bootstraps theme before body renders without hard-coded dark mode", async ({
+    request,
+  }) => {
+    const response = await request.get("/");
+    expect(response.ok()).toBe(true);
+
+    const html = await response.text();
+    const themeBootstrapIndex = html.indexOf("data-theme-bootstrap");
+    const criticalStyleIndex = html.indexOf("data-theme-critical");
+    const bodyIndex = html.indexOf("<body");
+
+    expect(html).not.toMatch(/<html[^>]*class="[^"]*\bdark\b[^"]*"/);
+    expect(criticalStyleIndex).toBe(-1);
+    expect(themeBootstrapIndex).toBeGreaterThan(-1);
+    expect(bodyIndex).toBeGreaterThan(themeBootstrapIndex);
+  });
+
+  test("docs pages use Starlight's built-in theme provider before styles load", async ({
+    request,
+  }) => {
+    const response = await request.get("/getting-started/quick-start/");
+    expect(response.ok()).toBe(true);
+
+    const html = await response.text();
+    const customThemeBootstrapIndex = html.indexOf(
+      "data-starlight-theme-bootstrap",
+    );
+    const criticalStyleIndex = html.indexOf("data-theme-critical");
+    const starlightThemeProviderIndex = html.indexOf(
+      "window.StarlightThemeProvider",
+    );
+    const bodyIndex = html.indexOf("<body");
+    const firstStylesheetIndex = findFirstStylesheetIndex(html);
+
+    expect(customThemeBootstrapIndex).toBe(-1);
+    expect(criticalStyleIndex).toBe(-1);
+    expect(starlightThemeProviderIndex).toBeGreaterThan(-1);
+    expect(firstStylesheetIndex).toBeGreaterThan(starlightThemeProviderIndex);
+    expect(bodyIndex).toBeGreaterThan(starlightThemeProviderIndex);
+  });
+
+  test("landing page applies stored dark theme before body renders", async ({
+    page,
+  }) => {
+    await installThemeBootstrapProbe({
+      page,
+      storedTheme: "dark",
+      systemTheme: "light",
+    });
+
+    await page.goto("/");
+
+    const events = await page.evaluate(
+      () => window.__themeBootstrapEvents ?? [],
+    );
+    expect(events).toContainEqual({
+      token: "dark",
+      force: true,
+      bodyExists: false,
+      readyState: "loading",
+    });
+    await expect(page.locator("html")).toHaveClass(/dark/);
+  });
+
+  test("landing page applies stored light theme before body renders", async ({
+    page,
+  }) => {
+    await installThemeBootstrapProbe({
+      page,
+      storedTheme: "light",
+      systemTheme: "dark",
+    });
+
+    await page.goto("/");
+
+    const events = await page.evaluate(
+      () => window.__themeBootstrapEvents ?? [],
+    );
+    expect(events).toContainEqual({
+      token: "dark",
+      force: false,
+      bodyExists: false,
+      readyState: "loading",
+    });
+    await expect(page.locator("html")).not.toHaveClass(/dark/);
+  });
+
+  test("landing page applies auto system dark theme before body renders", async ({
+    page,
+  }) => {
+    await installThemeBootstrapProbe({
+      page,
+      storedTheme: "",
+      systemTheme: "dark",
+    });
+
+    await page.goto("/");
+
+    const events = await page.evaluate(
+      () => window.__themeBootstrapEvents ?? [],
+    );
+    expect(events).toContainEqual({
+      token: "dark",
+      force: true,
+      bodyExists: false,
+      readyState: "loading",
+    });
+    await expect(page.locator("html")).toHaveClass(/dark/);
+  });
+
+  test("landing page applies missing preference system light theme before body renders", async ({
+    page,
+  }) => {
+    await installThemeBootstrapProbe({
+      page,
+      storedTheme: null,
+      systemTheme: "light",
+    });
+
+    await page.goto("/");
+
+    const events = await page.evaluate(
+      () => window.__themeBootstrapEvents ?? [],
+    );
+    expect(events).toContainEqual({
+      token: "dark",
+      force: false,
+      bodyExists: false,
+      readyState: "loading",
+    });
+    await expect(page.locator("html")).not.toHaveClass(/dark/);
+  });
+
+  test("landing page dark styles follow Starlight data-theme without a class", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.evaluate(() => {
+      document.documentElement.classList.remove("dark");
+      document.documentElement.dataset.theme = "dark";
+    });
+
+    await expect(page.locator("body")).toHaveCSS(
+      "background-color",
+      "rgb(3, 3, 4)",
+    );
+  });
+
   test("theme toggle switches between dark and light", async ({ page }) => {
     // Set dark theme explicitly before navigation
     await page.addInitScript(() => {
@@ -21,6 +250,7 @@ test.describe("Theme Switching", () => {
 
     // Should start in dark mode
     await expect(page.locator("html")).toHaveClass(/dark/);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 
     // Click theme toggle
     const themeToggle = page.getByLabel(/Toggle dark mode/i);
@@ -28,10 +258,12 @@ test.describe("Theme Switching", () => {
 
     // Should now be light mode
     await expect(page.locator("html")).not.toHaveClass(/dark/);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 
     // Toggle back to dark
     await themeToggle.click();
     await expect(page.locator("html")).toHaveClass(/dark/);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   });
 
   test("theme persists from landing page to docs", async ({ page }) => {
