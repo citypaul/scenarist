@@ -94,7 +94,14 @@ jobs:
           # Download npm tarball and verify integrity before installing
           curl -fsSL "https://registry.npmjs.org/npm/-/npm-${NPM_VERSION}.tgz" -o npm.tgz
           echo "${NPM_SHA512}  npm.tgz" | sha512sum -c -
-          npm install -g ./npm.tgz
+          NPM_ROOT="$(npm root -g)"
+          NPM_PREFIX="$(npm prefix -g)"
+          NPM_TMP="$(mktemp -d)"
+          tar -xzf npm.tgz --strip-components=1 -C "$NPM_TMP"
+          rm -rf "$NPM_ROOT/npm"
+          mv "$NPM_TMP" "$NPM_ROOT/npm"
+          ln -sf "$NPM_ROOT/npm/bin/npm-cli.js" "$NPM_PREFIX/bin/npm"
+          ln -sf "$NPM_ROOT/npm/bin/npx-cli.js" "$NPM_PREFIX/bin/npx"
           rm npm.tgz
           echo "npm version: $(npm --version)"
 
