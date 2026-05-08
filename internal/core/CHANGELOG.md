@@ -1,5 +1,13 @@
 # @scenarist/core
 
+## 0.4.13
+
+### Patch Changes
+
+- [#515](https://github.com/citypaul/scenarist/pull/515) [`6ad7746`](https://github.com/citypaul/scenarist/commit/6ad7746829796ee3d9f4f60acecf564d06cf13ab) Thanks [@citypaul](https://github.com/citypaul)! - Reject unsafe serialized regex patterns at the runtime matching boundary and scope the Semgrep suppression to validated RegExp construction.
+
+- [#518](https://github.com/citypaul/scenarist/pull/518) [`5b6d6b8`](https://github.com/citypaul/scenarist/commit/5b6d6b8820e40b23bde019ab69a947d84abd6704) Thanks [@citypaul](https://github.com/citypaul)! - Clarify internal regex matching trust-boundary types.
+
 ## 0.4.12
 
 ### Patch Changes
