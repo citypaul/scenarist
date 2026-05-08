@@ -55,7 +55,7 @@ describe("matchesRegex", () => {
     expect(result).toBe(false);
   });
 
-  it("should return false when the RegExp constructor rejects duplicate flags", () => {
+  it("should return false when duplicate flags pass schema but the RegExp constructor rejects them", () => {
     const result = matchesRegex("test", { source: "test", flags: "ii" });
     expect(result).toBe(false);
   });
