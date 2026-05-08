@@ -27,8 +27,8 @@ type ThemeBootstrapProbeInit = {
   readonly systemTheme: Theme;
 };
 
-const findFirstRenderBlockingStyleIndex = (html: string): number =>
-  html.search(/<link[^>]+rel="stylesheet"|<style\b/);
+const findFirstStylesheetIndex = (html: string): number =>
+  html.search(/<link[^>]+rel="stylesheet"/);
 
 const installThemeBootstrapProbe = async ({
   page,
@@ -102,37 +102,35 @@ test.describe("Theme Switching", () => {
     const themeBootstrapIndex = html.indexOf("data-theme-bootstrap");
     const criticalStyleIndex = html.indexOf("data-theme-critical");
     const bodyIndex = html.indexOf("<body");
-    const firstStyleIndex = findFirstRenderBlockingStyleIndex(html);
 
     expect(html).not.toMatch(/<html[^>]*class="[^"]*\bdark\b[^"]*"/);
+    expect(criticalStyleIndex).toBe(-1);
     expect(themeBootstrapIndex).toBeGreaterThan(-1);
-    expect(criticalStyleIndex).toBeGreaterThan(themeBootstrapIndex);
-    expect(html.slice(firstStyleIndex, firstStyleIndex + 120)).toContain(
-      "data-theme-critical",
-    );
-    expect(firstStyleIndex).toBeGreaterThan(themeBootstrapIndex);
     expect(bodyIndex).toBeGreaterThan(themeBootstrapIndex);
   });
 
-  test("docs pages bootstrap theme before render-blocking styles", async ({
+  test("docs pages use Starlight's built-in theme provider before styles load", async ({
     request,
   }) => {
     const response = await request.get("/getting-started/quick-start/");
     expect(response.ok()).toBe(true);
 
     const html = await response.text();
-    const themeBootstrapIndex = html.indexOf("data-starlight-theme-bootstrap");
-    const criticalStyleIndex = html.indexOf("data-theme-critical");
-    const bodyIndex = html.indexOf("<body");
-    const firstStyleIndex = findFirstRenderBlockingStyleIndex(html);
-
-    expect(themeBootstrapIndex).toBeGreaterThan(-1);
-    expect(criticalStyleIndex).toBeGreaterThan(themeBootstrapIndex);
-    expect(html.slice(firstStyleIndex, firstStyleIndex + 120)).toContain(
-      "data-theme-critical",
+    const customThemeBootstrapIndex = html.indexOf(
+      "data-starlight-theme-bootstrap",
     );
-    expect(firstStyleIndex).toBeGreaterThan(themeBootstrapIndex);
-    expect(bodyIndex).toBeGreaterThan(themeBootstrapIndex);
+    const criticalStyleIndex = html.indexOf("data-theme-critical");
+    const starlightThemeProviderIndex = html.indexOf(
+      "window.StarlightThemeProvider",
+    );
+    const bodyIndex = html.indexOf("<body");
+    const firstStylesheetIndex = findFirstStylesheetIndex(html);
+
+    expect(customThemeBootstrapIndex).toBe(-1);
+    expect(criticalStyleIndex).toBe(-1);
+    expect(starlightThemeProviderIndex).toBeGreaterThan(-1);
+    expect(firstStylesheetIndex).toBeGreaterThan(starlightThemeProviderIndex);
+    expect(bodyIndex).toBeGreaterThan(starlightThemeProviderIndex);
   });
 
   test("landing page applies stored dark theme before body renders", async ({
@@ -227,6 +225,21 @@ test.describe("Theme Switching", () => {
     await expect(page.locator("html")).not.toHaveClass(/dark/);
   });
 
+  test("landing page dark styles follow Starlight data-theme without a class", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.evaluate(() => {
+      document.documentElement.classList.remove("dark");
+      document.documentElement.dataset.theme = "dark";
+    });
+
+    await expect(page.locator("body")).toHaveCSS(
+      "background-color",
+      "rgb(3, 3, 4)",
+    );
+  });
+
   test("theme toggle switches between dark and light", async ({ page }) => {
     // Set dark theme explicitly before navigation
     await page.addInitScript(() => {
@@ -237,6 +250,7 @@ test.describe("Theme Switching", () => {
 
     // Should start in dark mode
     await expect(page.locator("html")).toHaveClass(/dark/);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 
     // Click theme toggle
     const themeToggle = page.getByLabel(/Toggle dark mode/i);
@@ -244,10 +258,12 @@ test.describe("Theme Switching", () => {
 
     // Should now be light mode
     await expect(page.locator("html")).not.toHaveClass(/dark/);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 
     // Toggle back to dark
     await themeToggle.click();
     await expect(page.locator("html")).toHaveClass(/dark/);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   });
 
   test("theme persists from landing page to docs", async ({ page }) => {

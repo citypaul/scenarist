@@ -63,37 +63,20 @@ const siteName = 'Scenarist';
     (() => {
       const getPreferredColorScheme = () =>
         window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      const applyTheme = (theme) => {
+        const normalizedTheme = theme === 'light' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = normalizedTheme;
+        document.documentElement.classList.toggle('dark', normalizedTheme === 'dark');
+      };
 
       try {
         const stored = localStorage.getItem('starlight-theme');
-        const theme =
-          stored === 'dark' || stored === 'light' ? stored : getPreferredColorScheme();
-        document.documentElement.classList.toggle('dark', theme === 'dark');
-        document.documentElement.dataset.theme = theme;
+        applyTheme(stored || getPreferredColorScheme());
       } catch {
-        const theme = getPreferredColorScheme();
-        document.documentElement.classList.toggle('dark', theme === 'dark');
-        document.documentElement.dataset.theme = theme;
+        applyTheme(getPreferredColorScheme());
       }
     })();
   </script>
-  <style is:inline data-theme-critical>
-    html {
-      background: #ffffff;
-      color-scheme: light;
-    }
-
-    html.dark,
-    html[data-theme='dark'] {
-      background: #030304;
-      color-scheme: dark;
-    }
-
-    html[data-theme='light'] {
-      background: #ffffff;
-      color-scheme: light;
-    }
-  </style>
 
   <!-- Plausible Analytics (proxied through Cloudflare) -->
   <script defer data-domain="scenarist.io" data-api="/api/event" src="/js/script.js"></script>
@@ -119,12 +102,12 @@ const siteName = 'Scenarist';
         if (isValidTheme(stored)) {
           return stored;
         }
-        // Empty string or null means 'auto' in Starlight - use system preference
         if (stored === '' || stored === null) {
           return getPreferredColorScheme();
         }
+        return 'dark';
       }
-      return 'dark';
+      return getPreferredColorScheme();
     };
 
     const updateAriaPressed = (isDark: boolean): void => {
@@ -136,12 +119,8 @@ const siteName = 'Scenarist';
 
     const setTheme = (theme: Theme): void => {
       const isDark = theme === 'dark';
-      if (isDark) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-      // Store in Starlight's format for cross-page sync
+      document.documentElement.dataset.theme = theme;
+      document.documentElement.classList.toggle('dark', isDark);
       localStorage.setItem(STORAGE_KEY, theme);
       updateAriaPressed(isDark);
     };
