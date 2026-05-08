@@ -10,7 +10,14 @@
     "test": {
       "dependsOn": ["build"],
       "outputs": ["coverage/**"],
-      "env": ["NODE_ENV"]
+      "env": [
+        "CI",
+        "NODE_ENV",
+        "DOCS_PORT",
+        "NEXTJS_APP_ROUTER_PORT",
+        "NEXTJS_FAKE_API_PORT",
+        "NEXTJS_PAGES_PORT"
+      ]
     },
     "test:bruno:ci": {
       "dependsOn": ["build"],

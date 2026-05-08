@@ -12,6 +12,7 @@
 
 import { headers } from "next/headers";
 import { getScenaristHeadersFromReadonlyHeaders } from "@scenarist/nextjs-adapter/app";
+import { getAppBaseURL } from "@/lib/app-base-url";
 
 type ApplicationStatus = {
   readonly state: string;
@@ -25,7 +26,7 @@ async function fetchApplicationStatus(
   const headersList = await headers();
 
   const response = await fetch(
-    `http://localhost:3002/api/issue335/applications/${appId}`,
+    new URL(`/api/issue335/applications/${appId}`, getAppBaseURL()).toString(),
     {
       headers: {
         ...getScenaristHeadersFromReadonlyHeaders(headersList),

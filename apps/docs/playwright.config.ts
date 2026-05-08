@@ -1,5 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const docsPort = process.env.DOCS_PORT ?? "4321";
+const docsBaseURL = `http://localhost:${docsPort}`;
+const docsWranglerConfig = "dist/server/wrangler.json";
+
 /**
  * Playwright configuration for Scenarist Documentation site
  *
@@ -15,13 +19,14 @@ import { defineConfig, devices } from "@playwright/test";
  */
 export default defineConfig({
   testDir: "./tests/playwright",
+  timeout: 120000,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: "list",
   use: {
-    baseURL: "http://localhost:4321",
+    baseURL: docsBaseURL,
     trace: "on-first-retry",
   },
 
@@ -33,8 +38,9 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: "pnpm preview",
-    url: "http://localhost:4321",
+    command: `pnpm exec wrangler dev --config ${docsWranglerConfig} --port ${docsPort}`,
+    url: docsBaseURL,
     reuseExistingServer: !process.env.CI,
+    timeout: 120000,
   },
 });

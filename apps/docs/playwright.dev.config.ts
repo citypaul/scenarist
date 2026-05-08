@@ -1,5 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const docsPort = process.env.DOCS_PORT ?? "4321";
+const docsBaseURL = `http://localhost:${docsPort}`;
+
 /**
  * Playwright configuration for development/UI mode
  *
@@ -16,7 +19,7 @@ export default defineConfig({
   workers: undefined,
   reporter: "list",
   use: {
-    baseURL: "http://localhost:4321",
+    baseURL: docsBaseURL,
     trace: "on-first-retry",
   },
 
@@ -28,8 +31,8 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: "pnpm dev",
-    url: "http://localhost:4321",
+    command: `pnpm exec astro dev --port ${docsPort}`,
+    url: docsBaseURL,
     reuseExistingServer: true,
   },
 });

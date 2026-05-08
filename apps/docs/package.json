@@ -7,7 +7,7 @@
     "dev": "astro dev",
     "start": "astro dev",
     "build": "astro build",
-    "preview": "wrangler pages dev dist --port 4321",
+    "preview": "wrangler dev --port 4321",
     "astro": "astro",
     "typecheck": "astro check",
     "test": "pnpm pw",
@@ -17,27 +17,27 @@
     "test:a11y": "playwright test --config=playwright.lighthouse.config.ts accessibility.spec.ts"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^12.6.13",
-    "@astrojs/sitemap": "^3.7.0",
-    "@astrojs/starlight": "^0.37.7",
+    "@astrojs/cloudflare": "^13.5.0",
+    "@astrojs/sitemap": "^3.7.2",
+    "@astrojs/starlight": "^0.39.1",
     "@fontsource-variable/inter": "^5.2.8",
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
     "@iconify-json/simple-icons": "1.2.70",
-    "astro": "^5.18.1",
+    "astro": "^6.3.1",
     "astro-icon": "1.1.5",
     "rehype-mermaid": "^3.0.0",
     "sharp": "^0.34.5"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.6",
-    "@axe-core/playwright": "^4.11.1",
-    "@playwright/test": "^1.58.2",
-    "@tailwindcss/vite": "^4.2.1",
-    "lighthouse": "^13.0.3",
-    "playwright": "^1.58.2",
+    "@astrojs/check": "^0.9.9",
+    "@axe-core/playwright": "^4.11.3",
+    "@playwright/test": "^1.59.1",
+    "@tailwindcss/vite": "^4.2.4",
+    "lighthouse": "^13.3.0",
+    "playwright": "^1.59.1",
     "playwright-lighthouse": "^4.0.0",
-    "tailwindcss": "^4.2.1",
+    "tailwindcss": "^4.2.4",
     "typescript": "^5.9.3",
-    "wrangler": "4.79.0"
+    "wrangler": "4.90.0"
   }
 }

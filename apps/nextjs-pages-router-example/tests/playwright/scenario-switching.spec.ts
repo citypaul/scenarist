@@ -13,13 +13,14 @@
 
 import { test, expect } from "./fixtures";
 
-test("can switch to premium scenario manually", async ({ page }) => {
+test("can switch to premium scenario manually", async ({ baseURL, page }) => {
   // VERBOSE: Manually construct test ID
   const testId = `test-premium-${Date.now()}`;
+  const finalBaseURL = baseURL ?? "http://localhost:3000";
 
   // VERBOSE: Manually call scenario endpoint
   const response = await page.request.post(
-    "http://localhost:3000/api/__scenario__",
+    `${finalBaseURL}/api/__scenario__`,
     {
       headers: { "x-scenarist-test-id": testId },
       data: { scenario: "premiumUser" },

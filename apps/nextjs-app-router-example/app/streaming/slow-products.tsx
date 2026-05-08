@@ -15,6 +15,7 @@
 import { headers } from "next/headers";
 import type { ProductsResponse } from "@/types/product";
 import { getScenaristHeadersFromReadonlyHeaders } from "@scenarist/nextjs-adapter/app";
+import { getAppBaseURL } from "@/lib/app-base-url";
 
 type SlowProductsProps = {
   readonly tier: string;
@@ -23,7 +24,7 @@ type SlowProductsProps = {
 async function fetchProducts(tier: string): Promise<ProductsResponse> {
   const headersList = await headers();
 
-  const response = await fetch("http://localhost:3002/api/products", {
+  const response = await fetch(new URL("/api/products", getAppBaseURL()), {
     headers: {
       ...getScenaristHeadersFromReadonlyHeaders(headersList),
       "x-user-tier": tier,

@@ -2,6 +2,12 @@ import { defineConfig, devices } from "@playwright/test";
 import type { ScenaristOptions } from "@scenarist/playwright-helpers";
 
 const useCustomServer = process.env.SERVER_MODE === "custom";
+const appPort = process.env.NEXTJS_PAGES_PORT ?? "3000";
+const appBaseURL = `http://localhost:${appPort}`;
+const appHealthURL = `${appBaseURL}/api/health`;
+const nextDevCommand = `pnpm exec next dev --webpack --port ${appPort}`;
+const fakeApiPort = process.env.NEXTJS_FAKE_API_PORT ?? "3001";
+const fakeApiProductsURL = `http://localhost:${fakeApiPort}/products`;
 
 /**
  * Playwright configuration for Scenarist E-commerce Example
@@ -12,13 +18,14 @@ const useCustomServer = process.env.SERVER_MODE === "custom";
  */
 export default defineConfig<ScenaristOptions>({
   testDir: "./tests/playwright",
+  timeout: 120000,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: "list",
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: appBaseURL,
     scenaristEndpoint: "/api/__scenario__",
     scenaristStateEndpoint: "/api/__scenarist__/state",
     trace: "on-first-retry",
@@ -50,18 +57,20 @@ export default defineConfig<ScenaristOptions>({
       command: useCustomServer
         ? "node server.cjs"
         : process.env.SCENARIST_LOG
-          ? "pnpm dev:logs"
-          : "pnpm dev",
-      url: "http://localhost:3000",
+          ? `SCENARIST_LOG=1 ${nextDevCommand}`
+          : nextDevCommand,
+      url: appHealthURL,
       reuseExistingServer: !process.env.CI,
       // Show server output (including Scenarist logs) when SCENARIST_LOG is set
       stdout: process.env.SCENARIST_LOG ? "pipe" : "ignore",
       stderr: "pipe",
+      timeout: 120000,
     },
     {
-      command: "pnpm fake-api",
-      url: "http://localhost:3001/products",
+      command: `pnpm exec json-server fake-api/db.json --port ${fakeApiPort}`,
+      url: fakeApiProductsURL,
       reuseExistingServer: !process.env.CI,
+      timeout: 120000,
     },
   ],
 });

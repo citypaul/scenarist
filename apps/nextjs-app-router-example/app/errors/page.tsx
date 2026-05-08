@@ -11,11 +11,12 @@
 import { headers } from "next/headers";
 import { getScenaristHeadersFromReadonlyHeaders } from "@scenarist/nextjs-adapter/app";
 import type { ErrorsResponse } from "../api/errors/route";
+import { getAppBaseURL } from "@/lib/app-base-url";
 
 async function fetchErrorData(): Promise<ErrorsResponse> {
   const headersList = await headers();
 
-  const response = await fetch("http://localhost:3002/api/errors", {
+  const response = await fetch(new URL("/api/errors", getAppBaseURL()), {
     headers: {
       ...getScenaristHeadersFromReadonlyHeaders(headersList),
     },

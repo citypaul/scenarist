@@ -3,7 +3,8 @@ const express = require('express4');
 const next = require('next');
 
 const dev = process.env.NODE_ENV !== 'production';
-const app = next({ dev, port: 3000 });
+const port = Number(process.env.NEXTJS_PAGES_PORT ?? process.env.PORT ?? 3000);
+const app = next({ dev, port, webpack: true });
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
@@ -16,7 +17,7 @@ app.prepare().then(() => {
 
   // Express 4 wildcard syntax - matches all routes
   server.all('*', (req, res) => handle(req, res));
-  server.listen(3000, () => {
-    console.log('> Custom server ready on http://localhost:3000');
+  server.listen(port, () => {
+    console.log(`> Custom server ready on http://localhost:${port}`);
   });
 });

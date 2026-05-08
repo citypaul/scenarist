@@ -42,23 +42,22 @@ test.describe("Cart Server Page - Stateful Mocks with Server Components", () => 
   });
 
   test("should display cart item after adding product via state capture", async ({
+    baseURL,
     page,
     switchScenario,
   }) => {
     const testId = await switchScenario(page, "cartWithState");
+    const finalBaseURL = baseURL ?? "http://localhost:3002";
 
     // Add product through Next.js API route (not directly to json-server)
     // page.request uses a separate context, so we must explicitly include x-scenarist-test-id
-    const response = await page.request.post(
-      "http://localhost:3002/api/cart/add",
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "x-scenarist-test-id": testId,
-        },
-        data: { productId: "prod-1" },
+    const response = await page.request.post(`${finalBaseURL}/api/cart/add`, {
+      headers: {
+        "Content-Type": "application/json",
+        "x-scenarist-test-id": testId,
       },
-    );
+      data: { productId: "prod-1" },
+    });
 
     if (!response.ok()) {
       const body = await response.json();
@@ -84,23 +83,22 @@ test.describe("Cart Server Page - Stateful Mocks with Server Components", () => 
   });
 
   test("should aggregate quantities when same product added multiple times", async ({
+    baseURL,
     page,
     switchScenario,
   }) => {
     const testId = await switchScenario(page, "cartWithState");
+    const finalBaseURL = baseURL ?? "http://localhost:3002";
 
     // Add same product 3 times
     for (let i = 0; i < 3; i++) {
-      const response = await page.request.post(
-        "http://localhost:3002/api/cart/add",
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "x-scenarist-test-id": testId,
-          },
-          data: { productId: "prod-1" },
+      const response = await page.request.post(`${finalBaseURL}/api/cart/add`, {
+        headers: {
+          "Content-Type": "application/json",
+          "x-scenarist-test-id": testId,
         },
-      );
+        data: { productId: "prod-1" },
+      });
       expect(response.ok()).toBe(true);
     }
 
@@ -113,10 +111,12 @@ test.describe("Cart Server Page - Stateful Mocks with Server Components", () => 
   });
 
   test("should display multiple different products with correct quantities", async ({
+    baseURL,
     page,
     switchScenario,
   }) => {
     const testId = await switchScenario(page, "cartWithState");
+    const finalBaseURL = baseURL ?? "http://localhost:3002";
 
     // Add product A twice, product B once, product C three times
     const addRequests = [
@@ -129,16 +129,13 @@ test.describe("Cart Server Page - Stateful Mocks with Server Components", () => 
     ];
 
     for (const data of addRequests) {
-      const response = await page.request.post(
-        "http://localhost:3002/api/cart/add",
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "x-scenarist-test-id": testId,
-          },
-          data,
+      const response = await page.request.post(`${finalBaseURL}/api/cart/add`, {
+        headers: {
+          "Content-Type": "application/json",
+          "x-scenarist-test-id": testId,
         },
-      );
+        data,
+      });
       expect(response.ok()).toBe(true);
     }
 
@@ -173,13 +170,15 @@ test.describe("Cart Server Page - Stateful Mocks with Server Components", () => 
   });
 
   test("should demonstrate that server component stateful mocks work without Jest", async ({
+    baseURL,
     page,
     switchScenario,
   }) => {
     const testId = await switchScenario(page, "cartWithState");
+    const finalBaseURL = baseURL ?? "http://localhost:3002";
 
     // Add a product to prove state capture works
-    await page.request.post("http://localhost:3002/api/cart/add", {
+    await page.request.post(`${finalBaseURL}/api/cart/add`, {
       headers: {
         "Content-Type": "application/json",
         "x-scenarist-test-id": testId,

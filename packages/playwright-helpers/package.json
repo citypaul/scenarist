@@ -57,7 +57,7 @@
     "@playwright/test": "^1.0.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.58.2",
+    "@playwright/test": "^1.59.1",
     "@scenarist/eslint-config": "workspace:*",
     "@scenarist/typescript-config": "workspace:*",
     "@types/node": "^25.3.0",

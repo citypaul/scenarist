@@ -20,6 +20,7 @@ import { headers } from "next/headers";
 import type { ProductsResponse } from "@/types/product";
 
 import { getScenaristHeadersFromReadonlyHeaders } from "@scenarist/nextjs-adapter/app";
+import { getAppBaseURL } from "@/lib/app-base-url";
 
 type ProductsPageProps = {
   searchParams: Promise<{ tier?: string; campaign?: string }>;
@@ -35,7 +36,7 @@ async function fetchProducts(
   // Get ReadonlyHeaders from Next.js Server Component
   const headersList = await headers();
 
-  const url = new URL("http://localhost:3002/api/products");
+  const url = new URL("/api/products", getAppBaseURL());
   if (campaign) {
     url.searchParams.set("campaign", campaign);
   }

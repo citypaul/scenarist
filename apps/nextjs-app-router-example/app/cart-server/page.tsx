@@ -16,6 +16,7 @@
 import { headers } from "next/headers";
 
 import { getScenaristHeadersFromReadonlyHeaders } from "@scenarist/nextjs-adapter/app";
+import { getAppBaseURL } from "@/lib/app-base-url";
 
 type CartItem = {
   readonly id: string;
@@ -56,7 +57,7 @@ async function fetchCart(): Promise<CartResponse> {
   // Get ReadonlyHeaders from Next.js Server Component
   const headersList = await headers();
 
-  const response = await fetch("http://localhost:3002/api/cart", {
+  const response = await fetch(new URL("/api/cart", getAppBaseURL()), {
     headers: {
       ...getScenaristHeadersFromReadonlyHeaders(headersList),
     },

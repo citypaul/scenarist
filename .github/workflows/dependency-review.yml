@@ -62,6 +62,7 @@ jobs:
           # uri-js: BSD-2-Clause AND BSD-2-Clause-Views (URI parsing library)
           # lucide-react: ISC license (icon library, license detection issue)
           # dompurify: compound SPDX expression including Apache-2.0 and MPL-2.0 (both allowed)
+          # protobufjs: BSD-3-Clause plus protobuf license metadata from scancode
           allow-dependencies-licenses: >-
             pkg:npm/dompurify,
             pkg:npm/bowser,
@@ -81,6 +82,7 @@ jobs:
             pkg:npm/@img/sharp-win32-ia32,
             pkg:npm/@img/sharp-win32-x64,
             pkg:npm/uri-js,
-            pkg:npm/lucide-react
+            pkg:npm/lucide-react,
+            pkg:npm/protobufjs
           # Comment on PR with findings
           comment-summary-in-pr: on-failure
