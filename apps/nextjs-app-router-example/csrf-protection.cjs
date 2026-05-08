@@ -1,18 +1,6 @@
 const { URL } = require('node:url');
 
-const csrfCookieName = 'scenarist-csrf-secret';
 const safeRequestMethods = new Set(['GET', 'HEAD', 'OPTIONS']);
-
-const getCookieValue = (cookieHeader, cookieName) => {
-  const cookie = (cookieHeader ?? '')
-    .split(';')
-    .map((candidate) => candidate.trim())
-    .find((candidate) => candidate.startsWith(`${cookieName}=`));
-
-  return cookie === undefined
-    ? undefined
-    : decodeURIComponent(cookie.slice(cookieName.length + 1));
-};
 
 const getHeaderOrigin = (headerValue) => {
   if (headerValue === undefined) {
@@ -26,64 +14,52 @@ const getHeaderOrigin = (headerValue) => {
   }
 };
 
-const hasSameOriginEvidence = (req) => {
-  const host = req.get('host');
+const getRequestOrigin = (req) => {
+  const origin = getHeaderOrigin(req.get('origin'));
 
-  if (host === undefined) {
-    return false;
+  if (origin !== undefined) {
+    return origin;
   }
 
-  const expectedOrigin = `${req.protocol}://${host}`;
-  const origin = getHeaderOrigin(req.get('origin'));
-  const refererOrigin = getHeaderOrigin(req.get('referer'));
-
-  return origin === expectedOrigin || refererOrigin === expectedOrigin;
+  return getHeaderOrigin(req.get('referer'));
 };
 
-const hasValidCsrfToken = (req, tokens, cookieName) => {
-  const token = req.get('x-csrf-token');
-  const secret = getCookieValue(req.get('cookie'), cookieName);
-
-  return (
-    token !== undefined && secret !== undefined && tokens.verify(secret, token)
-  );
+const getAllowedOrigin = (allowedOrigin) => {
+  try {
+    return new URL(allowedOrigin).origin;
+  } catch {
+    throw new Error(`Invalid CSRF allowed origin: ${allowedOrigin}`);
+  }
 };
 
 const createCsrfTokenHandler =
-  ({ tokens, cookieName = csrfCookieName, secureCookies }) =>
-  (req, res) => {
-    const existingSecret = getCookieValue(req.get('cookie'), cookieName);
-    const secret = existingSecret ?? tokens.secretSync();
-
-    res.cookie(cookieName, secret, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: secureCookies,
-    });
+  ({ tokens, secret }) =>
+  (_req, res) => {
     res.json({ token: tokens.create(secret) });
   };
 
 const createCsrfProtection =
-  ({ tokens, cookieName = csrfCookieName }) =>
-  (req, res, nextMiddleware) => {
-    const isSafeRequest = safeRequestMethods.has(req.method);
-    const hasCookies = req.get('cookie') !== undefined;
+  ({ allowedOrigin }) => {
+    const expectedOrigin = getAllowedOrigin(allowedOrigin);
 
-    if (
-      isSafeRequest ||
-      !hasCookies ||
-      hasSameOriginEvidence(req) ||
-      hasValidCsrfToken(req, tokens, cookieName)
-    ) {
-      nextMiddleware();
-      return;
-    }
+    return (req, res, nextMiddleware) => {
+      const isSafeRequest = safeRequestMethods.has(req.method);
+      const hasCookies = req.get('cookie') !== undefined;
 
-    res.status(403).json({ error: 'CSRF validation failed' });
+      if (
+        isSafeRequest ||
+        !hasCookies ||
+        getRequestOrigin(req) === expectedOrigin
+      ) {
+        nextMiddleware();
+        return;
+      }
+
+      res.status(403).json({ error: 'CSRF validation failed' });
+    };
   };
 
 module.exports = {
   createCsrfProtection,
   createCsrfTokenHandler,
-  csrfCookieName,
 };

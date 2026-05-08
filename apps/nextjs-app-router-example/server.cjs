@@ -12,6 +12,7 @@ process.env.NEXT_PUBLIC_APP_BASE_URL ??= `http://localhost:${port}`;
 const app = next({ dev, port, webpack: true });
 const handle = app.getRequestHandler();
 const csrfTokens = new Tokens();
+const csrfSecret = csrfTokens.secretSync();
 
 app.prepare().then(() => {
   const server = express();
@@ -23,10 +24,12 @@ app.prepare().then(() => {
 
   server.get(
     '/__csrf',
-    createCsrfTokenHandler({ tokens: csrfTokens, secureCookies: !dev }),
+    createCsrfTokenHandler({ tokens: csrfTokens, secret: csrfSecret }),
   );
 
-  server.use(createCsrfProtection({ tokens: csrfTokens }));
+  server.use(
+    createCsrfProtection({ allowedOrigin: process.env.NEXT_PUBLIC_APP_BASE_URL }),
+  );
 
   // Express 5 wildcard syntax - matches all routes
   server.all('/{*path}', (req, res) => handle(req, res));

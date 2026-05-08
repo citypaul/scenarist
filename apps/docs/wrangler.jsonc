@@ -1,5 +1,5 @@
 {
-  "main": "@astrojs/cloudflare/entrypoints/server",
+  "main": "./worker.js",
   "name": "scenarist",
   "compatibility_date": "2025-11-10",
   "compatibility_flags": [

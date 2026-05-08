@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 const docsPort = process.env.DOCS_PORT ?? "4321";
 const docsBaseURL = `http://localhost:${docsPort}`;
+const docsWranglerConfig = "dist/server/wrangler.json";
 
 /**
  * Playwright configuration for Scenarist Documentation site
@@ -37,7 +38,7 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: `pnpm exec wrangler dev --port ${docsPort}`,
+    command: `pnpm exec wrangler dev --config ${docsWranglerConfig} --port ${docsPort}`,
     url: docsBaseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120000,

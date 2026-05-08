@@ -4,8 +4,9 @@ const Tokens = require('csrf');
 const {
   createCsrfProtection,
   createCsrfTokenHandler,
-  csrfCookieName,
 } = require('../csrf-protection.cjs');
+
+const allowedOrigin = 'http://localhost:3006';
 
 const createRequest = ({ method = 'POST', headers = {}, protocol = 'http' }) => ({
   method,
@@ -41,8 +42,7 @@ const createNextSpy = () => {
 };
 
 test('allows mutating requests without ambient cookies', () => {
-  const tokens = new Tokens();
-  const middleware = createCsrfProtection({ tokens });
+  const middleware = createCsrfProtection({ allowedOrigin });
   const response = createResponse();
   const next = createNextSpy();
 
@@ -53,8 +53,7 @@ test('allows mutating requests without ambient cookies', () => {
 });
 
 test('allows same-origin mutating requests with ambient cookies', () => {
-  const tokens = new Tokens();
-  const middleware = createCsrfProtection({ tokens });
+  const middleware = createCsrfProtection({ allowedOrigin });
   const response = createResponse();
   const next = createNextSpy();
 
@@ -62,8 +61,8 @@ test('allows same-origin mutating requests with ambient cookies', () => {
     createRequest({
       headers: {
         cookie: 'session=abc',
-        host: 'localhost:3006',
-        origin: 'http://localhost:3006',
+        host: 'evil.example',
+        origin: allowedOrigin,
       },
     }),
     response,
@@ -75,8 +74,7 @@ test('allows same-origin mutating requests with ambient cookies', () => {
 });
 
 test('rejects cross-origin mutating requests with ambient cookies', () => {
-  const tokens = new Tokens();
-  const middleware = createCsrfProtection({ tokens });
+  const middleware = createCsrfProtection({ allowedOrigin });
   const response = createResponse();
   const next = createNextSpy();
 
@@ -97,38 +95,79 @@ test('rejects cross-origin mutating requests with ambient cookies', () => {
   assert.deepEqual(response.body, { error: 'CSRF validation failed' });
 });
 
-test('allows token-bearing mutating requests without origin evidence', () => {
-  const tokens = new Tokens();
-  const handler = createCsrfTokenHandler({ tokens, secureCookies: false });
-  const tokenResponse = createResponse();
-
-  handler(createRequest({ method: 'GET' }), tokenResponse);
-
-  const csrfCookie = tokenResponse.cookies.find(
-    (cookie) => cookie.name === csrfCookieName,
-  );
-  assert.notEqual(csrfCookie, undefined);
-  assert.deepEqual(csrfCookie.options, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: false,
-  });
-
-  const middleware = createCsrfProtection({ tokens });
-  const protectedResponse = createResponse();
+test('rejects mutating requests with ambient cookies and no origin evidence', () => {
+  const middleware = createCsrfProtection({ allowedOrigin });
+  const response = createResponse();
   const next = createNextSpy();
 
   middleware(
     createRequest({
       headers: {
-        cookie: `${csrfCookieName}=${encodeURIComponent(csrfCookie.value)}`,
-        'x-csrf-token': tokenResponse.body.token,
+        cookie: 'session=abc',
       },
     }),
-    protectedResponse,
+    response,
     next.next,
   );
 
-  assert.equal(next.wasCalled(), true);
-  assert.equal(protectedResponse.statusCode, undefined);
+  assert.equal(next.wasCalled(), false);
+  assert.equal(response.statusCode, 403);
+  assert.deepEqual(response.body, { error: 'CSRF validation failed' });
+});
+
+test('issues CSRF tokens without storing secrets in cookies', () => {
+  const tokens = new Tokens();
+  const secret = tokens.secretSync();
+  const handler = createCsrfTokenHandler({ tokens, secret });
+  const tokenResponse = createResponse();
+
+  handler(createRequest({ method: 'GET' }), tokenResponse);
+
+  assert.deepEqual(tokenResponse.cookies, []);
+  assert.equal(tokens.verify(secret, tokenResponse.body.token), true);
+});
+
+test('rejects token-bearing mutating requests without origin evidence', () => {
+  const tokens = new Tokens();
+  const secret = tokens.secretSync();
+  const middleware = createCsrfProtection({ allowedOrigin });
+  const response = createResponse();
+  const next = createNextSpy();
+  const token = tokens.create(secret);
+
+  middleware(
+    createRequest({
+      headers: {
+        cookie: 'session=abc',
+        'x-csrf-token': token,
+      },
+    }),
+    response,
+    next.next,
+  );
+
+  assert.equal(next.wasCalled(), false);
+  assert.equal(response.statusCode, 403);
+  assert.deepEqual(response.body, { error: 'CSRF validation failed' });
+});
+
+test('rejects invalid CSRF tokens without origin evidence', () => {
+  const middleware = createCsrfProtection({ allowedOrigin });
+  const response = createResponse();
+  const next = createNextSpy();
+
+  middleware(
+    createRequest({
+      headers: {
+        cookie: 'session=abc',
+        'x-csrf-token': 'invalid-token',
+      },
+    }),
+    response,
+    next.next,
+  );
+
+  assert.equal(next.wasCalled(), false);
+  assert.equal(response.statusCode, 403);
+  assert.deepEqual(response.body, { error: 'CSRF validation failed' });
 });
