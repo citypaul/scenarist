@@ -14,7 +14,7 @@ import type {
 import { ScenaristError, ErrorCodes } from "../types/errors.js";
 import { extractFromPath } from "./path-extraction.js";
 import { applyTemplates } from "./template-replacement.js";
-import { matchesRegex } from "./regex-matching.js";
+import { matchesRegex, matchesTrustedNativeRegex } from "./regex-matching.js";
 import { createStateResponseResolver } from "./state-response-resolver.js";
 import { deepEquals } from "./deep-equals.js";
 import { isRecord } from "./type-guards.js";
@@ -810,10 +810,7 @@ const matchesValue = (
 
   // Native RegExp support (ADR-0016)
   if (criteriaValue instanceof RegExp) {
-    return matchesRegex(requestValue, {
-      source: criteriaValue.source,
-      flags: criteriaValue.flags,
-    });
+    return matchesTrustedNativeRegex(requestValue, criteriaValue);
   }
 
   if (typeof criteriaValue === "number" || typeof criteriaValue === "boolean") {
