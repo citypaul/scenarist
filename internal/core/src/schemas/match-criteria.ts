@@ -32,13 +32,18 @@ const VALID_REGEX_FLAGS = /^[gimsuvy]*$/;
  *
  * Uses redos-detector to analyze the pattern for exponential backtracking.
  * Patterns that could cause catastrophic backtracking are rejected.
+ * redos-detector errors are treated as unsafe.
  *
  * @param pattern - The regex pattern to validate
  * @returns true if the pattern is safe, false otherwise
  */
 const isPatternSafeFromReDoS = (pattern: string): boolean => {
-  const result = isSafePattern(pattern);
-  return result.safe;
+  try {
+    const result = isSafePattern(pattern);
+    return result.safe;
+  } catch {
+    return false;
+  }
 };
 
 /**
