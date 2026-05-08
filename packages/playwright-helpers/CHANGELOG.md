@@ -1,5 +1,14 @@
 # @scenarist/playwright-helpers
 
+## 0.4.12
+
+### Patch Changes
+
+- [#516](https://github.com/citypaul/scenarist/pull/516) [`1bca0b2`](https://github.com/citypaul/scenarist/commit/1bca0b24b04f58884e79666a1ba0563c5a0e6c9e) Thanks [@citypaul](https://github.com/citypaul)! - Harden release workflows to avoid unpinned npm command usage in Scorecard scans.
+
+- Updated dependencies [[`1bca0b2`](https://github.com/citypaul/scenarist/commit/1bca0b24b04f58884e79666a1ba0563c5a0e6c9e)]:
+  - @scenarist/core@0.4.12
+
 ## 0.4.11
 
 ### Patch Changes
