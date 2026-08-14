@@ -7,9 +7,13 @@ import { match } from "path-to-regexp";
  * - string for simple params (:id)
  * - string[] for repeating params (:path+)
  */
+type UrlParams = Readonly<
+  Record<string, string | ReadonlyArray<string>>
+>;
+
 export type UrlMatchResult = {
   readonly matches: boolean;
-  readonly params?: Readonly<Record<string, string | ReadonlyArray<string>>>;
+  readonly params?: UrlParams;
 };
 
 /**
@@ -50,7 +54,7 @@ const extractPathnameOrReturnAsIs = (url: string): string => {
  * Returns Record<string, string | string[]> matching MSW's documented types.
  */
 const extractParams = (
-  params: object,
+  params: UrlParams,
 ): Record<string, string | ReadonlyArray<string>> => {
   const result: Record<string, string | ReadonlyArray<string>> = {};
 
@@ -62,7 +66,7 @@ const extractParams = (
     // Keep strings and arrays (MSW documented: string | string[])
     if (typeof value === "string") {
       result[key] = value;
-    } else if (Array.isArray(value)) {
+    } else {
       result[key] = value;
     }
   }
@@ -169,7 +173,9 @@ export const matchesUrl = (
     requestPath = requestPath.substring(0, queryIndex);
   }
 
-  const matcher = match(patternPath, { decode: decodeURIComponent });
+  const matcher = match<UrlParams>(patternPath, {
+    decode: decodeURIComponent,
+  });
   const result = matcher(requestPath);
 
   if (result) {

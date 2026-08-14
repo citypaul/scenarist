@@ -30,8 +30,6 @@ import { createScenarioEndpoint, createStateEndpoint } from "./endpoints.js";
  */
 declare global {
   // eslint-disable-next-line no-var
-  var __scenarist_msw_started: boolean | undefined;
-  // eslint-disable-next-line no-var
   var __scenarist_registry: ScenarioRegistry | undefined;
   // eslint-disable-next-line no-var
   var __scenarist_store: ScenarioStore | undefined;
@@ -154,17 +152,7 @@ export const createScenaristImpl = (
     clearScenario: (testId) => manager.clearScenario(testId),
     createScenarioEndpoint: () => createScenarioEndpoint(manager, config),
     createStateEndpoint: () => createStateEndpoint(manager, config),
-    start: () => {
-      // Singleton guard - prevents duplicate MSW initialization
-      // Next.js (Turbopack) creates multiple module instances, so this ensures
-      // server.listen() is only called once across all instances
-      if (global.__scenarist_msw_started) {
-        return;
-      }
-
-      global.__scenarist_msw_started = true;
-      server.listen();
-    },
+    start: () => server.listen(),
     stop: async () => server.close(),
   };
 

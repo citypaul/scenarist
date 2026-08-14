@@ -12,3 +12,6 @@ export { buildResponse } from "./conversion/response-builder.js";
 
 export { createDynamicHandler } from "./handlers/dynamic-handler.js";
 export type { DynamicHandlerOptions } from "./handlers/dynamic-handler.js";
+
+export { createSharedMswServer } from "./server/create-shared-server.js";
+export type { SharedMswServer } from "./server/create-shared-server.js";

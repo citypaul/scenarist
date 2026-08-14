@@ -26,6 +26,20 @@ export type DynamicHandlerOptions = {
   readonly logger?: Logger;
 };
 
+export type DynamicRequestResolution =
+  | {
+      readonly type: "handled";
+      readonly response: Response;
+    }
+  | {
+      readonly type: "unmatched";
+      readonly strictMode: boolean;
+    };
+
+export type DynamicRequestResolver = (
+  request: Request,
+) => Promise<DynamicRequestResolution>;
+
 /**
  * Extract HttpRequestContext from MSW Request object.
  * Converts MSW request to the format expected by ResponseSelector.
@@ -156,10 +170,10 @@ const getMocksFromScenarios = (
   return mocksWithParams;
 };
 
-export const createDynamicHandler = (
+export const createDynamicRequestResolver = (
   options: DynamicHandlerOptions,
-): HttpHandler => {
-  return http.all("*", async ({ request }) => {
+): DynamicRequestResolver => {
+  return async (request) => {
     const testId = options.getTestId(request);
 
     try {
@@ -220,7 +234,10 @@ export const createDynamicHandler = (
       );
 
       if (result.success) {
-        return buildResponse(result.data);
+        return {
+          type: "handled",
+          response: await buildResponse(result.data),
+        };
       }
 
       // Determine which error behavior to use based on error code
@@ -244,11 +261,10 @@ export const createDynamicHandler = (
         });
       }
 
-      if (options.strictMode) {
-        return new Response(null, { status: 501 });
-      }
-
-      return passthrough();
+      return {
+        type: "unmatched",
+        strictMode: options.strictMode,
+      };
     } catch (error) {
       // Log the error via Logger if available
       if (options.logger) {
@@ -295,10 +311,33 @@ export const createDynamicHandler = (
               code: errorCode,
             };
 
-      return new Response(JSON.stringify(responseBody), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return {
+        type: "handled",
+        response: new Response(JSON.stringify(responseBody), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }),
+      };
     }
+  };
+};
+
+export const createDynamicHandler = (
+  options: DynamicHandlerOptions,
+): HttpHandler => {
+  const resolveRequest = createDynamicRequestResolver(options);
+
+  return http.all("*", async ({ request }) => {
+    const resolution = await resolveRequest(request);
+
+    if (resolution.type === "handled") {
+      return resolution.response;
+    }
+
+    if (resolution.strictMode) {
+      return new Response(null, { status: 501 });
+    }
+
+    return passthrough();
   });
 };

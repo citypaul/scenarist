@@ -17,16 +17,16 @@
     "test:a11y": "playwright test --config=playwright.lighthouse.config.ts accessibility.spec.ts"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^13.5.0",
+    "@astrojs/cloudflare": "^14.2.1",
     "@astrojs/sitemap": "^3.7.2",
-    "@astrojs/starlight": "^0.39.1",
+    "@astrojs/starlight": "^0.41.7",
     "@fontsource-variable/inter": "^5.2.8",
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
     "@iconify-json/simple-icons": "1.2.70",
-    "astro": "^6.3.1",
+    "astro": "^7.2.2",
     "astro-icon": "1.1.5",
     "rehype-mermaid": "^3.0.0",
-    "sharp": "^0.34.5"
+    "sharp": "^0.35.3"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
@@ -38,6 +38,6 @@
     "playwright-lighthouse": "^4.0.0",
     "tailwindcss": "^4.2.4",
     "typescript": "^5.9.3",
-    "wrangler": "4.90.0"
+    "wrangler": "^4.123.0"
   }
 }
