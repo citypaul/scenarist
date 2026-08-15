@@ -281,5 +281,5 @@ export default defineConfig({
     icon(),
   ],
 
-  adapter: cloudflare(),
+  adapter: cloudflare({ imageService: "passthrough" }),
 });
