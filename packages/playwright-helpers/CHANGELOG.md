@@ -1,5 +1,14 @@
 # @scenarist/playwright-helpers
 
+## 0.4.14
+
+### Patch Changes
+
+- [#527](https://github.com/citypaul/scenarist/pull/527) [`c87e0c1`](https://github.com/citypaul/scenarist/commit/c87e0c14402d490848a9bf64256f10cfee04afa5) Thanks [@citypaul](https://github.com/citypaul)! - Remediate Dependabot security findings with available patched versions and keep overlapping Express and Next.js adapters compatible with the upgraded MSW interceptor stack. The extract-zip advisory (GHSA-jmr9-qjv8-65gv) remains unresolved because upstream provides no patched version.
+
+- Updated dependencies [[`c87e0c1`](https://github.com/citypaul/scenarist/commit/c87e0c14402d490848a9bf64256f10cfee04afa5)]:
+  - @scenarist/core@0.4.14
+
 ## 0.4.13
 
 ### Patch Changes
