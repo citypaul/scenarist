@@ -60,7 +60,7 @@ jobs:
         if: github.event_name == 'push'
         id: deploy-production
         run: |
-          DEPLOY_OUTPUT=$(pnpm --filter=@scenarist/docs exec wrangler deploy --name scenarist 2>&1)
+          DEPLOY_OUTPUT=$(pnpm --filter=@scenarist/docs exec wrangler deploy --name scenarist 2>&1) || { echo "$DEPLOY_OUTPUT"; exit 1; }
           echo "$DEPLOY_OUTPUT"
 
           # Extract URL from wrangler output
@@ -78,7 +78,7 @@ jobs:
         id: deploy-preview
         run: |
           WORKER_NAME="scenarist-pr-${{ github.event.pull_request.number }}"
-          DEPLOY_OUTPUT=$(pnpm --filter=@scenarist/docs exec wrangler deploy --name "$WORKER_NAME" 2>&1)
+          DEPLOY_OUTPUT=$(pnpm --filter=@scenarist/docs exec wrangler deploy --name "$WORKER_NAME" 2>&1) || { echo "$DEPLOY_OUTPUT"; exit 1; }
           echo "$DEPLOY_OUTPUT"
 
           # Extract URL from wrangler output

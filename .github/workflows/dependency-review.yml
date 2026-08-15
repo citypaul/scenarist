@@ -51,6 +51,7 @@ jobs:
             CC0-1.0,
             CC-BY-3.0,
             CC-BY-4.0,
+            OFL-1.1,
             Unlicense,
             Python-2.0,
             BlueOak-1.0.0,
@@ -83,6 +84,7 @@ jobs:
             pkg:npm/@img/sharp-win32-x64,
             pkg:npm/uri-js,
             pkg:npm/lucide-react,
+            pkg:npm/robust-predicates,
             pkg:npm/protobufjs
           # Comment on PR with findings
           comment-summary-in-pr: on-failure

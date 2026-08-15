@@ -1,4 +1,3 @@
-import { setupServer } from "msw/node";
 import {
   buildConfig,
   createScenarioManager,
@@ -14,7 +13,10 @@ import {
   type ScenarioManager,
   type ResponseSelector,
 } from "@scenarist/core";
-import { createDynamicHandler } from "@scenarist/msw-adapter";
+import {
+  createSharedMswServer,
+  type SharedMswServer,
+} from "@scenarist/msw-adapter";
 
 /**
  * Shared setup logic for both Pages Router and App Router adapters.
@@ -27,7 +29,7 @@ export type ScenaristBaseSetup = {
   readonly config: ScenaristConfig;
   readonly manager: ScenarioManager;
   readonly responseSelector: ResponseSelector;
-  readonly server: ReturnType<typeof setupServer>;
+  readonly server: SharedMswServer;
   readonly currentTestId: { value: string }; // Mutable ref for MSW handler
 };
 
@@ -83,7 +85,7 @@ export const createScenaristBase = (
   const currentTestId = { value: config.defaultTestId };
 
   // Create MSW dynamic handler
-  const handler = createDynamicHandler({
+  const server = createSharedMswServer({
     getTestId: (request) => {
       // Extract test ID from request headers (MSW Request object)
       const headerValue = request.headers.get(SCENARIST_TEST_ID_HEADER);
@@ -94,9 +96,6 @@ export const createScenaristBase = (
     strictMode: config.strictMode,
     responseSelector,
   });
-
-  // Initialize MSW server
-  const server = setupServer(handler);
 
   return {
     config,

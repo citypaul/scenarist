@@ -11,7 +11,8 @@ import cloudflare from "@astrojs/cloudflare";
 // https://astro.build/config
 export default defineConfig({
   site: "https://scenarist.io",
-  output: "server",
+  output: "static",
+  session: false,
 
   vite: {
     plugins: [tailwindcss()],
@@ -281,5 +282,5 @@ export default defineConfig({
     icon(),
   ],
 
-  adapter: cloudflare(),
+  adapter: cloudflare({ imageService: "passthrough" }),
 });

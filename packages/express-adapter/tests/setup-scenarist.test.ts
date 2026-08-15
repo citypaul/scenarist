@@ -373,6 +373,112 @@ describe("createScenarist", () => {
     expect(response.body.message).toBe("mocked response");
   });
 
+  it("should support overlapping lifecycles across instances", async () => {
+    const first = createTestScenarist({
+      enabled: true,
+      scenarios: {
+        default: {
+          id: "default",
+          name: "First lifecycle",
+          description: "First lifecycle",
+          mocks: [],
+        },
+      },
+    });
+    const second = createTestScenarist({
+      enabled: true,
+      scenarios: {
+        default: {
+          id: "default",
+          name: "Second lifecycle",
+          description: "Second lifecycle",
+          mocks: [
+            {
+              method: "GET",
+              url: "https://second-lifecycle.example.test/data",
+              response: {
+                status: 200,
+                body: { source: "second" },
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    try {
+      first.start();
+      second.start();
+
+      const response = await fetch(
+        "https://second-lifecycle.example.test/data",
+      );
+
+      expect(await response.json()).toEqual({ source: "second" });
+
+      await first.stop();
+
+      const responseAfterFirstStops = await fetch(
+        "https://second-lifecycle.example.test/data",
+      );
+
+      expect(await responseAfterFirstStops.json()).toEqual({
+        source: "second",
+      });
+    } finally {
+      await second.stop();
+      await first.stop();
+    }
+  });
+
+  it("should let an older owning instance handle before a newer strict fallback", async () => {
+    const owner = createTestScenarist({
+      enabled: true,
+      scenarios: {
+        default: {
+          id: "default",
+          name: "Owning lifecycle",
+          description: "Owning lifecycle",
+          mocks: [
+            {
+              method: "GET",
+              url: "https://older-owner.example.test/data",
+              response: {
+                status: 200,
+                body: { source: "owner" },
+              },
+            },
+          ],
+        },
+      },
+    });
+    const strictNonOwner = createTestScenarist({
+      enabled: true,
+      strictMode: true,
+      scenarios: {
+        default: {
+          id: "default",
+          name: "Strict non-owner",
+          description: "Strict non-owner",
+          mocks: [],
+        },
+      },
+    });
+
+    try {
+      owner.start();
+      strictNonOwner.start();
+
+      const response = await fetch("https://older-owner.example.test/data");
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ source: "owner" });
+    } finally {
+      await strictNonOwner.stop();
+      await owner.stop();
+    }
+  });
+
   it("should have all scenarios registered at initialization", () => {
     const scenarist = createTestScenarist({
       enabled: true,

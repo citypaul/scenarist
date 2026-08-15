@@ -11,7 +11,7 @@ type RegexPatternInput = {
 const testRegex = (value: string, pattern: RegexPatternInput): boolean => {
   try {
     // eslint-disable-next-line security/detect-non-literal-regexp -- Serialized patterns are schema-validated and native RegExp inputs are trusted code.
-    const regex = new RegExp(pattern.source, pattern.flags); // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
+    const regex = new RegExp(pattern.source, pattern.flags); // nosemgrep
     return regex.test(value);
   } catch {
     return false;

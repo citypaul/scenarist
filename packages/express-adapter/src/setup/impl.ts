@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { setupServer } from "msw/node";
 import {
   buildConfig,
   createScenarioManager,
@@ -13,7 +12,7 @@ import {
   type ScenaristAdapter,
   type ScenaristScenarios,
 } from "@scenarist/core";
-import { createDynamicHandler } from "@scenarist/msw-adapter";
+import { createSharedMswServer } from "@scenarist/msw-adapter";
 import { testIdStorage } from "../middleware/test-id-middleware.js";
 import { createTestIdMiddleware } from "../middleware/test-id-middleware.js";
 import { createScenarioEndpoints } from "../endpoints/scenario-endpoints.js";
@@ -100,15 +99,13 @@ export const createScenaristImpl = <T extends ScenaristScenarios>(
     logger,
   });
 
-  const handler = createDynamicHandler({
+  const server = createSharedMswServer({
     getTestId: (_request) => testIdStorage.getStore() ?? config.defaultTestId,
     getActiveScenario: (testId) => manager.getActiveScenario(testId),
     getScenarioDefinition: (scenarioId) => manager.getScenarioById(scenarioId),
     strictMode: config.strictMode,
     responseSelector,
   });
-
-  const server = setupServer(handler);
 
   const middleware = Router();
   middleware.use(createTestIdMiddleware(config));
