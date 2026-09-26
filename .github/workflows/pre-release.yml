@@ -70,8 +70,24 @@ jobs:
           echo "tag=$BRANCH" >> $GITHUB_OUTPUT
           echo "Publishing with tag: $BRANCH"
 
+      # Since Changesets 3.0.0 (changesets/changesets#1860), `changeset version` exits 1
+      # and prints "No unreleased changesets found." when there is nothing to version.
+      # Treat only that case as a no-op so publish still runs (it skips versions already
+      # on npm). Any other failure, or a reworded message after an upgrade, fails the job.
       - name: Version packages
-        run: pnpm changeset version
+        run: |
+          set +e
+          OUTPUT=$(pnpm changeset version 2>&1)
+          STATUS=$?
+          set -e
+          echo "$OUTPUT"
+          if [ "$STATUS" -ne 0 ]; then
+            if [ "$STATUS" -eq 1 ] && echo "$OUTPUT" | grep -qxF "No unreleased changesets found."; then
+              echo "Nothing to version, continuing to publish"
+            else
+              exit "$STATUS"
+            fi
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

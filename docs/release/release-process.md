@@ -64,9 +64,11 @@ git push origin release/beta
 
 The workflow will:
 
-1. Version packages (e.g., `1.0.0-beta.0`)
+1. Version packages (e.g., `1.0.0-beta.0`) and move the consumed changesets into `.changeset/pre/`
 2. Publish to npm with `@beta` tag
 3. Create git tag
+
+If a push has no new changesets, the version step is skipped and publish only retries versions not yet on npm.
 
 ### 5. Subsequent Beta Releases
 

@@ -74,22 +74,24 @@ jobs:
       - run: pnpm build
 
       - name: Create Release Pull Request or Publish
-        uses: changesets/action@v1
+        uses: changesets/action@v2
         with:
-          version: pnpm changeset version
-          publish: pnpm changeset publish
-          title: "chore: release packages"
-          commit: "chore: release packages"
-          createGithubReleases: true
+          version-script: pnpm changeset version
+          publish-script: pnpm changeset publish
+          pr-title: "chore: release packages"
+          commit-message: "chore: release packages"
+          create-github-releases: true
+          github-token: ${{ secrets.RELEASE_PAT }}
+          push-with-git-cli: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: true # Enable provenance attestation
+          PNPM_CONFIG_PROVENANCE: true # pnpm 11+ publishes natively
 ```
 
 ### Key Configuration Points
 
 1. **`id-token: write`** - Allows GitHub Actions to request OIDC tokens
-2. **`NPM_CONFIG_PROVENANCE: true`** - Enables npm provenance attestation
+2. **`PNPM_CONFIG_PROVENANCE: true`** - Enables provenance attestation (pnpm 11+ publishes natively and reads `pnpm_config_*`; `NPM_CONFIG_PROVENANCE` covers the npm CLI)
 3. **No `NPM_TOKEN`** - Authentication handled via OIDC
 
 ## Step 3: First-Time Package Publishing

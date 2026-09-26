@@ -75,16 +75,20 @@ jobs:
 
       - name: Create Release Pull Request or Publish
         id: changesets
-        uses: changesets/action@6a0a831ff30acef54f2c6aa1cbbc1096b066edaf # v1.7.0
+        uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
         with:
-          version: pnpm changeset version
-          publish: pnpm changeset publish
-          title: 'chore: release packages'
-          commit: 'chore: release packages'
-          createGithubReleases: true
+          version-script: pnpm changeset version
+          publish-script: pnpm changeset publish
+          pr-title: 'chore: release packages'
+          commit-message: 'chore: release packages'
+          create-github-releases: true
+          # PAT required to create Version PR and push to changeset-release branch.
+          # v2 reads the token only from this input (a GITHUB_TOKEN env var that differs
+          # fails the step) and exports it as GITHUB_TOKEN to the scripts for changelog-github
+          github-token: ${{ secrets.RELEASE_PAT }}
+          # Keep v1's git push transport; v2 defaults to pushing through the GitHub API
+          push-with-git-cli: true
         env:
-          # PAT required to create Version PR and push to changeset-release branch
-          GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}
           NPM_CONFIG_PROVENANCE: true
           # pnpm 11+ publishes natively and reads pnpm_config_* rather than npm_config_*
           PNPM_CONFIG_PROVENANCE: true
@@ -94,14 +98,18 @@ jobs:
       # Close/reopen the PR to trigger CI on the new commit.
       # @see https://docs.github.com/en/actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow
       - name: Trigger CI on Version PR
-        if: steps.changesets.outputs.hasChangesets == 'true' && steps.changesets.outputs.published != 'true'
+        if: steps.changesets.outputs.has-changesets == 'true' && steps.changesets.outputs.published != 'true'
         env:
           GH_TOKEN: ${{ secrets.RELEASE_PAT }}
+          PR_NUMBER_FROM_ACTION: ${{ steps.changesets.outputs.pr-number }}
         run: |
           echo "Version PR created/updated - triggering CI..."
 
-          # Find the Version PR by branch name
-          PR_NUMBER=$(gh pr list --head changeset-release/main --json number --jq '.[0].number')
+          PR_NUMBER="$PR_NUMBER_FROM_ACTION"
+          if [ -z "$PR_NUMBER" ]; then
+            # Fall back to finding the Version PR by branch name
+            PR_NUMBER=$(gh pr list --head changeset-release/main --json number --jq '.[0].number')
+          fi
 
           if [ -n "$PR_NUMBER" ]; then
             echo "Found Version PR #$PR_NUMBER, closing and reopening to trigger CI..."
@@ -194,7 +202,7 @@ jobs:
         if: steps.changesets.outputs.published == 'true'
         env:
           GH_TOKEN: ${{ secrets.RELEASE_PAT }}
-          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
+          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.published-packages }}
         run: |
           echo "=== Uploading signed artifacts to GitHub Releases ==="
           echo "Published packages: $PUBLISHED_PACKAGES"
