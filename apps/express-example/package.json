@@ -28,7 +28,7 @@
     "@scenarist/eslint-config": "workspace:*",
     "@scenarist/typescript-config": "workspace:*",
     "@types/express": "^5.0.6",
-    "@types/node": "^25.9.8",
+    "@types/node": "^26.6.2",
     "@types/supertest": "^7.2.1",
     "@types/wait-on": "^5.3.4",
     "@usebruno/cli": "^4.1.0",
