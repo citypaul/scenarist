@@ -1,5 +1,12 @@
 # @scenarist/msw-adapter
 
+## 0.4.15
+
+### Patch Changes
+
+- Updated dependencies [[`d254d47`](https://github.com/citypaul/scenarist/commit/d254d4758ae505505faf59995128533329cb56be)]:
+  - @scenarist/core@0.4.15
+
 ## 0.4.14
 
 ### Patch Changes

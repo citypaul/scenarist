@@ -1,5 +1,14 @@
 # @scenarist/nextjs-adapter
 
+## 0.4.15
+
+### Patch Changes
+
+- [#533](https://github.com/citypaul/scenarist/pull/533) [`d254d47`](https://github.com/citypaul/scenarist/commit/d254d4758ae505505faf59995128533329cb56be) Thanks [@citypaul](https://github.com/citypaul)! - Raise the minimum `zod` version to 4.6.5 as part of remediating the September 2026 Dependabot and code-scanning findings. The published type declarations now reference `z.ZodInstanceOf`, which zod added in 4.6.0.
+- Updated dependencies [[`d254d47`](https://github.com/citypaul/scenarist/commit/d254d4758ae505505faf59995128533329cb56be)]:
+  - @scenarist/core@0.4.15
+  - @scenarist/msw-adapter@0.4.15
+
 ## 0.4.14
 
 ### Patch Changes
