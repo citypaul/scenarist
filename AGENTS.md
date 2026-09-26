@@ -3,7 +3,7 @@
 ## Requirements
 
 - **Node.js**: 22.x LTS ONLY (v25+ breaks Next.js builds due to localStorage API changes)
-- **Package manager**: pnpm 9.0.0 (enforced via `packageManager` field)
+- **Package manager**: pnpm 11.28.0 (enforced via `packageManager` field)
 - Version files: `.nvmrc` and `.node-version` specify 22.21.1
 
 ## Commands

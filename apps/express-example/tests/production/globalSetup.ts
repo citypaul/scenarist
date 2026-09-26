@@ -57,7 +57,7 @@ export async function setup() {
   // wait-on checks HTTP endpoints and retries until success or timeout
   await waitOn({
     resources: [
-      "http://localhost:3001/cart", // json-server endpoint
+      "http-get://localhost:3001/cart", // json-server endpoint (rejects HEAD requests)
       "http://localhost:3000/health", // Express health check
     ],
     timeout: 30000, // 30 seconds

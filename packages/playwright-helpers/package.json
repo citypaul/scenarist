@@ -57,12 +57,13 @@
     "@playwright/test": "^1.0.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.59.1",
+    "@playwright/test": "^1.63.0",
     "@scenarist/eslint-config": "workspace:*",
     "@scenarist/typescript-config": "workspace:*",
-    "@types/node": "^25.3.0",
-    "msw": "^2.12.10",
-    "typescript": "^5.9.3"
+    "@types/node": "^25.9.8",
+    "eslint": "^9.39.5",
+    "msw": "^2.15.0",
+    "typescript": "^6.0.3"
   },
   "publishConfig": {
     "access": "public"

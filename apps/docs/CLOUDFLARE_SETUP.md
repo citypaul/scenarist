@@ -229,13 +229,13 @@ Cloudflare Pages officially supports monorepos and package managers (npm, pnpm, 
 
 ```
 NPM_FLAGS=--version
-NODE_VERSION=20
+NODE_VERSION=22
 ```
 
 **Build command:**
 
 ```bash
-npm install -g pnpm@9 && pnpm install --frozen-lockfile && pnpm --filter=@scenarist/docs build
+npm install -g pnpm@11 && pnpm install --frozen-lockfile && pnpm --filter=@scenarist/docs build
 ```
 
 **How it works:**
@@ -264,7 +264,7 @@ Add to root `package.json`:
 
 ```json
 {
-  "packageManager": "pnpm@9.0.0"
+  "packageManager": "pnpm@11.28.0"
 }
 ```
 

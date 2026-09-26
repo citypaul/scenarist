@@ -17,27 +17,28 @@
     "test:a11y": "playwright test --config=playwright.lighthouse.config.ts accessibility.spec.ts"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^14.2.1",
-    "@astrojs/sitemap": "^3.7.2",
-    "@astrojs/starlight": "^0.41.7",
-    "@fontsource-variable/inter": "^5.2.8",
-    "@fontsource-variable/jetbrains-mono": "^5.2.8",
-    "@iconify-json/simple-icons": "1.2.70",
-    "astro": "^7.2.2",
-    "astro-icon": "1.1.5",
+    "@astrojs/cloudflare": "^14.3.2",
+    "@astrojs/markdown-remark": "^7.3.1",
+    "@astrojs/sitemap": "^3.7.4",
+    "@astrojs/starlight": "^0.41.11",
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@iconify-json/simple-icons": "1.2.96",
+    "astro": "^7.3.3",
+    "astro-icon": "1.2.0",
     "rehype-mermaid": "^3.0.0",
-    "sharp": "^0.35.3"
+    "sharp": "^0.35.4"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.9",
-    "@axe-core/playwright": "^4.11.3",
-    "@playwright/test": "^1.59.1",
-    "@tailwindcss/vite": "^4.2.4",
-    "lighthouse": "^13.3.0",
-    "playwright": "^1.59.1",
+    "@astrojs/check": "^0.9.10",
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "lighthouse": "^13.5.0",
+    "playwright": "^1.63.0",
     "playwright-lighthouse": "^4.0.0",
-    "tailwindcss": "^4.2.4",
-    "typescript": "^5.9.3",
-    "wrangler": "^4.123.0"
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.135.0"
   }
 }

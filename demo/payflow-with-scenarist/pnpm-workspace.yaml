@@ -1,3 +1,24 @@
 # This file makes demo/payflow-with-scenarist a standalone pnpm workspace root.
 # Without this, pnpm finds the parent workspace and skips local install.
 packages: []
+
+# Supply-chain hardening
+# Wait 7 days before installing newly published versions
+minimumReleaseAge: 10080
+# Fail if a package version has weaker publish trust evidence than earlier versions
+trustPolicy: no-downgrade
+# Exact versions verified as published by each package's own maintainer without
+# provenance, after earlier provenance-attested releases:
+# - semver 6.3.1: npm team's CVE-2022-25883 backport
+# - eslint-import-resolver-typescript 3.10.1: latest 3.x, required by eslint-config-next
+trustPolicyExclude:
+  - "semver@6.3.1"
+  - "eslint-import-resolver-typescript@3.10.1"
+# Only direct dependencies may come from git repositories or tarball URLs
+blockExoticSubdeps: true
+
+# Dependency lifecycle scripts are not needed: native bindings ship as optional
+# platform packages, and msw has no workerDirectory configured
+allowBuilds:
+  msw: false
+  unrs-resolver: false
