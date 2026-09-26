@@ -29,9 +29,11 @@ updates:
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
 
-  # GitHub Actions
+  # GitHub Actions (workflows + local composite actions)
   - package-ecosystem: "github-actions"
-    directory: "/"
+    directories:
+      - "/"
+      - "/.github/actions/*"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -39,6 +41,12 @@ updates:
       timezone: "Europe/London"
     cooldown:
       default-days: 7
+    # One PR per action across all directories, so workflow and composite pins stay in sync
+    groups:
+      actions-by-name:
+        patterns:
+          - "*"
+        group-by: dependency-name
     labels:
       - "dependencies"
       - "ci"
