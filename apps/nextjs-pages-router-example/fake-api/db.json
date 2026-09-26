@@ -24,13 +24,5 @@
       "tier": "standard",
       "image": "/images/product-c.jpg"
     }
-  ],
-  "cart": {
-    "items": [
-      1,
-      2,
-      1
-    ]
-  },
-  "$schema": "./node_modules/json-server/schema.json"
+  ]
 }

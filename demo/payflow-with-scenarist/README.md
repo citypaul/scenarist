@@ -10,8 +10,8 @@ The original `demo/payflow/` remains unchanged for Video 2 demonstrations (app w
 
 ## Prerequisites
 
-- Node.js 18+
-- pnpm
+- Node.js 22+
+- pnpm 11+
 
 ## Quick Start
 
@@ -69,6 +69,12 @@ This app includes full Scenarist integration with 9 scenarios:
 | `paymentDeclined`        | Pro  | In stock      | All options | Declined  |
 | `paymentServiceDown`     | Pro  | In stock      | All options | 500 error |
 | `sellsOutDuringCheckout` | Pro  | Sequence 15→0 | All options | N/A       |
+
+### Response Sequences and React Strict Mode
+
+`next.config.ts` sets `reactStrictMode: false`. In development, Strict Mode runs every effect twice, so the products page's `useEffect` fetches `/api/inventory` twice on a single visit. Each request consumes one step of a response sequence, so `sellsOutDuringCheckout` would hand out both steps (in stock, then sold out) before the user reaches checkout, and the products page would already show "Sold Out".
+
+Production builds run effects once, so this only affects the development server that the Playwright tests use. If your app keeps Strict Mode on, fetch sequence-backed data in a Server Component rather than a client `useEffect`, or run the tests against a production build (`next build && next start`).
 
 ### Running Tests
 
