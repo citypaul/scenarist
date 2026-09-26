@@ -1,10 +1,11 @@
 {
-  "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
+  "$schema": "https://unpkg.com/@changesets/config@4.0.1/schema.json",
   "changelog": [
     "@changesets/changelog-github",
     { "repo": "citypaul/scenarist" }
   ],
   "commit": false,
+  "format": "prettier",
   "fixed": [
     [
       "@scenarist/core",
@@ -18,6 +19,10 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
+  "privatePackages": {
+    "version": false,
+    "tag": false
+  },
   "ignore": [
     "@scenarist/docs",
     "@scenarist/express-example",
