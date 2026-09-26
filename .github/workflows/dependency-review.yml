@@ -64,6 +64,7 @@ jobs:
           # lucide-react: ISC license (icon library, license detection issue)
           # dompurify: compound SPDX expression including Apache-2.0 and MPL-2.0 (both allowed)
           # protobufjs: BSD-3-Clause plus protobuf license metadata from scancode
+          # victory-vendor: MIT AND ISC (recharts' vendored d3); GitHub metadata adds a spurious JSON term
           allow-dependencies-licenses: >-
             pkg:npm/dompurify,
             pkg:npm/bowser,
@@ -85,6 +86,7 @@ jobs:
             pkg:npm/uri-js,
             pkg:npm/lucide-react,
             pkg:npm/robust-predicates,
-            pkg:npm/protobufjs
+            pkg:npm/protobufjs,
+            pkg:npm/victory-vendor
           # Comment on PR with findings
           comment-summary-in-pr: on-failure
