@@ -4,8 +4,8 @@ A payment integration dashboard built with Next.js 16, Auth0, and Stripe. This d
 
 ## Prerequisites
 
-- Node.js 18+
-- pnpm, npm, or yarn
+- Node.js 22+
+- pnpm 11+
 
 ## Quick Start
 
