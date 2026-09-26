@@ -55,16 +55,16 @@
   },
   "dependencies": {
     "redos-detector": "^6.1.4",
-    "zod": "^4.3.6"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@scenarist/eslint-config": "workspace:*",
     "@scenarist/typescript-config": "workspace:*",
-    "@vitest/coverage-v8": "^4.1.5",
-    "@vitest/ui": "^4.1.5",
-    "eslint": "^9.39.4",
-    "fast-check": "^4.5.3",
-    "typescript": "^5.9.3",
-    "vitest": "^4.1.5"
+    "@vitest/coverage-v8": "^5.0.1",
+    "@vitest/ui": "^5.0.1",
+    "eslint": "^9.39.5",
+    "fast-check": "^4.10.1",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.1"
   }
 }

@@ -1,4 +1,5 @@
 // @ts-check
+import { unified } from "@astrojs/markdown-remark";
 import sitemap from "@astrojs/sitemap";
 import starlight from "@astrojs/starlight";
 import tailwindcss from "@tailwindcss/vite";
@@ -23,7 +24,7 @@ export default defineConfig({
       type: "shiki",
       excludeLangs: ["mermaid"],
     },
-    rehypePlugins: [rehypeMermaid],
+    processor: unified({ rehypePlugins: [rehypeMermaid] }),
   },
 
   integrations: [

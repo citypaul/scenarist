@@ -59,28 +59,50 @@ function saveCartToStorage(items: readonly CartItem[]): void {
   }
 }
 
+// Cart store backed by sessionStorage. The server and hydration render see an
+// empty cart; the client loads the stored cart on first read.
+const EMPTY_CART: readonly CartItem[] = [];
+const cartListeners = new Set<() => void>();
+let cartSnapshot: readonly CartItem[] | undefined;
+
+function getCartSnapshot(): readonly CartItem[] {
+  if (cartSnapshot === undefined) {
+    cartSnapshot = loadCartFromStorage();
+  }
+  return cartSnapshot;
+}
+
+function getServerCartSnapshot(): readonly CartItem[] {
+  return EMPTY_CART;
+}
+
+function subscribeToCart(onChange: () => void) {
+  cartListeners.add(onChange);
+  return () => {
+    cartListeners.delete(onChange);
+  };
+}
+
+function updateCart(
+  update: (currentItems: readonly CartItem[]) => readonly CartItem[],
+): void {
+  cartSnapshot = update(getCartSnapshot());
+  saveCartToStorage(cartSnapshot);
+  cartListeners.forEach((listener) => listener());
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = React.useState<readonly CartItem[]>([]);
-  const [isHydrated, setIsHydrated] = React.useState(false);
+  const items = React.useSyncExternalStore(
+    subscribeToCart,
+    getCartSnapshot,
+    getServerCartSnapshot,
+  );
   const { user } = useAuth();
   const userTier = user?.tier ?? "free";
   const discount = TIER_DISCOUNTS[userTier];
 
-  // Load cart from storage on mount (client-side only)
-  React.useEffect(() => {
-    setItems(loadCartFromStorage());
-    setIsHydrated(true);
-  }, []);
-
-  // Persist cart to storage whenever it changes (after hydration)
-  React.useEffect(() => {
-    if (isHydrated) {
-      saveCartToStorage(items);
-    }
-  }, [items, isHydrated]);
-
   const addItem = React.useCallback((item: Omit<CartItem, "quantity">) => {
-    setItems((currentItems) => {
+    updateCart((currentItems) => {
       const existingItem = currentItems.find((i) => i.id === item.id);
       if (existingItem) {
         return currentItems.map((i) =>
@@ -92,21 +114,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const removeItem = React.useCallback((id: string) => {
-    setItems((currentItems) => currentItems.filter((i) => i.id !== id));
+    updateCart((currentItems) => currentItems.filter((i) => i.id !== id));
   }, []);
 
   const updateQuantity = React.useCallback((id: string, quantity: number) => {
     if (quantity <= 0) {
-      setItems((currentItems) => currentItems.filter((i) => i.id !== id));
+      updateCart((currentItems) => currentItems.filter((i) => i.id !== id));
     } else {
-      setItems((currentItems) =>
+      updateCart((currentItems) =>
         currentItems.map((i) => (i.id === id ? { ...i, quantity } : i)),
       );
     }
   }, []);
 
   const clearCart = React.useCallback(() => {
-    setItems([]);
+    updateCart(() => EMPTY_CART);
   }, []);
 
   const itemCount = items.reduce((acc, item) => acc + item.quantity, 0);

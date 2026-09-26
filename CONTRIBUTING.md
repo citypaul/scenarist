@@ -11,7 +11,7 @@ Please be respectful and constructive in all interactions. We welcome contributo
 ### Prerequisites
 
 - Node.js >= 22
-- pnpm 9.0.0+
+- pnpm 11.28.0+
 
 ### Getting Started
 

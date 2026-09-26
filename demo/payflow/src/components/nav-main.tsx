@@ -20,6 +20,8 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 
+const subscribeToNothing = () => () => {};
+
 export function NavMain({
   items,
 }: {
@@ -35,10 +37,11 @@ export function NavMain({
   }[];
 }) {
   // Delay rendering collapsibles until after hydration to avoid Radix ID mismatch
-  const [isClient, setIsClient] = React.useState(false);
-  React.useEffect(() => {
-    setIsClient(true);
-  }, []);
+  const isClient = React.useSyncExternalStore(
+    subscribeToNothing,
+    () => true,
+    () => false,
+  );
 
   return (
     <SidebarGroup>

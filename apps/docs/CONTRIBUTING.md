@@ -135,8 +135,8 @@ List features demonstrated with clear categorization:
 ```markdown
 ### Prerequisites
 
-- Node.js 20+
-- pnpm 9+
+- Node.js 22+
+- pnpm 11+
 ```
 
 #### Clone and Install

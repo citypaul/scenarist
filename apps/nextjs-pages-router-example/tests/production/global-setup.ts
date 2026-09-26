@@ -87,7 +87,7 @@ export default async function globalSetup() {
   console.log("Waiting for servers to be ready...");
   await waitOn({
     resources: [
-      "http://localhost:3001/cart", // json-server endpoint
+      "http-get://localhost:3001/cart", // json-server endpoint (rejects HEAD requests)
       "http://localhost:3000/api/health", // Next.js health check
     ],
     timeout: 60000, // 60 seconds (Next.js can take longer to start)

@@ -4,3 +4,38 @@ packages:
   - "internal/*"
   # demo/ is intentionally excluded - those apps install from npm, not workspace
   # See demo/README.md for details
+
+# Supply-chain hardening
+# Wait 7 days before installing newly published versions
+minimumReleaseAge: 10080
+# Fail if a package version has weaker publish trust evidence than earlier versions
+trustPolicy: no-downgrade
+# Exact versions verified as published by each package's own maintainer without
+# provenance, after earlier provenance-attested releases:
+# - semver 5.7.2 / 6.3.1: npm team's CVE-2022-25883 backports (via license-checker, @babel/core)
+# - chokidar 4.0.3: latest 4.x, required by @astrojs/check
+# - ua-parser-js 1.0.41: latest 1.x, required by playwright-lighthouse
+trustPolicyExclude:
+  - "semver@6.3.1 || 5.7.2"
+  - "chokidar@4.0.3"
+  - "ua-parser-js@1.0.41"
+# Only direct dependencies may come from git repositories or tarball URLs
+blockExoticSubdeps: true
+
+# Dependency lifecycle scripts are not needed: native binaries ship as optional
+# platform packages, and msw has no workerDirectory configured
+allowBuilds:
+  esbuild: false
+  msw: false
+  protobufjs: false
+  workerd: false
+
+# Every remaining override exists because @usebruno/* pins a vulnerable version
+# exactly or within a vulnerable major, even in its latest release
+overrides:
+  "axios": ">=1.18.0"
+  "form-data": ">=4.0.6"
+  "nanoid": ">=3.3.16"
+  "@usebruno/js>uuid": "11.1.1"
+  "@usebruno/cli>csv-parse": "^7.0.2"
+  "@usebruno/requests>@faker-js/faker": "^10.5.0"
