@@ -622,8 +622,8 @@ export const shoppingCartScenario: ScenaristScenario = {
       response: {
         status: 200,
         body: {
-          items: "{{body.items}}", // Echo back what was sent
-          count: "{{body.items.length}}", // Compute from request body (always defined)
+          items: "{{state.cartItems}}", // Items just captured from this request
+          count: "{{state.cartItems.length}}", // Compute from captured items
           message: "Item added to cart", // Bruno API tests expect this field
         },
       },

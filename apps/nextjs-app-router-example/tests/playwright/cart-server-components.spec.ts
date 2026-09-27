@@ -210,6 +210,66 @@ test.describe("Cart Server Page - Stateful Mocks with Server Components", () => 
   });
 });
 
+test.describe("Add to Cart API - Response Body", () => {
+  test("returns the accumulated cart items with stateful mocks", async ({
+    baseURL,
+    page,
+    switchScenario,
+  }) => {
+    const testId = await switchScenario(page, "cartWithState");
+    const finalBaseURL = baseURL ?? "http://localhost:3002";
+    const addToCart = (productId: string) =>
+      page.request.post(`${finalBaseURL}/api/cart/add`, {
+        headers: {
+          "Content-Type": "application/json",
+          "x-scenarist-test-id": testId,
+        },
+        data: { productId },
+      });
+
+    const firstResponse = await addToCart("prod-1");
+    const secondResponse = await addToCart("prod-2");
+
+    expect(await firstResponse.json()).toEqual({
+      success: true,
+      items: ["prod-1"],
+    });
+    expect(await secondResponse.json()).toEqual({
+      success: true,
+      items: ["prod-1", "prod-2"],
+    });
+  });
+
+  test("returns only the added item with the default scenario", async ({
+    baseURL,
+    page,
+    switchScenario,
+  }) => {
+    const testId = await switchScenario(page, "default");
+    const finalBaseURL = baseURL ?? "http://localhost:3002";
+    const addToCart = (productId: string) =>
+      page.request.post(`${finalBaseURL}/api/cart/add`, {
+        headers: {
+          "Content-Type": "application/json",
+          "x-scenarist-test-id": testId,
+        },
+        data: { productId },
+      });
+
+    const firstResponse = await addToCart("prod-1");
+    const secondResponse = await addToCart("prod-2");
+
+    expect(await firstResponse.json()).toEqual({
+      success: true,
+      items: ["prod-1"],
+    });
+    expect(await secondResponse.json()).toEqual({
+      success: true,
+      items: ["prod-2"],
+    });
+  });
+});
+
 /**
  * TEST RESULTS PROVE:
  *

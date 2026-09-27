@@ -64,6 +64,29 @@ test.describe("Cart Page - Server-Side Rendering (getServerSideProps)", () => {
   });
 });
 
+test.describe("Add to Cart API - Response Body", () => {
+  test("returns the accumulated cart items with stateful mocks", async ({
+    page,
+    switchScenario,
+  }) => {
+    const testId = await switchScenario(page, "cartWithState");
+    const addToCart = (productId: number) =>
+      page.request.post("/api/cart/add", {
+        headers: { "x-scenarist-test-id": testId },
+        data: { productId },
+      });
+
+    const firstResponse = await addToCart(1);
+    const secondResponse = await addToCart(2);
+
+    expect(await firstResponse.json()).toEqual({ success: true, items: [1] });
+    expect(await secondResponse.json()).toEqual({
+      success: true,
+      items: [1, 2],
+    });
+  });
+});
+
 /**
  * TEST RESULTS SHOULD PROVE:
  *

@@ -42,6 +42,28 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
       expect(response.body.count).toBe(3);
       expect(typeof response.body.count).toBe("number");
     });
+
+    it("should return the updated cart items when adding an item", async () => {
+      await request(fixtures.app)
+        .post(fixtures.scenarist.config.endpoints.setScenario)
+        .set(SCENARIST_TEST_ID_HEADER, "cart-add-response-test")
+        .send({ scenario: "shoppingCart" });
+
+      const firstResponse = await request(fixtures.app)
+        .post("/api/cart/add")
+        .set(SCENARIST_TEST_ID_HEADER, "cart-add-response-test")
+        .send({ item: "Apple" });
+
+      const secondResponse = await request(fixtures.app)
+        .post("/api/cart/add")
+        .set(SCENARIST_TEST_ID_HEADER, "cart-add-response-test")
+        .send({ item: "Banana" });
+
+      expect(firstResponse.status).toBe(200);
+      expect(firstResponse.body.items).toEqual(["Apple"]);
+      expect(secondResponse.status).toBe(200);
+      expect(secondResponse.body.items).toEqual(["Apple", "Banana"]);
+    });
   });
 
   describe("Multi-Step Form - Complete Journey", () => {
