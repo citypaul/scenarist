@@ -51,7 +51,7 @@ export const scenarist = createScenarist({
  * **For your own app**, you should use:
  * ```typescript
  * export const scenarist = createScenarist({
- *   enabled: process.env.NODE_ENV === 'test',  // Only enable in test environment
+ *   enabled: true, // Next.js inlines NODE_ENV, so a 'test' check is never true
  *   scenarios,
  * });
  *

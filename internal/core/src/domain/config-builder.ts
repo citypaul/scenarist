@@ -6,14 +6,11 @@ import type {
 } from "../types/index.js";
 import { ScenariosObjectSchema } from "../schemas/index.js";
 
-/**
- * Default error behaviors - strict by default.
- * All errors throw to ensure tests fail clearly when something goes wrong.
- */
+// 'throw' by default would 500 every unmatched request, including in-process calls to the app itself
 const DEFAULT_ERROR_BEHAVIORS: ErrorBehaviors = {
-  onNoMockFound: "throw",
-  onSequenceExhausted: "throw",
-  onMissingTestId: "throw",
+  onNoMockFound: "ignore",
+  onSequenceExhausted: "ignore",
+  onMissingTestId: "ignore",
 };
 
 /**

@@ -238,7 +238,7 @@ import { createScenarist } from "@scenarist/nextjs-adapter/app";
 import { scenarios } from "./scenarios";
 
 const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === "test",
+  enabled: true,
   scenarios,
   defaultScenarioId: "default",
   strictMode: false,

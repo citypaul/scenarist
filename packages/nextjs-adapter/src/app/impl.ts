@@ -117,7 +117,11 @@ export type AppScenarist = Omit<ScenaristAdapter<never>, "middleware"> & {
  */
 export const createScenaristImpl = (
   options: AppAdapterOptions,
-): AppScenarist => {
+): AppScenarist | undefined => {
+  if (!options.enabled) {
+    return undefined;
+  }
+
   // Singleton guard - return existing instance if already created
   // This prevents duplicate scenario registration errors when Next.js creates multiple module instances
   if (global.__scenarist_instance) {

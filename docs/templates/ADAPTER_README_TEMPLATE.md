@@ -120,7 +120,7 @@ import { createScenarist } from "@scenarist/[framework]-adapter";
 import { successScenario } from "./scenarios";
 
 export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === "test",
+  enabled: process.env.NODE_ENV === "test", // Express: must evaluate to true in the process serving tests; Next.js inlines NODE_ENV, so use true there
   defaultScenario: successScenario,
 });
 ```

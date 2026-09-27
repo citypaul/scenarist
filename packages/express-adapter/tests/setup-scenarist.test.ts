@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import express from "express";
 import request from "supertest";
-import { createTestScenarist } from "./test-helpers.js";
+import { createMockLogger, createTestScenarist } from "./test-helpers.js";
+import { createScenarist } from "../src/setup/setup-scenarist.js";
 import {
   SCENARIST_TEST_ID_HEADER,
   type ScenaristScenario,
@@ -921,5 +922,121 @@ describe("createScenarist", () => {
       expect(response.body.email).toBeNull();
       expect(response.body.address).toBeNull();
     });
+  });
+});
+
+describe("createScenarist runtime configuration", () => {
+  it("returns undefined when enabled is false", () => {
+    const scenarist = createScenarist({
+      enabled: false,
+      scenarios: testScenarios,
+    });
+
+    expect(scenarist).toBeUndefined();
+  });
+
+  it("responds 500 with NO_MOCK_FOUND when onNoMockFound is throw", async () => {
+    const scenarist = createTestScenarist({
+      enabled: true,
+      scenarios: testScenarios,
+      errorBehaviors: { onNoMockFound: "throw" },
+    });
+
+    scenarist.start();
+    try {
+      const response = await fetch("https://no-mock-throw.example.test/data");
+
+      expect(response.status).toBe(500);
+      expect(await response.json()).toEqual(
+        expect.objectContaining({ code: "NO_MOCK_FOUND" }),
+      );
+    } finally {
+      await scenarist.stop();
+    }
+  });
+
+  it("logs a warning through the configured logger when onNoMockFound is warn", async () => {
+    const logger = createMockLogger();
+    const scenarist = createTestScenarist({
+      enabled: true,
+      strictMode: true,
+      scenarios: testScenarios,
+      logger,
+      errorBehaviors: { onNoMockFound: "warn" },
+    });
+
+    scenarist.start();
+    try {
+      const response = await fetch("https://no-mock-warn.example.test/data");
+
+      expect(response.status).toBe(501);
+      expect(logger.warn).toHaveBeenCalledWith(
+        "matching",
+        "No mock matched for GET https://no-mock-warn.example.test/data",
+        expect.objectContaining({ testId: "default-test" }),
+      );
+    } finally {
+      await scenarist.stop();
+    }
+  });
+
+  it("responds 500 with SEQUENCE_EXHAUSTED when onSequenceExhausted is throw", async () => {
+    const url = "https://sequence-exhausted.example.test/data";
+    const scenarist = createTestScenarist({
+      enabled: true,
+      scenarios: {
+        default: {
+          id: "default",
+          name: "Default",
+          description: "Single-use sequence",
+          mocks: [
+            {
+              method: "GET",
+              url,
+              sequence: {
+                responses: [{ status: 200, body: { attempt: 1 } }],
+                repeat: "none",
+              },
+            },
+          ],
+        },
+      },
+      errorBehaviors: { onSequenceExhausted: "throw" },
+    });
+
+    scenarist.start();
+    try {
+      const first = await fetch(url);
+      const exhausted = await fetch(url);
+
+      expect(first.status).toBe(200);
+      expect(exhausted.status).toBe(500);
+      expect(await exhausted.json()).toEqual(
+        expect.objectContaining({ code: "SEQUENCE_EXHAUSTED" }),
+      );
+    } finally {
+      await scenarist.stop();
+    }
+  });
+
+  it("responds 500 with MISSING_TEST_ID when no test ID resolves and onMissingTestId is throw", async () => {
+    const scenarist = createTestScenarist({
+      enabled: true,
+      scenarios: testScenarios,
+      defaultTestId: "",
+      errorBehaviors: { onMissingTestId: "throw" },
+    });
+
+    scenarist.start();
+    try {
+      const response = await fetch("https://missing-test-id.example.test/data");
+
+      expect(response.status).toBe(500);
+      expect(await response.json()).toEqual(
+        expect.objectContaining({ code: "MISSING_TEST_ID" }),
+      );
+    } finally {
+      await scenarist.stop();
+    }
   });
 });

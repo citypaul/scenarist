@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { ScenaristScenarios } from "@scenarist/core";
+import { createMockLogger } from "../common/test-setup.js";
 import { createScenarist } from "../../src/pages/setup.js";
 
 const requireDefined = <T>(value: T | undefined): T => {
@@ -153,11 +154,8 @@ describe("Pages Router createScenarist", () => {
   });
 
   describe("Singleton guard for createScenarist() instance", () => {
-    beforeEach(() => {
-      clearAllGlobals();
-    });
-
     it("should return same instance when createScenarist() called multiple times", async () => {
+      clearAllGlobals();
       const instance1 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
@@ -173,6 +171,7 @@ describe("Pages Router createScenarist", () => {
     });
 
     it("should prevent duplicate scenario registration errors", async () => {
+      clearAllGlobals();
       // First call registers all scenarios
       const instance1 = createScenarist({
         enabled: true,
@@ -191,6 +190,7 @@ describe("Pages Router createScenarist", () => {
     });
 
     it("should share scenario registry across all instances", async () => {
+      clearAllGlobals();
       const instance1 = requireDefined(
         createScenarist({
           enabled: true,
@@ -214,6 +214,7 @@ describe("Pages Router createScenarist", () => {
     });
 
     it("should share scenario store across all instances", async () => {
+      clearAllGlobals();
       const instance1 = requireDefined(
         createScenarist({
           enabled: true,
@@ -239,6 +240,7 @@ describe("Pages Router createScenarist", () => {
     });
 
     it("should maintain singleton across different scenario configurations", async () => {
+      clearAllGlobals();
       const instance1 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
@@ -247,17 +249,19 @@ describe("Pages Router createScenarist", () => {
       // Even with different config, should return same instance
       const instance2 = requireDefined(
         createScenarist({
-          enabled: false, // Different enabled flag
+          enabled: true,
+          strictMode: true, // Different strictMode
           scenarios: testScenarios,
         }),
       );
 
       expect(instance1).toBe(instance2);
       // Original config should be preserved
-      expect(instance2.config.enabled).toBe(true); // Not false!
+      expect(instance2.config.strictMode).toBe(false);
     });
 
     it("should reuse existing registry/store when instance is cleared but globals persist", async () => {
+      clearAllGlobals();
       // First call creates everything
       requireDefined(
         createScenarist({
@@ -303,6 +307,7 @@ describe("Pages Router createScenarist", () => {
     });
 
     it("should reuse existing registry when store is missing", async () => {
+      clearAllGlobals();
       // First call creates everything
       createScenarist({
         enabled: true,
@@ -337,6 +342,7 @@ describe("Pages Router createScenarist", () => {
     });
 
     it("should reuse existing store when registry is missing", async () => {
+      clearAllGlobals();
       // First call creates everything
       createScenarist({
         enabled: true,
@@ -446,5 +452,121 @@ describe("Pages Router createScenarist", () => {
         scenarist.start();
       }).not.toThrow();
     });
+  });
+});
+
+describe("Pages Router createScenarist runtime configuration", () => {
+  it("returns undefined when enabled is false", () => {
+    clearAllGlobals();
+
+    const scenarist = createScenarist({
+      enabled: false,
+      scenarios: testScenarios,
+    });
+
+    expect(scenarist).toBeUndefined();
+  });
+
+  it("returns undefined when enabled is false even after an enabled instance exists", () => {
+    clearAllGlobals();
+    try {
+      requireDefined(
+        createScenarist({ enabled: true, scenarios: testScenarios }),
+      );
+
+      const scenarist = createScenarist({
+        enabled: false,
+        scenarios: testScenarios,
+      });
+
+      expect(scenarist).toBeUndefined();
+    } finally {
+      clearAllGlobals();
+    }
+  });
+
+  it("responds 500 with NO_MOCK_FOUND when onNoMockFound is throw", async () => {
+    clearAllGlobals();
+    const scenarist = requireDefined(
+      createScenarist({
+        enabled: true,
+        scenarios: testScenarios,
+        errorBehaviors: { onNoMockFound: "throw" },
+      }),
+    );
+
+    scenarist.start();
+    try {
+      const response = await fetch(
+        "https://pages-no-mock-throw.example.test/data",
+      );
+
+      expect(response.status).toBe(500);
+      expect(await response.json()).toEqual(
+        expect.objectContaining({ code: "NO_MOCK_FOUND" }),
+      );
+    } finally {
+      await scenarist.stop();
+      clearAllGlobals();
+    }
+  });
+
+  it("logs a warning through the configured logger when onNoMockFound is warn", async () => {
+    clearAllGlobals();
+    const logger = createMockLogger();
+    const scenarist = requireDefined(
+      createScenarist({
+        enabled: true,
+        strictMode: true,
+        scenarios: testScenarios,
+        logger,
+        errorBehaviors: { onNoMockFound: "warn" },
+      }),
+    );
+
+    scenarist.start();
+    try {
+      const response = await fetch(
+        "https://pages-no-mock-warn.example.test/data",
+        { headers: { "x-scenarist-test-id": "pages-warn" } },
+      );
+
+      expect(response.status).toBe(501);
+      expect(logger.warn).toHaveBeenCalledWith(
+        "matching",
+        "No mock matched for GET https://pages-no-mock-warn.example.test/data",
+        expect.objectContaining({ testId: "pages-warn" }),
+      );
+    } finally {
+      await scenarist.stop();
+      clearAllGlobals();
+    }
+  });
+
+  it("responds 500 with MISSING_TEST_ID when no test ID resolves and onMissingTestId is throw", async () => {
+    clearAllGlobals();
+    const scenarist = requireDefined(
+      createScenarist({
+        enabled: true,
+        scenarios: testScenarios,
+        defaultTestId: "",
+        errorBehaviors: { onMissingTestId: "throw" },
+      }),
+    );
+
+    scenarist.start();
+    try {
+      const response = await fetch(
+        "https://pages-missing-test-id.example.test/data",
+      );
+
+      expect(response.status).toBe(500);
+      expect(await response.json()).toEqual(
+        expect.objectContaining({ code: "MISSING_TEST_ID" }),
+      );
+    } finally {
+      await scenarist.stop();
+      clearAllGlobals();
+    }
   });
 });

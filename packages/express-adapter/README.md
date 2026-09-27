@@ -862,18 +862,23 @@ Scenarist is designed to be **completely eliminated from production** when the `
 **For Express applications** that deploy unbundled code directly to production, start Node with the `production` condition:
 
 ```bash
-# Deploy your application
+# Recommended: no Scenarist or MSW code is loaded
 NODE_ENV=production node --conditions=production src/server.js
 ```
-
-**How it works:**
 
 1. Node resolves `@scenarist/express-adapter` to `dist/setup/production.js` because the `production` condition is active
 2. `createScenarist()` returns `undefined` without loading dependencies
 3. MSW and all Scenarist code **never loads into memory**
 4. Zero performance impact, zero bundle bloat
 
-`NODE_ENV=production` alone does not switch entry points: without `--conditions=production`, Node loads the full implementation and `createScenarist()` returns a working instance.
+**Without the condition, the runtime guard still protects you:**
+
+```bash
+# Scenarist is inert: createScenarist() returns undefined, /__scenario__ returns 404
+NODE_ENV=production node src/server.js
+```
+
+`NODE_ENV=production` alone does not switch entry points, so Node loads the full implementation, but `createScenarist()` checks `NODE_ENV` and returns `undefined`: no middleware, no endpoints, no interception. The adapter and MSW modules are still imported, so `msw` must be installed. If you prune dev dependencies in production, use `--conditions=production`.
 
 ### Bundled Deployments (esbuild, webpack, Vite, rollup)
 
@@ -899,7 +904,7 @@ The `"production"` condition is a **custom condition** (not a Node.js built-in l
 **Without configuration:**
 
 - MSW code included in bundle (~320kb)
-- The full implementation is used: `createScenarist()` returns a working instance
+- The full implementation is bundled; with `NODE_ENV=production` the runtime guard makes `createScenarist()` return `undefined`, so it stays inert
 - Wastes bandwidth
 
 **With configuration:**

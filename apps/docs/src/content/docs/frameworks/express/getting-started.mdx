@@ -113,7 +113,7 @@ export const createApp = async () => {
   const app = express();
   app.use(express.json());
 
-  // Create Scenarist instance (synchronous - returns the instance, or undefined in production builds)
+  // Returns undefined when enabled is false or NODE_ENV is production
   const scenarist = createScenarist({
     enabled: process.env.NODE_ENV === "test",
     scenarios,
@@ -408,26 +408,42 @@ We recommend using **Supertest** with **Vitest** for testing Express application
 
 ## Production Tree-Shaking
 
-Scenarist automatically eliminates all test code from production builds. The implementation differs based on your deployment model:
+Scenarist keeps its endpoints and request interception out of production through two layers:
 
-### Unbundled Deployments (Most Common) ✅
+1. **The `production` export condition** resolves `@scenarist/express-adapter` to a stub that returns `undefined` and imports nothing. No Scenarist or MSW code is loaded or bundled.
+2. **A runtime guard**: when `NODE_ENV` is `production`, `createScenarist()` returns `undefined` even if the condition was not applied. No middleware, no `/__scenario__` endpoints, no interception.
 
-**Most Express applications** deploy unbundled code directly to production:
+`createScenarist()` also returns `undefined` when `enabled` is `false`, so always guard with `if (scenarist)`.
+
+### Unbundled Deployments (Most Common)
+
+`production` is a custom condition, so Node.js only applies it when you pass it explicitly:
 
 ```bash
+# Recommended: resolves the zero-dependency stub
 NODE_ENV=production node --conditions=production src/server.js
 ```
 
-**Pass Node's `--conditions=production` flag** so Node resolves the adapter's `production` export (see below):
+With the flag:
 
 - `createScenarist()` returns `undefined` at runtime
 - The production entry point imports nothing
 - MSW code **never loads into memory**
-- ⚠️ Without the flag, Node resolves the default entry point and Scenarist stays fully active — `NODE_ENV` and the `enabled` option do not disable it
+
+If you start the server without the flag, the runtime guard still disables Scenarist:
+
+```bash
+# Scenarist is inert: createScenarist() returns undefined, /__scenario__ returns 404
+NODE_ENV=production node src/server.js
+```
+
+<Aside type="caution" title="Without --conditions=production, MSW must be installed">
+Without the condition, Node.js loads the full adapter, which imports `msw`. If you install `msw` as a dev dependency and prune dev dependencies in production, the server fails at startup with `ERR_MODULE_NOT_FOUND`. Use `--conditions=production`, or keep `msw` installed.
+</Aside>
 
 ### Bundled Deployments (esbuild, webpack, Vite, rollup)
 
-**For teams bundling Express server code**, additional bundler configuration is required for complete tree-shaking.
+**For teams bundling Express server code**, configure the `production` condition. Without it, the runtime guard still disables Scenarist, but the adapter and MSW code stay in the bundle.
 
 Scenarist uses **conditional package.json exports** to provide different entry points:
 
@@ -502,8 +518,11 @@ export default {
 # Build with bundler configuration
 npm run build:production
 
-# Verify MSW code eliminated
-! grep -rE '(setupWorker|HttpResponse\.json)' dist/
+# Verify MSW code eliminated (succeeds only if dist/ exists and has no matches)
+test -d dist && {
+  grep -rqE '(__scenarist_shared_msw_server|setupWorker|HttpResponse\.json)' dist/
+  test $? -eq 1
+}
 ```
 
 **For detailed configuration examples**, see the [Express Adapter README - Production Tree-Shaking](https://github.com/citypaul/scenarist/tree/main/packages/express-adapter#production-tree-shaking).

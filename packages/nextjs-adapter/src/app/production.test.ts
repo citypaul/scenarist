@@ -324,4 +324,15 @@ describe("App Router production entry point", () => {
       expect(testId1).toBe(testId2);
     });
   });
+
+  describe("createConsoleLogger", () => {
+    it("should return undefined (logging disabled in production)", () => {
+      const logger = production.createConsoleLogger({
+        level: "debug",
+        format: "pretty",
+      });
+
+      expect(logger).toBeUndefined();
+    });
+  });
 });

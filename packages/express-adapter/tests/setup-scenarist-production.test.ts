@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import type { ScenaristScenario, ScenaristScenarios } from "@scenarist/core";
 
 // Test scenarios
@@ -19,32 +19,30 @@ const testScenarios = {
   },
 } as const satisfies ScenaristScenarios;
 
-describe("setup-scenarist.ts - Production Tree-Shaking", () => {
-  const originalEnv = process.env.NODE_ENV;
+const setNodeEnv = (value: string | undefined): void => {
+  if (value === undefined) {
+    delete process.env.NODE_ENV;
+    return;
+  }
+  process.env.NODE_ENV = value;
+};
 
-  beforeEach(() => {
-    // Clear module cache to ensure fresh imports
+const createScenaristUnderNodeEnv = async (nodeEnv: string | undefined) => {
+  const originalNodeEnv = process.env.NODE_ENV;
+  setNodeEnv(nodeEnv);
+  try {
     vi.resetModules();
-  });
+    const { createScenarist } = await import("../src/setup/setup-scenarist.js");
+    return createScenarist({ enabled: true, scenarios: testScenarios });
+  } finally {
+    setNodeEnv(originalNodeEnv);
+  }
+};
 
-  afterEach(() => {
-    // Restore original NODE_ENV
-    process.env.NODE_ENV = originalEnv;
-  });
-
+describe("setup-scenarist.ts - Production Tree-Shaking", () => {
   describe("Non-production mode (development/test)", () => {
     it("should return ExpressScenarist instance when NODE_ENV is development", async () => {
-      process.env.NODE_ENV = "development";
-
-      // Dynamic import to get fresh module with updated env
-      const { createScenarist } = await import(
-        "../src/setup/setup-scenarist.js"
-      );
-
-      const result = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
+      const result = await createScenaristUnderNodeEnv("development");
 
       expect(result).toBeDefined();
       expect(result).toHaveProperty("config");
@@ -55,46 +53,19 @@ describe("setup-scenarist.ts - Production Tree-Shaking", () => {
     });
 
     it("should return instance when NODE_ENV is test", async () => {
-      process.env.NODE_ENV = "test";
-
-      const { createScenarist } = await import(
-        "../src/setup/setup-scenarist.js"
-      );
-
-      const result = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
+      const result = await createScenaristUnderNodeEnv("test");
 
       expect(result).toBeDefined();
     });
 
     it("should return instance when NODE_ENV is undefined", async () => {
-      delete process.env.NODE_ENV;
-
-      const { createScenarist } = await import(
-        "../src/setup/setup-scenarist.js"
-      );
-
-      const result = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
+      const result = await createScenaristUnderNodeEnv(undefined);
 
       expect(result).toBeDefined();
     });
 
     it("should maintain type safety with generic parameter", async () => {
-      process.env.NODE_ENV = "development";
-
-      const { createScenarist } = await import(
-        "../src/setup/setup-scenarist.js"
-      );
-
-      const result = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
+      const result = await createScenaristUnderNodeEnv("development");
 
       // TypeScript will error if result doesn't have correct type
       if (result) {
@@ -113,16 +84,7 @@ describe("setup-scenarist.ts - Production Tree-Shaking", () => {
     });
 
     it("should have working config with correct default values", async () => {
-      process.env.NODE_ENV = "development";
-
-      const { createScenarist } = await import(
-        "../src/setup/setup-scenarist.js"
-      );
-
-      const result = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
+      const result = await createScenaristUnderNodeEnv("development");
 
       expect(result).toBeDefined();
       if (result) {
@@ -133,19 +95,17 @@ describe("setup-scenarist.ts - Production Tree-Shaking", () => {
     });
   });
 
+  describe("Production mode (unbundled, no production export condition)", () => {
+    it("should return undefined when NODE_ENV is production even if enabled", async () => {
+      const result = await createScenaristUnderNodeEnv("production");
+
+      expect(result).toBeUndefined();
+    });
+  });
+
   describe("Type checking", () => {
     it("should have correct return type ExpressScenarist | undefined", async () => {
-      process.env.NODE_ENV = "development";
-
-      const { createScenarist } = await import(
-        "../src/setup/setup-scenarist.js"
-      );
-
-      // This test verifies TypeScript types are correct
-      const result = createScenarist({
-        enabled: true,
-        scenarios: testScenarios,
-      });
+      const result = await createScenaristUnderNodeEnv("development");
 
       // Must handle both undefined and defined cases
       if (result === undefined) {

@@ -94,7 +94,7 @@ if (typeof window === 'undefined' && scenarist) {
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { scenarist } from '../../lib/scenarist';
 
-// In production, scenarist is undefined - fall back to a 405 handler
+// scenarist is undefined in production builds or when enabled is false - fall back to a 405 handler
 export default scenarist?.createScenarioEndpoint() ??
   ((_req: NextApiRequest, res: NextApiResponse) => {
     res.status(405).end();

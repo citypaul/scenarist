@@ -554,8 +554,8 @@ const scenarist = createScenarist({
   strictMode: false,
 });
 
-// Add Scenarist middleware
-if (process.env.NODE_ENV === "test") {
+// Add Scenarist middleware (createScenarist returns undefined when disabled)
+if (scenarist) {
   app.use(scenarist.middleware);
 }
 
@@ -630,7 +630,7 @@ const scenarios = {
 } as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === "test",
+  enabled: process.env.NODE_ENV === "test", // Express; in Next.js use enabled: true
   scenarios,
   strictMode: false,
 
@@ -751,8 +751,10 @@ import { createScenarist } from "@scenarist/nextjs-adapter/pages";
 // App Router
 import { createScenarist } from "@scenarist/nextjs-adapter/app";
 
+// Next.js inlines NODE_ENV as 'development' or 'production', so a 'test' check is never true.
+// Production builds resolve the `production` export condition and return undefined.
 const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === "test",
+  enabled: true,
   scenarios,
 });
 ```

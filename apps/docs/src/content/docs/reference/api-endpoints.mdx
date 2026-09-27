@@ -536,10 +536,13 @@ await switchScenario(page, 'payment-error');
 ## Security Considerations
 
 **Production Safety:**
-- When the `production` export condition is resolved, the adapter's `createScenarist()` resolves to a stub that returns `undefined`, so no endpoints are registered. Next.js production builds resolve it automatically; Express needs a bundler option such as esbuild's `--conditions=production` or `node --conditions=production`, because `NODE_ENV=production` alone does not switch the entry point. See [Production Safety](/concepts/production-safety/)
-- The `enabled` flag does not currently disable the endpoints. For defense in depth, also consider:
+- When `enabled: false`, `createScenarist()` returns `undefined`, so no endpoints are registered (Express responds 404)
+- When the `production` export condition is resolved, the adapter's `createScenarist()` resolves to a stub that returns `undefined`. Next.js production builds resolve it automatically; Express needs a bundler option such as esbuild's `--conditions=production` or `node --conditions=production`. See [Production Safety](/concepts/production-safety/)
+- Express also returns `undefined` when `NODE_ENV` is `production`, even with `enabled: true`, so unbundled apps started without the condition do not mount the endpoints
+- For defense in depth, also consider:
   - Custom endpoint paths (non-standard)
   - Network-level blocking (firewall)
+  - Environment-based enablement (never `true` in production)
 
 **Test Isolation:**
 - Each test ID is isolated

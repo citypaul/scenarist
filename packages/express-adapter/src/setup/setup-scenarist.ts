@@ -1,33 +1,34 @@
+import type { ScenaristScenarios } from "@scenarist/core";
+import {
+  createScenaristImpl,
+  type ExpressAdapterOptions,
+  type ExpressScenarist,
+} from "./impl.js";
+
 // Re-export types from impl for public API
 export type { ExpressAdapterOptions, ExpressScenarist } from "./impl.js";
 
 /**
- * Create a Scenarist instance for Express.
- *
- * Production tree-shaking is handled via conditional exports in package.json:
- * - Development/test: Uses this file (imports impl.js with full MSW setup)
- * - Production builds: Uses production.js (returns undefined, zero imports)
- *
- * This ensures all test code is eliminated from production bundles.
+ * The NODE_ENV check is defense-in-depth: unbundled `node server.js` deploys don't apply the `production` export condition, so without it the scenario endpoints would mount in production.
  *
  * @example
  * ```typescript
- * // src/app.ts
- * import { createScenarist } from '@scenarist/express-adapter';
- * import { scenarios } from './scenarios';
- *
  * export const scenarist = createScenarist({
- *   enabled: true,
+ *   enabled: process.env.NODE_ENV === "test",
  *   scenarios,
  * });
  *
  * if (scenarist) {
  *   app.use(scenarist.middleware);
  * }
- *
- * // tests/setup.ts
- * beforeAll(() => scenarist?.start());
- * afterAll(() => scenarist?.stop());
  * ```
  */
-export { createScenaristImpl as createScenarist } from "./impl.js";
+export const createScenarist = <T extends ScenaristScenarios>(
+  options: ExpressAdapterOptions<T>,
+): ExpressScenarist<T> | undefined => {
+  if (process.env.NODE_ENV === "production") {
+    return undefined;
+  }
+
+  return createScenaristImpl(options);
+};
