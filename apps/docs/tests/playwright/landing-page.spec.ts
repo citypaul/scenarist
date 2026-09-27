@@ -104,6 +104,21 @@ test.describe("Landing Page", () => {
     });
   });
 
+  test("says the Playwright helpers are installed separately", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    await expect(
+      page.getByText(
+        "Browser tests also need @scenarist/playwright-helpers and @playwright/test as dev dependencies.",
+      ),
+    ).toBeVisible();
+
+    await page.getByRole("link", { name: "Full install steps" }).click();
+    await expect(page).toHaveURL(/\/getting-started\/installation\/$/);
+  });
+
   test.describe("Copy Install Command", () => {
     test("copy button copies current command to clipboard", async ({
       page,
