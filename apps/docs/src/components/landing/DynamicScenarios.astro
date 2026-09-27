@@ -77,10 +77,12 @@ const demos: readonly Demo[] = [
 },`,
     steps: [
       { actor: 'test', label: 'Playwright', detail: "goto('/dashboard')" },
-      { actor: 'api', label: 'Auth0 · scripted', detail: '/userinfo → email_verified: false' },
+      { actor: 'server', label: 'Your middleware', detail: 'Checks the session, calls GET /userinfo' },
+      { actor: 'api', label: 'Auth0 · scripted', detail: '200 · { email_verified: false }' },
       { actor: 'server', label: 'Your middleware', detail: 'Blocks the dashboard, redirects to /verify' },
-      { actor: 'api', label: 'Auth0 · scripted', detail: 'verification ticket → 201', state: 'verified = true' },
-      { actor: 'server', label: 'Your middleware', detail: '/userinfo → email_verified: true, lets them in' },
+      { actor: 'server', label: 'Your verify route', detail: "User clicks Verify, calls Auth0's tickets API" },
+      { actor: 'api', label: 'Auth0 · scripted', detail: '201 · ticket issued', state: 'verified = true' },
+      { actor: 'server', label: 'Your middleware', detail: '/userinfo now says verified, lets them in' },
       { actor: 'test', label: 'Playwright', detail: 'sees the dashboard', pass: true },
     ],
     docs: { href: '/scenarios/state-aware-mocking', label: 'State-aware mocking' },
@@ -104,10 +106,12 @@ const demos: readonly Demo[] = [
 },`,
     steps: [
       { actor: 'test', label: 'Playwright', detail: "goto('/'), add the hoodie to the cart" },
+      { actor: 'server', label: 'Your product page', detail: 'Server Component calls GET /stock/hoodie' },
       { actor: 'api', label: 'Inventory · call 1', detail: '200 · { quantity: 15 }' },
       { actor: 'test', label: 'Playwright', detail: 'goes to checkout, clicks Pay' },
+      { actor: 'server', label: 'Your checkout action', detail: 'Re-checks GET /stock/hoodie before charging' },
       { actor: 'api', label: 'Inventory · call 2', detail: '200 · { quantity: 0 }' },
-      { actor: 'server', label: 'Your checkout action', detail: 'Re-checks stock, refuses to charge the card' },
+      { actor: 'server', label: 'Your checkout action', detail: 'Refuses to charge the card, returns sold out' },
       { actor: 'test', label: 'Playwright', detail: "sees 'Sold out during checkout'", pass: true },
     ],
     docs: { href: '/scenarios/response-sequences', label: 'Response sequences' },
@@ -116,7 +120,7 @@ const demos: readonly Demo[] = [
     id: 'match',
     tab: 'Request matching',
     title: 'Same endpoint. The right answer for each request.',
-    lede: 'Match on body, headers or query. A blocked user gets a 403 from Auth0 while everyone else gets a token—in the same scenario, against the same running server.',
+    lede: 'Match on body, headers or query. A blocked user gets a 403 from Auth0 while every other login in the same scenario gets a token, against the same running server.',
     file: 'scenarios/login.ts',
     code: `{
   method: 'POST',
@@ -137,11 +141,10 @@ const demos: readonly Demo[] = [
 },`,
     steps: [
       { actor: 'test', label: 'Playwright', detail: "logs in as 'blocked@acme.test'" },
-      { actor: 'api', label: 'Auth0 · scripted', detail: '403 · user is blocked' },
-      { actor: 'server', label: 'Your login route', detail: 'Maps the error, no session, shows support link' },
+      { actor: 'server', label: 'Your login route', detail: 'Calls POST /oauth/token' },
+      { actor: 'api', label: 'Auth0 · scripted', detail: '403 · user is blocked (matched on body.username)' },
+      { actor: 'server', label: 'Your login route', detail: 'Maps the error, sets no session, shows the support link' },
       { actor: 'test', label: 'Playwright', detail: "sees 'Your account is locked'", pass: true },
-      { actor: 'api', label: 'Auth0 · scripted', detail: 'any other user → 200 · access_token' },
-      { actor: 'server', label: 'Your session logic', detail: 'Sets the real session cookie' },
     ],
     docs: { href: '/scenarios/request-matching', label: 'Request matching' },
   },
@@ -164,7 +167,7 @@ const actorClass: Record<Actor, string> = {
   server: 'text-emerald-800 bg-emerald-50 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-500/10 dark:border-emerald-500/30',
   api: 'text-violet-800 bg-violet-50 border-violet-200 dark:text-violet-300 dark:bg-violet-500/10 dark:border-violet-500/30',
 };
-const actorTag: Record<Actor, string> = { test: 'test', server: 'real code', api: 'scripted' };
+const actorTag: Record<Actor, string> = { test: 'test · browser', server: 'real code', api: 'scripted' };
 ---
 
 <section id="dynamic" class="py-24 px-6 border-t border-gray-100 dark:border-white/5 relative overflow-hidden">
@@ -172,12 +175,11 @@ const actorTag: Record<Actor, string> = { test: 'test', server: 'real code', api
 
   <div class="max-w-6xl mx-auto relative z-10">
     <div class="text-center mb-12">
-      <p class="font-mono text-xs uppercase tracking-[0.2em] font-bold text-violet-700 dark:text-violet-400 mb-4">Beyond static stubs</p>
       <h2 class="text-3xl md:text-5xl font-bold tracking-tight mb-5 text-gray-900 dark:text-white">
-        Dynamic scenarios.<br class="hidden md:block" />
-        <span class="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-emerald-600 dark:from-violet-400 dark:to-emerald-400">Real backend logic.</span>
+        Dynamic scenarios.{' '}<br class="hidden md:block" />
+        <span class="text-violet-700 dark:text-violet-300">Real backend logic.</span>
       </h2>
-      <p class="text-gray-600 dark:text-gray-400 max-w-3xl mx-auto text-lg">
+      <p class="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto text-lg">
         Most mocks return one canned response. Scenarist mocks capture data, remember what happened, play out timelines and
         answer each request differently—all as declarative config, while your real server does the work. Sign-up flows,
         verification gates, launch-day races: the tests most teams never manage to automate.
@@ -225,8 +227,9 @@ const actorTag: Record<Actor, string> = { test: 'test', server: 'real code', api
           <!-- Play-out -->
           <div class="rounded-2xl border border-gray-200 dark:border-white/10 bg-white/80 dark:bg-[#0A0A0C]/80 p-5 md:p-6 shadow-xl shadow-black/5">
             <div class="flex items-center justify-between mb-5">
-              <p class="font-mono text-xs uppercase tracking-widest font-bold text-gray-500 dark:text-gray-400">How it plays out</p>
-              <div class="hidden sm:flex items-center gap-3 text-[11px] font-medium text-gray-500 dark:text-gray-400">
+              <p class="text-sm font-semibold text-gray-900 dark:text-white">How it plays out</p>
+              <div class="flex items-center gap-3 text-xs font-medium text-gray-600 dark:text-gray-400">
+                <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-sky-500"></span>test</span>
                 <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>real code</span>
                 <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-violet-500"></span>scripted</span>
               </div>
@@ -241,11 +244,15 @@ const actorTag: Record<Actor, string> = { test: 'test', server: 'real code', api
                     ]}
                     aria-hidden="true"
                   >
-                    {s.pass ? '✓' : n + 1}
+                    {s.pass ? (
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+                    ) : (
+                      n + 1
+                    )}
                   </span>
                   <div class="flex flex-wrap items-center gap-2">
                     <span class="text-sm font-semibold text-gray-900 dark:text-white">{s.label}</span>
-                    <span class:list={['text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded border', actorClass[s.actor]]}>{actorTag[s.actor]}</span>
+                    <span class:list={['text-xs font-semibold px-1.5 py-0.5 rounded border', actorClass[s.actor]]}>{actorTag[s.actor]}</span>
                   </div>
                   <p class="text-sm text-gray-600 dark:text-gray-400 font-mono mt-0.5 break-words">{s.detail}</p>
                   {s.state && (
@@ -264,7 +271,7 @@ const actorTag: Record<Actor, string> = { test: 'test', server: 'real code', api
       </div>
     ))}
 
-    <p class="mt-10 text-center text-sm text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+    <p class="mt-10 text-center text-sm text-gray-600 dark:text-gray-400 max-w-xl mx-auto">
       Mix them freely: capture state inside a sequence, match on the request and switch on state—see{' '}
       <a href="/scenarios/combining-features" class="font-semibold text-violet-700 dark:text-violet-400 hover:underline">combining features</a>.
       Every example above runs in parallel with every other test, each on its own isolated state.

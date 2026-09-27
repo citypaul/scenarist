@@ -23,7 +23,6 @@ const articles = [
 <section class="py-24 px-6 border-t border-gray-100 dark:border-white/5">
   <div class="max-w-5xl mx-auto">
     <div class="text-center mb-10">
-      <p class="font-mono text-xs uppercase tracking-[0.2em] font-bold text-violet-700 dark:text-violet-400 mb-4">From the community</p>
       <h2 class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 dark:text-white">Real apps. Real auth. Real scenarios.</h2>
     </div>
 
@@ -46,7 +45,7 @@ const articles = [
           <h3 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white mb-3 group-hover:text-violet-700 dark:group-hover:text-violet-300 transition-colors">
             {a.title}
           </h3>
-          <p class="text-gray-600 dark:text-gray-400 leading-relaxed max-w-3xl mb-6">{a.summary}</p>
+          <p class="text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl mb-6">{a.summary}</p>
           <div class="flex flex-wrap items-center gap-2">
             {a.tags.map((tag) => (
               <span class="px-2 py-1 rounded-md bg-gray-100 dark:bg-white/5 text-xs font-medium text-gray-700 dark:text-gray-300">{tag}</span>
@@ -59,12 +58,12 @@ const articles = [
         </div>
       </a>
       <div class="mt-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-white/70 dark:bg-white/[0.02] p-6">
-        <p class="font-mono text-xs uppercase tracking-widest font-bold text-gray-500 dark:text-gray-400 mb-4">What the article covers, in the docs</p>
+        <p class="text-sm font-semibold text-gray-900 dark:text-white mb-4">What the article covers, in the docs</p>
         <ul class="grid sm:grid-cols-2 gap-x-8 gap-y-3">
           {a.points.map((pt) => (
             <li>
               <a href={pt.href} class="group inline-flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300 hover:text-violet-700 dark:hover:text-violet-300">
-                <span class="mt-0.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true">✓</span>
+                <svg class="mt-1 w-3.5 h-3.5 flex-none text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
                 <span class="group-hover:underline">{pt.text}</span>
               </a>
             </li>
