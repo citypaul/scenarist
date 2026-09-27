@@ -83,6 +83,7 @@ const response = await fetch(url, {
 // Component fetch - must match URL pattern
 await fetch(`http://localhost:3001/github/jobs/${jobId}`, {  // ✅ Matches pattern
   headers: { ...getScenaristHeadersFromReadonlyHeaders(headersList) },
+  cache: 'no-store',
 });
 ```
 
