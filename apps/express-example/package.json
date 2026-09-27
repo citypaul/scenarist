@@ -39,7 +39,7 @@
     "json-server": "1.0.0-beta.15",
     "msw": "^2.15.0",
     "supertest": "^7.2.2",
-    "tsx": "^4.23.13",
+    "tsx": "^4.23.15",
     "typescript": "^6.0.3",
     "vitest": "^5.0.1",
     "wait-on": "^9.1.0"
