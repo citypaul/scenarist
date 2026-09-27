@@ -54,7 +54,6 @@ export const createScenaristBase = (
   const config = buildConfig(options);
   const logger = options.logger ?? noOpLogger;
 
-  // Registry and store are the router's global singletons, injected by impl.ts
   const { registry, store } = options;
   const stateManager = options.stateManager ?? createInMemoryStateManager();
   const sequenceTracker =
