@@ -1,5 +1,13 @@
 # @scenarist/express-adapter
 
+## 0.5.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @scenarist/core@0.5.1
+  - @scenarist/msw-adapter@0.5.1
+
 ## 0.5.0
 
 ### Minor Changes
