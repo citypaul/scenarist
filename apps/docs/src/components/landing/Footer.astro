@@ -1,20 +1,32 @@
 ---
 // Footer with CTA and links
+const year = new Date().getFullYear();
 ---
 
 <footer class="py-20 border-t border-gray-200 dark:border-white/5 text-center">
   <div class="max-w-2xl mx-auto px-6">
-    <h2 class="text-3xl font-bold mb-6 text-gray-900 dark:text-white">
-      Ready to stabilize your backend tests?
+    <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-4 text-gray-900 dark:text-white">
+      Stop testing only the happy path.
     </h2>
+    <p class="text-gray-600 dark:text-gray-400 mb-8">
+      Your real server. Every scenario. One <code class="font-mono text-sm px-1.5 py-0.5 rounded bg-gray-100 dark:bg-white/10">switchScenario</code> call away.
+    </p>
 
     <div class="flex justify-center gap-4 flex-wrap">
-      <!-- Read the Docs CTA -->
+      <!-- Get Started CTA -->
       <a
         href="/getting-started/quick-start"
         class="px-8 py-3 bg-gray-900 dark:bg-white text-white dark:text-black font-bold rounded-full hover:opacity-90 transition shadow-lg"
       >
-        Read the Docs
+        Get Started
+      </a>
+
+      <!-- Watch CTA -->
+      <a
+        href="#watch"
+        class="px-8 py-3 bg-violet-600 text-white font-bold rounded-full hover:bg-violet-700 transition shadow-lg shadow-violet-600/20"
+      >
+        Watch the tour
       </a>
 
       <!-- GitHub CTA -->
@@ -29,7 +41,7 @@
     </div>
 
     <div class="mt-12 text-gray-600 dark:text-gray-400 text-sm">
-      &copy; 2025 Scenarist. Released under MIT License.
+      &copy; {year} Scenarist. Released under MIT License.
     </div>
   </div>
 </footer>

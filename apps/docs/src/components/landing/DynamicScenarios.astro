@@ -1,0 +1,320 @@
+---
+// Showcase of Scenarist's dynamic mock types (state capture, state-aware
+// responses, sequences, request matching). Each tab pairs real, valid scenario
+// config with a play-out of what the test, the real server and the scripted
+// API do - so the "your backend still runs" point is visible, not claimed.
+type Actor = 'test' | 'server' | 'api';
+type Step = { actor: Actor; label: string; detail: string; state?: string; pass?: boolean };
+type Demo = {
+  id: string;
+  tab: string;
+  title: string;
+  lede: string;
+  file: string;
+  code: string;
+  steps: readonly Step[];
+  docs: { href: string; label: string };
+};
+
+const demos: readonly Demo[] = [
+  {
+    id: 'capture',
+    tab: 'Stateful mocks',
+    title: 'Capture from the request. Echo it back.',
+    lede: 'Every test signs up with its own unique email. Scenarist captures it from the Auth0 Management API call and returns it in later responses—no hardcoded fixtures, and no orphaned users in your tenant.',
+    file: 'scenarios/signup.ts',
+    code: `{
+  method: 'POST',
+  url: 'https://acme.auth0.com/api/v2/users',
+  captureState: { email: 'body.email' },
+  response: {
+    status: 201,
+    body: {
+      user_id: 'auth0|e2e-user',
+      email: '{{state.email}}',
+    },
+  },
+},
+{
+  method: 'GET',
+  url: 'https://acme.auth0.com/api/v2/users/:id',
+  response: {
+    status: 200,
+    body: { email: '{{state.email}}' },
+  },
+},`,
+    steps: [
+      { actor: 'test', label: 'Playwright', detail: "fill('Email', 'e2e-7f3a@acme.test'), click Sign up" },
+      { actor: 'server', label: 'Your signup route', detail: 'Validates the form, calls POST /api/v2/users' },
+      { actor: 'api', label: 'Auth0 · scripted', detail: "201 · { email: 'e2e-7f3a@acme.test' }", state: "email = 'e2e-7f3a@acme.test'" },
+      { actor: 'server', label: 'Your session logic', detail: 'Creates the session, loads the profile, redirects to /welcome' },
+      { actor: 'test', label: 'Playwright', detail: "sees 'Welcome, e2e-7f3a@acme.test'", pass: true },
+    ],
+    docs: { href: '/scenarios/stateful-mocks', label: 'Stateful mocks' },
+  },
+  {
+    id: 'state',
+    tab: 'State-aware responses',
+    title: 'Mocks that react to what already happened.',
+    lede: 'One endpoint, different answers depending on the workflow so far. Script an unverified user, let the flow verify them, and watch your real middleware change its mind.',
+    file: 'scenarios/verify-email.ts',
+    code: `{
+  method: 'GET',
+  url: 'https://acme.auth0.com/userinfo',
+  stateResponse: {
+    default: { status: 200, body: { email_verified: false } },
+    conditions: [{
+      when: { verified: true },
+      then: { status: 200, body: { email_verified: true } },
+    }],
+  },
+},
+{
+  method: 'POST',
+  url: 'https://acme.auth0.com/api/v2/tickets/email-verification',
+  response: { status: 201, body: { ticket: 'https://…' } },
+  afterResponse: { setState: { verified: true } },
+},`,
+    steps: [
+      { actor: 'test', label: 'Playwright', detail: "goto('/dashboard')" },
+      { actor: 'api', label: 'Auth0 · scripted', detail: '/userinfo → email_verified: false' },
+      { actor: 'server', label: 'Your middleware', detail: 'Blocks the dashboard, redirects to /verify' },
+      { actor: 'api', label: 'Auth0 · scripted', detail: 'verification ticket → 201', state: 'verified = true' },
+      { actor: 'server', label: 'Your middleware', detail: '/userinfo → email_verified: true, lets them in' },
+      { actor: 'test', label: 'Playwright', detail: 'sees the dashboard', pass: true },
+    ],
+    docs: { href: '/scenarios/state-aware-mocking', label: 'State-aware mocking' },
+  },
+  {
+    id: 'sequence',
+    tab: 'Response sequences',
+    title: 'Script a timeline, not just a response.',
+    lede: 'The first call says in stock, the next says sold out. Reproduce the race that only ever happens on launch day—every run, in milliseconds.',
+    file: 'scenarios/sells-out.ts',
+    code: `{
+  method: 'GET',
+  url: 'https://inventory.acme.dev/stock/hoodie',
+  sequence: {
+    responses: [
+      { status: 200, body: { quantity: 15 } },
+      { status: 200, body: { quantity: 0 } },
+    ],
+    repeat: 'last', // or 'cycle' | 'none'
+  },
+},`,
+    steps: [
+      { actor: 'test', label: 'Playwright', detail: "goto('/'), add the hoodie to the cart" },
+      { actor: 'api', label: 'Inventory · call 1', detail: '200 · { quantity: 15 }' },
+      { actor: 'test', label: 'Playwright', detail: 'goes to checkout, clicks Pay' },
+      { actor: 'api', label: 'Inventory · call 2', detail: '200 · { quantity: 0 }' },
+      { actor: 'server', label: 'Your checkout action', detail: 'Re-checks stock, refuses to charge the card' },
+      { actor: 'test', label: 'Playwright', detail: "sees 'Sold out during checkout'", pass: true },
+    ],
+    docs: { href: '/scenarios/response-sequences', label: 'Response sequences' },
+  },
+  {
+    id: 'match',
+    tab: 'Request matching',
+    title: 'Same endpoint. The right answer for each request.',
+    lede: 'Match on body, headers or query. A blocked user gets a 403 from Auth0 while everyone else gets a token—in the same scenario, against the same running server.',
+    file: 'scenarios/login.ts',
+    code: `{
+  method: 'POST',
+  url: 'https://acme.auth0.com/oauth/token',
+  match: { body: { username: 'blocked@acme.test' } },
+  response: {
+    status: 403,
+    body: { error: 'unauthorized', error_description: 'user is blocked' },
+  },
+},
+{
+  method: 'POST',
+  url: 'https://acme.auth0.com/oauth/token',
+  response: {
+    status: 200,
+    body: { access_token: 'eyJhbGciOi…', expires_in: 86400 },
+  },
+},`,
+    steps: [
+      { actor: 'test', label: 'Playwright', detail: "logs in as 'blocked@acme.test'" },
+      { actor: 'api', label: 'Auth0 · scripted', detail: '403 · user is blocked' },
+      { actor: 'server', label: 'Your login route', detail: 'Maps the error, no session, shows support link' },
+      { actor: 'test', label: 'Playwright', detail: "sees 'Your account is locked'", pass: true },
+      { actor: 'api', label: 'Auth0 · scripted', detail: 'any other user → 200 · access_token' },
+      { actor: 'server', label: 'Your session logic', detail: 'Sets the real session cookie' },
+    ],
+    docs: { href: '/scenarios/request-matching', label: 'Request matching' },
+  },
+];
+
+// Minimal TypeScript highlighter so the snippets render without a runtime Shiki load.
+const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const TOKEN = /(\/\/[^\n]*)|('(?:[^'\\\n]|\\.)*')|\b(\d+)\b|([A-Za-z_$][\w$]*)(?=\s*:(?!:))|([\s\S])/g;
+const highlight = (code: string) =>
+  code.replace(TOKEN, (m, com, str, num, prop) => {
+    if (com) return `<span class="dyn-com">${escape(com)}</span>`;
+    if (str) return `<span class="dyn-str">${escape(str)}</span>`;
+    if (num) return `<span class="dyn-num">${num}</span>`;
+    if (prop) return `<span class="dyn-prop">${prop}</span>`;
+    return escape(m);
+  });
+
+const actorClass: Record<Actor, string> = {
+  test: 'text-sky-800 bg-sky-50 border-sky-200 dark:text-sky-300 dark:bg-sky-500/10 dark:border-sky-500/30',
+  server: 'text-emerald-800 bg-emerald-50 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-500/10 dark:border-emerald-500/30',
+  api: 'text-violet-800 bg-violet-50 border-violet-200 dark:text-violet-300 dark:bg-violet-500/10 dark:border-violet-500/30',
+};
+const actorTag: Record<Actor, string> = { test: 'test', server: 'real code', api: 'scripted' };
+---
+
+<section id="dynamic" class="py-24 px-6 border-t border-gray-100 dark:border-white/5 relative overflow-hidden">
+  <div class="absolute inset-x-0 top-0 h-[520px] bg-gradient-to-b from-primary/[0.07] to-transparent pointer-events-none" aria-hidden="true"></div>
+
+  <div class="max-w-6xl mx-auto relative z-10">
+    <div class="text-center mb-12">
+      <p class="font-mono text-xs uppercase tracking-[0.2em] font-bold text-violet-700 dark:text-violet-400 mb-4">Beyond static stubs</p>
+      <h2 class="text-3xl md:text-5xl font-bold tracking-tight mb-5 text-gray-900 dark:text-white">
+        Dynamic scenarios.<br class="hidden md:block" />
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-emerald-600 dark:from-violet-400 dark:to-emerald-400">Real backend logic.</span>
+      </h2>
+      <p class="text-gray-600 dark:text-gray-400 max-w-3xl mx-auto text-lg">
+        Most mocks return one canned response. Scenarist mocks capture data, remember what happened, play out timelines and
+        answer each request differently—all as declarative config, while your real server does the work. Sign-up flows,
+        verification gates, launch-day races: the tests most teams never manage to automate.
+      </p>
+    </div>
+
+    <div class="dyn-tabs flex flex-wrap justify-center gap-2 mb-8" role="tablist" aria-label="Dynamic scenario examples">
+      {demos.map((d, i) => (
+        <button
+          type="button"
+          role="tab"
+          id={`dyn-tab-${d.id}`}
+          aria-controls={`dyn-panel-${d.id}`}
+          aria-selected={i === 0 ? 'true' : 'false'}
+          class="dyn-tab px-4 py-2 rounded-full text-sm font-semibold border transition-colors border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:border-primary/50 aria-selected:bg-violet-600 aria-selected:border-violet-600 aria-selected:text-white"
+        >
+          {d.tab}
+        </button>
+      ))}
+    </div>
+
+    {demos.map((d, i) => (
+      <div
+        role="tabpanel"
+        id={`dyn-panel-${d.id}`}
+        aria-labelledby={`dyn-tab-${d.id}`}
+        hidden={i !== 0}
+        class="dyn-panel"
+      >
+        <div class="text-center mb-8">
+          <h3 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white mb-3">{d.title}</h3>
+          <p class="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">{d.lede}</p>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-6 items-stretch">
+          <!-- Scenario config -->
+          <div class="rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0A0A0C] shadow-xl shadow-black/5">
+            <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-white/[0.02]">
+              <span class="w-3 h-3 rounded-full bg-[#FF5F56]"></span><span class="w-3 h-3 rounded-full bg-[#FFBD2E]"></span><span class="w-3 h-3 rounded-full bg-[#27C93F]"></span>
+              <span class="ml-3 font-mono text-xs text-gray-600 dark:text-gray-400">{d.file}</span>
+            </div>
+            <pre class="p-5 font-mono text-[13px] leading-relaxed text-gray-800 dark:text-gray-200 overflow-x-auto" tabindex="0" aria-label={`${d.tab} scenario configuration`}><code set:html={highlight(d.code)} /></pre>
+          </div>
+
+          <!-- Play-out -->
+          <div class="rounded-2xl border border-gray-200 dark:border-white/10 bg-white/80 dark:bg-[#0A0A0C]/80 p-5 md:p-6 shadow-xl shadow-black/5">
+            <div class="flex items-center justify-between mb-5">
+              <p class="font-mono text-xs uppercase tracking-widest font-bold text-gray-500 dark:text-gray-400">How it plays out</p>
+              <div class="hidden sm:flex items-center gap-3 text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>real code</span>
+                <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-violet-500"></span>scripted</span>
+              </div>
+            </div>
+            <ol class="relative space-y-3 before:absolute before:left-[15px] before:top-2 before:bottom-2 before:w-px before:bg-gray-200 dark:before:bg-white/10">
+              {d.steps.map((s, n) => (
+                <li class="dyn-step relative pl-10" style={`--i:${n}`}>
+                  <span
+                    class:list={[
+                      'absolute left-0 top-1 flex h-8 w-8 items-center justify-center rounded-full border text-xs font-bold',
+                      actorClass[s.actor],
+                    ]}
+                    aria-hidden="true"
+                  >
+                    {s.pass ? '✓' : n + 1}
+                  </span>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-sm font-semibold text-gray-900 dark:text-white">{s.label}</span>
+                    <span class:list={['text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded border', actorClass[s.actor]]}>{actorTag[s.actor]}</span>
+                  </div>
+                  <p class="text-sm text-gray-600 dark:text-gray-400 font-mono mt-0.5 break-words">{s.detail}</p>
+                  {s.state && (
+                    <p class="mt-1.5 inline-flex items-center gap-1.5 rounded-md bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 px-2 py-0.5 font-mono text-[12px] text-amber-900 dark:text-amber-300">
+                      <span class="font-bold">state</span> {s.state}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ol>
+            <a href={d.docs.href} class="mt-6 inline-flex items-center gap-1 text-sm font-semibold text-violet-700 dark:text-violet-400 hover:underline">
+              {d.docs.label} docs →
+            </a>
+          </div>
+        </div>
+      </div>
+    ))}
+
+    <p class="mt-10 text-center text-sm text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+      Mix them freely: capture state inside a sequence, match on the request and switch on state—see{' '}
+      <a href="/scenarios/combining-features" class="font-semibold text-violet-700 dark:text-violet-400 hover:underline">combining features</a>.
+      Every example above runs in parallel with every other test, each on its own isolated state.
+    </p>
+  </div>
+</section>
+
+<style is:global>
+  .dyn-prop { color: #1d4ed8; }
+  .dyn-str { color: #047857; }
+  .dyn-num { color: #b45309; }
+  .dyn-com { color: #6b7280; font-style: italic; }
+  .dark .dyn-prop { color: #93c5fd; }
+  .dark .dyn-str { color: #6ee7b7; }
+  .dark .dyn-num { color: #fcd34d; }
+  .dark .dyn-com { color: #9ca3af; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .dyn-panel:not([hidden]) .dyn-step {
+      animation: dyn-step-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+      animation-delay: calc(var(--i) * 110ms);
+    }
+  }
+  @keyframes dyn-step-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+</style>
+
+<script>
+  const tabs = Array.from(document.querySelectorAll<HTMLButtonElement>('.dyn-tab'));
+
+  const select = (tab: HTMLButtonElement) => {
+    for (const t of tabs) {
+      const selected = t === tab;
+      t.setAttribute('aria-selected', String(selected));
+      const panel = document.getElementById(t.getAttribute('aria-controls') ?? '');
+      if (panel) panel.hidden = !selected;
+    }
+  };
+
+  tabs.forEach((tab, i) => {
+    tab.addEventListener('click', () => select(tab));
+    tab.addEventListener('keydown', (event) => {
+      const offset = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+      if (!offset) return;
+      event.preventDefault();
+      const next = tabs[(i + offset + tabs.length) % tabs.length];
+      select(next);
+      next.focus();
+    });
+  });
+</script>

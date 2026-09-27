@@ -1,0 +1,71 @@
+---
+// "Why not just…?" - where Scenarist sits relative to unit tests and live-service E2E.
+type Mark = 'yes' | 'no' | 'partial';
+type Row = { label: string; unit: Mark; e2e: Mark; scenarist: Mark };
+
+const rows: readonly Row[] = [
+  { label: 'Your real backend code runs', unit: 'no', e2e: 'yes', scenarist: 'yes' },
+  { label: 'Any external scenario, on demand', unit: 'yes', e2e: 'no', scenarist: 'yes' },
+  { label: 'No mocking next/headers or req.session', unit: 'no', e2e: 'yes', scenarist: 'yes' },
+  { label: 'Deterministic, no shared sandbox state', unit: 'yes', e2e: 'no', scenarist: 'yes' },
+  { label: 'Parallel tests with isolated state', unit: 'yes', e2e: 'partial', scenarist: 'yes' },
+  { label: 'No third-party credentials in CI', unit: 'yes', e2e: 'no', scenarist: 'yes' },
+];
+
+const label: Record<Mark, string> = { yes: 'Yes', no: 'No', partial: 'Partly' };
+---
+
+<section class="py-24 px-6 border-t border-gray-100 dark:border-white/5">
+  <div class="max-w-5xl mx-auto">
+    <div class="text-center mb-12">
+      <p class="font-mono text-xs uppercase tracking-[0.2em] font-bold text-violet-700 dark:text-violet-400 mb-4">The testing gap</p>
+      <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-4 text-gray-900 dark:text-white">
+        Stop choosing between real code and real coverage
+      </h2>
+      <p class="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+        Unit tests can fake any scenario, but your server never runs. End-to-end tests run your server, but only on the happy path.
+        Scenarist gives you both.
+      </p>
+    </div>
+
+    <div class="overflow-x-auto rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0A0A0C]" tabindex="0" role="region" aria-label="Comparison of testing approaches">
+      <table class="w-full min-w-[640px] text-left text-sm">
+        <thead>
+          <tr class="border-b border-gray-200 dark:border-white/10">
+            <th scope="col" class="p-4 md:p-5 font-medium text-gray-500 dark:text-gray-400"><span class="sr-only">Capability</span></th>
+            <th scope="col" class="p-4 md:p-5 font-semibold text-gray-900 dark:text-white text-center">Unit tests + mocks</th>
+            <th scope="col" class="p-4 md:p-5 font-semibold text-gray-900 dark:text-white text-center">E2E against live services</th>
+            <th scope="col" class="p-4 md:p-5 font-bold text-violet-700 dark:text-violet-300 text-center bg-violet-50 dark:bg-violet-500/10">Scenarist</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr class="border-b last:border-b-0 border-gray-100 dark:border-white/5">
+              <th scope="row" class="p-4 md:p-5 font-medium text-gray-800 dark:text-gray-200">{row.label}</th>
+              {[row.unit, row.e2e, row.scenarist].map((mark, i) => (
+                <td class:list={['p-4 md:p-5 text-center', i === 2 && 'bg-violet-50/60 dark:bg-violet-500/[0.06]']}>
+                  <span
+                    class:list={[
+                      'inline-flex items-center justify-center gap-1.5 text-xs font-semibold',
+                      mark === 'yes' && 'text-emerald-700 dark:text-emerald-400',
+                      mark === 'no' && 'text-rose-700 dark:text-rose-400',
+                      mark === 'partial' && 'text-amber-800 dark:text-amber-400',
+                    ]}
+                  >
+                    <span aria-hidden="true">{mark === 'yes' ? '✓' : mark === 'no' ? '✕' : '~'}</span>
+                    {label[mark]}
+                  </span>
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <p class="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+      Comparing with MSW, Playwright route mocks, WireMock, Nock or Testcontainers?{' '}
+      <a href="/comparison" class="font-medium text-violet-700 dark:text-violet-400 hover:underline">See the detailed comparisons →</a>
+    </p>
+  </div>
+</section>

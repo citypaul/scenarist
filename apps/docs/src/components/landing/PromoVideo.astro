@@ -1,0 +1,58 @@
+---
+// 80-second product overview. preload="none" keeps the page fast: only the
+// poster loads until the visitor presses play.
+const duration = '80-second';
+---
+
+<figure class="relative w-full">
+  <div class="absolute -inset-3 bg-gradient-to-tr from-primary/40 via-primary/10 to-emerald-500/30 blur-2xl rounded-[2rem] opacity-60 dark:opacity-70 pointer-events-none" aria-hidden="true"></div>
+
+  <div class="relative aspect-video rounded-2xl overflow-hidden bg-[#030304] border border-gray-200 dark:border-white/10 shadow-2xl shadow-primary/10 ring-1 ring-black/5 dark:ring-white/5">
+    <video
+      id="promo-video"
+      class="absolute inset-0 w-full h-full"
+      preload="none"
+      playsinline
+      width="1920"
+      height="1080"
+      poster="/video/scenarist-overview-poster.webp"
+      aria-describedby="promo-video-summary"
+    >
+      <source src="/video/scenarist-overview.webm" type="video/webm" />
+      <source src="/video/scenarist-overview.mp4" type="video/mp4" />
+      <track kind="captions" src="/video/scenarist-overview.en.vtt" srclang="en" label="English" />
+    </video>
+
+    <button
+      id="promo-video-play"
+      type="button"
+      class="group absolute inset-0 flex items-center justify-center cursor-pointer bg-gradient-to-t from-black/50 via-black/0 to-black/0 focus-visible:outline-none"
+      aria-label={`Play the ${duration} Scenarist overview video`}
+    >
+      <span class="absolute bottom-3 left-3 sm:bottom-5 sm:left-5 inline-flex items-center gap-3 rounded-full bg-white/95 py-1.5 pl-1.5 pr-4 sm:pr-5 text-sm font-semibold text-gray-900 shadow-[0_0_50px_rgba(139,92,246,0.5)] transition-transform duration-300 group-hover:scale-105 group-focus-visible:ring-4 group-focus-visible:ring-primary/70" aria-hidden="true">
+        <span class="flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-violet-600 text-white">
+          <svg class="h-4 w-4 sm:h-5 sm:w-5 translate-x-px" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72a1 1 0 0 0 1.52.85l10.9-6.86a1 1 0 0 0 0-1.7L9.52 4.29A1 1 0 0 0 8 5.14Z" /></svg>
+        </span>
+        <span>Watch the {duration} tour <span class="hidden sm:inline font-normal text-gray-500">· sound on</span></span>
+      </span>
+    </button>
+  </div>
+
+  <figcaption id="promo-video-summary" class="sr-only">
+    A tour of Scenarist: a Playwright suite that only covers the happy path, then Scenarist scripting Auth0, Stripe and
+    shipping API responses per test while the real Next.js server code runs, six scenarios running in parallel against
+    one server, and the features that make it work.
+  </figcaption>
+</figure>
+
+<script>
+  const video = document.getElementById('promo-video');
+  const play = document.getElementById('promo-video-play');
+
+  play?.addEventListener('click', () => {
+    if (!(video instanceof HTMLVideoElement)) return;
+    video.controls = true;
+    play.hidden = true;
+    void video.play();
+  });
+</script>
