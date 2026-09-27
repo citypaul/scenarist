@@ -9,7 +9,7 @@ import {
 export type { ExpressAdapterOptions, ExpressScenarist } from "./impl.js";
 
 /**
- * Create a Scenarist instance for Express, or `undefined` when `enabled` is false or `NODE_ENV` is 'production'.
+ * The NODE_ENV check is defense-in-depth: unbundled `node server.js` deploys don't apply the `production` export condition, so without it the scenario endpoints would mount in production.
  *
  * @example
  * ```typescript
