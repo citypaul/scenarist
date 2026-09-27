@@ -1,12 +1,13 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * Internal Link Tests
+ * Trailing Slash Tests
  *
- * Every page is served at a trailing-slash URL. Cloudflare answers a
- * slashless URL with a 307 temporary redirect, which search engines treat
- * as a weak, conflicting canonical signal. Internal links must therefore
- * point straight at the trailing-slash URL.
+ * Every page is served at a trailing-slash URL, which its canonical tag
+ * names. By default Cloudflare answers a slashless URL with a 307 temporary
+ * redirect, which search engines treat as a weak signal and may index the
+ * slashless URL as a separate page. Internal links must point straight at
+ * the trailing-slash URL, and slashless URLs must redirect permanently.
  */
 
 const readSitemapPaths = async (
@@ -57,5 +58,33 @@ test.describe("Internal links", () => {
     );
 
     expect(offenders).toEqual([]);
+  });
+});
+
+test.describe("Slashless URLs", () => {
+  test("every page's slashless URL permanently redirects to it", async ({
+    request,
+  }) => {
+    const paths = (await readSitemapPaths(request)).filter(
+      (path) => path !== "/",
+    );
+    expect(paths.length).toBeGreaterThan(0);
+
+    const responses = await Promise.all(
+      paths.map(async (path) => {
+        const response = await request.get(path.slice(0, -1), {
+          maxRedirects: 0,
+        });
+        return {
+          path,
+          status: response.status(),
+          location: response.headers()["location"],
+        };
+      }),
+    );
+
+    expect(responses).toEqual(
+      paths.map((path) => ({ path, status: 301, location: path })),
+    );
   });
 });

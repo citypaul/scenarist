@@ -9,6 +9,7 @@ import icon from "astro-icon";
 
 import cloudflare from "@astrojs/cloudflare";
 import { siteHeadTags, structuredData } from "./src/utils/site-head.ts";
+import { trailingSlashRedirects } from "./integrations/trailing-slash-redirects.ts";
 
 // https://astro.build/config
 export default defineConfig({
@@ -242,6 +243,7 @@ export default defineConfig({
     }),
     sitemap(),
     icon(),
+    trailingSlashRedirects(),
   ],
 
   adapter: cloudflare({ imageService: "passthrough" }),
