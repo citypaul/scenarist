@@ -184,9 +184,9 @@ When using `stateResponse`, you can define condition-specific `afterResponse` to
   method: 'POST',
   url: '/api/process',
   stateResponse: {
-    default: { body: { processed: false } },
+    default: { status: 200, body: { processed: false } },
     conditions: [
-      { when: { ready: true }, then: { body: { processed: true } } }
+      { when: { ready: true }, then: { status: 200, body: { processed: true } } }
     ]
   },
   afterResponse: {
@@ -207,7 +207,7 @@ const mocks = [
     method: 'POST',
     url: '/api/review',
     match: { state: { step: 'initial' } },
-    response: { body: { newStatus: 'pending_approval' } },
+    response: { status: 200, body: { newStatus: 'pending_approval' } },
     afterResponse: { setState: { step: 'reviewed' } }
   },
   // When step is 'reviewed' → transition to 'approved'
@@ -215,14 +215,14 @@ const mocks = [
     method: 'POST',
     url: '/api/review',
     match: { state: { step: 'reviewed' } },
-    response: { body: { newStatus: 'approved' } },
+    response: { status: 200, body: { newStatus: 'approved' } },
     afterResponse: { setState: { step: 'approved' } }
   },
   // Fallback (no state match) → transition to 'reviewed'
   {
     method: 'POST',
     url: '/api/review',
-    response: { body: { newStatus: 'pending_approval' } },
+    response: { status: 200, body: { newStatus: 'pending_approval' } },
     afterResponse: { setState: { step: 'reviewed' } }
   }
 ];
@@ -242,7 +242,7 @@ const mocks = [
     state: { step: 'pending_review' },
     body: { decision: 'approve' }
   },
-  response: { body: { status: 'approved' } },
+  response: { status: 200, body: { status: 'approved' } },
   afterResponse: { setState: { step: 'approved' } }
 },
 {
@@ -252,7 +252,7 @@ const mocks = [
     state: { step: 'pending_review' },
     body: { decision: 'reject' }
   },
-  response: { body: { status: 'rejected' } },
+  response: { status: 200, body: { status: 'rejected' } },
   afterResponse: { setState: { step: 'rejected' } }
 }
 ```
@@ -430,7 +430,7 @@ GET /status → 'pending' (independent state)
 
 State resets when:
 - Scenario switches (clean slate for new scenario)
-- Test ends (test ID cleaned up)
+- A new test starts with a different test ID
 
 This ensures idempotent tests.
 
@@ -447,9 +447,9 @@ State-aware mocking combines with all existing features:
     headers: { 'x-tier': 'premium' }      // Request matching
   },
   stateResponse: {
-    default: { body: { discount: 10 } },
+    default: { status: 200, body: { discount: 10 } },
     conditions: [
-      { when: { loyaltyTier: 'gold' }, then: { body: { discount: 20 } } }
+      { when: { loyaltyTier: 'gold' }, then: { status: 200, body: { discount: 20 } } }
     ]
   },
   afterResponse: {
@@ -525,7 +525,7 @@ When tests fail, you often need to inspect the current state to understand what 
 
 ### Debug Endpoint
 
-All adapters expose a debug endpoint at `GET /__scenarist__/state`:
+The Express adapter exposes a debug endpoint at `GET /__scenarist__/state`. In Next.js, create the route yourself with `createStateEndpoint()` (for example at `/api/__scenarist__/state`):
 
 ```bash
 curl -H "x-scenarist-test-id: test-123" http://localhost:3000/__scenarist__/state

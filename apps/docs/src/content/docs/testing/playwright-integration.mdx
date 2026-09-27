@@ -227,6 +227,7 @@ If you already have custom Playwright fixtures, extend the Scenarist test object
 
 ```typescript
 // tests/fixtures.ts
+import type { Page } from '@playwright/test';
 import { withScenarios, expect } from '@scenarist/playwright-helpers';
 import { scenarios } from '../lib/scenarios';
 

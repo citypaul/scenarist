@@ -37,8 +37,13 @@ Test async Server Components with real HTTP requests:
 
 ```typescript
 // app/products/page.tsx
+import { headers } from 'next/headers';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+
 export default async function ProductsPage() {
-  const response = await fetch('https://api.stripe.com/v1/products');
+  const response = await fetch('https://api.stripe.com/v1/products', {
+    headers: getScenaristHeadersFromReadonlyHeaders(await headers()),
+  });
   const { data: products } = await response.json();
   return <ProductList products={products} />;
 }
@@ -57,10 +62,13 @@ Test API routes with different scenarios:
 
 ```typescript
 // app/api/checkout/route.ts
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
+
 export async function POST(request: Request) {
   const body = await request.json();
   const response = await fetch("https://api.stripe.com/v1/charges", {
     method: "POST",
+    headers: getScenaristHeaders(request),
     body: JSON.stringify(body),
   });
   return Response.json(await response.json());
@@ -68,8 +76,9 @@ export async function POST(request: Request) {
 
 // Test with different payment scenarios
 test("processes successful payment", async ({ page, switchScenario }) => {
-  await switchScenario(page, "paymentSuccess");
+  const testId = await switchScenario(page, "paymentSuccess");
   const response = await page.request.post("/api/checkout", {
+    headers: { "x-scenarist-test-id": testId },
     data: { amount: 5000, token: "tok_test" },
   });
   expect(response.ok()).toBe(true);
@@ -82,9 +91,16 @@ Test mutations with state capture:
 
 ```typescript
 // app/cart/actions.ts
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+import { getScenaristHeadersFromReadonlyHeaders } from "@scenarist/nextjs-adapter/app";
+
 export async function addToCart(productId: string) {
   await fetch("https://api.cart.example.com/add", {
     method: "POST",
+    headers: getScenaristHeadersFromReadonlyHeaders(await headers()),
     body: JSON.stringify({ productId }),
   });
   revalidatePath("/cart");

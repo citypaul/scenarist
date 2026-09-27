@@ -147,7 +147,7 @@ export async function createTestContainer(): Promise<StartedPostgreSqlContainer>
 }
 
 // tests/checkout.spec.ts
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures'; // withScenarios(scenarios)
 import { createTestContainer } from './helpers/setup-container';
 import { seedPremiumUser, seedStandardUser } from './helpers/seed-database';
 
@@ -226,9 +226,12 @@ Mock external APIs (Stripe, Auth0, SendGrid):
 
 ```typescript
 // lib/scenarios.ts
+import type { ScenaristScenario } from '@scenarist/nextjs-adapter/app';
+
 export const stripeSuccessScenario: ScenaristScenario = {
   id: 'stripeSuccess',
   name: 'Stripe Payment Success',
+  description: 'Stripe charges succeed',
   mocks: [
     {
       method: 'POST',
@@ -248,6 +251,7 @@ export const stripeSuccessScenario: ScenaristScenario = {
 export const stripeDeclinedScenario: ScenaristScenario = {
   id: 'stripeDeclined',
   name: 'Stripe Payment Declined',
+  description: 'Stripe declines the card',
   mocks: [
     {
       method: 'POST',
@@ -271,18 +275,14 @@ export const stripeDeclinedScenario: ScenaristScenario = {
 Here's a full test showing database setup, seeding, and API mocking using functional patterns:
 
 ```typescript
-import { test, expect } from '@playwright/test';
+import { withScenarios, expect } from '@scenarist/playwright-helpers';
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import { PrismaClient } from '@prisma/client';
-import { scenaristFixtures } from '@scenarist/playwright-helpers';
 import { execSync } from 'child_process';
+import { scenarios } from '../lib/scenarios';
 
-const { switchScenario } = scenaristFixtures({
-  testIdHeader: 'x-scenarist-test-id',
-  scenarioEndpoint: 'http://localhost:3000/__scenario__',
-});
-
-test.use({ ...switchScenario });
+// Test ID header is set automatically; scenaristEndpoint defaults to '/api/__scenario__'
+const test = withScenarios(scenarios);
 
 test.describe('Checkout flow with database', () => {
   const setup = test.beforeAll(async () => {

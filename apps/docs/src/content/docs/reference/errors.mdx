@@ -13,7 +13,7 @@ Scenarist provides comprehensive error handling with rich context, actionable hi
 |------|-------------|-------------|
 | `SCENARIO_NOT_FOUND` | Attempted to switch to a scenario that hasn't been registered | `switchScenario()` with unknown ID |
 | `DUPLICATE_SCENARIO` | Attempted to register a scenario with an ID that already exists | `registerScenario()` with duplicate ID |
-| `NO_MOCK_FOUND` | No mock matched the incoming request | Request handling with `strictMode: true` or `errorBehaviors.onNoMockFound: 'throw'` |
+| `NO_MOCK_FOUND` | No mock matched the incoming request | Request handling with `errorBehaviors.onNoMockFound: 'throw'` |
 | `SEQUENCE_EXHAUSTED` | Sequence with `repeat: 'none'` has no more responses and no fallback mock | Request to exhausted sequence |
 | `MISSING_TEST_ID` | Request arrived without the x-scenarist-test-id header | Request without test context |
 | `VALIDATION_ERROR` | Scenario definition failed schema validation | `registerScenario()` with invalid definition |
@@ -42,9 +42,11 @@ type ErrorContext = {
 ### Example Error
 
 ```typescript
-try {
-  manager.switchScenario('test-123', 'nonexistent-scenario');
-} catch (error) {
+// switchScenario returns a result instead of throwing
+const result = manager.switchScenario('test-123', 'nonexistent-scenario');
+
+if (!result.success) {
+  const { error } = result;
   if (error instanceof ScenaristError) {
     console.log(error.code);      // 'SCENARIO_NOT_FOUND'
     console.log(error.message);   // 'Scenario 'nonexistent-scenario' not found...'
@@ -59,6 +61,10 @@ try {
 ```
 
 ## Configurable Error Behaviors
+
+:::caution[Not yet wired up in the adapters]
+The Express and Next.js adapters accept `errorBehaviors` but do not currently pass it to the request handler, so these settings have no effect yet. Today an unmatched request passes through to the real API, or gets a `501` response when `strictMode: true`. This section describes the intended behavior.
+:::
 
 Control how Scenarist handles specific error conditions using `errorBehaviors`:
 
@@ -80,7 +86,7 @@ const scenarist = createScenarist({
 
 <CardGrid>
   <Card title="throw" icon="error">
-    **Default.** Throw `ScenaristError`. Test fails immediately with clear error message.
+    **Default.** Throw `ScenaristError`. The mocked request gets a 500 JSON response containing the error `code` and `message`.
   </Card>
   <Card title="warn" icon="warning">
     Log warning via Logger port, then continue. Good for development debugging.
@@ -129,7 +135,7 @@ try {
 } catch (error) {
   console.log(error.code);     // 'VALIDATION_ERROR'
   console.log(error.message);
-  // 'Invalid scenario definition for 'test': name: String must contain at least 1 character(s), mocks.0.url: String must contain at least 1 character(s), mocks.0.response.status: Number must be at most 599'
+  // 'Invalid scenario definition for 'test': name: Too small: expected string to have >=1 characters, mocks.0.url: Too small: expected string to have >=1 characters, mocks.0.response.status: Too big: expected number to be <=599'
 }
 ```
 
@@ -197,22 +203,23 @@ const scenarist = createScenarist({
 Use error codes to handle specific error types:
 
 ```typescript
-import { ScenaristError, ErrorCodes } from '@scenarist/core';
+import { ErrorCodes } from '@scenarist/core';
 
-try {
-  await makeRequest('/api/users');
-} catch (error) {
-  if (error instanceof ScenaristError) {
-    switch (error.code) {
-      case ErrorCodes.NO_MOCK_FOUND:
-        console.log('No mock matched:', error.context.requestInfo?.url);
-        break;
-      case ErrorCodes.SEQUENCE_EXHAUSTED:
-        console.log('Sequence exhausted for mock');
-        break;
-      default:
-        console.log('Scenarist error:', error.message);
-    }
+// Errors thrown while handling a mocked request do not propagate to your code.
+// The request receives a 500 JSON response: { error, message, code }
+const response = await fetch('https://api.example.com/users');
+
+if (response.status === 500) {
+  const body = await response.json();
+  switch (body.code) {
+    case ErrorCodes.NO_MOCK_FOUND:
+      console.log('No mock matched:', body.message);
+      break;
+    case ErrorCodes.SEQUENCE_EXHAUSTED:
+      console.log('Sequence exhausted for mock');
+      break;
+    default:
+      console.log('Scenarist error:', body.message);
   }
 }
 ```

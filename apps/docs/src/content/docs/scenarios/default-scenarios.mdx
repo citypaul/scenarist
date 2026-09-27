@@ -49,7 +49,7 @@ export const scenarios = {
 
 ## How Default Fallback Works
 
-When you switch to a specialized scenario, Scenarist collects mocks from **both** the default scenario **and** the active scenario, then uses specificity-based selection.
+When you switch to a specialized scenario, Scenarist collects the active scenario's mocks for the request's URL and method. If none of them is a fallback mock (a mock without `match` criteria), it also collects the default scenario's mocks, then uses specificity-based selection.
 
 ```typescript
 // Default scenario: All APIs succeed
@@ -165,24 +165,24 @@ mocks: [
 // Request without tier → Default scenario (fallback)
 ```
 
-## Tiebreaker: Last Fallback Wins
+## Active Fallbacks Replace Default Mocks
 
-When multiple mocks have **equal specificity** (no match criteria), the last one wins:
+When the active scenario has a fallback mock (no match criteria) for a URL and method, the default scenario's mocks for that URL and method are not considered at all:
 
 ```typescript
-// Mocks collected for same URL:
-[
-  { response: { body: { source: 'default' } } },  // From default scenario
-  { response: { body: { source: 'active' } } },   // From active scenario ← Wins
-]
+// Default scenario
+{ method: 'GET', url: '/api/data', response: { status: 200, body: { source: 'default' } } }
+
+// Active scenario ← Wins (default's mock is not a candidate)
+{ method: 'GET', url: '/api/data', response: { status: 200, body: { source: 'active' } } }
 ```
 
 This allows active scenarios to override default fallbacks without needing match criteria.
 
 :::note[Mock Type Priority]
-This tiebreaker applies when mocks have the same fallback priority. `sequence` and `stateResponse` mocks have higher priority (1) than simple `response` mocks (0). A `response` mock **cannot** override a `sequence` or `stateResponse` mock without match criteria.
+This also applies when the default mock is a `sequence` or `stateResponse`: an active scenario's simple `response` fallback still overrides it. Within one set of candidates, `sequence` and `stateResponse` fallbacks have higher priority (1) than simple `response` fallbacks (0).
 
-See [Mock Type Priority](/scenarios/request-matching/#mock-type-priority) for details and workarounds.
+See [Mock Type Priority](/scenarios/request-matching/#mock-type-priority) for details.
 :::
 
 ## Complete Example

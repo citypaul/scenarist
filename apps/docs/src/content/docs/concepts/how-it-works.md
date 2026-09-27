@@ -69,19 +69,38 @@ import type { ScenaristScenarios } from "@scenarist/nextjs-adapter/app";
 const scenarios = {
   default: {
     // Happy path - all APIs succeed
+    id: "default",
+    name: "All succeed",
+    description: "Happy path for every external API",
     mocks: [
-      { url: "https://api.stripe.com/...", response: { status: "succeeded" } },
       {
-        url: "https://api.auth0.com/...",
-        response: { user: "john@example.com" },
+        method: "POST",
+        url: "https://api.stripe.com/...",
+        response: { status: 200, body: { status: "succeeded" } },
       },
-      { url: "https://api.sendgrid.com/...", response: { status: "sent" } },
+      {
+        method: "GET",
+        url: "https://api.auth0.com/...",
+        response: { status: 200, body: { user: "john@example.com" } },
+      },
+      {
+        method: "POST",
+        url: "https://api.sendgrid.com/...",
+        response: { status: 200, body: { status: "sent" } },
+      },
     ],
   },
   paymentFails: {
     // Only override Stripe - Auth0 and SendGrid automatically fall back to default
+    id: "paymentFails",
+    name: "Payment fails",
+    description: "Stripe declines; everything else succeeds",
     mocks: [
-      { url: "https://api.stripe.com/...", response: { status: "declined" } },
+      {
+        method: "POST",
+        url: "https://api.stripe.com/...",
+        response: { status: 402, body: { status: "declined" } },
+      },
     ],
   },
 } as const satisfies ScenaristScenarios;
@@ -129,14 +148,25 @@ This example demonstrates HTTP-level testing with Next.js. Each framework has it
 **Step 1: Framework-specific setup** (done once per application)
 
 ```typescript
-// app/api/[[...route]]/route.ts - Next.js App Router
-import { createScenarist } from "@scenarist/nextjs-adapter";
+// lib/scenarist.ts - Next.js App Router
+import { createScenarist } from "@scenarist/nextjs-adapter/app";
 import { scenarios } from "./scenarios";
 
-export const { GET, POST } = createScenarist({
+export const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === "test",
   scenarios,
 });
+
+if (typeof window === "undefined" && scenarist) {
+  scenarist.start();
+}
+
+// app/api/%5F%5Fscenario%5F%5F/route.ts - serves /api/__scenario__
+import { scenarist } from "../../../lib/scenarist";
+
+const handler = scenarist?.createScenarioEndpoint();
+export const POST = handler;
+export const GET = handler;
 ```
 
 **Step 2: Define scenarios** (reusable across tests)
@@ -146,9 +176,16 @@ export const { GET, POST } = createScenarist({
 import type { ScenaristScenarios } from "@scenarist/nextjs-adapter/app";
 
 export const scenarios = {
+  default: {
+    id: "default",
+    name: "Default",
+    description: "Baseline mocks for every test",
+    mocks: [],
+  },
   premiumUser: {
     id: "premiumUser",
     name: "Premium User",
+    description: "Auth provider returns a premium session",
     mocks: [
       {
         method: "GET",
@@ -218,7 +255,7 @@ test("premium users access advanced features", async ({
 
 ## Ephemeral Endpoints: Test-Only Activation
 
-Scenarist creates special `/__scenario__` endpoints that **only exist when testing is enabled**. These ephemeral endpoints enable runtime scenario switching while maintaining production safety.
+Scenarist creates special scenario endpoints (`/__scenario__` in Express, `/api/__scenario__` in the Next.js example route files) that **only exist in non-production builds**. These ephemeral endpoints enable runtime scenario switching while maintaining production safety.
 
 **What are ephemeral endpoints?**
 
@@ -227,28 +264,28 @@ Scenarist creates special `/__scenario__` endpoints that **only exist when testi
 
 **Why "ephemeral"?**
 
-The endpoints only exist when you set `enabled: true` in your Scenarist configuration:
+The endpoints only exist when `createScenarist()` returns an instance. In production builds, each adapter's `production` export condition resolves to a stub whose `createScenarist()` returns `undefined`, so there is nothing to mount:
 
 ```typescript
 const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === "test", // Only active in test environment
+  enabled: process.env.NODE_ENV === "test",
   scenarios,
-});
+}); // undefined when the `production` export condition is resolved
 ```
 
-**When `enabled: true` (test mode):**
+**In development/test builds:**
 
 - Endpoints accept requests and switch scenarios
 - MSW intercepts external API calls
 - Test ID headers route requests to correct scenarios
 
-**When `enabled: false` (production):**
+**In production builds (`production` export condition):**
 
-- Endpoints return 404 (do not exist)
+- Endpoints have no working handler: Express never mounts them (404), and Next.js scenario routes answer 405
 - Zero overhead - no middleware, no MSW, no scenario infrastructure
 - Your app runs exactly as it would without Scenarist
 
-This ensures scenario switching infrastructure **never leaks into production**, even if you accidentally deploy with `enabled: true`.
+This ensures scenario switching infrastructure **never leaks into production**, as long as your production build resolves the `production` export condition. The `enabled` option is not currently read, so it does not provide this protection.
 
 [Learn more about ephemeral endpoints →](/reference/ephemeral-endpoints/)
 

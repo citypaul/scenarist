@@ -202,7 +202,7 @@ export default async function MyPage() {
 
 ### 6. Debug State in Playwright Tests
 
-The `@scenarist/playwright-helpers` package provides fixtures to inspect test state directly from your Playwright tests:
+The `@scenarist/playwright-helpers` package provides fixtures to inspect test state directly from your Playwright tests. They read from the state endpoint configured by `scenaristStateEndpoint` (default `/__scenarist__/state`). In the App Router, create `app/api/%5F%5Fscenarist%5F%5F/state/route.ts` exporting `GET = scenarist?.createStateEndpoint()` and set `scenaristStateEndpoint: '/api/__scenarist__/state'` in your Playwright config, as the example app does:
 
 ```typescript
 // Import from your configured fixtures file

@@ -104,6 +104,9 @@ export const scenarist = createScenarist({
   enabled: true,
   scenarios: {
     default: {
+      id: "default",
+      name: "Default",
+      description: "Baseline responses",
       mocks: [
         {
           url: "https://api.stripe.com/v1/charges",

@@ -37,7 +37,7 @@ Import from the `/app` subpath:
 import { createScenarist } from "@scenarist/nextjs-adapter/app";
 ```
 
-**Peer dependencies:** `next@^14.0.0 || ^15.0.0`, `msw@^2.0.0`
+**Peer dependencies:** `next@^14.0.0 || ^15.0.0 || ^16.0.0`, `msw@^2.0.0`
 
 After installation, follow the [Next.js App Router Getting Started guide](/frameworks/nextjs-app-router/getting-started/) to configure your app.
 
@@ -65,7 +65,7 @@ Import from the `/pages` subpath:
 import { createScenarist } from "@scenarist/nextjs-adapter/pages";
 ```
 
-**Peer dependencies:** `next@^14.0.0 || ^15.0.0`, `msw@^2.0.0`
+**Peer dependencies:** `next@^14.0.0 || ^15.0.0 || ^16.0.0`, `msw@^2.0.0`
 
 After installation, follow the [Next.js Pages Router Getting Started guide](/frameworks/nextjs-pages-router/getting-started/) to configure your app.
 

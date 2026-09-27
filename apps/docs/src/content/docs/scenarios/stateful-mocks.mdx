@@ -149,16 +149,16 @@ response: {
 
 ### Missing State
 
-When state key doesn't exist, the template string remains as-is:
+When a state key doesn't exist, a value that is only a template becomes `null`. A template embedded in a longer string remains as-is:
 
 ```typescript
 // If state.userName is not captured:
 body: { name: '{{state.userName}}' }
-// Returns: { name: '{{state.userName}}' }
+// Returns: { name: null }
 
 // If state.cartItems is not captured:
-body: { items: '{{state.cartItems}}' }
-// Returns: { items: '{{state.cartItems}}' }
+body: { summary: 'Items: {{state.cartItems}}' }
+// Returns: { summary: 'Items: {{state.cartItems}}' }
 ```
 
 ## Shopping Cart Example

@@ -6,3 +6,6 @@ Allow: /
 
 # Sitemap location
 Sitemap: https://scenarist.io/sitemap-index.xml
+
+# Documentation for LLMs and coding agents (https://llmstxt.org/)
+# https://scenarist.io/llms.txt

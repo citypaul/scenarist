@@ -21,7 +21,7 @@ This page compares Scenarist with **Playwright's built-in `page.route()` API**�
 | **Intercepts at** | Server (Node.js) | Browser |
 | **Server Components** | ✓ Full support | ✗ Cannot intercept |
 | **API Routes** | ✓ Full support | ✗ Cannot intercept |
-| **Client-side fetch** | ✓ Yes | ✓ Yes |
+| **Client-side fetch** | Via your server routes only | ✓ Yes |
 | **Setup** | Framework adapter | Built into Playwright |
 | **Test isolation** | Per-test via test ID | Per-page |
 | **HAR recording** | Not supported | ✓ Built-in |
@@ -237,8 +237,8 @@ test('shows user name', async ({ page }) => {
 
 // profile.spec.ts
 test('shows user name', async ({ page, switchScenario }) => {
-  // ✓ Works - Scenarist can intercept client-side fetches too
-  // (via MSW in the browser worker)
+  // ✓ Works - /api/user runs on your server, and Scenarist intercepts
+  // the external API calls it makes (browser requests are not intercepted)
   await switchScenario(page, 'user-profile');
 
   await page.goto('/profile');
@@ -315,7 +315,7 @@ test('complete user flow', async ({ page, switchScenario }) => {
 });
 ```
 
-**However**, Scenarist can handle both client and server-side requests, so you typically don't need Playwright mocks if you're already using Scenarist.
+Scenarist intercepts requests made by your server, including those triggered by client-side calls to your own API routes. Requests the browser sends directly to third-party hosts never reach your server, so use Playwright mocks for those.
 
 ## Decision Guide
 
@@ -340,7 +340,7 @@ test('complete user flow', async ({ page, switchScenario }) => {
 | API Routes | ✓ | ✗ |
 | Middleware | ✓ | ✗ |
 | SSR data fetching | ✓ | ✗ |
-| Client-side fetch | ✓ | ✓ |
+| Client-side fetch | Via server routes only | ✓ |
 | Zero setup | Framework adapter | ✓ Built-in |
 | Parallel isolation | ✓ Per-test-ID | Per-page |
 | Scenario management | ✓ | Manual |

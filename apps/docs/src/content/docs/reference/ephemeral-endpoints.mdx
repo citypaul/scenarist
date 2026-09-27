@@ -3,22 +3,22 @@ title: Ephemeral Endpoints
 description: Test-only activation, production safety, and test ID isolation in Scenarist
 ---
 
-Scenarist creates **ephemeral endpoints** that only exist when testing is enabled. In production, these endpoints return 404 and have zero overhead. This ensures scenario switching infrastructure never leaks into production.
+Scenarist creates **ephemeral endpoints** that only exist in development and test builds. In production builds they are never registered, so they add zero overhead. This ensures scenario switching infrastructure never leaks into production.
 
 ## The `enabled` Flag
 
-The `enabled` flag controls whether Scenarist's testing infrastructure is active:
+The `enabled` flag is required in the config, but the adapters do not currently read it at runtime. What removes the testing infrastructure is the adapter's `production` export condition, which makes `createScenarist()` return `undefined`. Next.js production builds resolve that condition automatically. Express needs it set explicitly, with a bundler option such as esbuild's `--conditions=production` or with `node --conditions=production`; `NODE_ENV=production` alone does not switch the entry point. See [Production Safety](/concepts/production-safety/).
 
 ```typescript
 import { createScenarist } from "@scenarist/express-adapter";
 
 const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === "test", // Only in test environment
+  enabled: process.env.NODE_ENV === "test", // Required option; not yet read at runtime
   scenarios,
 });
 ```
 
-### When `enabled: true` (Test Mode)
+### In Development and Test Builds
 
 **Endpoints are active:**
 
@@ -38,16 +38,16 @@ const scenarist = createScenarist({
 - External API calls intercepted
 - Responses returned based on active scenario
 
-### When `enabled: false` (Production Mode)
+### In Production Builds (`production` condition)
 
-**Endpoints return 404:**
+**Endpoints are not registered.** Requests to them get whatever your app returns for an unknown route:
 
 ```typescript
-// Request: POST /__scenario__
-// Response: 404 Not Found
+// Express: POST /__scenario__ → 404 Not Found (no middleware installed)
+// Next.js App Router: the route file exports undefined handlers → 405 Method Not Allowed
 ```
 
-**Middleware no-ops:**
+**No middleware is installed** (`createScenarist()` returned `undefined`, so there is no `scenarist.middleware`):
 
 - Extracts no headers
 - Adds no overhead
@@ -65,20 +65,15 @@ const scenarist = createScenarist({
 
 Scenarist provides multiple layers of production safety:
 
-### 1. Configuration Check
+### 1. Production Entry Point
 
-```typescript
-const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV !== "production", // Explicit check
-  scenarios,
-});
-```
+The `production` export condition swaps in a stub whose `createScenarist()` returns `undefined` and imports nothing. Make sure your production build resolves it; the [Production Safety guide](/concepts/production-safety/) shows how to verify this for each framework.
 
-**Best practice:** Use environment variables to ensure `enabled` is never `true` in production.
+The `enabled` option is not a safeguard today: the adapters do not read it, so `enabled: false` does not disable endpoints or interception.
 
 ### 2. Endpoint Availability
 
-Even if `enabled` accidentally left as `true`, endpoints can be configured to non-standard paths:
+As an extra precaution, the endpoints can be moved to non-standard paths:
 
 ```typescript
 const scenarist = createScenarist({
@@ -93,25 +88,27 @@ const scenarist = createScenarist({
 
 ### 3. Middleware Safety
 
-The middleware only activates when `enabled: true`:
+The middleware only exists when `createScenarist()` returns an instance:
 
 ```typescript
 // Express example
-app.use(scenarist.middleware());
+if (scenarist) {
+  app.use(scenarist.middleware);
+}
 
-// When enabled: false
-// - Middleware installed but inactive
+// In production builds scenarist is undefined
+// - Middleware never installed
 // - No header extraction
 // - No performance impact
 ```
 
 ### 4. MSW Registration
 
-MSW handlers only registered when `enabled: true`:
+MSW handlers are only registered when you call `scenarist.start()`, so guard the call:
 
 ```typescript
 // Next.js example
-if (scenarist.config.enabled) {
+if (scenarist) {
   scenarist.start(); // Registers MSW handlers
 }
 // In production: handlers never registered
@@ -155,7 +152,7 @@ test("handles error", async ({ page, switchScenario }) => {
 4. **Request made**: Test ID header included automatically
 5. **Scenario selected**: Based on test ID from header
 6. **Response returned**: From active scenario for that test ID
-7. **Test ends**: Test ID and scenario cleaned up
+7. **Test ends**: The test ID is never reused; its scenario mapping stays in memory until the server restarts
 
 ### Test ID Header
 
@@ -242,12 +239,12 @@ Scenarist enables **parallel execution** via test ID isolation:
 
 ```typescript
 // ✅ Scenarist approach - isolated scenarios
-test("test 1: admin view", async ({ switchScenario }) => {
+test("test 1: admin view", async ({ page, switchScenario }) => {
   await switchScenario(page, "admin-user");
   // Test ID: test-1 → Scenario: admin-user
 });
 
-test("test 2: guest view", async ({ switchScenario }) => {
+test("test 2: guest view", async ({ page, switchScenario }) => {
   await switchScenario(page, "guest-user");
   // Test ID: test-2 → Scenario: guest-user
   // Runs in parallel with test 1, no interference
@@ -288,17 +285,17 @@ NODE_ENV=test SCENARIO=edge npm start
 // NODE_ENV=test npm start
 
 // Switch scenarios at runtime
-test("success case", async ({ switchScenario }) => {
+test("success case", async ({ page, switchScenario }) => {
   await switchScenario(page, "success");
   // Instant scenario switch, no restart
 });
 
-test("error case", async ({ switchScenario }) => {
+test("error case", async ({ page, switchScenario }) => {
   await switchScenario(page, "error");
   // Instant scenario switch, no restart
 });
 
-test("edge case", async ({ switchScenario }) => {
+test("edge case", async ({ page, switchScenario }) => {
   await switchScenario(page, "edge");
   // Instant scenario switch, no restart
 });
@@ -411,7 +408,7 @@ Complete configuration options related to ephemeral endpoints:
 
 ```typescript
 const scenarist = createScenarist({
-  // Enable/disable testing infrastructure
+  // Required config field (not read at runtime by the adapters)
   enabled: process.env.NODE_ENV === "test",
 
   // Scenario definitions

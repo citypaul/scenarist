@@ -8,7 +8,7 @@ This file provides guidance to Claude Code when working with this repository. Fo
 
 **What is scenario-based testing?** An integration testing approach where your real application code executes while external dependencies (third-party APIs) return controlled responses. Unlike true end-to-end tests (zero mocks), scenario-based tests mock only external services you don't control—giving you the speed of unit tests with the realism of integration tests.
 
-**Status:** Production-ready v1.0 candidate. 314 tests passing across all packages with 100% coverage. TypeScript strict mode enforced throughout.
+**Status:** Production-ready v1.0 candidate. 900+ tests across all packages with 100% coverage thresholds (98% branches in the Next.js adapter). TypeScript strict mode enforced throughout.
 
 **Key Capabilities:**
 
@@ -308,25 +308,18 @@ demo/                        (EXTERNAL - promotional/educational apps)
 
 **Production Tree-Shaking Strategy:**
 
-Scenarist adapters use conditional exports to guarantee zero test code in production. The Express adapter adds an additional runtime guard as defense-in-depth.
+Scenarist adapters use conditional exports (the `production` condition) to guarantee zero test code in production. There is no runtime `NODE_ENV` guard: without the `production` condition, the full implementation loads.
 
-**Express adapter (two-layer defense):**
+**Express adapter (conditional exports only):**
 
 ```typescript
-// Layer 1: Conditional exports
-// package.json exports → production.ts when NODE_ENV=production
+// Conditional exports in package.json → setup/production.ts when the "production" condition is active
 
-// Layer 2: Runtime guard in setup.ts
-export const createScenarist = async (options) => {
-  if (process.env.NODE_ENV === "production") {
-    return undefined;
-  }
-  const { createScenaristImpl } = await import("./impl.js"); // Dynamic import
-  return createScenaristImpl(options);
-};
+// setup/setup-scenarist.ts (synchronous re-export, no runtime guard)
+export { createScenaristImpl as createScenarist } from "./impl.js";
 
 // production.ts (returns undefined, zero imports)
-export const createScenarist = async (_options) => {
+export const createScenarist = (_options) => {
   return undefined;
 };
 ```
@@ -334,7 +327,7 @@ export const createScenarist = async (_options) => {
 **Next.js adapters (conditional exports only):**
 
 ```typescript
-// Layer 1: Conditional exports in package.json → app/production.ts or pages/production.ts
+// Conditional exports in package.json → app/production.ts or pages/production.ts
 
 // app/setup.ts or pages/setup.ts (synchronous re-export, no runtime guard)
 export { createScenaristImpl as createScenarist } from "./impl.js";
@@ -395,17 +388,11 @@ export const scenarist = createScenarist({
 NODE_ENV=production next build && ! grep -rE '(setupWorker|HttpResponse\.json)' .next/
 ```
 
-**Why Express uses two layers (defense-in-depth):**
+**Activating the `production` condition:**
 
-- Layer 1 (conditional exports): Primary defense, handles all standard build tools
-- Layer 2 (NODE_ENV + dynamic imports): Fallback if conditional exports fail or bundler misconfigured
-- Provides extra safety for Express apps with custom build configurations
-
-**Why Next.js uses only Layer 1:**
-
-- Next.js build process is standardized and always respects conditional exports
-- No need for runtime guard when bundler behavior is predictable
-- Simpler implementation: synchronous re-export, no async/await required
+- Next.js production builds resolve it automatically
+- Bundled Express servers need bundler config (e.g. esbuild `--conditions=production`, as in `apps/express-example` `build:production`)
+- Unbundled Node servers need `node --conditions=production`; `NODE_ENV=production` alone does not switch entry points
 
 **Why core doesn't need production.ts:** When adapter has production.ts, core is never imported. Conditional exports are package-scoped, not transitive.
 

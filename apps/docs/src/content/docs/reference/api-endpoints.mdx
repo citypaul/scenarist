@@ -31,7 +31,6 @@ x-scenarist-test-id: <test-id>
 ```typescript
 {
   scenario: string;    // Required: scenario ID to activate
-  variant?: string;    // Optional: variant name within scenario
 }
 ```
 
@@ -43,7 +42,6 @@ x-scenarist-test-id: <test-id>
   success: true;
   testId: string;         // The test ID used for routing
   scenarioId: string;     // The activated scenario ID
-  variant?: string;       // The variant name (if provided)
 }
 ```
 
@@ -52,8 +50,7 @@ x-scenarist-test-id: <test-id>
 {
   "success": true,
   "testId": "test-abc123",
-  "scenarioId": "payment-error",
-  "variant": "visa-declined"
+  "scenarioId": "payment-error"
 }
 ```
 
@@ -71,11 +68,10 @@ x-scenarist-test-id: <test-id>
   "error": "Invalid request body",
   "details": [
     {
-      "code": "invalid_type",
       "expected": "string",
-      "received": "undefined",
+      "code": "invalid_type",
       "path": ["scenario"],
-      "message": "Required"
+      "message": "Invalid input: expected string, received undefined"
     }
   ]
 }
@@ -99,12 +95,12 @@ x-scenarist-test-id: <test-id>
 
 **With [Playwright helpers](/testing/playwright-integration/):**
 ```typescript
-import { test } from '@scenarist/playwright-helpers';
+import { test } from './fixtures'; // withScenarios(scenarios)
 
 test('my test', async ({ page, switchScenario }) => {
   // Helper handles POST request automatically
   await switchScenario(page, 'payment-error');
-  // Sends POST /__scenario__ with auto-generated test ID
+  // Sends POST to scenaristEndpoint (default '/api/__scenario__') with auto-generated test ID
 });
 ```
 
@@ -131,7 +127,7 @@ const result = await response.json();
 // { success: true, testId: 'test-123', scenarioId: 'payment-error' }
 ```
 
-**With Playwright (supertest):**
+**With supertest:**
 ```typescript
 import request from 'supertest';
 import app from './app';
@@ -218,7 +214,7 @@ curl http://localhost:3000/__scenario__ \
   -H "x-scenarist-test-id: test-123"
 ```
 
-**With Playwright (supertest):**
+**With supertest:**
 ```typescript
 const response = await request(app)
   .get('/__scenario__')
@@ -341,7 +337,7 @@ import { SCENARIST_TEST_ID_HEADER } from '@scenarist/express-adapter';
 **Test ID behavior:**
 - **Header present:** Uses value from header (e.g., `'test-abc123'`)
 - **Header missing:** Uses default test ID (e.g., `'default-test'`)
-- **Empty string:** Treated as missing, uses default
+- **Empty string:** App Router treats it as missing and uses the default; Express and Pages Router use the empty string as-is
 
 **Example:**
 ```typescript
@@ -362,14 +358,12 @@ import { z } from 'zod';
 
 const ScenarioRequestSchema = z.object({
   scenario: z.string().min(1),  // Required, non-empty string
-  variant: z.string().optional(),  // Optional string
 });
 ```
 
 **Valid requests:**
 ```json
 { "scenario": "payment-error" }
-{ "scenario": "payment-error", "variant": "visa-declined" }
 ```
 
 **Invalid requests:**
@@ -389,11 +383,11 @@ While the API is consistent across frameworks, the implementation differs:
 // Express endpoint handler
 export const handleSetScenario = (manager: ScenarioManager, config: ScenaristConfig) => {
   return (req: Request, res: Response): void => {
-    const { scenario, variant } = ScenarioRequestSchema.parse(req.body);
+    const { scenario } = ScenarioRequestSchema.parse(req.body);
     const context = new ExpressRequestContext(req, config);
     const testId = context.getTestId();
 
-    const result = manager.switchScenario(testId, scenario, variant);
+    const result = manager.switchScenario(testId, scenario);
 
     if (!result.success) {
       res.status(400).json({ error: result.error.message });
@@ -404,7 +398,6 @@ export const handleSetScenario = (manager: ScenarioManager, config: ScenaristCon
       success: true,
       testId,
       scenarioId: scenario,
-      ...(variant && { variant }),
     });
   };
 };
@@ -431,7 +424,6 @@ export const POST = async (req: Request): Promise<Response> => {
       success: true,
       testId: result.testId,
       scenarioId: result.scenarioId,
-      ...(result.variant && { variant: result.variant }),
     },
     { status: 200 }
   );
@@ -444,11 +436,11 @@ export const POST = async (req: Request): Promise<Response> => {
 // Next.js Pages Router endpoint handler
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === 'POST') {
-    const { scenario, variant } = ScenarioRequestSchema.parse(req.body);
+    const { scenario } = ScenarioRequestSchema.parse(req.body);
     const context = new PagesRequestContext(req, config);
     const testId = context.getTestId();
 
-    const result = manager.switchScenario(testId, scenario, variant);
+    const result = manager.switchScenario(testId, scenario);
 
     if (!result.success) {
       return res.status(400).json({ error: result.error.message });
@@ -458,7 +450,6 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       success: true,
       testId,
       scenarioId: scenario,
-      ...(variant && { variant }),
     });
   }
 
@@ -487,7 +478,7 @@ const scenarist = createScenarist({
 ```
 
 **Why customize endpoint paths?**
-- Security: Use non-standard paths in production (if `enabled: true` accidentally)
+- Security: Make the endpoints harder to find if a production build ever includes them
 - Compatibility: Avoid conflicts with existing routes
 - Convention: Match your team's naming standards
 
@@ -545,11 +536,10 @@ await switchScenario(page, 'payment-error');
 ## Security Considerations
 
 **Production Safety:**
-- When `enabled: false`, endpoints return 404
-- When `enabled: true`, consider:
+- When the `production` export condition is resolved, the adapter's `createScenarist()` resolves to a stub that returns `undefined`, so no endpoints are registered. Next.js production builds resolve it automatically; Express needs a bundler option such as esbuild's `--conditions=production` or `node --conditions=production`, because `NODE_ENV=production` alone does not switch the entry point. See [Production Safety](/concepts/production-safety/)
+- The `enabled` flag does not currently disable the endpoints. For defense in depth, also consider:
   - Custom endpoint paths (non-standard)
   - Network-level blocking (firewall)
-  - Environment-based enablement (never `true` in production)
 
 **Test Isolation:**
 - Each test ID is isolated
@@ -557,9 +547,9 @@ await switchScenario(page, 'payment-error');
 - Test IDs should be unique (use UUIDs)
 
 **Header Validation:**
-- Test ID header validated (`x-scenarist-test-id`)
+- Test ID read from the `x-scenarist-test-id` header
 - Missing header → uses default test ID
-- Empty header → uses default test ID
+- Empty header → uses default test ID (App Router); used as-is (Express, Pages Router)
 
 ## Error Handling
 
@@ -596,12 +586,10 @@ All endpoints return structured errors:
 Full workflow with both endpoints:
 
 ```typescript
-import { test } from '@scenarist/playwright-helpers';
+import { withScenarios, expect } from '@scenarist/playwright-helpers';
 import { scenarios } from './scenarios';
 
-export const testWithScenarios = test.extend({
-  scenarios,
-});
+export const testWithScenarios = withScenarios(scenarios);
 
 testWithScenarios('payment flow', async ({ page, switchScenario }) => {
   // 1. Switch to payment success scenario

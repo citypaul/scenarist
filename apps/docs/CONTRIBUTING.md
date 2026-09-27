@@ -315,7 +315,7 @@ The CI job `docs-production-tests` runs these tests against the production build
 
 | Change | What to do |
 | --- | --- |
-| Add a page | Add its trailing-slash path, such as `"/guides/new-guide/"`, to `published-pages.json`. The redirect rule is generated for you. |
+| Add a page | Add its trailing-slash path, such as `"/guides/new-guide/"`, to `published-pages.json`. The redirect rule is generated for you. Then add it to [llms.txt](#llmstxt). |
 | Rename or move a page | Add the new path to `published-pages.json` and keep the old one. Add `"/old/path/": "/new/path/"` to `redirects` in `astro.config.mjs`. |
 | Remove a page | Keep its path in `published-pages.json`. Add a `redirects` entry pointing at the closest remaining page. |
 
@@ -335,6 +335,31 @@ Never delete an entry from `published-pages.json`. Search engines and other site
 Google Search Console for `scenarist.io` shows what Google actually did. The **Pages** report lists why each URL isn't indexed. **Sitemaps** shows when Google last read `sitemap-index.xml`. After fixing a reported issue, open it in the Pages report and click **Validate fix**.
 
 The investigation behind these rules is in [Google indexing: trailing-slash URL variants](../../docs/investigations/google-indexing-trailing-slash.md).
+
+## llms.txt
+
+The site publishes its docs for AI assistants in the [llms.txt format](https://llmstxt.org/). The user-facing explanation is the [AI Assistants page](https://scenarist.io/getting-started/ai-assistants/).
+
+The [`starlight-llms-txt`](https://delucis.github.io/starlight-llms-txt/) plugin builds these files from the docs content on every build. `src/utils/llms-txt.ts` configures it.
+
+| URL | Built from | Search engines |
+| --- | --- | --- |
+| `/llms.txt` | The description, key facts, and page index written in `src/utils/llms-txt.ts`, plus links to the bundles below | In the sitemap and indexable, so Google and Bing can find it |
+| `/llms-full.txt` | Every docs page | `noindex` via `public/_headers`, because it repeats every page |
+| `/llms-small.txt` | Every page except comparisons and the roadmap, without tips, notes, or `<details>` | `noindex` |
+| `/_llms-txt/<topic>.txt` | The pages matched by each `customSets` entry | `noindex` |
+
+Every page on the site also links to `/llms.txt` from a `<link rel="describedby">` tag, as [llmstxt.org](https://llmstxt.org/) recommends, in `src/utils/site-head.ts`, and `public/robots.txt` names it.
+
+### When you change the docs
+
+| Change | What to do |
+| --- | --- |
+| Add a page | Add it to the matching section of `index` in `src/utils/llms-txt.ts`, with a summary of what an assistant will find there. Check that one of the `customSets` path globs matches it. |
+| Rename or remove a page | Update or remove its entry in `index`. |
+| Change a rule that assistants must follow, such as a required file location, an import path, or a default | Update the key facts in `src/utils/llms-txt.ts`. They are stated in `llms.txt` itself, so they do not change when the page they came from changes. |
+
+After `pnpm build`, read `dist/client/llms.txt` to check the result.
 
 ## Section Heading Standards
 

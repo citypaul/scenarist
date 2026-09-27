@@ -102,7 +102,7 @@ This is useful when you want path parameters for some cases but regex matching f
 
 ## Value Matching Strategies
 
-Scenarist provides **6 matching strategies** that work in URL, body, headers, and query:
+Scenarist provides **7 matching strategies** that work in URL, body, headers, and query:
 
 | Strategy | Syntax | Behavior |
 |----------|--------|----------|
@@ -210,7 +210,7 @@ All strategies work in:
 
 ```typescript
 {
-  method: 'GET',
+  method: 'POST',
   url: /\/api\/v\d+\/products/,  // Native RegExp in url
   match: {
     url: { contains: '/featured' },  // Strategy in match.url
@@ -384,7 +384,7 @@ const emailMock: ScenaristMock = {
 
 ## Security: ReDoS Protection
 
-Scenarist validates all regex patterns for **ReDoS (Regular Expression Denial of Service)** vulnerabilities:
+Scenarist validates all serialized regex patterns for **ReDoS (Regular Expression Denial of Service)** vulnerabilities:
 
 ```typescript
 // ✅ SAFE - Simple alternation
@@ -395,7 +395,7 @@ Scenarist validates all regex patterns for **ReDoS (Regular Expression Denial of
 
 // ❌ REJECTED - Catastrophic backtracking risk
 { regex: { source: '(a+)+b', flags: '' } }
-// Error: Regex pattern may cause ReDoS attack
+// Error: Regex pattern is unsafe (ReDoS vulnerability detected)
 ```
 
 **Protection mechanisms:**

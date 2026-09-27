@@ -258,7 +258,7 @@ export const cartWithStateScenario: ScenaristScenario = {
       response: {
         status: 200,
         body: {
-          items: '{{body.items}}',  // Echo back
+          items: '{{state.cartItems}}',  // Echo back the captured items
         },
       },
     },

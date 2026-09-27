@@ -9,13 +9,13 @@ Scenarist is **safe to use in production** - your test mocking code will never r
 
 ## How It Works
 
-When you deploy to production with `NODE_ENV=production`, Scenarist automatically returns `undefined` without loading any test code. Your bundler (Webpack, Vite, esbuild, etc.) then performs **tree-shaking** to eliminate all Scenarist code from your production bundle.
+When your production build resolves the `production` export condition, `createScenarist()` resolves to a stub that returns `undefined` without loading any test code, so no Scenarist or MSW code ends up in your production bundle. Next.js production builds resolve this condition automatically; Express builds must enable it (see [Express](#framework-specific-verification) below).
 
 ```typescript
 import { createScenarist } from "@scenarist/express-adapter";
 import { scenarios } from "./scenarios";
 
-// In production: returns undefined
+// In production builds (`production` export condition): returns undefined
 // In development/test: returns working Scenarist instance
 export const scenarist = createScenarist({
   enabled: true,
@@ -25,25 +25,22 @@ export const scenarist = createScenarist({
 
 ### The Production Wrapper Pattern
 
-All Scenarist adapters use a **production wrapper** that checks `NODE_ENV` before loading any test code:
+All Scenarist adapters use **conditional package.json exports** to swap in a production entry point that imports nothing:
 
 ```typescript
-// Simplified view of what happens inside createScenarist()
-export const createScenarist = (options) => {
-  if (process.env.NODE_ENV === "production") {
-    return undefined; // ← Returns immediately, no test code loaded
-  }
-
-  // Development/test: load implementation
-  return createScenaristImpl(options);
+// production.js - resolved via the `production` export condition
+export const createScenarist = (_options) => {
+  return undefined; // ← Returns immediately, no test code loaded
 };
+
+// Development/test (default condition): the full implementation is exported
 ```
 
 This pattern ensures:
 
 - ✅ **Zero runtime impact** - Production code paths never execute test logic
-- ✅ **Automatic tree-shaking** - Bundlers eliminate dead code
-- ✅ **No configuration needed** - Works automatically based on NODE_ENV
+- ✅ **Nothing to tree-shake** - The production entry point has zero imports
+- ✅ **Automatic in Next.js** - Next.js production builds resolve the `production` condition; Express builds need it enabled
 - ✅ **Type-safe** - TypeScript enforces null checks via `| undefined` return type
 
 ## Bundle Size Impact
@@ -194,35 +191,35 @@ du -sh dist/ .next/static/ build/
 
 #### Framework-Specific Verification
 
-**Express (Automatic for Unbundled, Configuration for Bundled):**
+**Express (Requires the `production` Condition):**
 
-<Aside type="tip">
-  **Most Express apps deploy unbundled code** and get automatic tree-shaking
-  with zero configuration. Only bundled deployments require additional bundler
-  setup.
+<Aside type="caution">
+  The Express adapter's production entry point is selected through the
+  `production` export condition. Node.js and standalone bundlers such as esbuild
+  do not enable this custom condition by default, so setting
+  `NODE_ENV=production` alone does not remove Scenarist.
 </Aside>
 
-**Unbundled Deployments (Most Common):**
+**Unbundled Deployments:**
 
-Standard Express deployment pattern - no bundler involved:
+Run Node with the `production` condition:
 
 ```bash
 # Deploy directly
-NODE_ENV=production node src/server.js
+NODE_ENV=production node --conditions=production src/server.js
 ```
 
 **How it works:**
 
+- Node resolves `@scenarist/express-adapter` to its production entry point
 - `createScenarist()` returns `undefined` at runtime
-- Dynamic imports never execute
 - MSW code **never loads into memory**
-- ✅ **Zero configuration required**
 
 Verify with memory inspection (optional):
 
 ```bash
 # Run production server and check memory
-NODE_ENV=production node --trace-warnings src/server.js &
+NODE_ENV=production node --conditions=production src/server.js &
 PID=$!
 
 # MSW should not appear in loaded modules
@@ -233,75 +230,6 @@ kill $PID
 ```
 
 **Bundled Deployments (esbuild, webpack, Vite, rollup):**
-
-<Aside type="tip">
-  Modern bundlers with **code splitting enabled** automatically tree-shake
-  Scenarist with **zero configuration**. The implementation code is split into a
-  separate chunk that is never loaded into memory.
-</Aside>
-
-**Default Approach (Zero Config):**
-
-Most bundlers enable code splitting by default for dynamic imports:
-
-```bash
-# esbuild with code splitting
-esbuild --bundle --splitting --outdir=dist --define:process.env.NODE_ENV='"production"'
-
-# webpack (code splitting automatic for dynamic imports)
-webpack --mode production
-
-# Vite (code splitting automatic)
-vite build
-
-# rollup (code splitting automatic for dynamic imports)
-rollup -c
-```
-
-**How it works:**
-
-1. Dynamic import creates code-splitting boundary
-2. Impl code split into separate chunk (e.g., `impl-ABC123.js`)
-3. DefinePlugin makes `if (process.env.NODE_ENV === 'production')` unreachable
-4. Import statement eliminated from entry point
-5. **Chunk file exists on disk but never loads into memory**
-
-**Verification:**
-
-```bash
-# Build with code splitting
-NODE_ENV=production npm run build
-
-# Entry point should be small (~27kb)
-ls -lh dist/server.js
-
-# Impl chunk should exist but never be loaded
-ls -lh dist/impl-*.js  # Exists (~242kb)
-
-# Verify chunk never loads into memory (optional)
-NODE_ENV=production node dist/server.js &
-PID=$!
-lsof -p $PID | grep 'impl-.*\.js'
-# Should output nothing (chunk not loaded)
-kill $PID
-```
-
-**Result:**
-
-- Entry point: ~27kb (94% smaller than single bundle)
-- Impl chunk: ~242kb (exists but never loaded)
-- **Effective delivery: 27kb** (same as conditional exports!)
-- **Zero custom configuration required**
-
----
-
-**Optional: Minimal Build Artifacts**
-
-<Aside type="caution">
-  For teams needing absolute minimal build artifacts (not delivery size),
-  Scenarist provides **conditional exports**. This requires a GLOBAL bundler
-  flag that affects ALL packages.
-</Aside>
 
 Scenarist uses **conditional package.json exports** to provide different entry points:
 
@@ -321,7 +249,7 @@ The `"production"` condition is **custom** (not a Node.js built-in). Bundlers mu
 **esbuild:**
 
 ```bash
-esbuild --bundle --splitting --outdir=dist --define:process.env.NODE_ENV='"production"' --conditions=production
+esbuild src/server.ts --bundle --platform=node --outfile=dist/server.js --define:process.env.NODE_ENV='"production"' --conditions=production
 ```
 
 **webpack:**
@@ -367,66 +295,29 @@ export default {
   could change behavior of other dependencies unexpectedly.
 </Aside>
 
-**Trade-off:**
-
-- ✅ Smallest possible build artifacts (~298kb total vs ~27kb + ~242kb)
-- ⚠️ GLOBAL configuration affects all dependencies
-- ⚠️ May break other packages using conditional exports
-- ⚠️ Requires auditing dependency tree
-
-**When to use conditional exports:**
-
-- Build artifact size is critical (containers, CI/CD storage)
-- Disk space constrained environments
-- You've audited your dependency tree
-- You understand the global nature of `--conditions`
-
-**Default recommendation:** Use code splitting (zero config). Only use conditional exports if build artifact size is critical and you understand the trade-offs
-
-**Verify bundled Express app with code splitting:**
+**Verify bundled Express app:**
 
 ```bash
-# Build production bundle with code splitting (default approach)
+# Build production bundle (with --conditions=production)
 NODE_ENV=production npm run build
 
-# Entry point should be small
-ls -lh dist/server.js
-
-# Search for MSW code (should not be in entry point)
-grep -rE '(setupWorker|startWorker|HttpResponse\.json)' dist/server.js
+# Search for MSW code
+! grep -rE '(setupWorker|startWorker|http\.(get|post|put|delete|patch)|HttpResponse\.json)' dist/
 # Should output nothing
-
-# Verify impl chunk exists but is never loaded
-ls -lh dist/impl-*.js  # Chunk exists on disk
-NODE_ENV=production node dist/server.js &
-PID=$!
-lsof -p $PID | grep 'impl-.*\.js'  # Not loaded into memory
-kill $PID
 ```
 
-**Example verification script (code splitting):**
+**Example verification script:**
 
 ```json
 {
   "scripts": {
-    "build:production": "esbuild src/server.ts --bundle --splitting --outdir=dist --platform=node --format=esm --external:express --define:process.env.NODE_ENV='\"production\"' --minify",
-    "verify:treeshaking": "npm run build:production && ! grep -rE '(setupWorker|HttpResponse\\.json)' dist/server.js"
+    "build:production": "esbuild src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --external:express --define:process.env.NODE_ENV='\"production\"' --minify --conditions=production",
+    "verify:treeshaking": "npm run build:production && ! grep -rE '(setupWorker|startWorker|http\\.(get|post|put|delete|patch)|HttpResponse\\.json)' dist/"
   }
 }
 ```
 
-**Example verification script (conditional exports):**
-
-```json
-{
-  "scripts": {
-    "build:production": "esbuild src/server.ts --bundle --splitting --outdir=dist --platform=node --format=esm --external:express --define:process.env.NODE_ENV='\"production\"' --minify --conditions=production",
-    "verify:minimal": "npm run build:production && ! grep -rE 'impl-.*\\.js' dist/"
-  }
-}
-```
-
-Run: `npm run verify:treeshaking` (code splitting) or `npm run verify:minimal` (conditional exports)
+Run: `npm run verify:treeshaking`
 
 **For detailed bundler configuration examples**, see the [Express Adapter README - Production Tree-Shaking](https://github.com/citypaul/scenarist/tree/main/packages/express-adapter#production-tree-shaking).
 
@@ -542,14 +433,14 @@ Run: `npm run verify:production`
 
 If verification fails, check these common issues:
 
-**1. NODE_ENV not set to 'production':**
+**1. `production` export condition not resolved:**
 
 ```bash
-# ❌ Wrong - tree-shaking won't work
-npm run build
+# ❌ Wrong - resolves the full implementation
+esbuild src/server.ts --bundle --platform=node --outfile=dist/server.js
 
-# ✅ Correct - enables tree-shaking
-NODE_ENV=production npm run build
+# ✅ Correct - resolves Scenarist's production entry point
+esbuild src/server.ts --bundle --platform=node --outfile=dist/server.js --conditions=production
 ```
 
 **2. Bundler not configured for tree-shaking:**
@@ -632,7 +523,7 @@ If tree-shaking still fails after checking the above:
 
 For additional help, see:
 
-- [Production Tree-Shaking Verification](/reference/verification/#production-tree-shaking-verification) - Verify code splitting works correctly
+- [Production Tree-Shaking Verification](/reference/verification/#production-tree-shaking-verification) - Verify the production entry point is used
 - [Header Propagation in Parallel Tests](/reference/verification/#header-propagation-in-parallel-tests) - Troubleshoot test isolation issues
 
 ## Type Safety
@@ -756,13 +647,12 @@ These helpers access global singletons and return safe defaults in production (e
 
 ### Does Scenarist run in production if I forget NODE_ENV?
 
-**No.** Even without `NODE_ENV=production`, Scenarist only activates when explicitly started. The `scenarist?.start()` call is typically in development server setup, not production runtime.
+**`NODE_ENV` is not what disables Scenarist** — the `production` export condition is. If your build or runtime does not resolve that condition, `createScenarist()` returns a working instance: MSW only intercepts requests after `scenarist.start()`, but the scenario endpoints are active wherever you mount the middleware (Express) or export the route handlers (Next.js).
 
 However, **you should always set NODE_ENV=production** for:
 
 - Optimal performance
 - Correct framework behavior
-- Automatic tree-shaking
 
 ### What about CI/CD environments?
 
@@ -774,13 +664,13 @@ CI/CD environments should use:
 Scenarist works in both modes:
 
 - **Test mode:** Full functionality for scenario-based tests
-- **Production mode:** Returns undefined, enabling tree-shaking
+- **Production builds (`production` export condition):** Returns undefined, so no test code is bundled
 
 ### Can I verify tree-shaking before deploying?
 
 Yes! See the [Production Tree-Shaking Verification](/reference/verification/#production-tree-shaking-verification) section for:
 
-- Step-by-step verification with lsof (proves chunk never loads)
+- Step-by-step build verification
 - Bundle size analysis
 - Build artifact inspection
 - Framework-specific verification commands
@@ -790,7 +680,7 @@ Yes! See the [Production Tree-Shaking Verification](/reference/verification/#pro
 
 If your bundler doesn't tree-shake Scenarist:
 
-1. **Check NODE_ENV:** Ensure `NODE_ENV=production` during build
+1. **Check the `production` condition:** Ensure your bundler (or `node --conditions=production`) resolves it
 2. **Check bundler config:** Verify tree-shaking is enabled (it usually is by default)
 3. **Check sideEffects:** Scenarist marks itself as side-effect-free in package.json
 4. **File an issue:** If tree-shaking still fails, [open an issue](https://github.com/citypaul/scenarist/issues) with your bundler details
@@ -853,8 +743,8 @@ Scenarist is designed for production safety:
 | ------------------ | -------------------------------------- |
 | Production runtime | Zero test code execution               |
 | Bundle size        | Zero Scenarist code after tree-shaking |
-| Configuration      | No environment-specific config needed  |
+| Configuration      | Next.js: none; Express: enable the `production` condition |
 | Type safety        | TypeScript enforces null checks        |
 | Performance        | No runtime overhead in production      |
 
-**The bottom line:** Scenarist's production wrapper + tree-shaking = zero production impact.
+**The bottom line:** Scenarist's production entry point + conditional exports = zero production impact.

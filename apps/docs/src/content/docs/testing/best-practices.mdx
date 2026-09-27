@@ -461,7 +461,7 @@ const rateLimitedScenario: ScenaristScenario = {
 When tests fail unexpectedly, enable Scenarist's logging to see what's happening:
 
 ```typescript
-import { createConsoleLogger } from '@scenarist/express-adapter';
+import { createScenarist, createConsoleLogger } from '@scenarist/express-adapter';
 
 const scenarist = createScenarist({
   enabled: true,

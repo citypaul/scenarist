@@ -18,8 +18,10 @@ Clone it, run the tests, and explore working code for scenarios, Supertest patte
 
 ```bash
 npm install @scenarist/express-adapter
-npm install -D @playwright/test @scenarist/playwright-helpers
+npm install -D msw @playwright/test @scenarist/playwright-helpers
 ```
+
+`msw` (v2) is a required peer dependency of `@scenarist/express-adapter`.
 
 ## Basic Setup
 
@@ -111,13 +113,13 @@ export const createApp = async () => {
   const app = express();
   app.use(express.json());
 
-  // Create Scenarist instance (async - returns Promise)
+  // Create Scenarist instance (synchronous - returns the instance, or undefined in production builds)
   const scenarist = createScenarist({
     enabled: process.env.NODE_ENV === "test",
     scenarios,
   });
 
-  // Add Scenarist middleware BEFORE your routes (only if enabled)
+  // Add Scenarist middleware BEFORE your routes (scenarist is undefined in production builds)
   if (scenarist) {
     app.use(scenarist.middleware);
   }
@@ -165,13 +167,11 @@ const main = async () => {
 main().catch(console.error);
 ```
 
-````
-
 **3. Install testing dependencies:**
 
 ```bash
 npm install -D vitest supertest @types/supertest
-````
+```
 
 **4. Write your tests:**
 
@@ -198,7 +198,7 @@ describe("Checkout API", () => {
 
   afterAll(async () => {
     const { scenarist } = await testContext;
-    scenarist?.stop(); // Stop MSW
+    await scenarist?.stop(); // Stop MSW
   });
 
   it("processes payment successfully", async () => {
@@ -415,15 +415,15 @@ Scenarist automatically eliminates all test code from production builds. The imp
 **Most Express applications** deploy unbundled code directly to production:
 
 ```bash
-NODE_ENV=production node src/server.js
+NODE_ENV=production node --conditions=production src/server.js
 ```
 
-**Tree-shaking is automatic** with zero configuration:
+**Pass Node's `--conditions=production` flag** so Node resolves the adapter's `production` export (see below):
 
 - `createScenarist()` returns `undefined` at runtime
-- Dynamic imports never execute
+- The production entry point imports nothing
 - MSW code **never loads into memory**
-- ✅ **No configuration required**
+- ⚠️ Without the flag, Node resolves the default entry point and Scenarist stays fully active — `NODE_ENV` and the `enabled` option do not disable it
 
 ### Bundled Deployments (esbuild, webpack, Vite, rollup)
 

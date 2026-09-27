@@ -203,7 +203,7 @@ export const createApp = () => {
     strictMode: false,
   });
 
-  // Add Scenarist middleware (only if enabled)
+  // Add Scenarist middleware (scenarist is undefined in production builds)
   if (scenarist) {
     app.use(scenarist.middleware);
   }
@@ -277,9 +277,6 @@ type ExpressAdapterOptions<T extends ScenaristScenarios> = {
   enabled: boolean; // Whether mocking is enabled
   scenarios: T; // REQUIRED - scenarios object
   strictMode?: boolean; // Return 501 for unmocked requests (default: false)
-  headers?: {
-    testId?: string; // Header for test ID (default: 'x-scenarist-test-id')
-  };
   endpoints?: {
     setScenario?: string; // POST endpoint (default: '/__scenario__')
     getScenario?: string; // GET endpoint (default: '/__scenario__')
@@ -293,19 +290,18 @@ type ExpressAdapterOptions<T extends ScenaristScenarios> = {
 **Returns:**
 
 ```typescript
-Promise<ExpressScenarist<T> | undefined>;
+ExpressScenarist<T> | undefined;
 ```
 
 Where `ExpressScenarist<T>` is:
 
 ```typescript
 type ExpressScenarist<T extends ScenaristScenarios> = {
-  config: ScenaristConfig; // Resolved configuration (endpoints, headers, etc.)
+  config: ScenaristConfig; // Resolved configuration (endpoints, strictMode, etc.)
   middleware: Router; // Express middleware (includes test ID extraction + scenario endpoints)
   switchScenario: (
     testId: string,
     scenarioId: keyof T,
-    variant?: string,
   ) => ScenaristResult<void, Error>;
   getActiveScenario: (testId: string) => ActiveScenario | undefined;
   getScenarioById: (scenarioId: string) => ScenaristScenario | undefined;
@@ -351,7 +347,6 @@ The middleware automatically exposes these endpoints:
 ```typescript
 {
   scenario: string;      // Scenario ID (required)
-  variant?: string;      // Variant name (optional)
 }
 ```
 
@@ -361,8 +356,7 @@ The middleware automatically exposes these endpoints:
 {
   success: true;
   testId: string;
-  scenario: string;
-  variant?: string;
+  scenarioId: string;
 }
 ```
 
@@ -556,7 +550,7 @@ Scenarist provides 20+ powerful features for scenario-based testing. All capabil
 
 ### Additional Features
 
-**Path parameters** (`/users/:id`), **Wildcard URLs** (`*/api/*`), **Response delays**, **Custom headers**, **Strict mode** (fail on unmocked requests)
+**Path parameters** (`/users/:id`), **Pathname-only URLs** (`/api/users` matches any host), **RegExp URLs** (`/\/api\//`), **Response delays**, **Custom headers**, **Strict mode** (fail on unmocked requests)
 
 **Want to learn more?** See [Core Functionality Documentation](../../docs/core-functionality.md) for detailed explanations and examples.
 
@@ -658,12 +652,12 @@ const scenarios = {
     mocks: [
       {
         method: "GET",
-        url: "*/api/users",
+        url: "/api/users",
         response: { status: 200, body: [] },
       },
       {
         method: "GET",
-        url: "*/api/orders",
+        url: "/api/orders",
         response: { status: 200, body: [] },
       },
     ],
@@ -671,10 +665,11 @@ const scenarios = {
   userError: {
     id: "user-error",
     name: "User API Error",
+    description: "Users API fails",
     mocks: [
       {
         method: "GET",
-        url: "*/api/users",
+        url: "/api/users",
         response: { status: 500, body: { error: "Server error" } },
       },
       // Orders endpoint falls back to default scenario
@@ -744,19 +739,15 @@ Create helper functions to reduce boilerplate:
 import request from "supertest";
 import { app } from "../src/app";
 
-export const setScenario = async (
-  testId: string,
-  scenario: string,
-  variant?: string,
-) => {
+export const setScenario = async (testId: string, scenario: string) => {
   await request(app)
     .post("/__scenario__")
     .set("x-scenarist-test-id", testId)
-    .send({ scenario, variant });
+    .send({ scenario });
 };
 
 export const makeRequest = (testId: string) => {
-  return request(app).set("x-scenarist-test-id", testId);
+  return request.agent(app).set("x-scenarist-test-id", testId);
 };
 ```
 
@@ -849,15 +840,12 @@ const scenarist = createScenarist({
 });
 ```
 
-### Custom Headers and Endpoints
+### Custom Endpoints
 
 ```typescript
 const scenarist = createScenarist({
   enabled: true,
   scenarios,
-  headers: {
-    testId: "x-my-test-id",
-  },
   endpoints: {
     setScenario: "/api/scenarios/set",
     getScenario: "/api/scenarios/active",
@@ -867,25 +855,25 @@ const scenarist = createScenarist({
 
 ## Production Tree-Shaking
 
-Scenarist is designed to be **completely eliminated from production bundles** when `NODE_ENV=production`. The implementation automatically disables itself and returns `undefined`, allowing bundlers to remove all Scenarist and MSW code through tree-shaking.
+Scenarist is designed to be **completely eliminated from production** when the `production` export condition is active. The package's production entry point returns `undefined` from `createScenarist()` and imports nothing, so no Scenarist or MSW code is loaded or bundled.
 
-### Unbundled Deployments (Most Express Apps) ✅
+### Unbundled Deployments (Most Express Apps)
 
-**For most Express applications** that deploy unbundled code directly to production (the standard pattern), tree-shaking works **automatically with zero configuration**:
+**For Express applications** that deploy unbundled code directly to production, start Node with the `production` condition:
 
 ```bash
 # Deploy your application
-NODE_ENV=production node src/server.js
+NODE_ENV=production node --conditions=production src/server.js
 ```
 
 **How it works:**
 
-1. `process.env.NODE_ENV === 'production'` evaluates to `true` at runtime
+1. Node resolves `@scenarist/express-adapter` to `dist/setup/production.js` because the `production` condition is active
 2. `createScenarist()` returns `undefined` without loading dependencies
 3. MSW and all Scenarist code **never loads into memory**
 4. Zero performance impact, zero bundle bloat
 
-**This is the default use case** - most Express applications don't bundle their server code.
+`NODE_ENV=production` alone does not switch entry points: without `--conditions=production`, Node loads the full implementation and `createScenarist()` returns a working instance.
 
 ### Bundled Deployments (esbuild, webpack, Vite, rollup)
 
@@ -911,7 +899,7 @@ The `"production"` condition is a **custom condition** (not a Node.js built-in l
 **Without configuration:**
 
 - MSW code included in bundle (~320kb)
-- Code never executes (safe)
+- The full implementation is used: `createScenarist()` returns a working instance
 - Wastes bandwidth
 
 **With configuration:**
@@ -1029,7 +1017,7 @@ The script checks that MSW-specific implementation patterns (`setupWorker`, `Htt
 
 - Bundle size: ~618kb
 - Includes: Application + Zod + MSW + Scenarist
-- Status: Code included but never executes
+- Status: Full implementation included and active
 
 **With tree-shaking configuration:**
 
@@ -1039,15 +1027,16 @@ The script checks that MSW-specific implementation patterns (`setupWorker`, `Htt
 
 ### Trade-Offs
 
-| Deployment Type                  | Configuration Required | Tree-Shaking | Bundle Impact              |
-| -------------------------------- | ---------------------- | ------------ | -------------------------- |
-| **Unbundled** (standard Express) | ✅ None                | ✅ Automatic | ✅ Zero (code never loads) |
-| **Bundled** without config       | ❌ None                | ❌ Partial   | ⚠️ ~320kb dead code        |
-| **Bundled** with config          | ✅ One line            | ✅ Complete  | ✅ Zero (eliminated)       |
+| Deployment Type            | Configuration Required | Tree-Shaking | Bundle Impact              |
+| -------------------------- | ---------------------- | ------------ | -------------------------- |
+| **Unbundled** with flag    | ✅ One flag            | ✅ Complete  | ✅ Zero (code never loads) |
+| **Unbundled** without flag | ❌ None                | ❌ None      | ⚠️ Full implementation     |
+| **Bundled** without config | ❌ None                | ❌ None      | ⚠️ Full implementation     |
+| **Bundled** with config    | ✅ One line            | ✅ Complete  | ✅ Zero (eliminated)       |
 
 **Recommendation:**
 
-- If you're deploying unbundled code: No action needed ✅
+- If you're deploying unbundled code: Start Node with `--conditions=production`
 - If you're bundling: Add the one-line bundler configuration for optimal bundle size
 
 ## Logging & Debugging
@@ -1246,7 +1235,7 @@ import type {
 See the [**Express Example App**](../../apps/express-example) for a complete working example demonstrating:
 
 - ✅ **Runtime scenario switching** - Change API behavior without restart
-- ✅ **Test ID isolation** - 20 tests with concurrent scenarios
+- ✅ **Test ID isolation** - Concurrent tests with different scenarios
 - ✅ **Default fallback** - Partial scenarios automatically falling back
 - ✅ **Real API integration** - Actual Express routes calling external APIs
 - ✅ **Multiple scenarios** - Success, errors, timeouts, mixed results
@@ -1254,8 +1243,8 @@ See the [**Express Example App**](../../apps/express-example) for a complete wor
 The example includes:
 
 - Complete Express application with GitHub, Weather, and Stripe API integrations
-- 7 different scenario definitions
-- 20 passing scenario-based tests demonstrating all features
+- 25 scenario definitions
+- 100+ passing scenario-based tests demonstrating all features
 - Comprehensive documentation and usage patterns
 
 ## Documentation
@@ -1272,7 +1261,7 @@ MIT
 
 ## Related Packages
 
-- **[@scenarist/core](../core)** - Core scenario management
-- **[@scenarist/msw-adapter](../msw-adapter)** - MSW integration (used internally)
+- **[@scenarist/core](../../internal/core)** - Core scenario management
+- **[@scenarist/msw-adapter](../../internal/msw-adapter)** - MSW integration (used internally)
 
 **Note:** The MSW adapter is used internally by this package. Users of `@scenarist/express-adapter` don't need to interact with it directly.

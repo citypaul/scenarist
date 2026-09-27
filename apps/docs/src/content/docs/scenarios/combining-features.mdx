@@ -223,7 +223,7 @@ export const premiumOnboardingScenario: ScenaristScenario = {
           },
           onboarding: {
             completedSteps: '{{state.completedSteps}}',
-            isComplete: '{{state.completedSteps.length >= 3}}',
+            stepCount: '{{state.completedSteps.length}}',
           },
         },
       },
@@ -363,11 +363,11 @@ const scenario: ScenaristScenario = {
       method: 'GET',
       url: '/api/application/status',
       stateResponse: {
-        default: { body: { status: 'pending' } },
+        default: { status: 200, body: { status: 'pending' } },
         conditions: [
-          { when: { step: 'pending_review' }, then: { body: { status: 'in_review' } } },
-          { when: { step: 'approved' }, then: { body: { status: 'approved' } } },
-          { when: { step: 'rejected' }, then: { body: { status: 'rejected' } } }
+          { when: { step: 'pending_review' }, then: { status: 200, body: { status: 'in_review' } } },
+          { when: { step: 'approved' }, then: { status: 200, body: { status: 'approved' } } },
+          { when: { step: 'rejected' }, then: { status: 200, body: { status: 'rejected' } } }
         ]
       }
     }
