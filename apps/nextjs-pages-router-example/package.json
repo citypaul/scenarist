@@ -20,7 +20,7 @@
     "test:e2e:all": "playwright test",
     "test:production": "playwright test --config=playwright.production.config.ts",
     "fake-api": "json-server fake-api/db.json --port 3001",
-    "verify:treeshaking": "pnpm build:production && ! grep -rE '(setupWorker|startWorker|http\\.(get|post|put|delete|patch)|HttpResponse\\.json)' .next/ --exclude-dir=cache"
+    "verify:treeshaking": "pnpm build:production && test -d .next/server && { grep -rqE --exclude-dir=cache '__scenarist_shared_msw_server' $(find .next -mindepth 1 -maxdepth 1 ! -name dev); test $? -eq 1; }"
   },
   "dependencies": {
     "@scenarist/nextjs-adapter": "workspace:*",

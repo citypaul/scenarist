@@ -1630,21 +1630,13 @@ When tree-shaking succeeds, your production bundle has:
    - Next.js: Should work automatically
    - Custom bundlers: Add `conditions: ['production']`
 
-3. **Check dynamic imports:** Avoid dynamic imports that bypass tree-shaking
+3. **Inspect bundle:** Search `.next/` for `__scenarist_shared_msw_server`, a global property name that survives minification
 
-   ```typescript
-   // ❌ BAD - Bypasses tree-shaking
-   const scenarist = await import('@scenarist/nextjs-adapter/app');
-
-   // ✅ GOOD - Enables tree-shaking
-   import { createScenarist } from '@scenarist/nextjs-adapter/app';
-   const scenarist = createScenarist({ ... });
-   ```
-
-4. **Inspect bundle:** Check `.next/` directory for MSW strings
    ```bash
-   grep -r "setupWorker\|HttpResponse\.json" .next/
+   grep -rl --exclude-dir=cache "__scenarist_shared_msw_server" $(find .next -mindepth 1 -maxdepth 1 ! -name dev)
    ```
+
+   Any file listed contains Scenarist and MSW code. The command skips the top-level `.next/dev` directory, which `next dev` writes and `next build` keeps, but still scans route folders named `dev` inside the production output. Do not rely on searching for MSW function names such as `setupWorker` or `HttpResponse.json`: minifiers rename them, so the search can miss MSW code.
 
 ### Architecture Details
 
