@@ -503,15 +503,19 @@ export default defineConfig({
 });
 ```
 
-**3. Dynamic imports preventing tree-shaking:**
+**3. Express bundle built without the `production` condition:**
 
-```js
-// ❌ Wrong - prevents tree-shaking
-const scenarist = require("@scenarist/express-adapter");
+Code splitting and `NODE_ENV=production` do not remove Scenarist from an Express bundle. The adapter imports its implementation statically, so only the `production` export condition swaps it for the zero-import stub:
 
-// ✅ Correct - enables tree-shaking
-import { createScenarist } from "@scenarist/express-adapter";
+```bash
+# ❌ Adapter and MSW code stay in the bundle
+esbuild src/server.ts --bundle --platform=node --format=esm --splitting --outdir=dist --define:process.env.NODE_ENV='"production"'
+
+# ✅ Resolves the stub: no Scenarist or MSW code in the bundle
+esbuild src/server.ts --bundle --platform=node --format=esm --splitting --outdir=dist --define:process.env.NODE_ENV='"production"' --conditions=production
 ```
+
+See [Express bundled deployments](#framework-specific-verification) for webpack, Vite, and rollup configuration.
 
 **4. package.json sideEffects field:**
 
