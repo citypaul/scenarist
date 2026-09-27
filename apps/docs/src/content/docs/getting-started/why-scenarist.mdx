@@ -44,7 +44,7 @@ This creates a testing challenge:
 
 **Between these approaches lies a gap:** Testing server-side HTTP behavior with different external API responses, without browser overhead or extensive framework mocking.
 
-**Scenarist fills this gap** by testing your server-side HTTP layer with mocked external APIs. Your code—Server Components, loaders, middleware, business logic—executes normally. Only HTTP requests (fetch, axios, etc.) are intercepted, returning scenario-defined responses based on test ID. This enables testing full user journeys through the browser using [Playwright helpers](/testing/playwright-integration), with each test isolated and running in parallel.
+**Scenarist fills this gap** by testing your server-side HTTP layer with mocked external APIs. Your code—Server Components, loaders, middleware, business logic—executes normally. Only HTTP requests (fetch, axios, etc.) are intercepted, returning scenario-defined responses based on test ID. This enables testing full user journeys through the browser using [Playwright helpers](/testing/playwright-integration/), with each test isolated and running in parallel.
 
 **Test extensive external API scenarios in parallel** without expensive cloud API calls or complex test infrastructure.
 
@@ -105,9 +105,9 @@ const products = await fetch("http://localhost:3000/api/products");
 - **File system operations** - no HTTP request
 - **WebSocket connections** - MSW supports WebSockets, but Scenarist's scenario system focuses on HTTP
 
-**If your app uses direct database access:** See [Testing Database Apps](/guides/testing-database-apps) for strategies. We recommend the [Repository Pattern](/guides/testing-database-apps/repository-pattern) for scalable parallel testing with the same test ID isolation model as Scenarist.
+**If your app uses direct database access:** See [Testing Database Apps](/guides/testing-database-apps/) for strategies. We recommend the [Repository Pattern](/guides/testing-database-apps/repository-pattern/) for scalable parallel testing with the same test ID isolation model as Scenarist.
 
-[Learn how it works →](/concepts/how-it-works)
+[Learn how it works →](/concepts/how-it-works/)
 
 ### Why Framework Documentation Recommends E2E
 
@@ -133,7 +133,7 @@ Scenarist enables behavior-focused testing by letting you test your server's res
 
 This follows Test-Driven Development principles: tests document expected behavior, implementation details can change as long as behavior stays consistent.
 
-[Learn about our testing philosophy →](/concepts/philosophy)
+[Learn about our testing philosophy →](/concepts/philosophy/)
 
 ## Comparing Testing Approaches
 
@@ -143,7 +143,7 @@ Scenarist fills a gap between unit tests and end-to-end tests. Each approach ser
 - **Scenarist** verifies HTTP-level behavior with different external API scenarios
 - **E2E tests** verify the complete user experience including browser interactions
 
-For detailed comparisons with other tools (WireMock, Nock, Testcontainers, Playwright mocks), see our [Tool Comparison](/comparison) guide. The comparison includes a [decision guide](/comparison#making-the-decision) to help you choose the right approach for your needs.
+For detailed comparisons with other tools (WireMock, Nock, Testcontainers, Playwright mocks), see our [Tool Comparison](/comparison/) guide. The comparison includes a [decision guide](/comparison/#making-the-decision) to help you choose the right approach for your needs.
 
 :::caution[Scenarist Complements E2E Testing]
 Scenarist tests server-side HTTP behavior, not complete user workflows. Browser interactions, JavaScript execution, and visual rendering still require end-to-end tests. Use Scenarist alongside E2E tests, not as a replacement.
@@ -151,9 +151,9 @@ Scenarist tests server-side HTTP behavior, not complete user workflows. Browser 
 
 ## Limitations and Trade-offs
 
-**HTTP only**: Scenarist intercepts HTTP requests only. It cannot mock database calls, file system operations, or WebSocket connections (MSW supports WebSockets, but Scenarist's scenario system is designed for HTTP request/response patterns). For apps with direct database access, see [Testing Database Apps](/guides/testing-database-apps) for recommended strategies.
+**HTTP only**: Scenarist intercepts HTTP requests only. It cannot mock database calls, file system operations, or WebSocket connections (MSW supports WebSockets, but Scenarist's scenario system is designed for HTTP request/response patterns). For apps with direct database access, see [Testing Database Apps](/guides/testing-database-apps/) for recommended strategies.
 
-**Database parallelism**: While Scenarist enables parallel HTTP tests via test ID isolation, database testing requires different strategies. We recommend the [Repository Pattern](/guides/testing-database-apps/repository-pattern), which provides the same test ID isolation model for database access. See [Parallelism Options](/guides/testing-database-apps/parallelism-options) for all approaches and trade-offs.
+**Database parallelism**: While Scenarist enables parallel HTTP tests via test ID isolation, database testing requires different strategies. We recommend the [Repository Pattern](/guides/testing-database-apps/repository-pattern/), which provides the same test ID isolation model for database access. See [Parallelism Options](/guides/testing-database-apps/parallelism-options/) for all approaches and trade-offs.
 
 **Single-server deployment**: Scenarist stores test ID to scenario mappings in memory. This works well for local development and single-instance CI environments. Load-balanced deployments would require additional state management.
 
@@ -165,12 +165,12 @@ Scenarist tests server-side HTTP behavior, not complete user workflows. Browser 
 
 Choose your framework to see specific installation and usage instructions:
 
-- [Next.js →](/frameworks/nextjs) - Test Server Components and API routes
-- [Express →](/frameworks/express) - Test middleware and route handlers
+- [Next.js →](/frameworks/nextjs/) - Test Server Components and API routes
+- [Express →](/frameworks/express/) - Test middleware and route handlers
 
 Or explore core concepts that apply to all frameworks:
 
-- [Overview: How It Works →](/concepts/how-it-works)
-- [Capabilities: Writing Scenarios →](/scenarios/overview)
-- [Scenarios & Format →](/scenarios/basic-structure)
-- [Architecture →](/concepts/architecture)
+- [Overview: How It Works →](/concepts/how-it-works/)
+- [Capabilities: Writing Scenarios →](/scenarios/overview/)
+- [Scenarios & Format →](/scenarios/basic-structure/)
+- [Architecture →](/concepts/architecture/)

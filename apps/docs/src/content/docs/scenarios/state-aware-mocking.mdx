@@ -14,12 +14,12 @@ Build state machines where mock responses depend on accumulated state from previ
 - **Authentication flows:** Login sets state, protected endpoints check it
 
 :::note[State-Aware vs Stateful Mocks]
-**[Stateful Mocks](/scenarios/stateful-mocks)** capture data from requests and inject it into responses (data flow). **State-Aware Mocking** uses accumulated state to **change behavior** - selecting different responses or different mocks based on workflow state (control flow).
+**[Stateful Mocks](/scenarios/stateful-mocks/)** capture data from requests and inject it into responses (data flow). **State-Aware Mocking** uses accumulated state to **change behavior** - selecting different responses or different mocks based on workflow state (control flow).
 :::
 
 ## The Problem It Solves
 
-[Response Sequences](/scenarios/response-sequences) work when you can predict the exact number of calls:
+[Response Sequences](/scenarios/response-sequences/) work when you can predict the exact number of calls:
 
 ```typescript
 // This works IF you know there will be exactly 3 calls before the POST
@@ -590,7 +590,7 @@ export default defineConfig({
 
 ## Next Steps
 
-- [Stateful Mocks →](/scenarios/stateful-mocks) - Capture and inject request data
-- [Response Sequences →](/scenarios/response-sequences) - Call-count based responses
-- [Request Matching →](/scenarios/request-matching) - Match on request content
-- [Combining Features →](/scenarios/combining-features) - Use all features together
+- [Stateful Mocks →](/scenarios/stateful-mocks/) - Capture and inject request data
+- [Response Sequences →](/scenarios/response-sequences/) - Call-count based responses
+- [Request Matching →](/scenarios/request-matching/) - Match on request content
+- [Combining Features →](/scenarios/combining-features/) - Use all features together

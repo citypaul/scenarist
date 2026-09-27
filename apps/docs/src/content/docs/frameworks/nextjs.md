@@ -31,8 +31,8 @@ Scenarist enables testing Next.js applications through real HTTP requests:
 
 Scenarist supports both Next.js routing patterns:
 
-- **[App Router](/frameworks/nextjs-app-router)** - Server Components, Server Actions, Route Handlers
-- **[Pages Router](/frameworks/nextjs-pages-router)** - API Routes, getServerSideProps, getStaticProps
+- **[App Router](/frameworks/nextjs-app-router/)** - Server Components, Server Actions, Route Handlers
+- **[Pages Router](/frameworks/nextjs-pages-router/)** - API Routes, getServerSideProps, getStaticProps
 
 ## Choose Your Router
 
@@ -40,7 +40,7 @@ Scenarist supports both Next.js routing patterns:
 
 The App Router introduces React Server Components, allowing server-side rendering with direct data fetching. Scenarist enables testing these components without mocking Next.js internals.
 
-[**Get started with App Router →**](/frameworks/nextjs-app-router)
+[**Get started with App Router →**](/frameworks/nextjs-app-router/)
 
 **Best for:**
 
@@ -53,7 +53,7 @@ The App Router introduces React Server Components, allowing server-side renderin
 
 The Pages Router uses the traditional pages directory with API routes and data fetching methods. Scenarist enables testing API routes and server-side rendering without complex mocking.
 
-[**Get started with Pages Router →**](/frameworks/nextjs-pages-router)
+[**Get started with Pages Router →**](/frameworks/nextjs-pages-router/)
 
 **Best for:**
 
@@ -74,5 +74,5 @@ The Pages Router uses the traditional pages directory with API routes and data f
 
 Choose your routing paradigm to get started:
 
-- [App Router Guide →](/frameworks/nextjs-app-router)
-- [Pages Router Guide →](/frameworks/nextjs-pages-router)
+- [App Router Guide →](/frameworks/nextjs-app-router/)
+- [Pages Router Guide →](/frameworks/nextjs-pages-router/)

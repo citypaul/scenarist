@@ -9,11 +9,19 @@ import icon from "astro-icon";
 
 import cloudflare from "@astrojs/cloudflare";
 import { siteHeadTags, structuredData } from "./src/utils/site-head.ts";
+import { trailingSlashRedirects } from "./integrations/trailing-slash-redirects.ts";
 
 // https://astro.build/config
 export default defineConfig({
   site: "https://scenarist.io",
   output: "static",
+  // Removed or renamed pages: see CONTRIBUTING.md#search-indexing
+  redirects: {
+    "/concepts/default-mocks/": "/scenarios/default-scenarios/",
+    "/concepts/dynamic-responses/": "/scenarios/overview/",
+    "/concepts/scenario-format/": "/scenarios/basic-structure/",
+    "/frameworks/nextjs-app-router/rsc-guide/": "/frameworks/nextjs-app-router/rsc/",
+  },
   session: false,
 
   vite: {
@@ -242,6 +250,7 @@ export default defineConfig({
     }),
     sitemap(),
     icon(),
+    trailingSlashRedirects(),
   ],
 
   adapter: cloudflare({ imageService: "passthrough" }),

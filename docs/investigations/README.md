@@ -10,6 +10,22 @@ _(No active investigations)_
 
 ## Resolved Investigations
 
+### Google Indexing: Trailing-Slash URL Variants and Removed Pages (2026-09-27)
+
+**File:** [google-indexing-trailing-slash.md](./google-indexing-trailing-slash.md)
+
+**Issue:** Google had indexed 12 of the site's pages and marked 55 as not indexed. Text from the Quick Start page returned no search results.
+
+**Root Cause:** Authored links omitted the trailing slash, and Cloudflare answered those URLs with a `307` temporary redirect, so Google treated `/path` and `/path/` as separate pages. Four removed pages also returned 404 with no redirect.
+
+**Resolution:** Links now end in `/`, a build step generates a `301` for every page's slashless URL, the removed pages redirect to their replacements, and tests guard all of this against a list of every published URL.
+
+**Status:** ✅ RESOLVED
+
+**Key Learning:** Link to trailing-slash URLs, never delete an entry from `apps/docs/published-pages.json`, and add a `redirects` entry whenever a page is removed or renamed.
+
+---
+
 ### Next.js Pages Router MSW Integration (2025-11-12)
 
 **File:** [next-js-pages-router-msw-investigation.md](./next-js-pages-router-msw-investigation.md)

@@ -48,7 +48,7 @@ const demos: readonly Demo[] = [
       { actor: 'server', label: 'Your session logic', detail: 'Creates the session, loads the profile, redirects to /welcome' },
       { actor: 'test', label: 'Playwright', detail: "sees 'Welcome, e2e-7f3a@acme.test'", pass: true },
     ],
-    docs: { href: '/scenarios/stateful-mocks', label: 'Stateful mocks' },
+    docs: { href: '/scenarios/stateful-mocks/', label: 'Stateful mocks' },
   },
   {
     id: 'state',
@@ -83,7 +83,7 @@ const demos: readonly Demo[] = [
       { actor: 'server', label: 'Your middleware', detail: '/userinfo now says verified, lets them in' },
       { actor: 'test', label: 'Playwright', detail: 'sees the dashboard', pass: true },
     ],
-    docs: { href: '/scenarios/state-aware-mocking', label: 'State-aware mocking' },
+    docs: { href: '/scenarios/state-aware-mocking/', label: 'State-aware mocking' },
   },
   {
     id: 'sequence',
@@ -112,7 +112,7 @@ const demos: readonly Demo[] = [
       { actor: 'server', label: 'Your checkout action', detail: 'Refuses to charge the card, returns sold out' },
       { actor: 'test', label: 'Playwright', detail: "sees 'Sold out during checkout'", pass: true },
     ],
-    docs: { href: '/scenarios/response-sequences', label: 'Response sequences' },
+    docs: { href: '/scenarios/response-sequences/', label: 'Response sequences' },
   },
   {
     id: 'match',
@@ -144,7 +144,7 @@ const demos: readonly Demo[] = [
       { actor: 'server', label: 'Your login route', detail: 'Maps the error, sets no session, shows the support link' },
       { actor: 'test', label: 'Playwright', detail: "sees 'Your account is locked'", pass: true },
     ],
-    docs: { href: '/scenarios/request-matching', label: 'Request matching' },
+    docs: { href: '/scenarios/request-matching/', label: 'Request matching' },
   },
 ];
 
@@ -246,7 +246,7 @@ const actorTag: Record<Actor, string> = { test: 'test · browser', server: 'real
 
     <p class="mt-10 text-center text-sm text-gray-600 dark:text-gray-400 max-w-xl mx-auto">
       Mix them freely: capture state inside a sequence, match on the request and switch on state—see{' '}
-      <a href="/scenarios/combining-features" class="font-semibold text-violet-700 dark:text-violet-400 hover:underline">combining features</a>.
+      <a href="/scenarios/combining-features/" class="font-semibold text-violet-700 dark:text-violet-400 hover:underline">combining features</a>.
       Every example above runs in parallel with every other test, each on its own isolated state.
     </p>
   </div>
