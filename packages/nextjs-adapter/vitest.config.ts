@@ -16,9 +16,7 @@ export default defineConfig({
       include: ["src/**/*.ts"],
       thresholds: {
         statements: 100,
-        // registry/store ?? fallback branches in create-scenarist-base.ts are exercised
-        // via singleton pattern (globals), but v8 coverage can't trace that path
-        branches: 98,
+        branches: 100,
         functions: 100,
         lines: 100,
       },

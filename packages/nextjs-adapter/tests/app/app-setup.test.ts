@@ -597,6 +597,19 @@ describe("App Router createScenarist runtime configuration", () => {
     expect(scenarist).toBeUndefined();
   });
 
+  it("returns undefined when enabled is false even after an enabled instance exists", () => {
+    clearAllGlobals();
+    requireDefined(createScenarist({ enabled: true, scenarios: testScenarios }));
+
+    const scenarist = createScenarist({
+      enabled: false,
+      scenarios: testScenarios,
+    });
+
+    expect(scenarist).toBeUndefined();
+    clearAllGlobals();
+  });
+
   it("responds 500 with NO_MOCK_FOUND when onNoMockFound is throw", async () => {
     clearAllGlobals();
     const scenarist = requireDefined(

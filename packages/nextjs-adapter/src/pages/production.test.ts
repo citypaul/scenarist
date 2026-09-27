@@ -369,4 +369,15 @@ describe("Pages Router production entry point", () => {
       });
     });
   });
+
+  describe("createConsoleLogger", () => {
+    it("should return undefined (logging disabled in production)", () => {
+      const logger = production.createConsoleLogger({
+        level: "debug",
+        format: "pretty",
+      });
+
+      expect(logger).toBeUndefined();
+    });
+  });
 });
