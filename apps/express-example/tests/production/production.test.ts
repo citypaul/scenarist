@@ -2,9 +2,10 @@
  * Production Build Verification Tests
  *
  * Verifies that the production build works correctly:
- * 1. App runs and serves endpoints
- * 2. Scenarist endpoints are NOT available (tree-shaken)
- * 3. Health check works
+ * 1. Production bundle contains no Scenarist or MSW code (tree-shaken)
+ * 2. App runs and serves endpoints
+ * 3. Scenarist endpoints are NOT available
+ * 4. Health check works
  *
  * Server lifecycle managed by globalSetup.ts:
  * - json-server and production Express server started before tests
