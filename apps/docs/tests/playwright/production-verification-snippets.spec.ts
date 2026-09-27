@@ -10,10 +10,6 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { expect, test } from "@playwright/test";
 
-// The production-safety guide tells readers to run these shell checks to prove
-// Scenarist is absent from their production output. Each check must succeed
-// only when the output exists and contains no Scenarist/MSW code.
-
 const readDoc = (path: string): string =>
   readFileSync(
     new URL(`../../src/content/docs/${path}`, import.meta.url),
@@ -24,8 +20,7 @@ const guide = readDoc("concepts/production-safety.mdx");
 const expressGuide = readDoc("frameworks/express/getting-started.mdx");
 
 const CLEAN_BUNDLE = 'import e from"express";const a=e();a.listen(3e3);';
-// esbuild --minify output without the production condition keeps this global
-const CONTAMINATED_BUNDLE =
+const MINIFIED_BUNDLE_WITH_SCENARIST =
   'globalThis.__scenarist_shared_msw_server??=a();import e from"express";';
 
 type BundleFiles = Readonly<Record<string, string>>;
@@ -111,15 +106,21 @@ const ciCheck = (): string => {
     .join("\n");
 };
 
-const npmCheck = (): string => {
-  const match = guide.match(/"verify:production": ("(?:[^"\\]|\\.)*")/);
-  expect(match, "guide defines a verify:production script").not.toBeNull();
+const npmScriptCheck = (name: string) => (): string => {
+  const match = guide.match(new RegExp(`"${name}": ("(?:[^"\\\\]|\\\\.)*")`));
+  expect(match, `guide defines a ${name} script`).not.toBeNull();
   const script: unknown = JSON.parse(match?.[1] ?? '""');
   if (typeof script !== "string") {
-    throw new Error("verify:production must be a string");
+    throw new Error(`${name} must be a string`);
   }
-  return script.replace(/^NODE_ENV=production npm run build && /, "");
+  return script.replace(
+    /^(NODE_ENV=production )?npm run build(:production)? && /,
+    "",
+  );
 };
+
+const expressBundleCheck = (): string =>
+  withoutBuildStep(codeBlockAfter(guide, "**Verify bundled Express app:**"));
 
 const GITHUB_ACTIONS_BASH = [
   "bash",
@@ -144,7 +145,11 @@ test.describe("production-safety verification snippets", () => {
 
     test("fails when a bundle contains Scenarist code", () => {
       expect(
-        runIn(nextBundle(CONTAMINATED_BUNDLE), POSIX_SH, nextJsCheck()),
+        runIn(
+          nextBundle(MINIFIED_BUNDLE_WITH_SCENARIST),
+          POSIX_SH,
+          nextJsCheck(),
+        ),
       ).not.toBe(0);
     });
 
@@ -160,8 +165,22 @@ test.describe("production-safety verification snippets", () => {
       shell: POSIX_SH,
       script: expressGuideCheck,
     },
+    {
+      name: "Express bundled check",
+      shell: POSIX_SH,
+      script: expressBundleCheck,
+    },
     { name: "CI step", shell: GITHUB_ACTIONS_BASH, script: ciCheck },
-    { name: "npm verify:production script", shell: POSIX_SH, script: npmCheck },
+    {
+      name: "npm verify:production script",
+      shell: POSIX_SH,
+      script: npmScriptCheck("verify:production"),
+    },
+    {
+      name: "npm verify:treeshaking script",
+      shell: POSIX_SH,
+      script: npmScriptCheck("verify:treeshaking"),
+    },
   ].forEach(({ name, shell, script }) => {
     test.describe(name, () => {
       test("passes when the bundle contains no Scenarist code", () => {
@@ -172,7 +191,11 @@ test.describe("production-safety verification snippets", () => {
 
       test("fails when the bundle contains Scenarist code", () => {
         expect(
-          runIn({ "dist/server.js": CONTAMINATED_BUNDLE }, shell, script()),
+          runIn(
+            { "dist/server.js": MINIFIED_BUNDLE_WITH_SCENARIST },
+            shell,
+            script(),
+          ),
         ).not.toBe(0);
       });
 
