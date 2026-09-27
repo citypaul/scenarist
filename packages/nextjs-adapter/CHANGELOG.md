@@ -1,5 +1,14 @@
 # @scenarist/nextjs-adapter
 
+## 0.5.1
+
+### Patch Changes
+
+- [#559](https://github.com/citypaul/scenarist/pull/559) [`72c6794`](https://github.com/citypaul/scenarist/commit/72c67949dd7bc94ff2689b9b98c27ebd52861340) Thanks [@citypaul](https://github.com/citypaul)! - Correct the Next.js README's tree-shaking troubleshooting. Dynamic imports do not bypass tree-shaking: they resolve through the same `production` export condition as static imports. Bundle inspection now searches for `__scenarist_shared_msw_server`, which survives minification, and skips the `.next/dev` directory that `next dev` writes.
+- Updated dependencies []:
+  - @scenarist/core@0.5.1
+  - @scenarist/msw-adapter@0.5.1
+
 ## 0.5.0
 
 ### Minor Changes
