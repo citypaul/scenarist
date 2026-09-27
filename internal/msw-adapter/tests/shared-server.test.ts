@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   createResponseSelector,
+  ErrorCodes,
+  ScenaristError,
   type ErrorBehaviors,
   type Logger,
   type ResponseSelector,
@@ -184,6 +186,35 @@ describe("createSharedMswServer", () => {
         "Handler error: shared resolver failure",
         expect.objectContaining({ requestUrl: url }),
         expect.objectContaining({ errorName: "Unknown", stack: undefined }),
+      );
+    } finally {
+      failing.close();
+      owner.close();
+    }
+  });
+
+  it("short-circuits on an unexpected ScenaristError from a collaborator", async () => {
+    const url = "https://unexpected-scenarist-error.example.test/data";
+    const owner = createOwner({ url, source: "owner" });
+    const responseSelector: ResponseSelector = {
+      selectResponse: () => {
+        throw new ScenaristError("collaborator failure", {
+          code: ErrorCodes.VALIDATION_ERROR,
+          context: {},
+        });
+      },
+    };
+    const failing = createServer({ responseSelector });
+
+    try {
+      owner.listen();
+      failing.listen();
+
+      const response = await fetch(url);
+
+      expect(response.status).toBe(500);
+      expect(await response.json()).toEqual(
+        expect.objectContaining({ code: "VALIDATION_ERROR" }),
       );
     } finally {
       failing.close();

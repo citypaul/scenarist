@@ -95,6 +95,17 @@ const extractHttpRequestContext = async (
 type UrlParams = Readonly<Record<string, string | ReadonlyArray<string>>>;
 
 /**
+ * Marks an error raised by a configured errorBehaviors 'throw', so the shared
+ * server can let another registration handle the request first. Unexpected
+ * errors (including ScenaristErrors from collaborators) stay terminal.
+ */
+class ErrorBehaviorRejection extends Error {
+  constructor(readonly error: ScenaristError) {
+    super(error.message);
+  }
+}
+
+/**
  * Check if a mock matches the request's method and URL.
  * Returns match result with extracted URL params if matching.
  */
@@ -184,18 +195,20 @@ export const createDynamicRequestResolver = (
       // Check for missing test ID
       if (!testId) {
         if (options.errorBehaviors?.onMissingTestId === "throw") {
-          throw new ScenaristError(
-            "Missing test ID header. Ensure your test setup sends the x-scenarist-test-id header with each request.",
-            {
-              code: ErrorCodes.MISSING_TEST_ID,
-              context: {
-                requestInfo: {
-                  method: request.method,
-                  url: request.url,
+          throw new ErrorBehaviorRejection(
+            new ScenaristError(
+              "Missing test ID header. Ensure your test setup sends the x-scenarist-test-id header with each request.",
+              {
+                code: ErrorCodes.MISSING_TEST_ID,
+                context: {
+                  requestInfo: {
+                    method: request.method,
+                    url: request.url,
+                  },
+                  hint: "This typically means: 1) Test didn't call switchScenario() before making requests, 2) Request originated outside the test context, or 3) Header forwarding is misconfigured.",
                 },
-                hint: "This typically means: 1) Test didn't call switchScenario() before making requests, 2) Request originated outside the test context, or 3) Header forwarding is misconfigured.",
               },
-            },
+            ),
           );
         }
 
@@ -253,7 +266,7 @@ export const createDynamicRequestResolver = (
 
       // Handle error based on configured behavior
       if (errorBehavior === "throw") {
-        throw result.error;
+        throw new ErrorBehaviorRejection(result.error);
       }
 
       if (errorBehavior === "warn" && options.logger) {
@@ -269,7 +282,10 @@ export const createDynamicRequestResolver = (
         type: "unmatched",
         strictMode: options.strictMode,
       };
-    } catch (error) {
+    } catch (thrown) {
+      const rejected = thrown instanceof ErrorBehaviorRejection;
+      const error = rejected ? thrown.error : thrown;
+
       // Log the error via Logger if available
       if (options.logger) {
         const errorMessage =
@@ -316,7 +332,7 @@ export const createDynamicRequestResolver = (
             };
 
       return {
-        type: error instanceof ScenaristError ? "rejected" : "handled",
+        type: rejected ? "rejected" : "handled",
         response: new Response(JSON.stringify(responseBody), {
           status: 500,
           headers: { "Content-Type": "application/json" },
