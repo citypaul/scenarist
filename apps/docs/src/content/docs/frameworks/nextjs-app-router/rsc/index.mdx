@@ -104,6 +104,7 @@ export default async function ProductsPage() {
       ...getScenaristHeadersFromReadonlyHeaders(headersList), // Forward test ID
       'Authorization': `Bearer ${process.env.STRIPE_KEY}`,
     },
+    cache: 'no-store', // Never serve a cached response to a different test
   });
 
   const products = await response.json();

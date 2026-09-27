@@ -43,6 +43,7 @@ import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapte
 export default async function ProductsPage() {
   const response = await fetch('https://api.stripe.com/v1/products', {
     headers: getScenaristHeadersFromReadonlyHeaders(await headers()),
+    cache: 'no-store',
   });
   const { data: products } = await response.json();
   return <ProductList products={products} />;
@@ -70,6 +71,7 @@ export async function POST(request: Request) {
     method: "POST",
     headers: getScenaristHeaders(request),
     body: JSON.stringify(body),
+    cache: "no-store",
   });
   return Response.json(await response.json());
 }
@@ -102,6 +104,7 @@ export async function addToCart(productId: string) {
     method: "POST",
     headers: getScenaristHeadersFromReadonlyHeaders(await headers()),
     body: JSON.stringify({ productId }),
+    cache: "no-store",
   });
   revalidatePath("/cart");
 }

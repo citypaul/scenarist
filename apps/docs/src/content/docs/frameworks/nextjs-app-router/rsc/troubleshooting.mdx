@@ -24,6 +24,7 @@ const response = await fetch(url, {
   headers: {
     ...getScenaristHeadersFromReadonlyHeaders(headersList),
   },
+  cache: 'no-store',
 });
 
 // ❌ Wrong - missing header forwarding
@@ -194,6 +195,7 @@ export default async function MyPage() {
     headers: {
       ...scenaristHeaders,
     },
+    cache: 'no-store',
   });
 
   // ...
