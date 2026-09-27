@@ -1,0 +1,13 @@
+{
+  "name": "scenarist-promo-video",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "audio": "node audio.mjs",
+    "render": "node render.mjs",
+    "build": "node audio.mjs && node render.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.55.0"
+  }
+}
