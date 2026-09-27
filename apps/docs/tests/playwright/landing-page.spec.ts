@@ -208,6 +208,25 @@ test.describe("Landing Page", () => {
     ).toBeInViewport();
   });
 
+  test("points AI assistants to llms.txt from the first screen", async ({
+    page,
+    request,
+  }) => {
+    await page.goto("/");
+
+    const llmsLink = page.getByRole("link", { name: "/llms.txt" });
+    await expect(llmsLink).toBeInViewport();
+
+    const response = await request.get(
+      (await llmsLink.getAttribute("href")) ?? "",
+    );
+    expect(response.ok()).toBe(true);
+    expect(await response.text()).toMatch(/^# Scenarist/);
+
+    await page.getByRole("link", { name: "AI Assistants guide" }).click();
+    await expect(page).toHaveURL(/\/getting-started\/ai-assistants\/$/);
+  });
+
   test("docs link navigates to documentation", async ({ page }) => {
     await page.goto("/");
 
