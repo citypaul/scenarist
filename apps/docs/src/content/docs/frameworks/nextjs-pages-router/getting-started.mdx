@@ -118,7 +118,15 @@ if (typeof window === 'undefined' && scenarist) {
 }
 ```
 
-Next.js replaces `process.env.NODE_ENV` in server code with `'development'` or `'production'`, so a `process.env.NODE_ENV === 'test'` check never matches; the example app uses `enabled: true`. Run your tests against `next dev`: `next build` resolves the adapter's `production` export condition, which makes `createScenarist()` return `undefined`. See [Running your app for tests](/frameworks/nextjs-app-router/getting-started/#running-your-app-for-tests) in the App Router guide, which applies to both routers.
+<Aside type="note" title="Why enabled: true, not a NODE_ENV check?">
+
+Next.js replaces `process.env.NODE_ENV` in your server code with `'development'` under `next dev` and `'production'` under `next build`, even when you start it with `NODE_ENV=test`. A check such as `process.env.NODE_ENV === 'test'` is therefore never true in a Next.js app, so the example app uses `enabled: true`.
+
+The adapters do not currently read `enabled` ([details](/reference/ephemeral-endpoints/#the-enabled-flag)). What keeps Scenarist out of production is the adapter's `production` export condition: `next build` resolves it and `createScenarist()` returns `undefined`. See [Production Safety](/concepts/production-safety/).
+
+Run your scenario tests against `next dev`, not `next build && next start`. [Running your app for tests](/frameworks/nextjs-app-router/getting-started/#running-your-app-for-tests) in the App Router guide shows the Playwright `webServer` config; it applies to both routers.
+
+</Aside>
 
 <Aside type="caution" title="Create One Instance">
 
