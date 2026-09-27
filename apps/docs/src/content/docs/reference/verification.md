@@ -774,7 +774,7 @@ If verification fails:
 1. Check bundler configuration for code splitting support
 2. Verify DefinePlugin is replacing `process.env.NODE_ENV`
 3. Ensure you're using dynamic imports (not static imports)
-4. Review [Production Safety Guide](/concepts/production-safety) for detailed configuration
+4. Review [Production Safety Guide](/concepts/production-safety/) for detailed configuration
 
 If verification succeeds:
 ✅ Your production deployment is safe - Scenarist implementation code is completely tree-shaken!
@@ -899,14 +899,14 @@ test.describe.parallel('Fast tests', () => {
 If verification reveals issues:
 
 1. **Review framework guides** - Ensure adapter is set up correctly
-   - [Next.js →](/frameworks/nextjs-app-router/getting-started)
-   - [Express →](/frameworks/express/getting-started)
+   - [Next.js →](/frameworks/nextjs-app-router/getting-started/)
+   - [Express →](/frameworks/express/getting-started/)
 
 2. **Check scenario definitions** - Verify mocks match external APIs
-   - [Writing Scenarios →](/scenarios/overview)
+   - [Writing Scenarios →](/scenarios/overview/)
 
 3. **Examine test setup** - Ensure test isolation is working
-   - [How it works: Test Isolation →](/concepts/how-it-works#how-test-isolation-works-complete-request-flow)
+   - [How it works: Test Isolation →](/concepts/how-it-works/#how-test-isolation-works-complete-request-flow)
 
 4. **Consult architecture docs** - Understand how pieces fit together
-   - [Architecture →](/concepts/architecture)
+   - [Architecture →](/concepts/architecture/)

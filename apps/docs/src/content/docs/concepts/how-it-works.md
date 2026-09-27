@@ -163,7 +163,7 @@ export const scenarios = {
 } as const satisfies ScenaristScenarios;
 ```
 
-**Step 3: [Set up Playwright fixtures](/testing/playwright-integration)** (one-time setup)
+**Step 3: [Set up Playwright fixtures](/testing/playwright-integration/)** (one-time setup)
 
 ```typescript
 // tests/fixtures.ts
@@ -200,7 +200,7 @@ test("premium users access advanced features", async ({
 
 1. Framework adapter integrates Scenarist into your Next.js app
 2. Scenarios define how external APIs behave
-3. [Playwright fixtures](/testing/playwright-integration) create type-safe test helpers with scenario autocomplete
+3. [Playwright fixtures](/testing/playwright-integration/) create type-safe test helpers with scenario autocomplete
 4. Tests import from fixtures (not @playwright/test directly)
 5. Test switches to scenario and makes real HTTP requests
 6. Your backend code executes with production behavior
@@ -208,13 +208,13 @@ test("premium users access advanced features", async ({
 
 **See complete working examples:**
 
-- [Next.js Example App →](/frameworks/nextjs-app-router/example-app)
-- [Express Example App →](/frameworks/express/example-app)
+- [Next.js Example App →](/frameworks/nextjs-app-router/example-app/)
+- [Express Example App →](/frameworks/express/example-app/)
 
 **Framework-specific guides:**
 
-- [Next.js setup →](/frameworks/nextjs-app-router/getting-started)
-- [Express setup →](/frameworks/express/getting-started)
+- [Next.js setup →](/frameworks/nextjs-app-router/getting-started/)
+- [Express setup →](/frameworks/express/getting-started/)
 
 ## Ephemeral Endpoints: Test-Only Activation
 
@@ -250,7 +250,7 @@ const scenarist = createScenarist({
 
 This ensures scenario switching infrastructure **never leaks into production**, even if you accidentally deploy with `enabled: true`.
 
-[Learn more about ephemeral endpoints →](/reference/ephemeral-endpoints)
+[Learn more about ephemeral endpoints →](/reference/ephemeral-endpoints/)
 
 ## Runtime Scenario Switching
 
@@ -372,11 +372,11 @@ Benefits:
 
 Supported frameworks: Express and Next.js (Pages and App Router). Additional adapters planned.
 
-[Learn about the architecture →](/concepts/architecture)
+[Learn about the architecture →](/concepts/architecture/)
 
 ## Next Steps
 
-- [Dynamic Capabilities →](/scenarios/overview) - Request matching, sequences, stateful mocks
-- [Scenario Format →](/scenarios/basic-structure) - Complete scenario structure reference
-- [Framework Guides →](/frameworks/express/getting-started) - Integrating with your framework
-- [Architecture Details →](/concepts/architecture) - Deep dive into hexagonal architecture
+- [Dynamic Capabilities →](/scenarios/overview/) - Request matching, sequences, stateful mocks
+- [Scenario Format →](/scenarios/basic-structure/) - Complete scenario structure reference
+- [Framework Guides →](/frameworks/express/getting-started/) - Integrating with your framework
+- [Architecture Details →](/concepts/architecture/) - Deep dive into hexagonal architecture

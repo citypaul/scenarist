@@ -18,7 +18,7 @@ Where do Server Components fit in the testing pyramid? They don't fit neatly int
 - **Full E2E is too slow** - Spinning up browsers for every scenario combination doesn't scale
 
 <Aside type="note" title="Broader Context">
-This testing gap applies to all modern server-side code. See [Why Scenarist?](/getting-started/why-scenarist) for how Scenarist addresses middleware, session handling, and other server-side testing challenges, or explore the [Philosophy](/concepts/philosophy) for the core beliefs that guide Scenarist's design.
+This testing gap applies to all modern server-side code. See [Why Scenarist?](/getting-started/why-scenarist/) for how Scenarist addresses middleware, session handling, and other server-side testing challenges, or explore the [Philosophy](/concepts/philosophy/) for the core beliefs that guide Scenarist's design.
 </Aside>
 
 ### The Jest Problem
@@ -115,7 +115,7 @@ export default async function ProductsPage() {
 Each Playwright test has a unique test ID (`x-scenarist-test-id`). This header tells MSW which scenario to use for each request. Without forwarding, your Server Component's fetch calls won't be associated with the correct test scenario.
 </Aside>
 
-For complete setup instructions, see [Getting Started with Next.js App Router](/frameworks/nextjs-app-router/getting-started).
+For complete setup instructions, see [Getting Started with Next.js App Router](/frameworks/nextjs-app-router/getting-started/).
 
 ---
 
@@ -127,22 +127,22 @@ This guide covers seven patterns for testing React Server Components. Choose bas
   <LinkCard
     title="Data Fetching Patterns"
     description="Core patterns: fetching data, stateful mocks, and sequences"
-    href="/frameworks/nextjs-app-router/rsc/data-fetching"
+    href="/frameworks/nextjs-app-router/rsc/data-fetching/"
   />
   <LinkCard
     title="Streaming & Suspense"
     description="Testing Suspense boundaries and streaming content"
-    href="/frameworks/nextjs-app-router/rsc/streaming"
+    href="/frameworks/nextjs-app-router/rsc/streaming/"
   />
   <LinkCard
     title="User Interactions"
     description="Authentication, Server Actions, and error boundaries"
-    href="/frameworks/nextjs-app-router/rsc/interactions"
+    href="/frameworks/nextjs-app-router/rsc/interactions/"
   />
   <LinkCard
     title="Troubleshooting"
     description="Common pitfalls and debugging tips"
-    href="/frameworks/nextjs-app-router/rsc/troubleshooting"
+    href="/frameworks/nextjs-app-router/rsc/troubleshooting/"
   />
 </CardGrid>
 
@@ -150,18 +150,18 @@ This guide covers seven patterns for testing React Server Components. Choose bas
 
 | Pattern | Page | Use Case |
 |---------|------|----------|
-| **Data Fetching** | [Data Fetching](/frameworks/nextjs-app-router/rsc/data-fetching) | Basic RSC data fetching with request matching |
-| **Stateful Mocks** | [Data Fetching](/frameworks/nextjs-app-router/rsc/data-fetching) | Shopping carts, state that builds across requests |
-| **Sequences** | [Data Fetching](/frameworks/nextjs-app-router/rsc/data-fetching) | Polling, retry logic, multi-step workflows |
-| **Streaming** | [Streaming](/frameworks/nextjs-app-router/rsc/streaming) | Suspense boundaries, progressive loading |
-| **Authentication** | [Interactions](/frameworks/nextjs-app-router/rsc/interactions) | Protected routes, session handling |
-| **Server Actions** | [Interactions](/frameworks/nextjs-app-router/rsc/interactions) | Form submissions, mutations |
-| **Error Boundaries** | [Interactions](/frameworks/nextjs-app-router/rsc/interactions) | Error handling and recovery |
+| **Data Fetching** | [Data Fetching](/frameworks/nextjs-app-router/rsc/data-fetching/) | Basic RSC data fetching with request matching |
+| **Stateful Mocks** | [Data Fetching](/frameworks/nextjs-app-router/rsc/data-fetching/) | Shopping carts, state that builds across requests |
+| **Sequences** | [Data Fetching](/frameworks/nextjs-app-router/rsc/data-fetching/) | Polling, retry logic, multi-step workflows |
+| **Streaming** | [Streaming](/frameworks/nextjs-app-router/rsc/streaming/) | Suspense boundaries, progressive loading |
+| **Authentication** | [Interactions](/frameworks/nextjs-app-router/rsc/interactions/) | Protected routes, session handling |
+| **Server Actions** | [Interactions](/frameworks/nextjs-app-router/rsc/interactions/) | Form submissions, mutations |
+| **Error Boundaries** | [Interactions](/frameworks/nextjs-app-router/rsc/interactions/) | Error handling and recovery |
 
 ---
 
 ## Next Steps
 
-- **[Data Fetching Patterns](/frameworks/nextjs-app-router/rsc/data-fetching)** - Start here for core RSC testing patterns
-- **[Next.js App Router Getting Started](/frameworks/nextjs-app-router/getting-started)** - Complete setup guide
-- **[Example App](/frameworks/nextjs-app-router/example-app)** - Full working example with all patterns
+- **[Data Fetching Patterns](/frameworks/nextjs-app-router/rsc/data-fetching/)** - Start here for core RSC testing patterns
+- **[Next.js App Router Getting Started](/frameworks/nextjs-app-router/getting-started/)** - Complete setup guide
+- **[Example App](/frameworks/nextjs-app-router/example-app/)** - Full working example with all patterns

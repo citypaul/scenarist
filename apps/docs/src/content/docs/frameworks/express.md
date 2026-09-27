@@ -28,7 +28,7 @@ Scenarist enables HTTP-level integration testing for Express:
 
 See Scenarist in action with a complete Express application:
 
-[**Explore the Express Example App →**](/frameworks/express/example-app)
+[**Explore the Express Example App →**](/frameworks/express/example-app/)
 
 The example demonstrates:
 
@@ -45,4 +45,4 @@ The example demonstrates:
 
 Ready to integrate Scenarist into your Express application?
 
-[Get started with Express →](/frameworks/express/getting-started)
+[Get started with Express →](/frameworks/express/getting-started/)

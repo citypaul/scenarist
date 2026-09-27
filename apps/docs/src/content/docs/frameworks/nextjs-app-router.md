@@ -107,7 +107,7 @@ test("cart maintains state across requests", async ({
 
 See Scenarist in action with a complete Next.js App Router application:
 
-[**Explore the Next.js App Router Example →**](/frameworks/nextjs-app-router/example-app)
+[**Explore the Next.js App Router Example →**](/frameworks/nextjs-app-router/example-app/)
 
 The example demonstrates:
 
@@ -123,7 +123,7 @@ The example demonstrates:
 
 Ready to integrate Scenarist into your Next.js App Router application?
 
-[**Get started with App Router →**](/frameworks/nextjs-app-router/getting-started)
+[**Get started with App Router →**](/frameworks/nextjs-app-router/getting-started/)
 
 ## Key Benefits
 

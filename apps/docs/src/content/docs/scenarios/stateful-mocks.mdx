@@ -14,7 +14,7 @@ Capture data from requests and inject it into subsequent responses. Build state 
 - **Form workflows:** Capture step data, show in confirmation
 
 :::note[Stateful Mocks vs State-Aware Mocking]
-**Stateful Mocks** (this page) capture data from requests and inject it into responses - state is a **data carrier**. **[State-Aware Mocking](/scenarios/state-aware-mocking)** uses state to **change mock behavior** - selecting different responses or different mocks based on workflow state (control flow).
+**Stateful Mocks** (this page) capture data from requests and inject it into responses - state is a **data carrier**. **[State-Aware Mocking](/scenarios/state-aware-mocking/)** uses state to **change mock behavior** - selecting different responses or different mocks based on workflow state (control flow).
 :::
 
 ## When to Use
@@ -24,7 +24,7 @@ Use stateful mocks when:
 - Testing multi-step workflows where data accumulates
 - Need to verify data flows through your application correctly
 
-**Not for call-count behavior** - use [Response Sequences](/scenarios/response-sequences) instead.
+**Not for call-count behavior** - use [Response Sequences](/scenarios/response-sequences/) instead.
 
 ## Basic State Capture and Injection
 
@@ -261,7 +261,7 @@ test('cart workflow', async ({ page, switchScenario }) => {
 
 ## Combining with Other Features
 
-State capture works with [Request Matching](/scenarios/request-matching):
+State capture works with [Request Matching](/scenarios/request-matching/):
 
 ```typescript
 {
@@ -277,7 +277,7 @@ State capture works with [Request Matching](/scenarios/request-matching):
 }
 ```
 
-State capture also works with [Response Sequences](/scenarios/response-sequences):
+State capture also works with [Response Sequences](/scenarios/response-sequences/):
 
 ```typescript
 {
@@ -299,7 +299,7 @@ State capture also works with [Response Sequences](/scenarios/response-sequences
 
 ## Next Steps
 
-- [State-Aware Mocking →](/scenarios/state-aware-mocking) - Conditional responses based on state
-- [Request Matching →](/scenarios/request-matching) - Combine state with matching
-- [Response Sequences →](/scenarios/response-sequences) - Capture state through sequences
-- [Combining Features →](/scenarios/combining-features) - Use all features together
+- [State-Aware Mocking →](/scenarios/state-aware-mocking/) - Conditional responses based on state
+- [Request Matching →](/scenarios/request-matching/) - Combine state with matching
+- [Response Sequences →](/scenarios/response-sequences/) - Capture state through sequences
+- [Combining Features →](/scenarios/combining-features/) - Use all features together

@@ -14,19 +14,19 @@ Scenarist is built on [MSW](https://mswjs.io/) and adds a complete scenario mana
 
 <CardGrid>
   <Card title="Simple Architecture" icon="rocket">
-    Just an HTTP header. No Docker, no separate processes, no network proxies. Install, configure scenarios, test. <a href="/concepts/architecture">Learn more →</a>
+    Just an HTTP header. No Docker, no separate processes, no network proxies. Install, configure scenarios, test. <a href="/concepts/architecture/">Learn more →</a>
   </Card>
   <Card title="Test ID Isolation" icon="random">
-    Run hundreds of <a href="/testing/parallel-testing">parallel tests</a> with different scenarios against a single server. Each test's header routes to its own scenario.
+    Run hundreds of <a href="/testing/parallel-testing/">parallel tests</a> with different scenarios against a single server. Each test's header routes to its own scenario.
   </Card>
   <Card title="Runtime Switching" icon="forward">
     Change scenarios mid-test without restarts. Perfect for testing retry flows, error recovery, and multi-step user journeys.
   </Card>
   <Card title="First-Class Playwright" icon="seti:playwright">
-    Dedicated <a href="/testing/playwright-integration">fixtures</a> with type-safe scenario switching and automatic test ID handling. Each test gets isolated state without manual header management.
+    Dedicated <a href="/testing/playwright-integration/">fixtures</a> with type-safe scenario switching and automatic test ID handling. Each test gets isolated state without manual header management.
   </Card>
   <Card title="Response Sequences" icon="list-format">
-    Ever tested a polling UI that shows pending → processing → complete? Most tools need complex state management. <a href="/scenarios/response-sequences">Scenarist: three lines of config</a>.
+    Ever tested a polling UI that shows pending → processing → complete? Most tools need complex state management. <a href="/scenarios/response-sequences/">Scenarist: three lines of config</a>.
   </Card>
   <Card title="Next.js Multi-Process (Solved)" icon="setting">
     Next.js has <a href="https://github.com/vercel/next.js/discussions/68572">documented singleton issues</a> that break MSW. Scenarist's adapter includes built-in <code>globalThis</code> guards—one stable MSW instance regardless of module loading.
@@ -114,17 +114,17 @@ Scenarist is built on top of [Mock Service Worker (MSW)](https://mswjs.io/)—th
 - Proven reliability and active maintenance
 
 **What Scenarist adds:**
-- **[Test ID isolation](/testing/parallel-testing)** — Parallel tests with different scenarios
-- **[Runtime switching](/concepts/how-it-works#runtime-scenario-switching)** — Change scenarios without restart
-- **[First-class Playwright support](/testing/playwright-integration)** — Dedicated fixtures with type-safe scenario switching and automatic test ID isolation
-- **[Response sequences](/scenarios/response-sequences)** — Built-in support for polling, retry flows, state machines
-- **[Stateful mocks](/scenarios/stateful-mocks)** — Capture values from requests, inject into responses (state isolated per test ID)
-- **[Advanced matching](/scenarios/request-matching)** — Body, headers, query params, regex patterns
+- **[Test ID isolation](/testing/parallel-testing/)** — Parallel tests with different scenarios
+- **[Runtime switching](/concepts/how-it-works/#runtime-scenario-switching)** — Change scenarios without restart
+- **[First-class Playwright support](/testing/playwright-integration/)** — Dedicated fixtures with type-safe scenario switching and automatic test ID isolation
+- **[Response sequences](/scenarios/response-sequences/)** — Built-in support for polling, retry flows, state machines
+- **[Stateful mocks](/scenarios/stateful-mocks/)** — Capture values from requests, inject into responses (state isolated per test ID)
+- **[Advanced matching](/scenarios/request-matching/)** — Body, headers, query params, regex patterns
 - **Framework adapters** — Express, Next.js integration out of the box
 
 If you need low-level control or use MSW for non-testing purposes (API development, storybook), use MSW directly. If you need scenario management for testing, Scenarist handles that layer.
 
-[Learn more about Scenarist + MSW →](/comparison/with-msw)
+[Learn more about Scenarist + MSW →](/comparison/with-msw/)
 
 ## When to Use What
 
@@ -143,11 +143,11 @@ If you need low-level control or use MSW for non-testing purposes (API developme
 
 Being explicit about when Scenarist isn't the right choice:
 
-- **Pure client-side SPAs** — If all HTTP calls originate in the browser, [Playwright's built-in mocks](/comparison/vs-playwright-mocks) may be simpler
+- **Pure client-side SPAs** — If all HTTP calls originate in the browser, [Playwright's built-in mocks](/comparison/vs-playwright-mocks/) may be simpler
 - **Java/Python/.NET shops** — WireMock's ecosystem is better suited for non-JavaScript teams
 - **Need recording/playback** — Use Nock (nockBack) or WireMock if you need to capture real API responses
 - **Simple unit tests without parallelism** — Nock is lighter-weight if you don't need scenario management
-- **Database testing** — Scenarist mocks HTTP only. See [Testing Database Apps](/guides/testing-database-apps) for database strategies
+- **Database testing** — Scenarist mocks HTTP only. See [Testing Database Apps](/guides/testing-database-apps/) for database strategies
 - **Contract testing** — Use WireMock with Spring Cloud Contract or similar frameworks
 
 ### Choose WireMock when...
@@ -157,7 +157,7 @@ Being explicit about when Scenarist isn't the right choice:
 - Want a **standalone mock server** independent of your test process
 - Team is already familiar with WireMock's ecosystem
 
-[Compare: Scenarist vs WireMock →](/comparison/vs-wiremock)
+[Compare: Scenarist vs WireMock →](/comparison/vs-wiremock/)
 
 ### Choose Nock when...
 
@@ -166,7 +166,7 @@ Being explicit about when Scenarist isn't the right choice:
 - Prefer **lighter-weight** approach without framework adapters
 - Already using Nock and don't need scenario management
 
-[Compare: Scenarist vs Nock →](/comparison/vs-nock)
+[Compare: Scenarist vs Nock →](/comparison/vs-nock/)
 
 ### Choose Testcontainers when...
 
@@ -178,13 +178,13 @@ Being explicit about when Scenarist isn't the right choice:
 Testcontainers and Scenarist solve different problems—they're often **complementary**. Many teams use both: Testcontainers for databases, Scenarist for external HTTP APIs.
 
 :::tip[Database Testing with Scenarist]
-If your app uses databases, see our [Testing Database Apps](/guides/testing-database-apps) guide for comprehensive options including:
-- **[Repository Pattern](/guides/testing-database-apps/repository-pattern)** — Test ID isolation for databases (our recommendation)
-- **[Testcontainers Hybrid](/guides/testing-database-apps/testcontainers-hybrid)** — Use both tools together
-- **[Parallelism Options](/guides/testing-database-apps/parallelism-options)** — Compare all approaches and trade-offs
+If your app uses databases, see our [Testing Database Apps](/guides/testing-database-apps/) guide for comprehensive options including:
+- **[Repository Pattern](/guides/testing-database-apps/repository-pattern/)** — Test ID isolation for databases (our recommendation)
+- **[Testcontainers Hybrid](/guides/testing-database-apps/testcontainers-hybrid/)** — Use both tools together
+- **[Parallelism Options](/guides/testing-database-apps/parallelism-options/)** — Compare all approaches and trade-offs
 :::
 
-[Compare: Scenarist vs Testcontainers →](/comparison/vs-testcontainers)
+[Compare: Scenarist vs Testcontainers →](/comparison/vs-testcontainers/)
 
 ### Choose Playwright's built-in `page.route()` when...
 
@@ -195,7 +195,7 @@ If your app uses databases, see our [Testing Database Apps](/guides/testing-data
 
 Note: This refers to Playwright's native [`page.route()`](https://playwright.dev/docs/mock) API for browser-side request interception—not Scenarist's `@scenarist/playwright-helpers` package, which provides test fixtures for server-side scenario management.
 
-[Compare: Scenarist vs Playwright Mocks →](/comparison/vs-playwright-mocks)
+[Compare: Scenarist vs Playwright Mocks →](/comparison/vs-playwright-mocks/)
 
 ## Detailed Comparisons
 
@@ -203,27 +203,27 @@ Note: This refers to Playwright's native [`page.route()`](https://playwright.dev
   <LinkCard
     title="Scenarist + MSW"
     description="How Scenarist builds on MSW and when to use each"
-    href="/comparison/with-msw"
+    href="/comparison/with-msw/"
   />
   <LinkCard
     title="vs WireMock"
     description="In-process vs server-based mocking approaches"
-    href="/comparison/vs-wiremock"
+    href="/comparison/vs-wiremock/"
   />
   <LinkCard
     title="vs Nock"
     description="Declarative scenarios vs imperative per-test setup"
-    href="/comparison/vs-nock"
+    href="/comparison/vs-nock/"
   />
   <LinkCard
     title="vs Testcontainers"
     description="Mocking external APIs vs running real services"
-    href="/comparison/vs-testcontainers"
+    href="/comparison/vs-testcontainers/"
   />
   <LinkCard
     title="vs Playwright Mocks"
     description="Server-side vs browser-side request interception"
-    href="/comparison/vs-playwright-mocks"
+    href="/comparison/vs-playwright-mocks/"
   />
 </CardGrid>
 
@@ -256,7 +256,7 @@ Still not sure? Here's a decision tree:
 - No → Scenarist or Nock
 
 **7. Does your app use databases alongside external HTTP APIs?**
-- Yes → See [Testing Database Apps](/guides/testing-database-apps) for options:
-  - [Repository Pattern](/guides/testing-database-apps/repository-pattern) for test ID isolation (recommended)
-  - [Testcontainers Hybrid](/guides/testing-database-apps/testcontainers-hybrid) for real database + mocked APIs
+- Yes → See [Testing Database Apps](/guides/testing-database-apps/) for options:
+  - [Repository Pattern](/guides/testing-database-apps/repository-pattern/) for test ID isolation (recommended)
+  - [Testcontainers Hybrid](/guides/testing-database-apps/testcontainers-hybrid/) for real database + mocked APIs
 - No (HTTP APIs only) → Scenarist handles everything

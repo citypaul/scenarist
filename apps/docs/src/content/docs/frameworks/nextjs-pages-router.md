@@ -119,7 +119,7 @@ test('renders featured products', async ({ page, switchScenario }) => {
 
 Ready to integrate Scenarist into your Next.js Pages Router application?
 
-[**Get started with Pages Router →**](/frameworks/nextjs-pages-router/getting-started)
+[**Get started with Pages Router →**](/frameworks/nextjs-pages-router/getting-started/)
 
 ## Key Benefits
 
@@ -135,5 +135,5 @@ Ready to integrate Scenarist into your Next.js Pages Router application?
 
 ## Next Steps
 
-- [Pages Router Getting Started →](/frameworks/nextjs-pages-router/getting-started) - Set up Scenarist in your Pages Router app
-- [Next.js General Guide →](/frameworks/nextjs) - Learn about Next.js testing with Scenarist
+- [Pages Router Getting Started →](/frameworks/nextjs-pages-router/getting-started/) - Set up Scenarist in your Pages Router app
+- [Next.js General Guide →](/frameworks/nextjs/) - Learn about Next.js testing with Scenarist
