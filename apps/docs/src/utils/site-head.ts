@@ -35,6 +35,11 @@ export const siteHeadTags: readonly HeadTag[] = [
   { tag: "link", attrs: { rel: "manifest", href: "/site.webmanifest" } },
 ];
 
+type JsonLd = {
+  readonly "@context": "https://schema.org";
+  readonly "@graph": readonly Readonly<Record<string, unknown>>[];
+};
+
 export const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
@@ -71,4 +76,4 @@ export const structuredData = {
       },
     },
   ],
-};
+} as const satisfies JsonLd;

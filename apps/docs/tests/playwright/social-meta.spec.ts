@@ -19,20 +19,20 @@ const fetchHtml = async (request: APIRequestContext, path: string) => {
   return response.text();
 };
 
-const attr = (html: string, pattern: RegExp) => html.match(pattern)?.[1];
-
-const metaContent = (html: string, key: "name" | "property", value: string) =>
-  attr(html, new RegExp(`<meta[^>]*${key}="${value}"[^>]*content="([^"]*)"`));
-
-const links = (html: string) =>
-  Array.from(html.matchAll(/<link\b[^>]*>/g), ([tag]) =>
+const tagsAttrs = (html: string, tag: "meta" | "link") =>
+  Array.from(html.matchAll(new RegExp(`<${tag}\\b[^>]*>`, "g")), ([match]) =>
     Object.fromEntries(
-      Array.from(tag.matchAll(/([\w-]+)="([^"]*)"/g), ([, key, value]) => [
+      Array.from(match.matchAll(/([\w:-]+)="([^"]*)"/g), ([, key, value]) => [
         key,
         value,
       ]),
     ),
   );
+
+const metaContent = (html: string, key: "name" | "property", value: string) =>
+  tagsAttrs(html, "meta").find((meta) => meta[key] === value)?.content;
+
+const links = (html: string) => tagsAttrs(html, "link");
 
 test.describe("Social & SEO meta", () => {
   test("landing page description fits in search and social previews", async ({
@@ -104,7 +104,9 @@ test.describe("Social & SEO meta", () => {
     expect(response.status()).toBe(200);
   });
 
-  test("web manifest lists installable icons", async ({ request }) => {
+  test("web manifest lists separate any and maskable icons", async ({
+    request,
+  }) => {
     const response = await request.get("/site.webmanifest");
     expect(response.ok()).toBe(true);
 
@@ -112,8 +114,26 @@ test.describe("Social & SEO meta", () => {
     expect(manifest).toMatchObject({
       name: "Scenarist",
       icons: expect.arrayContaining([
-        expect.objectContaining({ sizes: "192x192", type: "image/png" }),
-        expect.objectContaining({ sizes: "512x512", type: "image/png" }),
+        expect.objectContaining({
+          sizes: "192x192",
+          type: "image/png",
+          purpose: "any",
+        }),
+        expect.objectContaining({
+          sizes: "192x192",
+          type: "image/png",
+          purpose: "maskable",
+        }),
+        expect.objectContaining({
+          sizes: "512x512",
+          type: "image/png",
+          purpose: "any",
+        }),
+        expect.objectContaining({
+          sizes: "512x512",
+          type: "image/png",
+          purpose: "maskable",
+        }),
       ]),
     });
   });
