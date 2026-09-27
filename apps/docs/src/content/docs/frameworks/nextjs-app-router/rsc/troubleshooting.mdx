@@ -24,6 +24,7 @@ const response = await fetch(url, {
   headers: {
     ...getScenaristHeadersFromReadonlyHeaders(headersList),
   },
+  cache: 'no-store',
 });
 
 // ❌ Wrong - missing header forwarding
@@ -82,6 +83,7 @@ const response = await fetch(url, {
 // Component fetch - must match URL pattern
 await fetch(`http://localhost:3001/github/jobs/${jobId}`, {  // ✅ Matches pattern
   headers: { ...getScenaristHeadersFromReadonlyHeaders(headersList) },
+  cache: 'no-store',
 });
 ```
 
@@ -99,7 +101,7 @@ Add a console logger to your Scenarist setup:
 import { createScenarist, createConsoleLogger } from '@scenarist/nextjs-adapter/app';
 
 const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
+  enabled: true,
   scenarios,
 
   // Enable logging at info level
@@ -143,7 +145,7 @@ import {
 } from '@scenarist/nextjs-adapter/app';
 
 const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
+  enabled: true,
   scenarios,
 
   // Enable via SCENARIST_LOG=1
@@ -194,6 +196,7 @@ export default async function MyPage() {
     headers: {
       ...scenaristHeaders,
     },
+    cache: 'no-store',
   });
 
   // ...

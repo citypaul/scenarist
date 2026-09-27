@@ -268,9 +268,15 @@ import { FileTree } from '@astrojs/starlight/components';
 ### Testing Server Components
 
 ```typescript
-// Server Component fetches external API
+// Server Component fetches external API, forwarding the test ID
+import { headers } from 'next/headers';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+
 export default async function ProductsPage() {
-  const response = await fetch('https://api.products.example.com/list');
+  const response = await fetch('https://api.products.example.com/list', {
+    headers: getScenaristHeadersFromReadonlyHeaders(await headers()),
+    cache: 'no-store',
+  });
   const products = await response.json();
   return <div>{products.map(p => <Product key={p.id} {...p} />)}</div>;
 }

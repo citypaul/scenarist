@@ -106,7 +106,7 @@ import { createScenarist } from '@scenarist/nextjs-adapter/app';
 import { scenarios } from './scenarios';
 
 export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
+  enabled: true,
   scenarios,
 });
 
@@ -115,6 +115,14 @@ if (typeof window === 'undefined' && scenarist) {
   scenarist.start();
 }
 ```
+
+<Aside type="note" title="Why enabled: true, not a NODE_ENV check?">
+
+Next.js replaces `process.env.NODE_ENV` in your server code with `'development'` under `next dev` and `'production'` under `next build`, even when you start it with `NODE_ENV=test`. A check such as `process.env.NODE_ENV === 'test'` is therefore never true in a Next.js app, so the example app uses `enabled: true`.
+
+The adapters do not currently read `enabled` ([details](/reference/ephemeral-endpoints/#the-enabled-flag)). What keeps Scenarist out of production is the adapter's `production` export condition: `next build` resolves it and `createScenarist()` returns `undefined`. See [Running your app for tests](#running-your-app-for-tests) and [Production Safety](/concepts/production-safety/).
+
+</Aside>
 
 <Aside type="caution" title="Create One Instance">
 
@@ -160,7 +168,52 @@ The folder is named `%5F%5Fscenario%5F%5F` (URL-encoded underscores) because Nex
 The route will be accessible at `/api/__scenario__` in your application, which is the default `scenaristEndpoint` used by `@scenarist/playwright-helpers`. If you place the route file elsewhere, set `scenaristEndpoint` in your Playwright config to match.
 :::
 
-## 4. Set Up Playwright Fixtures
+To inspect captured state from your tests with `debugState` and `waitForDebugState`, add the debug state route the same way:
+
+```typescript
+// app/api/%5F%5Fscenarist%5F%5F/state/route.ts
+import { scenarist } from '@/lib/scenarist';
+
+export const GET = scenarist?.createStateEndpoint();
+```
+
+This route is served at `/api/__scenarist__/state`.
+
+## 4. Configure Playwright
+
+```typescript
+// playwright.config.ts
+import { defineConfig } from '@playwright/test';
+import type { ScenaristOptions } from '@scenarist/playwright-helpers';
+
+export default defineConfig<ScenaristOptions>({
+  use: {
+    baseURL: 'http://localhost:3000',
+    // The Playwright helpers default to /__scenarist__/state, which is the Express path
+    scenaristStateEndpoint: '/api/__scenarist__/state',
+  },
+  // Playwright starts the app with next dev, where Scenarist is active
+  webServer: {
+    // Next.js 16; on Next.js 14 and 15, drop --webpack (webpack is already the default)
+    command: 'npx next dev --webpack --port 3000',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
+  },
+});
+```
+
+`scenaristEndpoint` defaults to `/api/__scenario__`, so you only need to set it if you moved the scenario route.
+
+### Running your app for tests
+
+Run your scenario tests against `next dev`. The `webServer` block above starts it before the tests run and, outside CI, reuses one you already have running. Under `next dev`, `createScenarist()` returns the Scenarist instance, `scenarist.start()` starts MSW in the server process, and the scenario route switches scenarios. You don't need to set `NODE_ENV`. The [example app](https://github.com/citypaul/scenarist/tree/main/apps/nextjs-app-router-example) starts its server the same way, with `next dev --webpack` on Next.js 16. Next.js 14 and 15 have no `--webpack` flag and use webpack by default, so run `next dev` there.
+
+**Can the tests run against `next build && next start`?** No. `next build` resolves the adapter's `production` export condition, so `createScenarist()` returns `undefined` and MSW never starts. The scenario route then answers `405`, and `switchScenario` throws `Failed to switch scenario: 405`. Setting `NODE_ENV=test` does not change this.
+
+To test the production build itself, use a separate Playwright config that does not switch scenarios and points your app at real or stand-in backends. The example app does this with `playwright.production.config.ts`, which builds the app, runs `next start`, and asserts that the scenario route answers `405`.
+
+## 5. Set Up Playwright Fixtures
 
 ```typescript
 // tests/fixtures.ts
@@ -172,7 +225,7 @@ export const test = withScenarios(scenarios);
 export { expect };
 ```
 
-## 5. Write Tests
+## 6. Write Tests
 
 ```typescript
 // tests/products.spec.ts
@@ -211,31 +264,39 @@ We recommend using **Playwright** for testing Next.js applications with Scenaris
 **[Learn more about Playwright testing →](/testing/playwright-integration/)**
 :::
 
-**Example Server Component:**
+**Example Server Component** that the tests above exercise:
 
 ```typescript
 // app/products/page.tsx
+import { headers } from 'next/headers';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+
+const plans = {
+  standard: { name: 'Standard Plan', price: '$25.00' },
+  premium: { name: 'Premium Plan', price: '$50.00' },
+};
+
 export default async function ProductsPage() {
-  // This fetch is mocked by Scenarist
-  const response = await fetch('https://api.stripe.com/v1/products', {
-    headers: { 'Authorization': `Bearer ${process.env.STRIPE_KEY}` },
+  // Scenarist answers this call with the Auth0 mock from the test's scenario
+  const response = await fetch('https://api.auth0.com/userinfo', {
+    // Forward the test ID, or the call falls back to the default scenario
+    headers: getScenaristHeadersFromReadonlyHeaders(await headers()),
+    cache: 'no-store',
   });
+  const user = await response.json();
 
-  const { data: products } = await response.json();
+  const plan = user.tier === 'premium' ? plans.premium : plans.standard;
 
-  // Your component renders with mocked data
   return (
     <div>
-      {products.map(product => (
-        <div key={product.id}>
-          <h2>{product.name}</h2>
-          <span className="price">${(product.price / 100).toFixed(2)}</span>
-        </div>
-      ))}
+      <h2>{plan.name}</h2>
+      <span className="price">{plan.price}</span>
     </div>
   );
 }
 ```
+
+Every `fetch` your server code makes to a mocked API must forward the Scenarist headers and set `cache: 'no-store'`, so Next.js never answers it from its fetch cache instead of the mock for the active scenario ([why](/frameworks/nextjs-app-router/rsc/troubleshooting/#pitfall-3-nextjs-caching)). See [Forwarding Headers to External APIs](#forwarding-headers-to-external-apis) for Server Components and Route Handlers.
 
 ## Forwarding Headers to External APIs
 
@@ -260,6 +321,7 @@ export default async function ProductsPage() {
       ...getScenaristHeadersFromReadonlyHeaders(headersList), // ✅ For ReadonlyHeaders
       'Authorization': `Bearer ${process.env.STRIPE_KEY}`,
     },
+    cache: 'no-store', // Never serve a cached response to a different test
   });
 
   const { data: products } = await response.json();
@@ -291,6 +353,7 @@ export async function GET(request: Request) {
       ...getScenaristHeaders(request), // ✅ For Request objects
       'Authorization': `Bearer ${process.env.STRIPE_KEY}`,
     },
+    cache: 'no-store', // Never serve a cached response to a different test
   });
 
   const data = await response.json();

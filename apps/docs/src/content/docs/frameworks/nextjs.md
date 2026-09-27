@@ -24,7 +24,7 @@ Scenarist enables testing Next.js applications through real HTTP requests:
 - Test server-side code without mocking framework internals
 - Verify different external API scenarios with runtime switching
 - Run parallel tests without interference
-- Fast execution without browser overhead for every scenario
+- Switch scenarios per test against one running server, with no restarts
 - **Automatic singleton protection** - Handles Next.js module duplication for you (no `globalThis` boilerplate needed)
 
 ## Next.js Support

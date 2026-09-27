@@ -42,7 +42,7 @@ This creates a testing challenge:
 
 **End-to-end tests** provide confidence by testing the complete system, but cannot reach most edge case states. How do you make Stripe return a specific decline code? Or Auth0 timeout? Or SendGrid fail with a particular error? You can't control real external APIs to test these scenarios. Testing the few scenarios you can reach would also be prohibitively slow.
 
-**Between these approaches lies a gap:** Testing server-side HTTP behavior with different external API responses, without browser overhead or extensive framework mocking.
+**Between these approaches lies a gap:** Running your real server-side code against any external API response you choose, without calling live third-party services or mocking framework internals.
 
 **Scenarist fills this gap** by testing your server-side HTTP layer with mocked external APIs. Your code—Server Components, loaders, middleware, business logic—executes normally. Only HTTP requests (fetch, axios, etc.) are intercepted, returning scenario-defined responses based on test ID. This enables testing full user journeys through the browser using [Playwright helpers](/testing/playwright-integration/), with each test isolated and running in parallel.
 
@@ -63,12 +63,20 @@ This creates a testing challenge:
 
 ```typescript
 // Server Component - Your real code executes
+import { headers } from 'next/headers';
+import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+
 export default async function CheckoutPage() {
   // ✅ This call is intercepted - you control the response
   const payment = await fetch('https://api.stripe.com/v1/charges', {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${process.env.STRIPE_KEY}` },
+    headers: {
+      // Forward the test ID so the call gets this test's scenario
+      ...getScenaristHeadersFromReadonlyHeaders(await headers()),
+      'Authorization': `Bearer ${process.env.STRIPE_KEY}`,
+    },
     body: JSON.stringify({ amount: 5000 }),
+    cache: 'no-store',
   });
 
   // Your real rendering logic

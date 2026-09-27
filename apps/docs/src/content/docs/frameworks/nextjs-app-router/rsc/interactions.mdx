@@ -258,6 +258,7 @@ export async function submitContactForm(
       email: formData.get("email"),
       message: formData.get("message"),
     }),
+    cache: "no-store",
   });
 
   const data: unknown = await response.json();

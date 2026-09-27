@@ -26,7 +26,7 @@ Scenarist enables HTTP-level testing for App Router applications:
 - **Test Route Handlers** with different external API scenarios
 - **Test Server Actions** with runtime scenario switching
 - **Run parallel tests** without interference
-- **Fast execution** - no browser overhead for every scenario
+- **No restarts** - each test switches scenario at runtime against one running server
 - **Automatic singleton protection** - Handles Next.js module duplication for you (no `globalThis` boilerplate needed)
 
 ## App Router Features Supported
@@ -43,6 +43,7 @@ import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapte
 export default async function ProductsPage() {
   const response = await fetch('https://api.stripe.com/v1/products', {
     headers: getScenaristHeadersFromReadonlyHeaders(await headers()),
+    cache: 'no-store',
   });
   const { data: products } = await response.json();
   return <ProductList products={products} />;
@@ -70,6 +71,7 @@ export async function POST(request: Request) {
     method: "POST",
     headers: getScenaristHeaders(request),
     body: JSON.stringify(body),
+    cache: "no-store",
   });
   return Response.json(await response.json());
 }
@@ -102,6 +104,7 @@ export async function addToCart(productId: string) {
     method: "POST",
     headers: getScenaristHeadersFromReadonlyHeaders(await headers()),
     body: JSON.stringify({ productId }),
+    cache: "no-store",
   });
   revalidatePath("/cart");
 }

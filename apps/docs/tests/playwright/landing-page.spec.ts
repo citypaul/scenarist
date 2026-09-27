@@ -104,6 +104,21 @@ test.describe("Landing Page", () => {
     });
   });
 
+  test("says the Playwright helpers are installed separately", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    await expect(
+      page.getByText(
+        "Browser tests also need @scenarist/playwright-helpers and @playwright/test as dev dependencies. Full install steps",
+      ),
+    ).toBeVisible();
+
+    await page.getByRole("link", { name: "Full install steps" }).click();
+    await expect(page).toHaveURL(/\/getting-started\/installation\/$/);
+  });
+
   test.describe("Copy Install Command", () => {
     test("copy button copies current command to clipboard", async ({
       page,
@@ -206,6 +221,30 @@ test.describe("Landing Page", () => {
     await expect(
       page.getByRole("heading", { name: /Dynamic scenarios/ }),
     ).toBeInViewport();
+  });
+
+  test("points AI assistants to llms.txt from the first screen", async ({
+    page,
+    request,
+  }) => {
+    await page.goto("/");
+
+    await expect(
+      page.getByText(
+        "Using an AI assistant? Start with /llms.txt or the AI Assistants guide.",
+      ),
+    ).toBeVisible();
+
+    const llmsLink = page.getByRole("link", { name: "/llms.txt" });
+    await expect(llmsLink).toBeInViewport();
+    await expect(llmsLink).toHaveAttribute("href", "/llms.txt");
+
+    const response = await request.get("/llms.txt");
+    expect(response.ok()).toBe(true);
+    expect(await response.text()).toMatch(/^# Scenarist/);
+
+    await page.getByRole("link", { name: "AI Assistants guide" }).click();
+    await expect(page).toHaveURL(/\/getting-started\/ai-assistants\/$/);
   });
 
   test("docs link navigates to documentation", async ({ page }) => {

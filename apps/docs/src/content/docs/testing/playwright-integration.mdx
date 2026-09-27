@@ -92,6 +92,8 @@ export default defineConfig<ScenaristOptions>({
 });
 ```
 
+The default matches the Next.js scenario routes. Express serves the endpoint at `/__scenario__`, so Express projects set `scenaristEndpoint: '/__scenario__'`.
+
 :::tip[Cross-Origin API Servers]
 When your API server runs on a different host or port than your frontend, use an absolute URL:
 
@@ -397,10 +399,12 @@ export default defineConfig<ScenaristOptions>({
   use: {
     baseURL: 'http://localhost:3000',
     scenaristEndpoint: '/api/__scenario__',
-    scenaristStateEndpoint: '/__scenarist__/state',  // Default value
+    scenaristStateEndpoint: '/__scenarist__/state',  // Default value (Express)
   },
 });
 ```
+
+Next.js apps serve the state route under `/api/`, so set `scenaristStateEndpoint: '/api/__scenarist__/state'` there, as both Next.js example apps do.
 
 ## API Reference
 
