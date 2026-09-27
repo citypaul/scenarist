@@ -1,5 +1,26 @@
 # @scenarist/core
 
+## 0.5.0
+
+### Minor Changes
+
+- [#556](https://github.com/citypaul/scenarist/pull/556) [`2b5ee8e`](https://github.com/citypaul/scenarist/commit/2b5ee8eff7fd043ca26b16d0761bfd6813a7f42a) Thanks [@citypaul](https://github.com/citypaul)! - `enabled` is now honoured. `createScenarist({ enabled: false })` returns `undefined` from the Express, Next.js App Router and Next.js Pages Router adapters: no scenario endpoints, no middleware and no request interception. The adapters' `createScenarist()` return types now include `undefined`, so guard with `if (scenarist)` or `scenarist?.`.
+
+  **Check your `enabled` expression.** Previously `enabled` was ignored, so Scenarist ran even when it evaluated to `false`.
+
+  - **Next.js:** `enabled: process.env.NODE_ENV === "test"` now disables Scenarist. Next.js replaces `process.env.NODE_ENV` in your code with `'development'` under `next dev` and `'production'` under `next build`, even when you start it with `NODE_ENV=test`. Use `enabled: true`; production builds are still excluded because they resolve the `production` export condition.
+  - **Express:** `enabled: process.env.NODE_ENV === "test"` works when the process serving your tests runs with `NODE_ENV=test` (Vitest and Jest set it). If Playwright starts your server, set it in `webServer.env`.
+
+  A Pages Router API route that does `export default scenarist?.createScenarioEndpoint()` needs a fallback handler to satisfy Next.js route types.
+
+- [#556](https://github.com/citypaul/scenarist/pull/556) [`2b5ee8e`](https://github.com/citypaul/scenarist/commit/2b5ee8eff7fd043ca26b16d0761bfd6813a7f42a) Thanks [@citypaul](https://github.com/citypaul)! - `errorBehaviors` and `logger` now reach request handling. Previously the Express and Next.js adapters dropped them, so `onNoMockFound`, `onSequenceExhausted` and `onMissingTestId` had no effect and `warn` never logged.
+
+  - All three behaviors now default to `'ignore'`, which keeps today's runtime behavior: `strictMode` alone decides unmatched requests (pass through, or `501` when `strictMode: true`).
+  - **The documented default changes from `'throw'` to `'ignore'`.** The `'throw'` default never took effect, and wiring it in as-is would have made every unmatched request return `500`, including in-process calls to your own app (for example with supertest). If you set only some behaviors, for example `errorBehaviors: { onNoMockFound: 'warn' }`, the ones you leave out are now `'ignore'`, not `'throw'`. Set them explicitly if you want `'throw'`.
+  - `'throw'` responds `500` with a JSON body carrying the error `code` and `message`. `'warn'` logs through the configured `logger`, then defers to `strictMode`.
+  - When several Scenarist instances share the MSW server, a `'throw'` from one instance is used only if no other instance has a mock for the request.
+  - `onMissingTestId` applies only when no test ID resolves. Adapters still fall back to `defaultTestId`; set `defaultTestId: ''` to make a missing `x-scenarist-test-id` header an error.
+
 ## 0.4.15
 
 ### Patch Changes
