@@ -148,11 +148,6 @@ const demos: readonly Demo[] = [
   },
 ];
 
-const actorClass: Record<Actor, string> = {
-  test: 'text-sky-800 bg-sky-50 border-sky-200 dark:text-sky-300 dark:bg-sky-500/10 dark:border-sky-500/30',
-  server: 'text-emerald-800 bg-emerald-50 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-500/10 dark:border-emerald-500/30',
-  api: 'text-violet-800 bg-violet-50 border-violet-200 dark:text-violet-300 dark:bg-violet-500/10 dark:border-violet-500/30',
-};
 const actorTag: Record<Actor, string> = { test: 'test · browser', server: 'real code', api: 'scripted' };
 ---
 
@@ -196,51 +191,45 @@ const actorTag: Record<Actor, string> = { test: 'test · browser', server: 'real
         class="dyn-panel"
       >
         <div class="text-center mb-8">
-          <h3 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white mb-3">{d.title}</h3>
-          <p class="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">{d.lede}</p>
+          <h3 class="dyn-title">{d.title}</h3>
+          <p class="dyn-lede">{d.lede}</p>
         </div>
 
         <div class="grid lg:grid-cols-2 gap-6 items-stretch">
-          <div class="rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0A0A0C] shadow-xl shadow-black/5">
-            <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-white/[0.02]">
-              <span class="w-3 h-3 rounded-full bg-[#FF5F56]"></span><span class="w-3 h-3 rounded-full bg-[#FFBD2E]"></span><span class="w-3 h-3 rounded-full bg-[#27C93F]"></span>
-              <span class="ml-3 font-mono text-xs text-gray-600 dark:text-gray-400">{d.file}</span>
+          <div class="dyn-card overflow-hidden">
+            <div class="dyn-bar">
+              <span class="dyn-dot bg-[#FF5F56]"></span><span class="dyn-dot bg-[#FFBD2E]"></span><span class="dyn-dot bg-[#27C93F]"></span>
+              <span class="dyn-file">{d.file}</span>
             </div>
-            <pre class="p-5 font-mono text-[13px] leading-relaxed text-gray-800 dark:text-gray-200 overflow-x-auto" tabindex="0" aria-label={`${d.tab} scenario configuration`}><code set:html={highlight(d.code)} /></pre>
+            <pre class="dyn-pre" tabindex="0" aria-label={`${d.tab} scenario configuration`}><code set:html={highlight(d.code)} /></pre>
           </div>
 
-          <div class="rounded-2xl border border-gray-200 dark:border-white/10 bg-white/80 dark:bg-[#0A0A0C]/80 p-5 md:p-6 shadow-xl shadow-black/5">
+          <div class="dyn-card dyn-flow">
             <div class="flex items-center justify-between mb-5">
-              <p class="text-sm font-semibold text-gray-900 dark:text-white">How it plays out</p>
-              <div class="flex items-center gap-3 text-xs font-medium text-gray-600 dark:text-gray-400">
-                <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-sky-500"></span>test</span>
-                <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>real code</span>
-                <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-violet-500"></span>scripted</span>
+              <p class="dyn-label">How it plays out</p>
+              <div class="dyn-legend">
+                <span><i class="bg-sky-500"></i>test</span>
+                <span><i class="bg-emerald-500"></i>real code</span>
+                <span><i class="bg-violet-500"></i>scripted</span>
               </div>
             </div>
-            <ol class="relative space-y-3 before:absolute before:left-[15px] before:top-2 before:bottom-2 before:w-px before:bg-gray-200 dark:before:bg-white/10">
+            <ol class="dyn-steps">
               {d.steps.map((s, n) => (
-                <li class="dyn-step relative pl-10" style={`--i:${n}`}>
-                  <span
-                    class:list={[
-                      'absolute left-0 top-1 flex h-8 w-8 items-center justify-center rounded-full border text-xs font-bold',
-                      actorClass[s.actor],
-                    ]}
-                    aria-hidden="true"
-                  >
+                <li class="dyn-step" style={`--i:${n}`}>
+                  <span class={`dyn-num dyn-${s.actor}`} aria-hidden="true">
                     {s.pass ? (
                       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
                     ) : (
                       n + 1
                     )}
                   </span>
-                  <div class="flex flex-wrap items-center gap-2">
-                    <span class="text-sm font-semibold text-gray-900 dark:text-white">{s.label}</span>
-                    <span class:list={['text-xs font-semibold px-1.5 py-0.5 rounded border', actorClass[s.actor]]}>{actorTag[s.actor]}</span>
+                  <div class="dyn-head">
+                    <span class="dyn-label">{s.label}</span>
+                    <span class={`dyn-tag dyn-${s.actor}`}>{actorTag[s.actor]}</span>
                   </div>
-                  <p class="text-sm text-gray-600 dark:text-gray-400 font-mono mt-0.5 break-words">{s.detail}</p>
+                  <p class="dyn-detail">{s.detail}</p>
                   {s.state && (
-                    <p class="mt-1.5 inline-flex items-center gap-1.5 rounded-md bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 px-2 py-0.5 font-mono text-[12px] text-amber-900 dark:text-amber-300">
+                    <p class="dyn-state">
                       <span class="font-bold">state</span> {s.state}
                     </p>
                   )}
@@ -264,6 +253,77 @@ const actorTag: Record<Actor, string> = { test: 'test · browser', server: 'real
 </section>
 
 <style is:global>
+  @reference "../../styles/global.css";
+
+  @layer components {
+    .dyn-num {
+      @apply absolute left-0 top-1 flex h-8 w-8 items-center justify-center rounded-full border text-xs font-bold;
+    }
+    .dyn-tag {
+      @apply text-xs font-semibold px-1.5 py-0.5 rounded border;
+    }
+    .dyn-test {
+      @apply text-sky-800 bg-sky-50 border-sky-200 dark:text-sky-300 dark:bg-sky-500/10 dark:border-sky-500/30;
+    }
+    .dyn-server {
+      @apply text-emerald-800 bg-emerald-50 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-500/10 dark:border-emerald-500/30;
+    }
+    .dyn-api {
+      @apply text-violet-800 bg-violet-50 border-violet-200 dark:text-violet-300 dark:bg-violet-500/10 dark:border-violet-500/30;
+    }
+    .dyn-head {
+      @apply flex flex-wrap items-center gap-2;
+    }
+    .dyn-label {
+      @apply text-sm font-semibold text-gray-900 dark:text-white;
+    }
+    .dyn-detail {
+      @apply text-sm text-gray-600 dark:text-gray-400 font-mono mt-0.5 break-words;
+    }
+    .dyn-title {
+      @apply text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white mb-3;
+    }
+    .dyn-lede {
+      @apply text-gray-600 dark:text-gray-400 max-w-2xl mx-auto;
+    }
+    .dyn-card {
+      @apply rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0A0A0C] shadow-xl shadow-black/5;
+    }
+    .dyn-flow {
+      @apply bg-white/80 dark:bg-[#0A0A0C]/80 p-5 md:p-6;
+    }
+    .dyn-bar {
+      @apply flex items-center gap-2 px-4 py-3 border-b border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-white/[0.02];
+    }
+    .dyn-dot {
+      @apply w-3 h-3 rounded-full;
+    }
+    .dyn-file {
+      @apply ml-3 font-mono text-xs text-gray-600 dark:text-gray-400;
+    }
+    .dyn-pre {
+      @apply p-5 font-mono text-[13px] leading-relaxed text-gray-800 dark:text-gray-200 overflow-x-auto;
+    }
+    .dyn-legend {
+      @apply flex items-center gap-3 text-xs font-medium text-gray-600 dark:text-gray-400;
+    }
+    .dyn-legend > span {
+      @apply inline-flex items-center gap-1;
+    }
+    .dyn-legend i {
+      @apply w-2 h-2 rounded-full;
+    }
+    .dyn-steps {
+      @apply relative space-y-3 before:absolute before:left-[15px] before:top-2 before:bottom-2 before:w-px before:bg-gray-200 dark:before:bg-white/10;
+    }
+    .dyn-step {
+      @apply relative pl-10;
+    }
+    .dyn-state {
+      @apply mt-1.5 inline-flex items-center gap-1.5 rounded-md bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 px-2 py-0.5 font-mono text-[12px] text-amber-900 dark:text-amber-300;
+    }
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     .dyn-panel:not([hidden]) .dyn-step {
       animation: dyn-step-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;

@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import '@fontsource-variable/inter';
 import '@fontsource-variable/jetbrains-mono';
+import { siteHeadTags, structuredData } from '../utils/site-head';
 
 interface Props {
   title: string;
@@ -47,16 +48,17 @@ const siteName = 'Scenarist';
   <meta property="og:site_name" content={siteName} />
 
   <!-- Twitter -->
-  <meta property="twitter:card" content="summary_large_image" />
-  <meta property="twitter:url" content={canonicalUrl} />
-  <meta property="twitter:title" content={title} />
-  <meta property="twitter:description" content={description} />
-  <meta property="twitter:image" content={image} />
+  <meta name="twitter:url" content={canonicalUrl} />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image" content={image} />
   <meta name="twitter:image:alt" content="Scenarist: a real browser, your real server, and only third-party APIs scripted per test." />
 
-  <!-- Favicon -->
+  <!-- Locale, logo, Twitter card, favicons and manifest (shared with docs pages) -->
+  {siteHeadTags.map(({ tag: Tag, attrs }) => <Tag {...attrs} />)}
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+  <script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData)} />
 
   <!-- Fonts are self-hosted via @fontsource for optimal performance -->
 
