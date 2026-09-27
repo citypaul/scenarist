@@ -1,7 +1,4 @@
 ---
-// The request path, drawn once: Playwright drives a real browser, the request
-// hits the real server, and only the server's outbound third-party calls are
-// scripted. Uses the same test / real code / scripted colours as DynamicScenarios.
 const serverParts = ['Server Components & routes', 'Middleware & sessions', 'Validation & business logic'];
 const thirdParties = ['Stripe', 'Auth0', 'SendGrid'];
 ---
@@ -20,7 +17,6 @@ const thirdParties = ['Stripe', 'Auth0', 'SendGrid'];
     </div>
 
     <ol class="grid gap-8 lg:gap-0 lg:grid-cols-[minmax(0,1fr)_3rem_minmax(0,1.45fr)_4.5rem_minmax(0,1fr)] items-stretch" aria-label="Request path">
-      <!-- 1. Browser -->
       <li class="relative rounded-2xl border border-sky-200 dark:border-sky-500/25 bg-white dark:bg-[#0A0A0C] p-6 shadow-[0_10px_30px_-12px_rgba(2,132,199,0.25)]">
         <span class="absolute -top-3.5 left-5 inline-flex items-center gap-1.5 rounded-full border border-current/30 bg-white dark:bg-[#0A0A0C] px-2.5 py-1 text-xs font-semibold text-sky-800 dark:text-sky-300"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9h18M7 6.5h.01M10 6.5h.01" stroke-linecap="round" /></svg>Test</span>
         <h3 class="mt-2 text-xl font-bold text-gray-900 dark:text-white text-balance">Playwright drives a real browser</h3>
@@ -34,7 +30,6 @@ const thirdParties = ['Stripe', 'Auth0', 'SendGrid'];
         <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M14 7l5 5-5 5" /></svg>
       </li>
 
-      <!-- 2. Your server -->
       <li class="relative rounded-2xl border border-emerald-300 dark:border-emerald-500/35 bg-emerald-50/70 dark:bg-emerald-500/[0.06] p-6 shadow-[0_14px_40px_-14px_rgba(5,150,105,0.35)]">
         <span class="absolute -top-3.5 left-5 inline-flex items-center gap-1.5 rounded-full border border-current/30 bg-white dark:bg-[#0A0A0C] px-2.5 py-1 text-xs font-semibold text-emerald-800 dark:text-emerald-300"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="7" rx="1.5" /><rect x="3" y="13" width="18" height="7" rx="1.5" /><path d="M7 7.5h.01M7 16.5h.01" stroke-linecap="round" /></svg>Runs for real</span>
         <h3 class="mt-2 text-xl font-bold text-gray-900 dark:text-white text-balance">Your server does the work</h3>
@@ -49,14 +44,12 @@ const thirdParties = ['Stripe', 'Auth0', 'SendGrid'];
         </ul>
       </li>
 
-      <!-- Scenarist edge -->
       <li class="flex lg:flex-col items-center justify-center gap-3 py-1 lg:py-0" aria-label="Scenarist intercepts outbound HTTP on your server">
         <span class="h-px lg:h-full w-full lg:w-[3px] rounded-full bg-violet-500"></span>
         <span class="flex-none rounded-full bg-violet-600 px-3 py-1 text-xs font-bold text-white shadow-[0_6px_16px_-6px_rgba(124,58,237,0.7)] lg:[writing-mode:vertical-rl] lg:rotate-180 lg:py-3 lg:px-1.5">Scenarist</span>
         <span class="h-px lg:h-full w-full lg:w-[3px] rounded-full bg-violet-500"></span>
       </li>
 
-      <!-- 3. Third parties -->
       <li class="relative rounded-2xl border border-dashed border-violet-300 dark:border-violet-500/40 bg-violet-50/60 dark:bg-violet-500/[0.05] p-6">
         <span class="absolute -top-3.5 left-5 inline-flex items-center gap-1.5 rounded-full border border-current/30 bg-white dark:bg-[#0A0A0C] px-2.5 py-1 text-xs font-semibold text-violet-800 dark:text-violet-300"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5" stroke-linecap="round" stroke-linejoin="round" /></svg>Scripted per test</span>
         <h3 class="mt-2 text-xl font-bold text-gray-900 dark:text-white text-balance">Third-party APIs</h3>

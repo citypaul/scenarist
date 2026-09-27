@@ -157,15 +157,16 @@ test.describe("Landing Page", () => {
     test("downloads nothing but the poster until the visitor presses play", async ({
       page,
     }) => {
-      const videoRequests: string[] = [];
-      page.on("request", (request) => {
-        if (isVideoRequest(request.url())) videoRequests.push(request.url());
-      });
-
       await page.goto("/");
       await page.waitForLoadState("networkidle");
 
-      expect(videoRequests).toEqual([]);
+      const loadedResources = await page.evaluate(() =>
+        performance.getEntriesByType("resource").map((entry) => entry.name),
+      );
+      expect(loadedResources.filter(isVideoRequest)).toEqual([]);
+      expect(loadedResources.some((url) => url.endsWith("-poster.webp"))).toBe(
+        true,
+      );
     });
 
     test("streams the video once the visitor presses play", async ({

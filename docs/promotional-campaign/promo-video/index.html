@@ -595,7 +595,6 @@ function makeTyper(pre, gutter, src) {
   pre.appendChild(probe);
   let cw = 0, lh = 0;
   const measure = () => { cw = probe.getBoundingClientRect().width / 40 / (window.__scale || 1); lh = parseFloat(getComputedStyle(pre).lineHeight); };
-  const totalLines = src.split('\n').length;
   const pos = (n) => { const before = src.slice(0, n); const line = before.split('\n').length - 1; const col = n - (before.lastIndexOf('\n') + 1); return { x: col * cw, y: line * lh, line }; };
   return {
     len: src.length, src, pos, measure,

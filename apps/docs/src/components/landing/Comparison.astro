@@ -1,5 +1,4 @@
 ---
-// "Why not just…?" - where Scenarist sits relative to unit tests and live-service E2E.
 type Mark = 'yes' | 'no' | 'partial';
 type Row = { label: string; unit: Mark; e2e: Mark; scenarist: Mark };
 
@@ -37,7 +36,6 @@ const markPath: Record<Mark, string> = { yes: 'M5 12.5l4.5 4.5L19 7.5', no: 'M7 
       </p>
     </div>
 
-    <!-- Mobile: one card per capability, Scenarist first -->
     <ul class="md:hidden space-y-3">
       {rows.map((row) => (
         <li class="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0A0A0C] p-4">

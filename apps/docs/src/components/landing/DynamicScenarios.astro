@@ -1,8 +1,6 @@
 ---
-// Showcase of Scenarist's dynamic mock types (state capture, state-aware
-// responses, sequences, request matching). Each tab pairs real, valid scenario
-// config with a play-out of what the test, the real server and the scripted
-// API do - so the "your backend still runs" point is visible, not claimed.
+import { highlight } from './highlight';
+
 type Actor = 'test' | 'server' | 'api';
 type Step = { actor: Actor; label: string; detail: string; state?: string; pass?: boolean };
 type Demo = {
@@ -150,18 +148,6 @@ const demos: readonly Demo[] = [
   },
 ];
 
-// Minimal TypeScript highlighter so the snippets render without a runtime Shiki load.
-const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const TOKEN = /(\/\/[^\n]*)|('(?:[^'\\\n]|\\.)*')|\b(\d+)\b|([A-Za-z_$][\w$]*)(?=\s*:(?!:))|([\s\S])/g;
-const highlight = (code: string) =>
-  code.replace(TOKEN, (m, com, str, num, prop) => {
-    if (com) return `<span class="dyn-com">${escape(com)}</span>`;
-    if (str) return `<span class="dyn-str">${escape(str)}</span>`;
-    if (num) return `<span class="dyn-num">${num}</span>`;
-    if (prop) return `<span class="dyn-prop">${prop}</span>`;
-    return escape(m);
-  });
-
 const actorClass: Record<Actor, string> = {
   test: 'text-sky-800 bg-sky-50 border-sky-200 dark:text-sky-300 dark:bg-sky-500/10 dark:border-sky-500/30',
   server: 'text-emerald-800 bg-emerald-50 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-500/10 dark:border-emerald-500/30',
@@ -215,7 +201,6 @@ const actorTag: Record<Actor, string> = { test: 'test · browser', server: 'real
         </div>
 
         <div class="grid lg:grid-cols-2 gap-6 items-stretch">
-          <!-- Scenario config -->
           <div class="rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0A0A0C] shadow-xl shadow-black/5">
             <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-white/[0.02]">
               <span class="w-3 h-3 rounded-full bg-[#FF5F56]"></span><span class="w-3 h-3 rounded-full bg-[#FFBD2E]"></span><span class="w-3 h-3 rounded-full bg-[#27C93F]"></span>
@@ -224,7 +209,6 @@ const actorTag: Record<Actor, string> = { test: 'test · browser', server: 'real
             <pre class="p-5 font-mono text-[13px] leading-relaxed text-gray-800 dark:text-gray-200 overflow-x-auto" tabindex="0" aria-label={`${d.tab} scenario configuration`}><code set:html={highlight(d.code)} /></pre>
           </div>
 
-          <!-- Play-out -->
           <div class="rounded-2xl border border-gray-200 dark:border-white/10 bg-white/80 dark:bg-[#0A0A0C]/80 p-5 md:p-6 shadow-xl shadow-black/5">
             <div class="flex items-center justify-between mb-5">
               <p class="text-sm font-semibold text-gray-900 dark:text-white">How it plays out</p>
@@ -280,15 +264,6 @@ const actorTag: Record<Actor, string> = { test: 'test · browser', server: 'real
 </section>
 
 <style is:global>
-  .dyn-prop { color: #1d4ed8; }
-  .dyn-str { color: #047857; }
-  .dyn-num { color: #b45309; }
-  .dyn-com { color: #6b7280; font-style: italic; }
-  .dark .dyn-prop { color: #93c5fd; }
-  .dark .dyn-str { color: #6ee7b7; }
-  .dark .dyn-num { color: #fcd34d; }
-  .dark .dyn-com { color: #9ca3af; }
-
   @media (prefers-reduced-motion: no-preference) {
     .dyn-panel:not([hidden]) .dyn-step {
       animation: dyn-step-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;

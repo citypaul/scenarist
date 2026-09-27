@@ -1,6 +1,5 @@
 ---
-// Scenario definition + the Playwright test that uses it. Highlighted at build
-// time so Cloudflare never loads Shiki themes at runtime.
+// Highlighted at build time so the page never loads Shiki themes at runtime.
 import { highlight } from './highlight';
 
 const scenarioCode = `export const scenarios = {
