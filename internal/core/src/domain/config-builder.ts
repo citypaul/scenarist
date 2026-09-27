@@ -6,11 +6,7 @@ import type {
 } from "../types/index.js";
 import { ScenariosObjectSchema } from "../schemas/index.js";
 
-/**
- * Default error behaviors - defer to strictMode.
- * Unmatched requests pass through (or return 501 when strictMode is true)
- * unless the user opts into 'warn' or 'throw'.
- */
+// 'throw' by default would 500 every unmatched request, including in-process calls to the app itself
 const DEFAULT_ERROR_BEHAVIORS: ErrorBehaviors = {
   onNoMockFound: "ignore",
   onSequenceExhausted: "ignore",

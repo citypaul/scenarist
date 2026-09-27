@@ -156,11 +156,8 @@ describe("App Router createScenarist", () => {
   });
 
   describe("Singleton guard for createScenarist() instance", () => {
-    beforeEach(() => {
-      clearAllGlobals();
-    });
-
     it("should return same instance when createScenarist() called multiple times", async () => {
+      clearAllGlobals();
       const instance1 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
@@ -176,6 +173,7 @@ describe("App Router createScenarist", () => {
     });
 
     it("should prevent duplicate scenario registration errors", async () => {
+      clearAllGlobals();
       // First call registers all scenarios
       const instance1 = createScenarist({
         enabled: true,
@@ -194,6 +192,7 @@ describe("App Router createScenarist", () => {
     });
 
     it("should share scenario registry across all instances", async () => {
+      clearAllGlobals();
       const instance1 = requireDefined(
         createScenarist({
           enabled: true,
@@ -217,6 +216,7 @@ describe("App Router createScenarist", () => {
     });
 
     it("should share scenario store across all instances", async () => {
+      clearAllGlobals();
       const instance1 = requireDefined(
         createScenarist({
           enabled: true,
@@ -242,6 +242,7 @@ describe("App Router createScenarist", () => {
     });
 
     it("should maintain singleton across different scenario configurations", async () => {
+      clearAllGlobals();
       const instance1 = createScenarist({
         enabled: true,
         scenarios: testScenarios,
@@ -262,6 +263,7 @@ describe("App Router createScenarist", () => {
     });
 
     it("should reuse existing registry/store when instance is cleared but globals persist", async () => {
+      clearAllGlobals();
       // First call creates everything
       requireDefined(
         createScenarist({
@@ -306,6 +308,7 @@ describe("App Router createScenarist", () => {
     });
 
     it("should reuse existing registry when store is missing", async () => {
+      clearAllGlobals();
       // First call creates everything
       createScenarist({
         enabled: true,
@@ -338,6 +341,7 @@ describe("App Router createScenarist", () => {
     });
 
     it("should reuse existing store when registry is missing", async () => {
+      clearAllGlobals();
       // First call creates everything
       createScenarist({
         enabled: true,
@@ -449,11 +453,8 @@ describe("App Router createScenarist", () => {
   });
 
   describe("Dependency injection", () => {
-    beforeEach(() => {
-      clearAllGlobals();
-    });
-
     it("should clear injected stateManager state when switching scenarios", () => {
+      clearAllGlobals();
       const stateManager = createInMemoryStateManager();
       stateManager.set("test-di-1", "userId", "user-123");
       stateManager.set("test-di-1", "cartItems", "item1,item2");
@@ -478,6 +479,7 @@ describe("App Router createScenarist", () => {
     });
 
     it("should reset injected sequenceTracker positions when switching scenarios", () => {
+      clearAllGlobals();
       const sequenceTracker = createInMemorySequenceTracker();
       sequenceTracker.advance("test-di-2", "login-sequence");
       sequenceTracker.advance("test-di-2", "login-sequence");
@@ -590,7 +592,9 @@ describe("App Router createScenarist runtime configuration", () => {
 
   it("returns undefined when enabled is false even after an enabled instance exists", () => {
     clearAllGlobals();
-    requireDefined(createScenarist({ enabled: true, scenarios: testScenarios }));
+    requireDefined(
+      createScenarist({ enabled: true, scenarios: testScenarios }),
+    );
 
     const scenarist = createScenarist({
       enabled: false,

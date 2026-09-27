@@ -8,7 +8,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { scenarist } from "../../../lib/scenarist";
 
-// scenarist is undefined in production or when enabled is false
+// Next.js requires a default export function, and scenarist is undefined in production or when disabled
 export default scenarist?.createStateEndpoint() ??
   ((_req: NextApiRequest, res: NextApiResponse) => {
     res.status(404).end();

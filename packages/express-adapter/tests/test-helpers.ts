@@ -27,6 +27,11 @@ export const mockConfig = (
     getState: "/__scenarist__/state",
   },
   defaultTestId: "default-test",
+  errorBehaviors: {
+    onNoMockFound: "ignore",
+    onSequenceExhausted: "ignore",
+    onMissingTestId: "ignore",
+  },
   ...overrides,
 });
 

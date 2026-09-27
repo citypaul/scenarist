@@ -980,6 +980,45 @@ describe("createScenarist runtime configuration", () => {
     }
   });
 
+  it("responds 500 with SEQUENCE_EXHAUSTED when onSequenceExhausted is throw", async () => {
+    const url = "https://sequence-exhausted.example.test/data";
+    const scenarist = createTestScenarist({
+      enabled: true,
+      scenarios: {
+        default: {
+          id: "default",
+          name: "Default",
+          description: "Single-use sequence",
+          mocks: [
+            {
+              method: "GET",
+              url,
+              sequence: {
+                responses: [{ status: 200, body: { attempt: 1 } }],
+                repeat: "none",
+              },
+            },
+          ],
+        },
+      },
+      errorBehaviors: { onSequenceExhausted: "throw" },
+    });
+
+    scenarist.start();
+    try {
+      const first = await fetch(url);
+      const exhausted = await fetch(url);
+
+      expect(first.status).toBe(200);
+      expect(exhausted.status).toBe(500);
+      expect(await exhausted.json()).toEqual(
+        expect.objectContaining({ code: "SEQUENCE_EXHAUSTED" }),
+      );
+    } finally {
+      await scenarist.stop();
+    }
+  });
+
   it("responds 500 with MISSING_TEST_ID when no test ID resolves and onMissingTestId is throw", async () => {
     const scenarist = createTestScenarist({
       enabled: true,
