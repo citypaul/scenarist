@@ -2,13 +2,7 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import type { AstroIntegration } from "astro";
 
-/**
- * Cloudflare answers a slashless page URL with a 307 temporary redirect,
- * which search engines may index as a page separate from the trailing-slash
- * URL named by its canonical tag. An exact-path `_redirects` rule per page
- * takes precedence and makes that redirect permanent. Rules written earlier
- * by the Cloudflare adapter for `redirects` in astro.config.mjs are kept.
- */
+// Overrides Cloudflare's default 307 for /path with a 301 to /path/, keeping any rules already in _redirects.
 
 const readExistingRules = (file: string): Promise<ReadonlyArray<string>> =>
   readFile(file, "utf8").then(

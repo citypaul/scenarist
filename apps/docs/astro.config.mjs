@@ -15,8 +15,7 @@ import { trailingSlashRedirects } from "./integrations/trailing-slash-redirects.
 export default defineConfig({
   site: "https://scenarist.io",
   output: "static",
-  // Pages that were removed or renamed. Every URL in published-pages.json
-  // must keep resolving, so add an entry here whenever a page goes away.
+  // Removed or renamed pages: see CONTRIBUTING.md#search-indexing
   redirects: {
     "/concepts/default-mocks/": "/scenarios/default-scenarios/",
     "/concepts/dynamic-responses/": "/scenarios/overview/",

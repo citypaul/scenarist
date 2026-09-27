@@ -1,16 +1,8 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type APIRequestContext } from "@playwright/test";
+import { readSitemapPaths } from "./sitemap";
 
-/**
- * Published Pages Tests
- *
- * `published-pages.json` records every page URL the site has ever
- * published. A URL search engines have indexed must keep resolving: either
- * the page still exists, or it permanently redirects to its replacement.
- * The list only grows, so deleting or renaming a page without a redirect
- * fails here instead of surfacing later as a "Not found (404)" in Search
- * Console.
- */
+// Rules and rationale: apps/docs/CONTRIBUTING.md#search-indexing
 
 const readPublishedPages = (): ReadonlyArray<string> => {
   const parsed: unknown = JSON.parse(
@@ -26,17 +18,6 @@ const readPublishedPages = (): ReadonlyArray<string> => {
     throw new Error("published-pages.json must be an array of URL paths");
   }
   return parsed;
-};
-
-const readSitemapPaths = async (
-  request: APIRequestContext,
-): Promise<ReadonlyArray<string>> => {
-  const response = await request.get("/sitemap-0.xml");
-  expect(response.ok()).toBe(true);
-  const xml = await response.text();
-  return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(
-    ([, loc]) => new URL(loc ?? "").pathname,
-  );
 };
 
 type Resolution = {
