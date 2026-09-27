@@ -165,6 +165,10 @@ test('approval flow', async ({ page, switchScenario, waitForDebugState }) => {
 });
 ```
 
+:::note[Next.js: set the state endpoint]
+These fixtures read the debug state route, which the Playwright helpers look for at `/__scenarist__/state` (the Express path). Next.js apps serve it under `/api/`, so set `scenaristStateEndpoint: '/api/__scenarist__/state'` in the `use` block of `playwright.config.ts`. The [App Router guide](/frameworks/nextjs-app-router/getting-started/#3-create-scenario-control-endpoint) shows the route and config; the [Pages Router example app](https://github.com/citypaul/scenarist/tree/main/apps/nextjs-pages-router-example) does the same with `pages/api/__scenarist__/state.ts`.
+:::
+
 **[→ Full Playwright debug helpers guide](/testing/playwright-integration/#debugging-state)**
 
 ## Next Steps

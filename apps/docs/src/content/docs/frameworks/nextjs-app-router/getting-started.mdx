@@ -160,7 +160,36 @@ The folder is named `%5F%5Fscenario%5F%5F` (URL-encoded underscores) because Nex
 The route will be accessible at `/api/__scenario__` in your application, which is the default `scenaristEndpoint` used by `@scenarist/playwright-helpers`. If you place the route file elsewhere, set `scenaristEndpoint` in your Playwright config to match.
 :::
 
-## 4. Set Up Playwright Fixtures
+To inspect captured state from your tests with `debugState` and `waitForDebugState`, add the debug state route the same way:
+
+```typescript
+// app/api/%5F%5Fscenarist%5F%5F/state/route.ts
+import { scenarist } from '@/lib/scenarist';
+
+export const GET = scenarist?.createStateEndpoint();
+```
+
+This route is served at `/api/__scenarist__/state`.
+
+## 4. Configure Playwright
+
+```typescript
+// playwright.config.ts
+import { defineConfig } from '@playwright/test';
+import type { ScenaristOptions } from '@scenarist/playwright-helpers';
+
+export default defineConfig<ScenaristOptions>({
+  use: {
+    baseURL: 'http://localhost:3000',
+    // The Playwright helpers default to /__scenarist__/state, which is the Express path
+    scenaristStateEndpoint: '/api/__scenarist__/state',
+  },
+});
+```
+
+`scenaristEndpoint` defaults to `/api/__scenario__`, so you only need to set it if you moved the scenario route.
+
+## 5. Set Up Playwright Fixtures
 
 ```typescript
 // tests/fixtures.ts
@@ -172,7 +201,7 @@ export const test = withScenarios(scenarios);
 export { expect };
 ```
 
-## 5. Write Tests
+## 6. Write Tests
 
 ```typescript
 // tests/products.spec.ts
