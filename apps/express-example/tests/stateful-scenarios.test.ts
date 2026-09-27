@@ -44,17 +44,17 @@ describe("Stateful Scenarios E2E (Phase 3)", () => {
     });
 
     it("should return the updated cart items when adding an item", async () => {
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "cart-add-response-test")
         .send({ scenario: "shoppingCart" });
 
-      const firstResponse = await request(fixtures.app)
+      const firstResponse = await request(fixtures.server)
         .post("/api/cart/add")
         .set(SCENARIST_TEST_ID_HEADER, "cart-add-response-test")
         .send({ item: "Apple" });
 
-      const secondResponse = await request(fixtures.app)
+      const secondResponse = await request(fixtures.server)
         .post("/api/cart/add")
         .set(SCENARIST_TEST_ID_HEADER, "cart-add-response-test")
         .send({ item: "Banana" });
