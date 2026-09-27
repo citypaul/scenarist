@@ -77,10 +77,13 @@ export const defaultScenario: ScenaristScenario = {
     {
       method: "PATCH",
       url: "http://localhost:3001/cart",
+      captureState: {
+        cartItems: "body.items",
+      },
       response: {
         status: 200,
         body: {
-          items: "{{body.items}}", // Echo back the items array sent in request
+          items: "{{state.cartItems}}", // Echo back the items array sent in request
         },
       },
     },
@@ -278,7 +281,7 @@ export const cartWithStateScenario: ScenaristScenario = {
       response: {
         status: 200,
         body: {
-          items: "{{body.items}}", // Echo back what route sent
+          items: "{{state.cartItems}}", // Echo back what route sent
         },
       },
     },

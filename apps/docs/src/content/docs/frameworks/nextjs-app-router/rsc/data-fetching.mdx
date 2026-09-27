@@ -184,15 +184,47 @@ Stateful mocks capture data from one request and inject it into later responses.
 // app/cart-server/page.tsx
 import { headers } from 'next/headers';
 import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapter/app';
+import { getAppBaseURL } from '@/lib/app-base-url';
 
 type CartResponse = {
-  readonly items?: ReadonlyArray<string>;
+  // null until the first PATCH captures state
+  readonly items?: ReadonlyArray<string> | null;
+};
+
+type CartItem = {
+  readonly id: string;
+  readonly name: string;
+  readonly quantity: number;
+};
+
+const PRODUCT_NAMES: Record<string, string> = {
+  'prod-1': 'Product A',
+  'prod-2': 'Product B',
+  'prod-3': 'Product C',
+};
+
+// Turn the raw productId array from state into items with quantities
+const aggregateCartItems = (
+  productIds: ReadonlyArray<string> | null | undefined,
+): ReadonlyArray<CartItem> => {
+  const counts = (productIds ?? []).reduce<Record<string, number>>(
+    (acc, id) => ({ ...acc, [id]: (acc[id] ?? 0) + 1 }),
+    {},
+  );
+
+  return Object.entries(counts).map(([id, quantity]) => ({
+    id,
+    name: PRODUCT_NAMES[id] ?? `Unknown Product (${id})`,
+    quantity,
+  }));
 };
 
 async function fetchCart(): Promise<CartResponse> {
   const headersList = await headers();
 
-  const response = await fetch('http://localhost:3001/cart', {
+  // Calls the app's own /api/cart route, which forwards the headers to
+  // GET http://localhost:3001/cart
+  const response = await fetch(new URL('/api/cart', getAppBaseURL()), {
     headers: {
       ...getScenaristHeadersFromReadonlyHeaders(headersList),
     },
