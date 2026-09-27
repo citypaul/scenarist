@@ -27,11 +27,12 @@ const toRoutePath = (file: string) =>
     .replace(/\/index$/, "/")
     .replace(/\[\[?\.{0,3}[^\]]+\]\]?/g, "1");
 
+const NON_ROUTE_FILES = ["_app.tsx", "_document.tsx"];
+
 const findRoutePaths = (pagesDir: string): ReadonlyArray<string> =>
-  globSync("**/*.{ts,tsx}", {
-    cwd: pagesDir,
-    exclude: ["_app.tsx", "_document.tsx"],
-  }).map(toRoutePath);
+  globSync("**/*.{ts,tsx}", { cwd: pagesDir })
+    .filter((file) => !NON_ROUTE_FILES.includes(file))
+    .map(toRoutePath);
 
 export default async function globalSetup(config: FullConfig): Promise<void> {
   const baseURL = config.projects[0]?.use.baseURL;
