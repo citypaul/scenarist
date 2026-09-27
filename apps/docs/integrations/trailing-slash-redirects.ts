@@ -1,4 +1,4 @@
-import { readdir, writeFile } from "node:fs/promises";
+import { readdir, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import type { AstroIntegration } from "astro";
 
@@ -6,8 +6,15 @@ import type { AstroIntegration } from "astro";
  * Cloudflare answers a slashless page URL with a 307 temporary redirect,
  * which search engines may index as a page separate from the trailing-slash
  * URL named by its canonical tag. An exact-path `_redirects` rule per page
- * takes precedence and makes that redirect permanent.
+ * takes precedence and makes that redirect permanent. Rules written earlier
+ * by the Cloudflare adapter for `redirects` in astro.config.mjs are kept.
  */
+
+const readExistingRules = (file: string): Promise<ReadonlyArray<string>> =>
+  readFile(file, "utf8").then(
+    (content) => content.split("\n").filter((line) => line.trim() !== ""),
+    () => [],
+  );
 
 const findPagePaths = async (
   clientDir: string,
@@ -27,12 +34,14 @@ export const trailingSlashRedirects = (): AstroIntegration => ({
   hooks: {
     "astro:build:done": async ({ dir, logger }) => {
       const clientDir = fileURLToPath(dir);
+      const redirectsFile = `${clientDir}/_redirects`;
+      const existing = await readExistingRules(redirectsFile);
       const paths = await findPagePaths(clientDir);
-      await writeFile(
-        `${clientDir}/_redirects`,
-        `${paths.map(toRedirectRule).join("\n")}\n`,
+      const rules = [...existing, ...paths.map(toRedirectRule)];
+      await writeFile(redirectsFile, `${rules.join("\n")}\n`);
+      logger.info(
+        `Added ${paths.length} trailing-slash redirects to ${existing.length} existing rules`,
       );
-      logger.info(`Wrote ${paths.length} trailing-slash redirects`);
     },
   },
 });
