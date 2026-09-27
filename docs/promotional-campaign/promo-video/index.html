@@ -191,12 +191,53 @@ pre.code { font: 400 21px/1.62 var(--mono); color: #d4d4d8; white-space: pre; po
 #ac .it.on { background: rgba(139,92,246,0.28); color: #fff; }
 #ac .foot { padding: 9px 16px; font-size: 15px; color: var(--faint); border-top: 1px solid var(--line); }
 #ac-badge { opacity: 0; z-index: 3; }
-#c-result { left: 1060px; top: 700px; width: 760px; height: 250px; z-index: 4; opacity: 0; }
-#c-result .rb { padding: 26px 30px; display: flex; flex-direction: column; gap: 16px; }
-.alert { display: flex; gap: 16px; align-items: center; padding: 18px 22px; border-radius: 14px; background: var(--red-lo); border: 1px solid rgba(244,63,94,0.4); }
-.alert b { width: 36px; height: 36px; border-radius: 50%; background: var(--red); color: #fff; display: grid; place-items: center; font-size: 20px; flex: none; }
-.alert div { font-size: 24px; font-weight: 700; } .alert div small { display: block; font-size: 18px; font-weight: 500; color: rgba(253,164,175,0.8); margin-top: 2px; }
-.passline { font: 700 22px var(--mono); color: var(--emerald-hi); display: flex; align-items: center; gap: 12px; white-space: nowrap; }
+
+/* ---------- 5b. watch it run ---------- */
+#rn-head { top: 52px; }
+#rn-code { left: 60px; top: 150px; width: 800px; height: 500px; }
+#rn-code .ed-body { padding-top: 26px; }
+#rn-code pre.code { font-size: 18px; line-height: 1.7; }
+#rn-gutter { width: 64px; padding-right: 20px; font: 400 18px/1.7 var(--mono); text-align: right; }
+#rn-gutter div { color: rgba(255,255,255,0.18); }
+#rn-gutter div.ok { color: var(--emerald-hi); font-weight: 700; }
+#rn-hl { position: absolute; left: 0; right: 0; height: 30.6px; top: 26px; background: rgba(139,92,246,0.16); border-left: 3px solid var(--violet-hi); opacity: 0; }
+#rn-result { position: absolute; left: 30px; bottom: 26px; font: 700 21px var(--mono); color: var(--emerald-hi); opacity: 0; }
+#rn-result span { color: var(--faint); font-weight: 500; }
+#rn-browser { left: 900px; top: 150px; width: 960px; height: 500px; background: #f8f8fb; color: #111827; }
+#rn-browser .bar { background: #ececf1; border-bottom: 1px solid #dcdce3; }
+#rn-url { margin-left: 18px; flex: 0 0 420px; height: 32px; border-radius: 8px; background: #fff; border: 1px solid #dcdce3; font: 500 16px var(--mono); color: #4b5563; display: flex; align-items: center; padding: 0 14px; }
+#rn-chip { margin-left: auto; font: 700 14px var(--mono); color: #5b21b6; background: #ede9fe; border: 1px solid #c4b5fd; padding: 6px 12px; border-radius: 8px; opacity: 0; white-space: nowrap; }
+#rn-page { position: relative; height: 448px; }
+#rn-page .pg { position: absolute; left: 200px; width: 560px; }
+.rn-brand { position: absolute; left: 36px; top: 26px; font-weight: 800; font-size: 22px; letter-spacing: -0.02em; }
+.rn-brand span { color: #7c3aed; }
+.rn-h { top: 22px; font-size: 30px; font-weight: 800; letter-spacing: -0.02em; text-align: left; }
+.rn-item { top: 76px; display: flex; justify-content: space-between; font-size: 20px; font-weight: 600; padding-bottom: 14px; border-bottom: 1px solid #e5e7eb; }
+.rn-item span { color: #6b7280; font-weight: 500; }
+.rn-label { font-size: 15px; font-weight: 600; color: #374151; }
+.rn-input { height: 48px; border-radius: 10px; border: 1.5px solid #d1d5db; background: #fff; font: 500 18px var(--mono); color: #111827; display: flex; align-items: center; padding: 0 16px; }
+.rn-input.focus { border-color: #7c3aed; box-shadow: 0 0 0 4px rgba(124,58,237,0.18); }
+#rn-pay { top: 306px; height: 52px; border-radius: 12px; background: #111827; color: #fff; font-size: 19px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; }
+#rn-alert { top: 374px; display: flex; gap: 14px; align-items: center; padding: 12px 16px; border-radius: 12px; background: #fff1f2; border: 1px solid #fecdd3; opacity: 0; }
+#rn-alert b { width: 30px; height: 30px; border-radius: 50%; background: #e11d48; color: #fff; display: grid; place-items: center; flex: none; font-size: 17px; }
+#rn-alert div { font-size: 18px; font-weight: 700; color: #881337; } #rn-alert small { display: block; font-size: 15px; font-weight: 500; color: #9f1239; }
+#rn-cursor { position: absolute; left: 0; top: 0; width: 30px; height: 30px; z-index: 6; opacity: 0; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)); }
+.rn-node { position: absolute; top: 690px; height: 190px; border-radius: 20px; border: 1px solid var(--line); background: linear-gradient(180deg, rgba(22,22,26,0.96), rgba(12,12,15,0.96)); padding: 20px 24px; }
+.rn-node .t { display: flex; align-items: center; justify-content: space-between; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+.rn-node .sub { font: 500 16px var(--mono); color: var(--faint); margin-top: 8px; }
+.rn-node .req { font: 600 17px var(--mono); color: #e4e4e7; margin-top: 12px; min-height: 22px; }
+#rn-n1 { left: 60px; width: 300px; }
+#rn-n2 { left: 440px; width: 700px; }
+#rn-n3 { left: 1260px; width: 600px; }
+.rn-steps { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.rn-step { font: 600 16px var(--mono); padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); color: var(--faint); background: rgba(255,255,255,0.03); }
+.rn-step.on { color: var(--emerald-hi); border-color: rgba(16,185,129,0.45); background: var(--emerald-lo); }
+#rn-resp { display: inline-block; margin-top: 12px; font: 700 18px var(--mono); padding: 8px 14px; border-radius: 10px; color: #fecdd3; background: rgba(244,63,94,0.16); border: 1px solid rgba(244,63,94,0.45); opacity: 0; }
+#rn-note { font: 500 15px var(--mono); color: var(--faint); margin-top: 12px; opacity: 0; }
+#rn-wall { left: 1196px; top: 680px; width: 8px; height: 210px; border-radius: 6px; background: linear-gradient(180deg, var(--violet-hi), var(--violet)); box-shadow: 0 0 26px var(--violet); }
+#rn-wall-l { left: 1200px; top: 648px; transform: translateX(-50%); font: 700 15px var(--sans); color: #ede9fe; background: rgba(139,92,246,0.25); border: 1px solid rgba(139,92,246,0.6); padding: 4px 12px; border-radius: 999px; white-space: nowrap; }
+#rn-svg { position: absolute; left: 0; top: 0; }
+#rn-cap { top: 935px; font-size: 48px; }
 
 /* ---------- 6. parallel ---------- */
 #p-head { top: 70px; }
@@ -408,13 +449,39 @@ body.render #ui { display: none; }
       <div class="foot">keyof typeof scenarios</div>
     </div>
     <div class="abs" id="ac-badge"><span class="tag vi">✦ type-safe scenario IDs</span></div>
-    <div class="window" id="c-result">
-      <div class="bar"><i></i><i></i><i></i><span>localhost:3000/checkout</span></div>
-      <div class="rb">
-        <div class="alert"><b>!</b><div>Payment failed<small>Your card was declined. Try another card.</small></div></div>
-        <div class="passline">✓ 1 passed <span style="color:var(--faint);font-weight:500">(412ms) · real server, scripted Stripe</span></div>
+  </section>
+
+  <!-- 5b. WATCH IT RUN -->
+  <section class="scene" id="s-run">
+    <div class="abs center-x" id="rn-head"><div class="h-m">Playwright drives a <span class="grad">real browser.</span> Your server runs <span class="grad">for real.</span></div></div>
+    <div class="window" id="rn-code">
+      <div class="bar"><i></i><i></i><i></i><span class="tab">checkout.spec.ts</span></div>
+      <div class="ed-body" style="position:relative"><div id="rn-hl"></div><div id="rn-gutter"></div><pre class="code" id="rn-pre"></pre></div>
+      <div id="rn-result">✓ 1 passed <span>(1.2s) · chromium · real server</span></div>
+    </div>
+    <div class="window" id="rn-browser">
+      <div class="bar"><i></i><i></i><i></i><div id="rn-url">about:blank</div><div id="rn-chip">scenario: paymentDeclined · test-id 5a6b2d90</div></div>
+      <div id="rn-page">
+        <div class="rn-brand">acme<span>shop</span></div>
+        <div class="pg rn-h">Checkout</div>
+        <div class="pg rn-item">Hoodie <span>Size M · $79.99</span></div>
+        <div class="pg rn-label" style="top:128px">Email</div>
+        <div class="pg rn-input" id="rn-email" style="top:152px"></div>
+        <div class="pg rn-label" style="top:214px">Card</div>
+        <div class="pg rn-input" style="top:238px">4000 0000 0000 0002</div>
+        <div class="pg" id="rn-pay">Pay $79.99</div>
+        <div class="pg" id="rn-alert"><b>!</b><div>Payment failed<small>Your card was declined. Try another card.</small></div></div>
       </div>
     </div>
+    <svg id="rn-svg" width="1920" height="1080"></svg>
+    <div class="rn-node" id="rn-n1"><div class="t">Browser <span class="tag vi">playwright</span></div><div class="sub">real Chromium, real UI</div><div class="req" id="rn-n1-req"></div></div>
+    <div class="rn-node" id="rn-n2"><div class="t">Your server <span class="tag ok">● real code</span></div><div class="req" id="rn-n2-req"></div>
+      <div class="rn-steps"><div class="rn-step">middleware · session</div><div class="rn-step">validate cart</div><div class="rn-step">calculate total</div><div class="rn-step">handle card_declined</div></div></div>
+    <div class="abs" id="rn-wall"></div>
+    <div class="abs" id="rn-wall-l">Scenarist</div>
+    <div class="rn-node" id="rn-n3"><div class="t">Stripe <span class="tag bad">scripted</span></div><div class="req" id="rn-n3-req"></div><div id="rn-resp">402 · card_declined</div><div id="rn-note">scenario paymentDeclined answered · Stripe never called</div></div>
+    <svg id="rn-cursor" viewBox="0 0 24 24"><path d="M4 2l15 11-6.5 1.2L16 21l-2.8 1.2-3.3-6.6L4 19z" fill="#fff" stroke="#111" stroke-width="1.3" stroke-linejoin="round"/></svg>
+    <div class="caption" id="rn-cap">A real browser. Your real server. <span class="v">Only Stripe is scripted.</span></div>
   </section>
 
   <!-- 6. PARALLEL -->
@@ -548,12 +615,11 @@ function makeTyper(pre, gutter, src) {
 }
 
 const CODE1 = `export const scenarios = {
-  default: {
-    id: 'default',
-    mocks: [/* the happy path */],
-  },
+  default: happyPath,
   paymentDeclined: {
     id: 'paymentDeclined',
+    name: 'Card declined',
+    description: 'Stripe rejects the charge',
     mocks: [{
       method: 'POST',
       url: 'https://api.stripe.com/v1/charges',
@@ -660,7 +726,7 @@ const rLines = RESULT_TESTS.map(([f, n, ms]) => {
 const rSum = document.createElement('div'); rSum.className = 'tl big'; rSum.innerHTML = '48 passed <span style="color:var(--faint);font-weight:500;font-size:22px">(6.1s) · 31 scenarios · 1 server</span>';
 $('#r-lines').appendChild(rSum);
 
-const scenes = Object.fromEntries(Object.entries({ hook: '#s-hook', gap: '#s-gap', logo: '#s-logo', boundary: '#s-bound', code: '#s-code', parallel: '#s-par', features: '#s-feat', results: '#s-res', cta: '#s-cta' }).map(([k, s]) => [k, $(s)]));
+const scenes = Object.fromEntries(Object.entries({ hook: '#s-hook', gap: '#s-gap', logo: '#s-logo', boundary: '#s-bound', code: '#s-code', run: '#s-run', parallel: '#s-par', features: '#s-feat', results: '#s-res', cta: '#s-cta' }).map(([k, s]) => [k, $(s)]));
 
 // Scene-level in/out transition: blur-zoom through.
 function sceneEnv(name, t, { inDur = 0.5, outDur = 0.45, noIn = false, noOut = false } = {}) {
@@ -849,18 +915,96 @@ function renderCode(t) {
   $$('#ac .it').forEach((el, i) => cls(el, 'on', i === sel));
   const kb = P(t, C.popup + 0.15, C.popup + 0.5, E.outBack) * (1 - P(t, C.type2b[1], C.type2b[1] + 0.3));
   set($('#ac-badge'), { left: (ax + 2) + 'px', top: (ay - 58) + 'px', opacity: String(kb), transform: `translateX(${(1 - kb) * -16}px)` });
-  const kr = P(t, C.run, C.run + 0.55, E.outExpo);
-  reveal($('#c-result'), kr, { y: 60, blur: 14, s: 0.94 });
-  const kp = P(t, C.pass, C.pass + 0.3);
-  set($('#c-result .passline'), { opacity: String(kp) });
   void p;
+}
+
+const CODE_RUN = `test('declined card shows a friendly error', async ({
+  page, switchScenario,
+}) => {
+  await switchScenario(page, 'paymentDeclined');
+  await page.goto('/checkout');
+  await page.getByLabel('Email').fill('ada@acme.test');
+  await page.getByRole('button', { name: 'Pay' }).click();
+  await expect(page.getByText('Payment failed')).toBeVisible();
+});`;
+const typerRun = makeTyper($('#rn-pre'), null, CODE_RUN);
+const rnGutter = CODE_RUN.split('\n').map((_, i) => { const d = document.createElement('div'); d.textContent = String(i + 1); $('#rn-gutter').appendChild(d); return d; });
+const rsvg = $('#rn-svg');
+const rnPkt = Array.from({ length: 3 }, () => svgEl('circle', { r: 10, cx: -50, cy: -50 }, rsvg));
+svgEl('line', { x1: 360, y1: 785, x2: 440, y2: 785, stroke: 'rgba(255,255,255,0.14)', 'stroke-width': 2, 'stroke-dasharray': '6 8' }, rsvg);
+svgEl('line', { x1: 1140, y1: 785, x2: 1196, y2: 785, stroke: 'rgba(255,255,255,0.14)', 'stroke-width': 2, 'stroke-dasharray': '6 8' }, rsvg);
+const CUR = { rest: [1720, 610], email: [1380, 388], pay: [1380, 544] };
+
+function renderRun(t) {
+  const env = sceneEnv('run', t); if (!env) return;
+  const R = TL.run;
+  reveal($('#rn-head'), P(t, R.head, R.head + 0.6, E.outExpo), { y: 24, blur: 12 });
+  reveal($('#rn-code'), P(t, 43.05, 43.7, E.outExpo), { x: -50, y: 0, blur: 10 });
+  reveal($('#rn-browser'), P(t, 43.15, 43.8, E.outExpo), { x: 50, y: 0, blur: 10 });
+  ['#rn-n1', '#rn-n2', '#rn-n3'].forEach((id, i) => reveal($(id), P(t, 43.35 + i * 0.1, 43.95 + i * 0.1, E.outExpo), { y: 40, blur: 8 }));
+  const kw = P(t, 43.6, 44.1, E.outExpo);
+  set($('#rn-wall'), { opacity: String(kw), transform: `scaleY(${kw})`, transformOrigin: '50% 0' });
+  set($('#rn-wall-l'), { opacity: String(kw) });
+
+  // test code: current step highlighted, finished steps ticked
+  typerRun.render(typerRun.len, false, t);
+  const steps = [[3, R.switchAt, R.gotoAt], [4, R.gotoAt, R.fillAt], [5, R.fillAt, R.clickAt], [6, R.clickAt, R.expectAt], [7, R.expectAt, R.passAt]];
+  const cur = steps.find(([, a, b]) => t >= a && t < b);
+  set($('#rn-hl'), { opacity: cur ? '1' : '0', transform: `translateY(${(cur ? cur[0] : 3) * 30.6}px)` });
+  steps.forEach(([line, , b]) => { const done = t >= b; txt(rnGutter[line], done ? '✓' : String(line + 1)); cls(rnGutter[line], 'ok', done); });
+  reveal($('#rn-result'), P(t, R.passAt, R.passAt + 0.4, E.outBack), { y: 10, blur: 4, s: 0.9 });
+
+  // browser
+  set($('#rn-chip'), { opacity: String(P(t, R.switchAt, R.switchAt + 0.3)) });
+  txt($('#rn-url'), t < R.gotoAt ? 'about:blank' : 'localhost:3000/checkout');
+  set($('#rn-page'), { opacity: String(P(t, R.gotoAt + 0.45, R.gotoAt + 0.75)) });
+  const email = 'ada@acme.test';
+  txt($('#rn-email'), email.slice(0, Math.round(email.length * P(t, R.fillAt + 0.35, R.typeEnd, E.lin))));
+  cls($('#rn-email'), 'focus', t >= R.fillAt + 0.3 && t < R.clickAt);
+  const busy = t >= R.clickAt + 0.1 && t < R.alert;
+  txt($('#rn-pay'), busy ? 'Processing…' : 'Pay $79.99');
+  const press = t >= R.clickAt && t < R.clickAt + 0.18 ? 0.96 : 1;
+  set($('#rn-pay'), { transform: `scale(${press})`, background: busy ? '#374151' : '#111827' });
+  reveal($('#rn-alert'), P(t, R.alert, R.alert + 0.35, E.outBack), { y: 10, blur: 0, s: 0.96 });
+
+  // cursor
+  const toEmail = P(t, R.fillAt - 0.1, R.fillAt + 0.3, E.inOutCubic);
+  const toPay = P(t, R.clickAt - 0.55, R.clickAt - 0.05, E.inOutCubic);
+  const cx = lerp(lerp(CUR.rest[0], CUR.email[0], toEmail), CUR.pay[0], toPay);
+  const cy = lerp(lerp(CUR.rest[1], CUR.email[1], toEmail), CUR.pay[1], toPay);
+  const clickPop = (t >= R.fillAt + 0.3 && t < R.fillAt + 0.45) || (t >= R.clickAt && t < R.clickAt + 0.15) ? 0.8 : 1;
+  set($('#rn-cursor'), { opacity: String(P(t, R.gotoAt + 0.8, R.gotoAt + 1.1) * (1 - P(t, R.passAt, R.passAt + 0.4))), transform: `translate(${cx}px, ${cy}px) scale(${clickPop})`, transformOrigin: '4px 2px' });
+
+  // request path
+  const moves = [
+    [R.gotoAt, R.gotoAt + 0.25, 360, 440, '#34d399'], [R.gotoAt + 0.3, R.gotoAt + 0.55, 440, 360, '#34d399'],
+    [R.clickAt + 0.1, R.clickAt + 0.35, 360, 440, '#34d399'],
+    [R.edgeOut - 0.25, R.edgeOut, 1140, 1190, '#e4e4e7'],
+    [R.scripted, R.scripted + 0.3, 1190, 1140, '#a78bfa'],
+    [R.backToBrowser, R.backToBrowser + 0.3, 440, 360, '#34d399'],
+  ];
+  let used = 0;
+  moves.forEach(([a, b, x0, x1, col]) => {
+    if (t < a || t >= b) return; const c = rnPkt[used++]; if (!c) return;
+    c.setAttribute('cx', lerp(x0, x1, E.inOutCubic((t - a) / (b - a)))); c.setAttribute('cy', 785); c.setAttribute('fill', col); c.style.filter = `drop-shadow(0 0 8px ${col})`;
+  });
+  for (let i = used; i < rnPkt.length; i++) rnPkt[i].setAttribute('cx', -50);
+  txt($('#rn-n1-req'), t < R.gotoAt ? '' : t < R.clickAt ? 'GET /checkout' : t < R.alert ? 'POST /api/checkout' : 'renders “Payment failed”');
+  txt($('#rn-n2-req'), t < R.gotoAt + 0.2 ? 'waiting for requests…' : t < R.clickAt + 0.3 ? 'GET /checkout → Server Component renders' : 'POST /api/checkout → your route handler');
+  $$('#rn-n2 .rn-step').forEach((el, i) => cls(el, 'on', t >= R.serverSteps[i]));
+  const n2glow = t >= R.clickAt + 0.3 && t < R.alert ? 1 : 0;
+  set($('#rn-n2'), { borderColor: `rgba(16,185,129,${0.08 + n2glow * 0.45})` });
+  txt($('#rn-n3-req'), t < R.edgeOut ? '' : 'POST /v1/charges');
+  reveal($('#rn-resp'), P(t, R.scripted, R.scripted + 0.3, E.outBack), { y: 8, blur: 0, s: 0.9 });
+  set($('#rn-note'), { opacity: String(P(t, R.scripted + 0.25, R.scripted + 0.6)) });
+  reveal($('#rn-cap'), P(t, R.caption, R.caption + 0.6, E.outExpo), { y: 18, blur: 10 });
 }
 
 function renderParallel(t) {
   const env = sceneEnv('parallel', t); if (!env) return;
   const Pp = TL.parallel;
-  reveal($('#p-head'), P(t, 45.15, 45.8, E.outExpo), { y: 30, blur: 12 });
-  reveal($('#p-server'), P(t, 45.4, 45.9, E.outBack), { y: 14, s: 0.8 });
+  reveal($('#p-head'), P(t, 55.15, 55.8, E.outExpo), { y: 30, blur: 12 });
+  reveal($('#p-server'), P(t, 55.4, 55.9, E.outBack), { y: 14, s: 0.8 });
   pcards.forEach((c, i) => {
     const a = Pp.cardsIn + i * Pp.cardStagger;
     reveal(c.el, P(t, a, a + 0.6, E.outExpo), { y: 60, blur: 12, s: 0.9 });
@@ -887,7 +1031,7 @@ function renderParallel(t) {
 function renderFeatures(t) {
   const env = sceneEnv('features', t); if (!env) return;
   const F = TL.features;
-  reveal($('#f-kicker'), P(t, 56.15, 56.6), { y: 12 });
+  reveal($('#f-kicker'), P(t, 66.15, 66.6), { y: 12 });
   F.tiles.forEach((a, i) => {
     const el = $('#t' + i);
     const k = P(t, a, a + 0.65, E.outExpo);
@@ -908,7 +1052,7 @@ function renderResults(t) {
   const env = sceneEnv('results', t); if (!env) return;
   const R = TL.results;
   const kUp = P(t, R.stats[0] - 0.5, R.stats[0] + 0.2, E.inOutCubic);
-  set($('#r-term'), { opacity: String(P(t, 66.05, 66.5)), transform: `translateY(${(1 - P(t, 66.05, 66.6, E.outExpo)) * 40 - kUp * 30}px) scale(${lerp(1, 0.97, kUp)})` });
+  set($('#r-term'), { opacity: String(P(t, 76.05, 76.5)), transform: `translateY(${(1 - P(t, 76.05, 76.6, E.outExpo)) * 40 - kUp * 30}px) scale(${lerp(1, 0.97, kUp)})` });
   const cmd = 'npx playwright test';
   txt($('#r-cmd'), cmd.slice(0, clamp(Math.floor((t - R.cmd) / 0.03), 0, cmd.length)));
   reveal($('#r-running'), P(t, R.running, R.running + 0.2), { y: 0, blur: 0 });
@@ -939,8 +1083,8 @@ function renderBackground(t) {
   const S = TL.scenes;
   // glows drift; red glow lives in the hook, emerald rises once the product appears
   const red = P(t, 1.8, 3.2) * (1 - P(t, 7.2, 9));
-  const em = P(t, 16, 18) * (1 - P(t, 78.5, 80));
-  const vi = P(t, 0.3, 2.5) * (1 - P(t, 79, 80));
+  const em = P(t, 16, 18) * (1 - P(t, TL.duration - 1.5, TL.duration));
+  const vi = P(t, 0.3, 2.5) * (1 - P(t, TL.duration - 1, TL.duration));
   set($('#glow-v'), { opacity: String(vi * (0.8 + 0.2 * Math.sin(t * 0.7))), transform: `translate(${-200 + Math.sin(t * 0.21) * 220}px, ${-420 + Math.cos(t * 0.17) * 160}px)` });
   set($('#glow-e'), { opacity: String(em * 0.9), transform: `translate(${900 + Math.cos(t * 0.19) * 240}px, ${80 + Math.sin(t * 0.23) * 180}px)` });
   set($('#glow-r'), { opacity: String(red), transform: `translate(${820 + Math.sin(t * 0.5) * 60}px, ${-100}px)` });
@@ -955,7 +1099,7 @@ function renderBackground(t) {
 function renderAt(t) {
   renderBackground(t);
   renderHook(t); renderGap(t); renderLogo(t); renderBoundary(t); renderCode(t);
-  renderParallel(t); renderFeatures(t); renderResults(t); renderCta(t);
+  renderRun(t); renderParallel(t); renderFeatures(t); renderResults(t); renderCta(t);
 }
 
 /* ---------------- boot ---------------- */

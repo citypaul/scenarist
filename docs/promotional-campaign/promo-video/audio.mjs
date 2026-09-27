@@ -191,7 +191,7 @@ for (let t = grooveStart, k = 0; t < grooveEnd - 0.01; t += bar, k++) {
   for (let j = 0; j < 8; j++) bass(t + j * beat / 2, beat / 2 - 0.02, c.root + (j % 2 ? 12 : 0), 0.24);
   if (t >= S.parallel[0] - 0.01) c.pad.forEach((m, j) => { for (let r = 0; r < 2; r++) pluck(t + (j + r * 4) * beat / 2, m + 12, 0.035, j % 2 ? 0.5 : -0.5, 7, 0.5); });
 }
-[S.code[0], S.parallel[0], S.features[0], S.results[0]].forEach((t) => whoosh(t, 0.8, 0.12));
+[S.code[0], S.run[0], S.parallel[0], S.features[0], S.results[0]].forEach((t) => whoosh(t, 0.8, 0.12));
 
 // Boundary: the wall landing
 impact(TL.boundary.wall, 0.45);
@@ -199,7 +199,14 @@ pluck(TL.boundary.wall, 76, 0.07, 0, 3, 0.6);
 // Code: autocomplete ticks, accept, test pass
 [TL.code.popup, ...TL.code.popupMoves].forEach((t) => tick(t, 0.08, 1900));
 pluck(TL.code.accept, 81, 0.06);
-pluck(TL.code.pass, 84, 0.07); pluck(TL.code.pass + 0.08, 88, 0.06);
+// Watch it run: a tick per test step, typing clicks, server steps chime up, scripted 402 lands low
+const RN = TL.run;
+[RN.switchAt, RN.gotoAt, RN.fillAt, RN.clickAt, RN.expectAt].forEach((t) => tick(t, 0.09, 2000));
+for (let i = 0; i < 13; i++) tick(RN.fillAt + 0.35 + i * ((RN.typeEnd - RN.fillAt - 0.35) / 13), 0.035, 3000 + (i % 3) * 350);
+RN.serverSteps.forEach((t, i) => pluck(t, [76, 79, 83, 84][i], 0.05, 0.3, 5));
+pluck(RN.scripted, 57, 0.08, -0.3, 3); glitch(RN.scripted, 0.08);
+kick(RN.alert, 0.3);
+pluck(RN.passAt, 84, 0.07); pluck(RN.passAt + 0.08, 88, 0.06);
 // Parallel: a rising chime per passing card
 TL.parallel.passes.forEach((t, i) => pluck(t, [72, 74, 76, 79, 81, 84][i], 0.075, (i % 3 - 1) * 0.5, 4, 0.5));
 // Features: soft hit per tile
@@ -207,11 +214,11 @@ TL.features.tiles.forEach((t, i) => { tick(t, 0.06, 1500); pluck(t, [64, 67, 71,
 // Results: ticks per green line, chord on the summary, stat hits
 for (let i = 0; i < TL.results.lines; i++) tick(TL.results.lineStart + i * TL.results.lineStep, 0.05, 2600);
 TL.results.stats.forEach((t) => kick(t, 0.3));
-riser(70.6, S.cta[0], 0.14);
+riser(S.cta[0] - 1.4, S.cta[0], 0.14);
 
 // CTA: final impact, resolved Cmaj9 bloom, fade out
 impact(S.cta[0], 0.9);
-pad(S.cta[0], 79.2, [36, 48, 55, 59, 62, 64, 67], { gain: 0.042, cutoff: 1600, attack: 0.05, release: 0.8, send: 0.8 });
+pad(S.cta[0], TL.duration - 0.8, [36, 48, 55, 59, 62, 64, 67], { gain: 0.042, cutoff: 1600, attack: 0.05, release: 0.8, send: 0.8 });
 [72, 76, 79, 83, 86].forEach((m, i) => pluck(TL.cta.word + i * 0.12, m, 0.05, (i % 2 ? 0.4 : -0.4), 2.5, 0.8));
 
 /* ---------- reverb (Schroeder) on the send bus ---------- */
@@ -234,7 +241,7 @@ reverb(sendL, L, 0); reverb(sendR, R, 23);
 let peak = 0;
 for (let i = 0; i < N; i++) {
   const t = i / SR;
-  const fade = Math.min(1, t / 0.05) * (t > 78.6 ? Math.max(0, (TL.duration - t) / 1.4) : 1);
+  const fade = Math.min(1, t / 0.05) * (t > TL.duration - 1.4 ? Math.max(0, (TL.duration - t) / 1.4) : 1);
   L[i] = Math.tanh(L[i] * 1.1) * fade; R[i] = Math.tanh(R[i] * 1.1) * fade;
   peak = Math.max(peak, Math.abs(L[i]), Math.abs(R[i]));
 }
