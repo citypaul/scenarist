@@ -18,6 +18,9 @@ const duration = '90-second';
       poster="/video/scenarist-overview-poster.webp"
       aria-describedby="promo-video-summary"
     >
+      <!-- Phones get a lighter 720p encode; nothing downloads until play (preload="none") -->
+      <source src="/video/scenarist-overview-720.webm" type="video/webm" media="(max-width: 767px)" />
+      <source src="/video/scenarist-overview-720.mp4" type="video/mp4" media="(max-width: 767px)" />
       <source src="/video/scenarist-overview.webm" type="video/webm" />
       <source src="/video/scenarist-overview.mp4" type="video/mp4" />
       <track kind="captions" src="/video/scenarist-overview.en.vtt" srclang="en" label="English" />

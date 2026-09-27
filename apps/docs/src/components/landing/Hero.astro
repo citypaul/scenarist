@@ -5,9 +5,17 @@ import pkg from '../../../../../packages/express-adapter/package.json';
 
 const version = pkg.version;
 const releasesUrl = 'https://github.com/citypaul/scenarist/releases';
+
+// Early wayfinding: the four sections a first-time visitor should not miss.
+const chapters = [
+  { href: '#how-it-works', title: 'How it works', blurb: 'Browser → your server → scripted APIs' },
+  { href: '#scenarios', title: 'Every scenario', blurb: 'The edge cases teams never test' },
+  { href: '#dynamic', title: 'Dynamic scenarios', blurb: 'Interactive: state, sequences and matching', featured: true },
+  { href: '#compare', title: 'Compare', blurb: 'vs unit tests and live-service E2E' },
+];
 ---
 
-<section class="relative z-10 pt-24 lg:pt-28 pb-16 lg:pb-20 px-6 overflow-hidden">
+<section class="relative z-10 pt-24 pb-16 lg:pb-20 px-6 overflow-hidden">
   <!-- Background Gradients -->
   <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl pointer-events-none">
     <div class="absolute top-20 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl opacity-30 motion-safe:animate-pulse"></div>
@@ -141,6 +149,31 @@ const releasesUrl = 'https://github.com/citypaul/scenarist/releases';
       </div>
     </div>
   </div>
+
+  <nav aria-label="Jump to a section" class="relative z-10 max-w-6xl mx-auto mt-12 lg:mt-10">
+    <p class="mb-3 text-sm font-medium text-gray-600 dark:text-gray-400 text-center lg:text-left">Jump to</p>
+    <ul class="grid grid-cols-2 lg:grid-cols-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-white/70 dark:bg-white/[0.02] backdrop-blur-sm divide-gray-200 dark:divide-white/10 [&>li]:border-gray-200 dark:[&>li]:border-white/10 [&>li:nth-child(odd)]:border-r lg:[&>li]:border-r lg:[&>li:last-child]:border-r-0 [&>li:nth-child(-n+2)]:border-b lg:[&>li]:border-b-0">
+      {chapters.map((c) => (
+        <li>
+          <a
+            href={c.href}
+            class:list={[
+              'group flex h-full items-start justify-between gap-3 p-4 lg:p-5 rounded-2xl transition-colors',
+              c.featured ? 'bg-violet-50/80 dark:bg-violet-500/[0.08] hover:bg-violet-100/70 dark:hover:bg-violet-500/[0.14]' : 'hover:bg-gray-50 dark:hover:bg-white/[0.04]',
+            ]}
+          >
+            <span class="min-w-0">
+              <span class="flex flex-wrap items-center gap-2">
+                <span class="font-semibold text-gray-900 dark:text-white group-hover:text-violet-700 dark:group-hover:text-violet-300 transition-colors">{c.title}</span>
+              </span>
+              <span class:list={["mt-1 block text-sm", c.featured ? "text-violet-800 dark:text-violet-200" : "text-gray-600 dark:text-gray-400"]}>{c.blurb}</span>
+            </span>
+            <svg class="mt-1 w-4 h-4 flex-none text-gray-400 group-hover:text-violet-600 dark:group-hover:text-violet-400 motion-safe:group-hover:translate-y-0.5 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6" /></svg>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
 </section>
 
 <script>

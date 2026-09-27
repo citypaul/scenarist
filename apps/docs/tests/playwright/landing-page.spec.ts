@@ -150,6 +150,63 @@ test.describe("Landing Page", () => {
     });
   });
 
+  test.describe("Promo video", () => {
+    const isVideoRequest = (url: string) =>
+      /\/video\/.+\.(webm|mp4)$/.test(url);
+
+    test("downloads nothing but the poster until the visitor presses play", async ({
+      page,
+    }) => {
+      const videoRequests: string[] = [];
+      page.on("request", (request) => {
+        if (isVideoRequest(request.url())) videoRequests.push(request.url());
+      });
+
+      await page.goto("/");
+      await page.waitForLoadState("networkidle");
+
+      expect(videoRequests).toEqual([]);
+    });
+
+    test("streams the video once the visitor presses play", async ({
+      page,
+    }) => {
+      await page.goto("/");
+
+      const firstVideoRequest = page.waitForRequest((request) =>
+        isVideoRequest(request.url()),
+      );
+      await page
+        .getByRole("button", { name: /Play the .* Scenarist overview video/ })
+        .click();
+
+      await firstVideoRequest;
+      await expect
+        .poll(() =>
+          page.evaluate(() => {
+            const video =
+              document.querySelector<HTMLVideoElement>("#promo-video");
+            return video !== null && !video.paused && video.currentTime > 0;
+          }),
+        )
+        .toBe(true);
+    });
+  });
+
+  test("jump links take visitors to each key section", async ({ page }) => {
+    await page.goto("/");
+    const jumpNav = page.getByRole("navigation", {
+      name: "Jump to a section",
+    });
+
+    await jumpNav.getByRole("link", { name: /Dynamic scenarios/ }).click();
+
+    await expect(page).toHaveURL(/#dynamic$/);
+    await expect(
+      page.getByRole("heading", { name: /Dynamic scenarios/ }),
+    ).toBeInViewport();
+  });
+
   test("docs link navigates to documentation", async ({ page }) => {
     await page.goto("/");
 

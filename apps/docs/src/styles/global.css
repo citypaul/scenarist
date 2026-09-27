@@ -147,6 +147,9 @@
     outline-offset: 3px;
     border-radius: 6px;
   }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
   pre::-webkit-scrollbar { height: 8px; }
   pre::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.35); border-radius: 8px; }
 }
