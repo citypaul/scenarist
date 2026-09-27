@@ -304,7 +304,7 @@ export { app };
 
 ```typescript
 // tests/user-registration.spec.ts
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures'; // withScenarios(scenarios)
 
 test.describe('User Registration', () => {
   test('should register new user', async ({ page, switchScenario }) => {

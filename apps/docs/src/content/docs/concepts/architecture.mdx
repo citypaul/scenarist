@@ -3,7 +3,7 @@ title: Architecture
 description: How Scenarist's framework-agnostic core works internally
 ---
 
-Scenarist uses **hexagonal architecture** (also called ports and adapters) to maintain complete framework independence. This means the core scenario management logic has zero framework dependencies, while thin adapters integrate with Express, Next.js, Fastify, and other frameworks.
+Scenarist uses **hexagonal architecture** (also called ports and adapters) to maintain complete framework independence. This means the core scenario management logic has zero framework dependencies, while thin adapters integrate with Express and Next.js (App Router and Pages Router).
 
 ## Why This Architecture Matters
 
@@ -72,20 +72,20 @@ graph TD
 The core defines **interfaces** (ports) that adapters must implement:
 
 ```typescript
-// Driving ports (called BY core)
+// Driving port (called by adapters, implemented by core)
 interface ScenarioManager {
   registerScenario(definition: ScenaristScenario): void;
-  switchScenario(testId: string, scenarioId: string): ScenaristResult<void>;
+  switchScenario(testId: string, scenarioId: string): ScenaristResult<void, Error>;
   getActiveScenario(testId: string): ActiveScenario | undefined;
   listScenarios(): ReadonlyArray<ScenaristScenario>;
+  // ... clearScenario, getScenarioById, getState
 }
 
-// Driven ports (called by adapters)
+// Driven ports (implemented by adapters)
 interface RequestContext {
   getTestId(): string;
-  getBody(): unknown;
-  getHeaders(): Record<string, string>;
-  getQuery(): Record<string, string>;
+  getHeaders(): Record<string, string | string[] | undefined>;
+  getHostname(): string;
 }
 
 // Driven port for observability
@@ -123,17 +123,17 @@ All data structures use `type` (not `interface`) with `readonly`:
 type ScenaristScenario = {
   readonly id: string;
   readonly name: string;
-  readonly description?: string;
+  readonly description: string;
   readonly mocks: ReadonlyArray<ScenaristMock>;
 };
 
 type ScenaristMock = {
-  readonly method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-  readonly url: string;
+  readonly method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'HEAD';
+  readonly url: string | RegExp;
   readonly response?: MockResponse;
   readonly sequence?: ResponseSequence;
   readonly match?: MatchCriteria;
-  readonly captureState?: Record<string, StateCapture>;
+  readonly captureState?: Record<string, string>;
 };
 ```
 
@@ -151,7 +151,6 @@ Adapters are small (~100 lines) framework-specific integration layers. They tran
 graph LR
     A[Express Adapter] --> B[Core Ports]
     C[Next.js Adapter] --> B
-    D[Fastify Adapter] --> B
     E[Future Adapters] -.-> B
 
     B --> F[Scenario Manager]
@@ -161,7 +160,6 @@ graph LR
     style B fill:#228be6,stroke:#1971c2,color:#fff
     style A fill:#51cf66,stroke:#2f9e44
     style C fill:#51cf66,stroke:#2f9e44
-    style D fill:#51cf66,stroke:#2f9e44
     style F fill:#ffd43b,stroke:#fab005
     style G fill:#ffd43b,stroke:#fab005
     style H fill:#ffd43b,stroke:#fab005
@@ -176,33 +174,31 @@ Each adapter does **three things only**:
 ```typescript
 // Express
 class ExpressRequestContext implements RequestContext {
-  constructor(private req: Request) {}
+  constructor(private req: Request, private config: ScenaristConfig) {}
 
   getTestId(): string {
-    return this.req.headers['x-scenarist-test-id'] as string || 'default-test';
+    const header = this.req.headers['x-scenarist-test-id'];
+    return typeof header === 'string' ? header : this.config.defaultTestId;
   }
 
-  getBody(): unknown {
-    return this.req.body;
+  getHeaders(): Record<string, string | string[] | undefined> {
+    return this.req.headers;
   }
 
-  getHeaders(): Record<string, string> {
-    return this.req.headers as Record<string, string>;
+  getHostname(): string {
+    return this.req.hostname;
   }
 }
 
 // Next.js App Router
-class NextAppRequestContext implements RequestContext {
-  constructor(private request: Request) {}
+class AppRequestContext implements RequestContext {
+  constructor(private request: Request, private config: ScenaristConfig) {}
 
   getTestId(): string {
-    return this.request.headers.get('x-scenarist-test-id') || 'default-test';
+    return this.request.headers.get('x-scenarist-test-id') || this.config.defaultTestId;
   }
 
-  getBody(): unknown {
-    // Must be parsed before constructing context
-    return this.parsedBody;
-  }
+  // ... getHeaders(), getHostname()
 }
 ```
 
@@ -214,12 +210,12 @@ app.post('/__scenario__', async (req, res) => {
   const testId = extractTestId(req);
   const { scenario } = req.body;
 
-  const result = scenarist.scenarioManager.switchScenario(testId, scenario);
+  const result = manager.switchScenario(testId, scenario);
 
   if (result.success) {
     res.json({ success: true });
   } else {
-    res.status(404).json({ success: false, error: result.error.message });
+    res.status(400).json({ error: result.error.message });
   }
 });
 
@@ -228,13 +224,13 @@ export async function POST(request: Request) {
   const testId = request.headers.get('x-scenarist-test-id') || 'default-test';
   const { scenario } = await request.json();
 
-  const result = scenarist.scenarioManager.switchScenario(testId, scenario);
+  const result = manager.switchScenario(testId, scenario);
 
   return Response.json(
     result.success
       ? { success: true }
-      : { success: false, error: result.error.message },
-    { status: result.success ? 200 : 404 }
+      : { error: result.error.message },
+    { status: result.success ? 200 : 400 }
   );
 }
 ```
@@ -267,7 +263,7 @@ graph TD
     B --> D[Dynamic Handler Creation]
 
     C --> C1[Exact Match: /api/users]
-    C --> C2[Glob Match: /api/*]
+    C --> C2[RegExp Match: /users/]
     C --> C3[Path Params: /api/users/:id]
 
     D --> D1[Request Context Extraction]
@@ -296,9 +292,9 @@ const mockDefinition: ScenaristMock = {
   }
 };
 
-// MSW Adapter converts to:
-http.get('/api/users/:id', async ({ request }) => {
-  // Extract context, select response via core, return HttpResponse
+// MSW Adapter registers one catch-all handler that resolves mocks per request:
+http.all('*', async ({ request }) => {
+  // Extract test ID, find matching mocks (URL + method), select response via core
   return HttpResponse.json({ name: 'John Doe' }, { status: 200 });
 });
 ```
@@ -306,7 +302,7 @@ http.get('/api/users/:id', async ({ request }) => {
 **2. URL Pattern Matching**
 
 - **Exact match**: `/api/users` (string literal)
-- **Glob patterns**: `/api/*` or `/api/users/*`
+- **RegExp patterns**: `/\/api\/users\//` (substring match, any origin)
 - **Path parameters**: `/api/users/:id` (extracted and available in context)
 
 **3. Dynamic Handler with Fallback**
@@ -362,7 +358,7 @@ sequenceDiagram
 
 **1. Scenario Switching**
 - Test calls `switchScenario(page, 'premiumUser')`
-- Playwright helper sends POST to `/__scenario__`
+- Playwright helper sends POST to the scenario endpoint (`scenaristEndpoint`, default `/api/__scenario__`)
 - Adapter extracts test ID, calls core's `ScenarioManager`
 - Core stores `{ testId: 'uuid-123', scenarioId: 'premiumUser' }`
 
@@ -524,24 +520,24 @@ const mocks = [
 
 This mirrors React's design philosophy: React could allow imperative DOM manipulation, but enforces declarative JSX because it's clearer, more composable, and easier to reason about. Scenarist makes the same choice for test scenarios.
 
-**Runtime conversion:** MSW handlers are created at runtime from declarative definitions:
+**Runtime conversion:** A single MSW handler interprets the declarative definitions at request time:
 
 ```typescript
-const toMSWHandler = (mock: ScenaristMock): HttpHandler => {
-  return http[mock.method.toLowerCase()](mock.url, async () => {
-    if (mock.response.delay) await delay(mock.response.delay);
-    return HttpResponse.json(mock.response.body, {
-      status: mock.response.status,
-      headers: mock.response.headers,
-    });
+const buildResponse = async (response: ScenaristResponse): Promise<Response> => {
+  if (response.delay) await delay(response.delay);
+  return HttpResponse.json(response.body, {
+    status: response.status,
+    headers: response.headers,
   });
 };
+
+// Registered once: http.all('*', ...) selects the matching mock's response, then calls buildResponse
 ```
 
 ## Benefits of Hexagonal Architecture
 
 **1. Framework Independence**
-- Write scenarios once, use with Express, Next.js, Remix, Fastify
+- Write scenarios once, use with Express and Next.js (App Router and Pages Router)
 - Switching frameworks doesn't require rewriting tests
 - Core improvements benefit all frameworks immediately
 

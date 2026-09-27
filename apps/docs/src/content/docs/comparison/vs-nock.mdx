@@ -22,7 +22,7 @@ Both Nock (v14+) and Scenarist use @mswjs/interceptors under the hood—the inte
 | **Test isolation** | Per-test via test ID | Manual scope management |
 | **Interception level** | Network (MSW) | @mswjs/interceptors (v14+) |
 | **Runtime switching** | Yes (API call) | Manual (cleanAll + reconfigure) |
-| **Browser support** | Via MSW | Node.js only |
+| **Browser support** | Node.js only (server-side) | Node.js only |
 | **Setup** | Framework adapters | Standalone library |
 | **TypeScript** | Native (scenarios are TS) | Built-in definitions |
 | **Recording** | Not supported | nockBack fixture recording |
@@ -38,7 +38,9 @@ Both Nock (v14+) and Scenarist use @mswjs/interceptors under the hood—the inte
 // Declarative - describe what, not how
 const scenarios = {
   'user-premium': {
+    id: 'user-premium', name: 'Premium user', description: 'Active subscription',
     mocks: [{
+      method: 'GET',
       url: 'https://api.stripe.com/v1/customers/cus_123',
       response: {
         status: 200,
@@ -47,7 +49,9 @@ const scenarios = {
     }]
   },
   'user-free': {
+    id: 'user-free', name: 'Free user', description: 'No subscriptions',
     mocks: [{
+      method: 'GET',
       url: 'https://api.stripe.com/v1/customers/cus_123',
       response: {
         status: 200,
@@ -58,7 +62,7 @@ const scenarios = {
 } as const satisfies ScenaristScenarios;
 
 // Tests select scenarios by name
-test('premium features visible', async ({ switchScenario }) => {
+test('premium features visible', async ({ page, switchScenario }) => {
   await switchScenario(page, 'user-premium');
 });
 ```
@@ -107,7 +111,7 @@ test('free features visible', async () => {
 // Built-in test isolation via test ID
 test.describe.parallel('Payment flows', () => {
   test('success flow', async ({ page, switchScenario }) => {
-    // x-test-id header routes to this scenario
+    // x-scenarist-test-id header routes to this scenario
     await switchScenario(page, 'payment-success');
     // Other tests can run simultaneously with different scenarios
   });
@@ -166,7 +170,7 @@ test.describe('Payment flows', () => {
   url: 'https://api.stripe.com/v1/charges',
   match: {
     body: {
-      amount: 5000,
+      amount: '5000',
       currency: 'usd'
     },
     headers: {
@@ -207,7 +211,7 @@ nock('https://api.stripe.com')
   <TabItem label="Scenarist">
 ```typescript
 // Scenarios persist - switch between them
-test('multi-step flow', async ({ switchScenario }) => {
+test('multi-step flow', async ({ page, switchScenario }) => {
   // Start with error
   await switchScenario(page, 'payment-timeout');
   await page.click('#submit');
@@ -356,8 +360,10 @@ beforeEach(() => {
 // Scenarist - centralized scenarios
 const scenarios = {
   default: {
+    id: 'default', name: 'Default', description: 'Baseline responses',
     mocks: [
       {
+        method: 'GET',
         url: 'https://api.stripe.com/v1/customers/cus_123',
         response: { status: 200, body: { id: 'cus_123', name: 'Test Customer' } }
       },

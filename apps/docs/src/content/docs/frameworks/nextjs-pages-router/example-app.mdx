@@ -63,7 +63,7 @@ Visit [http://localhost:3000](http://localhost:3000) to see the app.
 pnpm test
 
 # Run tests in UI mode
-pnpm test:ui
+pnpm test:e2e:ui
 
 # Run specific test file
 pnpm test products-server-side
@@ -83,19 +83,25 @@ export const scenarist = createScenarist({
   scenarios,
 });
 
-// Auto-start MSW server for server-side API route interception
-if (typeof window === 'undefined') {
+// Auto-start MSW server for server-side interception (scenarist is undefined in production builds)
+if (typeof window === 'undefined' && scenarist) {
   scenarist.start();
 }
 ```
 
 **`pages/api/__scenario__.ts`** - Scenario control endpoint
 ```typescript
-import { scenarist } from '@/lib/scenarist';
-export default scenarist.createScenarioEndpoint();
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { scenarist } from '../../lib/scenarist';
+
+// In production, scenarist is undefined - fall back to a 405 handler
+export default scenarist?.createScenarioEndpoint() ??
+  ((_req: NextApiRequest, res: NextApiResponse) => {
+    res.status(405).end();
+  });
 ```
 
-This creates the `/__scenario__` endpoint used by tests to switch scenarios.
+This creates the `/api/__scenario__` endpoint used by tests to switch scenarios. `pages/api/__scenarist__/state.ts` exports `scenarist?.createStateEndpoint()` for the `/api/__scenarist__/state` debug endpoint.
 
 ### Scenario Definitions
 
@@ -109,6 +115,8 @@ Key scenarios:
 ```typescript
 premiumUser: {
   id: 'premiumUser',
+  name: 'Premium User',
+  description: 'Premium tier pricing (£99.99)',
   mocks: [{
     method: 'GET',
     url: 'http://localhost:3001/products',
@@ -122,14 +130,16 @@ premiumUser: {
 ```typescript
 githubPolling: {
   id: 'githubPolling',
+  name: 'GitHub Job Polling',
+  description: "Async job polling sequence (repeat: 'last')",
   mocks: [{
     method: 'GET',
     url: 'http://localhost:3001/github/jobs/:id',
     sequence: {
       responses: [
-        { status: 200, body: { status: 'pending', progress: 0 } },
-        { status: 200, body: { status: 'processing', progress: 50 } },
-        { status: 200, body: { status: 'complete', progress: 100 } }
+        { status: 200, body: { jobId: '123', status: 'pending', progress: 0 } },
+        { status: 200, body: { jobId: '123', status: 'processing', progress: 50 } },
+        { status: 200, body: { jobId: '123', status: 'complete', progress: 100 } }
       ],
       repeat: 'last'
     }
@@ -141,15 +151,10 @@ githubPolling: {
 ```typescript
 cartWithState: {
   id: 'cartWithState',
+  name: 'Shopping Cart with State',
+  description: 'Stateful shopping cart that captures and injects cart items',
   mocks: [
-    {
-      method: 'POST',
-      url: 'http://localhost:3001/cart/add',
-      captureState: {
-        'cartItems[]': 'body.productId'
-      },
-      response: { status: 200, body: { success: true } }
-    },
+    // (also mocks GET /products so the add-to-cart buttons render)
     {
       method: 'GET',
       url: 'http://localhost:3001/cart',
@@ -157,6 +162,14 @@ cartWithState: {
         status: 200,
         body: { items: '{{state.cartItems}}' }
       }
+    },
+    {
+      method: 'PATCH',
+      url: 'http://localhost:3001/cart',
+      captureState: {
+        cartItems: 'body.items'
+      },
+      response: { status: 200, body: { items: '{{state.cartItems}}' } }
     }
   ]
 }
@@ -166,14 +179,16 @@ cartWithState: {
 ```typescript
 checkout: {
   id: 'checkout',
+  name: 'Checkout with Shipping',
+  description: 'Demonstrates matching + stateful composition',
   mocks: [
-    // UK free shipping
+    // UK free shipping (US and FR variants follow the same shape)
     {
       method: 'POST',
       url: 'http://localhost:3001/checkout/shipping',
       match: { body: { country: 'UK' } },
       captureState: { country: 'body.country', address: 'body.address' },
-      response: { status: 200, body: { shippingCost: 0 } }
+      response: { status: 200, body: { country: 'UK', shippingCost: 0 } }
     },
     // Order with captured address
     {
@@ -197,12 +212,17 @@ checkout: {
 
 **`pages/api/products.ts`** - Products API route with tier-based pricing
 ```typescript
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const tier = req.headers['x-user-tier'] || 'standard';
 
   // This fetch is mocked by Scenarist
   const response = await fetch('http://localhost:3001/products', {
-    headers: { 'x-user-tier': tier },
+    headers: {
+      ...getScenaristHeaders(req), // Forward the test ID
+      'x-user-tier': tier,
+    },
   });
 
   const data = await response.json();
@@ -210,36 +230,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 }
 ```
 
-**`pages/api/cart.ts`** - Cart API route with state capture
+**`pages/api/cart/add.ts`** - Add-to-cart API route (state captured)
 ```typescript
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method === 'POST') {
-    // Add to cart - state captured by Scenarist
-    const response = await fetch('http://localhost:3001/cart/add', {
-      method: 'POST',
-      body: JSON.stringify(req.body),
-    });
-    return res.json(await response.json());
-  }
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
 
-  // Get cart - state injected by Scenarist
-  const response = await fetch('http://localhost:3001/cart');
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // GET current cart - state injected by Scenarist
+  const current = await fetch('http://localhost:3001/cart', {
+    headers: getScenaristHeaders(req),
+  }).then((r) => r.json());
+
+  // PATCH full items array - state captured by Scenarist
+  const response = await fetch('http://localhost:3001/cart', {
+    method: 'PATCH',
+    headers: { ...getScenaristHeaders(req), 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      items: [...(current.items || []), req.body.productId], // raw productIds
+    }),
+  });
   res.json(await response.json());
 }
 ```
+
+`pages/api/cart.ts` serves `GET /api/cart` the same way, forwarding `getScenaristHeaders(req)` to `GET http://localhost:3001/cart`.
 
 ### Test Examples
 
 **`tests/playwright/products-server-side.spec.ts`** - getServerSideProps with request matching
 ```typescript
-test('premium users see discounted pricing', async ({ page, switchScenario }) => {
+test('should render premium products server-side', async ({ page, switchScenario }) => {
   await switchScenario(page, 'premiumUser');
 
-  await page.goto('/');
+  await page.goto('/?tier=premium');
 
-  // getServerSideProps fetches from API route with x-user-tier header
+  // getServerSideProps fetches http://localhost:3001/products with x-user-tier header
   // Scenarist returns mock matching { headers: { 'x-user-tier': 'premium' } }
-  await expect(page.getByText('£99.99')).toBeVisible();
+  const firstProduct = page.getByRole('article').first();
+  await expect(firstProduct.getByText('£99.99')).toBeVisible();
 });
 ```
 
@@ -248,68 +275,69 @@ test('premium users see discounted pricing', async ({ page, switchScenario }) =>
 test('polling updates status through sequence', async ({ page, switchScenario }) => {
   await switchScenario(page, 'githubPolling');
 
-  await page.goto('/polling');
+  await page.goto('/sequences');
+  const checkStatus = page.getByRole('button', { name: 'Check Job Status' });
+  const jobStatus = page.getByRole('status').first();
 
   // First request: pending
-  await expect(page.getByText('Status: pending')).toBeVisible();
+  await checkStatus.click();
+  await expect(jobStatus).toContainText('Status: pending');
 
-  await page.getByRole('button', { name: 'Refresh' }).click();
   // Second request: processing
-  await expect(page.getByText('Status: processing')).toBeVisible();
+  await checkStatus.click();
+  await expect(jobStatus).toContainText('Status: processing');
 
-  await page.getByRole('button', { name: 'Refresh' }).click();
   // Third request: complete
-  await expect(page.getByText('Status: complete')).toBeVisible();
+  await checkStatus.click();
+  await expect(jobStatus).toContainText('Status: complete');
 });
 ```
 
 **`tests/playwright/cart-server-side.spec.ts`** - Stateful mocks with API routes
 ```typescript
-test('cart maintains state across requests', async ({ page, switchScenario }) => {
-  const testId = await switchScenario(page, 'cartWithState');
+test('should render cart items server-side after adding products', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'cartWithState');
 
-  // Add product via API route - state captured
-  const response = await page.request.post('http://localhost:3000/api/cart', {
-    headers: { 'x-scenarist-test-id': testId },
-    data: { productId: 'prod-1' }
-  });
+  // Add products via the UI - POST /api/cart/add, state captured
+  await page.goto('/');
+  const addButtons = page.getByRole('button', { name: /Add .* to cart/ });
+  const cartCount = page.getByLabel('Cart item count');
 
-  expect(response.ok()).toBe(true);
+  await addButtons.nth(0).click();
+  await expect(cartCount).toHaveText('1');
 
+  await addButtons.nth(1).click();
+  await expect(cartCount).toHaveText('2');
+
+  // Cart page is server-rendered - state injected
   await page.goto('/cart');
-
-  // Cart shows added product - state injected
-  await expect(page.getByText('Product A')).toBeVisible();
+  const cartList = page.getByRole('list', { name: 'Shopping cart items' });
+  await expect(cartList.getByRole('listitem')).toHaveCount(2);
 });
 ```
 
 **`tests/playwright/checkout.spec.ts`** - Feature composition
 ```typescript
-test('checkout captures address and applies UK free shipping', async ({ page, switchScenario }) => {
-  const testId = await switchScenario(page, 'checkout');
+test('should provide free shipping for UK and capture address', async ({ page, switchScenario }) => {
+  await switchScenario(page, 'checkout');
+  await page.goto('/checkout');
 
   // Calculate shipping - matches UK, captures address
-  await page.request.post('http://localhost:3000/api/checkout/shipping', {
-    headers: { 'x-scenarist-test-id': testId },
-    data: {
-      country: 'UK',
-      address: '123 Test St',
-      city: 'London',
-      postcode: 'SW1A 1AA'
-    }
-  });
+  await page.getByLabel('Country').selectOption('UK');
+  await page.getByLabel('Address').fill('123 Test Street');
+  await page.getByLabel('City').fill('London');
+  await page.getByLabel('Postcode').fill('SW1A 1AA');
+  await page.getByRole('button', { name: 'Calculate Shipping' }).click();
+
+  const shippingCost = page.getByRole('status').filter({ hasText: 'Shipping' });
+  await expect(shippingCost).toContainText('£0.00');
 
   // Place order - injects captured address
-  const orderResponse = await page.request.post('http://localhost:3000/api/checkout/order', {
-    headers: { 'x-scenarist-test-id': testId },
-    data: { orderId: 'order-123' }
-  });
+  await page.getByRole('button', { name: 'Place Order' }).click();
 
-  const order = await orderResponse.json();
-
-  // Verify state was captured and injected
-  expect(order.shippingAddress.country).toBe('UK');
-  expect(order.shippingAddress.address).toBe('123 Test St');
+  const confirmation = page.getByRole('region', { name: 'Order confirmation' });
+  await expect(confirmation).toContainText('123 Test Street');
+  await expect(confirmation).toContainText('UK');
 });
 ```
 
@@ -341,11 +369,14 @@ import { FileTree } from '@astrojs/starlight/components';
   - pages/
     - index.tsx Products page (getServerSideProps)
     - cart.tsx Cart page
-    - polling.tsx Polling example
+    - sequences.tsx Sequences (polling) example
+    - checkout.tsx Checkout page
     - api/
       - __scenario__.ts Scenarist endpoint
+      - __scenarist__/state.ts Debug state endpoint
       - products.ts Products API route
       - cart.ts Cart API route
+      - cart/add.ts Add-to-cart API route
       - checkout/ Checkout API routes
   - lib/
     - scenarist.ts Scenarist setup
@@ -366,7 +397,9 @@ import { FileTree } from '@astrojs/starlight/components';
 ```typescript
 // API route with external API call
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const response = await fetch('https://api.external.com/data');
+  const response = await fetch('https://api.external.com/data', {
+    headers: getScenaristHeaders(req), // Forward the test ID
+  });
   const data = await response.json();
   res.json(data);
 }
@@ -397,8 +430,10 @@ test('premium data', async ({ page, switchScenario }) => {
 
 ```typescript
 // Page with getServerSideProps
-export async function getServerSideProps() {
-  const response = await fetch('https://api.external.com/products');
+export async function getServerSideProps({ req }) {
+  const response = await fetch('https://api.external.com/products', {
+    headers: getScenaristHeaders(req), // Forward the test ID
+  });
   const { products } = await response.json();
   return { props: { products } };
 }

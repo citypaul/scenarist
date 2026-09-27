@@ -152,7 +152,7 @@ export async function GET(request: Request) {
 **What these helpers do:**
 - Extract test ID from request/headers
 - Return `{ 'x-scenarist-test-id': 'generated-uuid' }` object
-- Safe to call when Scenarist is disabled (returns empty object)
+- Safe to call in production builds, where no Scenarist instance exists (returns empty object)
 
 ### Express Solution: Manual Header Forwarding
 
@@ -210,8 +210,9 @@ await expect(page.getByText('£149.99')).toBeVisible();
 
 1. **Add logging** to see which scenario is active:
    ```typescript
-   console.log('Test ID:', req.get('x-scenarist-test-id'));
-   console.log('Active scenario:', scenarioManager.getActive(testId));
+   const testId = req.get('x-scenarist-test-id') ?? 'default-test';
+   console.log('Test ID:', testId);
+   console.log('Active scenario:', scenarist.getActiveScenario(testId));
    ```
 
 2. **Check server logs** for test ID headers on internal fetches

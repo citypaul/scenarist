@@ -230,7 +230,7 @@ test("premium user scenario", async ({ page }) => {
 });
 ```
 
-> **Note on testing**: This package has comprehensive behavior-driven tests at the package level. This is NOT unit testing - we test observable behavior through the public API only. See [Testing Philosophy](#testing-philosophy) below for full rationale.
+> **Note on testing**: This package has comprehensive behavior-driven tests at the package level. This is NOT unit testing - we test observable behavior through the public API only.
 
 #### Options
 
@@ -238,8 +238,7 @@ test("premium user scenario", async ({ page }) => {
 type SwitchScenarioOptions = {
   readonly baseURL: string; // Base URL of your application
   readonly endpoint?: string; // Scenario endpoint path or absolute URL (default: '/__scenario__')
-  readonly testIdHeader?: string; // Test ID header name (default: 'x-scenarist-test-id')
-  readonly variant?: string; // Optional scenario variant
+  readonly testId?: string; // Test ID to use (default: auto-generated)
 };
 ```
 
@@ -249,10 +248,10 @@ type SwitchScenarioOptions = {
 
 The `switchScenario` helper:
 
-1. Generates a unique test ID (`test-{scenarioId}-{timestamp}`)
-2. POSTs to the scenario endpoint with the test ID header
-3. Verifies the scenario switch succeeded (200 response)
-4. Sets the test ID header for all subsequent requests in the test
+1. Generates a unique test ID (`test-{scenarioId}-{uuid}`)
+2. Sets the test ID header for all subsequent requests in the test
+3. POSTs to the scenario endpoint with the test ID header
+4. Verifies the scenario switch succeeded (200 response)
 
 This reduces scenario switching from 9 lines of boilerplate to 2 lines:
 
@@ -451,9 +450,15 @@ The debug fixtures require a debug state endpoint in your application. Create it
 
 ```typescript
 // pages/api/__scenarist__/state.ts
+import type { NextApiRequest, NextApiResponse } from "next";
 import { scenarist } from "@/lib/scenarist";
 
-export default scenarist?.createStateEndpoint();
+// In production, scenarist is undefined due to conditional exports.
+// Next.js requires a default export function, so fall back to a 405 handler.
+export default scenarist?.createStateEndpoint() ??
+  ((_req: NextApiRequest, res: NextApiResponse) => {
+    res.status(405).end();
+  });
 ```
 
 **App Router:**

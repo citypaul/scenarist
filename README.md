@@ -324,10 +324,6 @@ Strict TypeScript types for scenarios, configs, and APIs. Catch errors at compil
 
 Next.js has a [well-documented singleton problem](https://github.com/vercel/next.js/discussions/68572) where modules get bundled multiple times, breaking the singleton pattern. This causes [MSW integration issues](https://github.com/mswjs/msw/issues/1644) with multiple conflicting server instances. Scenarist's Next.js adapter includes built-in singleton protection using `globalThis` guards—you get a single, stable MSW instance regardless of how Next.js loads your modules. No manual workarounds required.
 
-### 🎨 Scenario Variants for Data-Driven Testing
-
-Parameterize scenarios with variants. Test the same flow with different user tiers, payment methods, or feature flags without duplicating scenario definitions.
-
 ### 🔌 Built on MSW (Mock Service Worker)
 
 Leverage the power of MSW's battle-tested HTTP interception. Scenarist adds runtime management, test isolation, and framework adapters on top of MSW's solid foundation.
@@ -354,8 +350,8 @@ Scenarist uses **Hexagonal Architecture** (Ports & Adapters) for maximum flexibi
 │                                                                       │
 │  ┌─────────────────────────────────────────────────────────────┐   │
 │  │  Types (Data Structures)                                     │   │
-│  │  • Scenario                                                  │   │
-│  │  • ScenarioVariant                                           │   │
+│  │  • ScenaristScenario                                         │   │
+│  │  • ScenaristMock                                             │   │
 │  │  • ActiveScenario                                            │   │
 │  │  • ScenaristConfig                                           │   │
 │  └─────────────────────────────────────────────────────────────┘   │
@@ -371,7 +367,7 @@ Scenarist uses **Hexagonal Architecture** (Ports & Adapters) for maximum flexibi
 │  │  Domain (Implementations)                                    │   │
 │  │  • createScenarioManager()                                   │   │
 │  │  • buildConfig()                                             │   │
-│  │  • createScenario()                                          │   │
+│  │  • createResponseSelector()                                  │   │
 │  └─────────────────────────────────────────────────────────────┘   │
 │                                                                       │
 └───────────────────────┬───────────────────────┬──────────────────────┘
@@ -638,31 +634,12 @@ const scenarist = createScenarist({
   scenarios,
   strictMode: false,
 
-  // Customize header names
-  headers: {
-    testId: "x-my-test-id",
-  },
-
   // Customize endpoint paths
   endpoints: {
     setScenario: "/api/test/scenario",
     getScenario: "/api/test/scenario",
   },
 });
-```
-
-### Scenario Variants
-
-You can pass optional variant names when switching scenarios:
-
-```typescript
-await request(app)
-  .post("/__scenario__")
-  .set("x-scenarist-test-id", "test-123")
-  .send({
-    scenario: "user-scenario",
-    variant: "premium-tier", // Optional variant
-  });
 ```
 
 ### Checking Active Scenario
@@ -689,6 +666,7 @@ Capture state from requests and inject it into responses for multi-step flows:
 const shoppingCartScenario: ScenaristScenario = {
   id: "shopping-cart",
   name: "Shopping Cart",
+  description: "Cart accumulates items across requests",
   mocks: [
     {
       method: "POST",
@@ -1007,7 +985,6 @@ async function switchScenario(page: Page, scenario: string) {
 
 ### Planning & Architecture
 
-- **[Dynamic Responses Plan](./docs/plans/dynamic-responses.md)** - Complete implementation plan and requirements
 - **[ADR-0002: Dynamic Response System](./docs/adrs/0002-dynamic-response-system.md)** - Architectural decisions
 
 ---
@@ -1032,8 +1009,8 @@ pnpm test
 # Build all packages
 pnpm build
 
-# Run tests in watch mode
-pnpm test:watch
+# Run tests in watch mode (per package)
+cd internal/core && pnpm test:watch
 ```
 
 ### Areas for Contribution
@@ -1188,7 +1165,7 @@ Think of it as MSW + scenario management + test orchestration.
 
 **Q: Can I use this with Next.js App Router?**
 
-A: Yes! Scenarist works perfectly with Next.js 13+ App Router, Server Components, Server Actions, and the Pages Router. Your React Server Components execute normally, only external API calls are intercepted.
+A: Yes! Scenarist works perfectly with Next.js 14+ App Router, Server Components, Server Actions, and the Pages Router. Your React Server Components execute normally, only external API calls are intercepted.
 
 **Q: Does this work with Remix, Fastify, or other frameworks?**
 
@@ -1200,7 +1177,7 @@ A: Yes! Your entire tRPC router, procedures, and middleware execute. Only calls 
 
 **Q: Can I use this in production?**
 
-A: Scenarist is designed for testing/development. The middleware can be disabled in production via config (`enabled: process.env.NODE_ENV !== 'production'`).
+A: Scenarist is designed for testing/development. Each adapter's package exports resolve to a production stub when your bundler or runtime uses the `production` condition, so `createScenarist()` returns `undefined` and no MSW or scenario code ships in production builds.
 
 **Q: Does this work with Playwright's built-in mocking?**
 
@@ -1212,7 +1189,7 @@ A: Absolutely! Scenarist works with Cypress, Puppeteer, Selenium, or any test fr
 
 **Q: What about my database? Does Scenarist help with that?**
 
-A: No. Scenarist only intercepts **external HTTP requests** (Stripe, Auth0, etc.). Database calls are not HTTP requests—they go directly to your database. If your app uses databases, use a test database or tools like Testcontainers. See our [Testing Database Apps](/guides/testing-database-apps) guide for strategies.
+A: No. Scenarist only intercepts **external HTTP requests** (Stripe, Auth0, etc.). Database calls are not HTTP requests—they go directly to your database. If your app uses databases, use a test database or tools like Testcontainers. See our [Testing Database Apps](https://scenarist.io/guides/testing-database-apps/) guide for strategies.
 
 **Q: How fast is scenario switching?**
 
@@ -1236,7 +1213,7 @@ A: Absolutely! Scenarist is built with Turborepo. Perfect for monorepo testing s
 
 **Q: What if I need to test with real external APIs sometimes?**
 
-A: Set `enabled: false` to disable mocking globally, or use `strictMode: false` and create scenarios with selective mocks to allow passthrough for specific endpoints.
+A: Use `strictMode: false` (the default) and create scenarios with selective mocks—requests that no mock matches pass through to the real API.
 
 ---
 

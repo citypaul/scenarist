@@ -83,7 +83,7 @@ export async function GET(request: Request) {
 
 - Extract test ID from request/headers
 - Return `{ 'x-scenarist-test-id': 'generated-uuid' }` object
-- Safe to call even when Scenarist is disabled (returns empty object)
+- Safe to call in production builds, where no Scenarist instance exists (returns empty object)
 
 #### Express: Headers Already Tracked
 
@@ -566,215 +566,95 @@ test("retries on failure", async ({ page, switchScenario }) => {
 
 ## Production Tree-Shaking Verification
 
-When deploying Scenarist to production, it's critical to verify that implementation code is NOT being delivered to production. Modern bundlers with code splitting enabled automatically tree-shake Scenarist with zero configuration, but you should verify this is working correctly in your build.
+When deploying Scenarist to production, it's critical to verify that implementation code is NOT being delivered to production. The adapters use **conditional exports**: when your bundler resolves the `production` export condition, the adapter entry point resolves to a stub whose `createScenarist()` returns `undefined` and imports nothing. You should verify this is working correctly in your build.
 
-### How Code Splitting Works
+### How Conditional Exports Work
 
-When you use dynamic imports with code splitting:
-
-1. **DefinePlugin** replaces `process.env.NODE_ENV` with literal `'production'`
-2. **Dead code elimination** makes the `if (process.env.NODE_ENV === 'production')` branch unreachable
-3. **Code splitting** puts implementation code in a separate chunk (e.g., `impl-ABC123.js`)
-4. **Tree-shaking** eliminates the unreachable import statement from the entry point
-5. **Result:** Implementation chunk exists on disk but is NEVER loaded into memory
+1. The adapter's `package.json` maps the `production` export condition to a `production.js` stub
+2. Your bundler resolves that condition when building for production
+3. The stub's `createScenarist()` returns `undefined` and has no imports
+4. **Result:** Neither the Scenarist implementation nor MSW is included in the build output
 
 ### Step 1: Build Your Application
 
-First, build your application with code splitting enabled:
+Build with the `production` condition enabled:
 
 ```bash
-# esbuild (requires --splitting for ESM)
-esbuild src/server.ts --bundle --splitting --outdir=dist \
-  --platform=node --format=esm \
-  --define:process.env.NODE_ENV='"production"'
+# esbuild (--conditions=production is required)
+esbuild src/server.ts --bundle --platform=node --format=esm \
+  --outfile=dist/server.js \
+  --define:process.env.NODE_ENV='"production"' \
+  --conditions=production
 
-# webpack (code splitting automatic for dynamic imports)
-NODE_ENV=production webpack --mode production
-
-# Vite (code splitting automatic)
-NODE_ENV=production vite build
+# Next.js
+NODE_ENV=production next build
 ```
 
-**Expected output:**
+For other bundlers, make sure `production` is included in the resolve conditions for production builds.
 
-```
-dist/
-  server.js           ~27kb    ← Entry point (small!)
-  impl-ABC123.js      ~242kb   ← Implementation chunk (exists but never loaded)
-  chunk-XYZ789.js     ...      ← Other chunks
-```
-
-### Step 2: Verify Implementation is NOT in Entry Point
-
-Check that implementation code is NOT bundled into the main entry point:
+### Step 2: Verify Implementation is NOT in the Build Output
 
 ```bash
-# Search for Scenarist implementation code in entry point
-grep -rE '(createScenaristImpl|setupWorker|HttpResponse\.json)' dist/server.js
+# Search for MSW implementation code in the build output
+grep -rE '(setupWorker|HttpResponse\.json)' dist/
 
 # Should output nothing (no matches) ✅
 ```
 
-**Expected result:** No matches. If you see matches, implementation code is being bundled inline (bad).
-
-### Step 3: Verify Implementation Chunk is Never Loaded (Runtime)
-
-This is the **critical verification** - prove the implementation chunk exists but never loads into memory:
-
-```bash
-# Start production server in background
-NODE_ENV=production node dist/server.js &
-SERVER_PID=$!
-
-# Wait for server to start
-sleep 2
-
-# Check which files are loaded into memory
-lsof -p $SERVER_PID | grep -E 'impl-.*\.js'
-
-# Should output nothing (chunk not loaded) ✅
-
-# Clean up
-kill $SERVER_PID
-```
-
-**Expected result:** No output. The `impl-*.js` chunk file exists on disk but is NOT loaded into the Node.js process memory.
-
-**What `lsof` proves:**
-
-- Lists all files opened by a process
-- If implementation chunk was loaded, it would appear in the output
-- No output = chunk never touched by runtime = zero delivery overhead
-
-### Step 4: Verify Build Artifact Sizes
-
-Check that your entry point is significantly smaller than total build output:
-
-```bash
-# Check entry point size
-ls -lh dist/server.js
-# Should be small (~27kb for typical Express app)
-
-# Check implementation chunk size (exists but never loads)
-ls -lh dist/impl-*.js
-# ~242kb (this is normal - it's tree-shaken by never loading)
-
-# Total on-disk size vs delivered size:
-# On disk: ~27kb + ~242kb = ~269kb
-# Delivered: ~27kb (impl chunk never loads)
-```
-
-**Expected behavior:**
-
-- Entry point is 85-95% smaller than it would be without code splitting
-- Implementation chunk exists (this is normal and expected)
-- Runtime verification (step 3) proves chunk never loads
+**Expected result:** No matches. If you see matches, the bundler resolved the default (non-production) entry point and bundled the implementation.
 
 ### Red Flags
 
-**❌ Implementation code in entry point:**
+**❌ Implementation code in the build output:**
 
 ```bash
-$ grep 'createScenaristImpl' dist/server.js
-# Found matches ← BAD: Implementation bundled inline
+$ grep -rE '(setupWorker|HttpResponse\.json)' dist/
+# Found matches ← BAD: Implementation bundled
 ```
 
-**Fix:** Enable code splitting:
+**Fix:** Make sure the bundler resolves the `production` export condition:
 
-- esbuild: Add `--splitting --outdir=dist` (requires ESM format)
-- webpack: Check that dynamic imports aren't being forced inline
-- Vite: Code splitting should be automatic (check build config)
-
-**❌ Implementation chunk loads into memory:**
-
-```bash
-$ lsof -p $SERVER_PID | grep 'impl-.*\.js'
-dist/impl-ABC123.js  ← BAD: Chunk is being loaded!
-```
-
-**Fix:** Check that `process.env.NODE_ENV` is being set to `'production'`:
-
-- Verify DefinePlugin configuration
-- Check that `if (process.env.NODE_ENV === 'production')` branch is unreachable
-- Ensure bundler is actually replacing `process.env.NODE_ENV` with literal value
-
-**❌ No code splitting (single bundle):**
-
-```bash
-$ ls dist/
-server.js  ← Only one file, no chunks
-
-$ ls -lh dist/server.js
-618kb  ← Much larger than expected
-```
-
-**Fix:** Enable code splitting in your bundler configuration.
+- esbuild: Add `--conditions=production`
+- Next.js: Build with `NODE_ENV=production`
+- Other bundlers: Add `production` to the resolve conditions
 
 ### Framework-Specific Verification
 
 #### Express
 
 ```bash
-# Build
+# Build (esbuild with --conditions=production)
 pnpm build:production
 
-# Verify implementation not in entry point
-grep 'createScenaristImpl' dist/server.js
+# Verify implementation not in output
+! grep -rE '(setupWorker|startWorker|http\.(get|post|put|delete|patch)|HttpResponse\.json)' dist/
 # (no matches)
-
-# Runtime verification
-NODE_ENV=production node dist/server.js &
-SERVER_PID=$!
-sleep 2
-lsof -p $SERVER_PID | grep 'impl-.*\.js'
-# (no output - chunk not loaded)
-kill $SERVER_PID
 ```
 
-#### Next.js App Router
-
-Next.js automatically handles code splitting, but you can verify:
+#### Next.js App Router and Pages Router
 
 ```bash
 # Build
-pnpm build
+NODE_ENV=production next build
 
-# Check .next/standalone output
-ls -lh .next/standalone/server.js
-
-# Next.js tree-shaking is automatic for dynamic imports
-# Verification: Check that Scenarist implementation is NOT in main bundle
-grep -r 'createScenaristImpl' .next/standalone
-# Should only appear in separate chunks, not main bundle
-```
-
-#### Next.js Pages Router
-
-```bash
-# Build
-pnpm build
-
-# Similar to App Router - check build output
-grep -r 'createScenaristImpl' .next/server/pages
-# Should be in separate chunks only
+# Verify implementation not in output
+! grep -rE '(setupWorker|startWorker|http\.(get|post|put|delete|patch)|HttpResponse\.json)' .next/ --exclude-dir=cache
+# (no matches)
 ```
 
 ### What This Proves
 
 ✅ **Zero delivery overhead** - Implementation code never reaches production runtime
-✅ **Code splitting works** - Bundler correctly creates separate chunks
-✅ **DefinePlugin works** - `process.env.NODE_ENV` replaced with literal
-✅ **Tree-shaking works** - Unreachable import eliminated
+✅ **Conditional exports work** - Bundler resolved the production stub
 ✅ **Production safety** - Test infrastructure code completely absent from production execution
 
 ### Next Steps
 
 If verification fails:
 
-1. Check bundler configuration for code splitting support
-2. Verify DefinePlugin is replacing `process.env.NODE_ENV`
-3. Ensure you're using dynamic imports (not static imports)
-4. Review [Production Safety Guide](/concepts/production-safety/) for detailed configuration
+1. Check that your bundler resolves the `production` export condition
+2. Verify `NODE_ENV=production` is set for the build
+3. Review [Production Safety Guide](/concepts/production-safety/) for detailed configuration
 
 If verification succeeds:
 ✅ Your production deployment is safe - Scenarist implementation code is completely tree-shaken!
@@ -853,7 +733,7 @@ test("test 1", async ({ page, switchScenario }) => {
 **Check:**
 
 - Verify `/__scenario__` endpoint is registered
-- Check that `enabled: true` in config
+- Check that `createScenarist()` returned an instance (it returns `undefined` in production builds)
 - Ensure test ID headers are being sent
 
 **Fix:**

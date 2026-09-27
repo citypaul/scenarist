@@ -27,6 +27,8 @@ import type { ScenaristScenarios } from '@scenarist/express-adapter';
 const scenarios = {
   default: {
     id: 'default',
+    name: 'Default',
+    description: 'Payment succeeds',
     mocks: [
       {
         method: 'POST',
@@ -37,6 +39,8 @@ const scenarios = {
   },
   cardDeclined: {
     id: 'cardDeclined',
+    name: 'Card declined',
+    description: 'Stripe rejects the charge',
     mocks: [
       {
         method: 'POST',
@@ -112,7 +116,7 @@ Before diving into your framework guide, here's what makes Scenarist different:
 
 ## Debugging with Logs
 
-When scenarios don't match as expected, Scenarist's built-in logging shows you exactly what's happening:
+When scenarios don't match as expected, pass a logger to `createScenarist()` to see exactly what's happening. The example apps pass `createConsoleLogger()` when a `SCENARIST_LOG` environment variable is set:
 
 ```bash
 # See which mocks are matching your requests

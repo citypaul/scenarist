@@ -94,13 +94,13 @@ Filter logs to specific areas of concern:
 
 | Category | Description | Example Messages |
 |----------|-------------|-----------------|
-| `lifecycle` | Startup, shutdown | `scenarist_started`, `scenarist_stopped` |
-| `scenario` | Scenario switching | `scenario_switched`, `scenario_not_found` |
-| `matching` | Mock selection | `mock_selected`, `mock_no_match`, `mock_candidates_found` |
-| `sequence` | Sequence state | `sequence_advanced`, `sequence_exhausted` |
-| `state` | State capture | `state_captured`, `state_injected` |
-| `template` | Template replacement | `template_replaced` |
-| `request` | Request lifecycle | `request_received`, `response_sent` |
+| `lifecycle` | Startup, shutdown | None emitted yet |
+| `scenario` | Scenario switching | `scenario_switched`, `scenario_not_found`, `scenario_registered`, `scenario_cleared` |
+| `matching` | Mock selection | `mock_selected`, `mock_no_match`, `mock_candidates_found`, `mock_match_evaluated` |
+| `sequence` | Sequence state | `sequence_exhausted` |
+| `state` | State updates | `state_set`, `state_response_resolved` |
+| `template` | Template replacement | None emitted yet |
+| `request` | Request lifecycle | None emitted yet |
 
 ```typescript
 // Only show matching and scenario logs
@@ -115,12 +115,12 @@ const logger = createConsoleLogger({
 <Tabs>
 <TabItem label="Pretty Format">
 ```
-12:34:56.789 INF 🎬 [test-user-login] scenario | scenario_switched scenarioId=premium-user
-12:34:56.801 INF 🎯 [test-user-login] matching | mock_selected mockIndex=2 specificity=5
-12:34:56.802 DBG 🎯 [test-user-login] matching | mock_match_evaluated mockIndex=0 matched=false
-12:34:56.803 DBG 🎯 [test-user-login] matching | mock_match_evaluated mockIndex=1 matched=true
-12:34:56.810 INF 💾 [test-user-login] state    | state_captured key=userId value=user-123
-12:34:56.815 WRN 🎯 [test-user-login] matching | mock_no_match url=/api/unknown candidateCount=0
+12:34:56.789 INF [test-user-login] 🎬 scenario   scenario_switched
+12:34:56.801 DBG [test-user-login] 🎯 matching   mock_match_evaluated mockIndex=0 matched=false hasCriteria=true
+12:34:56.802 DBG [test-user-login] 🎯 matching   mock_match_evaluated mockIndex=1 matched=true hasCriteria=true
+12:34:56.803 INF [test-user-login] 🎯 matching   mock_selected mockIndex=1 specificity=5
+12:34:56.810 DBG [test-user-login] 💾 state      state_set setState={"userId":"user-123"} source="mock-level"
+12:34:56.815 WRN [test-user-login] 🎯 matching   mock_no_match url="https://api.example.com/unknown" method="GET" candidateCount=0
 ```
 
 **Features:**
@@ -134,9 +134,9 @@ const logger = createConsoleLogger({
 </TabItem>
 <TabItem label="JSON Format">
 ```json
-{"level":"info","category":"scenario","message":"scenario_switched","testId":"test-user-login","scenarioId":"premium-user","timestamp":1732650896789}
-{"level":"info","category":"matching","message":"mock_selected","testId":"test-user-login","data":{"mockIndex":2,"specificity":5},"timestamp":1732650896801}
-{"level":"debug","category":"matching","message":"mock_match_evaluated","testId":"test-user-login","data":{"mockIndex":0,"matched":false},"timestamp":1732650896802}
+{"timestamp":1732650896789,"level":"info","category":"scenario","message":"scenario_switched","testId":"test-user-login","scenarioId":"premium-user","data":{}}
+{"timestamp":1732650896801,"level":"info","category":"matching","message":"mock_selected","testId":"test-user-login","scenarioId":"premium-user","data":{"mockIndex":2,"specificity":5}}
+{"timestamp":1732650896802,"level":"debug","category":"matching","message":"mock_match_evaluated","testId":"test-user-login","scenarioId":"premium-user","data":{"mockIndex":0,"matched":false,"hasCriteria":true}}
 ```
 
 **Use for:** Log aggregation (Datadog, Splunk), structured queries, production debugging
@@ -149,10 +149,10 @@ const logger = createConsoleLogger({
 When running tests in parallel, each test gets a unique test ID. The pretty format assigns **persistent colors** to each test ID, making it easy to trace logs from concurrent tests:
 
 ```
-12:34:56.789 INF 🎯 [test-checkout-flow] matching | mock_selected
-12:34:56.790 INF 🎯 [test-payment-process] matching | mock_selected
-12:34:56.791 INF 🎯 [test-user-login] matching | mock_selected
-12:34:56.792 INF 💾 [test-checkout-flow] state | state_captured
+12:34:56.789 INF [test-checkout-flow] 🎯 matching   mock_selected mockIndex=0 specificity=0
+12:34:56.790 INF [test-payment-process] 🎯 matching   mock_selected mockIndex=1 specificity=0
+12:34:56.791 INF [test-user-login] 🎯 matching   mock_selected mockIndex=0 specificity=2
+12:34:56.792 DBG [test-checkout-flow] 💾 state      state_set setState={"step":"paid"} source="mock-level"
 ```
 
 Each test ID gets a unique color that remains consistent throughout the test run.
@@ -321,8 +321,8 @@ const logger = createConsoleLogger({
 ```
 
 You'll see:
-- `state_captured` - When state is extracted from a response
-- `state_injected` - When state is injected into a mock
+- `state_set` - When `afterResponse.setState` updates state
+- `state_response_resolved` - Which `stateResponse` condition (or default) was used
 
 ## Custom Loggers
 

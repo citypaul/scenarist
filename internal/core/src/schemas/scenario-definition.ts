@@ -95,8 +95,8 @@ export type ScenaristCaptureConfig = z.infer<
 >;
 
 /**
- * URL pattern supports three forms:
- * - String: exact match, path params (/users/:id), or glob (/api/*)
+ * URL pattern supports two forms:
+ * - String: exact match or path-to-regexp v6 params (/users/:id, /files/:path+)
  * - Native RegExp: pattern match (e.g., /\/users\/\d+/)
  */
 export const ScenaristUrlPatternSchema = z.union([

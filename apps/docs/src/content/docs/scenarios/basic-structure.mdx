@@ -43,11 +43,11 @@ export const myScenario: ScenaristScenario = {
 | `id` | `string` | Unique identifier used when switching scenarios in tests |
 | `name` | `string` | Human-readable name for documentation and tooling |
 | `description` | `string` | Explains when and why to use this scenario |
-| `mocks` | `array` | Array of mock definitions (at least one required) |
+| `mocks` | `array` | Array of mock definitions |
 
 ## Mock Definition
 
-Each mock requires a `method`, `url`, and **either** a `response` or `sequence`.
+Each mock requires a `method`, `url`, and **one of** `response`, `sequence`, or `stateResponse`.
 
 ### Simple Response Mock
 
@@ -115,12 +115,14 @@ url: 'https://api.example.com/users/:id'
 // Matches: https://api.example.com/users/abc
 ```
 
-### Glob Patterns
+### Multi-Segment Parameters
 ```typescript
-url: 'https://api.example.com/users/*'
+url: 'https://api.example.com/users/:path+'
 // Matches: https://api.example.com/users/123
 // Matches: https://api.example.com/users/123/profile
 ```
+
+Glob wildcards such as `/users/*` are not supported in mock URLs; use a repeating parameter (`:path+`) or a RegExp instead.
 
 ### Regular Expressions
 

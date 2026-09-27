@@ -193,11 +193,11 @@ export type ScenarioId = keyof typeof scenarios;
 
 ```typescript
 // tests/example.spec.ts
-import { test, expect } from '@playwright/test';
+import { test as base, expect } from '@playwright/test';
 import type { ScenarioId } from '../lib/scenarios';
 
 // Type-safe fixture
-test.extend<{ switchScenario: (id: ScenarioId) => Promise<void> }>({
+const test = base.extend<{ switchScenario: (id: ScenarioId) => Promise<void> }>({
   switchScenario: async ({ page }, use) => {
     await use(async (id: ScenarioId) => {
       await page.request.post('/__scenario__', {
@@ -252,7 +252,8 @@ export type ScenarioId = keyof typeof scenarios;
 ```typescript
 const scenarios = {
   success: successScenario,
-  // ❌ Error: Property 'default' is missing
+  // ❌ Not a compile-time error: createScenarist() throws at runtime
+  //    "Scenarios object must have a 'default' key"
 } as const satisfies ScenaristScenarios;
 ```
 
@@ -278,7 +279,8 @@ const scenario: ScenaristScenario = {
     {
       method: 'GET',
       url: '/api/test',
-      // ❌ Error: Must have 'response' or 'sequence'
+      // ❌ Not a compile-time error: a request that selects this mock
+      //    fails at runtime because it has no 'response', 'sequence', or 'stateResponse'
     },
   ],
 };

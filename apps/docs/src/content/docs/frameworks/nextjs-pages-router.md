@@ -28,7 +28,7 @@ Scenarist enables HTTP-level testing for Pages Router applications:
 
 - **Test API routes** with real HTTP requests and different external API scenarios
 - **Test getServerSideProps** without mocking Next.js internals
-- **Test getStaticProps** with runtime scenario switching
+- **Test getStaticProps** against your default scenario (it has no request to carry a test ID)
 - **Run parallel tests** without interference
 - **Fast execution** - no browser overhead for every scenario
 - **Automatic singleton protection** - Handles Next.js module duplication for you (no `globalThis` boilerplate needed)
@@ -41,12 +41,15 @@ Test API routes with different scenarios:
 
 ```typescript
 // pages/api/checkout.ts
+import { getScenaristHeaders } from "@scenarist/nextjs-adapter/pages";
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
   const response = await fetch("https://api.stripe.com/v1/charges", {
     method: "POST",
+    headers: getScenaristHeaders(req), // Forward the test ID
     body: JSON.stringify(req.body),
   });
 
@@ -56,8 +59,9 @@ export default async function handler(
 
 // Test with different payment scenarios
 test("processes successful payment", async ({ page, switchScenario }) => {
-  await switchScenario(page, "paymentSuccess");
+  const testId = await switchScenario(page, "paymentSuccess");
   const response = await page.request.post("/api/checkout", {
+    headers: { "x-scenarist-test-id": testId }, // page.request needs the test ID explicitly
     data: { amount: 5000, token: "tok_test" },
   });
   expect(response.ok()).toBe(true);
@@ -70,8 +74,12 @@ Test server-side rendering with different external API responses:
 
 ```typescript
 // pages/products.tsx
-export async function getServerSideProps() {
-  const response = await fetch('https://api.stripe.com/v1/products');
+import { getScenaristHeaders } from '@scenarist/nextjs-adapter/pages';
+
+export async function getServerSideProps(context) {
+  const response = await fetch('https://api.stripe.com/v1/products', {
+    headers: getScenaristHeaders(context.req), // Forward the test ID
+  });
   const { data: products } = await response.json();
   return { props: { products } };
 }
@@ -90,7 +98,7 @@ test('renders products from external API', async ({ page, switchScenario }) => {
 
 ### getStaticProps
 
-Test static generation with different data scenarios:
+`getStaticProps` receives no request object, so it cannot forward the test ID header. Its external calls resolve against the default test ID (`default-test`) and use your `default` scenario rather than a per-test scenario. In production builds it runs at build time:
 
 ```typescript
 // pages/index.tsx
@@ -107,11 +115,10 @@ export default function HomePage({ featured }) {
   return <FeaturedProducts products={featured} />;
 }
 
-// Test with different featured product scenarios
-test('renders featured products', async ({ page, switchScenario }) => {
-  await switchScenario(page, 'holidaySale');
+// Test against the default scenario's featured products
+test('renders featured products', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByText('Holiday Sale')).toBeVisible();
+  await expect(page.getByText('Featured')).toBeVisible();
 });
 ```
 

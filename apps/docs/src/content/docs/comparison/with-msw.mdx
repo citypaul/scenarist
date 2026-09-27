@@ -115,23 +115,27 @@ export const handlers = [
 // scenarios/payment.ts - Scenarist for testing
 const scenarios = {
   default: {
-    mocks: [{ url: 'https://api.stripe.com/v1/charges', response: { status: 200, body: { id: 'ch_123' } } }]
+    id: 'default', name: 'Default', description: 'Baseline responses',
+    mocks: [{ method: 'POST', url: 'https://api.stripe.com/v1/charges', response: { status: 200, body: { id: 'ch_123' } } }]
   },
   'payment-success': {
-    mocks: [{ url: 'https://api.stripe.com/v1/charges', response: { status: 200, body: { id: 'ch_456', status: 'succeeded' } } }]
+    id: 'payment-success', name: 'Payment success', description: 'Charge succeeds',
+    mocks: [{ method: 'POST', url: 'https://api.stripe.com/v1/charges', response: { status: 200, body: { id: 'ch_456', status: 'succeeded' } } }]
   },
   'payment-declined': {
-    mocks: [{ url: 'https://api.stripe.com/v1/charges', response: { status: 402, body: { error: { code: 'card_declined' } } } }]
+    id: 'payment-declined', name: 'Payment declined', description: 'Card declined',
+    mocks: [{ method: 'POST', url: 'https://api.stripe.com/v1/charges', response: { status: 402, body: { error: { code: 'card_declined' } } } }]
   },
   'payment-timeout': {
-    mocks: [{ url: 'https://api.stripe.com/v1/charges', response: { status: 504, delay: 30000 } }]
+    id: 'payment-timeout', name: 'Payment timeout', description: 'Gateway times out',
+    mocks: [{ method: 'POST', url: 'https://api.stripe.com/v1/charges', response: { status: 504, delay: 30000 } }]
   }
 } as const satisfies ScenaristScenarios;
 
 // payment.spec.ts - Tests run in parallel
 test('shows success message', async ({ page, switchScenario }) => {
   await switchScenario(page, 'payment-success');
-  // Test isolation via x-test-id header
+  // Test isolation via x-scenarist-test-id header
 });
 
 test('shows decline message', async ({ page, switchScenario }) => {
@@ -182,15 +186,15 @@ test.concurrent('Test B', server.boundary(async () => {
   <TabItem label="Scenarist">
 ```typescript
 // Scenarist - complete isolation via test ID
-test('Test A - expects success', async ({ switchScenario }) => {
+test('Test A - expects success', async ({ page, switchScenario }) => {
   await switchScenario(page, 'payment-success');
-  // x-test-id: test-a → payment-success scenario
+  // x-scenarist-test-id: test-a → payment-success scenario
   // Sequences, state capture, everything isolated
 });
 
-test('Test B - expects failure', async ({ switchScenario }) => {
+test('Test B - expects failure', async ({ page, switchScenario }) => {
   await switchScenario(page, 'payment-declined');
-  // x-test-id: test-b → payment-declined scenario
+  // x-scenarist-test-id: test-b → payment-declined scenario
   // Complete isolation including sequences and captured state
 });
 ```
@@ -231,9 +235,10 @@ beforeEach(() => {
 // scenarios/index.ts
 export const scenarios = {
   'premium-checkout': {
+    id: 'premium-checkout', name: 'Premium checkout', description: 'Premium user pays successfully',
     mocks: [
-      { url: '/api/payment', response: { body: { status: 'succeeded' } } },
-      { url: '/api/user', response: { body: { tier: 'premium' } } }
+      { method: 'POST', url: '/api/payment', response: { status: 200, body: { status: 'succeeded' } } },
+      { method: 'GET', url: '/api/user', response: { status: 200, body: { tier: 'premium' } } }
     ]
   }
 } as const satisfies ScenaristScenarios;
@@ -274,7 +279,7 @@ test('retry after failure', async () => {
   <TabItem label="With Scenarist">
 ```typescript
 // Solution: Runtime switching per test ID
-test('retry after failure', async ({ switchScenario }) => {
+test('retry after failure', async ({ page, switchScenario }) => {
   await switchScenario(page, 'payment-timeout');
   await page.click('#submit');
   await expect(page.locator('.retry')).toBeVisible();

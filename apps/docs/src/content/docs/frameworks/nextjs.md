@@ -44,7 +44,7 @@ The App Router introduces React Server Components, allowing server-side renderin
 
 **Best for:**
 
-- New Next.js projects (Next.js 13+)
+- New Next.js projects (Scenarist supports Next.js 14, 15 and 16)
 - Server Components and streaming
 - Server Actions for mutations
 - Route Handlers for API endpoints

@@ -62,7 +62,7 @@ Visit [http://localhost:3002](http://localhost:3002) to see the app.
 pnpm test
 
 # Run tests in UI mode
-pnpm test:ui
+pnpm test:e2e:ui
 
 # Run specific test file
 pnpm test products-server-components
@@ -74,23 +74,31 @@ pnpm test products-server-components
 
 **`lib/scenarist.ts`** - Scenarist configuration
 ```typescript
-import { createScenarist } from '@scenarist/nextjs-adapter';
+import { createScenarist } from '@scenarist/nextjs-adapter/app';
 import { scenarios } from './scenarios';
 
 export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
+  enabled: true,
   scenarios,
 });
+
+// Start MSW in Node.js environment
+if (typeof window === 'undefined' && scenarist) {
+  scenarist.start();
+}
 ```
 
-**`app/api/[[...route]]/route.ts`** - Catch-all route for Scenarist endpoints
+**`app/api/%5F%5Fscenario%5F%5F/route.ts`** - Scenario control endpoint
 ```typescript
-import { scenarist } from '@/lib/scenarist';
+import { scenarist } from '../../../lib/scenarist';
 
-export const { GET, POST } = scenarist;
+const handler = scenarist?.createScenarioEndpoint();
+
+export const POST = handler;
+export const GET = handler;
 ```
 
-This creates the `/__scenario__` endpoint used by tests to switch scenarios.
+This creates the `/api/__scenario__` endpoint used by tests to switch scenarios.
 
 ### Scenario Definitions
 
@@ -106,9 +114,9 @@ premiumUser: {
   id: 'premiumUser',
   mocks: [{
     method: 'GET',
-    url: 'https://api.products.example.com/pricing',
-    match: { query: { tier: 'premium' } },
-    response: { status: 200, body: { price: 799, discount: 20 } }
+    url: 'http://localhost:3001/products',
+    match: { headers: { 'x-user-tier': 'premium' } },
+    response: { status: 200, body: { products: buildProducts('premium') } }
   }]
 }
 ```
@@ -119,12 +127,12 @@ githubPolling: {
   id: 'githubPolling',
   mocks: [{
     method: 'GET',
-    url: 'https://api.github.com/repos/user/repo/status',
+    url: 'http://localhost:3001/github/jobs/:id',
     sequence: {
       responses: [
-        { status: 200, body: { status: 'pending' } },
-        { status: 200, body: { status: 'processing' } },
-        { status: 200, body: { status: 'complete' } }
+        { status: 200, body: { jobId: '123', status: 'pending', progress: 0 } },
+        { status: 200, body: { jobId: '123', status: 'processing', progress: 50 } },
+        { status: 200, body: { jobId: '123', status: 'complete', progress: 100 } }
       ],
       repeat: 'last'
     }
@@ -138,16 +146,19 @@ cartWithState: {
   id: 'cartWithState',
   mocks: [
     {
-      method: 'POST',
-      url: 'https://api.cart.example.com/add',
-      captureState: {
-        cartItems: { from: 'body', path: 'productId' }
-      },
-      response: { status: 201 }
+      method: 'GET',
+      url: 'http://localhost:3001/cart',
+      response: {
+        status: 200,
+        body: { items: '{{state.cartItems}}' }
+      }
     },
     {
-      method: 'GET',
-      url: 'https://api.cart.example.com/items',
+      method: 'PATCH',
+      url: 'http://localhost:3001/cart',
+      captureState: {
+        cartItems: 'body.items'
+      },
       response: {
         status: 200,
         body: { items: '{{state.cartItems}}' }
@@ -161,41 +172,39 @@ cartWithState: {
 
 **`tests/playwright/products-server-components.spec.ts`** - Server Components with request matching
 ```typescript
-test('premium users see discounted pricing', async ({ page, switchScenario }) => {
+test('should render products from server component with premium tier', async ({ page, switchScenario }) => {
   await switchScenario(page, 'premiumUser');
 
-  await page.goto('/products');
+  await page.goto('/products?tier=premium');
 
-  // Server Component fetches pricing with tier=premium query param
-  // Scenarist returns mock matching { query: { tier: 'premium' } }
-  await expect(page.getByText('$799')).toBeVisible();
-  await expect(page.getByText('20% off')).toBeVisible();
+  // Server Component forwards x-user-tier: premium to the products API
+  // Scenarist returns mock matching { headers: { 'x-user-tier': 'premium' } }
+  await expect(page.getByText('Current tier: premium')).toBeVisible();
+  await expect(page.getByText('£99.99')).toBeVisible();
 });
 ```
 
-**`tests/playwright/sequences.spec.ts`** - Polling with sequences
+**`tests/playwright/polling-server-components.spec.ts`** - Polling with sequences
 ```typescript
-test('polling updates status through sequence', async ({ page, switchScenario }) => {
+test('should show complete status on third request', async ({ page, switchScenario }) => {
   await switchScenario(page, 'githubPolling');
 
-  await page.goto('/polling');
-
   // First request: pending
-  await expect(page.getByText('Status: pending')).toBeVisible();
+  await page.goto('/polling?jobId=123');
 
-  await page.getByRole('button', { name: 'Refresh' }).click();
   // Second request: processing
-  await expect(page.getByText('Status: processing')).toBeVisible();
+  await page.reload();
 
-  await page.getByRole('button', { name: 'Refresh' }).click();
   // Third request: complete
-  await expect(page.getByText('Status: complete')).toBeVisible();
+  await page.reload();
+  await expect(page.getByText('COMPLETE', { exact: true })).toBeVisible();
+  await expect(page.getByText('100%', { exact: true })).toBeVisible();
 });
 ```
 
-**`tests/playwright/cart-server-rsc.spec.ts`** - Stateful mocks with Server Components
+**`tests/playwright/cart-server-components.spec.ts`** - Stateful mocks with Server Components
 ```typescript
-test('cart maintains state across requests', async ({ page, switchScenario }) => {
+test('should display cart item after adding product via state capture', async ({ page, switchScenario }) => {
   const testId = await switchScenario(page, 'cartWithState');
 
   // Add product - state captured
@@ -215,7 +224,7 @@ test('cart maintains state across requests', async ({ page, switchScenario }) =>
 
 ### How It Works
 
-1. **Setup** - Next.js app includes Scenarist catch-all route
+1. **Setup** - Next.js app includes the Scenarist scenario endpoint route
 2. **Test starts** - Calls `switchScenario()` to set active scenario
 3. **HTTP request** - Test makes request to Next.js app
 4. **Backend execution** - Server Components, API routes execute normally
@@ -225,7 +234,7 @@ test('cart maintains state across requests', async ({ page, switchScenario }) =>
 ### Test Isolation
 
 Each test gets a unique test ID:
-- Scenario switching: `POST /__scenario__` with `x-scenarist-test-id` header
+- Scenario switching: `POST /api/__scenario__` with `x-scenarist-test-id` header
 - All requests include `x-scenarist-test-id` header automatically (Playwright helper)
 - Server routes requests to correct scenario based on test ID
 - Parallel tests don't interfere with each other
@@ -238,7 +247,8 @@ import { FileTree } from '@astrojs/starlight/components';
 - apps/nextjs-app-router-example/
   - app/
     - api/
-      - [[...route]]/route.ts Scenarist endpoints
+      - %5F%5Fscenario%5F%5F/route.ts Scenario endpoint
+      - %5F%5Fscenarist%5F%5F/state/route.ts Debug state endpoint
     - products/ Server Components
     - polling/ Sequence example
     - cart-server/ Stateful mock example
@@ -248,8 +258,8 @@ import { FileTree } from '@astrojs/starlight/components';
   - tests/
     - playwright/
       - products-server-components.spec.ts
-      - sequences.spec.ts
-      - cart-server-rsc.spec.ts
+      - polling-server-components.spec.ts
+      - cart-server-components.spec.ts
 
 </FileTree>
 

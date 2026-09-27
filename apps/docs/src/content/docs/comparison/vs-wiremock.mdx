@@ -39,6 +39,9 @@ export const scenarist = createScenarist({
   enabled: process.env.NODE_ENV === "test",
   scenarios: {
     default: {
+      id: "default",
+      name: "Default",
+      description: "Baseline responses",
       mocks: [
         {
           url: "https://api.stripe.com/v1/charges",
@@ -354,9 +357,9 @@ stubFor(get(urlEqualTo("/job/123/status"))
   url: 'https://api.stripe.com/v1/charges',
   match: {
     body: {
-      amount: 5000,
+      amount: '5000',
       currency: 'usd',
-      metadata: { orderId: /^order-\d+$/ }  // Regex support
+      orderId: /^order-\d+$/  // Regex support (top-level body fields)
     },
     headers: {
       'idempotency-key': /.+/  // Must be present
@@ -404,11 +407,12 @@ stubFor(get(urlEqualTo("/job/123/status"))
 // Capture state from requests, inject into responses
 const scenarios = {
   'cart-flow': {
+    id: 'cart-flow', name: 'Cart flow', description: 'Cart accumulates items',
     mocks: [
       // Capture item when added to cart
       {
         method: 'POST',
-        url: '*/api/cart/items',
+        url: '/api/cart/items',
         captureState: {
           'cartItems[]': 'body.item'  // Append to array
         },
@@ -417,7 +421,7 @@ const scenarios = {
       // Inject captured state into response
       {
         method: 'GET',
-        url: '*/api/cart',
+        url: '/api/cart',
         response: {
           status: 200,
           body: {

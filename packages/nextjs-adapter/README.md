@@ -179,7 +179,7 @@ Scenarist provides 20+ powerful features for scenario-based testing. All capabil
 
 ### Additional Features
 
-**Path parameters** (`/users/:id`), **Wildcard URLs** (`*/api/*`), **Response delays**, **Custom headers**, **Strict mode** (fail on unmocked requests)
+**Path parameters** (`/users/:id`), **Pathname-only URLs** (`/api/users` matches any host), **RegExp URLs** (`/\/api\//`), **Response delays**, **Custom headers**, **Strict mode** (fail on unmocked requests)
 
 **Want to learn more?** See [Core Functionality Documentation](../../docs/core-functionality.md) for detailed explanations and examples.
 
@@ -194,7 +194,7 @@ Test how your UI handles API errors without maintaining separate error mocks per
 const errorScenario = {
   id: "api-error",
   name: "API Error",
-  mocks: [{ method: "GET", url: "*/api/*", response: { status: 500 } }],
+  mocks: [{ method: "GET", url: /\/api\//, response: { status: 500 } }],
 };
 
 // Use in many tests
@@ -213,7 +213,7 @@ const slowScenario = {
   mocks: [
     {
       method: "GET",
-      url: "*/api/data",
+      url: "/api/data",
       response: { status: 200, body: { data: [] }, delay: 3000 }, // 3s delay
     },
   ],
@@ -282,7 +282,7 @@ yarn add -D @scenarist/nextjs-adapter msw
 
 **Peer Dependencies:**
 
-- `next` ^14.0.0 || ^15.0.0
+- `next` ^14.0.0 || ^15.0.0 || ^16.0.0
 - `msw` ^2.0.0
 
 ## Quick Start (5 Minutes)
@@ -301,6 +301,7 @@ import type {
 export const defaultScenario: ScenaristScenario = {
   id: "default",
   name: "Default",
+  description: "Baseline responses",
   mocks: [
     {
       method: "GET",
@@ -313,6 +314,7 @@ export const defaultScenario: ScenaristScenario = {
 export const successScenario: ScenaristScenario = {
   id: "success",
   name: "API Success",
+  description: "User API succeeds",
   mocks: [
     {
       method: "GET",
@@ -376,11 +378,15 @@ if (typeof window === "undefined" && scenarist) {
 **Pages Router:** Create `pages/api/__scenario__.ts`:
 
 ```typescript
+import type { NextApiRequest, NextApiResponse } from "next";
 import { scenarist } from "@/lib/scenarist";
 
-// In production, scenarist is undefined due to conditional exports
-// When the default export is undefined, Next.js treats the route as non-existent
-export default scenarist?.createScenarioEndpoint();
+// In production, scenarist is undefined due to conditional exports.
+// Next.js requires a default export function, so fall back to a 405 handler.
+export default scenarist?.createScenarioEndpoint() ??
+  ((_req: NextApiRequest, res: NextApiResponse) => {
+    res.status(405).end();
+  });
 ```
 
 **App Router:** Create `app/api/%5F%5Fscenario%5F%5F/route.ts`:
@@ -391,7 +397,7 @@ export default scenarist?.createScenarioEndpoint();
 import { scenarist } from "@/lib/scenarist";
 
 // In production, scenarist is undefined due to conditional exports
-// When exports are undefined, Next.js treats the route as non-existent
+// When the exports are undefined, the route answers 405 Method Not Allowed
 const handler = scenarist?.createScenarioEndpoint();
 
 export const POST = handler;
@@ -408,7 +414,7 @@ afterAll(() => scenarist.stop()); // Stop MSW server
 
 it("fetches user successfully", async () => {
   // Set scenario for this test
-  await fetch("http://localhost:3000/__scenario__", {
+  await fetch("http://localhost:3000/api/__scenario__", {
     method: "POST",
     headers: {
       "x-scenarist-test-id": "test-1",
@@ -445,7 +451,7 @@ it("fetches user successfully", async () => {
 | ---------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | **Import Path**        | `@scenarist/nextjs-adapter/pages`                   | `@scenarist/nextjs-adapter/app`                                                                                          |
 | **Setup File**         | `pages/api/__scenario__.ts`                         | `app/api/%5F%5Fscenario%5F%5F/route.ts` \*                                                                               |
-| **Scenario Endpoint**  | `export default scenarist.createScenarioEndpoint()` | `const handler = scenarist.createScenarioEndpoint();`<br>`export const POST = handler;`<br>`export const GET = handler;` |
+| **Scenario Endpoint**  | `export default scenarist?.createScenarioEndpoint() ?? fallback` | `const handler = scenarist?.createScenarioEndpoint();`<br>`export const POST = handler;`<br>`export const GET = handler;` |
 | **Core Functionality** | ✅ Same scenarios, same behavior                    | ✅ Same scenarios, same behavior                                                                                         |
 
 \* App Router uses `%5F%5Fscenario%5F%5F` (URL-encoded) because folders starting with `_` are treated as private folders in Next.js App Router. See [App Router Setup](#app-router-setup) for details.
@@ -532,11 +538,15 @@ if (typeof window === "undefined" && scenarist) {
 
 ```typescript
 // pages/api/__scenario__.ts
+import type { NextApiRequest, NextApiResponse } from "next";
 import { scenarist } from "../../lib/scenarist";
 
-// In production, scenarist is undefined due to conditional exports
-// When the default export is undefined, Next.js treats the route as non-existent
-export default scenarist?.createScenarioEndpoint();
+// In production, scenarist is undefined due to conditional exports.
+// Next.js requires a default export function, so fall back to a 405 handler.
+export default scenarist?.createScenarioEndpoint() ??
+  ((_req: NextApiRequest, res: NextApiResponse) => {
+    res.status(405).end();
+  });
 ```
 
 This single line creates a Next.js API route that handles both GET and POST requests for scenario management.
@@ -554,7 +564,7 @@ describe("User API", () => {
 
   it("should return admin user", async () => {
     // Set scenario for this test
-    await fetch("http://localhost:3000/__scenario__", {
+    await fetch("http://localhost:3000/api/__scenario__", {
       method: "POST",
       headers: {
         "x-scenarist-test-id": "admin-test",
@@ -608,7 +618,7 @@ if (typeof window === "undefined" && scenarist) {
 import { scenarist } from "@/lib/scenarist";
 
 // In production, scenarist is undefined due to conditional exports
-// When exports are undefined, Next.js treats the route as non-existent
+// When the exports are undefined, the route answers 405 Method Not Allowed
 const handler = scenarist?.createScenarioEndpoint();
 
 export const POST = handler;
@@ -646,9 +656,6 @@ type AdapterOptions<T extends ScenaristScenarios> = {
   enabled: boolean; // Whether mocking is enabled
   scenarios: T; // REQUIRED - scenarios object (all scenarios registered upfront)
   strictMode?: boolean; // Return 501 for unmocked requests (default: false)
-  headers?: {
-    testId?: string; // Header for test ID (default: 'x-scenarist-test-id')
-  };
   defaultTestId?: string; // Default test ID (default: 'default-test')
   registry?: ScenarioRegistry; // Custom registry (default: InMemoryScenarioRegistry)
   store?: ScenarioStore; // Custom store (default: InMemoryScenarioStore)
@@ -661,12 +668,11 @@ type AdapterOptions<T extends ScenaristScenarios> = {
 
 ```typescript
 type Scenarist<T extends ScenaristScenarios> = {
-  config: ScenaristConfig; // Resolved configuration (headers, etc.)
+  config: ScenaristConfig; // Resolved configuration (strictMode, defaultTestId, etc.)
   createScenarioEndpoint: () => Handler; // Creates scenario endpoint handler
   switchScenario: (
     testId: string,
     scenarioId: ScenarioIds<T>,
-    variant?: string,
   ) => ScenaristResult<void, Error>;
   getActiveScenario: (testId: string) => ActiveScenario | undefined;
   getScenarioById: (
@@ -684,11 +690,14 @@ type Scenarist<T extends ScenaristScenarios> = {
 Unlike Express, Next.js doesn't have global middleware. Instead, you manually create the scenario endpoint using `createScenarioEndpoint()`:
 
 ```typescript
-// Pages Router - single default export
-export default scenarist.createScenarioEndpoint();
+// Pages Router - single default export, with a 405 fallback for production builds
+export default scenarist?.createScenarioEndpoint() ??
+  ((_req: NextApiRequest, res: NextApiResponse) => {
+    res.status(405).end();
+  });
 
-// App Router - explicit method exports
-const handler = scenarist.createScenarioEndpoint();
+// App Router - explicit method exports (undefined in production, so the route answers 405)
+const handler = scenarist?.createScenarioEndpoint();
 export const POST = handler;
 export const GET = handler;
 ```
@@ -697,14 +706,13 @@ export const GET = handler;
 
 The endpoint handler exposes these operations:
 
-#### `POST /__scenario__` - Set Active Scenario
+#### `POST /api/__scenario__` - Set Active Scenario
 
 **Request:**
 
 ```typescript
 {
   scenario: string;      // Scenario ID (required)
-  variant?: string;      // Variant name (optional)
 }
 ```
 
@@ -715,14 +723,13 @@ The endpoint handler exposes these operations:
   success: true;
   testId: string;
   scenarioId: string;
-  variant?: string;
 }
 ```
 
 **Example:**
 
 ```typescript
-await fetch("http://localhost:3000/__scenario__", {
+await fetch("http://localhost:3000/api/__scenario__", {
   method: "POST",
   headers: {
     "x-scenarist-test-id": "test-123",
@@ -732,7 +739,7 @@ await fetch("http://localhost:3000/__scenario__", {
 });
 ```
 
-#### `GET /__scenario__` - Get Active Scenario
+#### `GET /api/__scenario__` - Get Active Scenario
 
 **Response (200):**
 
@@ -756,7 +763,7 @@ await fetch("http://localhost:3000/__scenario__", {
 **Example:**
 
 ```typescript
-const response = await fetch("http://localhost:3000/__scenario__", {
+const response = await fetch("http://localhost:3000/api/__scenario__", {
   headers: { "x-scenarist-test-id": "test-123" },
 });
 
@@ -764,7 +771,7 @@ const data = await response.json();
 console.log(data.scenarioId); // 'user-logged-in'
 ```
 
-#### `GET /__scenarist__/state` - Debug State Endpoint
+#### `GET /api/__scenarist__/state` - Debug State Endpoint
 
 Inspect the current test state for debugging. Useful when testing multi-stage flows with `afterResponse.setState`.
 
@@ -780,7 +787,7 @@ Inspect the current test state for debugging. Useful when testing multi-stage fl
 **Example:**
 
 ```typescript
-const response = await fetch("http://localhost:3000/__scenarist__/state", {
+const response = await fetch("http://localhost:3000/api/__scenarist__/state", {
   headers: { "x-scenarist-test-id": "test-123" },
 });
 
@@ -794,9 +801,15 @@ console.log(data.state); // { submitted: true, phase: "review" }
 
 ```typescript
 // pages/api/__scenarist__/state.ts
+import type { NextApiRequest, NextApiResponse } from "next";
 import { scenarist } from "@/lib/scenarist";
 
-export default scenarist?.createStateEndpoint();
+// In production, scenarist is undefined due to conditional exports.
+// Next.js requires a default export function, so fall back to a 405 handler.
+export default scenarist?.createStateEndpoint() ??
+  ((_req: NextApiRequest, res: NextApiResponse) => {
+    res.status(405).end();
+  });
 ```
 
 **App Router:**
@@ -919,7 +932,7 @@ export default async function ProductsPage() {
 **What these helpers do:**
 
 - Extract test ID from request headers (`x-scenarist-test-id` by default)
-- Respect your configured `testIdHeaderName` and `defaultTestId`
+- Respect your configured `defaultTestId`
 - Return object with Scenarist headers ready to spread
 - Safe to use in production (return empty object when scenarist is undefined)
 
@@ -963,8 +976,8 @@ Active scenario mocks take precedence; unmocked endpoints fall back to default s
 const defaultScenario = {
   id: "default",
   mocks: [
-    { method: "GET", url: "*/api/users", response: { status: 200, body: [] } },
-    { method: "GET", url: "*/api/orders", response: { status: 200, body: [] } },
+    { method: "GET", url: "/api/users", response: { status: 200, body: [] } },
+    { method: "GET", url: "/api/orders", response: { status: 200, body: [] } },
   ],
 };
 
@@ -972,7 +985,7 @@ const defaultScenario = {
 const errorScenario = {
   id: "error",
   mocks: [
-    { method: "GET", url: "*/api/users", response: { status: 500 } },
+    { method: "GET", url: "/api/users", response: { status: 500 } },
     // Orders uses default scenario
   ],
 };
@@ -982,7 +995,7 @@ const errorScenario = {
 
 ## Type-Safe Scenario IDs
 
-TypeScript automatically infers scenario names from your scenarios object, providing autocomplete and compile-time safety.
+The `satisfies ScenaristScenarios` constraint type-checks every scenario definition. For autocomplete and compile-time checking of scenario IDs in tests, pass the same scenarios object to `withScenarios()` from `@scenarist/playwright-helpers`.
 
 ### How It Works
 
@@ -994,10 +1007,10 @@ import type {
 } from "@scenarist/nextjs-adapter/pages";
 
 export const scenarios = {
-  default: { id: "default", name: "Default", mocks: [] },
-  success: { id: "success", name: "Success", mocks: [] },
-  error: { id: "error", name: "Error", mocks: [] },
-  timeout: { id: "timeout", name: "Timeout", mocks: [] },
+  default: { id: "default", name: "Default", description: "", mocks: [] },
+  success: { id: "success", name: "Success", description: "", mocks: [] },
+  error: { id: "error", name: "Error", description: "", mocks: [] },
+  timeout: { id: "timeout", name: "Timeout", description: "", mocks: [] },
 } as const satisfies ScenaristScenarios;
 
 // lib/scenarist.ts
@@ -1013,17 +1026,24 @@ export const scenarist = createScenarist({
 ### Type Safety Benefits
 
 ```typescript
-// ✅ Valid - TypeScript knows about these scenario IDs
-scenarist.switchScenario("test-123", "success");
-scenarist.switchScenario("test-123", "error");
-scenarist.switchScenario("test-123", "timeout");
+// tests/fixtures.ts
+import { withScenarios, expect } from "@scenarist/playwright-helpers";
+import { scenarios } from "../lib/scenarios";
 
-// ❌ TypeScript error - 'invalid-name' is not a valid scenario ID
-scenarist.switchScenario("test-123", "invalid-name");
-//                                    ^^^^^^^^^^^^^^
-// Argument of type '"invalid-name"' is not assignable to parameter of type
-// '"default" | "success" | "error" | "timeout"'
+export const test = withScenarios(scenarios);
+export { expect };
+
+// tests/example.spec.ts
+test("switches scenario", async ({ page, switchScenario }) => {
+  // ✅ Valid - TypeScript knows about these scenario IDs
+  await switchScenario(page, "success");
+
+  // ❌ TypeScript error - 'invalid-name' is not a valid scenario ID
+  await switchScenario(page, "invalid-name");
+});
 ```
+
+**Note:** `scenarist.switchScenario()` on the Next.js adapter instance accepts any `string` scenario ID; an unknown ID returns an error result at runtime rather than a compile-time error.
 
 ### In Tests
 
@@ -1032,7 +1052,7 @@ scenarist.switchScenario("test-123", "invalid-name");
 import { scenarios } from "./scenarios";
 
 // ✅ Type-safe scenario switching
-await fetch("http://localhost:3000/__scenario__", {
+await fetch("http://localhost:3000/api/__scenario__", {
   method: "POST",
   headers: {
     "x-scenarist-test-id": "test-1",
@@ -1042,7 +1062,7 @@ await fetch("http://localhost:3000/__scenario__", {
 });
 
 // Or reference by object key for refactor-safety
-await fetch("http://localhost:3000/__scenario__", {
+await fetch("http://localhost:3000/api/__scenario__", {
   method: "POST",
   headers: {
     "x-scenarist-test-id": "test-1",
@@ -1070,18 +1090,14 @@ Create helper functions to reduce boilerplate:
 // tests/helpers.ts
 const API_BASE = "http://localhost:3000";
 
-export const setScenario = async (
-  testId: string,
-  scenario: string,
-  variant?: string,
-) => {
-  await fetch(`${API_BASE}/__scenario__`, {
+export const setScenario = async (testId: string, scenario: string) => {
+  await fetch(`${API_BASE}/api/__scenario__`, {
     method: "POST",
     headers: {
       "x-scenarist-test-id": testId,
       "content-type": "application/json",
     },
-    body: JSON.stringify({ scenario, variant }),
+    body: JSON.stringify({ scenario }),
   });
 };
 
@@ -1151,43 +1167,27 @@ describe("API Tests", () => {
 
 **⚠️ Security Warning:** Only enable scenario endpoints in development/test environments, **NEVER in production**.
 
-**Why?** The `/__scenario__` endpoint allows arbitrary mock switching, which could be exploited in production to bypass security, fake data, or cause unexpected behavior.
+**Why?** The `/api/__scenario__` endpoint allows arbitrary mock switching, which could be exploited in production to bypass security, fake data, or cause unexpected behavior.
 
-**Safe configuration:**
-
-```typescript
-// lib/scenarist.ts
-// ✅ CORRECT - Only enabled in safe environments
-const scenarist = createScenarist({
-  enabled:
-    process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test",
-  scenarios,
-  strictMode: false,
-});
-
-// ❌ WRONG - Dangerous in production
-const scenarist = createScenarist({
-  enabled: true, // Always on, including production!
-  scenarios,
-});
-```
+**How production is protected:** production builds resolve `@scenarist/nextjs-adapter/app` and `/pages` to entry points where `createScenarist()` returns `undefined`, so the scenario route has no working handler (App Router route handlers are undefined and answer 405; Pages Router routes use a 405 fallback) (see [Production Tree-Shaking](#production-tree-shaking)). The `enabled` option does not by itself turn mocking or the endpoints off.
 
 **Production checklist:**
 
-- ✅ `enabled` is conditional (never hardcoded `true`)
-- ✅ Environment checks use `process.env.NODE_ENV`
-- ✅ `/__scenario__` endpoints not exposed in production builds
+- ✅ App Router route files use `scenarist?.createScenarioEndpoint()`, so their handlers are undefined in production
+- ✅ Pages Router route files add a 405 fallback (`scenarist?.createScenarioEndpoint() ?? fallback`), because Next.js requires a default export function
+- ✅ Production builds run with `NODE_ENV=production` (`next build`)
+- ✅ `/api/__scenario__` endpoints not exposed in production builds
 
 **During development**, manually switch scenarios with curl:
 
 ```bash
 # Switch to error scenario
-curl -X POST http://localhost:3000/__scenario__ \
+curl -X POST http://localhost:3000/api/__scenario__ \
   -H "Content-Type: application/json" \
   -d '{"scenario": "payment-declined"}'
 
 # Check active scenario
-curl http://localhost:3000/__scenario__
+curl http://localhost:3000/api/__scenario__
 ```
 
 ## Configuration
@@ -1273,18 +1273,6 @@ const scenarist = createScenarist({
 - Request for mocked endpoint → Returns defined mock response ✅
 - Request for unmocked endpoint → Passes through to real API 🌐
 - Useful for incremental mocking in development
-
-### Custom Headers
-
-```typescript
-const scenarist = createScenarist({
-  enabled: true,
-  scenarios,
-  headers: {
-    testId: "x-my-test-id",
-  },
-});
-```
 
 ## Logging & Debugging
 
@@ -1461,7 +1449,7 @@ await setScenario("test-1", "my-scenario"); // ✅ Now works
 
 **Problem:** Type errors with Next.js request/response types.
 
-**Solution:** Ensure your `next` peer dependency version matches the adapter's supported versions (^14.0.0 || ^15.0.0).
+**Solution:** Ensure your `next` peer dependency version matches the adapter's supported versions (^14.0.0 || ^15.0.0 || ^16.0.0).
 
 ## TypeScript
 
@@ -1555,7 +1543,7 @@ import {
 
 ### How It Works
 
-When `NODE_ENV=production`, bundlers (Next.js webpack/Turbopack, esbuild, Vite, etc.) automatically resolve to production entry points that return `undefined` with **zero imports**:
+When the bundler resolves the `"production"` export condition (Next.js production builds do this automatically; custom bundlers need configuring, see below), imports resolve to production entry points that return `undefined` with **zero imports**:
 
 ```typescript
 // Production build imports this instead:
@@ -1702,8 +1690,8 @@ MIT
 
 ## Related Packages
 
-- **[@scenarist/core](../core)** - Core scenario management
+- **[@scenarist/core](../../internal/core)** - Core scenario management
 - **[@scenarist/express-adapter](../express-adapter)** - Express.js adapter
-- **[@scenarist/msw-adapter](../msw-adapter)** - MSW integration (used internally)
+- **[@scenarist/msw-adapter](../../internal/msw-adapter)** - MSW integration (used internally)
 
 **Note:** The MSW adapter is used internally by this package. Users of `@scenarist/nextjs-adapter` don't need to interact with it directly.

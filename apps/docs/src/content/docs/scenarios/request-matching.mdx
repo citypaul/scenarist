@@ -136,6 +136,7 @@ When multiple mocks match the same URL, Scenarist uses **specificity scoring** t
 - Each body field = +1 point
 - Each header = +1 point
 - Each query param = +1 point
+- Each state key = +1 point
 - No match criteria = 0 points (fallback)
 
 **Most specific mock wins**, regardless of order.
@@ -247,15 +248,15 @@ mocks: [
 
 **Fallback mocks (specificity = 0):** Last match wins
 
-This enables active scenarios to override default scenario fallbacks:
-
 ```typescript
-// Default scenario fallback + active scenario fallback
+// Two fallback mocks for the same endpoint in one scenario
 mocks: [
-  { response: { body: { tier: 'standard' } } },  // From default
-  { response: { body: { tier: 'premium' } } },   // From active ← Wins (last)
+  { response: { body: { tier: 'standard' } } },
+  { response: { body: { tier: 'premium' } } },   // ← Wins (last)
 ]
 ```
+
+Active scenarios do not rely on this to override the default: an active scenario's fallback mock excludes the default scenario's mocks for that endpoint.
 
 ## Mock Type Priority
 
@@ -267,9 +268,9 @@ When comparing fallback mocks (no match criteria), **dynamic response types have
 | `stateResponse` | 1 (higher) |
 | `response` | 0 (lower) |
 
-This means a `sequence` or `stateResponse` from the default scenario **cannot** be overridden by a simple `response` from the active scenario.
+This priority applies when fallback mocks compete within the same set of candidates. It does **not** stop an active scenario overriding the default: when the active scenario has a fallback mock for an endpoint, the default scenario's mocks for that endpoint are not considered at all.
 
-### Example: Override Limitation
+### Example: Overriding a Default Sequence
 
 ```typescript
 // Default scenario has a sequence
@@ -289,65 +290,19 @@ const defaultScenario = {
   ]
 };
 
-// Active scenario tries to override with simple response
+// Active scenario overrides with simple response
 const activeScenario = {
   mocks: [
     {
       method: 'GET',
       url: '/api/job/status',
-      response: { status: 200, body: { status: 'error' } }  // ❌ Won't override!
+      response: { status: 200, body: { status: 'error' } }  // ✅ Overrides the default sequence
     }
   ]
 };
 ```
 
-**Result:** Default's `sequence` (priority 1) wins over active's `response` (priority 0).
-
-### How to Override Dynamic Response Types
-
-To override a `sequence` or `stateResponse`, use one of these approaches:
-
-**Option 1: Use the same mock type**
-
-```typescript
-// ✅ sequence overrides sequence
-mocks: [
-  {
-    method: 'GET',
-    url: '/api/job/status',
-    sequence: {
-      responses: [{ status: 200, body: { status: 'error' } }],
-      repeat: 'last'
-    }
-  }
-]
-
-// ✅ stateResponse overrides sequence
-mocks: [
-  {
-    method: 'GET',
-    url: '/api/job/status',
-    stateResponse: {
-      default: { status: 200, body: { status: 'error' } }
-    }
-  }
-]
-```
-
-**Option 2: Add match criteria (priority 100+)**
-
-```typescript
-// ✅ response with match criteria overrides sequence fallback
-mocks: [
-  {
-    method: 'GET',
-    url: '/api/job/status',
-    match: { headers: { 'x-force-error': 'true' } },
-    response: { status: 200, body: { status: 'error' } }
-  }
-]
-// Now send requests with x-force-error: true header
-```
+**Result:** Active's `response` wins. Because the active scenario has a fallback mock for this endpoint, the default scenario's `sequence` is not a candidate.
 
 ## Real-World Example
 
