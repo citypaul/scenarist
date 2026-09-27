@@ -222,7 +222,7 @@ pre.code { font: 400 21px/1.62 var(--mono); color: #d4d4d8; white-space: pre; po
 #rn-alert b { width: 30px; height: 30px; border-radius: 50%; background: #e11d48; color: #fff; display: grid; place-items: center; flex: none; font-size: 17px; }
 #rn-alert div { font-size: 18px; font-weight: 700; color: #881337; } #rn-alert small { display: block; font-size: 15px; font-weight: 500; color: #9f1239; }
 #rn-cursor { position: absolute; left: 0; top: 0; width: 30px; height: 30px; z-index: 6; opacity: 0; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)); }
-.rn-node { position: absolute; top: 690px; height: 190px; border-radius: 20px; border: 1px solid var(--line); background: linear-gradient(180deg, rgba(22,22,26,0.96), rgba(12,12,15,0.96)); padding: 20px 24px; }
+.rn-node { position: absolute; top: 686px; height: 216px; border-radius: 20px; border: 1px solid var(--line); background: linear-gradient(180deg, rgba(22,22,26,0.96), rgba(12,12,15,0.96)); padding: 20px 24px; }
 .rn-node .t { display: flex; align-items: center; justify-content: space-between; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
 .rn-node .sub { font: 500 16px var(--mono); color: var(--faint); margin-top: 8px; }
 .rn-node .req { font: 600 17px var(--mono); color: #e4e4e7; margin-top: 12px; min-height: 22px; }
@@ -234,10 +234,10 @@ pre.code { font: 400 21px/1.62 var(--mono); color: #d4d4d8; white-space: pre; po
 .rn-step.on { color: var(--emerald-hi); border-color: rgba(16,185,129,0.45); background: var(--emerald-lo); }
 #rn-resp { display: inline-block; margin-top: 12px; font: 700 18px var(--mono); padding: 8px 14px; border-radius: 10px; color: #fecdd3; background: rgba(244,63,94,0.16); border: 1px solid rgba(244,63,94,0.45); opacity: 0; }
 #rn-note { font: 500 15px var(--mono); color: var(--faint); margin-top: 12px; opacity: 0; }
-#rn-wall { left: 1196px; top: 680px; width: 8px; height: 210px; border-radius: 6px; background: linear-gradient(180deg, var(--violet-hi), var(--violet)); box-shadow: 0 0 26px var(--violet); }
-#rn-wall-l { left: 1200px; top: 648px; transform: translateX(-50%); font: 700 15px var(--sans); color: #ede9fe; background: rgba(139,92,246,0.25); border: 1px solid rgba(139,92,246,0.6); padding: 4px 12px; border-radius: 999px; white-space: nowrap; }
+#rn-wall { left: 1196px; top: 676px; width: 8px; height: 236px; border-radius: 6px; background: linear-gradient(180deg, var(--violet-hi), var(--violet)); box-shadow: 0 0 26px var(--violet); }
+#rn-wall-l { left: 1200px; top: 644px; transform: translateX(-50%); font: 700 15px var(--sans); color: #ede9fe; background: rgba(139,92,246,0.25); border: 1px solid rgba(139,92,246,0.6); padding: 4px 12px; border-radius: 999px; white-space: nowrap; }
 #rn-svg { position: absolute; left: 0; top: 0; }
-#rn-cap { top: 935px; font-size: 48px; }
+#rn-cap { top: 944px; font-size: 48px; }
 
 /* ---------- 6. parallel ---------- */
 #p-head { top: 70px; }
@@ -931,8 +931,8 @@ const typerRun = makeTyper($('#rn-pre'), null, CODE_RUN);
 const rnGutter = CODE_RUN.split('\n').map((_, i) => { const d = document.createElement('div'); d.textContent = String(i + 1); $('#rn-gutter').appendChild(d); return d; });
 const rsvg = $('#rn-svg');
 const rnPkt = Array.from({ length: 3 }, () => svgEl('circle', { r: 10, cx: -50, cy: -50 }, rsvg));
-svgEl('line', { x1: 360, y1: 785, x2: 440, y2: 785, stroke: 'rgba(255,255,255,0.14)', 'stroke-width': 2, 'stroke-dasharray': '6 8' }, rsvg);
-svgEl('line', { x1: 1140, y1: 785, x2: 1196, y2: 785, stroke: 'rgba(255,255,255,0.14)', 'stroke-width': 2, 'stroke-dasharray': '6 8' }, rsvg);
+svgEl('line', { x1: 360, y1: 794, x2: 440, y2: 794, stroke: 'rgba(255,255,255,0.14)', 'stroke-width': 2, 'stroke-dasharray': '6 8' }, rsvg);
+svgEl('line', { x1: 1140, y1: 794, x2: 1196, y2: 794, stroke: 'rgba(255,255,255,0.14)', 'stroke-width': 2, 'stroke-dasharray': '6 8' }, rsvg);
 const CUR = { rest: [1720, 610], email: [1380, 388], pay: [1380, 544] };
 
 function renderRun(t) {
@@ -986,7 +986,7 @@ function renderRun(t) {
   let used = 0;
   moves.forEach(([a, b, x0, x1, col]) => {
     if (t < a || t >= b) return; const c = rnPkt[used++]; if (!c) return;
-    c.setAttribute('cx', lerp(x0, x1, E.inOutCubic((t - a) / (b - a)))); c.setAttribute('cy', 785); c.setAttribute('fill', col); c.style.filter = `drop-shadow(0 0 8px ${col})`;
+    c.setAttribute('cx', lerp(x0, x1, E.inOutCubic((t - a) / (b - a)))); c.setAttribute('cy', 794); c.setAttribute('fill', col); c.style.filter = `drop-shadow(0 0 8px ${col})`;
   });
   for (let i = used; i < rnPkt.length; i++) rnPkt[i].setAttribute('cx', -50);
   txt($('#rn-n1-req'), t < R.gotoAt ? '' : t < R.clickAt ? 'GET /checkout' : t < R.alert ? 'POST /api/checkout' : 'renders “Payment failed”');
