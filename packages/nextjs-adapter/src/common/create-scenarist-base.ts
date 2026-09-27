@@ -95,6 +95,8 @@ export const createScenaristBase = (
     getScenarioDefinition: (scenarioId) => manager.getScenarioById(scenarioId),
     strictMode: config.strictMode,
     responseSelector,
+    errorBehaviors: config.errorBehaviors,
+    logger,
   });
 
   return {

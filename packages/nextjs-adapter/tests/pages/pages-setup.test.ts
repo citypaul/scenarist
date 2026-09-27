@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import type { ScenaristScenarios } from "@scenarist/core";
+import { describe, it, expect, vi } from "vitest";
+import type { Logger, ScenaristScenarios } from "@scenarist/core";
 import { createScenarist } from "../../src/pages/setup.js";
 
 const requireDefined = <T>(value: T | undefined): T => {
@@ -247,14 +247,15 @@ describe("Pages Router createScenarist", () => {
       // Even with different config, should return same instance
       const instance2 = requireDefined(
         createScenarist({
-          enabled: false, // Different enabled flag
+          enabled: true,
+          strictMode: true, // Different strictMode
           scenarios: testScenarios,
         }),
       );
 
       expect(instance1).toBe(instance2);
       // Original config should be preserved
-      expect(instance2.config.enabled).toBe(true); // Not false!
+      expect(instance2.config.strictMode).toBe(false);
     });
 
     it("should reuse existing registry/store when instance is cleared but globals persist", async () => {
@@ -446,5 +447,112 @@ describe("Pages Router createScenarist", () => {
         scenarist.start();
       }).not.toThrow();
     });
+  });
+});
+
+const createMockLogger = (): Logger => ({
+  error: vi.fn(),
+  warn: vi.fn(),
+  info: vi.fn(),
+  debug: vi.fn(),
+  trace: vi.fn(),
+  isEnabled: () => true,
+});
+
+describe("Pages Router createScenarist runtime configuration", () => {
+  it("returns undefined when enabled is false", () => {
+    clearAllGlobals();
+
+    const scenarist = createScenarist({
+      enabled: false,
+      scenarios: testScenarios,
+    });
+
+    expect(scenarist).toBeUndefined();
+  });
+
+  it("responds 500 with NO_MOCK_FOUND when onNoMockFound is throw", async () => {
+    clearAllGlobals();
+    const scenarist = requireDefined(
+      createScenarist({
+        enabled: true,
+        scenarios: testScenarios,
+        errorBehaviors: { onNoMockFound: "throw" },
+      }),
+    );
+
+    scenarist.start();
+    try {
+      const response = await fetch(
+        "https://pages-no-mock-throw.example.test/data",
+      );
+
+      expect(response.status).toBe(500);
+      expect(await response.json()).toEqual(
+        expect.objectContaining({ code: "NO_MOCK_FOUND" }),
+      );
+    } finally {
+      await scenarist.stop();
+      clearAllGlobals();
+    }
+  });
+
+  it("logs a warning through the configured logger when onNoMockFound is warn", async () => {
+    clearAllGlobals();
+    const logger = createMockLogger();
+    const scenarist = requireDefined(
+      createScenarist({
+        enabled: true,
+        strictMode: true,
+        scenarios: testScenarios,
+        logger,
+        errorBehaviors: { onNoMockFound: "warn" },
+      }),
+    );
+
+    scenarist.start();
+    try {
+      const response = await fetch(
+        "https://pages-no-mock-warn.example.test/data",
+        { headers: { "x-scenarist-test-id": "pages-warn" } },
+      );
+
+      expect(response.status).toBe(501);
+      expect(logger.warn).toHaveBeenCalledWith(
+        "matching",
+        "No mock matched for GET https://pages-no-mock-warn.example.test/data",
+        expect.objectContaining({ testId: "pages-warn" }),
+      );
+    } finally {
+      await scenarist.stop();
+      clearAllGlobals();
+    }
+  });
+
+  it("responds 500 with MISSING_TEST_ID when no test ID resolves and onMissingTestId is throw", async () => {
+    clearAllGlobals();
+    const scenarist = requireDefined(
+      createScenarist({
+        enabled: true,
+        scenarios: testScenarios,
+        defaultTestId: "",
+        errorBehaviors: { onMissingTestId: "throw" },
+      }),
+    );
+
+    scenarist.start();
+    try {
+      const response = await fetch(
+        "https://pages-missing-test-id.example.test/data",
+      );
+
+      expect(response.status).toBe(500);
+      expect(await response.json()).toEqual(
+        expect.objectContaining({ code: "MISSING_TEST_ID" }),
+      );
+    } finally {
+      await scenarist.stop();
+      clearAllGlobals();
+    }
   });
 });
