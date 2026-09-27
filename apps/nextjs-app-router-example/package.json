@@ -17,7 +17,7 @@
     "test:logs": "SCENARIST_LOG=1 playwright test --project=chromium",
     "test:custom": "SERVER_MODE=custom playwright test --project=chromium",
     "test:production": "playwright test --config=playwright.production.config.ts",
-    "verify:treeshaking": "pnpm build:production && ! grep -rE '(setupWorker|startWorker|http\\.(get|post|put|delete|patch)|HttpResponse\\.json)' .next/ --exclude-dir=cache"
+    "verify:treeshaking": "pnpm build:production && test -d .next/server && { grep -rqE --exclude-dir=cache '__scenarist_shared_msw_server' $(find .next -mindepth 1 -maxdepth 1 ! -name dev); test $? -eq 1; }"
   },
   "dependencies": {
     "@scenarist/nextjs-adapter": "workspace:*",

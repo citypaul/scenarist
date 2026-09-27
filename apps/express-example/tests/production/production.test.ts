@@ -14,10 +14,36 @@
  * Run with: pnpm test:production
  */
 
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, it, expect } from "vitest";
+
+const SCENARIST_MARKER = "__scenarist_shared_msw_server";
+
+const listBundleFiles = (dir: string): ReadonlyArray<string> =>
+  readdirSync(dir, { recursive: true, encoding: "utf8" })
+    .filter((file) => file.endsWith(".js"))
+    .map((file) => join(dir, file));
 
 describe("Production Build Verification", () => {
   const baseURL = "http://localhost:3000";
+
+  it("production bundle contains no Scenarist or MSW code", () => {
+    // SEMANTIC GOAL: Prove the production export condition removed Scenarist
+    // - A 404 from /__scenario__ shows Scenarist is not serving requests; it
+    //   does not show that the adapter and MSW code are absent from the bundle
+    // - The shared MSW server global survives minification, unlike MSW
+    //   function names, so its absence proves the code is gone
+
+    const bundleFiles = listBundleFiles(join(process.cwd(), "dist"));
+
+    expect(bundleFiles).not.toHaveLength(0);
+    expect(
+      bundleFiles.filter((file) =>
+        readFileSync(file, "utf8").includes(SCENARIST_MARKER),
+      ),
+    ).toEqual([]);
+  });
 
   it("health endpoint works in production", async () => {
     // SEMANTIC GOAL: Prove Express app runs without errors in production
