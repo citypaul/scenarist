@@ -1,6 +1,6 @@
 {
   "name": "@scenarist/playwright-helpers",
-  "version": "0.4.15",
+  "version": "0.5.0",
   "description": "Playwright test helpers for Scenarist scenario management",
   "author": "Paul Hammond (citypaul) <paul@packsoftware.co.uk>",
   "license": "MIT",
