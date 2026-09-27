@@ -1,14 +1,23 @@
+import type { ScenaristScenarios } from "@scenarist/core";
+import {
+  createScenaristImpl,
+  type ExpressAdapterOptions,
+  type ExpressScenarist,
+} from "./impl.js";
+
 // Re-export types from impl for public API
 export type { ExpressAdapterOptions, ExpressScenarist } from "./impl.js";
 
 /**
  * Create a Scenarist instance for Express.
  *
- * Production tree-shaking is handled via conditional exports in package.json:
- * - Development/test: Uses this file (imports impl.js with full MSW setup)
- * - Production builds: Uses production.js (returns undefined, zero imports)
+ * Production safety uses two layers:
+ * - Conditional exports: bundlers and `node --conditions=production` resolve
+ *   production.js (returns undefined, zero imports)
+ * - Runtime guard: returns undefined when NODE_ENV is 'production', for
+ *   unbundled apps started without the production condition
  *
- * This ensures all test code is eliminated from production bundles.
+ * Also returns undefined when `enabled` is false.
  *
  * @example
  * ```typescript
@@ -30,4 +39,12 @@ export type { ExpressAdapterOptions, ExpressScenarist } from "./impl.js";
  * afterAll(() => scenarist?.stop());
  * ```
  */
-export { createScenaristImpl as createScenarist } from "./impl.js";
+export const createScenarist = <T extends ScenaristScenarios>(
+  options: ExpressAdapterOptions<T>,
+): ExpressScenarist<T> | undefined => {
+  if (process.env.NODE_ENV === "production") {
+    return undefined;
+  }
+
+  return createScenaristImpl(options);
+};

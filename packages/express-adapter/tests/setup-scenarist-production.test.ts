@@ -133,6 +133,23 @@ describe("setup-scenarist.ts - Production Tree-Shaking", () => {
     });
   });
 
+  describe("Production mode (unbundled, no production export condition)", () => {
+    it("should return undefined when NODE_ENV is production even if enabled", async () => {
+      process.env.NODE_ENV = "production";
+
+      const { createScenarist } = await import(
+        "../src/setup/setup-scenarist.js"
+      );
+
+      const result = createScenarist({
+        enabled: true,
+        scenarios: testScenarios,
+      });
+
+      expect(result).toBeUndefined();
+    });
+  });
+
   describe("Type checking", () => {
     it("should have correct return type ExpressScenarist | undefined", async () => {
       process.env.NODE_ENV = "development";

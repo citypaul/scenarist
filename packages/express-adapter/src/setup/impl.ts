@@ -42,6 +42,9 @@ export type ExpressScenarist<
 /**
  * Create a Scenarist instance for Express.
  *
+ * Returns `undefined` when `enabled` is false: no middleware, no endpoints,
+ * no request interception.
+ *
  * This is the primary API for Express users. It wires everything automatically:
  * - MSW server with dynamic handler
  * - Test ID middleware
@@ -71,7 +74,11 @@ export type ExpressScenarist<
  */
 export const createScenaristImpl = <T extends ScenaristScenarios>(
   options: ExpressAdapterOptions<T>,
-): ExpressScenarist<T> => {
+): ExpressScenarist<T> | undefined => {
+  if (!options.enabled) {
+    return undefined;
+  }
+
   const config = buildConfig(options);
   const logger = options.logger ?? noOpLogger;
   const registry = options.registry ?? new InMemoryScenarioRegistry();
@@ -105,6 +112,8 @@ export const createScenaristImpl = <T extends ScenaristScenarios>(
     getScenarioDefinition: (scenarioId) => manager.getScenarioById(scenarioId),
     strictMode: config.strictMode,
     responseSelector,
+    errorBehaviors: config.errorBehaviors,
+    logger,
   });
 
   const middleware = Router();
