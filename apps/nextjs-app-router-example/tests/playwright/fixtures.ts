@@ -182,6 +182,8 @@ export const test = baseTest.extend<ExtendedFixtures>({
    *
    * `goto`/`reload` are replaced on the fixture-owned page instance because
    * Playwright hands the same object to `expect` and to the test.
+   * `goBack`/`goForward` are not wrapped: no spec navigates through history.
+   * Wrap them the same way before adding one that interacts afterwards.
    */
   page: async ({ page }, use) => {
     await use(waitForHydrationAfterNavigation(page));

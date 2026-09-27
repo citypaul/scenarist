@@ -27,25 +27,29 @@ const toRoutePath = (file: string) =>
     .replace(/\/index$/, "/")
     .replace(/\[\[?\.{0,3}[^\]]+\]\]?/g, "1");
 
-const NON_ROUTE_FILES = ["_app.tsx", "_document.tsx"];
+// Every file under pages/ is a route except Next's special files at the root
+// (`_app`, `_document`, `_error`). Nested `api/__scenario__.ts` is a route.
+const isSpecialPagesFile = (file: string) => /^_[^/]*$/.test(file);
 
 const findRoutePaths = (pagesDir: string): ReadonlyArray<string> =>
   globSync("**/*.{ts,tsx}", { cwd: pagesDir })
-    .filter((file) => !NON_ROUTE_FILES.includes(file))
+    .filter((file) => !isSpecialPagesFile(file))
     .map(toRoutePath);
 
 export default async function globalSetup(config: FullConfig): Promise<void> {
-  const baseURL = config.projects[0]?.use.baseURL;
-
-  if (baseURL) {
-    for (const routePath of findRoutePaths(PAGES_DIR)) {
-      await fetch(new URL(routePath, baseURL)).catch(() => undefined);
-    }
-  }
-
   if (process.env.SKIP_MSW === "true") {
     console.log(
       "⏭️  Skipping MSW server (comparison tests use real json-server)",
     );
+  }
+
+  const baseURL = config.projects[0]?.use.baseURL;
+
+  if (!baseURL) {
+    return;
+  }
+
+  for (const routePath of findRoutePaths(PAGES_DIR)) {
+    await fetch(new URL(routePath, baseURL)).catch(() => undefined);
   }
 }

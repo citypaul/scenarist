@@ -19,6 +19,8 @@ import type { FullConfig } from "@playwright/test";
 
 const APP_DIR = path.join(import.meta.dirname, "../../app");
 
+// Folders such as `api/%5F%5Fscenario%5F%5F` are named with Next's `%5F`
+// escape on disk so they serve `/api/__scenario__` instead of being private.
 const toRoutePath = (file: string) =>
   `/${path.dirname(file)}`
     .replace(/\/\.$/, "/")
