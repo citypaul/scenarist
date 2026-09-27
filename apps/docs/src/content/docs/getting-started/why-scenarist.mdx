@@ -76,6 +76,7 @@ export default async function CheckoutPage() {
       'Authorization': `Bearer ${process.env.STRIPE_KEY}`,
     },
     body: JSON.stringify({ amount: 5000 }),
+    cache: 'no-store',
   });
 
   // Your real rendering logic

@@ -275,6 +275,7 @@ import { getScenaristHeadersFromReadonlyHeaders } from '@scenarist/nextjs-adapte
 export default async function ProductsPage() {
   const response = await fetch('https://api.products.example.com/list', {
     headers: getScenaristHeadersFromReadonlyHeaders(await headers()),
+    cache: 'no-store',
   });
   const products = await response.json();
   return <div>{products.map(p => <Product key={p.id} {...p} />)}</div>;
