@@ -3,22 +3,27 @@ import type { ScenaristScenarios } from "./scenario.js";
 /**
  * How errors should be handled when they occur.
  *
- * - `throw`: Throw ScenaristError (strict - test fails with clear message)
- * - `warn`: Log at warn level, return undefined (let strictMode decide next step)
- * - `ignore`: Return undefined silently (let strictMode decide next step)
+ * - `throw`: Respond 500 with the ScenaristError code and message
+ * - `warn`: Log at warn level via the configured logger, then let strictMode decide
+ * - `ignore`: Let strictMode decide silently (default)
  */
 export type ErrorBehavior = "throw" | "warn" | "ignore";
 
 /**
  * Configuration for how different error types should be handled.
- * Default is 'throw' for all (strict by default).
+ * Default is 'ignore' for all, so strictMode alone decides unmatched requests.
  */
 export type ErrorBehaviors = {
-  /** How to handle when no mock matches a request. Default: 'throw' */
+  /** How to handle when no mock matches a request. Default: 'ignore' */
   readonly onNoMockFound: ErrorBehavior;
-  /** How to handle when a sequence is exhausted. Default: 'throw' */
+  /** How to handle when a sequence is exhausted. Default: 'ignore' */
   readonly onSequenceExhausted: ErrorBehavior;
-  /** How to handle when x-scenarist-test-id header is missing. Default: 'throw' */
+  /**
+   * How to handle when no test ID can be resolved for a request. Default: 'ignore'
+   *
+   * Adapters fall back to `defaultTestId` when the header is absent, so this
+   * only applies when `defaultTestId` is set to `''`.
+   */
   readonly onMissingTestId: ErrorBehavior;
 };
 
@@ -29,8 +34,10 @@ export type ErrorBehaviors = {
 export type ScenaristConfig = {
   /**
    * Whether mocking is enabled.
+   * When false, adapters' `createScenarist()` returns `undefined`: no scenario
+   * endpoints are mounted and no requests are intercepted.
    * For dynamic enabling (e.g., based on environment), evaluate before creating config:
-   * `enabled: process.env.NODE_ENV !== 'production'`
+   * `enabled: process.env.NODE_ENV === 'test'`
    */
   readonly enabled: boolean;
 
@@ -66,7 +73,7 @@ export type ScenaristConfig = {
 
   /**
    * How different error types should be handled.
-   * Default is 'throw' for all (strict by default).
+   * Default is 'ignore' for all (strictMode decides unmatched requests).
    */
   readonly errorBehaviors: ErrorBehaviors;
 };
@@ -104,7 +111,7 @@ export type ScenaristConfigInput<
   readonly scenarios: T;
   readonly defaultTestId?: string;
   /**
-   * Optional error behavior overrides. Missing values use 'throw' as default.
+   * Optional error behavior overrides. Missing values use 'ignore' as default.
    */
   readonly errorBehaviors?: Partial<ErrorBehaviors>;
 };

@@ -7,13 +7,14 @@ import type {
 import { ScenariosObjectSchema } from "../schemas/index.js";
 
 /**
- * Default error behaviors - strict by default.
- * All errors throw to ensure tests fail clearly when something goes wrong.
+ * Default error behaviors - defer to strictMode.
+ * Unmatched requests pass through (or return 501 when strictMode is true)
+ * unless the user opts into 'warn' or 'throw'.
  */
 const DEFAULT_ERROR_BEHAVIORS: ErrorBehaviors = {
-  onNoMockFound: "throw",
-  onSequenceExhausted: "throw",
-  onMissingTestId: "throw",
+  onNoMockFound: "ignore",
+  onSequenceExhausted: "ignore",
+  onMissingTestId: "ignore",
 };
 
 /**

@@ -174,10 +174,9 @@ describe("buildConfig", () => {
         scenarios: mockScenarios,
       });
 
-      // Default is 'throw' for all error types (strict by default)
-      expect(config.errorBehaviors.onNoMockFound).toBe("throw");
-      expect(config.errorBehaviors.onSequenceExhausted).toBe("throw");
-      expect(config.errorBehaviors.onMissingTestId).toBe("throw");
+      expect(config.errorBehaviors.onNoMockFound).toBe("ignore");
+      expect(config.errorBehaviors.onSequenceExhausted).toBe("ignore");
+      expect(config.errorBehaviors.onMissingTestId).toBe("ignore");
     });
 
     it("should allow overriding individual error behaviors", () => {
@@ -186,14 +185,13 @@ describe("buildConfig", () => {
         scenarios: mockScenarios,
         errorBehaviors: {
           onNoMockFound: "warn",
-          onMissingTestId: "ignore",
+          onMissingTestId: "throw",
         },
       });
 
       expect(config.errorBehaviors.onNoMockFound).toBe("warn");
-      expect(config.errorBehaviors.onMissingTestId).toBe("ignore");
-      // Others should still be default
-      expect(config.errorBehaviors.onSequenceExhausted).toBe("throw");
+      expect(config.errorBehaviors.onMissingTestId).toBe("throw");
+      expect(config.errorBehaviors.onSequenceExhausted).toBe("ignore");
     });
 
     it("should allow setting all error behaviors to warn for lenient mode", () => {
