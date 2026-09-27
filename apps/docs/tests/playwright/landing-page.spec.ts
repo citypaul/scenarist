@@ -111,7 +111,7 @@ test.describe("Landing Page", () => {
 
     await expect(
       page.getByText(
-        "Browser tests also need @scenarist/playwright-helpers and @playwright/test as dev dependencies.",
+        "Browser tests also need @scenarist/playwright-helpers and @playwright/test as dev dependencies. Full install steps",
       ),
     ).toBeVisible();
 
@@ -228,6 +228,12 @@ test.describe("Landing Page", () => {
     request,
   }) => {
     await page.goto("/");
+
+    await expect(
+      page.getByText(
+        "Using an AI assistant? Start with /llms.txt or the AI Assistants guide.",
+      ),
+    ).toBeVisible();
 
     const llmsLink = page.getByRole("link", { name: "/llms.txt" });
     await expect(llmsLink).toBeInViewport();
