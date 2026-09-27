@@ -124,6 +124,7 @@ export default async function Page() {
     headers: {
       ...getScenaristHeadersFromReadonlyHeaders(headersList),  // Include test ID header
     },
+    cache: 'no-store',
   });
 
   const data = await response.json();
@@ -142,6 +143,7 @@ export async function GET(request: Request) {
     headers: {
       ...getScenaristHeaders(request),  // Include test ID header
     },
+    cache: 'no-store',
   });
 
   const data = await response.json();

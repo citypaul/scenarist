@@ -602,6 +602,7 @@ export async function GET(request: Request) {
       ...getScenaristHeaders(request), // Always safe, no guards needed
       "x-user-tier": "premium",
     },
+    cache: "no-store",
   });
 }
 ```
@@ -616,6 +617,7 @@ export default async function ProductsPage() {
 
   const response = await fetch("http://localhost:3001/products", {
     headers: getScenaristHeadersFromReadonlyHeaders(headersList),
+    cache: "no-store",
   });
 }
 ```

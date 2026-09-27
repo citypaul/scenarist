@@ -54,6 +54,7 @@ export default async function Page() {
     headers: {
       ...getScenaristHeadersFromReadonlyHeaders(headersList),  // Include test ID header
     },
+    cache: 'no-store',
   });
 
   const data = await response.json();
@@ -72,6 +73,7 @@ export async function GET(request: Request) {
     headers: {
       ...getScenaristHeaders(request), // Include test ID header
     },
+    cache: "no-store",
   });
 
   const data = await response.json();
@@ -195,6 +197,7 @@ const headersList = await headers();
 
 fetch(url, {
   headers: { ...getScenaristHeadersFromReadonlyHeaders(headersList) },
+  cache: "no-store",
 }); // Always include
 ```
 
@@ -206,6 +209,7 @@ import { getScenaristHeaders } from "@scenarist/nextjs-adapter/app";
 // In your route handler: export async function GET(request: Request)
 fetch(url, {
   headers: { ...getScenaristHeaders(request) },
+  cache: "no-store",
 }); // Always include
 ```
 
