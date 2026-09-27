@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { HydrationMarker } from "../components/HydrationMarker";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -40,6 +41,7 @@ export default function RootLayout({
           </div>
         </nav>
         <main>{children}</main>
+        <HydrationMarker />
       </body>
     </html>
   );
