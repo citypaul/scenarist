@@ -5,7 +5,7 @@ import request from "supertest";
 import { createTestFixtures } from "./test-helpers.js";
 import { scenarios } from "../src/scenarios.js";
 
-const fixtures = createTestFixtures();
+const fixtures = await createTestFixtures();
 
 describe("Scenario Switching E2E", () => {
   afterAll(async () => {
@@ -14,7 +14,7 @@ describe("Scenario Switching E2E", () => {
 
   describe("Default scenario", () => {
     it("should use default scenario when no scenario is set", async () => {
-      const response = await request(fixtures.app)
+      const response = await request(fixtures.server)
         .get("/api/github/user/testuser")
         .set(SCENARIST_TEST_ID_HEADER, "default-test-1");
 
@@ -30,7 +30,7 @@ describe("Scenario Switching E2E", () => {
     });
 
     it("should use default scenario for weather API", async () => {
-      const response = await request(fixtures.app)
+      const response = await request(fixtures.server)
         .get("/api/weather/london")
         .set(SCENARIST_TEST_ID_HEADER, "default-test-2");
 
@@ -44,7 +44,7 @@ describe("Scenario Switching E2E", () => {
     });
 
     it("should use default scenario for stripe payment", async () => {
-      const response = await request(fixtures.app)
+      const response = await request(fixtures.server)
         .post("/api/payment")
         .set(SCENARIST_TEST_ID_HEADER, "default-test-3")
         .send({ amount: 1000, currency: "usd" });
@@ -62,7 +62,7 @@ describe("Scenario Switching E2E", () => {
   describe("Switching to success scenario", () => {
     it("should switch to success scenario via POST /__scenario__", async () => {
       // Switch scenario - type-safe with autocomplete!
-      const switchResponse = await request(fixtures.app)
+      const switchResponse = await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "success-test-1")
         .send({ scenario: scenarios.success.id });
@@ -75,7 +75,7 @@ describe("Scenario Switching E2E", () => {
       });
 
       // Verify GitHub uses success scenario
-      const githubResponse = await request(fixtures.app)
+      const githubResponse = await request(fixtures.server)
         .get("/api/github/user/testuser")
         .set(SCENARIST_TEST_ID_HEADER, "success-test-1");
 
@@ -92,13 +92,13 @@ describe("Scenario Switching E2E", () => {
 
     it("should return success scenario data for weather", async () => {
       // Switch scenario - type-safe!
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "success-test-2")
         .send({ scenario: scenarios.success.id });
 
       // Verify weather uses success scenario
-      const weatherResponse = await request(fixtures.app)
+      const weatherResponse = await request(fixtures.server)
         .get("/api/weather/sanfrancisco")
         .set(SCENARIST_TEST_ID_HEADER, "success-test-2");
 
@@ -115,13 +115,13 @@ describe("Scenario Switching E2E", () => {
   describe("Switching to error scenarios", () => {
     it("should return 404 when using github-not-found scenario", async () => {
       // Switch to github-not-found scenario
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "github-404-test")
         .send({ scenario: scenarios.githubNotFound.id });
 
       // Verify GitHub returns 404
-      const githubResponse = await request(fixtures.app)
+      const githubResponse = await request(fixtures.server)
         .get("/api/github/user/nonexistent")
         .set(SCENARIST_TEST_ID_HEADER, "github-404-test");
 
@@ -134,13 +134,13 @@ describe("Scenario Switching E2E", () => {
 
     it("should return 500 when using weather-error scenario", async () => {
       // Switch to weather-error scenario
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "weather-error-test")
         .send({ scenario: scenarios.weatherError.id });
 
       // Verify weather returns 500
-      const weatherResponse = await request(fixtures.app)
+      const weatherResponse = await request(fixtures.server)
         .get("/api/weather/tokyo")
         .set(SCENARIST_TEST_ID_HEADER, "weather-error-test");
 
@@ -153,13 +153,13 @@ describe("Scenario Switching E2E", () => {
 
     it("should return 402 when using stripe-failure scenario", async () => {
       // Switch to stripe-failure scenario
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "stripe-failure-test")
         .send({ scenario: scenarios.stripeFailure.id });
 
       // Verify payment fails
-      const paymentResponse = await request(fixtures.app)
+      const paymentResponse = await request(fixtures.server)
         .post("/api/payment")
         .set(SCENARIST_TEST_ID_HEADER, "stripe-failure-test")
         .send({ amount: 5000, currency: "usd" });
@@ -178,13 +178,13 @@ describe("Scenario Switching E2E", () => {
   describe("Getting current scenario", () => {
     it("should return current scenario via GET /__scenario__", async () => {
       // Switch to a scenario
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "get-scenario-test")
         .send({ scenario: scenarios.success.id });
 
       // Get current scenario
-      const getResponse = await request(fixtures.app)
+      const getResponse = await request(fixtures.server)
         .get(fixtures.scenarist.config.endpoints.getScenario)
         .set(SCENARIST_TEST_ID_HEADER, "get-scenario-test");
 
@@ -195,7 +195,7 @@ describe("Scenario Switching E2E", () => {
     });
 
     it("should return 404 when no scenario is set", async () => {
-      const getResponse = await request(fixtures.app)
+      const getResponse = await request(fixtures.server)
         .get(fixtures.scenarist.config.endpoints.getScenario)
         .set(SCENARIST_TEST_ID_HEADER, "no-scenario-test");
 

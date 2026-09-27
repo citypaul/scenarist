@@ -4,7 +4,7 @@ import { afterAll, describe, expect, it } from "vitest";
 
 import { createTestFixtures } from "./test-helpers.js";
 
-const fixtures = createTestFixtures();
+const fixtures = await createTestFixtures();
 
 /**
  * Issue #335: Scenario switching must use active scenario's response
@@ -22,12 +22,12 @@ describe("Issue #335: Active scenario simple response overrides default sequence
   it("returns active scenario's simple response instead of default's sequence mock", async () => {
     const testId = "issue335-simple-response-wins";
 
-    await request(fixtures.app)
+    await request(fixtures.server)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(SCENARIST_TEST_ID_HEADER, testId)
       .send({ scenario: "issue335-simple-response" });
 
-    const response = await request(fixtures.app)
+    const response = await request(fixtures.server)
       .get("/api/issue328/applications/app-123")
       .set(SCENARIST_TEST_ID_HEADER, testId);
 
@@ -41,7 +41,7 @@ describe("Issue #335: Active scenario simple response overrides default sequence
   it("uses default sequence when no scenario is set", async () => {
     const testId = "issue335-default-still-works";
 
-    const response = await request(fixtures.app)
+    const response = await request(fixtures.server)
       .get("/api/issue328/applications/app-456")
       .set(SCENARIST_TEST_ID_HEADER, testId);
 
@@ -52,23 +52,23 @@ describe("Issue #335: Active scenario simple response overrides default sequence
   it("resumes default sequence after switching back from active scenario", async () => {
     const testId = "issue335-switch-back";
 
-    await request(fixtures.app)
+    await request(fixtures.server)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(SCENARIST_TEST_ID_HEADER, testId)
       .send({ scenario: "issue335-simple-response" });
 
-    const firstResponse = await request(fixtures.app)
+    const firstResponse = await request(fixtures.server)
       .get("/api/issue328/applications/app-789")
       .set(SCENARIST_TEST_ID_HEADER, testId);
 
     expect(firstResponse.body.source).toBe("issue335-simple-response");
 
-    await request(fixtures.app)
+    await request(fixtures.server)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(SCENARIST_TEST_ID_HEADER, testId)
       .send({ scenario: "default" });
 
-    const secondResponse = await request(fixtures.app)
+    const secondResponse = await request(fixtures.server)
       .get("/api/issue328/applications/app-789")
       .set(SCENARIST_TEST_ID_HEADER, testId);
 

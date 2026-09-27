@@ -5,7 +5,7 @@ import request from "supertest";
 import { createTestFixtures } from "./test-helpers.js";
 import { scenarios } from "../src/scenarios.js";
 
-const fixtures = createTestFixtures();
+const fixtures = await createTestFixtures();
 
 describe("Dynamic Content Matching E2E (Phase 1)", () => {
   afterAll(async () => {
@@ -15,13 +15,13 @@ describe("Dynamic Content Matching E2E (Phase 1)", () => {
   describe("Request Body Matching", () => {
     it("should match premium items and apply discount", async () => {
       // Switch to content-matching scenario
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "body-match-test-1")
         .send({ scenario: scenarios.contentMatching.id });
 
       // Make payment request with premium item
-      const response = await request(fixtures.app)
+      const response = await request(fixtures.server)
         .post("/api/payment")
         .set(SCENARIST_TEST_ID_HEADER, "body-match-test-1")
         .send({
@@ -41,12 +41,12 @@ describe("Dynamic Content Matching E2E (Phase 1)", () => {
     });
 
     it("should match standard items with regular pricing", async () => {
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "body-match-test-2")
         .send({ scenario: scenarios.contentMatching.id });
 
-      const response = await request(fixtures.app)
+      const response = await request(fixtures.server)
         .post("/api/payment")
         .set(SCENARIST_TEST_ID_HEADER, "body-match-test-2")
         .send({
@@ -65,12 +65,12 @@ describe("Dynamic Content Matching E2E (Phase 1)", () => {
     });
 
     it("should use fallback when no body criteria matches", async () => {
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "body-match-test-3")
         .send({ scenario: scenarios.contentMatching.id });
 
-      const response = await request(fixtures.app)
+      const response = await request(fixtures.server)
         .post("/api/payment")
         .set(SCENARIST_TEST_ID_HEADER, "body-match-test-3")
         .send({
@@ -89,12 +89,12 @@ describe("Dynamic Content Matching E2E (Phase 1)", () => {
     });
 
     it("should support partial body matching (extra fields ignored)", async () => {
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "body-match-test-4")
         .send({ scenario: scenarios.contentMatching.id });
 
-      const response = await request(fixtures.app)
+      const response = await request(fixtures.server)
         .post("/api/payment")
         .set(SCENARIST_TEST_ID_HEADER, "body-match-test-4")
         .send({
@@ -113,12 +113,12 @@ describe("Dynamic Content Matching E2E (Phase 1)", () => {
 
   describe("Request Header Matching", () => {
     it("should match premium tier header and return enhanced data", async () => {
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "header-match-test-1")
         .send({ scenario: scenarios.contentMatching.id });
 
-      const response = await request(fixtures.app)
+      const response = await request(fixtures.server)
         .get("/api/github/user/testuser")
         .set(SCENARIST_TEST_ID_HEADER, "header-match-test-1")
         .set("x-user-tier", "premium"); // Matches premium tier
@@ -137,12 +137,12 @@ describe("Dynamic Content Matching E2E (Phase 1)", () => {
     });
 
     it("should match standard tier header and return basic data", async () => {
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "header-match-test-2")
         .send({ scenario: scenarios.contentMatching.id });
 
-      const response = await request(fixtures.app)
+      const response = await request(fixtures.server)
         .get("/api/github/user/testuser")
         .set(SCENARIST_TEST_ID_HEADER, "header-match-test-2")
         .set("x-user-tier", "standard"); // Matches standard tier
@@ -159,12 +159,12 @@ describe("Dynamic Content Matching E2E (Phase 1)", () => {
     });
 
     it("should use fallback when no tier header present", async () => {
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "header-match-test-3")
         .send({ scenario: scenarios.contentMatching.id });
 
-      const response = await request(fixtures.app)
+      const response = await request(fixtures.server)
         .get("/api/github/user/testuser")
         .set(SCENARIST_TEST_ID_HEADER, "header-match-test-3");
       // No x-user-tier header, uses fallback
@@ -183,12 +183,12 @@ describe("Dynamic Content Matching E2E (Phase 1)", () => {
 
   describe("Query Parameter Matching", () => {
     it("should match multiple query params and return detailed data", async () => {
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "query-match-test-1")
         .send({ scenario: scenarios.contentMatching.id });
 
-      const response = await request(fixtures.app)
+      const response = await request(fixtures.server)
         .get("/api/weather/paris")
         .query({ units: "metric", detailed: "true" }) // Matches both params
         .set(SCENARIST_TEST_ID_HEADER, "query-match-test-1");
@@ -206,12 +206,12 @@ describe("Dynamic Content Matching E2E (Phase 1)", () => {
     });
 
     it("should match single query param when subset matches", async () => {
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "query-match-test-2")
         .send({ scenario: scenarios.contentMatching.id });
 
-      const response = await request(fixtures.app)
+      const response = await request(fixtures.server)
         .get("/api/weather/newyork")
         .query({ units: "imperial" }) // Matches units param only
         .set(SCENARIST_TEST_ID_HEADER, "query-match-test-2");
@@ -226,12 +226,12 @@ describe("Dynamic Content Matching E2E (Phase 1)", () => {
     });
 
     it("should not match when only one of multiple required params present", async () => {
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "query-match-test-3")
         .send({ scenario: scenarios.contentMatching.id });
 
-      const response = await request(fixtures.app)
+      const response = await request(fixtures.server)
         .get("/api/weather/london")
         .query({ units: "metric" }) // Missing 'detailed' param, doesn't match first mock
         .set(SCENARIST_TEST_ID_HEADER, "query-match-test-3");
@@ -247,12 +247,12 @@ describe("Dynamic Content Matching E2E (Phase 1)", () => {
     });
 
     it("should use fallback when no query params match", async () => {
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "query-match-test-4")
         .send({ scenario: scenarios.contentMatching.id });
 
-      const response = await request(fixtures.app)
+      const response = await request(fixtures.server)
         .get("/api/weather/tokyo")
         // No query params at all
         .set(SCENARIST_TEST_ID_HEADER, "query-match-test-4");
@@ -269,13 +269,13 @@ describe("Dynamic Content Matching E2E (Phase 1)", () => {
 
   describe("First Matching Mock Wins (Precedence)", () => {
     it("should use first matching mock when multiple could match", async () => {
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "precedence-test-1")
         .send({ scenario: scenarios.contentMatching.id });
 
       // Payment with standard itemType should match the FIRST standard mock, not fallback
-      const response = await request(fixtures.app)
+      const response = await request(fixtures.server)
         .post("/api/payment")
         .set(SCENARIST_TEST_ID_HEADER, "precedence-test-1")
         .send({
@@ -294,25 +294,25 @@ describe("Dynamic Content Matching E2E (Phase 1)", () => {
   describe("Test ID Isolation with Content Matching", () => {
     it("should maintain separate matching state per test ID", async () => {
       // Test ID 1: Premium tier
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "isolation-test-1")
         .send({ scenario: scenarios.contentMatching.id });
 
       // Test ID 2: Also content matching but different requests
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "isolation-test-2")
         .send({ scenario: scenarios.contentMatching.id });
 
       // Test ID 1 with premium header
-      const response1 = await request(fixtures.app)
+      const response1 = await request(fixtures.server)
         .get("/api/github/user/user1")
         .set(SCENARIST_TEST_ID_HEADER, "isolation-test-1")
         .set("x-user-tier", "premium");
 
       // Test ID 2 with standard header
-      const response2 = await request(fixtures.app)
+      const response2 = await request(fixtures.server)
         .get("/api/github/user/user2")
         .set(SCENARIST_TEST_ID_HEADER, "isolation-test-2")
         .set("x-user-tier", "standard");

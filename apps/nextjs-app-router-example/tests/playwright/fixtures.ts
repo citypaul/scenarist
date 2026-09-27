@@ -119,6 +119,27 @@ const baseTest = withScenarios(scenarios);
 // Type-safe scenario IDs derived from your scenarios object
 type ScenarioId = keyof typeof scenarios;
 
+const waitForHydration = (page: Page) =>
+  page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+
+const waitForHydrationAfterNavigation = (page: Page): Page => {
+  const goto = page.goto.bind(page);
+  const reload = page.reload.bind(page);
+
+  return Object.assign(page, {
+    goto: async (...args: Parameters<Page["goto"]>) => {
+      const response = await goto(...args);
+      await waitForHydration(page);
+      return response;
+    },
+    reload: async (...args: Parameters<Page["reload"]>) => {
+      const response = await reload(...args);
+      await waitForHydration(page);
+      return response;
+    },
+  });
+};
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // EXTENDED FIXTURES FOR DATABASE APPS
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -149,6 +170,24 @@ type ExtendedFixtures = {
 };
 
 export const test = baseTest.extend<ExtendedFixtures>({
+  /**
+   * Page that waits for React hydration after every navigation.
+   *
+   * Server-rendered controls are visible and enabled before React hydrates
+   * them, so Playwright's actionability checks pass too early: fills never
+   * reach component state and clicks have no handler. Under full-suite load
+   * that window is wide enough to break specs (empty checkout form posted,
+   * sequence clicks ignored). `HydrationMarker` in the root layout sets
+   * `data-hydrated` once handlers are attached; we wait for it here.
+   *
+   * `goto`/`reload` are replaced on the fixture-owned page instance because
+   * Playwright hands the same object to `expect` and to the test.
+   * `goBack`/`goForward` are not wrapped: no spec navigates through history.
+   * Wrap them the same way before adding one that interacts afterwards.
+   */
+  page: async ({ page }, use) => {
+    await use(waitForHydrationAfterNavigation(page));
+  },
   /**
    * Extended switchScenario that handles HTTP mocks AND database seeding.
    *

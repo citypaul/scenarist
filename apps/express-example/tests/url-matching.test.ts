@@ -25,7 +25,7 @@ import { scenarios } from "../src/scenarios.js";
  * Uses factory pattern to avoid let/any violations
  */
 // Use top-level await to create fixtures once before all tests
-const fixtures = createTestFixtures();
+const fixtures = await createTestFixtures();
 
 describe("URL Matching Strategies - Express", () => {
   afterAll(async () => {
@@ -46,12 +46,12 @@ describe("URL Matching Strategies - Express", () => {
    * - '/users/123' (ends with different number)
    */
   it("should match URL with numeric ID using native RegExp", async () => {
-    await request(fixtures.app)
+    await request(fixtures.server)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(SCENARIST_TEST_ID_HEADER, "url-test-1")
       .send({ scenario: scenarios.urlMatching.id });
 
-    const response = await request(fixtures.app)
+    const response = await request(fixtures.server)
       .get("/api/test-url-match/numeric-id/1")
       .set(SCENARIST_TEST_ID_HEADER, "url-test-1");
 
@@ -62,12 +62,12 @@ describe("URL Matching Strategies - Express", () => {
   });
 
   it("should NOT match non-numeric ID (fallback to path param mock)", async () => {
-    await request(fixtures.app)
+    await request(fixtures.server)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(SCENARIST_TEST_ID_HEADER, "url-test-2")
       .send({ scenario: scenarios.urlMatching.id });
 
-    const response = await request(fixtures.app)
+    const response = await request(fixtures.server)
       .get("/api/test-url-match/numeric-id/octocat")
       .set(SCENARIST_TEST_ID_HEADER, "url-test-2");
 
@@ -90,12 +90,12 @@ describe("URL Matching Strategies - Express", () => {
    * - URLs without '/weather/' substring
    */
   it('should match URL containing "/weather/" using contains strategy', async () => {
-    await request(fixtures.app)
+    await request(fixtures.server)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(SCENARIST_TEST_ID_HEADER, "url-test-3")
       .send({ scenario: scenarios.urlMatching.id });
 
-    const response = await request(fixtures.app)
+    const response = await request(fixtures.server)
       .get("/api/test-url-match/contains-api/london")
       .set(SCENARIST_TEST_ID_HEADER, "url-test-3");
 
@@ -118,12 +118,12 @@ describe("URL Matching Strategies - Express", () => {
    * - 'https://api.weather.com/v1/weather/london' (starts with v1, not v2)
    */
   it("should match v2 API URL using startsWith strategy", async () => {
-    await request(fixtures.app)
+    await request(fixtures.server)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(SCENARIST_TEST_ID_HEADER, "url-test-4")
       .send({ scenario: scenarios.urlMatching.id });
 
-    const response = await request(fixtures.app)
+    const response = await request(fixtures.server)
       .get("/api/test-url-match/version/v2/newyork")
       .set(SCENARIST_TEST_ID_HEADER, "url-test-4");
 
@@ -134,12 +134,12 @@ describe("URL Matching Strategies - Express", () => {
   });
 
   it("should NOT match v1 API URL (fallback)", async () => {
-    await request(fixtures.app)
+    await request(fixtures.server)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(SCENARIST_TEST_ID_HEADER, "url-test-5")
       .send({ scenario: scenarios.urlMatching.id });
 
-    const response = await request(fixtures.app)
+    const response = await request(fixtures.server)
       .get("/api/test-url-match/version/v1/paris")
       .set(SCENARIST_TEST_ID_HEADER, "url-test-5");
 
@@ -161,12 +161,12 @@ describe("URL Matching Strategies - Express", () => {
    * - '/repos/owner/repo/contents/readme.txt' (ends with .txt)
    */
   it("should match .json file extension using endsWith strategy", async () => {
-    await request(fixtures.app)
+    await request(fixtures.server)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(SCENARIST_TEST_ID_HEADER, "url-test-6")
       .send({ scenario: scenarios.urlMatching.id });
 
-    const response = await request(fixtures.app)
+    const response = await request(fixtures.server)
       .get("/api/test-url-match/file-extension/config.json")
       .set(SCENARIST_TEST_ID_HEADER, "url-test-6");
 
@@ -177,12 +177,12 @@ describe("URL Matching Strategies - Express", () => {
   });
 
   it("should NOT match non-.json file (fallback)", async () => {
-    await request(fixtures.app)
+    await request(fixtures.server)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(SCENARIST_TEST_ID_HEADER, "url-test-7")
       .send({ scenario: scenarios.urlMatching.id });
 
-    const response = await request(fixtures.app)
+    const response = await request(fixtures.server)
       .get("/api/test-url-match/file-extension/readme.txt")
       .set(SCENARIST_TEST_ID_HEADER, "url-test-7");
 
@@ -201,12 +201,12 @@ describe("URL Matching Strategies - Express", () => {
    * Should NOT match when only URL matches (header mismatch)
    */
   it("should match when both URL and header match", async () => {
-    await request(fixtures.app)
+    await request(fixtures.server)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(SCENARIST_TEST_ID_HEADER, "url-test-8")
       .send({ scenario: scenarios.urlMatching.id });
 
-    const response = await request(fixtures.app)
+    const response = await request(fixtures.server)
       .get("/api/test-url-match/combined")
       .query({ apiVersion: "2023-10-16" })
       .set(SCENARIST_TEST_ID_HEADER, "url-test-8");
@@ -217,12 +217,12 @@ describe("URL Matching Strategies - Express", () => {
   });
 
   it("should NOT match when URL matches but header does not (fallback)", async () => {
-    await request(fixtures.app)
+    await request(fixtures.server)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(SCENARIST_TEST_ID_HEADER, "url-test-9")
       .send({ scenario: scenarios.urlMatching.id });
 
-    const response = await request(fixtures.app)
+    const response = await request(fixtures.server)
       .get("/api/test-url-match/combined")
       .query({ apiVersion: "2022-11-15" }) // Different version
       .set(SCENARIST_TEST_ID_HEADER, "url-test-9");
@@ -241,12 +241,12 @@ describe("URL Matching Strategies - Express", () => {
    * Should match only the exact URL
    */
   it("should match exact URL string", async () => {
-    await request(fixtures.app)
+    await request(fixtures.server)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(SCENARIST_TEST_ID_HEADER, "url-test-10")
       .send({ scenario: scenarios.urlMatching.id });
 
-    const response = await request(fixtures.app)
+    const response = await request(fixtures.server)
       .get("/api/test-url-match/exact/exactuser")
       .set(SCENARIST_TEST_ID_HEADER, "url-test-10");
 
@@ -275,13 +275,13 @@ describe("URL Matching Strategies - Express", () => {
      * Should extract different IDs and return user-specific data
      */
     it("should extract simple path parameter :id and route to different users", async () => {
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "url-test-11")
         .send({ scenario: scenarios.urlMatching.id });
 
       // Request user ID 123
-      const response123 = await request(fixtures.app)
+      const response123 = await request(fixtures.server)
         .get("/api/test-url-match/path-param/123")
         .set(SCENARIST_TEST_ID_HEADER, "url-test-11");
 
@@ -290,7 +290,7 @@ describe("URL Matching Strategies - Express", () => {
       expect(response123.body.login).toBe("user-123");
 
       // Request different user ID 456
-      const response456 = await request(fixtures.app)
+      const response456 = await request(fixtures.server)
         .get("/api/test-url-match/path-param/456")
         .set(SCENARIST_TEST_ID_HEADER, "url-test-11");
 
@@ -306,12 +306,12 @@ describe("URL Matching Strategies - Express", () => {
      * Should extract both parameters correctly
      */
     it("should extract multiple path parameters :userId and :postId", async () => {
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "url-test-12")
         .send({ scenario: scenarios.urlMatching.id });
 
-      const response = await request(fixtures.app)
+      const response = await request(fixtures.server)
         .get("/api/test-url-match/multiple-params/alice/42")
         .set(SCENARIST_TEST_ID_HEADER, "url-test-12");
 
