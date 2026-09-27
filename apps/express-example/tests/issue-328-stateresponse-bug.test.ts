@@ -4,7 +4,7 @@ import { afterAll, describe, expect, it } from "vitest";
 
 import { createTestFixtures } from "./test-helpers.js";
 
-const fixtures = createTestFixtures();
+const fixtures = await createTestFixtures();
 
 /**
  * Issue #328: stateResponse conditions not evaluated when default scenario
@@ -110,14 +110,14 @@ describe("Issue #328: stateResponse conditions not evaluated", () => {
       const testId = "issue328-bug-test-1";
 
       // Step 1: Switch to the scenario with stateResponse
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, testId)
         .send({ scenario: "issue328-stateresponse" });
 
       // Step 2: First GET - should return stateResponse DEFAULT (not sequence!)
       // This verifies the stateResponse mock is being selected at all
-      const firstGet = await request(fixtures.app)
+      const firstGet = await request(fixtures.server)
         .get("/api/issue328/applications/app-123")
         .set(SCENARIST_TEST_ID_HEADER, testId);
 
@@ -129,7 +129,7 @@ describe("Issue #328: stateResponse conditions not evaluated", () => {
       expect(firstGet.body.state).toBe("appStarted");
 
       // Step 3: POST /eligibility - sets state { phase: 'quoteAccept' }
-      const postEligibility = await request(fixtures.app)
+      const postEligibility = await request(fixtures.server)
         .post("/api/issue328/applications/app-123/eligibility")
         .set(SCENARIST_TEST_ID_HEADER, testId)
         .send({ amount: 10000 });
@@ -138,7 +138,7 @@ describe("Issue #328: stateResponse conditions not evaluated", () => {
 
       // Step 4: Second GET - should now match stateResponse CONDITION
       // This is where the bug manifests
-      const secondGet = await request(fixtures.app)
+      const secondGet = await request(fixtures.server)
         .get("/api/issue328/applications/app-123")
         .set(SCENARIST_TEST_ID_HEADER, testId);
 
@@ -163,13 +163,13 @@ describe("Issue #328: stateResponse conditions not evaluated", () => {
       const testId = "issue328-bug-test-2";
 
       // Switch to stateResponse scenario
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, testId)
         .send({ scenario: "issue328-stateresponse" });
 
       // Initial state - should be appStarted (stateResponse default)
-      const initial = await request(fixtures.app)
+      const initial = await request(fixtures.server)
         .get("/api/issue328/applications/app-456")
         .set(SCENARIST_TEST_ID_HEADER, testId);
 
@@ -177,13 +177,13 @@ describe("Issue #328: stateResponse conditions not evaluated", () => {
       expect(initial.body.source).toBe("stateResponse-default");
 
       // Transition 1: POST eligibility → sets phase: 'quoteAccept'
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post("/api/issue328/applications/app-456/eligibility")
         .set(SCENARIST_TEST_ID_HEADER, testId)
         .send({});
 
       // Check state transition - should now be quoteAccept
-      const afterEligibility = await request(fixtures.app)
+      const afterEligibility = await request(fixtures.server)
         .get("/api/issue328/applications/app-456")
         .set(SCENARIST_TEST_ID_HEADER, testId);
 
@@ -203,26 +203,26 @@ describe("Issue #328: stateResponse conditions not evaluated", () => {
     it("should work correctly when no default sequence conflict exists", async () => {
       const testId = "issue328-control-test";
 
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, testId)
         .send({ scenario: "loanApplication" });
 
       // Initial state - pending
-      const initial = await request(fixtures.app)
+      const initial = await request(fixtures.server)
         .get("/api/loan/status")
         .set(SCENARIST_TEST_ID_HEADER, testId);
 
       expect(initial.body.status).toBe("pending");
 
       // Submit - sets state
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post("/api/loan/submit")
         .set(SCENARIST_TEST_ID_HEADER, testId)
         .send({ amount: 10000 });
 
       // After submit - should be reviewing
-      const afterSubmit = await request(fixtures.app)
+      const afterSubmit = await request(fixtures.server)
         .get("/api/loan/status")
         .set(SCENARIST_TEST_ID_HEADER, testId);
 

@@ -20,7 +20,7 @@ import { scenarios } from "../src/scenarios.js";
  * - Verifies automatic default fallback behavior
  */
 
-const fixtures = createTestFixtures();
+const fixtures = await createTestFixtures();
 
 describe("String Matching Strategies - Express", () => {
   afterAll(async () => {
@@ -43,13 +43,13 @@ describe("String Matching Strategies - Express", () => {
    */
   it("should match header using contains strategy", async () => {
     // Switch to string matching scenario
-    await request(fixtures.app)
+    await request(fixtures.server)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(SCENARIST_TEST_ID_HEADER, "string-test-1")
       .send({ scenario: scenarios.stringMatching.id });
 
     // Make request with campaign containing 'premium'
-    const response = await request(fixtures.app)
+    const response = await request(fixtures.server)
       .get("/api/test-string-match/contains/testuser")
       .query({ campaign: "summer-premium-sale" })
       .set(SCENARIST_TEST_ID_HEADER, "string-test-1");
@@ -62,13 +62,13 @@ describe("String Matching Strategies - Express", () => {
   });
 
   it("should NOT match when header doesn't contain substring", async () => {
-    await request(fixtures.app)
+    await request(fixtures.server)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(SCENARIST_TEST_ID_HEADER, "string-test-2")
       .send({ scenario: scenarios.stringMatching.id });
 
     // Make request with campaign NOT containing 'premium'
-    const response = await request(fixtures.app)
+    const response = await request(fixtures.server)
       .get("/api/test-string-match/contains/testuser")
       .query({ campaign: "standard-sale" })
       .set(SCENARIST_TEST_ID_HEADER, "string-test-2");
@@ -95,13 +95,13 @@ describe("String Matching Strategies - Express", () => {
    * - 'test_sk_12345' (contains but doesn't start with)
    */
   it("should match header using startsWith strategy", async () => {
-    await request(fixtures.app)
+    await request(fixtures.server)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(SCENARIST_TEST_ID_HEADER, "string-test-3")
       .send({ scenario: scenarios.stringMatching.id });
 
     // Make request with API key starting with 'sk_' (POST body for sensitive data)
-    const response = await request(fixtures.app)
+    const response = await request(fixtures.server)
       .post("/api/test-string-match/starts-with")
       .send({ apiKey: "sk_test_12345" })
       .set(SCENARIST_TEST_ID_HEADER, "string-test-3");
@@ -114,13 +114,13 @@ describe("String Matching Strategies - Express", () => {
   });
 
   it("should NOT match when header doesn't start with prefix", async () => {
-    await request(fixtures.app)
+    await request(fixtures.server)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(SCENARIST_TEST_ID_HEADER, "string-test-4")
       .send({ scenario: scenarios.stringMatching.id });
 
     // Make request with API key NOT starting with 'sk_' (POST body for sensitive data)
-    const response = await request(fixtures.app)
+    const response = await request(fixtures.server)
       .post("/api/test-string-match/starts-with")
       .send({ apiKey: "pk_test_12345" })
       .set(SCENARIST_TEST_ID_HEADER, "string-test-4");
@@ -146,13 +146,13 @@ describe("String Matching Strategies - Express", () => {
    * - 'company.com' (exact match but no @)
    */
   it("should match query param using endsWith strategy", async () => {
-    await request(fixtures.app)
+    await request(fixtures.server)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(SCENARIST_TEST_ID_HEADER, "string-test-5")
       .send({ scenario: scenarios.stringMatching.id });
 
     // Make request with email ending with '@company.com'
-    const response = await request(fixtures.app)
+    const response = await request(fixtures.server)
       .get("/api/test-string-match/ends-with/testuser")
       .query({ email: "john@company.com" })
       .set(SCENARIST_TEST_ID_HEADER, "string-test-5");
@@ -166,13 +166,13 @@ describe("String Matching Strategies - Express", () => {
   });
 
   it("should NOT match when query param doesn't end with suffix", async () => {
-    await request(fixtures.app)
+    await request(fixtures.server)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(SCENARIST_TEST_ID_HEADER, "string-test-6")
       .send({ scenario: scenarios.stringMatching.id });
 
     // Make request with email NOT ending with '@company.com'
-    const response = await request(fixtures.app)
+    const response = await request(fixtures.server)
       .get("/api/test-string-match/ends-with/testuser")
       .query({ email: "john@example.com" })
       .set(SCENARIST_TEST_ID_HEADER, "string-test-6");
@@ -199,13 +199,13 @@ describe("String Matching Strategies - Express", () => {
    * - 'EXACT-VALUE' (case-sensitive)
    */
   it("should match header using equals strategy", async () => {
-    await request(fixtures.app)
+    await request(fixtures.server)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(SCENARIST_TEST_ID_HEADER, "string-test-7")
       .send({ scenario: scenarios.stringMatching.id });
 
     // Make request with exact header value
-    const response = await request(fixtures.app)
+    const response = await request(fixtures.server)
       .get("/api/test-string-match/equals")
       .query({ exact: "exact-value" })
       .set(SCENARIST_TEST_ID_HEADER, "string-test-7");
@@ -218,13 +218,13 @@ describe("String Matching Strategies - Express", () => {
   });
 
   it("should NOT match when header value is not exact", async () => {
-    await request(fixtures.app)
+    await request(fixtures.server)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(SCENARIST_TEST_ID_HEADER, "string-test-8")
       .send({ scenario: scenarios.stringMatching.id });
 
     // Make request with non-exact header value
-    const response = await request(fixtures.app)
+    const response = await request(fixtures.server)
       .get("/api/test-string-match/equals")
       .query({ exact: "exact-value-plus" })
       .set(SCENARIST_TEST_ID_HEADER, "string-test-8");
@@ -243,13 +243,13 @@ describe("String Matching Strategies - Express", () => {
    */
   it("should maintain backward compatibility with plain string matching", async () => {
     // Use existing default scenario (uses plain string matching)
-    await request(fixtures.app)
+    await request(fixtures.server)
       .post(fixtures.scenarist.config.endpoints.setScenario)
       .set(SCENARIST_TEST_ID_HEADER, "string-test-9")
       .send({ scenario: scenarios.default.id });
 
     // Make request to GitHub API
-    const response = await request(fixtures.app)
+    const response = await request(fixtures.server)
       .get("/api/github/user/octocat")
       .set(SCENARIST_TEST_ID_HEADER, "string-test-9");
 

@@ -3,7 +3,7 @@ import request from "supertest";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { createTestFixtures } from "./test-helpers.js";
-const fixtures = createTestFixtures();
+const fixtures = await createTestFixtures();
 
 /**
  * State-Aware Mocking Scenario-Based Tests (ADR-0019)
@@ -33,13 +33,13 @@ describe("State-Aware Mocking (ADR-0019)", () => {
      * - After review: status returns "approved" (state.step = "reviewed")
      */
     it("should return different responses based on workflow state", async () => {
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "loan-workflow-1")
         .send({ scenario: "loanApplication" });
 
       // Initial state - no step set, returns default "pending"
-      const status1 = await request(fixtures.app)
+      const status1 = await request(fixtures.server)
         .get("/api/loan/status")
         .set(SCENARIST_TEST_ID_HEADER, "loan-workflow-1");
 
@@ -48,7 +48,7 @@ describe("State-Aware Mocking (ADR-0019)", () => {
       expect(status1.body.message).toBe("Application not yet submitted");
 
       // Submit application - sets state.step = "submitted" via afterResponse.setState
-      const submit = await request(fixtures.app)
+      const submit = await request(fixtures.server)
         .post("/api/loan/submit")
         .set(SCENARIST_TEST_ID_HEADER, "loan-workflow-1")
         .send({ amount: 10000 });
@@ -57,7 +57,7 @@ describe("State-Aware Mocking (ADR-0019)", () => {
       expect(submit.body.success).toBe(true);
 
       // After submit - stateResponse condition matches step = "submitted"
-      const status2 = await request(fixtures.app)
+      const status2 = await request(fixtures.server)
         .get("/api/loan/status")
         .set(SCENARIST_TEST_ID_HEADER, "loan-workflow-1");
 
@@ -66,14 +66,14 @@ describe("State-Aware Mocking (ADR-0019)", () => {
       expect(status2.body.message).toBe("Application under review");
 
       // Review completes - sets state.step = "reviewed"
-      const review = await request(fixtures.app)
+      const review = await request(fixtures.server)
         .post("/api/loan/review")
         .set(SCENARIST_TEST_ID_HEADER, "loan-workflow-1");
 
       expect(review.status).toBe(200);
 
       // After review - stateResponse condition matches step = "reviewed"
-      const status3 = await request(fixtures.app)
+      const status3 = await request(fixtures.server)
         .get("/api/loan/status")
         .set(SCENARIST_TEST_ID_HEADER, "loan-workflow-1");
 
@@ -94,13 +94,13 @@ describe("State-Aware Mocking (ADR-0019)", () => {
      * - GET /api/pricing returns different mock based on feature state
      */
     it("should select different mocks based on feature flag state", async () => {
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "feature-flag-1")
         .send({ scenario: "featureFlags" });
 
       // Initial state - no feature flags, returns standard pricing
-      const pricing1 = await request(fixtures.app)
+      const pricing1 = await request(fixtures.server)
         .get("/api/pricing")
         .set(SCENARIST_TEST_ID_HEADER, "feature-flag-1");
 
@@ -109,7 +109,7 @@ describe("State-Aware Mocking (ADR-0019)", () => {
       expect(pricing1.body.price).toBe(100);
 
       // Enable premium feature flag
-      const enableFlag = await request(fixtures.app)
+      const enableFlag = await request(fixtures.server)
         .post("/api/features")
         .set(SCENARIST_TEST_ID_HEADER, "feature-flag-1")
         .send({ flag: "premium_pricing", enabled: true });
@@ -121,7 +121,7 @@ describe("State-Aware Mocking (ADR-0019)", () => {
       });
 
       // Now pricing returns premium tier (mock selected via match.state)
-      const pricing2 = await request(fixtures.app)
+      const pricing2 = await request(fixtures.server)
         .get("/api/pricing")
         .set(SCENARIST_TEST_ID_HEADER, "feature-flag-1");
 
@@ -134,31 +134,31 @@ describe("State-Aware Mocking (ADR-0019)", () => {
   describe("State Isolation - Different test IDs have independent state", () => {
     it("should maintain independent workflow state for different test IDs", async () => {
       // Set up both tests with same scenario
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "isolation-A")
         .send({ scenario: "loanApplication" });
 
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "isolation-B")
         .send({ scenario: "loanApplication" });
 
       // Test A submits application
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post("/api/loan/submit")
         .set(SCENARIST_TEST_ID_HEADER, "isolation-A")
         .send({ amount: 10000 });
 
       // Test A should be "reviewing"
-      const statusA = await request(fixtures.app)
+      const statusA = await request(fixtures.server)
         .get("/api/loan/status")
         .set(SCENARIST_TEST_ID_HEADER, "isolation-A");
 
       expect(statusA.body.status).toBe("reviewing");
 
       // Test B should still be "pending" (independent state)
-      const statusB = await request(fixtures.app)
+      const statusB = await request(fixtures.server)
         .get("/api/loan/status")
         .set(SCENARIST_TEST_ID_HEADER, "isolation-B");
 
@@ -168,36 +168,36 @@ describe("State-Aware Mocking (ADR-0019)", () => {
 
   describe("State Reset on Scenario Switch", () => {
     it("should reset state-aware workflow when switching scenarios", async () => {
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "reset-test")
         .send({ scenario: "loanApplication" });
 
       // Advance to "reviewing" state
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post("/api/loan/submit")
         .set(SCENARIST_TEST_ID_HEADER, "reset-test")
         .send({ amount: 10000 });
 
-      const status1 = await request(fixtures.app)
+      const status1 = await request(fixtures.server)
         .get("/api/loan/status")
         .set(SCENARIST_TEST_ID_HEADER, "reset-test");
 
       expect(status1.body.status).toBe("reviewing");
 
       // Switch to different scenario and back
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "reset-test")
         .send({ scenario: "success" });
 
-      await request(fixtures.app)
+      await request(fixtures.server)
         .post(fixtures.scenarist.config.endpoints.setScenario)
         .set(SCENARIST_TEST_ID_HEADER, "reset-test")
         .send({ scenario: "loanApplication" });
 
       // State should be reset - back to "pending"
-      const status2 = await request(fixtures.app)
+      const status2 = await request(fixtures.server)
         .get("/api/loan/status")
         .set(SCENARIST_TEST_ID_HEADER, "reset-test");
 
