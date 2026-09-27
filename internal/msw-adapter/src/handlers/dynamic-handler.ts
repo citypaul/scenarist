@@ -32,6 +32,10 @@ export type DynamicRequestResolution =
       readonly response: Response;
     }
   | {
+      readonly type: "rejected";
+      readonly response: Response;
+    }
+  | {
       readonly type: "unmatched";
       readonly strictMode: boolean;
     };
@@ -312,7 +316,7 @@ export const createDynamicRequestResolver = (
             };
 
       return {
-        type: "handled",
+        type: error instanceof ScenaristError ? "rejected" : "handled",
         response: new Response(JSON.stringify(responseBody), {
           status: 500,
           headers: { "Content-Type": "application/json" },
@@ -330,7 +334,7 @@ export const createDynamicHandler = (
   return http.all("*", async ({ request }) => {
     const resolution = await resolveRequest(request);
 
-    if (resolution.type === "handled") {
+    if (resolution.type !== "unmatched") {
       return resolution.response;
     }
 

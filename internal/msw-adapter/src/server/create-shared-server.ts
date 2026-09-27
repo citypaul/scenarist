@@ -52,6 +52,14 @@ const resolveRequest = async (
     return remainingResolution;
   }
 
+  if (resolution.type === "rejected") {
+    return resolution;
+  }
+
+  if (remainingResolution.type === "rejected") {
+    return remainingResolution;
+  }
+
   return {
     type: "unmatched",
     strictMode: resolution.strictMode || remainingResolution.strictMode,
@@ -72,7 +80,7 @@ const createSharedServerState = (): SharedServerState => {
         request,
       );
 
-      if (resolution.type === "handled") {
+      if (resolution.type !== "unmatched") {
         return resolution.response;
       }
 

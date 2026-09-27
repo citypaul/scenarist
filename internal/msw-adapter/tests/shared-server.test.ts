@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createResponseSelector,
+  type ErrorBehaviors,
   type Logger,
   type ResponseSelector,
   type ScenaristMock,
@@ -17,6 +18,7 @@ type SharedServerOptions = {
   readonly mocks?: ReadonlyArray<ScenaristMock>;
   readonly responseSelector?: ResponseSelector;
   readonly logger?: Logger;
+  readonly errorBehaviors?: ErrorBehaviors;
 };
 
 const createServer = (
@@ -35,6 +37,7 @@ const createServer = (
     strictMode: options.strictMode ?? false,
     responseSelector: options.responseSelector ?? createResponseSelector(),
     logger: options.logger,
+    errorBehaviors: options.errorBehaviors,
   });
 };
 
@@ -185,6 +188,62 @@ describe("createSharedMswServer", () => {
     } finally {
       failing.close();
       owner.close();
+    }
+  });
+
+  it("lets another owner handle before a newer registration that throws on no mock", async () => {
+    const url = "https://owner-before-throw.example.test/data";
+    const owner = createOwner({ url, source: "owner" });
+    const throwing = createServer({
+      errorBehaviors: {
+        onNoMockFound: "throw",
+        onSequenceExhausted: "throw",
+        onMissingTestId: "throw",
+      },
+    });
+
+    try {
+      owner.listen();
+      throwing.listen();
+
+      const response = await fetch(url);
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ source: "owner" });
+    } finally {
+      throwing.close();
+      owner.close();
+    }
+  });
+
+  it.each([
+    { order: "older", url: "https://older-throw-miss.example.test/data" },
+    { order: "newer", url: "https://newer-throw-miss.example.test/data" },
+  ])("responds with an $order registration's no-mock error after every registration misses", async ({ order, url }) => {
+    const throwing = createServer({
+      errorBehaviors: {
+        onNoMockFound: "throw",
+        onSequenceExhausted: "throw",
+        onMissingTestId: "throw",
+      },
+    });
+    const strict = createServer({ strictMode: true });
+    const [first, second] =
+      order === "older" ? [throwing, strict] : [strict, throwing];
+
+    try {
+      first.listen();
+      second.listen();
+
+      const response = await fetch(url);
+
+      expect(response.status).toBe(500);
+      expect(await response.json()).toEqual(
+        expect.objectContaining({ code: "NO_MOCK_FOUND" }),
+      );
+    } finally {
+      strict.close();
+      throwing.close();
     }
   });
 
