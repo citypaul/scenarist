@@ -13,7 +13,7 @@ interface Props {
 const {
   title,
   description,
-  image = 'https://scenarist.io/social-preview.png',
+  image = 'https://scenarist.io/og-image.png',
   canonicalUrl = Astro.url.href,
 } = Astro.props;
 
@@ -41,6 +41,9 @@ const siteName = 'Scenarist';
   <meta property="og:title" content={title} />
   <meta property="og:description" content={description} />
   <meta property="og:image" content={image} />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Scenarist: Playwright drives a real browser, your server runs for real, and only third-party APIs like Stripe and Auth0 are scripted per test." />
   <meta property="og:site_name" content={siteName} />
 
   <!-- Twitter -->
@@ -49,6 +52,7 @@ const siteName = 'Scenarist';
   <meta property="twitter:title" content={title} />
   <meta property="twitter:description" content={description} />
   <meta property="twitter:image" content={image} />
+  <meta name="twitter:image:alt" content="Scenarist: a real browser, your real server, and only third-party APIs scripted per test." />
 
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />

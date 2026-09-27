@@ -3,7 +3,7 @@ title: Testing Apps with Database Access
 description: How to test applications that use direct database access alongside Scenarist
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Aside, Card, CardGrid } from '@astrojs/starlight/components';
 
 ## The Pattern: Shared Identity for Parallel Test Isolation
 
@@ -51,6 +51,20 @@ The **connection point** is the `x-scenarist-test-id` header. Both systems read 
 |----------------|------|--------------|
 | HTTP API mocking | **Scenarist** | Intercepts fetch calls, returns mocks based on test ID |
 | Database state isolation | **Your code** | Partitions database queries/data based on test ID |
+
+<CardGrid>
+  <Card title="Scenarist scripts" icon="approve-check">
+    - **Third-party HTTP APIs**: Stripe, Auth0, SendGrid
+    - **Other services your server calls** over HTTP
+    - **Any outgoing HTTP request** from your server code
+  </Card>
+
+  <Card title="Scenarist leaves alone" icon="error">
+    - **Database queries**: Prisma, Drizzle, raw SQL
+    - **Your own API routes and Server Actions**: they're your code, so let them run for real
+    - **File system operations**: `fs.readFile` and similar
+  </Card>
+</CardGrid>
 
 ---
 
@@ -170,6 +184,7 @@ That's why **you implement** database isolation, using whatever approach fits yo
 
 | Your Situation | Approach |
 |----------------|----------|
+| App only calls external HTTP APIs (no database) | Scenarist alone; no database strategy needed |
 | Want scalable parallel tests + clean architecture | [Repository Pattern](./repository-pattern) |
 | Tests have direct database access | Test fixtures with direct seeding |
 | Can't change application code | Row-level security or test ID columns |

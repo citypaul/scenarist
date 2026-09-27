@@ -3,25 +3,31 @@ import LandingLayout from '../layouts/LandingLayout.astro';
 import GridBackground from '../components/landing/GridBackground.astro';
 import Nav from '../components/landing/Nav.astro';
 import Hero from '../components/landing/Hero.astro';
-import Why from '../components/landing/Why.astro';
+import HowItWorks from '../components/landing/HowItWorks.astro';
 import CodeExample from '../components/landing/CodeExample.astro';
-import ValueProps from '../components/landing/ValueProps.astro';
+import Scenarios from '../components/landing/Scenarios.astro';
+import DynamicScenarios from '../components/landing/DynamicScenarios.astro';
+import Comparison from '../components/landing/Comparison.astro';
 import Features from '../components/landing/Features.astro';
+import Community from '../components/landing/Community.astro';
 import Footer from '../components/landing/Footer.astro';
 ---
 
 <LandingLayout
   title="Scenarist | Test Reality. Control the Rest."
-  description="Test real backend code with controlled scenarios. Your Server Components render, middleware executes, validation runs—for real. Only external APIs are mocked. Switch scenarios instantly without restarting."
+  description="Playwright tests that drive a real browser while your real backend runs and every external API plays the scenario you choose. Test the declined card, the expired Auth0 session and the 503—not just the happy path. Switch scenarios per test, in parallel, without restarting."
 >
   <GridBackground />
   <Nav />
   <main>
     <Hero />
+    <HowItWorks />
     <CodeExample />
-    <Why />
-    <ValueProps />
+    <Scenarios />
+    <DynamicScenarios />
+    <Comparison />
     <Features />
+    <Community />
   </main>
   <Footer />
 </LandingLayout>

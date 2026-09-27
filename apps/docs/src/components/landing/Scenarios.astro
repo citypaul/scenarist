@@ -1,0 +1,99 @@
+---
+type Scenario = {
+  service: string;
+  id: string;
+  response: string;
+  outcome: string;
+  tone: 'error' | 'sequence';
+};
+
+const scenarios: readonly Scenario[] = [
+  {
+    service: 'Auth0',
+    id: 'emailAlreadyRegistered',
+    response: '409 · user_exists',
+    outcome: 'Your signup route offers “Sign in instead” rather than a 500.',
+    tone: 'error',
+  },
+  {
+    service: 'Auth0',
+    id: 'sessionExpired',
+    response: '401 · token_expired',
+    outcome: 'Your middleware redirects to login and keeps the cart intact.',
+    tone: 'error',
+  },
+  {
+    service: 'Stripe',
+    id: 'paymentDeclined',
+    response: '402 · card_declined',
+    outcome: 'Your checkout shows a friendly retry, not a stack trace.',
+    tone: 'error',
+  },
+  {
+    service: 'Shipping API',
+    id: 'shippingServiceDown',
+    response: '503 · unavailable',
+    outcome: 'Your UI disables Pay instead of charging for an order you can’t ship.',
+    tone: 'error',
+  },
+  {
+    service: 'Inventory',
+    id: 'sellsOutDuringCheckout',
+    response: 'in stock → sold out',
+    outcome: 'A response sequence proves your code catches the race mid-checkout.',
+    tone: 'sequence',
+  },
+  {
+    service: 'Any async job',
+    id: 'pollingUntilReady',
+    response: 'pending → pending → done',
+    outcome: 'Your poller waits, retries and finishes—no sleeps, no flake.',
+    tone: 'sequence',
+  },
+];
+---
+
+<section id="scenarios" class="py-24 px-6 relative overflow-hidden scroll-mt-16">
+  <div class="max-w-6xl mx-auto relative z-10">
+    <div class="text-center mb-14">
+      <h2 class="text-3xl md:text-5xl font-bold tracking-tight mb-5 text-gray-900 dark:text-white">
+        Your happy path is tested.{' '}<br class="hidden md:block" />
+        <span class="text-violet-700 dark:text-violet-300">Now test everything else.</span>
+      </h2>
+      <p class="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto text-lg">
+        The bugs that reach production live in the scenarios real services won’t produce on cue. With Scenarist, each one is a
+        few lines of declarative config—and your real backend handles it exactly as it would in production.
+      </p>
+    </div>
+
+    <ul class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      {scenarios.map((s) => (
+        <li class="group relative p-6 rounded-2xl bg-white dark:bg-[#0A0A0C] border border-gray-200 dark:border-white/5 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300">
+          <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-4">
+            <span class="text-sm font-semibold text-gray-900 dark:text-white">{s.service}</span>
+            <span
+              class:list={[
+                'font-mono text-xs font-bold px-2 py-1 rounded-md border whitespace-nowrap',
+                s.tone === 'error'
+                  ? 'text-rose-700 bg-rose-50 border-rose-200 dark:text-rose-300 dark:bg-rose-500/10 dark:border-rose-500/30'
+                  : 'text-amber-800 bg-amber-50 border-amber-200 dark:text-amber-300 dark:bg-amber-500/10 dark:border-amber-500/30',
+              ]}
+            >
+              {s.response}
+            </span>
+          </div>
+          <code class="block font-mono text-[12.5px] text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 rounded-lg px-3 py-2 mb-4 break-words">
+            <span class="text-violet-700 dark:text-violet-400">switchScenario</span>(page, <span class="text-emerald-700 dark:text-emerald-400">'{s.id}'</span>)
+          </code>
+          <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{s.outcome}</p>
+        </li>
+      ))}
+    </ul>
+
+    <div class="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm">
+      <a href="/scenarios/response-sequences" class="font-medium text-violet-700 dark:text-violet-400 hover:underline">Response sequences →</a>
+      <a href="/scenarios/state-aware-mocking" class="font-medium text-violet-700 dark:text-violet-400 hover:underline">State-aware mocking →</a>
+      <a href="/scenarios/request-matching" class="font-medium text-violet-700 dark:text-violet-400 hover:underline">Request matching →</a>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,80 @@
+---
+const articles = [
+  {
+    href: 'https://dev.to/lokesh_kumar_v/scenario-driven-auth0-mocking-in-playwright-with-scenarist-30f3',
+    title: 'Scenario-Driven Auth0 Mocking in Playwright with Scenarist',
+    author: 'Lokesh Kumar V',
+    source: 'DEV Community',
+    summary:
+      'Keeping the real UI, routes and server logic under test while scripting the Auth0 Management API—so test runs stop creating orphaned users in the tenant, and unique test data still flows through via captured state.',
+    tags: ['Auth0', 'Next.js', 'Playwright', 'captureState'],
+    points: [
+      { text: 'Mock at the server boundary, keep the UI and routes real', href: '/concepts/how-it-works' },
+      { text: 'Unique emails flow through with captureState', href: '/scenarios/stateful-mocks' },
+      { text: 'switchScenario per test in Playwright', href: '/testing/playwright-integration' },
+      { text: 'Where it goes next: user-exists, rate-limited and failure scenarios', href: '/scenarios/request-matching' },
+      { text: 'Guarded out of production builds', href: '/concepts/production-safety' },
+    ],
+  },
+] as const;
+---
+
+<section class="py-24 px-6 border-t border-gray-100 dark:border-white/5">
+  <div class="max-w-5xl mx-auto">
+    <div class="text-center mb-10">
+      <h2 class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 dark:text-white">Real apps. Real auth. Real scenarios.</h2>
+    </div>
+
+    {articles.map((a) => (
+      <>
+      <a
+        href={a.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="group block relative p-8 md:p-10 rounded-2xl bg-white dark:bg-[#0A0A0C] border border-gray-200 dark:border-white/10 hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300 overflow-hidden"
+      >
+        <div class="absolute -right-16 -top-16 w-64 h-64 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-colors duration-500" aria-hidden="true"></div>
+        <div class="relative">
+          <div class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 mb-4">
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-500 text-white font-bold text-sm" aria-hidden="true">
+              {a.author.split(' ').map((w) => w[0]).join('').slice(0, 2)}
+            </span>
+            <span><span class="font-semibold text-gray-900 dark:text-white">{a.author}</span> · {a.source}</span>
+          </div>
+          <h3 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white mb-3 group-hover:text-violet-700 dark:group-hover:text-violet-300 transition-colors">
+            {a.title}
+          </h3>
+          <p class="text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl mb-6">{a.summary}</p>
+          <div class="flex flex-wrap items-center gap-2">
+            {a.tags.map((tag) => (
+              <span class="px-2 py-1 rounded-md bg-gray-100 dark:bg-white/5 text-xs font-medium text-gray-700 dark:text-gray-300">{tag}</span>
+            ))}
+            <span class="ml-auto text-sm font-semibold text-violet-700 dark:text-violet-400 inline-flex items-center gap-1">
+              Read the article
+              <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </span>
+          </div>
+        </div>
+      </a>
+      <div class="mt-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-white/70 dark:bg-white/[0.02] p-6">
+        <p class="text-sm font-semibold text-gray-900 dark:text-white mb-4">What the article covers, in the docs</p>
+        <ul class="grid sm:grid-cols-2 gap-x-8 gap-y-3">
+          {a.points.map((pt) => (
+            <li>
+              <a href={pt.href} class="group inline-flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300 hover:text-violet-700 dark:hover:text-violet-300">
+                <svg class="mt-1 w-3.5 h-3.5 flex-none text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+                <span class="group-hover:underline">{pt.text}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+      </>
+    ))}
+
+    <p class="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+      Written about Scenarist?{' '}
+      <a href="https://github.com/citypaul/scenarist/discussions" target="_blank" rel="noopener noreferrer" class="font-medium text-violet-700 dark:text-violet-400 hover:underline">Share it with us on GitHub →</a>
+    </p>
+  </div>
+</section>

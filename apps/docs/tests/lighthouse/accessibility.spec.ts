@@ -78,6 +78,14 @@ test.describe("Accessibility - axe-core audits", () => {
 
         await page.goto(testPage.url);
         await page.waitForLoadState("networkidle");
+        // Expressive Code makes overflowing code blocks keyboard-focusable from an
+        // idle callback; audit the page users get, not the moment before it runs.
+        await page.waitForFunction(() =>
+          Array.from(document.querySelectorAll(".expressive-code pre")).every(
+            (pre) =>
+              pre.scrollWidth <= pre.clientWidth || pre.hasAttribute("tabindex"),
+          ),
+        );
 
         const accessibilityScanResults = await new AxeBuilder({ page })
           .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])

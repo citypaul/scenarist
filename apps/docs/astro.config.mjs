@@ -43,19 +43,19 @@ export default defineConfig({
         },
         {
           tag: "meta",
-          attrs: { property: "og:image", content: "https://scenarist.io/social-preview.png" },
+          attrs: { property: "og:image", content: "https://scenarist.io/og-image.png" },
         },
         {
           tag: "meta",
-          attrs: { property: "og:image:width", content: "1238" },
+          attrs: { property: "og:image:width", content: "1200" },
         },
         {
           tag: "meta",
-          attrs: { property: "og:image:height", content: "612" },
+          attrs: { property: "og:image:height", content: "630" },
         },
         {
           tag: "meta",
-          attrs: { property: "og:image:alt", content: "Scenarist - The Scenario-based Testing Framework for the Web" },
+          attrs: { property: "og:image:alt", content: "Scenarist: Playwright drives a real browser, your server runs for real, and only third-party APIs like Stripe and Auth0 are scripted per test." },
         },
         // Twitter Card
         {
@@ -64,7 +64,7 @@ export default defineConfig({
         },
         {
           tag: "meta",
-          attrs: { name: "twitter:image", content: "https://scenarist.io/social-preview.png" },
+          attrs: { name: "twitter:image", content: "https://scenarist.io/og-image.png" },
         },
         // Additional SEO
         {

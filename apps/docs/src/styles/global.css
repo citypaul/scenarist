@@ -123,3 +123,33 @@
     color: var(--color-code-comment);
   }
 }
+
+/* Landing-page snippet highlighting (see components/landing/highlight.ts) */
+@layer components {
+  .hl-kw { color: #7c3aed; }
+  .hl-str { color: #047857; }
+  .hl-num { color: #b45309; }
+  .hl-prop { color: #1d4ed8; }
+  .hl-fn { color: #a21caf; }
+  .hl-com { color: #6b7280; font-style: italic; }
+  .dark .hl-kw { color: #c4b5fd; }
+  .dark .hl-str { color: #6ee7b7; }
+  .dark .hl-num { color: #fcd34d; }
+  .dark .hl-prop { color: #93c5fd; }
+  .dark .hl-fn { color: #f0abfc; }
+  .dark .hl-com { color: #9ca3af; }
+}
+
+/* Themed browser surfaces on the landing page */
+@layer base {
+  :where(a, button, [tabindex]):focus-visible {
+    outline: 2px solid #8b5cf6;
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
+  pre::-webkit-scrollbar { height: 8px; }
+  pre::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.35); border-radius: 8px; }
+}
