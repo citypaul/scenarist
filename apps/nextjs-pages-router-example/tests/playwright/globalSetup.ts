@@ -12,8 +12,10 @@
  * Routes are requested one at a time: the warm-up only needs each route to be
  * compiled, not to succeed, so status codes are ignored.
  *
- * MSW is auto-started in the Next.js process by lib/scenarist.ts; comparison
- * tests (SKIP_MSW=true) hit the real json-server instead.
+ * MSW is auto-started in the Next.js process by lib/scenarist.ts. Comparison
+ * tests (SKIP_MSW=true) run without Scenarist against the real json-server, so
+ * the warm-up is skipped there: it would send every route's traffic to the
+ * real backend, and that project only exercises a single route.
  */
 
 import { globSync } from "node:fs";
@@ -41,6 +43,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     console.log(
       "⏭️  Skipping MSW server (comparison tests use real json-server)",
     );
+    return;
   }
 
   const baseURL = config.projects[0]?.use.baseURL;
