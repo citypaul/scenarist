@@ -451,6 +451,7 @@ For deeper dives into specific topics, see:
 - [Architecture Deep-Dives](docs/architecture/) - Hexagonal architecture, declarative patterns, DI
 - [Investigations](docs/investigations/) - MSW behavior, Next.js quirks, tree-shaking analysis
 - [Production Readiness](docs/production-readiness-assessment.md) - v1.0 readiness checklist
+- [Docs Site Search Indexing](apps/docs/CONTRIBUTING.md#search-indexing) - Internal links end in `/`; every page must be in `apps/docs/published-pages.json` (never remove entries); removed or renamed pages need a `redirects` entry in `apps/docs/astro.config.mjs`
 
 ## Key Files Reference
 

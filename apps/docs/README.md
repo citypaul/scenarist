@@ -96,12 +96,21 @@ sidebar: [
    ```
 
 3. Add to navigation in `astro.config.mjs`:
+
    ```javascript
    {
      label: 'Remix',
      slug: 'frameworks/remix/getting-started'
    }
    ```
+
+4. Add the page's trailing-slash path to `published-pages.json`:
+
+   ```json
+   "/frameworks/remix/getting-started/",
+   ```
+
+   Link to the page with that trailing-slash path too. To rename or remove a page, see [Search Indexing](./CONTRIBUTING.md#search-indexing). Tests fail if a published URL stops resolving.
 
 ## Content Guidelines
 
