@@ -33,6 +33,15 @@ export const siteHeadTags: readonly HeadTag[] = [
     },
   },
   { tag: "link", attrs: { rel: "manifest", href: "/site.webmanifest" } },
+  {
+    tag: "link",
+    attrs: {
+      rel: "describedby",
+      type: "text/plain",
+      title: "Scenarist documentation for LLMs",
+      href: "/llms.txt",
+    },
+  },
 ];
 
 type JsonLd = {

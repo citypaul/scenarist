@@ -6,10 +6,12 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "astro/config";
 import rehypeMermaid from "rehype-mermaid";
 import icon from "astro-icon";
+import starlightLlmsTxt from "starlight-llms-txt";
 
 import cloudflare from "@astrojs/cloudflare";
 import { siteHeadTags, structuredData } from "./src/utils/site-head.ts";
 import { trailingSlashRedirects } from "./integrations/trailing-slash-redirects.ts";
+import { llmsTxtOptions } from "./src/utils/llms-txt.ts";
 
 // https://astro.build/config
 export default defineConfig({
@@ -40,6 +42,7 @@ export default defineConfig({
     starlight({
       title: "Scenarist",
       description: "Playwright tests that hit your real server. Server Components, routes, and middleware execute for real. Mock only external APIs—switchable per test.",
+      plugins: [starlightLlmsTxt(llmsTxtOptions)],
       head: [
         // Open Graph
         {
@@ -124,6 +127,7 @@ export default defineConfig({
             { label: "Quick Start", slug: "getting-started/quick-start" },
             { label: "Installation", slug: "getting-started/installation" },
             { label: "Why Scenarist?", slug: "getting-started/why-scenarist" },
+            { label: "AI Assistants", slug: "getting-started/ai-assistants" },
           ],
         },
         {
@@ -248,7 +252,9 @@ export default defineConfig({
       ],
       customCss: ["./src/styles/custom.css"],
     }),
-    sitemap(),
+    // llms.txt is listed so search engines find it. The generated bundles it links to
+    // repeat every page's content, so they stay out of the sitemap and send noindex (public/_headers).
+    sitemap({ customPages: ["https://scenarist.io/llms.txt"] }),
     icon(),
     trailingSlashRedirects(),
   ],

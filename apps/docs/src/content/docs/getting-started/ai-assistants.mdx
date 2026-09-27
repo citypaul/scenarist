@@ -1,0 +1,57 @@
+---
+title: Using Scenarist with AI Assistants
+description: Give Claude, ChatGPT, Cursor, Copilot, and other coding agents accurate Scenarist documentation through llms.txt
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Coding assistants often guess at APIs they have not seen. Scenarist publishes its documentation in plain Markdown, following the [llms.txt standard](https://llmstxt.org/), so an assistant can read the real API instead of inventing one.
+
+## Which file to use
+
+| URL | What it contains | Use it when |
+| --- | --- | --- |
+| <a href="/llms.txt">`scenarist.io/llms.txt`</a> | A short index: what Scenarist is, the rules assistants most often get wrong, and links to the most useful docs pages and to the bundles below | The assistant can fetch URLs itself. Start here. |
+| <a href="/llms-full.txt">`scenarist.io/llms-full.txt`</a> | Every docs page in one Markdown file | You want the assistant to have everything, and its context window is large |
+| <a href="/llms-small.txt">`scenarist.io/llms-small.txt`</a> | The same pages with tips, notes, and comparison pages removed | The full file is too large for the tool you are using |
+
+`llms.txt` also links to smaller topic bundles, such as Writing scenarios, Next.js App Router, and Express, that fit in almost any context window.
+
+The full, small, and topic files are generated from the documentation on every deploy, so they always match this site. The index and rules in `llms.txt` are written by hand and reviewed with each docs change.
+
+## Point your assistant at the docs
+
+### Agents that read project instructions
+
+Claude Code, Codex, Cursor, GitHub Copilot, and similar agents read a project instructions file such as `AGENTS.md`, `CLAUDE.md`, or `.github/copilot-instructions.md`. Add a line to it so the agent fetches the documentation before writing Scenarist code:
+
+```markdown
+## Scenarist
+
+Before writing or changing Scenarist scenarios, adapters, or tests, read
+https://scenarist.io/llms.txt and follow the links relevant to the task.
+```
+
+### Editors that index documentation
+
+In an editor that can index documentation by URL, such as Cursor's **@Docs**, add `https://scenarist.io/llms-full.txt`. The editor can then pull in Scenarist's docs when you mention them in a prompt.
+
+### Chat assistants
+
+In Claude, ChatGPT, Gemini, or another chat assistant, paste `https://scenarist.io/llms.txt` into your message and ask the assistant to read it first. If the assistant cannot browse, download `llms-small.txt` or a topic bundle and attach it to the conversation.
+
+<Aside type="tip" title="Ask for the framework you use">
+Name your framework in the prompt, for example "Next.js App Router with Playwright". Setup differs between adapters, and the index tells the assistant which guide covers each one.
+</Aside>
+
+## What the index tells an assistant up front
+
+Beyond links, `llms.txt` states the facts assistants most often get wrong, so they are right on the first attempt:
+
+- Scenarios are plain data, never functions, and must include a `default` scenario
+- Next.js apps forward the test ID header on every outgoing `fetch`
+- The Next.js App Router scenario route lives in `app/api/%5F%5Fscenario%5F%5F/route.ts`
+- Playwright tests import `test` from a fixtures file built with `withScenarios`
+- Scenarist mocks HTTP requests only, not database calls
+
+If an assistant still produces code that does not match these docs, [open an issue](https://github.com/citypaul/scenarist/issues) with the prompt you used so the index can be improved.

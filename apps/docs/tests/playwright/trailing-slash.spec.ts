@@ -47,7 +47,7 @@ test.describe("Slashless URLs", () => {
     request,
   }) => {
     const paths = (await readSitemapPaths(request)).filter(
-      (path) => path !== "/",
+      (path) => path !== "/" && !/\.[a-z0-9]+$/i.test(path),
     );
 
     const responses = await Promise.all(
