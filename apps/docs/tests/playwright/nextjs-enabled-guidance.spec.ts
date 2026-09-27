@@ -23,6 +23,7 @@ const SHARED_GUIDANCE_SOURCES = [
   "apps/docs/src/content/docs",
   "README.md",
   "CLAUDE.md",
+  "docs/templates",
   "packages/playwright-helpers/README.md",
 ];
 
@@ -51,14 +52,37 @@ const nextJsOnlyOffenders = (file: string): ReadonlyArray<number> => {
   return gateOffsets(text).map((index) => lineOf(text, index));
 };
 
-const sharedGuidanceOffenders = (file: string): ReadonlyArray<number> => {
-  const text = readFileSync(file, "utf8");
-  return [...text.matchAll(FENCED_CODE_BLOCK)]
-    .filter(([block]) => !/express/i.test(block))
-    .flatMap(({ 0: block, index }) =>
-      gateOffsets(block).map((offset) => lineOf(text, index + offset)),
-    );
+const INLINE_CODE_SPAN = /`[^`\n]+`/g;
+
+const marksGateAsExpress = (block: string, offset: number): boolean => {
+  const lineEnd = block.indexOf("\n", offset);
+  const gateLine = block.slice(offset, lineEnd === -1 ? undefined : lineEnd);
+  return (
+    block.includes("@scenarist/express-adapter") ||
+    /\/\/\s*Express\b/.test(gateLine)
+  );
 };
+
+const blankOut = (text: string, pattern: RegExp): string =>
+  text.replace(pattern, (match) => " ".repeat(match.length));
+
+const sharedGuidanceOffenderLines = (text: string): ReadonlyArray<number> => {
+  const fenced = [...text.matchAll(FENCED_CODE_BLOCK)].flatMap(
+    ({ 0: block, index }) =>
+      gateOffsets(block)
+        .filter((offset) => !marksGateAsExpress(block, offset))
+        .map((offset) => lineOf(text, index + offset)),
+  );
+  const prose = blankOut(text, FENCED_CODE_BLOCK);
+  const inline = [...prose.matchAll(INLINE_CODE_SPAN)].flatMap(
+    ({ 0: span, index }) =>
+      gateOffsets(span).map((offset) => lineOf(text, index + offset)),
+  );
+  return [...fenced, ...inline];
+};
+
+const sharedGuidanceOffenders = (file: string): ReadonlyArray<number> =>
+  sharedGuidanceOffenderLines(readFileSync(file, "utf8"));
 
 const findOffenders = (
   sources: ReadonlyArray<string>,
@@ -83,6 +107,39 @@ test.describe("enabled guidance for Next.js", () => {
       1, 1, 1,
     ]);
     expect(gateOffsets("enabled: true,")).toEqual([]);
+  });
+
+  test("only an Express import or a // Express comment on the gate exempts a shared snippet", () => {
+    const fence = (body: string): string => "```ts\n" + body + "\n```";
+    const gate =
+      'createScenarist({\n  enabled: process.env.NODE_ENV === "test",\n});';
+
+    expect(
+      [
+        fence(
+          'import { createScenarist } from "@scenarist/nextjs-adapter/app";\n' +
+            gate,
+        ),
+        fence("// Unlike Express, this runs in Next.js\n" + gate),
+        fence("// Evaluate the expression at startup\n" + gate),
+        'Use `enabled: process.env.NODE_ENV === "test"` in tests.',
+      ].map((text) => sharedGuidanceOffenderLines(text).length),
+    ).toEqual([1, 1, 1, 1]);
+
+    expect(
+      [
+        fence(
+          'import { createScenarist } from "@scenarist/express-adapter";\n' +
+            gate,
+        ),
+        fence(
+          gate.replace(
+            '"test",',
+            '"test", // Express; in Next.js use enabled: true',
+          ),
+        ),
+      ].map((text) => sharedGuidanceOffenderLines(text).length),
+    ).toEqual([0, 0]);
   });
 
   test("Next.js-only guidance never gates enabled on NODE_ENV === 'test', which Next.js never inlines", () => {

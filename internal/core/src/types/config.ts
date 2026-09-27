@@ -36,8 +36,11 @@ export type ScenaristConfig = {
    * Whether mocking is enabled.
    * When false, adapters' `createScenarist()` returns `undefined`: no scenario
    * endpoints are mounted and no requests are intercepted.
-   * For dynamic enabling (e.g., based on environment), evaluate before creating config:
-   * `enabled: process.env.NODE_ENV === 'test'`
+   * For dynamic enabling, evaluate before creating config. In Express,
+   * `process.env.NODE_ENV === 'test'` works when the test runner sets it. In
+   * Next.js use `true`: Next.js inlines `NODE_ENV` as 'development' or
+   * 'production', so a 'test' check is never true, and production builds are
+   * excluded by the `production` export condition.
    */
   readonly enabled: boolean;
 
