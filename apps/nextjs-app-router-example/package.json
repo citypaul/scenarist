@@ -34,7 +34,7 @@
     "@scenarist/playwright-helpers": "workspace:*",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/express": "^5.0.6",
-    "@types/node": "^25.9.8",
+    "@types/node": "^26.6.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@types/wait-on": "^5.3.4",
