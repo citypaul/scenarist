@@ -8,6 +8,7 @@ import rehypeMermaid from "rehype-mermaid";
 import icon from "astro-icon";
 
 import cloudflare from "@astrojs/cloudflare";
+import { siteHeadTags, structuredData } from "./src/utils/site-head.ts";
 
 // https://astro.build/config
 export default defineConfig({
@@ -57,11 +58,7 @@ export default defineConfig({
           tag: "meta",
           attrs: { property: "og:image:alt", content: "Scenarist: Playwright drives a real browser, your server runs for real, and only third-party APIs like Stripe and Auth0 are scripted per test." },
         },
-        // Twitter Card
-        {
-          tag: "meta",
-          attrs: { name: "twitter:card", content: "summary_large_image" },
-        },
+        ...siteHeadTags,
         {
           tag: "meta",
           attrs: { name: "twitter:image", content: "https://scenarist.io/og-image.png" },
@@ -82,46 +79,10 @@ export default defineConfig({
             content: "testing, e2e testing, integration testing, playwright, msw, mock service worker, nodejs, typescript, express, nextjs, react server components",
           },
         },
-        // JSON-LD Structured Data
         {
           tag: "script",
           attrs: { type: "application/ld+json" },
-          content: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "SoftwareSourceCode",
-            "name": "Scenarist",
-            "description": "Playwright tests that hit your real server. Server Components, routes, and middleware execute for real. Mock only external APIs—switchable per test.",
-            "url": "https://scenarist.io",
-            "codeRepository": "https://github.com/citypaul/scenarist",
-            "programmingLanguage": ["TypeScript", "JavaScript"],
-            "runtimePlatform": "Node.js",
-            "license": "https://opensource.org/licenses/MIT",
-            "keywords": ["testing", "e2e", "playwright", "msw", "nodejs", "typescript"],
-            "author": {
-              "@type": "Organization",
-              "name": "Scenarist Contributors",
-              "url": "https://github.com/citypaul/scenarist"
-            }
-          }),
-        },
-        {
-          tag: "script",
-          attrs: { type: "application/ld+json" },
-          content: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "WebSite",
-            "name": "Scenarist Documentation",
-            "url": "https://scenarist.io",
-            "description": "Documentation for Scenarist - Playwright tests that hit your real server. Mock only external APIs—switchable per test.",
-            "potentialAction": {
-              "@type": "SearchAction",
-              "target": {
-                "@type": "EntryPoint",
-                "urlTemplate": "https://scenarist.io/?search={search_term_string}"
-              },
-              "query-input": "required name=search_term_string"
-            }
-          }),
+          content: JSON.stringify(structuredData),
         },
         // Plausible Analytics (proxied through Cloudflare)
         {

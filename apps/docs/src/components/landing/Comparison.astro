@@ -15,16 +15,16 @@ const rows: readonly Row[] = [
 const heads = ['Unit tests + mocks', 'E2E against live services', 'Scenarist'] as const;
 
 const label: Record<Mark, string> = { yes: 'Yes', no: 'No', partial: 'Partly' };
-const markClass: Record<Mark, string> = {
-  yes: 'text-emerald-700 dark:text-emerald-400',
-  no: 'text-rose-700 dark:text-rose-400',
-  partial: 'text-amber-800 dark:text-amber-400',
-};
 const markPath: Record<Mark, string> = { yes: 'M5 12.5l4.5 4.5L19 7.5', no: 'M7 7l10 10M17 7L7 17', partial: 'M6 12h12' };
 ---
 
 
 <section id="compare" class="py-24 px-6 border-t border-gray-100 dark:border-white/5 scroll-mt-16">
+  <svg class="hidden" aria-hidden="true">
+    {(Object.keys(markPath) as Mark[]).map((mark) => (
+      <symbol id={`cmp-${mark}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d={markPath[mark]} /></symbol>
+    ))}
+  </svg>
   <div class="max-w-5xl mx-auto">
     <div class="text-center mb-12">
       <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-4 text-gray-900 dark:text-white">
@@ -42,10 +42,10 @@ const markPath: Record<Mark, string> = { yes: 'M5 12.5l4.5 4.5L19 7.5', no: 'M7 
           <p class="font-medium text-gray-900 dark:text-white mb-3">{row.label}</p>
           <dl class="grid grid-cols-3 gap-2 text-center">
             {[row.scenarist, row.unit, row.e2e].map((mark, i) => (
-              <div class:list={['rounded-lg px-2 py-2', i === 0 ? 'bg-violet-50 dark:bg-violet-500/10' : 'bg-gray-50 dark:bg-white/[0.03]']}>
-                <dt class="text-[12px] leading-tight text-gray-600 dark:text-gray-400 mb-1">{[heads[2], heads[0], heads[1]][i]}</dt>
-                <dd class:list={['inline-flex items-center gap-1 text-xs font-semibold', markClass[mark]]}>
-                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={markPath[mark]} /></svg>
+              <div class:list={['cmp-cell', i === 0 && 'cmp-cell-ours']}>
+                <dt class="cmp-head">{[heads[2], heads[0], heads[1]][i]}</dt>
+                <dd class={`cmp-mark cmp-${mark}`}>
+                  <svg class="w-3.5 h-3.5" aria-hidden="true"><use href={`#cmp-${mark}`} /></svg>
                   {label[mark]}
                 </dd>
               </div>
@@ -71,15 +71,8 @@ const markPath: Record<Mark, string> = { yes: 'M5 12.5l4.5 4.5L19 7.5', no: 'M7 
               <th scope="row" class="p-4 md:p-5 font-medium text-gray-800 dark:text-gray-200">{row.label}</th>
               {[row.unit, row.e2e, row.scenarist].map((mark, i) => (
                 <td class:list={['p-4 md:p-5 text-center', i === 2 && 'bg-violet-50/60 dark:bg-violet-500/[0.06]']}>
-                  <span
-                    class:list={[
-                      'inline-flex items-center justify-center gap-1.5 text-xs font-semibold',
-                      mark === 'yes' && 'text-emerald-700 dark:text-emerald-400',
-                      mark === 'no' && 'text-rose-700 dark:text-rose-400',
-                      mark === 'partial' && 'text-amber-800 dark:text-amber-400',
-                    ]}
-                  >
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={markPath[mark]} /></svg>
+                  <span class={`cmp-mark justify-center gap-1.5 cmp-${mark}`}>
+                    <svg class="w-3.5 h-3.5" aria-hidden="true"><use href={`#cmp-${mark}`} /></svg>
                     {label[mark]}
                   </span>
                 </td>
@@ -96,3 +89,31 @@ const markPath: Record<Mark, string> = { yes: 'M5 12.5l4.5 4.5L19 7.5', no: 'M7 
     </p>
   </div>
 </section>
+
+<style is:global>
+  @reference "../../styles/global.css";
+
+  @layer components {
+    .cmp-cell {
+      @apply rounded-lg px-2 py-2 bg-gray-50 dark:bg-white/[0.03];
+    }
+    .cmp-cell-ours {
+      @apply bg-violet-50 dark:bg-violet-500/10;
+    }
+    .cmp-head {
+      @apply text-[12px] leading-tight text-gray-600 dark:text-gray-400 mb-1;
+    }
+    .cmp-mark {
+      @apply inline-flex items-center gap-1 text-xs font-semibold;
+    }
+    .cmp-yes {
+      @apply text-emerald-700 dark:text-emerald-400;
+    }
+    .cmp-no {
+      @apply text-rose-700 dark:text-rose-400;
+    }
+    .cmp-partial {
+      @apply text-amber-800 dark:text-amber-400;
+    }
+  }
+</style>
