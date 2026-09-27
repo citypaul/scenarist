@@ -237,10 +237,9 @@ test.describe("Landing Page", () => {
 
     const llmsLink = page.getByRole("link", { name: "/llms.txt" });
     await expect(llmsLink).toBeInViewport();
+    await expect(llmsLink).toHaveAttribute("href", "/llms.txt");
 
-    const response = await request.get(
-      (await llmsLink.getAttribute("href")) ?? "",
-    );
+    const response = await request.get("/llms.txt");
     expect(response.ok()).toBe(true);
     expect(await response.text()).toMatch(/^# Scenarist/);
 
