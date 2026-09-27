@@ -61,7 +61,7 @@
     "@scenarist/eslint-config": "workspace:*",
     "@scenarist/typescript-config": "workspace:*",
     "@types/node": "^25.9.8",
-    "eslint": "^9.39.5",
+    "eslint": "^10.11.0",
     "msw": "^2.15.0",
     "typescript": "^6.0.3"
   },
