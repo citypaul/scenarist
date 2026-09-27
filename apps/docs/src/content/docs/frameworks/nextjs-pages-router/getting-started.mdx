@@ -108,7 +108,7 @@ import { createScenarist } from '@scenarist/nextjs-adapter/pages';
 import { scenarios } from './scenarios';
 
 export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
+  enabled: true,
   scenarios,
 });
 
@@ -117,6 +117,8 @@ if (typeof window === 'undefined' && scenarist) {
   scenarist.start();
 }
 ```
+
+Next.js replaces `process.env.NODE_ENV` in server code with `'development'` or `'production'`, so a `process.env.NODE_ENV === 'test'` check never matches; the example app uses `enabled: true`. Run your tests against `next dev`: `next build` resolves the adapter's `production` export condition, which makes `createScenarist()` return `undefined`. See [Running your app for tests](/frameworks/nextjs-app-router/getting-started/#running-your-app-for-tests) in the App Router guide, which applies to both routers.
 
 <Aside type="caution" title="Create One Instance">
 

@@ -106,7 +106,7 @@ import { createScenarist } from '@scenarist/nextjs-adapter/app';
 import { scenarios } from './scenarios';
 
 export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
+  enabled: true,
   scenarios,
 });
 
@@ -115,6 +115,14 @@ if (typeof window === 'undefined' && scenarist) {
   scenarist.start();
 }
 ```
+
+<Aside type="note" title="Why enabled: true, not a NODE_ENV check?">
+
+Next.js replaces `process.env.NODE_ENV` in your server code with `'development'` under `next dev` and `'production'` under `next build`, even when you start it with `NODE_ENV=test`. A check such as `process.env.NODE_ENV === 'test'` is therefore never true in a Next.js app, so the example app uses `enabled: true`.
+
+The adapters do not currently read `enabled` ([details](/reference/ephemeral-endpoints/#the-enabled-flag)). What keeps Scenarist out of production is the adapter's `production` export condition: `next build` resolves it and `createScenarist()` returns `undefined`. See [Running your app for tests](#running-your-app-for-tests) and [Production Safety](/concepts/production-safety/).
+
+</Aside>
 
 <Aside type="caution" title="Create One Instance">
 
@@ -184,10 +192,25 @@ export default defineConfig<ScenaristOptions>({
     // The Playwright helpers default to /__scenarist__/state, which is the Express path
     scenaristStateEndpoint: '/api/__scenarist__/state',
   },
+  // Playwright starts the app with next dev, where Scenarist is active
+  webServer: {
+    command: 'npx next dev --webpack --port 3000',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
+  },
 });
 ```
 
 `scenaristEndpoint` defaults to `/api/__scenario__`, so you only need to set it if you moved the scenario route.
+
+### Running your app for tests
+
+Run your scenario tests against `next dev`. The `webServer` block above starts it before the tests run and, outside CI, reuses one you already have running. Under `next dev`, `createScenarist()` returns the Scenarist instance, `scenarist.start()` starts MSW in the server process, and the scenario route switches scenarios. You don't need to set `NODE_ENV`. The [example app](https://github.com/citypaul/scenarist/tree/main/apps/nextjs-app-router-example) starts its server the same way, with `next dev --webpack`.
+
+**Can the tests run against `next build && next start`?** No. `next build` resolves the adapter's `production` export condition, so `createScenarist()` returns `undefined` and MSW never starts. The scenario route then answers `405`, and `switchScenario` throws `Failed to switch scenario: 405`. Setting `NODE_ENV=test` does not change this.
+
+To test the production build itself, use a separate Playwright config that does not switch scenarios and points your app at real or stand-in backends. The example app does this with `playwright.production.config.ts`, which builds the app, runs `next start`, and asserts that the scenario route answers `405`.
 
 ## 5. Set Up Playwright Fixtures
 

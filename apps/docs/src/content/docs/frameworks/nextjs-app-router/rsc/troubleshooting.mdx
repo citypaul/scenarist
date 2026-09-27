@@ -100,7 +100,7 @@ Add a console logger to your Scenarist setup:
 import { createScenarist, createConsoleLogger } from '@scenarist/nextjs-adapter/app';
 
 const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
+  enabled: true,
   scenarios,
 
   // Enable logging at info level
@@ -144,7 +144,7 @@ import {
 } from '@scenarist/nextjs-adapter/app';
 
 const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === 'test',
+  enabled: true,
   scenarios,
 
   // Enable via SCENARIST_LOG=1
