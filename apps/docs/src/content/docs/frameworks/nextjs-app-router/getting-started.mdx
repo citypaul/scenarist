@@ -120,7 +120,7 @@ if (typeof window === 'undefined' && scenarist) {
 
 Next.js replaces `process.env.NODE_ENV` in your server code with `'development'` under `next dev` and `'production'` under `next build`, even when you start it with `NODE_ENV=test`. A check such as `process.env.NODE_ENV === 'test'` is therefore never true in a Next.js app, so the example app uses `enabled: true`.
 
-The adapters do not currently read `enabled` ([details](/reference/ephemeral-endpoints/#the-enabled-flag)). What keeps Scenarist out of production is the adapter's `production` export condition: `next build` resolves it and `createScenarist()` returns `undefined`. See [Running your app for tests](#running-your-app-for-tests) and [Production Safety](/concepts/production-safety/).
+When `enabled` is `false`, `createScenarist()` returns `undefined` ([details](/reference/ephemeral-endpoints/#the-enabled-flag)); what keeps Scenarist out of production builds regardless is the adapter's `production` export condition: `next build` resolves it and `createScenarist()` returns `undefined`. See [Running your app for tests](#running-your-app-for-tests) and [Production Safety](/concepts/production-safety/).
 
 </Aside>
 
@@ -139,7 +139,7 @@ Without protection, this causes:
 - Different tests getting wrong scenarios
 - Scenarios not switching properly
 
-**How Scenarist solves this:** The first `createScenarist()` call stores its instance in `global.__scenarist_instance`. Every later call returns that same instance, even when Next.js loads your module more than once, so only one instance and one MSW server ever exist. Later calls ignore the options you pass them, so a second `createScenarist()` call with different scenarios has no effect.
+**How Scenarist solves this:** The first `createScenarist()` call stores its instance in `global.__scenarist_instance`. Every later call returns that same instance, even when Next.js loads your module more than once, so only one instance and one MSW server ever exist. Later calls ignore the options you pass them, so a second `createScenarist()` call with different scenarios has no effect. The exception is `enabled: false`, which always returns `undefined`.
 
 </Aside>
 
@@ -155,7 +155,8 @@ The module duplication issue is a [well-known Next.js challenge](https://github.
 // app/api/%5F%5Fscenario%5F%5F/route.ts
 import { scenarist } from '@/lib/scenarist';
 
-// scenarist is undefined in production builds, so these handlers are undefined and the route answers 405
+// scenarist is undefined in production builds or when enabled is false,
+// so these handlers are undefined and the route answers 405
 const handler = scenarist?.createScenarioEndpoint();
 
 export const POST = handler;

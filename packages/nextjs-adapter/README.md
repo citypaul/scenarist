@@ -338,7 +338,7 @@ import { createScenarist } from "@scenarist/nextjs-adapter/pages"; // or /app
 import { scenarios } from "./scenarios";
 
 export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === "test",
+  enabled: true,
   scenarios, // All scenarios registered upfront
 });
 
@@ -523,7 +523,7 @@ import { createScenarist } from "@scenarist/nextjs-adapter/pages";
 import { scenarios } from "./scenarios";
 
 export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === "test",
+  enabled: true,
   scenarios, // All scenarios registered upfront
   strictMode: false, // Allow unmocked requests to pass through to real APIs
 });
@@ -600,7 +600,7 @@ import { createScenarist } from "@scenarist/nextjs-adapter/app";
 import { scenarios } from "./scenarios";
 
 export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === "test",
+  enabled: true,
   scenarios, // All scenarios registered upfront
   strictMode: false, // Allow unmocked requests to pass through to real APIs
 });
@@ -690,13 +690,14 @@ type Scenarist<T extends ScenaristScenarios> = {
 Unlike Express, Next.js doesn't have global middleware. Instead, you manually create the scenario endpoint using `createScenarioEndpoint()`:
 
 ```typescript
-// Pages Router - single default export, with a 405 fallback for production builds
+// Pages Router - single default export, with a 405 fallback because
+// scenarist is undefined in production builds or when enabled is false
 export default scenarist?.createScenarioEndpoint() ??
   ((_req: NextApiRequest, res: NextApiResponse) => {
     res.status(405).end();
   });
 
-// App Router - explicit method exports (undefined in production, so the route answers 405)
+// App Router - explicit method exports (undefined in production builds or when enabled is false, so the route answers 405)
 const handler = scenarist?.createScenarioEndpoint();
 export const POST = handler;
 export const GET = handler;
@@ -1169,7 +1170,7 @@ describe("API Tests", () => {
 
 **Why?** The `/api/__scenario__` endpoint allows arbitrary mock switching, which could be exploited in production to bypass security, fake data, or cause unexpected behavior.
 
-**How production is protected:** production builds resolve `@scenarist/nextjs-adapter/app` and `/pages` to entry points where `createScenarist()` returns `undefined`, so the scenario route has no working handler (App Router route handlers are undefined and answer 405; Pages Router routes use a 405 fallback) (see [Production Tree-Shaking](#production-tree-shaking)). The `enabled` option does not by itself turn mocking or the endpoints off.
+**How production is protected:** production builds resolve `@scenarist/nextjs-adapter/app` and `/pages` to entry points where `createScenarist()` returns `undefined`, so the scenario route has no working handler (App Router route handlers are undefined and answer 405; Pages Router routes use a 405 fallback) (see [Production Tree-Shaking](#production-tree-shaking)). `createScenarist()` also returns `undefined` when `enabled` is `false`, so the same holds in development and test.
 
 **Production checklist:**
 
@@ -1194,20 +1195,14 @@ curl http://localhost:3000/api/__scenario__
 
 ### Environment-Specific
 
+Next.js replaces `process.env.NODE_ENV` in your code with `'development'` under `next dev` and `'production'` under `next build`, even when you start it with `NODE_ENV=test`. Gating `enabled` on `process.env.NODE_ENV === "test"` therefore never passes and disables Scenarist. Use `enabled: true`: production builds resolve the `production` export condition, so `createScenarist()` returns `undefined` there anyway.
+
 ```typescript
-// Test-only
+// Recommended: active under next dev, absent from production builds
 const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === "test",
+  enabled: true,
   scenarios,
   strictMode: true, // Fail if any unmocked request
-});
-
-// Development and test
-const scenarist = createScenarist({
-  enabled:
-    process.env.NODE_ENV === "test" || process.env.NODE_ENV === "development",
-  scenarios,
-  strictMode: false, // Allow passthrough to real APIs
 });
 
 // Opt-in with environment variable
@@ -1256,7 +1251,7 @@ const testScenarios = {
 } as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === "test",
+  enabled: true,
   scenarios: testScenarios,
   strictMode: true, // Fail loudly if any endpoint isn't mocked
 });
@@ -1294,7 +1289,7 @@ import {
 } from "@scenarist/nextjs-adapter/pages";
 
 export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === "test",
+  enabled: true,
   scenarios,
 
   // Enable logging with pretty format
@@ -1336,7 +1331,7 @@ const parseLogFormat = (value: string | undefined): LogFormat =>
   LOG_FORMATS.includes(value as LogFormat) ? (value as LogFormat) : "pretty";
 
 export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === "test",
+  enabled: true,
   scenarios,
 
   // Enable via SCENARIST_LOG=1 environment variable

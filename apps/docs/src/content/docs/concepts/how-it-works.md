@@ -268,7 +268,7 @@ The endpoints only exist when `createScenarist()` returns an instance. In produc
 
 ```typescript
 const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === "test",
+  enabled: process.env.NODE_ENV === "test", // Express; in Next.js use enabled: true
   scenarios,
 }); // undefined when the `production` export condition is resolved
 ```
@@ -279,13 +279,13 @@ const scenarist = createScenarist({
 - MSW intercepts external API calls
 - Test ID headers route requests to correct scenarios
 
-**In production builds (`production` export condition):**
+**When `enabled: false`:**
 
-- Endpoints have no working handler: Express never mounts them (404), and Next.js scenario routes answer 405
+- `createScenarist()` returns `undefined`, so the endpoints have no working handler: Express never mounts them (404), and Next.js scenario routes answer 405 (or your fallback handler's status)
 - Zero overhead - no middleware, no MSW, no scenario infrastructure
 - Your app runs exactly as it would without Scenarist
 
-This ensures scenario switching infrastructure **never leaks into production**, as long as your production build resolves the `production` export condition. The `enabled` option is not currently read, so it does not provide this protection.
+In production, `createScenarist()` also returns `undefined` even if you accidentally deploy with `enabled: true`: Next.js builds resolve the `production` export condition, and the Express adapter checks `NODE_ENV`. This keeps scenario switching infrastructure **out of production**. See [Production Safety](/concepts/production-safety/).
 
 [Learn more about ephemeral endpoints →](/reference/ephemeral-endpoints/)
 

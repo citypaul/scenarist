@@ -11,14 +11,16 @@ Scenarist is **safe to use in production** - your test mocking code will never r
 
 When your production build resolves the `production` export condition, `createScenarist()` resolves to a stub that returns `undefined` without loading any test code, so no Scenarist or MSW code ends up in your production bundle. Next.js production builds resolve this condition automatically; Express builds must enable it (see [Express](#framework-specific-verification) below).
 
+Independently of the condition, `createScenarist()` also returns `undefined` when `enabled` is `false`, and the Express adapter returns `undefined` when `NODE_ENV` is `production` (see [Runtime Guards](#runtime-guards)).
+
 ```typescript
 import { createScenarist } from "@scenarist/express-adapter";
 import { scenarios } from "./scenarios";
 
-// In production builds (`production` export condition): returns undefined
-// In development/test: returns working Scenarist instance
+// In production builds (`production` export condition), or when enabled is false: returns undefined
+// In development/test with enabled: true: returns working Scenarist instance
 export const scenarist = createScenarist({
-  enabled: true,
+  enabled: process.env.NODE_ENV === "test",
   scenarios,
 });
 ```
@@ -43,6 +45,17 @@ This pattern ensures:
 - ✅ **Automatic in Next.js** - Next.js production builds resolve the `production` condition; Express builds need it enabled
 - ✅ **Type-safe** - TypeScript enforces null checks via `| undefined` return type
 
+### Runtime Guards
+
+- **`enabled: false`**: every adapter returns `undefined` from `createScenarist()`: no endpoints, no middleware, no interception.
+- **`NODE_ENV=production` (Express)**: the Express adapter also returns `undefined` when `NODE_ENV` is `production`, even with `enabled: true`. This protects unbundled Express apps started without `--conditions=production`.
+
+A runtime guard makes Scenarist inert, but it does not remove code: without the `production` condition, the adapter and MSW are still loaded or bundled.
+
+<Aside type="caution" title="enabled is honoured">
+`enabled` decides whether Scenarist runs, so it must evaluate to `true` in the process that serves your tests. For Express, `process.env.NODE_ENV === "test"` works when your test runner sets it (Vitest and Jest do). **In Next.js, don't gate on `NODE_ENV === "test"`:** Next.js replaces `process.env.NODE_ENV` in your code with `'development'` under `next dev` and `'production'` under `next build`, even when you start it with `NODE_ENV=test`, so that check is never true. Use `enabled: true`; production builds are excluded by the `production` export condition.
+</Aside>
+
 ## Bundle Size Impact
 
 Production bundles contain **zero Scenarist code** - the production wrapper pattern combined with tree-shaking completely eliminates all test code from your production builds.
@@ -60,10 +73,15 @@ The fastest way to verify tree-shaking by searching for **MSW runtime functions*
 NODE_ENV=production npm run build
 
 # Search for MSW runtime code (setupWorker, HttpResponse, handler functions)
-! grep -rE '(setupWorker|startWorker|http\.(get|post|put|delete|patch)|HttpResponse\.json)' dist/ .next/static/ build/
+# and Scenarist's shared server global, which survives minification
+OUT_DIR=dist # your build output directory, e.g. dist, .next or build
+test -d "$OUT_DIR" && {
+  grep -rqE '(__scenarist_shared_msw_server|setupWorker|startWorker|http\.(get|post|put|delete|patch)|HttpResponse\.json)' "$OUT_DIR"
+  test $? -eq 1
+}
 ```
 
-**Expected result:** No matches found (exit code 0 from the command due to `!` negation). If matches are found, tree-shaking failed.
+**Expected result:** exit code 0. `grep` exits 1 when nothing matches, so the command succeeds only when the output directory exists and contains no matches. A non-zero exit means tree-shaking failed or the directory is missing.
 
 **Why this pattern:** Searching for the literal strings "scenarist" or "msw" gives false positives (your own variable names, Zod code, comments). This pattern searches for actual MSW runtime functions like `http.get()`, `HttpResponse.json()`, and worker setup - code that should NEVER appear in production bundles.
 
@@ -197,7 +215,9 @@ du -sh dist/ .next/static/ build/
   The Express adapter's production entry point is selected through the
   `production` export condition. Node.js and standalone bundlers such as esbuild
   do not enable this custom condition by default, so setting
-  `NODE_ENV=production` alone does not remove Scenarist.
+  `NODE_ENV=production` alone does not remove Scenarist's code. The runtime
+  guard still returns `undefined`, so no endpoints are mounted, but the adapter
+  and `msw` are loaded, so `msw` must be installed.
 </Aside>
 
 **Unbundled Deployments:**
@@ -207,6 +227,10 @@ Run Node with the `production` condition:
 ```bash
 # Deploy directly
 NODE_ENV=production node --conditions=production src/server.js
+
+# Without the condition: Scenarist is inert (/__scenario__ returns 404),
+# but its code and msw are still loaded
+NODE_ENV=production node src/server.js
 ```
 
 **How it works:**
@@ -215,19 +239,16 @@ NODE_ENV=production node --conditions=production src/server.js
 - `createScenarist()` returns `undefined` at runtime
 - MSW code **never loads into memory**
 
-Verify with memory inspection (optional):
+Verify Node resolves the production entry point, using the same Node flags as your start command (Node.js 20.6+, run from your app's root):
 
 ```bash
-# Run production server and check memory
-NODE_ENV=production node --conditions=production src/server.js &
-PID=$!
-
-# MSW should not appear in loaded modules
-lsof -p $PID | grep -i msw
-# Should output nothing
-
-kill $PID
+# Succeeds only when @scenarist/express-adapter resolves to its zero-import stub
+node --conditions=production --input-type=module \
+  -e "console.log(import.meta.resolve('@scenarist/express-adapter'))" \
+  | grep -q '/dist/setup/production.js$'
 ```
+
+Checking open files with `lsof` does not work for this: Node closes module files after loading them, so MSW never shows up even when it is loaded.
 
 **Bundled Deployments (esbuild, webpack, Vite, rollup):**
 
@@ -301,10 +322,14 @@ export default {
 # Build production bundle (with --conditions=production)
 NODE_ENV=production npm run build
 
-# Search for MSW code
-! grep -rE '(setupWorker|startWorker|http\.(get|post|put|delete|patch)|HttpResponse\.json)' dist/
-# Should output nothing
+# Search for MSW code (succeeds only if dist/ exists and has no matches)
+test -d dist && {
+  grep -rqE '(__scenarist_shared_msw_server|setupWorker|startWorker|http\.(get|post|put|delete|patch)|HttpResponse\.json)' dist/
+  test $? -eq 1
+}
 ```
+
+Minifiers rename MSW's internal identifiers, so `setupWorker` or `HttpResponse.json` can miss MSW code in a minified bundle. `__scenarist_shared_msw_server` is a global property name that survives minification.
 
 **Example verification script:**
 
@@ -312,7 +337,7 @@ NODE_ENV=production npm run build
 {
   "scripts": {
     "build:production": "esbuild src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --external:express --define:process.env.NODE_ENV='\"production\"' --minify --conditions=production",
-    "verify:treeshaking": "npm run build:production && ! grep -rE '(setupWorker|startWorker|http\\.(get|post|put|delete|patch)|HttpResponse\\.json)' dist/"
+    "verify:treeshaking": "npm run build:production && test -d dist && { grep -rqE '(__scenarist_shared_msw_server|setupWorker|startWorker|http\\.(get|post|put|delete|patch)|HttpResponse\\.json)' dist/; test $? -eq 1; }"
   }
 }
 ```
@@ -329,13 +354,13 @@ Next.js has separate client and server bundles. Verify both:
 # Build
 NODE_ENV=production npm run build
 
-# Check client bundles for MSW runtime functions
-! find .next/static -name "*.js" -exec grep -E '(setupWorker|HttpResponse\.json)' {} \;
-# Should output nothing (exit code 0)
-
-# Check server bundles for MSW runtime functions
-! find .next/server -name "*.js" -exec grep -E '(http\.(get|post|put|delete|patch)|HttpResponse\.json)' {} \;
-# Should output nothing (exit code 0)
+# Check client and server bundles for Scenarist/MSW runtime code.
+# grep exits 1 when nothing matches, so this succeeds (exit 0) only when the
+# bundles exist and contain no matches.
+test -d .next/static && test -d .next/server && {
+  grep -rqE --include='*.js' '(__scenarist_shared_msw_server|setupWorker|HttpResponse\.json)' .next/static .next/server
+  test $? -eq 1
+}
 ```
 
 **Vercel Deployment:**
@@ -383,9 +408,16 @@ jobs:
 
       - name: Verify no MSW runtime code in bundle
         run: |
-          if grep -rE '(setupWorker|startWorker|http\.(get|post|put|delete|patch)|HttpResponse\.json)' dist/ .next/static/ build/ 2>/dev/null; then
+          OUT_DIR=dist # your build output directory, e.g. dist, .next or build
+          status=0
+          grep -rE '(__scenarist_shared_msw_server|setupWorker|startWorker|http\.(get|post|put|delete|patch)|HttpResponse\.json)' "$OUT_DIR" || status=$?
+          if [ "$status" -eq 0 ]; then
             echo "❌ ERROR: MSW runtime code found in production bundle!"
-            echo "Tree-shaking failed. Check NODE_ENV and bundler config."
+            echo "Tree-shaking failed. Check the production condition and bundler config."
+            exit 1
+          fi
+          if [ "$status" -ne 1 ]; then
+            echo "❌ ERROR: could not search $OUT_DIR"
             exit 1
           fi
           echo "✅ Verified: No MSW runtime code in production bundle"
@@ -405,7 +437,7 @@ Add to `package.json` for manual verification:
 ```json
 {
   "scripts": {
-    "verify:production": "NODE_ENV=production npm run build && ! grep -rE '(setupWorker|HttpResponse\\.json)' dist/ .next/static/ build/"
+    "verify:production": "NODE_ENV=production npm run build && test -d dist && { grep -rqE '(__scenarist_shared_msw_server|setupWorker|HttpResponse\\.json)' dist/; test $? -eq 1; }"
   }
 }
 ```
@@ -649,10 +681,11 @@ These helpers access global singletons and return safe defaults in production (e
 
 ### Does Scenarist run in production if I forget NODE_ENV?
 
-**`NODE_ENV` is not what disables Scenarist** — the `production` export condition is. If your build or runtime does not resolve that condition, `createScenarist()` returns a working instance: MSW only intercepts requests after `scenarist.start()`, but the scenario endpoints are active wherever you mount the middleware (Express) or export the route handlers (Next.js).
+**Not if `enabled` is tied to your test environment.** In Express, gating `enabled` on `process.env.NODE_ENV === "test"` means an unset `NODE_ENV` makes `createScenarist()` return `undefined`: no endpoints, no interception. (In Next.js use `enabled: true`: Next.js inlines `NODE_ENV`, so a `"test"` check is never true, and production builds are excluded by the `production` export condition.) `enabled` is the switch, not `start()`: MSW only intercepts requests after `scenarist.start()`, but the scenario endpoints are active wherever you mount the middleware (Express) or export the route handlers (Next.js).
 
-However, **you should always set NODE_ENV=production** for:
+You should still set `NODE_ENV=production` in production for:
 
+- The Express runtime guard (returns `undefined` even with `enabled: true`)
 - Optimal performance
 - Correct framework behavior
 
@@ -743,10 +776,10 @@ Scenarist is designed for production safety:
 
 | Aspect             | Guarantee                              |
 | ------------------ | -------------------------------------- |
-| Production runtime | Zero test code execution               |
+| Production runtime | No endpoints, no request interception  |
 | Bundle size        | Zero Scenarist code after tree-shaking |
 | Configuration      | Next.js: none; Express: enable the `production` condition |
 | Type safety        | TypeScript enforces null checks        |
 | Performance        | No runtime overhead in production      |
 
-**The bottom line:** Scenarist's production entry point + conditional exports = zero production impact.
+**The bottom line:** the `production` export condition removes Scenarist entirely, and the runtime guards (`enabled: false`, and `NODE_ENV=production` in Express) keep it inert when the condition is not applied.

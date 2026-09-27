@@ -11,11 +11,11 @@ Scenarist provides comprehensive error handling with rich context, actionable hi
 
 | Code | Description | When Thrown |
 |------|-------------|-------------|
-| `SCENARIO_NOT_FOUND` | Attempted to switch to a scenario that hasn't been registered | `switchScenario()` with unknown ID |
+| `SCENARIO_NOT_FOUND` | Attempted to switch to a scenario that hasn't been registered | `switchScenario()` with unknown ID (returned as `result.error`, not thrown) |
 | `DUPLICATE_SCENARIO` | Attempted to register a scenario with an ID that already exists | `registerScenario()` with duplicate ID |
-| `NO_MOCK_FOUND` | No mock matched the incoming request | Request handling with `errorBehaviors.onNoMockFound: 'throw'` |
-| `SEQUENCE_EXHAUSTED` | Sequence with `repeat: 'none'` has no more responses and no fallback mock | Request to exhausted sequence |
-| `MISSING_TEST_ID` | Request arrived without the x-scenarist-test-id header | Request without test context |
+| `NO_MOCK_FOUND` | No mock matched the incoming request | Unmatched request with `errorBehaviors.onNoMockFound: 'throw'` |
+| `SEQUENCE_EXHAUSTED` | Sequence with `repeat: 'none'` has no more responses and no fallback mock | Request to exhausted sequence with `errorBehaviors.onSequenceExhausted: 'throw'` |
+| `MISSING_TEST_ID` | No test ID could be resolved for the request | Request without a test ID header, with `defaultTestId: ''` and `errorBehaviors.onMissingTestId: 'throw'` |
 | `VALIDATION_ERROR` | Scenario definition failed schema validation | `registerScenario()` with invalid definition |
 
 ## ScenaristError
@@ -41,43 +41,41 @@ type ErrorContext = {
 
 ### Example Error
 
-```typescript
-// switchScenario returns a result instead of throwing
-const result = manager.switchScenario('test-123', 'nonexistent-scenario');
+`switchScenario()` returns a result instead of throwing. The error is typed as `Error`; at runtime it is a `ScenaristError`:
 
-if (!result.success) {
-  const { error } = result;
-  if (error instanceof ScenaristError) {
-    console.log(error.code);      // 'SCENARIO_NOT_FOUND'
-    console.log(error.message);   // 'Scenario 'nonexistent-scenario' not found...'
-    console.log(error.context);
-    // {
-    //   testId: 'test-123',
-    //   scenarioId: 'nonexistent-scenario',
-    //   hint: 'Make sure to register the scenario before switching...'
-    // }
-  }
+```typescript
+import { ScenaristError } from '@scenarist/core';
+
+const result = scenarist.switchScenario('test-123', scenarioId);
+
+if (!result.success && result.error instanceof ScenaristError) {
+  console.log(result.error.code);      // 'SCENARIO_NOT_FOUND'
+  console.log(result.error.message);   // "Scenario '...' not found..."
+  console.log(result.error.context);
+  // {
+  //   testId: 'test-123',
+  //   scenarioId: '...',
+  //   hint: 'Make sure to register the scenario before switching...'
+  // }
 }
 ```
 
+The Express adapter type-checks scenario IDs against your scenarios object; the Next.js adapters accept any string. Over HTTP, `POST /__scenario__` with an unknown scenario responds `400` with the error message.
+
 ## Configurable Error Behaviors
 
-:::caution[Not yet wired up in the adapters]
-The Express and Next.js adapters accept `errorBehaviors` but do not currently pass it to the request handler, so these settings have no effect yet. Today an unmatched request passes through to the real API, or gets a `501` response when `strictMode: true`. This section describes the intended behavior.
-:::
-
-Control how Scenarist handles specific error conditions using `errorBehaviors`:
+Control how Scenarist handles request-time error conditions using `errorBehaviors`:
 
 ```typescript
-import { createScenarist } from '@scenarist/express-adapter';
+import { createScenarist, createConsoleLogger } from '@scenarist/express-adapter';
 
 const scenarist = createScenarist({
-  enabled: true,
+  enabled: process.env.NODE_ENV === 'test',
   scenarios,
+  logger: createConsoleLogger({ level: 'warn' }),
   errorBehaviors: {
-    onNoMockFound: 'warn',        // Log warning, continue
-    onSequenceExhausted: 'throw', // Throw error (fail test)
-    onMissingTestId: 'warn',      // Log warning, use default scenario
+    onNoMockFound: 'warn',        // Log a warning, then strictMode decides
+    onSequenceExhausted: 'throw', // Respond 500 with SEQUENCE_EXHAUSTED
   },
 });
 ```
@@ -85,34 +83,65 @@ const scenarist = createScenarist({
 ### Behavior Options
 
 <CardGrid>
-  <Card title="throw" icon="error">
-    **Default.** Throw `ScenaristError`. The mocked request gets a 500 JSON response containing the error `code` and `message`.
+  <Card title="ignore" icon="approve-check">
+    **Default.** Continue silently. `strictMode` decides what happens next.
   </Card>
   <Card title="warn" icon="warning">
-    Log warning via Logger port, then continue. Good for development debugging.
+    Log a warning through the configured `logger`, then let `strictMode` decide. Without a `logger`, this behaves like `ignore`.
   </Card>
-  <Card title="ignore" icon="approve-check">
-    Silently continue without logging. Use sparingly.
+  <Card title="throw" icon="error">
+    Respond with HTTP 500 and a JSON body containing the error `code` and `message`. The request your application made receives that response.
   </Card>
 </CardGrid>
 
+A `throw` response looks like this:
+
+```json
+{
+  "error": "Internal mock server error",
+  "message": "No mock matched for GET https://api.example.com/users",
+  "code": "NO_MOCK_FOUND"
+}
+```
+
 ### Behavior Defaults
 
-All behaviors default to `throw` for strict-by-default testing:
+All behaviors default to `ignore`, so an unmatched request behaves exactly as `strictMode` says:
 
 ```typescript
 const DEFAULT_ERROR_BEHAVIORS = {
-  onNoMockFound: 'throw',
-  onSequenceExhausted: 'throw',
-  onMissingTestId: 'throw',
+  onNoMockFound: 'ignore',
+  onSequenceExhausted: 'ignore',
+  onMissingTestId: 'ignore',
 };
 ```
 
-<Aside type="caution" title="Relationship with strictMode">
-`errorBehaviors` control whether Scenarist throws/warns when errors occur. `strictMode` controls what happens when no mock matches:
+<Aside type="note" title="Relationship with strictMode">
+`errorBehaviors` run first. `throw` responds 500 immediately. `warn` and `ignore` hand the request to `strictMode`:
 - `strictMode: true` → Return 501 for unmatched requests
-- `strictMode: false` → Pass through to real endpoint
+- `strictMode: false` → Pass through to the real endpoint
 </Aside>
+
+<Aside type="caution" title="In-process tests see your own requests too">
+MSW intercepts every outgoing request in the process, including requests your test makes to your own app with supertest. With `strictMode: true` or `onNoMockFound: 'throw'`, those requests are also treated as unmatched. Use these options when your app runs in a separate process (for example, Playwright against a running server), or mock the app's own URL.
+</Aside>
+
+### When onMissingTestId Applies
+
+Adapters fall back to `defaultTestId` (`'default-test'`) when a request has no `x-scenarist-test-id` header, so by default a test ID is always resolved and `onMissingTestId` never fires. To make a missing header an error, disable the fallback:
+
+```typescript
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === 'test', // Express; in Next.js use enabled: true
+  scenarios,
+  defaultTestId: '',
+  errorBehaviors: { onMissingTestId: 'throw' },
+});
+```
+
+### Multiple Scenarist Instances
+
+When several instances are started in one process (for example, App Router and Pages Router adapters in the same Next.js app), each request is offered to every instance. A `throw` from one instance is used only if no other instance has a mock for the request.
 
 ## Validation Errors
 
@@ -184,7 +213,7 @@ describe('API tests', () => {
 
 ### Graceful Degradation
 
-For development environments, use `warn` to surface issues without blocking:
+Use `warn` locally to surface issues without blocking, and `throw` in CI:
 
 ```typescript
 const scenarist = createScenarist({
@@ -193,14 +222,14 @@ const scenarist = createScenarist({
   logger: createConsoleLogger({ level: 'warn' }),
   errorBehaviors: {
     onNoMockFound: process.env.CI ? 'throw' : 'warn',
-    onMissingTestId: process.env.CI ? 'throw' : 'warn',
+    onSequenceExhausted: process.env.CI ? 'throw' : 'warn',
   },
 });
 ```
 
-### Catching Specific Error Types
+### Asserting on Request-Time Errors
 
-Use error codes to handle specific error types:
+Request-time errors (`NO_MOCK_FOUND`, `SEQUENCE_EXHAUSTED`, `MISSING_TEST_ID`) are not thrown into your application code. With `throw`, the external request your app made receives a 500 response whose body carries the `code`, so your app's own error handling runs:
 
 ```typescript
 import { ErrorCodes } from '@scenarist/core';
@@ -223,6 +252,10 @@ if (response.status === 500) {
   }
 }
 ```
+
+Switching errors are returned, not thrown: check `result.success` (see [Example Error](#example-error)).
+
+Registration errors (`DUPLICATE_SCENARIO`, `VALIDATION_ERROR`) are thrown as `ScenaristError` when scenarios are registered, which adapters do inside `createScenarist()`. See [Validation Errors](#validation-errors).
 
 ## API Reference
 

@@ -308,15 +308,24 @@ demo/                        (EXTERNAL - promotional/educational apps)
 
 **Production Tree-Shaking Strategy:**
 
-Scenarist adapters use conditional exports (the `production` condition) to guarantee zero test code in production. There is no runtime `NODE_ENV` guard: without the `production` condition, the full implementation loads.
+Scenarist adapters use conditional exports to guarantee zero test code in production bundles. Runtime guards keep Scenarist inert when the condition is not applied.
 
-**Express adapter (conditional exports only):**
+**`enabled` (all adapters):** `createScenarist()` returns `undefined` when `enabled` is `false` — no endpoints, no middleware, no interception.
+
+**Express adapter (conditional exports + runtime guard):**
 
 ```typescript
-// Conditional exports in package.json → setup/production.ts when the "production" condition is active
+// Layer 1: Conditional exports
+// package.json exports → production.ts when the `production` condition applies
+// (bundler conditions, or `node --conditions=production`)
 
-// setup/setup-scenarist.ts (synchronous re-export, no runtime guard)
-export { createScenaristImpl as createScenarist } from "./impl.js";
+// Layer 2: Runtime guard in setup-scenarist.ts (synchronous, static import)
+export const createScenarist = (options) => {
+  if (process.env.NODE_ENV === "production") {
+    return undefined;
+  }
+  return createScenaristImpl(options); // returns undefined when enabled is false
+};
 
 // production.ts (returns undefined, zero imports)
 export const createScenarist = (_options) => {
@@ -329,8 +338,8 @@ export const createScenarist = (_options) => {
 ```typescript
 // Conditional exports in package.json → app/production.ts or pages/production.ts
 
-// app/setup.ts or pages/setup.ts (synchronous re-export, no runtime guard)
-export { createScenaristImpl as createScenarist } from "./impl.js";
+// app/setup.ts or pages/setup.ts (synchronous re-export, no NODE_ENV guard)
+export { createScenaristImpl as createScenarist } from "./impl.js"; // undefined when enabled is false
 
 // production.ts (returns undefined, zero imports)
 export const createScenarist = (_options) => {
@@ -341,12 +350,14 @@ export const createScenarist = (_options) => {
 **User-facing pattern (all adapters):**
 
 ```typescript
-// Synchronous pattern - no async/await needed
+// Synchronous pattern - no async/await needed; always guard on undefined
 export const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === "test",
+  enabled: process.env.NODE_ENV === "test", // Express only
   scenarios,
 });
 ```
+
+Next.js inlines `process.env.NODE_ENV` as `'development'` (`next dev`) or `'production'` (`next build`), so a `'test'` check is never true there and disables Scenarist. Next.js apps use `enabled: true`; production builds are excluded by the `production` export condition.
 
 **Conditional exports:**
 
@@ -381,12 +392,21 @@ export const scenarist = createScenarist({
 **Verification:**
 
 ```bash
-# Express adapter & example
+# Express adapter & example (tsc output, unbundled)
 ! grep -rE '(setupWorker|HttpResponse\.json)' dist/
 
+# Bundled output: minifiers rename MSW identifiers; search for the shared-server global instead
+! grep -rE '__scenarist_shared_msw_server' dist/
+
 # Next.js example apps
-NODE_ENV=production next build && ! grep -rE '(setupWorker|HttpResponse\.json)' .next/
+NODE_ENV=production next build && ! grep -rE '(__scenarist_shared_msw_server|setupWorker|HttpResponse\.json)' .next/
 ```
+
+**Why Express uses two layers (defense-in-depth):**
+
+- Layer 1 (conditional exports): Only layer that removes code; Node.js applies the custom `production` condition only with `--conditions=production`
+- Layer 2 (NODE_ENV guard): Keeps unbundled `NODE_ENV=production node server.js` safe (no `/__scenario__` endpoints), but the adapter and MSW are still imported — `msw` must be installed
+- Code splitting alone does not remove Scenarist from an Express bundle (there is no dynamic import)
 
 **Activating the `production` condition:**
 

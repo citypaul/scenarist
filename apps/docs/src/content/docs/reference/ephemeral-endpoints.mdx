@@ -3,22 +3,35 @@ title: Ephemeral Endpoints
 description: Test-only activation, production safety, and test ID isolation in Scenarist
 ---
 
-Scenarist creates **ephemeral endpoints** that only exist in development and test builds. In production builds they are never registered, so they add zero overhead. This ensures scenario switching infrastructure never leaks into production.
+import { Aside } from "@astrojs/starlight/components";
+
+Scenarist creates **ephemeral endpoints** that only exist when Scenarist is enabled in development and test. When `enabled` is `false`, and in production, they are never registered, so they add zero overhead. This ensures scenario switching infrastructure never leaks into production.
 
 ## The `enabled` Flag
 
-The `enabled` flag is required in the config, but the adapters do not currently read it at runtime. What removes the testing infrastructure is the adapter's `production` export condition, which makes `createScenarist()` return `undefined`. Next.js production builds resolve that condition automatically. Express needs it set explicitly, with a bundler option such as esbuild's `--conditions=production` or with `node --conditions=production`; `NODE_ENV=production` alone does not switch the entry point. See [Production Safety](/concepts/production-safety/).
+The `enabled` flag controls whether Scenarist's testing infrastructure is active. When it is `false`, `createScenarist()` returns `undefined` in every adapter.
 
 ```typescript
 import { createScenarist } from "@scenarist/express-adapter";
 
 const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === "test", // Required option; not yet read at runtime
+  enabled: process.env.NODE_ENV === "test", // Only in test environment
   scenarios,
 });
 ```
 
-### In Development and Test Builds
+Production has its own guards that apply regardless of `enabled`: the adapter's `production` export condition makes `createScenarist()` return `undefined` without loading any test code, and the Express adapter also returns `undefined` when `NODE_ENV` is `production`. See [Production Safety](/concepts/production-safety/).
+
+<Aside type="caution" title="Make sure enabled is true where your tests run">
+  `enabled` is evaluated in the process that serves requests. For Express,
+  `process.env.NODE_ENV === "test"` works when your test runner sets it (Vitest
+  and Jest do). In Next.js, use `enabled: true`: Next.js replaces
+  `process.env.NODE_ENV` with `'development'` or `'production'` at build time,
+  so a `"test"` check is never true, and production builds are excluded by the
+  `production` export condition.
+</Aside>
+
+### When `enabled: true` (Development and Test)
 
 **Endpoints are active:**
 
@@ -38,13 +51,15 @@ const scenarist = createScenarist({
 - External API calls intercepted
 - Responses returned based on active scenario
 
-### In Production Builds (`production` condition)
+### When `enabled: false`, and in Production
+
+`createScenarist()` returns `undefined`.
 
 **Endpoints are not registered.** Requests to them get whatever your app returns for an unknown route:
 
 ```typescript
 // Express: POST /__scenario__ → 404 Not Found (no middleware installed)
-// Next.js App Router: the route file exports undefined handlers → 405 Method Not Allowed
+// Next.js: undefined handlers (App Router) or your fallback handler (Pages Router) → 405 Method Not Allowed
 ```
 
 **No middleware is installed** (`createScenarist()` returned `undefined`, so there is no `scenarist.middleware`):
@@ -69,9 +84,20 @@ Scenarist provides multiple layers of production safety:
 
 The `production` export condition swaps in a stub whose `createScenarist()` returns `undefined` and imports nothing. Make sure your production build resolves it; the [Production Safety guide](/concepts/production-safety/) shows how to verify this for each framework.
 
-The `enabled` option is not a safeguard today: the adapters do not read it, so `enabled: false` does not disable endpoints or interception.
+The Express adapter also returns `undefined` when `NODE_ENV` is `production`, even with `enabled: true`. This protects unbundled Express apps started without `--conditions=production`; the adapter and `msw` are still loaded in that case, but nothing is mounted or intercepted.
 
-### 2. Endpoint Availability
+### 2. Configuration Check
+
+```typescript
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === "test", // Express: false in production; in Next.js use enabled: true
+  scenarios,
+});
+```
+
+**Best practice:** Derive `enabled` from the environment so it is never `true` in production.
+
+### 3. Endpoint Availability
 
 As an extra precaution, the endpoints can be moved to non-standard paths:
 
@@ -86,7 +112,7 @@ const scenarist = createScenarist({
 });
 ```
 
-### 3. Middleware Safety
+### 4. Middleware Safety
 
 The middleware only exists when `createScenarist()` returns an instance:
 
@@ -96,13 +122,13 @@ if (scenarist) {
   app.use(scenarist.middleware);
 }
 
-// In production builds scenarist is undefined
+// When enabled is false, or in production, scenarist is undefined
 // - Middleware never installed
 // - No header extraction
 // - No performance impact
 ```
 
-### 4. MSW Registration
+### 5. MSW Registration
 
 MSW handlers are only registered when you call `scenarist.start()`, so guard the call:
 
@@ -111,7 +137,7 @@ MSW handlers are only registered when you call `scenarist.start()`, so guard the
 if (scenarist) {
   scenarist.start(); // Registers MSW handlers
 }
-// In production: handlers never registered
+// When enabled is false, or in production: handlers never registered
 ```
 
 ## Test ID Isolation
@@ -214,6 +240,17 @@ GET / api / user;
 ```
 
 **Use case:** Manual testing during development. Open browser, navigate to app, no test ID needed.
+
+Change the fallback with `defaultTestId`. To treat a missing header as an error instead, set `defaultTestId: ''` and choose an [`onMissingTestId`](/reference/errors/#configurable-error-behaviors) behavior:
+
+```typescript
+const scenarist = createScenarist({
+  enabled: process.env.NODE_ENV === "test", // Express; in Next.js use enabled: true
+  scenarios,
+  defaultTestId: "", // No fallback
+  errorBehaviors: { onMissingTestId: "throw" }, // Respond 500 with MISSING_TEST_ID
+});
+```
 
 ## How Ephemeral Endpoints Enable Parallel Tests
 
@@ -408,8 +445,8 @@ Complete configuration options related to ephemeral endpoints:
 
 ```typescript
 const scenarist = createScenarist({
-  // Required config field (not read at runtime by the adapters)
-  enabled: process.env.NODE_ENV === "test",
+  // createScenarist() returns undefined when false
+  enabled: process.env.NODE_ENV === "test", // Express; in Next.js use enabled: true
 
   // Scenario definitions
   scenarios: {
