@@ -415,8 +415,8 @@ importers:
         specifier: workspace:*
         version: link:../core
       path-to-regexp:
-        specifier: ^6.3.0
-        version: 6.3.0
+        specifier: ^8.4.2
+        version: 8.4.2
     devDependencies:
       '@scenarist/eslint-config':
         specifier: workspace:^
