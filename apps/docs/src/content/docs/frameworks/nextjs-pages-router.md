@@ -30,7 +30,7 @@ Scenarist enables HTTP-level testing for Pages Router applications:
 - **Test getServerSideProps** without mocking Next.js internals
 - **Test getStaticProps** against your default scenario (it has no request to carry a test ID)
 - **Run parallel tests** without interference
-- **Fast execution** - no browser overhead for every scenario
+- **No restarts** - each test switches scenario at runtime against one running server
 - **Automatic singleton protection** - Handles Next.js module duplication for you (no `globalThis` boilerplate needed)
 
 ## Pages Router Features Supported

@@ -26,7 +26,7 @@ Scenarist enables HTTP-level testing for App Router applications:
 - **Test Route Handlers** with different external API scenarios
 - **Test Server Actions** with runtime scenario switching
 - **Run parallel tests** without interference
-- **Fast execution** - no browser overhead for every scenario
+- **No restarts** - each test switches scenario at runtime against one running server
 - **Automatic singleton protection** - Handles Next.js module duplication for you (no `globalThis` boilerplate needed)
 
 ## App Router Features Supported
