@@ -1,5 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
-import type { Logger, ScenaristScenarios } from "@scenarist/core";
+import { describe, it, expect } from "vitest";
+import type { ScenaristScenarios } from "@scenarist/core";
+import { createMockLogger } from "../common/test-setup.js";
 import { createScenarist } from "../../src/pages/setup.js";
 
 const requireDefined = <T>(value: T | undefined): T => {
@@ -448,15 +449,6 @@ describe("Pages Router createScenarist", () => {
       }).not.toThrow();
     });
   });
-});
-
-const createMockLogger = (): Logger => ({
-  error: vi.fn(),
-  warn: vi.fn(),
-  info: vi.fn(),
-  debug: vi.fn(),
-  trace: vi.fn(),
-  isEnabled: () => true,
 });
 
 describe("Pages Router createScenarist runtime configuration", () => {

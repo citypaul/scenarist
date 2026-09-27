@@ -9,34 +9,18 @@ import {
 export type { ExpressAdapterOptions, ExpressScenarist } from "./impl.js";
 
 /**
- * Create a Scenarist instance for Express.
- *
- * Production safety uses two layers:
- * - Conditional exports: bundlers and `node --conditions=production` resolve
- *   production.js (returns undefined, zero imports)
- * - Runtime guard: returns undefined when NODE_ENV is 'production', for
- *   unbundled apps started without the production condition
- *
- * Also returns undefined when `enabled` is false.
+ * Create a Scenarist instance for Express, or `undefined` when `enabled` is false or `NODE_ENV` is 'production'.
  *
  * @example
  * ```typescript
- * // src/app.ts
- * import { createScenarist } from '@scenarist/express-adapter';
- * import { scenarios } from './scenarios';
- *
  * export const scenarist = createScenarist({
- *   enabled: true,
+ *   enabled: process.env.NODE_ENV === "test",
  *   scenarios,
  * });
  *
  * if (scenarist) {
  *   app.use(scenarist.middleware);
  * }
- *
- * // tests/setup.ts
- * beforeAll(() => scenarist?.start());
- * afterAll(() => scenarist?.stop());
  * ```
  */
 export const createScenarist = <T extends ScenaristScenarios>(

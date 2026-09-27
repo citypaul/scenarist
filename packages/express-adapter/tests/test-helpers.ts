@@ -1,5 +1,7 @@
 import type { Request, Response } from "express";
+import { vi } from "vitest";
 import type {
+  Logger,
   ScenarioManager,
   ScenaristConfig,
   ScenaristScenarios,
@@ -97,3 +99,15 @@ export const createTestScenarist = <T extends ScenaristScenarios>(
 
   return scenarist;
 };
+
+/**
+ * Create a Logger whose methods are spies, for asserting on log calls.
+ */
+export const createMockLogger = (): Logger => ({
+  error: vi.fn(),
+  warn: vi.fn(),
+  info: vi.fn(),
+  debug: vi.fn(),
+  trace: vi.fn(),
+  isEnabled: () => true,
+});

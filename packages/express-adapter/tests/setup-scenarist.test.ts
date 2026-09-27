@@ -1,11 +1,10 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import express from "express";
 import request from "supertest";
-import { createTestScenarist } from "./test-helpers.js";
+import { createMockLogger, createTestScenarist } from "./test-helpers.js";
 import { createScenarist } from "../src/setup/setup-scenarist.js";
 import {
   SCENARIST_TEST_ID_HEADER,
-  type Logger,
   type ScenaristScenario,
   type ScenaristScenarios,
 } from "@scenarist/core";
@@ -924,15 +923,6 @@ describe("createScenarist", () => {
       expect(response.body.address).toBeNull();
     });
   });
-});
-
-const createMockLogger = (): Logger => ({
-  error: vi.fn(),
-  warn: vi.fn(),
-  info: vi.fn(),
-  debug: vi.fn(),
-  trace: vi.fn(),
-  isEnabled: () => true,
 });
 
 describe("createScenarist runtime configuration", () => {

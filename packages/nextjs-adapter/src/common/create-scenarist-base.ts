@@ -2,8 +2,6 @@ import {
   buildConfig,
   createScenarioManager,
   createResponseSelector,
-  InMemoryScenarioRegistry,
-  InMemoryScenarioStore,
   createInMemorySequenceTracker,
   createInMemoryStateManager,
   noOpLogger,
@@ -11,6 +9,8 @@ import {
   type BaseAdapterOptions,
   type ScenaristConfig,
   type ScenarioManager,
+  type ScenarioRegistry,
+  type ScenarioStore,
   type ResponseSelector,
 } from "@scenarist/core";
 import {
@@ -38,7 +38,7 @@ export type ScenaristBaseSetup = {
  *
  * Follows hexagonal architecture:
  * - Accepts optional port implementations via dependency injection
- * - Uses in-memory defaults if not provided
+ * - Requires the injected registry and store; state manager and sequence tracker default to in-memory
  * - Sets up MSW dynamic handler with response selector
  * - Initializes MSW server
  *
@@ -46,16 +46,16 @@ export type ScenaristBaseSetup = {
  * @returns Shared setup objects for both router implementations
  */
 export const createScenaristBase = (
-  options: BaseAdapterOptions,
+  options: BaseAdapterOptions & {
+    readonly registry: ScenarioRegistry;
+    readonly store: ScenarioStore;
+  },
 ): ScenaristBaseSetup => {
   const config = buildConfig(options);
   const logger = options.logger ?? noOpLogger;
 
-  // Use injected ports or in-memory defaults
-  // Note: registry/store fallback branches are exercised via singleton pattern in impl.ts
-  // (globals pass these through, but v8 coverage can't trace that execution path)
-  const registry = options.registry ?? new InMemoryScenarioRegistry();
-  const store = options.store ?? new InMemoryScenarioStore();
+  // Registry and store are the router's global singletons, injected by impl.ts
+  const { registry, store } = options;
   const stateManager = options.stateManager ?? createInMemoryStateManager();
   const sequenceTracker =
     options.sequenceTracker ?? createInMemorySequenceTracker();

@@ -247,6 +247,31 @@ describe("createSharedMswServer", () => {
     }
   });
 
+  it("lets a newer owner handle when an older registration throws on no mock", async () => {
+    const url = "https://older-throw-newer-owner.example.test/data";
+    const throwing = createServer({
+      errorBehaviors: {
+        onNoMockFound: "throw",
+        onSequenceExhausted: "throw",
+        onMissingTestId: "throw",
+      },
+    });
+    const owner = createOwner({ url, source: "owner" });
+
+    try {
+      throwing.listen();
+      owner.listen();
+
+      const response = await fetch(url);
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ source: "owner" });
+    } finally {
+      owner.close();
+      throwing.close();
+    }
+  });
+
   it.each([
     { order: "older", url: "https://older-throw-miss.example.test/data" },
     { order: "newer", url: "https://newer-throw-miss.example.test/data" },

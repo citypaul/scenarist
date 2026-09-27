@@ -2,10 +2,10 @@ import {
   createInMemorySequenceTracker,
   createInMemoryStateManager,
   SCENARIST_TEST_ID_HEADER,
-  type Logger,
   type ScenaristScenarios,
 } from "@scenarist/core";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
+import { createMockLogger } from "../common/test-setup.js";
 import { createScenarist } from "../../src/app/setup.js";
 
 const requireDefined = <T>(value: T | undefined): T => {
@@ -574,15 +574,6 @@ describe("App Router createScenarist", () => {
       await scenarist.stop();
     });
   });
-});
-
-const createMockLogger = (): Logger => ({
-  error: vi.fn(),
-  warn: vi.fn(),
-  info: vi.fn(),
-  debug: vi.fn(),
-  trace: vi.fn(),
-  isEnabled: () => true,
 });
 
 describe("App Router createScenarist runtime configuration", () => {

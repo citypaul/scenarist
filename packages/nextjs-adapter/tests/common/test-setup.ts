@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import {
   buildConfig,
   createScenarioManager,
@@ -6,6 +7,7 @@ import {
   type ScenarioDefinition,
   type ScenarioManager,
   type ScenaristConfig,
+  type Logger,
 } from "@scenarist/core";
 
 /**
@@ -92,3 +94,15 @@ export const createEndpointTestSetup = <T>(
 
   return { handler, manager, config };
 };
+
+/**
+ * Create a Logger whose methods are spies, for asserting on log calls.
+ */
+export const createMockLogger = (): Logger => ({
+  error: vi.fn(),
+  warn: vi.fn(),
+  info: vi.fn(),
+  debug: vi.fn(),
+  trace: vi.fn(),
+  isEnabled: () => true,
+});
