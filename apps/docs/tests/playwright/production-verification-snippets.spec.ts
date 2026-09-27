@@ -122,6 +122,26 @@ const npmScriptCheck = (name: string) => (): string => {
 const expressBundleCheck = (): string =>
   withoutBuildStep(codeBlockAfter(guide, "**Verify bundled Express app:**"));
 
+const entryPointCheck = (): string =>
+  codeBlockAfter(guide, "Verify Node resolves the production entry point");
+
+const INSTALLED_EXPRESS_ADAPTER: BundleFiles = {
+  "node_modules/@scenarist/express-adapter/package.json": JSON.stringify({
+    name: "@scenarist/express-adapter",
+    type: "module",
+    exports: {
+      ".": {
+        production: "./dist/setup/production.js",
+        default: "./dist/index.js",
+      },
+    },
+  }),
+  "node_modules/@scenarist/express-adapter/dist/setup/production.js":
+    "export const createScenarist = () => undefined;",
+  "node_modules/@scenarist/express-adapter/dist/index.js":
+    "export const createScenarist = () => ({});",
+};
+
 const GITHUB_ACTIONS_BASH = [
   "bash",
   "--noprofile",
@@ -155,6 +175,29 @@ test.describe("production-safety verification snippets", () => {
 
     test("fails when there is no build output", () => {
       expect(runIn({}, POSIX_SH, nextJsCheck())).not.toBe(0);
+    });
+  });
+
+  test.describe("Unbundled Express entry-point check", () => {
+    test("passes when Node resolves the production entry point", () => {
+      expect(
+        runIn(INSTALLED_EXPRESS_ADAPTER, POSIX_SH, entryPointCheck()),
+      ).toBe(0);
+    });
+
+    test("fails when Node starts without the production condition", () => {
+      const withoutCondition = entryPointCheck().replaceAll(
+        "--conditions=production",
+        "",
+      );
+      expect(withoutCondition).not.toBe(entryPointCheck());
+      expect(
+        runIn(INSTALLED_EXPRESS_ADAPTER, POSIX_SH, withoutCondition),
+      ).not.toBe(0);
+    });
+
+    test("fails when the adapter is not installed", () => {
+      expect(runIn({}, POSIX_SH, entryPointCheck())).not.toBe(0);
     });
   });
 
