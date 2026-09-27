@@ -194,6 +194,7 @@ export default defineConfig<ScenaristOptions>({
   },
   // Playwright starts the app with next dev, where Scenarist is active
   webServer: {
+    // Next.js 16; on Next.js 14 and 15, drop --webpack (webpack is already the default)
     command: 'npx next dev --webpack --port 3000',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
@@ -206,7 +207,7 @@ export default defineConfig<ScenaristOptions>({
 
 ### Running your app for tests
 
-Run your scenario tests against `next dev`. The `webServer` block above starts it before the tests run and, outside CI, reuses one you already have running. Under `next dev`, `createScenarist()` returns the Scenarist instance, `scenarist.start()` starts MSW in the server process, and the scenario route switches scenarios. You don't need to set `NODE_ENV`. The [example app](https://github.com/citypaul/scenarist/tree/main/apps/nextjs-app-router-example) starts its server the same way, with `next dev --webpack`.
+Run your scenario tests against `next dev`. The `webServer` block above starts it before the tests run and, outside CI, reuses one you already have running. Under `next dev`, `createScenarist()` returns the Scenarist instance, `scenarist.start()` starts MSW in the server process, and the scenario route switches scenarios. You don't need to set `NODE_ENV`. The [example app](https://github.com/citypaul/scenarist/tree/main/apps/nextjs-app-router-example) starts its server the same way, with `next dev --webpack` on Next.js 16. Next.js 14 and 15 have no `--webpack` flag and use webpack by default, so run `next dev` there.
 
 **Can the tests run against `next build && next start`?** No. `next build` resolves the adapter's `production` export condition, so `createScenarist()` returns `undefined` and MSW never starts. The scenario route then answers `405`, and `switchScenario` throws `Failed to switch scenario: 405`. Setting `NODE_ENV=test` does not change this.
 
