@@ -630,7 +630,7 @@ const scenarios = {
 } as const satisfies ScenaristScenarios;
 
 const scenarist = createScenarist({
-  enabled: process.env.NODE_ENV === "test",
+  enabled: process.env.NODE_ENV === "test", // Express; in Next.js use enabled: true
   scenarios,
   strictMode: false,
 
