@@ -61,7 +61,7 @@
     "@scenarist/eslint-config": "workspace:*",
     "@scenarist/typescript-config": "workspace:*",
     "@vitest/coverage-v8": "^5.0.1",
-    "@vitest/ui": "^5.0.1",
+    "@vitest/ui": "^5.0.5",
     "eslint": "^9.39.5",
     "fast-check": "^4.10.1",
     "typescript": "^6.0.3",
