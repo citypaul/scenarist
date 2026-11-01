@@ -69,7 +69,7 @@
   "dependencies": {
     "@scenarist/core": "workspace:*",
     "@scenarist/msw-adapter": "workspace:*",
-    "zod": "^4.6.5"
+    "zod": "^4.6.6"
   },
   "peerDependencies": {
     "msw": "^2.0.0",
