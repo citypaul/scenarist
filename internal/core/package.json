@@ -55,7 +55,7 @@
   },
   "dependencies": {
     "redos-detector": "^6.1.4",
-    "zod": "^4.6.5"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@scenarist/eslint-config": "workspace:*",
