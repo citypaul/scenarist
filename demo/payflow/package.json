@@ -33,7 +33,7 @@
     "recharts": "3.10.1",
     "sonner": "2.0.8",
     "tailwind-merge": "3.7.0",
-    "zod": "^4.6.5"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
