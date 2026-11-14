@@ -24,7 +24,7 @@
     "@fontsource-variable/inter": "^5.3.0",
     "@fontsource-variable/jetbrains-mono": "^5.3.0",
     "@iconify-json/simple-icons": "1.2.96",
-    "astro": "^7.3.3",
+    "astro": "^7.4.7",
     "astro-icon": "1.2.0",
     "rehype-mermaid": "^3.0.0",
     "sharp": "^0.35.4",
